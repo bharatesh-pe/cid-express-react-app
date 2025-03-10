@@ -379,18 +379,14 @@ const Layout = ({ children }) => {
                                 key={index}
                                 sx={{ cursor: "pointer" }}
                                 onClick={() => {
-                                    navigate(`/${element.name}`);
+                                    navigate(element.location);
                                 }}
-                                className={`sidebarMenus ${
-                                element.name === location.pathname
-                                    ? "active"
-                                    : ""
-                                }`}
+                                className={`sidebarMenus ${ element?.active_location?.includes(location.pathname) ? "active" : "" }`}
                             >
                                 <ListItemIcon>
                                     {icons['dashboardIcon']}
                                 </ListItemIcon>
-                                <ListItemText primary={element.ui_name} />
+                                <ListItemText primary={element?.ui_name} />
                             </ListItem>
                         );
                     })}
