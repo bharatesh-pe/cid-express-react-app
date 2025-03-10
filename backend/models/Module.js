@@ -14,6 +14,14 @@ module.exports = (sequelize, DataTypes) => {
     ui_name: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    location: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    active_location: {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     tableName: 'module',
