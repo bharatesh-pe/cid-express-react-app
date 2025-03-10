@@ -1,0 +1,154 @@
+[
+  {
+    "required": "",
+    "disabled": "",
+    "label": "",
+    "kannada": "",
+    "heading": "",
+    "supportingText": "",
+    "info": "",
+    "history": "",
+    "minLength": 2,
+    "maxLength": 50,
+    "numeric": "",
+    "type": "text",
+    "name": "text",
+    "formType": "Short Text"
+  },
+  {
+    "required": "",
+    "disabled": "",
+    "label": "Values input",
+    "kannada": "",
+    "heading": "",
+    "supportingText": "",
+    "info": "",
+    "history": "",
+    "minLength": 2,
+    "maxLength": 50,
+    "type": "valuesinput",
+    "name": "text",
+    "placeholder": "",
+    "formType": "Values input"
+  },
+  {
+    "required": "",
+    "disabled": "",
+    "label": "",
+    "kannada": "",
+    "heading": "",
+    "supportingText": "",
+    "info": "",
+    "history": "",
+    "placeholder": "",
+    "minLength": 2,
+    "maxLength": 50,
+    "numeric": "",
+    "type": "date",
+    "name": "date",
+    "formType": "Date"
+  },
+  {
+    "required": "",
+    "disabled": "",
+    "label": "Long text",
+    "kannada": "",
+    "placeholder": "",
+    "heading": "",
+    "supportingText": "",
+    "info": "",
+    "history": "",
+    "type": "textarea",
+    "name": "textarea",
+    "formType": "Long text"
+  },
+  {
+    "label": "",
+    "kannada": "",
+    "heading": "",
+    "supportingText": "",
+    "info": "",
+    "history": "",
+    "placeholder": "",
+    "disabled": "",
+    "type": "dropdown",
+    "name": "select",
+    "options": [
+      {
+        "name": "Bagalkot • ಬಾಗಲಕೋಟೆ ",
+        "code": "US"
+      },
+      {
+        "name": "Bellary • ಬಳ್ಳಾರಿ",
+        "code": "DE"
+      },
+      {
+        "name": "Belagavi • ಬೆಳಗಾವಿ",
+        "code": "IN"
+      },
+      {
+        "name": "Bidar • ಬೀದರ್",
+        "code": "SE"
+      }
+    ],
+    "required": "",
+    "formType": "Dropdown"
+  },
+  {
+    "type": "email",
+    "name": "email",
+    "label": "Email",
+    "formType": "Email",
+    "placeholder": "",
+    "required": true
+  },
+  {
+    "type": "checkbox",
+    "name": "checkbox",
+    "label": "Checkbox",
+    "formType": "Checkbox"
+  },
+  {
+    "type": "radio",
+    "name": "radio",
+    "label": "radio",
+    "options": [],
+    "required": true,
+    "formType": "Radio"
+  },
+  {
+    "type": "dropdown",
+    "name": "select",
+    "label": "select",
+    "options": [],
+    "required": true,
+    "formType": "Dropdown"
+  },
+  {
+    "type": "autocomplete",
+    "name": "select",
+    "label": "autocomplete",
+    "options": [],
+    "required": true
+  },
+  {
+    "type": "date",
+    "name": "date",
+    "label": "date",
+    "required": true
+  },
+  {
+    "type": "file",
+    "name": "file",
+    "label": "file",
+    "required": true,
+    "multiple": true
+  },
+  {
+    "type": "checkbox-group",
+    "name": "checkbox-group",
+    "label": "checkbox-group",
+    "options": [],
+    "required": true
+  }
+]

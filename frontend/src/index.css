@@ -1,0 +1,866 @@
+/* Poppins font */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+/* Roboto  */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap');
+/* kannada anek font */
+@import url('https://fonts.googleapis.com/css2?family=Anek+Kannada:wght@100..800&display=swap');
+
+
+/* loader css */
+
+.parent_spinner{
+    height: 100vh;
+    width: 100vw;
+    position: fixed;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.4);
+    z-index: 9999;
+}
+
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+        monospace;
+}
+
+.Roboto {
+    font-family: "Roboto" !important;
+}
+
+.anekKannada {
+    font-family: "Anek Kannada";
+    /* padding-right: 12px !important; */
+}
+
+.MuiInputBase-root {
+    font-weight: 500 !important;
+    font-size: 16px !important;
+    font-family: 'Roboto' !important;
+    color: #1D2939 !important;
+}
+
+.MuiSelect-select {
+    font-weight: 500 !important;
+    font-size: 16px !important;
+    font-family: 'Roboto' !important;
+    color: #1D2939 !important;
+}
+
+.bg-white .MuiInputBase-root {
+    background-color: #FFFFFF !important;
+}
+
+.bg-white .MuiSelect-select {
+    background-color: #FFFFFF !important;
+}
+
+.ProfileNameText {
+    font-family: 'Roboto' !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    color: #1D2939 !important;
+}
+
+.poppins {
+    font-family: "Poppins" !important;
+}
+
+.sidebarMenus .MuiListItemIcon-root {
+    min-width: 30px !important;
+}
+
+.css-10d30g3-MuiPaper-root-MuiDialog-paper {
+    border-radius: 8px !important;
+}
+
+.sidebarMenus {
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    padding-left: 18px !important;
+    width: 95% !important;
+    border-top-right-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+}
+
+.sidebarMenus .MuiListItemIcon-root svg {
+    stroke: #667085;
+    fill: #667085;
+}
+
+.sidebarMenus .MuiListItemText-root span {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    color: #667085 !important;
+    font-family: "Roboto" !important;
+}
+
+.sidebarMenus.active .MuiListItemText-root span {
+    color: #1D2939 !important;
+}
+
+.sidebarMenus:hover .MuiListItemText-root span {
+    color: #1D2939 !important;
+}
+
+.sidebarMenus.active {
+    background: #D1E9FF;
+    border-left: 3px solid #1570EF;
+}
+
+.sidebarMenus:hover {
+    background: #D1E9FF;
+    border-left: 3px solid #1570EF;
+}
+
+.sidebarMenus:hover .MuiListItemIcon-root svg {
+    stroke: #1D2939;
+    fill: #1D2939;
+}
+
+.sidebarMenus.active .MuiListItemIcon-root svg {
+    stroke: #1D2939;
+    fill: #1D2939;
+}
+
+/* outlined btns */
+.outlinedBtn {
+    border: 1px solid #D0D5DD !important;
+    background-color: #F9FAFB !important;
+    color: #101828 !important;
+    border-radius: 6px !important;
+}
+
+.outlinedBtn:hover {
+    background: #D0D5DD !important;
+}
+
+.GreenFillBtn {
+    background-color: #32D583 !important;
+    color: #101828 !important;
+    border-radius: 6px !important;
+    border: none !important;
+}
+
+.GreenFillBtn:hover {
+    background-color: #12a35b !important;
+}
+
+.smallSecondaryBtn {
+    border: 1px solid #D0D5DD !important;
+    border-radius: 6px !important;
+    color: #98A2B3 !important;
+    background: #F9FAFB !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.fillPrimaryBtn {
+    border: 1px solid #1570EF !important;
+    border-radius: 6px !important;
+    color: #FFFFFF !important;
+    background: #1570EF !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+
+.gutter {
+    background-color: #1570EF;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    cursor: row-resize;
+    z-index: 99;
+    position: relative;
+}
+
+.HighlightedSquare {
+    background-color: #1D2939;
+    border-radius: 5px;
+    height: 28px;
+    width: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    color: #FFFFFF;
+    margin: 0;
+}
+
+.HighlightedText {
+    color: #1D2939;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+}
+
+.moreInfoText {
+    color: #1D2939;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+}
+
+.addNewFieldBtn {
+    border: 1px dashed #1570EF;
+    background-color: #F5FAFF;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+}
+
+.addNewFieldBtn .css-sc8y68-MuiInputBase-root-MuiOutlinedInput-root-MuiSelect-root:hover .MuiOutlinedInput-notchedOutline,
+.addNewFieldBtn .css-1ll44ll-MuiOutlinedInput-notchedOutline {
+    border: none !important;
+}
+
+.MuiFormHelperText-root:has(.notranslate) {
+    display: none;
+}
+
+.MuiFormHelperText-root {
+    display: block;
+    font-weight: 400 !important;
+    font-size: 14px !important;
+    color: #98A2B3 !important;
+    font-family: 'Roboto' !important;
+    margin-left: 0 !important;
+}
+
+.flexCenter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flexBetween {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.PreviewTemplateBtn {
+    color: #1D2939 !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    border: 1px solid #D0D5DD !important;
+    border-radius: 6px !important;
+    background-color: #FFFFFF !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    text-transform: none !important;
+}
+
+.SaveTemplateBtn {
+    color: #FFFFFF !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    border: 1px solid #12B76A !important;
+    border-radius: 6px !important;
+    background-color: #12B76A !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    text-transform: none !important;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.mainSelectList {
+    position: absolute;
+    top: 170px;
+    left: 16px;
+    right: 26px;
+    width: 98%;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background-color: #FFFFFF;
+    z-index: 999;
+    box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+    border-radius: 8px;
+}
+
+.mainSelectList li {
+    text-align: center;
+    font-size: 18px;
+    font-weight: 400;
+    border-radius: 8px;
+}
+
+.mainSelectList li:hover {
+    background-color: #ecf1fa;
+}
+
+.maindropdown .MuiPaper-root {
+    width: 100%;
+    max-width: calc(100vw - 21rem);
+    right: 0 !important;
+}
+
+@media (max-width: 960px) {
+    .maindropdown .MuiPaper-root {
+        max-width: calc(100vw - 4rem);
+    }
+}
+
+.MuiSwitch-track {
+    height: 20px !important;
+    width: 36px !important;
+    background-color: #D0D5DD !important;
+    opacity: 1 !important;
+    border-radius: 10px !important;
+}
+
+.MuiSwitch-thumb {
+    width: 16px !important;
+    height: 16px !important;
+}
+
+.MuiSwitch-switchBase {
+    padding: 0 !important;
+    top: 14px !important;
+    left: 14px !important;
+}
+
+.MuiSwitch-switchBase.Mui-checked {
+    transform: translateX(15px) !important;
+}
+
+.MuiSwitch-switchBase.Mui-checked {
+    color: #FFFFFF !important;
+}
+
+.MuiSwitch-switchBase.Mui-checked+.MuiSwitch-track {
+    background-color: #1570EF !important;
+}
+
+/*--------------------- pageflip book view ---------------------*/
+
+.demoPage,
+.page {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+
+/* stepper css */
+
+.stepperHeader {
+    font-size: 16px !important;
+    font-weight: 500 !important;
+    font-family: 'Roboto' !important;
+    color: #1D2939 !important;
+}
+
+.stepperCompletedPercentage {
+    border-radius: 12px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    font-family: 'Roboto' !important;
+    padding: 6px !important;
+    display: inline-flex;
+}
+
+/* inactive stepper */
+
+.MuiStepIcon-root {
+    color: #EAECF0 !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+}
+
+.MuiStepIcon-text  {
+    fill: #98A2B3 !important;
+}
+
+.Mui-disabled .stepperHeader {
+    color: #98A2B3 !important;
+}
+
+.Mui-disabled .stepperCompletedPercentage {
+    background-color: #EAECF0 !important;
+    color: #98A2B3 !important;
+}
+
+
+/* active stepper */
+.MuiStepIcon-root.Mui-active {
+    color: #1570EF !important;
+    box-shadow: 0px 0px 0px 5px #DCEBFF !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+}
+
+.MuiStepIcon-root.Mui-active .MuiStepIcon-text {
+    fill: #FFFFFF !important;
+}
+
+.Mui-active .stepperCompletedPercentage {
+    background-color: #EFF8FF !important;
+    color: #1570EF !important;
+}
+
+/* completed stepper */
+.Stepper_100_Percentage .MuiStepLabel-horizontal .MuiStepLabel-iconContainer .MuiStepIcon-root, .Stepper_100_Percentage .MuiStepLabel-horizontal .MuiStepLabel-iconContainer .MuiStepIcon-root.Mui-completed {
+    color: #12B76A !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+}
+.MuiStepLabel-horizontal .MuiStepLabel-iconContainer .MuiStepIcon-root.Mui-completed {
+    color: #1570EF !important;
+    box-shadow: 0px 0px 0px 5px #DCEBFF !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+}
+
+.Stepper_100_Percentage.stepperHeader{
+    color: #1D2939 !important;
+}
+
+.Stepper_100_Percentage .MuiStepLabel-horizontal .MuiStepLabel-iconContainer .MuiStepIcon-root .MuiStepIcon-text{
+    fill: #FFFFFF !important;
+}
+
+.Stepper_100_Percentage .stepperCompletedPercentage {
+    background-color: #ECFDF3 !important;
+    color: #12B76A !important;
+}
+
+/* stepper border */
+.MuiStepConnector-horizontal {
+    flex: 0 0 auto !important;
+    width: 24px !important;
+}
+
+.stepperWidth_2 .MuiStepConnector-horizontal, .stepperWidth_3 .MuiStepConnector-horizontal {
+    flex: 0 0 auto !important;
+    width: 188px !important;
+}
+
+.MuiStepConnector-horizontal.Mui-active .MuiStepConnector-lineHorizontal,
+.MuiStepConnector-horizontal.Mui-completed .MuiStepConnector-lineHorizontal {
+    border-color: #667085 !important;
+}
+
+.MuiStepConnector-horizontal.Mui-disabled .MuiStepConnector-lineHorizontal {
+    border-color: #D0D5DD !important;
+}
+
+.ProfileViewHeading {
+    margin: 0;
+    padding-bottom: 3px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #3E4784;
+}
+
+.ProfileViewDesc {
+    margin: 0;
+    font-weight: 400;
+    font-size: 11px;
+    color: #101828;
+}
+
+.pageColor {
+    background: #EAECF0 !important;
+    width: 50% !important;
+    height: 90vh !important;
+}
+
+.bg-white {
+    background: #FFFFFF !important;
+}
+
+.pageRightIcon {
+    background-color: #1570EF;
+    display: inline-flex;
+    border-radius: 50%;
+    padding: 6px;
+    position: absolute;
+    top: 75%;
+    right: 0;
+    cursor: pointer;
+    outline: none;
+    border: none;
+}
+
+.pageLeftIcon {
+    background-color: #1570EF;
+    display: inline-flex;
+    border-radius: 50%;
+    padding: 6px;
+    position: absolute;
+    top: 75%;
+    left: -10px;
+    cursor: pointer;
+    z-index: 99;
+    outline: none;
+    border: none;
+}
+
+.pageLeftIcon:disabled,
+.pageRightIcon:disabled {
+    display: none !important;
+}
+
+.formbuilderDeleteIcon {
+    border: none;
+    outline: none;
+    background-color: #F04438;
+    border-radius: 50%;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.propsOptionsBtn {
+    font-family: 'Roboto';
+    font-size: 16px;
+    font-weight: 400;
+    color: #1D2939;
+}
+
+.MuiFormLabel-asterisk {
+    color: #F04438 !important;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Anek Kannada';
+    margin-top: 7px;
+}
+
+.pt-0 {
+    padding-top: 0 !important;
+}
+
+.rowToggleBtn {
+    border-radius: 6px !important;
+}
+
+.rowToggleBtnParent {
+    gap: 2px;
+}
+
+th::first-letter,
+td::first-letter,
+p::first-letter,
+div::first-letter {
+    text-transform: uppercase;
+}
+
+.divider {
+    margin: 20px;
+    width: 400px;
+    border-top: 2px dashed black;
+    border-image: repeating-linear-gradient(to right, #98A2B3 0%, #98A2B3 15px, transparent 5px, transparent 25px) 1;
+}
+
+/* table view */
+.FigmaTableView .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-columnHeader {
+    background-color: #EAECF0 !important;
+    height: 40px !important;
+}
+
+.MuiDataGrid-row--borderBottom .MuiDataGrid-filler, .MuiDataGrid-row--borderBottom .MuiDataGrid-scrollbarFiller--header{
+    background-color: #EAECF0 !important;
+}
+
+.w-0 {
+    width: 0;
+}
+
+.w-0 .css-pyt3b0-MuiButton-endIcon,
+.w-0 .MuiTouchRipple-root {
+    width: 0;
+}
+
+.MuiOutlinedInput-root,
+.MuiSelect-root,
+.MuiAutocomplete-root,
+.MuiInputBase-root {
+    --TextField-defaultBorderColor: #D0D5DD;
+    --TextField-focusBorderColor: #1570EF;
+}
+
+.MuiOutlinedInput-notchedOutline,
+.MuiSelect-outlined,
+.MuiAutocomplete-inputRoot .MuiOutlinedInput-notchedOutline {
+    border-color: var(--TextField-defaultBorderColor);
+}
+
+.MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline,
+.MuiSelect-root.Mui-focused .MuiOutlinedInput-notchedOutline,
+.MuiAutocomplete-root.Mui-focused .MuiOutlinedInput-notchedOutline,
+.MuiInputBase-root.Mui-focused {
+    border-color: var(--TextField-focusBorderColor) !important;
+    /* box-shadow: 0px 0px 0px 3px #D1E9FF; */
+    box-shadow: 2px 3px 3px 1px #D1E9FF;
+}
+
+.MuiOutlinedInput-root:focus-visible,
+.MuiSelect-root:focus-visible,
+.MuiAutocomplete-root:focus-visible,
+.MuiInputBase-root:focus-visible {
+    outline: none;
+}
+
+.MuiDataGrid-columnHeaderTitle {
+    color: #1D2939 !important;
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    font-family: 'Roboto' !important;
+}
+
+.MuiDataGrid-cell {
+    color: #667085 !important;
+    font-size: 14px;
+    font-weight: 400;
+    font-family: 'Roboto' !important;
+}
+
+
+.filesupportingformat {
+    border: 1px solid #D0D5DD;
+    border-radius: 6px;
+    display: flex;
+    padding: 8px 12px;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.filesupportingformat.selected {
+    border: 1.5px solid #1570EF !important;
+    background: #EFF8FF !important;
+}
+
+.css-1o131fq-MuiStep-root {
+    cursor: pointer;
+}
+
+    .FigmaTableView .MuiDataGrid-main .MuiDataGrid-virtualScroller .MuiDataGrid-overlayWrapper .MuiDataGrid-overlayWrapperInner .MuiDataGrid-overlay {
+        color: #FFFFFF;
+    }
+    
+    .MuiDataGrid-overlay::before {
+        content: "No Record Found";
+        color: #000000;
+    }
+
+    .MuiModal-root {
+        z-index: 1000 !important;
+    }
+
+    .attachmentTableBtn{
+        border: 1px solid #D0D5DD;
+        border-radius: 6px;
+        height: 32px;
+        width: 32px;
+        padding: 8px 6px;
+        color: #1D2939;
+        font-size: 14px;
+        font-weight: 500;
+        background: #FFFFFF !important;
+    }
+
+    .attachmentTableName{
+        color:#1D2939;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    .attachmentTableBox{
+        height:22px;
+        width:160px;
+        border:1px solid #D0D5DD;
+        border-radius:6px;
+        padding:6px 8px;
+        display:flex;
+        align-items:center;
+        gap:8px;
+    }
+
+    .tableValueTextView{
+        color: #667085;
+        font-size: 14px;
+        font-weight: 400;
+    }
+
+    .tableValueTextView.unreadMsgText{
+        color: #1D2939;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .folderCategoryBox{
+        display: inline-flex;
+        padding: 4px 18px;
+        border: 1px solid #D0D5DD;
+        border-radius: 24px;
+        background-color: #F9FAFB;
+        color: #475467;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+    }
+
+    .folderCategoryBox.active{
+        border-color: #1570EF;
+        color: #1570EF;
+        background-color: #F0F9FF;
+    }
+
+    .page {
+        page-break-after: always;
+    }
+    .no-break {
+        break-inside: avoid;
+    }
+
+    .hideHistory .MuiInputBase-root fieldset legend span div:not(:has(.infoIcon)) .historyIcon {
+        width: 8px !important;
+    }
+    
+    .hideHistory .MuiInputBase-root fieldset legend span div:has(.infoIcon) .historyIcon {
+        width: 2px !important;
+    }
+
+    .hideHistory .MuiInputBase-root fieldset legend span div:not(:has(.historyIcon)) .infoIcon {
+        width: 4px !important;
+    }
+
+    .selectHideHistory fieldset legend span div:not(:has(.infoIcon)) .historyIcon {
+        width: 8px !important;
+    }
+    
+    .selectHideHistory fieldset legend span div:has(.infoIcon) .historyIcon {
+        width: 2px !important;
+    }
+
+    .selectHideHistory fieldset legend span div:not(:has(.historyIcon)) .infoIcon {
+        width: 4px !important;
+    }
+
+    .FigmaTableView .MuiDataGrid-main .MuiDataGrid-scrollbar {
+        overflow-y: hidden !important;
+        overflow-x: auto !important;
+    }
+
+
+    .parentFilterTabs{
+        background-color: #F2F4F7 !important;
+        border-radius: 6px;
+        border: 1px solid #EAECF0 !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        padding: 0px 4px !important;
+        display: flex;
+        align-items: center;
+    }
+    
+    .filterTabs{
+        height: 28px !important;
+        width: 90px !important;
+        border-radius: 6px !important;
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        color: #667085 !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .filterTabs.Active{
+        background-color: #FFFFFF !important;
+        border: 1px solid #D0D5DD !important;
+        font-weight: 500 !important;
+        color: #1D2939 !important;
+    }
+
+    #content-to-pdf {
+        page-break-inside: avoid;
+        overflow: hidden;
+    }
+    
+    /* Ensure text doesn't break awkwardly */
+    #pdfDownloadTable td, #pdfDownloadTable th {
+        white-space: normal;
+        word-wrap: break-word;
+    }
+    
+    /* Force a page break before specific elements */
+    .page-break {
+        page-break-before: always;
+        break-before: always;
+    }
+
+    .toast-error {
+        background-color: red !important;
+        color: white !important;
+    }
+
+    .toast-success {
+        background-color: green !important;
+        color: white !important;
+    }
+    .toast-warning {
+        background-color: #FEC84B !important;
+        color: white !important;
+    }
+
+    .Toastify__toast-icon svg {
+        fill: white !important;
+    }     
+
+    .Toastify__close-button--light{
+        color: #FFFFFF !important;
+    }
+
+    .Toastify__progress-bar--wrp .Toastify__progress-bar {
+        background-color: #FFFFFF !important;
+    }
+
+    .profileSearchClass .MuiOutlinedInput-root{
+        padding-right: 0 !important;
+    }
+    .profileSearchClass .MuiOutlinedInput-root input{
+        border-right: 1px solid #D0D5DD;
+    }

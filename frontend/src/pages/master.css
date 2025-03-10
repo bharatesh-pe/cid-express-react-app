@@ -1,0 +1,155 @@
+.align-left .p-column-header-content {
+    justify-content: flex-start; 
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    z-index: 1000;
+}
+
+.modal-content {
+    position: absolute;
+    width: 793px;
+    top: 245px;
+    left: 264px;
+    background: #fff;
+    border-radius: 12px; 
+    border: 1px solid #ccc;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 0px; 
+    z-index: 1001;
+    opacity: 1;
+}
+
+
+.modal-header {
+    position: relative;
+    height: 64px; 
+    padding: 25px;
+    gap: var(--DocsStructureStructureGapBetween); 
+    background-color: #F8FAFC; 
+    border-radius: 12px; 
+    border: 1px solid #E4E4E7; 
+    border-top: 1px solid #ccc;
+    opacity: 1; 
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 600; 
+    line-height: 24px; 
+    letter-spacing: 0.005em;
+    text-align: left; 
+    text-underline-position: from-font;
+    text-decoration-skip-ink: none;
+    color: #1F2937; 
+}
+
+.modal-footer {
+    border-bottom-left-radius: 8px; 
+    border-bottom-right-radius: 8px; 
+    display: flex;
+    justify-content: flex-end; 
+    gap: 10px; 
+    padding: 10px 20px; 
+    border-top: 1px solid #ccc;
+    background-color: #fff; 
+}
+
+.file-input {
+    border-radius: 8px; 
+    border: 1px solid #ccc; 
+    padding: 8px;
+    width: 50%; 
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    color:#6B7280;
+
+}
+.modal-input {
+    border-radius: 8px; 
+    border: 1px solid #ccc; 
+    padding: 16px;
+    width: 50%; 
+    font-size: 16px;
+    font-family: 'Inter', sans-serif;
+    color:#6B7280;
+    margin-left: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+
+}
+
+.modal-input:focus {
+    border: 1px solid #E4E4E7; 
+    outline: none; 
+}
+
+
+.modal-body {
+    border-radius:'8px';
+    padding: 5px; 
+    display: flex;
+    flex-direction: column; 
+    justify-content: center;
+    gap: 15px;
+    background-color: #fff; 
+}
+
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.btn-secondary { 
+    font-weight: 600;
+    background-color: #f9fafb; 
+    color: #6B7280;
+    border: 1px solid Gray; 
+    border-radius: 8px; 
+    width: 157px;
+    height: 46px; 
+    display: flex; 
+    justify-content: center;
+    align-items: center; 
+    gap: 0px; 
+    opacity: 1;
+    cursor: pointer; 
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    width: 86px; 
+    height: 46px; 
+    background: #2A55E5; 
+    border-radius: 8px; 
+
+    color: #fff; 
+    border: none; 
+    display: flex;
+    justify-content: center; 
+    align-items: center; 
+   
+}
+
+.btn-primary:hover {
+    background: #1F44CC;
+    opacity: 0.9; 
+}
+
+
+
+

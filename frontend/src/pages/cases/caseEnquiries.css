@@ -1,0 +1,40 @@
+.custom-datatable .p-datatable-tbody > tr:hover {
+  background-color: transparent !important;
+}
+
+.custom-datatable .p-datatable-tbody > tr:hover .action-column {
+  display: table-cell !important;
+  position: sticky;
+  right: 0;
+  background: linear-gradient(
+    140deg,
+    rgba(240, 248, 255, 0) 0%,
+    rgb(255 255 255) 30.09%
+  );
+}
+
+.custom-datatable .action-column {
+  display: none;
+}
+.p-menuitem:hover svg circle {
+  fill: #e46e0b;
+}
+
+.p-menuitem:hover svg g rect {
+  fill: #e46e0b;
+}
+.p-menuitem:hover svg path {
+  fill: white;
+}
+.p-menuitem:hover {
+  background-color: #fff2e8 !important;
+}
+
+.MuiDataGrid-root {
+  overflow: visible !important;
+}
+
+.MuiPaper-root {
+  overflow: visible !important;
+}
+

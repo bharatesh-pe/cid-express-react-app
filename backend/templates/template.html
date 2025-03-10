@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+        }
+
+        .Roboto {
+            font-family: "Roboto" !important;
+        }
+
+        .ProfileViewHeading {
+            margin: 0;
+            padding-bottom: 3px;
+            font-weight: 600;
+            font-size: 13px;
+            color: #3E4784;
+        }
+
+        .ProfileViewDesc {
+            margin: 0;
+            font-weight: 400;
+            font-size: 11px;
+            color: #101828;
+        }
+
+        .container {
+            padding: 10px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .header-content {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-content h2 {
+            margin: 0;
+            color: #101828;
+            font-weight: 800;
+            font-size: 22px;
+            line-height: 1;
+            vertical-align: middle;
+        }
+
+        .header-content img {
+            display: inline-block;
+            width: 36px;
+            height: 32px;
+            vertical-align: middle;
+        }
+
+        .content {
+            text-align: left;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <span class="Roboto">SIIMS</span>
+                <img src="./siimsLogo.svg" alt="logo" />
+            </div>
+        </div>
+        <div class="content">
+            {{#each fields}}
+            <div style="padding:10px;border-top: 1px solid #EAECF0;">
+                <p class="Roboto ProfileViewHeading">
+                    {{fieldName}}
+                </p>
+                <p class="Roboto ProfileViewDesc">
+                    {{fieldValue}}
+                </p>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+</body>
+
+</html>
