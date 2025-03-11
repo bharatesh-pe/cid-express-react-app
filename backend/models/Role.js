@@ -16,6 +16,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: true
     },
+    dashboard: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
     user_mgnt: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
@@ -307,6 +311,42 @@ module.exports = (sequelize, DataTypes) => {
     delete_government_order: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
+    },
+    template: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    create_role: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    role: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    logs: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    case: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    enquiry: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    gn_order: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    judgements: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    circular: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
     },
     created_by: {
       type: DataTypes.INTEGER,
