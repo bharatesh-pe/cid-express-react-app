@@ -22,6 +22,18 @@ module.exports = (sequelize, DataTypes) => {
     active_location: {
       type: DataTypes.TEXT,
       allowNull: true
+    },
+    is_main_module : {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    is_sub_module : {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    sub_modules : {
+      type: DataTypes.TEXT,
+      allowNull: true
     }
   }, {
     tableName: 'module',

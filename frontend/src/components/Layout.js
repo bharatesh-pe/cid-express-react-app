@@ -8,10 +8,14 @@ import {
   List,
   ListItem,
   ListItemText,
+  Collapse,
   Stack,
   ListItemIcon,
   CircularProgress,
 } from "@mui/material";
+
+import { ExpandLess, ExpandMore } from "@mui/icons-material";
+
 import { useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import { useState } from 'react';
@@ -221,7 +225,19 @@ const Layout = ({ children }) => {
   const userName = localStorage.getItem("userName");
 
     const [sidebarMenusObj, setSidebarMenusObj] = useState([]);
+
+    // for dropdowmn sidebars
+    const [openDropdowns, setOpenDropdowns] = useState({});
+
     const [loading, setLoading] = useState(false); // State for loading indicator
+
+    // for toggle sidebar dropdowns
+    const handleDropdownToggle = (index) => {
+        setOpenDropdowns((prev) => ({
+            ...prev,
+            [index]: !prev[index],
+        }));
+    };
 
     useEffect(()=>{
         const ApprunCall = async ()=> {
@@ -371,25 +387,72 @@ const Layout = ({ children }) => {
                     py={0.5}
                     sx={{ display: "flex", flexDirection: "column", gap: "4px" }}
                 >
-                    {sidebarMenusObj &&
-                    sidebarMenusObj.length > 0 &&
-                    sidebarMenusObj.map((element, index) => {
+                {sidebarMenusObj &&
+                sidebarMenusObj.length > 0 &&
+                sidebarMenusObj.map((element, index) => {
+
+                    // Check if this element is a main module
+                    if (element?.is_main_module && Array.isArray(JSON.parse(element?.sub_modules)) && JSON.parse(element?.sub_modules).length > 0) {
+
+                        // Find matching submodules
+                        const matchingSubModules = sidebarMenusObj.filter(subItem =>
+                            JSON.parse(element.sub_modules).includes(subItem.module_id)
+                        );
+
+                        return (
+                            <>
+
+                                {/* main module dropdown */}
+
+                                <ListItem
+                                    sx={{ cursor: "pointer" }}
+                                    onClick={() => handleDropdownToggle(element.name)}
+                                    className={`sidebarMenus ${element?.active_location?.includes(location.pathname) ? "active" : ""}`}
+                                >
+                                    <ListItemIcon>{icons["dashboardIcon"]}</ListItemIcon>
+                                    <ListItemText primary={element?.ui_name} />
+                                    {openDropdowns[element.name] ? <ExpandLess /> : <ExpandMore />}
+                                </ListItem>
+
+                                {/* sub menu module */}
+
+                                <Collapse in={openDropdowns[element.name]} timeout="auto" unmountOnExit>
+                                    <List component="div" disablePadding>
+                                        {matchingSubModules.map((subModule, subIndex) => (
+                                            <ListItem
+                                                key={subIndex}
+                                                sx={{ pl: 4, cursor: "pointer" }}
+                                                onClick={() => navigate(subModule.location)}
+                                                className={`sidebarMenus ${subModule?.active_location?.includes(location.pathname) ? "active" : ""}`}
+                                            >
+                                                <ListItemIcon>{icons["dashboardIcon"]}</ListItemIcon>
+                                                <ListItemText primary={subModule?.ui_name} />
+                                            </ListItem>
+                                        ))}
+                                    </List>
+                                </Collapse>
+
+                            </>
+                        );
+                    }
+
+                    // individual sidebar menu
+                    if (!element?.is_main_module && !element?.is_sub_module) {
                         return (
                             <ListItem
-                                key={index}
+                                key={element.name}
                                 sx={{ cursor: "pointer" }}
-                                onClick={() => {
-                                    navigate(element.location);
-                                }}
-                                className={`sidebarMenus ${ element?.active_location?.includes(location.pathname) ? "active" : "" }`}
+                                onClick={() => navigate(element.location)}
+                                className={`sidebarMenus ${element?.active_location?.includes(location.pathname) ? "active" : ""}`}
                             >
-                                <ListItemIcon>
-                                    {icons['dashboardIcon']}
-                                </ListItemIcon>
+                                <ListItemIcon>{icons["dashboardIcon"]}</ListItemIcon>
                                 <ListItemText primary={element?.ui_name} />
                             </ListItem>
                         );
-                    })}
+                    }
+
+                    return null;
+                })}
                 </Box>
 
               {/* 2nd menu list */}
