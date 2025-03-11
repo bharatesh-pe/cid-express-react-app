@@ -36,10 +36,18 @@ const Repository = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
   const location = useLocation();
-  const values = useParams();
-  console.log("values", values)
-  const type = location.state?.type;
-  const value = location.state?.value;
+  const common = useParams();  
+  const paramsArray = Object.values(common);
+  const lastParam = paramsArray[paramsArray.length - 1];
+  const mappings = {
+    gn_order: { type: "Government Orders", value: "government_orders" },
+    judgements: { type: "Judgement", value: "judgements" },
+    circular: { type: "Circular", value: "circulars" }
+};
+
+const type = mappings[lastParam]?.type;
+const value = mappings[lastParam]?.value;
+
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(0);
 
@@ -155,7 +163,7 @@ const Repository = () => {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiOTY5ODI3MzI3MiIsInJvbGVfaWQiOjEsInVzZXJfaWQiOjEsImlhdCI6MTc0MTM5NjU3MCwiZXhwIjoxNzQxNjU1NzcwfQ.zS6-uGPLgUcBNgGzBSYUQ5O5GCUYldxkg22952PWPaE",
+            'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiMTIzNDU2Nzg5OSIsInJvbGVfaWQiOjIsInVzZXJfaWQiOjIsImlhdCI6MTc0MTY2OTkzMSwiZXhwIjoxNzQxOTI5MTMxfQ.MIAK6wtFJqhHfH2HlI-yNrqRexY57eNCmECS554umk4",
           },
         });
       
@@ -199,7 +207,7 @@ const Repository = () => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiOTY5ODI3MzI3MiIsInJvbGVfaWQiOjEsInVzZXJfaWQiOjEsImlhdCI6MTc0MTM5NjU3MCwiZXhwIjoxNzQxNjU1NzcwfQ.zS6-uGPLgUcBNgGzBSYUQ5O5GCUYldxkg22952PWPaE",
+              'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiMTIzNDU2Nzg5OSIsInJvbGVfaWQiOjIsInVzZXJfaWQiOjIsImlhdCI6MTc0MTY2OTkzMSwiZXhwIjoxNzQxOTI5MTMxfQ.MIAK6wtFJqhHfH2HlI-yNrqRexY57eNCmECS554umk4",
             },
             body: JSON.stringify(requestData),
           });
@@ -264,7 +272,7 @@ const Repository = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiOTY5ODI3MzI3MiIsInJvbGVfaWQiOjEsInVzZXJfaWQiOjEsImlhdCI6MTc0MTM5NjU3MCwiZXhwIjoxNzQxNjU1NzcwfQ.zS6-uGPLgUcBNgGzBSYUQ5O5GCUYldxkg22952PWPaE",
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiMTIzNDU2Nzg5OSIsInJvbGVfaWQiOjIsInVzZXJfaWQiOjIsImlhdCI6MTc0MTY2OTkzMSwiZXhwIjoxNzQxOTI5MTMxfQ.MIAK6wtFJqhHfH2HlI-yNrqRexY57eNCmECS554umk4",
         },
         body: JSON.stringify(requestData),
       });
@@ -300,7 +308,7 @@ const Repository = () => {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
-          'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiOTY5ODI3MzI3MiIsInJvbGVfaWQiOjEsInVzZXJfaWQiOjEsImlhdCI6MTc0MTM5NjU3MCwiZXhwIjoxNzQxNjU1NzcwfQ.zS6-uGPLgUcBNgGzBSYUQ5O5GCUYldxkg22952PWPaE",
+          'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiMTIzNDU2Nzg5OSIsInJvbGVfaWQiOjIsInVzZXJfaWQiOjIsImlhdCI6MTc0MTY2OTkzMSwiZXhwIjoxNzQxOTI5MTMxfQ.MIAK6wtFJqhHfH2HlI-yNrqRexY57eNCmECS554umk4",
         }
       });
       const result = await response.json();

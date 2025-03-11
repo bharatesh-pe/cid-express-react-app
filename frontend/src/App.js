@@ -23,7 +23,6 @@ import Report from "./pages/reports";
 import UICreate from './pages/cases/UICreate';
 import UICases from './pages/cases/UICases';
 import RolePage from './pages/Role';
-
 import UIView from './pages/cases/UIView';
 import Trail from './pages/trail';
 import Annexure from './pages/annexure'
