@@ -55,23 +55,23 @@
     },
     {
         "name": "Circulars",
-        "type":"Circulars",
-        "location": "/repository/Circulars",
-        "activeLocation": ["/repository/Circulars"],
+        "value":"circulars",
+        "location": "/repository/circulars",
+        "activeLocation": ["/repository/circulars"],        
         "icon": "circularIcon"
     },
     {
         "name": "Government Orders",
-        "type":"Government",
-        "location": "/repository/Government",
-        "activeLocation": ["/repository/Government"],
+        "value":"government_orders",
+        "location": "/repository/government_orders",
+        "activeLocation": ["/repository/government_orders"],        
         "icon": "governmentIcon"
     },
     {
         "name": "Judgement",
-        "type":"Judgement",
-        "location": "/repository/Judgement",
-        "activeLocation": ["/repository/Judgement"],
+        "value":"judgements",
+        "location": "/repository/judgements",
+        "activeLocation": ["/repository/judgements"],
         "icon": "judgmentIcon"
     },
     {

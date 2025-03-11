@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import TableView from "../../components/table-view/TableView";
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import Grid from '@mui/material/Grid';
 import { useParams, useLocation } from "react-router-dom";
-import { Snackbar, Alert, Box } from '@mui/material';
+import { Snackbar, Alert } from '@mui/material';
 import pdf from "../../store/CMS_sample_pdf.pdf";
 import eyes from "../../Images/eye.svg"
 import edit from "../../Images/tableEdit.svg";
@@ -24,7 +24,9 @@ const Repository = () => {
   const [newTitleValue, setNewTitleValue] = useState("");
   const [newAttachment, setNewAttachment] = useState(null);
   const [editTitleValue, setEditTitleValue] = useState("");
-  const [editFileValue, setEditFileValue] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedFileName, setSelectedFileName] = useState("");
+  const [updateItem, setUpdateItem] = useState(null);
   const [deleteItem, setDeleteItem] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [showWarningDialog, setShowWarningDialog] = useState(false);
@@ -34,32 +36,16 @@ const Repository = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
   const location = useLocation();
+  const values = useParams();
+  console.log("values", values)
   const type = location.state?.type;
-
+  const value = location.state?.value;
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(0);
 
-  console.log("repotype", type)
-  useEffect(() => {
-    setCrimeTitleData([
-      { id: 1, Title: `${type} 1`, Attachment: "sample.pdf" },
-      { id: 2, Title: `${type} 2`, Attachment: "sample.pdf" },
-      { id: 3, Title: `${type} 3`, Attachment: "sample.pdf" },
-      { id: 4, Title: `${type} 4`, Attachment: "sample.pdf" },
-      { id: 5, Title: `${type} 5`, Attachment: "sample.pdf" },
-      { id: 6, Title: `${type} 6`, Attachment: "sample.pdf" },
-      { id: 7, Title: `${type} 7`, Attachment: "sample.pdf" },
-      { id: 8, Title: `${type} 8`, Attachment: "sample.pdf" },
-      { id: 9, Title: `${type} 9`, Attachment: "sample.pdf" },
-      { id: 10, Title: `${type} 10`, Attachment: "sample.pdf" },
-      { id: 11, Title: `${type} 11`, Attachment: "sample.pdf" },
-    ]);
-  }, [type]);
-
-
   const actionBodyTemplate = (rowData) => {
     return (
-      <div style={{ display: "flex", justifyContent: "center", gap: "12px" }}>
+      <div style={{ display: "flex", justifyContent: "center", gap: "12px" , marginTop: "15px"}}>
         <Button
           style={{
             background: "transparent",
@@ -99,7 +85,7 @@ const Repository = () => {
             textAlign: "center",
             textTransform: "none",
           }}
-          onClick={() => handleEditClick(rowData)}
+          onClick={() => handleEditClick(rowData.row)}
         >
           <img
             src={edit}
@@ -122,7 +108,7 @@ const Repository = () => {
             textAlign: "center",
             textTransform: "none",
           }}
-          onClick={() => handleDeleteClick(rowData)}
+          onClick={() => handleDeleteClick(rowData.row)}
         >
           <img
             src={trash}
@@ -153,20 +139,90 @@ const Repository = () => {
     if (currentPage > 0) setCurrentPage(currentPage - 1);
   };
 
-
-  
-
   const handleCreateNewClick = () => {
     setIsCreateRecord(true);
   };
 
-  const handleCreateNewSave = () => {
-    setIsCreateRecord(false);
-    setSnackbarMessage(` Approval Requested Successfully.`);
-    setSnackbarSeverity('success');
-    setOpenSnackbar(true);
-  };
+ useEffect(() => {
+    fetchData();
+  }, [value]);
+ 
+    const fetchData = async () => {
+      try {
+        const serverURL = process.env.REACT_APP_SERVER_URL;
+        
+        const response = await fetch(`${serverURL}/repository/get_repositories?tableName=${value}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiOTY5ODI3MzI3MiIsInJvbGVfaWQiOjEsInVzZXJfaWQiOjEsImlhdCI6MTc0MTM5NjU3MCwiZXhwIjoxNzQxNjU1NzcwfQ.zS6-uGPLgUcBNgGzBSYUQ5O5GCUYldxkg22952PWPaE",
+          },
+        });
+      
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+  
+      const result = await response.json();
+      
+        if (result.success) {
+          setCrimeTitleData(
+            result.data.map((item, index) => ({
+              id: item.repository_id,
+              repository_id: item.repository_id,
+              Title: item.subject || `empty`,
+              Attachment: item.documents ? item.documents.split("\\").pop() : "sample.pdf",
+            }))
+          );
+        } else {
+          console.error("API response was unsuccessful:", result.message);
+        }
+      } catch (error) {
+        console.error("Request failed:", error);
+      }
+    };
+  
 
+    const handleCreateNewSave = async () => {
+        try {
+          const serverURL = process.env.REACT_APP_SERVER_URL;
+            
+          const requestData = {
+            tableName: value,
+            subject: newTitleValue,
+            tags: "update",
+            documents: `/uploads/repositorys/temp/${newAttachment.name}`,
+            created_by: "1"
+          };
+            
+          const response = await fetch(`${serverURL}/repository/create_repository`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiOTY5ODI3MzI3MiIsInJvbGVfaWQiOjEsInVzZXJfaWQiOjEsImlhdCI6MTc0MTM5NjU3MCwiZXhwIjoxNzQxNjU1NzcwfQ.zS6-uGPLgUcBNgGzBSYUQ5O5GCUYldxkg22952PWPaE",
+            },
+            body: JSON.stringify(requestData),
+          });
+      
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+            
+          setIsCreateRecord(false);
+          setSnackbarMessage("Record Created Successfully.");
+          setSnackbarSeverity("success");
+          setOpenSnackbar(true);
+          setNewTitleValue("");
+          setNewAttachment(null);
+          fetchData();
+        } catch (error) {
+          console.error("Request failed:", error);
+          setSnackbarMessage("Failed to get data.");
+          setSnackbarSeverity("error");
+          setOpenSnackbar(true);
+        }
+      };
+    
   const handleCreateNewCancel = () => {
     setIsCreateRecord(false);
     setNewTitleValue("");
@@ -178,53 +234,144 @@ const Repository = () => {
   };
 
   const handleEditClick = (rowData) => {
-    setEditTitleValue(rowData.row.Title);
-    setEditFileValue(rowData.row.Attachment);
+    setUpdateItem(rowData);
+    setEditTitleValue(rowData.Title);
+    setSelectedFile(rowData.Attachment);
+    setSelectedFileName(rowData.Attachment);
     setIsModalOpen(true);
   };
 
-  const handleUpdateClick = () => {
-    setIsModalOpen(false);
-    setSnackbarMessage(` Updated Successfully.`);
-    setSnackbarSeverity('success');
-    setOpenSnackbar(true);
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    setSelectedFile(file);
+    setSelectedFileName(file ? file.name : "");
   };
 
-  const handleDeleteClick = (rowData) => {
+  const handleUpdateClick = async () => {
+    try {
+      const serverURL = process.env.REACT_APP_SERVER_URL;
+  
+      const requestData = {
+        tableName: value,
+        repository_id: updateItem.repository_id, // Include repository ID for updating
+        subject: editTitleValue,
+        tags: "policy, update, revised",
+        documents: selectedFile ? `/uploads/repositorys/temp/${selectedFile.name}` : selectedFileName, // Send existing or new file path
+        created_by: "1",
+      };
+  
+      const response = await fetch(`${serverURL}/repository/update_repository`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiOTY5ODI3MzI3MiIsInJvbGVfaWQiOjEsInVzZXJfaWQiOjEsImlhdCI6MTc0MTM5NjU3MCwiZXhwIjoxNzQxNjU1NzcwfQ.zS6-uGPLgUcBNgGzBSYUQ5O5GCUYldxkg22952PWPaE",
+        },
+        body: JSON.stringify(requestData),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+  
+      setIsCreateRecord(false);
+      setSnackbarMessage("Record Updated Successfully.");
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);
+      fetchData();
+    } catch (error) {
+      console.error("Request failed:", error);
+      setSnackbarMessage("Failed to update data.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
+    setIsModalOpen(false);
+  };
+
+    const handleDeleteClick = (rowData) => {
     setDeleteItem(rowData);
     setIsDeleteModalOpen(true);
   };
 
-  const handleDeleteConfirm = (item) => {
-    console.log("Deleted Item:", item);
-    setIsDeleteModalOpen(false);
-    setSnackbarMessage(` Deleted Successfully.`);
-    setSnackbarSeverity('success');
-    setOpenSnackbar(true);
+  const handleDeleteConfirm = async (item) => {
+    try {
+      const serverURL = process.env.REACT_APP_SERVER_URL;
 
+      const response = await fetch(`${serverURL}/repository/delete_repository?tableName=${value}&repository_id=${item.repository_id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          'token': "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJrZ2lkIjoiOTY5ODI3MzI3MiIsInJvbGVfaWQiOjEsInVzZXJfaWQiOjEsImlhdCI6MTc0MTM5NjU3MCwiZXhwIjoxNzQxNjU1NzcwfQ.zS6-uGPLgUcBNgGzBSYUQ5O5GCUYldxkg22952PWPaE",
+        }
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to delete record.");
+      }
+      setIsDeleteModalOpen(false);
+      setSnackbarMessage("Record Deleted Successfully.");
+      setSnackbarSeverity("success");
+      setOpenSnackbar(true);        
+      fetchData();
+    } catch (error) {
+      console.error("Request failed:", error);
+      setSnackbarMessage("Failed to delete data.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+    }
   };
-
+  
   const header = (
+    <div
+      style={{
+        padding: "8px",
+        backgroundColor: "white",
+        borderRadius: "8px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <div
-            style={{
+          style={{
             display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            backgroundColor: "white",
-            borderRadius: "8px",
-            }}
+            flexDirection: "column",
+            gap: "8px",
+          }}
         >
-        <p
+          <p
             style={{
-                margin: "0",
-                fontSize: "24px",
-                fontWeight: "600",
-                fontFamily: "Roboto",
-                color: "#1D2939",
+              margin: "0",
+              fontSize: "16px",
+              fontWeight: "normal",
+              fontFamily: "Roboto",
+              color: "#667085",
             }}
-        >
+          >
+            Overview
+          </p>
+          <p
+            style={{
+              margin: "0",
+              fontSize: "20px",
+              fontWeight: "600",
+              fontFamily: "Roboto",
+              color: "#1D2939",
+            }}
+          >
             {type}
-        </p>
+          </p>
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "16px",
+          }}
+        >
           <button
             onClick={handleCreateNewClick}
             style={{
@@ -274,12 +421,21 @@ const Repository = () => {
             </svg>
             Create New
           </button>
+        </div>
       </div>
+    </div>
   );
 
 
   return (
-    <Box p={2}>
+    <div
+      className="card"
+      style={{
+        backgroundColor: "white",
+        marginLeft: "10px",
+        borderRadius: "8px",
+      }}
+    >
       {header}
 
       <div className="pt-4" style={{ overflowX: "auto" }}>
@@ -469,8 +625,13 @@ const Repository = () => {
                 fullWidth
                 variant="outlined"
                 InputLabelProps={{ shrink: true }}
-                onChange={(e) => setEditTitleValue(e.target.files[0])}
+                onChange={handleFileChange}
               />
+              {selectedFileName && (
+                <Typography variant="body2" color="textSecondary">
+                  Selected File: {selectedFileName}
+                </Typography>
+              )}             
             </Grid>
           </Grid>
         </DialogContent>
@@ -508,7 +669,7 @@ const Repository = () => {
                 backgroundColor: "#1d4ed8",
               },
             }}
-            onClick={handleUpdateClick}
+            onClick={() => handleUpdateClick()}
           >
             Update
           </Button>
@@ -551,7 +712,7 @@ const Repository = () => {
                 color: '#1D2939',
               }}
             >
-              Deleting <span style={{ color: '#F04438' }}>{deleteItem.row.Title}</span>
+              Deleting <span style={{ color: '#F04438' }}>{deleteItem.Title}</span>
             </Typography>
           )}
           <Typography
@@ -618,7 +779,7 @@ const Repository = () => {
         > {snackbarMessage} </Alert>
       </Snackbar>
 
-    </Box>
+    </div>
   );
 };
 

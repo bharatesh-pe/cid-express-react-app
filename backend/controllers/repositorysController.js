@@ -23,7 +23,7 @@ exports.create_repository = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Invalid tableName' });
     }
 
-    const tempPath = "../backend/"+documents;
+    const tempPath = "../backend"+documents;
     const targetPath = path.join(__dirname, '../uploads/repositorys/original', path.basename(documents));
 
     //check if the temp file exists
@@ -90,7 +90,7 @@ exports.approve_repository = async (req, res) => {
 
 exports.get_repositories = async (req, res) => {
   try {
-    const { tableName } = req.body;
+    const { tableName } = req.query;
     let Model;
 
     switch (tableName) {
@@ -150,7 +150,7 @@ exports.update_repository = async (req, res) => {
     }
 
     if (documents) {
-      const tempPath = "../backend/"+documents;
+      const tempPath = "../backend"+documents;
       const targetPath = path.join(__dirname, '../uploads/repositorys/original', path.basename(documents));
 
       //check if the temp file exists
@@ -181,7 +181,7 @@ exports.update_repository = async (req, res) => {
 
 exports.delete_repository = async (req, res) => {
   try {
-    const { tableName, repository_id } = req.body;
+    const { tableName, repository_id } = req.query;
     let Model;
 
     switch (tableName) {
