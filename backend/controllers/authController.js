@@ -1,4 +1,4 @@
-const { AuthSecure ,Role , Module , Users , UsersDesignation , Designation } = require('../models'); // Correct import
+const { AuthSecure ,Role , Module , Users , UserDesignation , Designation } = require('../models'); // Correct import
 const crypto = require('crypto');
 const moment = require('moment');
 const { generateUserToken } = require("../helper/validations");
@@ -72,7 +72,7 @@ const verify_OTP = async (req, res) => {
                 // Return success response with token
                 // console.log(token,"token")
                 //det the users_designation  from userdesignation table find all where user_id = user.user_id and also along with designation_id , designation_name ,description  from designation table 
-                const users_designation = await UsersDesignation.findAll({
+                const users_designation = await UserDesignation.findAll({
                     where: { user_id: user.user_id },
                     include: {
                         model: Designation,

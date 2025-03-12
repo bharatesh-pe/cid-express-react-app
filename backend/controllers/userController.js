@@ -1,6 +1,14 @@
-const { Sequelize } = require('sequelize');
-const sequelize = require('../config/dbConfig');
-const { UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure } = require('../models');
+const { Sequelize } = require("sequelize");
+const dbConfig = require("../config/dbConfig");
+const { UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
+
+
+// Initialize Sequelize
+const sequelize = new Sequelize(dbConfig.database.database, dbConfig.database.username, dbConfig.database.password, {
+    host: dbConfig.database.host,
+    port: dbConfig.database.port,
+    dialect: dbConfig.database.dialect
+});
 
 // Create user
 exports.create_user = async (req, res) => {
@@ -9,11 +17,11 @@ exports.create_user = async (req, res) => {
     const t = await sequelize.transaction();
 
     try {
-        // Check if the user exists
+        // Check if user already exists
         const existingUser = await Users.findOne({ where: { kgid: kgid } });
         if (existingUser) {
             await t.rollback();
-            return res.status(400).json({ message: 'User already exists' });
+            return res.status(400).json({ message: "User already exists" });
         }
 
         // Create user
@@ -25,14 +33,14 @@ exports.create_user = async (req, res) => {
         }, { transaction: t });
 
         // Create auth secure
-        const newAuthSecure = await AuthSecure.create({
+        await AuthSecure.create({
             user_id: newUser.user_id,
             kgid: kgid,
             pin: pin
         }, { transaction: t });
 
         // Create user designation
-        const newUserDesignation = await UserDesignation.create({
+        await UserDesignation.create({
             user_id: newUser.user_id,
             designation_id: designation_id,
             created_by: created_by
@@ -45,28 +53,28 @@ exports.create_user = async (req, res) => {
             created_by: created_by
         }, { transaction: t });
 
-        // Create user division
-        const newUserDivision = await UsersDivision.create({
+        // Create user division (Get user_id from department)
+        await UsersDivision.create({
             user_department_id: newUserDepartment.user_department_id,
             division_id: division_id,
             created_by: created_by,
-            user_id: newUser.user_id
+            user_id: newUserDepartment.user_id
         }, { transaction: t });
 
         await t.commit();
-
-        return res.status(201).json({ message: 'User created successfully' });
+        return res.status(201).json({ message: "User created successfully" });
 
     } catch (error) {
-        await t.rollback();
-        console.error('Error creating user:', error.message);
-        return res.status(500).json({ message: 'Failed to create user', error: error.message });
+        if (t.finished !== "rollback") {
+            await t.rollback();
+        }
+        console.error("Error creating user:", error);
+        return res.status(500).json({ message: "Failed to create user", error: error.message });
     }
 };
 
-// Update user
 exports.update_user = async (req, res) => {
-    const { user_id, username, role_id, kgid, pin, designation_id, department_id, division_id, updated_by } = req.body;
+    const { user_id, username, role_id, kgid, pin, designation_id, department_id, division_id } = req.body;
 
     const t = await sequelize.transaction();
 
@@ -75,60 +83,139 @@ exports.update_user = async (req, res) => {
         const existingUser = await Users.findOne({ where: { user_id: user_id } });
         if (!existingUser) {
             await t.rollback();
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: "User not found" });
         }
 
-        // Update user
-        await existingUser.update({
-            name: username,
-            role_id: role_id,
-            kgid: kgid,
-            updated_by: updated_by
-        }, { transaction: t });
+        // Update user details
+        await Users.update(
+            {
+                name: username,
+                role_id: role_id,
+                kgid: kgid
+            },
+            { where: { user_id: user_id }, transaction: t }
+        );
 
-        // Update auth secure
-        const existingAuthSecure = await AuthSecure.findOne({ where: { user_id: user_id } });
-        if (existingAuthSecure) {
-            await existingAuthSecure.update({
-                kgid: kgid,
-                pin: pin
-            }, { transaction: t });
-        }
+        // Update auth secure details
+        await AuthSecure.update(
+            { pin: pin },
+            { where: { user_id: user_id }, transaction: t }
+        );
 
         // Update user designation
-        const existingUserDesignation = await UserDesignation.findOne({ where: { user_id: user_id } });
-        if (existingUserDesignation) {
-            await existingUserDesignation.update({
-                designation_id: designation_id,
-                updated_by: updated_by
-            }, { transaction: t });
-        }
+        await UserDesignation.update(
+            { designation_id: designation_id },
+            { where: { user_id: user_id }, transaction: t }
+        );
 
         // Update user department
-        const existingUserDepartment = await UsersDepartment.findOne({ where: { user_id: user_id } });
-        if (existingUserDepartment) {
-            await existingUserDepartment.update({
-                department_id: department_id,
-                updated_by: updated_by
-            }, { transaction: t });
-        }
+        const userDepartment = await UsersDepartment.findOne({ where: { user_id: user_id } });
+        if (userDepartment) {
+            await UsersDepartment.update(
+                { department_id: department_id },
+                { where: { user_id: user_id }, transaction: t }
+            );
 
-        // Update user division
-        const existingUserDivision = await UsersDivision.findOne({ where: { user_id: user_id } });
-        if (existingUserDivision) {
-            await existingUserDivision.update({
-                division_id: division_id,
-                updated_by: updated_by
-            }, { transaction: t });
+            // Update user division
+            await UsersDivision.update(
+                { division_id: division_id },
+                { where: { user_department_id: userDepartment.user_department_id }, transaction: t }
+            );
         }
 
         await t.commit();
-
-        return res.status(200).json({ message: 'User updated successfully' });
+        return res.status(200).json({ message: "User updated successfully" });
 
     } catch (error) {
-        await t.rollback();
-        console.error('Error updating user:', error.message);
-        return res.status(500).json({ message: 'Failed to update user', error: error.message });
+        if (t.finished !== "rollback") {
+            await t.rollback();
+        }
+        console.error("Error updating user:", error);
+        return res.status(500).json({ message: "Failed to update user", error: error.message });
     }
 };
+
+exports.user_active_deactive = async (req, res) => {
+    const { user_id, dev_status } = req.body; // dev_status should be true or false
+
+    const t = await sequelize.transaction();
+
+    try {
+        // Check if the user exists
+        const existingUser = await Users.findOne({ where: { user_id: user_id } });
+        if (!existingUser) {
+            await t.rollback();
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Update the user's dev_status
+        await Users.update(
+            { dev_status: dev_status },
+            { where: { user_id: user_id }, transaction: t }
+        );
+
+        await t.commit();
+        return res.status(200).json({ message: `User ${dev_status ? "activated" : "deactivated"} successfully` });
+
+    } catch (error) {
+        if (t.finished !== "rollback") {
+            await t.rollback();
+        }
+        console.error("Error updating user status:", error);
+        return res.status(500).json({ message: "Failed to update user status", error: error.message });
+    }
+};
+
+exports.get_users = async (req, res) => {
+    try {
+        const users = await Users.findAll({
+            include: [
+                {
+                    model: UserDesignation,
+                    as: "user_designations",
+                    attributes: ["designation_id"],
+                    include: [
+                        {
+                            model: Designation,
+                            as: "designation",
+                            attributes: ["designation_name"]
+                        }
+                    ]
+                },
+                {
+                    model: UsersDepartment,
+                    as: "user_departments",
+                    attributes: ["department_id"],
+                    include: [
+                        {
+                            model: Department,
+                            as: "department",
+                            attributes: ["department_name"]
+                        }
+                    ]
+                },
+                {
+                    model: UsersDivision,
+                    as: "user_divisions",
+                    attributes: ["division_id"],
+                    include: [
+                        {
+                            model: Division,
+                            as: "division",
+                            attributes: ["division_name"]
+                        }
+                    ]
+                }
+            ],
+            attributes: ["user_id", "name", "role_id", "kgid", "dev_status"]
+        });
+
+        return res.status(200).json({ users });
+
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        return res.status(500).json({ message: "Failed to fetch users", error: error.message });
+    }
+};
+
+
