@@ -5,7 +5,7 @@ require('dotenv').config(); // Load environment variables
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const schema = process.env.DB_SCHEMA || 'cms'; // Default to 'cid' if not set
+    const schema = process.env.DB_SCHEMA || 'public'; // Default to 'cid' if not set
 
     await queryInterface.createTable(
       { schema, tableName: 'auth_secure' },
@@ -72,7 +72,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    const schema = process.env.DB_SCHEMA || 'cid';
+    const schema = process.env.DB_SCHEMA || 'public';
     await queryInterface.dropTable({ schema, tableName: 'auth_secure' });
   },
 };
