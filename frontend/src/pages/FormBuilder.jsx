@@ -1140,17 +1140,43 @@ const Formbuilder = () => {
 
 
         console.log(createTemplatePayload,"createTemplatePayload");
-        return;
 
         setLoading(true);
+        const token = localStorage.getItem("auth_token");
 
         try {
-            const createTemplateResponse = await api.post("/templates/createTemplate", createTemplatePayload);
+
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+
+            const createTemplateResponse = await fetch(`${serverURL}/templates/createTemplate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token' : token
+                },
+                body: JSON.stringify(createTemplatePayload),
+            });
+
+            const data = await createTemplateResponse.json();
             setLoading(false);
 
-            if (createTemplateResponse && createTemplateResponse.success) {
+            if (!createTemplateResponse.ok) {
+                toast.error(data.message, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
 
-                toast.success(createTemplateResponse.message || "Template Created Successfully", {
+            if (data && data.success) {
+
+                toast.success(data.message || "Template Created Successfully", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -1163,7 +1189,7 @@ const Formbuilder = () => {
                 });
 
             } else {
-                const errorMessage = createTemplateResponse.message ? createTemplateResponse.message : "Failed to create the template. Please try again.";
+                const errorMessage = data.message ? data.message : "Failed to create the template. Please try again.";
                 toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
