@@ -41,25 +41,25 @@ const eitherAuthMiddleware = async (req, res, next) => {
 };
 
 router.post('/createTemplate',
-	adminAuthMiddleware,
+	// adminAuthMiddleware,
 	[createTemplateValidation],
 	templateController.createTemplate)
 router.post('/updateTemplate',
-	adminAuthMiddleware,
+	// adminAuthMiddleware,
 	[updateTemplateValidation],
 	templateController.updateTemplate)
 router.post('/deleteTemplate',
-	adminAuthMiddleware,
+	// adminAuthMiddleware,
 	[deleteTemplateValidation],
 	templateController.deleteTemplate)
 router.post('/viewTemplate',
 	// adminAuthMiddleware,
-	eitherAuthMiddleware,
+	// eitherAuthMiddleware,
 	[viewTemplateValidation],
 	templateController.viewTemplate)
 router.post('/paginateTemplate',
 	// adminAuthMiddleware,
-	eitherAuthMiddleware,
+	// eitherAuthMiddleware,
 	[paginateTemplateValidation],
 	templateController.paginateTemplate)
 router.post('/downloadPdf',
