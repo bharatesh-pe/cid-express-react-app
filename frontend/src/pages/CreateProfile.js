@@ -42,6 +42,7 @@ const CreateProfile = () => {
     const [formData, setFormData] = useState({
         profile_name: '',
         type: '',
+        module: '',
     });
     const [errors, setErrors] = useState({
         profile_name: '',
@@ -453,18 +454,18 @@ const CreateProfile = () => {
         label: 'Choose how do you want to create your template',
         options: [
             { name: 'One sheet template', code: 'onesheettemplate' },
-            { name: 'Template with multiple Section', code: 'multiplesection' },
-            { name: 'Masters', code: 'master' }
+            { name: 'Template with multiple Section', code: 'multiplesection' }
         ]
     };
 
-    const linkEventOptions = {
+    const moduleOptions = {
         id: 'formbuilderOptions',
         label: 'Choose how do you want to create your template',
         options: [
-            { name: 'None', code: 'none' },
-            { name: 'Link to Leader', code: 'leader' },
-            { name: 'Link to Organization', code: 'organization' }
+            { name: 'Under Investigation', code: 'ui_case' },
+            { name: 'Pending Trail', code: 'pt_case' },
+            { name: 'Enquiries', code: 'eq_case' },
+            { name: 'Masters', code: 'master' }
         ]
     };
 
@@ -477,6 +478,7 @@ const CreateProfile = () => {
         setFormData({
             profile_name: '',
             type: '',
+            module: ''
         });
     }
 
@@ -677,6 +679,45 @@ const CreateProfile = () => {
                                                 name="type"
                                                 required
                                                 id={`${addNewOptions.id}-${option.code}`}
+                                                value={option.code}
+                                                checked={isSelected}
+                                                onChange={handleChange}
+                                            />
+                                            <label className='Roboto' style={{ color: `${styles.color}`, fontWeight: `${styles.fontWeight}`, fontSize: '14px', cursor: 'pointer' }} htmlFor={`${addNewOptions.id}-${option.code}`}>
+                                                {option.name}
+                                            </label>
+                                        </Box>
+                                    );
+                                })}
+                                </Box>
+                            </Box>
+
+                            <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
+                                    Choose which module you want to create
+                                </h4>
+                                <Box>
+                                {moduleOptions.options?.map((option, index) => {
+                                    const isSelected = formData['module'] === option.code;
+
+                                    const styles = {
+                                        border: `1px solid ${isSelected ? '#1570EF' : '#D0D5DD'}`,
+                                        borderRadius: index === 0
+                                            ? '6px 6px 0 0'
+                                            : index === moduleOptions.options.length - 1
+                                                ? '0 0 6px 6px'
+                                                : '0',
+                                        background: isSelected ? '#EFF8FF' : '#FCFCFD',
+                                        color: isSelected ? '#1D2939' : '#475467',
+                                        fontWeight: isSelected ? '500' : '400',
+                                    };
+
+                                    return (
+                                        <Box key={`${moduleOptions.id}-${option.code}`} sx={{ border: styles.border, borderRadius: styles.borderRadius, background: styles.background }}>
+                                            <Radio
+                                                name="module"
+                                                required
+                                                id={`${moduleOptions.id}-${option.code}`}
                                                 value={option.code}
                                                 checked={isSelected}
                                                 onChange={handleChange}
