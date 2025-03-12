@@ -56,6 +56,7 @@ const verify_OTP = async (req, res) => {
         if (!kgid || !otp) {
             return res.status(400).json({ success: false, message: "KGID and OTP are required" });
         }
+        
         // Find the user by kgid
         const user = await AuthSecure.findOne({ where: { kgid } });
         // If user is found
@@ -70,8 +71,8 @@ const verify_OTP = async (req, res) => {
                 const token = generateUserToken(user.kgid, userRole.role_id, user.user_id, userRole.role_id);
                 // Return success response with token
                 // console.log(token,"token")
-                //det the user_designation  from userdesignation table find all where user_id = user.user_id and also along with designation_id , designation_name ,description  from designation table 
-                const user_designation = await UserDesignation.findAll({
+                //det the users_designation  from userdesignation table find all where user_id = user.user_id and also along with designation_id , designation_name ,description  from designation table 
+                const users_designation = await UserDesignation.findAll({
                     where: { user_id: user.user_id },
                     include: {
                         model: Designation,
@@ -79,8 +80,8 @@ const verify_OTP = async (req, res) => {
                         attributes: ['designation_name', 'description']
                     }
                 });
-                console.log(user_designation,"user_designation")
-                return res.status(200).json({ success: true, message: 'OTP verified successfully.', token ,user_designation});
+                console.log(users_designation,"users_designation")
+                return res.status(200).json({ success: true, message: 'OTP verified successfully.', token ,users_designation});
             } else {
                 // Return error if the otp is invalid or has expired
                 return res.status(401).json({ success: false, message: "Invalid OTP or OTP has expired" });

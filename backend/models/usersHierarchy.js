@@ -2,32 +2,32 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class UsersDepartment extends Model {
+  class UsersHierarchy extends Model {
     static associate(models) {
-      UsersDepartment.belongsTo(models.Users, {
-        foreignKey: "user_id",
-        as: "user",
+      UsersHierarchy.belongsTo(models.Designation, {
+        foreignKey: "supervisor_designation_id",
+        as: "supervisorDesignation",
       });
 
-      UsersDepartment.belongsTo(models.Department, {
-        foreignKey: "department_id",
-        as: "department",
+      UsersHierarchy.belongsTo(models.Designation, {
+        foreignKey: "officer_designation_id",
+        as: "officerDesignation",
       });
     }
   }
 
-  UsersDepartment.init(
+  UsersHierarchy.init(
     {
-      user_department_id: {
+      users_hierarchy_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
-      user_id: {
+      supervisor_designation_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      department_id: {
+      officer_designation_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
@@ -42,13 +42,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "UsersDepartment",
-      tableName: "users_department",
+      modelName: "UsersHierarchy",
+      tableName: "users_hierarchy",
       schema: process.env.DB_SCHEMA || "public",
       timestamps: false,
     }
   );
 
-  return UsersDepartment;
+  return UsersHierarchy;
 };
 

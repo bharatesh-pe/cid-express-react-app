@@ -17,7 +17,7 @@ const sequelize = new Sequelize(
     host: dbConfig.database.host,
     port: dbConfig.database.port,
     dialect: dbConfig.database.dialect,
-    schema: 'public', // Added schema
+    // schema: 'public',// Added schema
   }
 );
 
@@ -35,7 +35,7 @@ Object.keys(db).forEach((modelName) => {
     db[modelName].associate(db);
   }
 });
-
+console.log("Loaded models:", Object.keys(db));
 // Export Sequelize instance and models
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;

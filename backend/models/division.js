@@ -11,6 +11,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: false
     },
+    department_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
     description: {
       type: DataTypes.TEXT,
       allowNull: true
@@ -27,6 +31,13 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'division',
     timestamps: false
   });
+
+  Division.associate = (models) => {
+    Division.belongsTo(models.Department, {
+      foreignKey: "department_id",
+      as: "department",
+    });
+  };
 
   return Division;
 };

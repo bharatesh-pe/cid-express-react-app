@@ -4,12 +4,11 @@ const authRoutes = require('./authRoutes');
 const userRoutes = require('./userRoutes');
 const roleRoutes = require('./roleRoutes');
 const repositoryRoutes = require('./repositoryRoutes');
-// const mastersRoutes = require('./mastersRoutes');
-
+const templateRoutes = require('./templateRoutes');
 router.use('/auth', authRoutes);
 router.use('/user', userRoutes);
 router.use('/role', roleRoutes);
 router.use('/repository', repositoryRoutes);
-// router.use('/master', mastersRoutes);
+router.use('/templates', templateRoutes);
 
 module.exports = router;
