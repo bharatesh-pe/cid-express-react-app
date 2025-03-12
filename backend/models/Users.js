@@ -52,7 +52,7 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'users',
     timestamps: false,
     underscored: true,
-    schema: 'cid'
+    schema: 'public'
   });
 
   Users.associate = (models) => {
@@ -60,6 +60,24 @@ module.exports = (sequelize, DataTypes) => {
     Users.belongsTo(models.Role, {
       foreignKey: 'role_id',
       as: 'role'
+    });
+
+   // Add correct association with UserDesignation
+    Users.hasMany(models.UserDesignation, {
+      foreignKey: 'user_id',
+      as: 'users_designations'
+    });
+
+    // Add correct association with UsersDepartment
+    Users.hasMany(models.UsersDepartment, {
+      foreignKey: 'user_id',
+      as: 'users_departments'
+    });
+
+    // Add correct association with UsersDivision
+    Users.hasMany(models.UsersDivision, {
+      foreignKey: 'user_id',
+      as: 'users_divisions'
     });
   };
 

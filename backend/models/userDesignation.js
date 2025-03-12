@@ -9,13 +9,17 @@ module.exports = (sequelize, DataTypes) => {
     },
     user_id: {
       type: DataTypes.INTEGER,
-      allowNull: true
+      allowNull: true,
+      references: {
+        model: 'Users', // name of the target model
+        key: 'user_id' // key in the target model that the foreign key refers to
+      }
     },
     designation_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
-        model: 'designation', // name of the target model
+        model: 'Designation', // name of the target model
         key: 'designation_id' // key in the target model that the foreign key refers to
       }
     },
@@ -28,11 +32,15 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: DataTypes.NOW
     }
   }, {
-    tableName: 'user_designation',
+    tableName: 'users_designation',
     timestamps: false
   });
 
   UserDesignation.associate = (models) => {
+    UserDesignation.belongsTo(models.Users, {
+      foreignKey: 'user_id',
+      as: 'user'
+    });
     UserDesignation.belongsTo(models.Designation, {
       foreignKey: 'designation_id',
       as: 'designation'

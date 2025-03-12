@@ -17,7 +17,7 @@ const sequelize = new Sequelize(
     host: dbConfig.database.host,
     port: dbConfig.database.port,
     dialect: dbConfig.database.dialect,
-    schema: 'cid', // Added schema
+    schema: 'public', // Added schema
   }
 );
 

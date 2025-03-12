@@ -175,7 +175,7 @@ function App() {
             }
           />
           <Route
-            path="/UserManagement"
+            path="/user_management"
             element={
               <ProtectedRoute>
                 <Layout>
