@@ -345,7 +345,6 @@ const Layout = ({ children }) => {
             {/* Sidebar Header */}
             <Box
               sx={{
-                padding: 1,
                 display: "flex",
                 gap: "10px",
                 alignItems: "center",
@@ -357,18 +356,19 @@ const Layout = ({ children }) => {
                 srcSet={`${LogoText}?w=150&fit=crop&auto=format&dpr=2 4x`}
                 src={`${LogoText}?w=150&fit=crop&auto=format`}
                 alt=""
+                style={{width: '44px', height: '44px'}}
                 loading="lazy"
               />
 
-              <Divider
+              {/* <Divider
                 sx={{
                   height: "24px",
                   width: "1px",
                   backgroundColor: "#D0D5DD",
                   border: "none",
                 }}
-              />
-              <p className="cmsLogoText">
+              /> */}
+              <p className="cidLogoText">
                 Case Management
                 <br />
                 System
@@ -381,7 +381,7 @@ const Layout = ({ children }) => {
             </Box>
 
             {/* Sidebar Content (Navigation Links) */}
-            <List sx={{ height: "100%" }}>
+            <List sx={{ height: "100%",padding:'4px' }}>
               {/* 1st menu list */}
                 <Box
                     py={0.5}
@@ -399,6 +399,14 @@ const Layout = ({ children }) => {
                             JSON.parse(element.sub_modules).includes(subItem.module_id)
                         );
 
+                        var mainActiveClass = ''
+
+                        matchingSubModules.map((subModule, subIndex) => {
+                            if(subModule?.active_location?.includes(location.pathname)){
+                                mainActiveClass = 'active'
+                            }
+                        })
+
                         return (
                             <>
 
@@ -407,7 +415,7 @@ const Layout = ({ children }) => {
                                 <ListItem
                                     sx={{ cursor: "pointer" }}
                                     onClick={() => handleDropdownToggle(element.name)}
-                                    className={`sidebarMenus ${element?.active_location?.includes(location.pathname) ? "active" : ""}`}
+                                    className={`sidebarMenus ${mainActiveClass}`}
                                 >
                                     <ListItemIcon>{icons["dashboardIcon"]}</ListItemIcon>
                                     <ListItemText primary={element?.ui_name} />
@@ -423,7 +431,7 @@ const Layout = ({ children }) => {
                                                 key={subIndex}
                                                 sx={{ pl: 4, cursor: "pointer" }}
                                                 onClick={() => navigate(subModule.location)}
-                                                className={`sidebarMenus ${subModule?.active_location?.includes(location.pathname) ? "active" : ""}`}
+                                                className={`subMenuSidebarMenus ${subModule?.active_location?.includes(location.pathname) ? "active" : ""}`}
                                             >
                                                 <ListItemIcon>{icons["dashboardIcon"]}</ListItemIcon>
                                                 <ListItemText primary={subModule?.ui_name} />
