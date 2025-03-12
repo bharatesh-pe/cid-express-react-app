@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const schema = process.env.DB_SCHEMA || "cid"; // Default to 'cid' if DB_SCHEMA is not set
+    const schema = process.env.DB_SCHEMA || "public"; // Default to 'cid' if DB_SCHEMA is not set
 
     await queryInterface.sequelize.query(`CREATE SCHEMA IF NOT EXISTS ${schema};`);
 
@@ -38,7 +38,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    const schema = process.env.DB_SCHEMA || "cid";
+    const schema = process.env.DB_SCHEMA || "public";
 
     await queryInterface.dropTable({ schema: schema, tableName: "approval_item" });
   },

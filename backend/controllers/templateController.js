@@ -9,6 +9,7 @@ const { Template } = require("../models"); // Access the Template model
 const { adminSendResponse } = require('../services/adminSendResponse');
 const { Op } = require("sequelize");
 const { admin_user, TemplateUserStatus } = require('../models');
+const { AuthSecure, Role, Module, Users, UserDesignation, Designation } = require('../models');
 const sharp = require("sharp");
 const typeMapping = {
 	STRING: Sequelize.DataTypes.STRING,
@@ -26,15 +27,16 @@ const typeMapping = {
 
 
 exports.createTemplate = async (req, res, next) => {
+	console.log(">>>>>")
 	try {
 		let { template_name, template_type, fields, sections, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
-		const iddd = res.locals.admin_user_id;
+		// const iddd = res.locals.admin_user_id;
 
 
-		const adminUser = await admin_user.findOne({
-			where: { admin_user_id: iddd },
-			attributes: ['full_name']
-		});
+		// const adminUser = await admin_user.findOne({
+		// 	where: { admin_user_id: iddd },
+		// 	attributes: ['full_name']
+		// });
 
 
 		// Convert template_name to a valid table_name
@@ -197,8 +199,8 @@ exports.createTemplate = async (req, res, next) => {
 			no_of_sections,
 			is_link_to_organization,
 			is_link_to_leader,
-			created_by: adminUser.full_name,
-			updated_by: adminUser.full_name,
+			created_by: "adminUser.full_name",
+			updated_by: "adminUser.full_name",
 
 			paranoid,
 		};

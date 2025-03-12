@@ -8,7 +8,7 @@ module.exports = {
         username: process.env.DB_USERNAME,
         password: process.env.DB_PASSWORD,
         dialect: "postgres",
-        schema: process.env.DB_SCHEMA || "cid", // Default schema
+        schema: process.env.DB_SCHEMA || "public", // Default schema
     },
     development: {
         host: process.env.DB_HOST,
@@ -17,7 +17,7 @@ module.exports = {
         username: process.env.DB_USERNAME,
         password: process.env.DB_PASSWORD,
         dialect: "postgres",
-        schema: process.env.DB_SCHEMA || "cid",
+        schema: process.env.DB_SCHEMA || "public",
     },
     test: {
         host: process.env.DB_HOST,
@@ -26,6 +26,6 @@ module.exports = {
         username: process.env.DB_USERNAME,
         password: process.env.DB_PASSWORD,
         dialect: "postgres",
-        schema: process.env.DB_SCHEMA || "cid",
+        schema: process.env.DB_SCHEMA || "public",
     }
 };

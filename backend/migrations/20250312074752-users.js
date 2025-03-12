@@ -4,7 +4,7 @@ require('dotenv').config(); // Load environment variables
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const schema = process.env.DB_SCHEMA || 'cms'; // Get schema from .env
+    const schema = process.env.DB_SCHEMA || 'public'; // Get schema from .env
 
     await queryInterface.createTable(
       { tableName: 'users', schema }, // Include schema

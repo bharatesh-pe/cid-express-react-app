@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const schema = process.env.DB_SCHEMA || 'cms'; // Get schema from .env
+    const schema = process.env.DB_SCHEMA || 'public'; // Get schema from .env
 
     await queryInterface.createTable(
       { tableName: 'role', schema }, // Ensure schema is used
@@ -75,7 +75,7 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    const schema = process.env.DB_SCHEMA || 'cms';
+    const schema = process.env.DB_SCHEMA || 'public';
 
     await queryInterface.dropTable({ tableName: 'role', schema });
   }
