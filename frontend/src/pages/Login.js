@@ -84,21 +84,21 @@ const Login = () => {
             console.log('data',data);
             console.log('data.user_designation',data.user_designation);
 
-            if(data && data.user_designation){
-                const user_designation = data.user_designation;
-                console.log("user_designation",user_designation)
-                if(user_designation.length === 1){
+            if(data && data.users_designation){
+                const users_designation = data.users_designation;
+                console.log("users_designation",users_designation)
+                if(users_designation.length === 1){
                     if(data && data.token){
                         localStorage.setItem('auth_token', data.token);
                         localStorage.setItem('kgid', kgid);
                         navigate('/dashboard');
                     }
                 }
-                else if(user_designation.length > 1){
+                else if(users_designation.length > 1){
                     if(data && data.token){
                         setTempToken(data.token);
                     }
-                    setDesignation(user_designation);
+                    setDesignation(users_designation);
                     setShowDesignation(true);
                 }
 
