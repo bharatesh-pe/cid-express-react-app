@@ -96,7 +96,6 @@ code {
 
 .sidebarMenus .MuiListItemIcon-root svg, .subMenuSidebarMenus .MuiListItemIcon-root svg {
     stroke: #667085;
-    fill: #667085;
 }
 
 .sidebarMenus .MuiListItemText-root span, .subMenuSidebarMenus .MuiListItemText-root span {
@@ -126,12 +125,10 @@ code {
 
 .sidebarMenus:hover .MuiListItemIcon-root svg {
     stroke: #FFFFFF;
-    fill: #FFFFFF;
 }
 
 .sidebarMenus.active .MuiListItemIcon-root svg {
     stroke: #FFFFFF;
-    fill: #FFFFFF;
 }
 
 .subMenuSidebarMenus.active .MuiListItemText-root span {
@@ -155,12 +152,10 @@ code {
 
 .subMenuSidebarMenus:hover .MuiListItemIcon-root svg {
     stroke: #1F1DAC;
-    fill: #1F1DAC;
 }
 
 .subMenuSidebarMenus.active .MuiListItemIcon-root svg {
     stroke: #1F1DAC;
-    fill: #1F1DAC;
 }
 
 /* outlined btns */
