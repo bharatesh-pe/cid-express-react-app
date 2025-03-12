@@ -129,6 +129,7 @@ const CreateProfile = () => {
                     profile_name : viewTemplateResponse.data['template_name'],
                     Createdfields : viewTemplateResponse.data['fields'],
                     type : viewTemplateResponse.data['template_type'],
+                    module : viewTemplateResponse.data['template_module'],
                     stepper : viewTemplateResponse.data['sections'] && viewTemplateResponse.data['sections'].length > 0 ? viewTemplateResponse.data['sections'] : [],
                     action : 'edit',
                     pagination: paginationCount,
@@ -311,60 +312,57 @@ const CreateProfile = () => {
             "search": searchData ? searchData : ''
         }
 
-        console.log(getTemplatePayload,"getTemplatePayload")
-        // setLoading(true);
+        setLoading(true);
 
-        // try {
-        //     const getTemplateResponse = await api.post("/templates/paginateTemplate", getTemplatePayload);
-        //     setLoading(false);
+        try {
+            const getTemplateResponse = await api.post("/templates/paginateTemplate", getTemplatePayload);
+            setLoading(false);
 
-        //     if (getTemplateResponse && getTemplateResponse.success) {
-        //         if (getTemplateResponse.data && getTemplateResponse.data['data']) {
-        //             var updatedTableData = getTemplateResponse.data['data'].map((field, index) => {
-        //                 return {
-        //                     ...field,
-        //                     id: field.table_name + index, // Create a unique id for each row
-        //                     sl_no: (page - 1) * 10 + (index + 1),
-        //                     table_name: field?.table_name.split('_').join(" "),
-        //                 };
-        //             });
+            if (getTemplateResponse && getTemplateResponse.success) {
+                if (getTemplateResponse.data && getTemplateResponse.data['data']) {
+                    var updatedTableData = getTemplateResponse.data['data'].map((field, index) => {
+                        return {
+                            ...field,
+                            id: field.table_name + index, // Create a unique id for each row
+                            sl_no: (page - 1) * 10 + (index + 1),
+                            table_name: field?.table_name.split('_').join(" "),
+                        };
+                    });
 
-        //             console.log(updatedTableData)
+                    setTableData(updatedTableData)
+                }
 
-        //             setTableData(updatedTableData)
-        //         }
+            } else {
+                const errorMessage = getTemplateResponse.message ? getTemplateResponse.message : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
 
-        //     } else {
-        //         const errorMessage = getTemplateResponse.message ? getTemplateResponse.message : "Failed to create the template. Please try again.";
-        //         toast.error(errorMessage, {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
+        } catch (error) {
+            console.log(error, "error");
+            setLoading(false);
 
-        // } catch (error) {
-        //     console.log(error, "error");
-        //     setLoading(false);
-
-        //     if (error && error.response && error.response['data']) {
-        //         toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // }
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
     }
 
 
@@ -401,51 +399,50 @@ const CreateProfile = () => {
         e.preventDefault();
 
         if (validate()) {
-            // setLoading(true);
+            setLoading(true);
 
-            // try {
+            try {
 
-            //     var duplicatePayload = {
-            //         "template_name" : formData.profile_name
-            //     }
+                var duplicatePayload = {
+                    "template_name" : formData.profile_name
+                }
 
-            //     var duplicateCheck = await api.post('templates/checkDuplicateTemplate',duplicatePayload);
-            //     setLoading(false);
+                var duplicateCheck = await api.post('templates/checkDuplicateTemplate',duplicatePayload);
+                setLoading(false);
 
-            //     if(duplicateCheck && duplicateCheck.success){
-            //         setIsSubmitting(true);
+                if(duplicateCheck && duplicateCheck.success){
+                    setIsSubmitting(true);
                     formData['pagination'] = paginationCount;
-                    console.log(formData,"formData")
                     navigate('/formbuilder', { state: formData });
-            //     }else{
-            //         toast.warning(`Table ${formData.profile_name} already exists`, {
-            //             position: "top-right",
-            //             autoClose: 3000,
-            //             hideProgressBar: false,
-            //             closeOnClick: true,
-            //             pauseOnHover: true,
-            //             draggable: true,
-            //             progress: undefined,
-            //             className: "toast-warning",
-            //         });
-            //         return;
-            //     }
-                
-            // } catch (error) {
-            //     setLoading(false);
-            //     if (error && error.response && error.response['data']) {
-            //         toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-            //             position: "top-right",
-            //             autoClose: 3000,
-            //             hideProgressBar: false,
-            //             closeOnClick: true,
-            //             pauseOnHover: true,
-            //             draggable: true,
-            //             progress: undefined,
-            //             className: "toast-error",
-            //         });
-            //     }
-            // }
+                }else{
+                    toast.warning(`Table ${formData.profile_name} already exists`, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-warning",
+                    });
+                    return;
+                }
+
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
         }
     };
 

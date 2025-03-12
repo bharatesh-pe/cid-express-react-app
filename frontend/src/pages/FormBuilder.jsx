@@ -72,7 +72,7 @@ const convertToUnderscore = (str) => {
 const Formbuilder = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
-    const { profile_name, stepper, type, Createdfields, action, pagination } = state;
+    const { profile_name, stepper, type, Createdfields, action, pagination, module } = state;
     const [fields, setFields] = useState([]);
     const [selectedField, setSelectedField] = useState(null);
     const [selectedDropdwonField, setSelectedDropdownField] = useState(null);
@@ -1130,6 +1130,7 @@ const Formbuilder = () => {
         var createTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
+            "template_module": module,
             "fields": updatedFields,
             "paranoid": false
         }
@@ -1138,45 +1139,17 @@ const Formbuilder = () => {
             createTemplatePayload = {...createTemplatePayload, no_of_sections : stepper.length, sections: stepper }
         }
 
-
-        console.log(createTemplatePayload,"createTemplatePayload");
-
         setLoading(true);
-        const token = localStorage.getItem("auth_token");
 
         try {
 
-            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const createTemplateResponse = await api.post("/templates/createTemplate", createTemplatePayload);
 
-            const createTemplateResponse = await fetch(`${serverURL}/templates/createTemplate`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token' : token
-                },
-                body: JSON.stringify(createTemplatePayload),
-            });
-
-            const data = await createTemplateResponse.json();
             setLoading(false);
 
-            if (!createTemplateResponse.ok) {
-                toast.error(data.message, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-                return;
-            }
+            if (createTemplateResponse && createTemplateResponse.success) {
 
-            if (data && data.success) {
-
-                toast.success(data.message || "Template Created Successfully", {
+                toast.success(createTemplateResponse.message || "Template Created Successfully", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -1189,7 +1162,7 @@ const Formbuilder = () => {
                 });
 
             } else {
-                const errorMessage = data.message ? data.message : "Failed to create the template. Please try again.";
+                const errorMessage = createTemplateResponse.message ? createTemplateResponse.message : "Failed to create the template. Please try again.";
                 toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
@@ -1319,6 +1292,7 @@ const Formbuilder = () => {
         var updateTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
+            "template_module": module,
             "fields": updatedFields,
             "paranoid": false
         }
