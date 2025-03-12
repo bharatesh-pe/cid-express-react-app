@@ -1,22 +1,16 @@
 "use strict";
-const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class Designation extends Model {
-    static associate(models) {
-      // If there are any associations, define them here
-      // Example: this.hasMany(models.UserDesignation, { foreignKey: "designation_id" });
-    }
-  }
-
-  Designation.init(
+  const Department = sequelize.define(
+    "Department",
     {
-      designation_id: {
+      department_id: {
         type: DataTypes.INTEGER,
-        autoIncrement: true,
         primaryKey: true,
+        autoIncrement: true,
+        allowNull: false,
       },
-      designation_name: {
+      department_name: {
         type: DataTypes.TEXT,
         allowNull: false,
       },
@@ -30,18 +24,17 @@ module.exports = (sequelize, DataTypes) => {
       },
       created_at: {
         type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW,
+        allowNull: false,
+        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
     },
     {
-      sequelize,
-      modelName: "Designation",
-      tableName: "designation",
+      tableName: "department",
       schema: process.env.DB_SCHEMA || "public",
       timestamps: false,
     }
   );
 
-  return Designation;
+  return Department;
 };
 

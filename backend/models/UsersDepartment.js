@@ -2,43 +2,38 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class UsersDivision extends Model {
+  class UsersDepartment extends Model {
     static associate(models) {
-      UsersDivision.belongsTo(models.UsersDepartment, {
-        foreignKey: "user_department_id",
-        as: "userDepartment",
-      });
-
-      UsersDivision.belongsTo(models.Division, {
-        foreignKey: "division_id",
-        as: "division",
-      });
-
-      UsersDivision.belongsTo(models.Users, {
+      UsersDepartment.belongsTo(models.Users, {
         foreignKey: "user_id",
         as: "user",
+      });
+
+      UsersDepartment.belongsTo(models.Department, {
+        foreignKey: "department_id",
+        as: "department",
       });
     }
   }
 
-  UsersDivision.init(
+  UsersDepartment.init(
     {
-      user_division_id: {
+      user_department_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
-      user_department_id: {
-        type: DataTypes.INTEGER,
-      },
-      division_id: {
-        type: DataTypes.INTEGER,
-      },
       user_id: {
         type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      department_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       created_by: {
         type: DataTypes.INTEGER,
+        allowNull: true,
       },
       created_at: {
         type: DataTypes.DATE,
@@ -47,13 +42,13 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "UsersDivision",
-      tableName: "users_division",
+      modelName: "UsersDepartment",
+      tableName: "users_department",
       schema: process.env.DB_SCHEMA || "public",
       timestamps: false,
     }
   );
 
-  return UsersDivision;
+  return UsersDepartment;
 };
 

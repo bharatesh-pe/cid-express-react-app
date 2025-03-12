@@ -35,7 +35,7 @@ api.interceptors.request.use(
         // You can add auth token here or other headers
         const token = localStorage.getItem('auth_token');
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            config.headers['token'] = token;
         }
         if (config.data instanceof FormData) {
             config.headers['Content-Type'] = 'multipart/form-data';

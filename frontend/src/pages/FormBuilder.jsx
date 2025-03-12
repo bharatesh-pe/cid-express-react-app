@@ -72,7 +72,7 @@ const convertToUnderscore = (str) => {
 const Formbuilder = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
-    const { profile_name, stepper, type, Createdfields, action, pagination } = state;
+    const { profile_name, stepper, type, Createdfields, action, pagination, module } = state;
     const [fields, setFields] = useState([]);
     const [selectedField, setSelectedField] = useState(null);
     const [selectedDropdwonField, setSelectedDropdownField] = useState(null);
@@ -1130,6 +1130,7 @@ const Formbuilder = () => {
         var createTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
+            "template_module": module,
             "fields": updatedFields,
             "paranoid": false
         }
@@ -1138,14 +1139,12 @@ const Formbuilder = () => {
             createTemplatePayload = {...createTemplatePayload, no_of_sections : stepper.length, sections: stepper }
         }
 
-
-        console.log(createTemplatePayload,"createTemplatePayload");
-        return;
-
         setLoading(true);
 
         try {
+
             const createTemplateResponse = await api.post("/templates/createTemplate", createTemplatePayload);
+
             setLoading(false);
 
             if (createTemplateResponse && createTemplateResponse.success) {
@@ -1293,6 +1292,7 @@ const Formbuilder = () => {
         var updateTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
+            "template_module": module,
             "fields": updatedFields,
             "paranoid": false
         }
