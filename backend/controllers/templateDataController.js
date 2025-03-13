@@ -34,21 +34,22 @@ exports.insertTemplateData = async (req, res, next) => {
     //     attributes: ['full_name']
     // });
 
-    const userName = await user.findOne({
-        where: { user_id: userId },
-        attributes: ['user_firstname']
-    });
+    // const userName = await user.findOne({
+    //     where: { user_id: userId },
+    //     attributes: ['user_firstname']
+    // });
     // const actorName = adminUserName?.full_name || userName?.user_firstname;
     const actorName = "abc"
 
 
 
-    if (!actorId) {
-        return userSendResponse(res, 403, false, "Unauthorized access.", null);
-    }
+    // if (!actorId) {
+    //     return userSendResponse(res, 403, false, "Unauthorized access.", null);
+    // }
 
     try {
         const tableData = await Template.findOne({ where: { table_name } });
+        console.log("?????????????", tableData)
 
         if (!tableData) {
             const message = `Table ${table_name} does not exist.`;
@@ -90,16 +91,16 @@ exports.insertTemplateData = async (req, res, next) => {
             createdAt: 'created_at',
             updatedAt: 'updated_at',
         });
-
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>", modelAttributes)
         const insertedData = await Model.create(validData);
 
-        await ActivityLog.create({
-            template_id: tableData.template_id,
-            table_row_id: insertedData.id,
-            user_id: actorId,
-            actor_name: actorName,
-            activity: `Created`,
-        });
+        // await ActivityLog.create({
+        //     template_id: tableData.template_id,
+        //     table_row_id: insertedData.id,
+        //     user_id: actorId,
+        //     actor_name: actorName,
+        //     activity: `Created`,
+        // });
 
         const fileUpdates = {};
 
@@ -269,24 +270,24 @@ async function getDisplayValueForField(field, value, schema) {
 }
 exports.updateTemplateData = async (req, res, next) => {
     const { table_name, id, data, folder_attachment_ids } = req.body;
-    const userId = res.locals.user_id || null;
-    const adminUserId = res.locals.admin_user_id || null;
-    const actorId = userId || adminUserId;
+    // const userId = res.locals.user_id || null;
+    // const adminUserId = res.locals.admin_user_id || null;
+    // const actorId = userId || adminUserId;
 
-    const adminUserName = await admin_user.findOne({
-        where: { admin_user_id: adminUserId },
-        attributes: ['full_name']
-    });
+    // const adminUserName = await admin_user.findOne({
+    //     where: { admin_user_id: adminUserId },
+    //     attributes: ['full_name']
+    // });
 
-    const userName = await user.findOne({
-        where: { user_id: userId },
-        attributes: ['user_firstname']
-    });
-    const actorName = adminUserName?.full_name || userName?.user_firstname;
-
-    if (!actorId) {
-        return userSendResponse(res, 403, false, "Unauthorized access.", null);
-    }
+    // const userName = await user.findOne({
+    //     where: { user_id: userId },
+    //     attributes: ['user_firstname']
+    // });
+    // const actorName = adminUserName?.full_name || userName?.user_firstname;
+    const actorName = "kvn"
+    // if (!actorId) {
+    //     return userSendResponse(res, 403, false, "Unauthorized access.", null);
+    // }
 
     try {
         // Fetch the table template
@@ -357,41 +358,41 @@ exports.updateTemplateData = async (req, res, next) => {
             await record.update(updatedFields);
 
             // Log changes in ProfileHistory (Only for changed fields)
-            if (userId) {
-                for (const key in updatedFields) {
-                    const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
-                    const newValue = updatedFields[key];
+            // if (userId) {
+            //     for (const key in updatedFields) {
+            //         const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
+            //         const newValue = updatedFields[key];
 
-                    console.log(">>>>>oldValue1>>>>>>>>", oldValue);
-                    console.log(">>>>>>newValue1>>>>>>>", newValue);
+            //         console.log(">>>>>oldValue1>>>>>>>>", oldValue);
+            //         console.log(">>>>>>newValue1>>>>>>>", newValue);
 
-                    const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
-                    const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
+            //         const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
+            //         const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
 
-                    console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
-                    console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
+            //         console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
+            //         console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
 
-                    // Only log changes, not unchanged fields
-                    if (oldValue !== newValue) {
-                        await ProfileHistory.create({
-                            template_id: tableData.template_id,
-                            table_row_id: id,
-                            user_id: userId,
-                            field_name: key,
-                            old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
-                            updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
-                        });
-                    }
-                }
-            }
+            //         // Only log changes, not unchanged fields
+            //         if (oldValue !== newValue) {
+            //             await ProfileHistory.create({
+            //                 template_id: tableData.template_id,
+            //                 table_row_id: id,
+            //                 user_id: userId,
+            //                 field_name: key,
+            //                 old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
+            //                 updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
+            //             });
+            //         }
+            //     }
+            // }
 
-            await ActivityLog.create({
-                template_id: tableData.template_id,
-                table_row_id: id,
-                user_id: actorId,
-                actor_name: actorName,
-                activity: `Updated`,
-            });
+            // await ActivityLog.create({
+            //     template_id: tableData.template_id,
+            //     table_row_id: id,
+            //     user_id: actorId,
+            //     actor_name: actorName,
+            //     activity: `Updated`,
+            // });
         }
 
         const fileUpdates = {};
@@ -453,12 +454,12 @@ exports.updateTemplateData = async (req, res, next) => {
 
 
 
-        await TemplateUserStatus.destroy({
-            where: {
-                template_id: tableData.template_id,
-                table_row_id: id
-            }
-        });
+        // await TemplateUserStatus.destroy({
+        //     where: {
+        //         template_id: tableData.template_id,
+        //         table_row_id: id
+        //     }
+        // });
 
 
         return userSendResponse(res, 200, true, `Data updated successfully in table ${table_name}.`, null);
@@ -711,23 +712,23 @@ exports.getTemplateData = async (req, res, next) => {
 
 exports.viewTemplateData = async (req, res, next) => {
     const { table_name, id } = req.body;
-    const userId = res.locals.user_id || null;
-    const adminUserId = res.locals.admin_user_id || null;
-    const actorId = userId || adminUserId;
-    const adminUserName = await admin_user.findOne({
-        where: { admin_user_id: adminUserId },
-        attributes: ['full_name']
-    });
+    // const userId = res.locals.user_id || null;
+    // const adminUserId = res.locals.admin_user_id || null;
+    // const actorId = userId || adminUserId;
+    // const adminUserName = await admin_user.findOne({
+    //     where: { admin_user_id: adminUserId },
+    //     attributes: ['full_name']
+    // });
 
-    const userName = await user.findOne({
-        where: { user_id: userId },
-        attributes: ['user_firstname']
-    });
-    const actorName = adminUserName?.full_name || userName?.user_firstname;
-
-    if (!actorId) {
-        return userSendResponse(res, 403, false, "Unauthorized access.", null);
-    }
+    // const userName = await user.findOne({
+    //     where: { user_id: userId },
+    //     attributes: ['user_firstname']
+    // });
+    // const actorName = adminUserName?.full_name || userName?.user_firstname;
+    // const actorName = "abc"
+    // if (!actorId) {
+    //     return userSendResponse(res, 403, false, "Unauthorized access.", null);
+    // }
 
     try {
         const tableData = await Template.findOne({ where: { table_name } });
@@ -784,38 +785,38 @@ exports.viewTemplateData = async (req, res, next) => {
         delete data.created_at;
         delete data.updated_at;
 
-        const attachments = await ProfileAttachment.findAll({
-            where: {
-                template_id: tableData.template_id,
-                table_row_id: id,
-            },
-            order: [['created_at', 'DESC']]
-        });
+        // const attachments = await ProfileAttachment.findAll({
+        //     where: {
+        //         template_id: tableData.template_id,
+        //         table_row_id: id,
+        //     },
+        //     order: [['created_at', 'DESC']]
+        // });
 
-        if (attachments.length) {
-            data.attachments = attachments.map(att => att.toJSON());
-        }
-        if (userId) {
-            await TemplateUserStatus.findOrCreate({
-                where: {
-                    template_id: tableData.template_id,
-                    table_row_id: id,
-                    user_id: userId
-                },
-                defaults: {
-                    created_at: new Date(),
-                    updated_at: new Date()
-                }
-            });
-        }
+        // if (attachments.length) {
+        //     data.attachments = attachments.map(att => att.toJSON());
+        // }
+        // if (userId) {
+        //     await TemplateUserStatus.findOrCreate({
+        //         where: {
+        //             template_id: tableData.template_id,
+        //             table_row_id: id,
+        //             user_id: userId
+        //         },
+        //         defaults: {
+        //             created_at: new Date(),
+        //             updated_at: new Date()
+        //         }
+        //     });
+        // }
 
-        await ActivityLog.create({
-            template_id: tableData.template_id,
-            table_row_id: id,
-            user_id: actorId,
-            actor_name: actorName,
-            activity: `Viewed `,
-        });
+        // await ActivityLog.create({
+        //     template_id: tableData.template_id,
+        //     table_row_id: id,
+        //     user_id: actorId,
+        //     actor_name: actorName,
+        //     activity: `Viewed `,
+        // });
 
         const responseMessage = `Fetched record successfully from table ${table_name}.`;
         return userSendResponse(res, 200, true, responseMessage, data);
@@ -829,22 +830,22 @@ exports.viewTemplateData = async (req, res, next) => {
 exports.viewMagazineTemplateData = async (req, res) => {
     try {
         const { table_name, id } = req.body;
-        const userId = res.locals.user_id || null;
-        const adminUserId = res.locals.admin_user_id || null;
-        const actorId = userId || adminUserId;
+        // const userId = res.locals.user_id || null;
+        // const adminUserId = res.locals.admin_user_id || null;
+        // const actorId = userId || adminUserId;
 
 
-        const adminUserName = await admin_user.findOne({
-            where: { admin_user_id: adminUserId },
-            attributes: ['full_name']
-        });
+        // const adminUserName = await admin_user.findOne({
+        //     where: { admin_user_id: adminUserId },
+        //     attributes: ['full_name']
+        // });
 
-        const userName = await user.findOne({
-            where: { user_id: userId },
-            attributes: ['user_firstname']
-        });
-        const actorName = adminUserName?.full_name || userName?.user_firstname;
-
+        // const userName = await user.findOne({
+        //     where: { user_id: userId },
+        //     attributes: ['user_firstname']
+        // });
+        // const actorName = adminUserName?.full_name || userName?.user_firstname;
+        const actorName = "abc"
         if (!table_name) {
             return userSendResponse(res, 400, false, "Table name is required.", null);
         }
@@ -993,17 +994,17 @@ exports.viewMagazineTemplateData = async (req, res) => {
             }
         }
 
-        const attachments = await ProfileAttachment.findAll({
-            where: {
-                template_id: tableTemplate.template_id,
-                table_row_id: data.id,
-            },
-            order: [['created_at', 'DESC']]
-        });
+        // const attachments = await ProfileAttachment.findAll({
+        //     where: {
+        //         template_id: tableTemplate.template_id,
+        //         table_row_id: data.id,
+        //     },
+        //     order: [['created_at', 'DESC']]
+        // });
 
-        if (attachments.length) {
-            data.attachments = attachments.map(att => att.toJSON());
-        }
+        // if (attachments.length) {
+        //     data.attachments = attachments.map(att => att.toJSON());
+        // }
 
         for (const association of associations) {
             const alias = `${association.relatedTable}Details`;
@@ -1014,27 +1015,27 @@ exports.viewMagazineTemplateData = async (req, res) => {
                 });
             }
         }
-        if (userId) {
-            await TemplateUserStatus.findOrCreate({
-                where: {
-                    template_id: tableTemplate.template_id,
-                    table_row_id: id,
-                    user_id: userId
-                },
-                defaults: {
-                    created_at: new Date(),
-                    updated_at: new Date()
-                }
-            });
+        // if (userId) {
+        //     await TemplateUserStatus.findOrCreate({
+        //         where: {
+        //             template_id: tableTemplate.template_id,
+        //             table_row_id: id,
+        //             user_id: userId
+        //         },
+        //         defaults: {
+        //             created_at: new Date(),
+        //             updated_at: new Date()
+        //         }
+        //     });
 
-        }
-        await ActivityLog.create({
-            template_id: tableTemplate.template_id,
-            table_row_id: id,
-            user_id: actorId,
-            actor_name: actorName,
-            activity: `Viewed `,
-        });
+        // }
+        // await ActivityLog.create({
+        //     template_id: tableTemplate.template_id,
+        //     table_row_id: id,
+        //     user_id: actorId,
+        //     actor_name: actorName,
+        //     activity: `Viewed `,
+        // });
 
         return userSendResponse(res, 200, true, "Data fetched successfully", data);
     } catch (error) {
@@ -1048,21 +1049,21 @@ exports.viewMagazineTemplateData = async (req, res) => {
 exports.deleteTemplateData = async (req, res, next) => {
     try {
         const { table_name, where } = req.body;
-        const userId = res.locals.user_id || null;
-        const adminUserId = res.locals.admin_user_id || null;
-        const actorId = userId || adminUserId;
+        // const userId = res.locals.user_id || null;
+        // const adminUserId = res.locals.admin_user_id || null;
+        // const actorId = userId || adminUserId;
 
-        const adminUserName = await admin_user.findOne({
-            where: { admin_user_id: adminUserId },
-            attributes: ['full_name']
-        });
+        // const adminUserName = await admin_user.findOne({
+        //     where: { admin_user_id: adminUserId },
+        //     attributes: ['full_name']
+        // });
 
-        const userName = await user.findOne({
-            where: { user_id: userId },
-            attributes: ['user_firstname']
-        });
-        const actorName = adminUserName?.full_name || userName?.user_firstname;
-
+        // const userName = await user.findOne({
+        //     where: { user_id: userId },
+        //     attributes: ['user_firstname']
+        // });
+        // const actorName = adminUserName?.full_name || userName?.user_firstname;
+        const actorName = "abc"
         // Retrieve table Template
         const tableData = await Template.findOne({
             where: { table_name },
@@ -1131,12 +1132,12 @@ exports.deleteTemplateData = async (req, res, next) => {
             if (data.deleted_at) {
                 // Restore the record by setting deleted_at to null
                 await Model.update({ deleted_at: null }, { where });
-                await ActivityLog.create({
-                    template_id: tableData.template_id,
-                    table_row_id: data.id,
-                    user_id: actorId,
-                    activity: `Restored`,
-                });
+                // await ActivityLog.create({
+                //     template_id: tableData.template_id,
+                //     table_row_id: data.id,
+                //     user_id: actorId,
+                //     activity: `Restored`,
+                // });
                 return userSendResponse(
                     res,
                     200,
@@ -1147,13 +1148,13 @@ exports.deleteTemplateData = async (req, res, next) => {
             } else {
                 // Soft delete (set deleted_at timestamp)
                 await Model.update({ deleted_at: new Date() }, { where });
-                await ActivityLog.create({
-                    template_id: tableData.template_id,
-                    table_row_id: data.id,
-                    user_id: actorId,
-                    actor_name: actorName,
-                    activity: `Deleted`,
-                });
+                // await ActivityLog.create({
+                //     template_id: tableData.template_id,
+                //     table_row_id: data.id,
+                //     user_id: actorId,
+                //     actor_name: actorName,
+                //     activity: `Deleted`,
+                // });
                 return userSendResponse(
                     res,
                     200,
@@ -1167,34 +1168,34 @@ exports.deleteTemplateData = async (req, res, next) => {
             await Model.destroy({ where });
 
             // Delete corresponding entries from related tables
-            await ProfileAttachment.destroy({
-                where: {
-                    template_id: tableData.template_id,
-                    table_row_id: data.id,
-                },
-            });
+            // await ProfileAttachment.destroy({
+            //     where: {
+            //         template_id: tableData.template_id,
+            //         table_row_id: data.id,
+            //     },
+            // });
 
-            await ActivityLog.destroy({
-                where: {
-                    template_id: tableData.template_id,
-                    table_row_id: data.id,
-                },
-            });
+            // await ActivityLog.destroy({
+            //     where: {
+            //         template_id: tableData.template_id,
+            //         table_row_id: data.id,
+            //     },
+            // });
 
-            await ProfileHistory.destroy({
-                where: {
-                    template_id: tableData.template_id,
-                    table_row_id: data.id,
-                },
+            // await ProfileHistory.destroy({
+            //     where: {
+            //         template_id: tableData.template_id,
+            //         table_row_id: data.id,
+            //     },
 
-            });
+            // });
 
-            await TemplateUserStatus.destroy({
-                where: {
-                    template_id: tableData.template_id,
-                    table_row_id: data.id,
-                },
-            });
+            // await TemplateUserStatus.destroy({
+            //     where: {
+            //         template_id: tableData.template_id,
+            //         table_row_id: data.id,
+            //     },
+            // });
             return userSendResponse(
                 res,
                 200,
@@ -1339,43 +1340,43 @@ exports.paginateTemplateData = async (req, res) => {
             }
         }
 
-        // Add TemplateStar association
-        DynamicTable.hasOne(db.TemplateStar, {
-            foreignKey: 'table_row_id',
-            sourceKey: 'id',
-            as: 'Starred',
-            constraints: false,
-        });
+        // // Add TemplateStar association
+        // DynamicTable.hasOne(db.TemplateStar, {
+        //     foreignKey: 'table_row_id',
+        //     sourceKey: 'id',
+        //     as: 'Starred',
+        //     constraints: false,
+        // });
 
-        // Add TemplateUserStatus association
-        DynamicTable.hasOne(db.TemplateUserStatus, {
-            foreignKey: 'table_row_id',
-            sourceKey: 'id',
-            as: 'ReadStatus',
-            constraints: false,
-        });
+        // // Add TemplateUserStatus association
+        // DynamicTable.hasOne(db.TemplateUserStatus, {
+        //     foreignKey: 'table_row_id',
+        //     sourceKey: 'id',
+        //     as: 'ReadStatus',
+        //     constraints: false,
+        // });
 
-        include.push({
-            model: db.TemplateStar,
-            as: 'Starred',
-            required: is_starred,  // Only include if filtering by starred
-            where: {
-                user_id: userId,
-                template_id: tableTemplate.template_id
-            },
-            attributes: ['template_star_id']
-        });
+        // include.push({
+        //     model: db.TemplateStar,
+        //     as: 'Starred',
+        //     required: is_starred,  // Only include if filtering by starred
+        //     where: {
+        //         user_id: userId,
+        //         template_id: tableTemplate.template_id
+        //     },
+        //     attributes: ['template_star_id']
+        // });
 
-        include.push({
-            model: db.TemplateUserStatus,
-            as: 'ReadStatus',
-            required: is_read,
-            where: {
-                user_id: userId,
-                template_id: tableTemplate.template_id
-            },
-            attributes: ['template_user_status_id']
-        });
+        // include.push({
+        //     model: db.TemplateUserStatus,
+        //     as: 'ReadStatus',
+        //     required: is_read,
+        //     where: {
+        //         user_id: userId,
+        //         template_id: tableTemplate.template_id
+        //     },
+        //     attributes: ['template_user_status_id']
+        // });
 
         const offset = (page - 1) * limit;
         const Op = Sequelize.Op;
@@ -1578,72 +1579,72 @@ exports.paginateTemplateData = async (req, res) => {
                 }
 
                 // Fetch attachments related to this row
-                const attachments = await ProfileAttachment.findAll({
-                    where: {
-                        template_id: tableTemplate.template_id,
-                        table_row_id: data.id,
-                    },
-                    order: [['created_at', 'DESC']]
-                });
+                // const attachments = await ProfileAttachment.findAll({
+                //     where: {
+                //         template_id: tableTemplate.template_id,
+                //         table_row_id: data.id,
+                //     },
+                //     order: [['created_at', 'DESC']]
+                // });
 
-                if (attachments.length) {
-                    data.attachments = attachments.map(att => att.toJSON());
-                }
+                // if (attachments.length) {
+                //     data.attachments = attachments.map(att => att.toJSON());
+                // }
 
-                data.ReadStatus = data.ReadStatus ? true : false;
+                // data.ReadStatus = data.ReadStatus ? true : false;
                 // Handle alias mappings before processing associations
-                for (const association of associations) {
-                    const alias = `${association.relatedTable}Details`;
-                    if (data[alias]) {
-                        Object.entries(data[alias]).forEach(([key, value]) => {
-                            data[association.foreignKey] = value;
-                        });
-                        delete data[alias]; // Remove unnecessary alias object from response
-                    }
-                }
+                // for (const association of associations) {
+                //     const alias = `${association.relatedTable}Details`;
+                //     if (data[alias]) {
+                //         Object.entries(data[alias]).forEach(([key, value]) => {
+                //             data[association.foreignKey] = value;
+                //         });
+                //         delete data[alias]; // Remove unnecessary alias object from response
+                //     }
+                // }
 
                 // Fetch linked profile info manually
                 const linkedProfileInfo = [];
 
-                for (const association of associations) {
-                    const foreignKeyValue = data[association.foreignKey];
+                // for (const association of associations) {
+                //     const foreignKeyValue = data[association.foreignKey];
 
-                    if (foreignKeyValue) {
-                        try {
-                            // Fetch associated table metadata from the Template model
-                            const associatedTemplate = await Template.findOne({
-                                where: {
-                                    table_name: association.relatedTable,  // Ensure the correct table name
-                                },
-                                attributes: ['template_type'],
-                            });
+                //     if (foreignKeyValue) {
+                //         try {
+                //             // Fetch associated table metadata from the Template model
+                //             const associatedTemplate = await Template.findOne({
+                //                 where: {
+                //                     table_name: association.relatedTable,  // Ensure the correct table name
+                //                 },
+                //                 attributes: ['template_type'],
+                //             });
 
-                            // Check if the table name starts with "da" and template_type is not "master"
-                            if (associatedTemplate && association.relatedTable.startsWith("da") && associatedTemplate.template_type !== "master") {
-                                const [linkedRow] = await sequelize.query(
-                                    `SELECT id FROM ${association.relatedTable} WHERE ${association.targetAttribute} = :foreignKeyValue LIMIT 1`,
-                                    {
-                                        replacements: { foreignKeyValue },
-                                        type: Sequelize.QueryTypes.SELECT
-                                    }
-                                );
+                //             // Check if the table name starts with "da" and template_type is not "master"
+                //             if (associatedTemplate && association.relatedTable.startsWith("da") && associatedTemplate.template_type !== "master") {
+                //                 const [linkedRow] = await sequelize.query(
+                //                     `SELECT id FROM ${association.relatedTable} WHERE ${association.targetAttribute} = :foreignKeyValue LIMIT 1`,
+                //                     {
+                //                         replacements: { foreignKeyValue },
+                //                         type: Sequelize.QueryTypes.SELECT
+                //                     }
+                //                 );
 
-                                if (linkedRow && linkedRow.id) {
-                                    linkedProfileInfo.push({
-                                        table: association.relatedTable,
-                                        id: linkedRow.id,
-                                        field: association.foreignKey
-                                    });
-                                }
-                            }
-                        } catch (error) {
-                            console.error(`Error fetching linked profile info for ${association.relatedTable}:`, error);
-                        }
-                    }
-                }
+                //                 if (linkedRow && linkedRow.id) {
+                //                     linkedProfileInfo.push({
+                //                         table: association.relatedTable,
+                //                         id: linkedRow.id,
+                //                         field: association.foreignKey
+                //                     });
+                //                 }
+                //             }
+                //         } catch (error) {
+                //             console.error(`Error fetching linked profile info for ${association.relatedTable}:`, error);
+                //         }
+                //     }
+                // }
 
                 // Add linked profile info to the response
-                data.linked_profile_info = linkedProfileInfo.length ? linkedProfileInfo : null;
+                // data.linked_profile_info = linkedProfileInfo.length ? linkedProfileInfo : null;
 
                 return data;
             })
