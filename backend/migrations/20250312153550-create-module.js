@@ -41,6 +41,10 @@ module.exports = {
           type: Sequelize.BOOLEAN,
           allowNull: true,
         },
+        order: {  // <-- Added this field
+          type: Sequelize.INTEGER,
+          allowNull: true, // Change to false if required
+        },
       }
     );
   },

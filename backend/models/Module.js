@@ -42,6 +42,9 @@ module.exports = (sequelize, DataTypes) => {
       is_sub_module: {
         type: DataTypes.BOOLEAN,
         allowNull: true,
+      }, order: {  // <-- Added this field
+        type: DataTypes.INTEGER,
+        allowNull: true, // Change to false if required
       },
     },
     {
