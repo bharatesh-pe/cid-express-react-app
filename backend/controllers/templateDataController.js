@@ -29,17 +29,17 @@ exports.insertTemplateData = async (req, res, next) => {
     const actorId = userId || adminUserId;
 
     console.log("inserting user", userId, actorId);
-    const adminUserName = await admin_user.findOne({
-        where: { admin_user_id: adminUserId },
-        attributes: ['full_name']
-    });
+    // const adminUserName = await admin_user.findOne({
+    //     where: { admin_user_id: adminUserId },
+    //     attributes: ['full_name']
+    // });
 
     const userName = await user.findOne({
         where: { user_id: userId },
         attributes: ['user_firstname']
     });
-    const actorName = adminUserName?.full_name || userName?.user_firstname;
-
+    // const actorName = adminUserName?.full_name || userName?.user_firstname;
+    const actorName = "abc"
 
 
 
