@@ -7,7 +7,7 @@ import AddIcon from '@mui/icons-material/Add';
 import ASC from '@mui/icons-material/North';
 import DESC from '@mui/icons-material/South';
 import ClearIcon from '@mui/icons-material/Clear';
-
+import api from '../services/api';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -34,81 +34,7 @@ const RolePage = () => {
         permissions: {},
     });
 
-    const [addPermissionData, setAddPermissionData] = useState({
-        'user_mgnt': false,
-        'master': false,
-        'ui_case': false,
-        'pt_case': false,
-        'trial_case': false,
-        'quick_report': false,
-        'create_case': false,
-        'view_case': false,
-        'edit_case': false,
-        'delete_case': false,
-        'add_accused': false,
-        'view_accused': false,
-        'edit_accused': false,
-        'delete_accused': false,
-        'progress_report_enabled': false,
-        'add_progress_report': false,
-        'view_progress_report': false,
-        'edit_progress_report': false,
-        'delete_progress_report': false,
-        'fsl_enabled': false,
-        'add_fsl': false,
-        'view_fsl': false,
-        'edit_fsl': false,
-        'delete_fsl': false,
-        'transfer_to_other_division': false,
-        'change_of_io': false,
-        'prosecution_sanction': false,
-        '17a_pc_act': false,
-        'add_attachment': false,
-        'view_attachment': false,
-        'delete_attachment': false,
-        'download_attachment': false,
-        'view_remark': false,
-        'add_remark': false,
-        'delete_remark': false,
-        'petitions_enabled': false,
-        'add_petitions': false,
-        'view_petitions': false,
-        'edit_petitions': false,
-        'delete_petitions': false,
-        'merge': false,
-        'demerge': false,
-        'case_details_download': false,
-        'cases_download': false,
-        'case_details_print': false,
-        'cases_print': false,
-        'create_pt': false,
-        'view_pt': false,
-        'edit_pt_case': false,
-        'view_witnesses': false,
-        'add_witnesses': false,
-        'edit_witnesses': false,
-        'trial_monitoring': false,
-        'further_investigation': false,
-        'prosecutors_updates': false,
-        'status_update': false,
-        'preliminary_charge_sheet_173_8': false,
-        'create_enquiry': false,
-        'view_enquiry': false,
-        'edit_enquiry': false,
-        'create_new_circular': false,
-        'approval': false,
-        'view_circular': false,
-        'edit_circular': false,
-        'delete_circular': false,
-        'create_new_judgement': false,
-        'view_judgement': false,
-        'edit_judgement': false,
-        'delete_judgement': false,
-        'create_new_government_order': false,
-        'view_government_order': false,
-        'edit_government_order': false,
-        'delete_government_order': false
-    })
+    const [addPermissionData, setAddPermissionData] = useState({});
 
     // table row variable
     const [roleRowData, setRoleRowData] = useState([]);
@@ -220,30 +146,17 @@ const RolePage = () => {
             toast.error("Invalid role ID.");
             return;
         }
-
-        const token = localStorage.getItem("auth_token");
-
+    
         try {
-            const serverURL = process.env.REACT_APP_SERVER_URL;
-
-            const response = await fetch(`${serverURL}/role/delete_role`, {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': token
-                },
-                body: JSON.stringify({ id })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                let errorMessage = data.message || `Error ${response.status}: ${response.statusText}`;
-
+            const response = await api.post("/role/delete_role", { id });
+    
+            if (!response || !response.success) {
+                let errorMessage = response.message || "Error deleting role";
+    
                 if (errorMessage.includes("violates foreign key constraint")) {
                     errorMessage = "This role has been assigned to some officer. Please check.";
                 }
-
+    
                 toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
@@ -254,11 +167,11 @@ const RolePage = () => {
                     progress: undefined,
                     className: "toast-error",
                 });
-
+    
                 return;
             }
-
-            toast.success(data.message || "Role Deleted Successfully", {
+    
+            toast.success(response.message || "Role Deleted Successfully", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -266,17 +179,13 @@ const RolePage = () => {
                 pauseOnHover: true,
                 draggable: true,
                 progress: undefined,
-                className: "toast-success"
+                className: "toast-success",
             });
-
+    
             getDetails();
-
+    
         } catch (err) {
-            var errMessage = 'Something went wrong. Please try again.';
-            if (err && err.message) {
-                errMessage = err.message;
-            }
-            toast.error(errMessage, {
+            toast.error(err?.message || "Something went wrong. Please try again.", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -286,64 +195,73 @@ const RolePage = () => {
                 progress: undefined,
                 className: "toast-warning",
             });
-            return;
         }
     };
-
-
-    useEffect(() => {
-        getDetails();
-    }, [])
-
+    
+    
     const getDetails = async () => {
-        const token = localStorage.getItem("auth_token");
-
         try {
-            const serverURL = process.env.REACT_APP_SERVER_URL;
-
-            const response = await fetch(`${serverURL}/role/get_all_roles`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': token
-                },
-            });
-
-            const data = await response.json();
-            if (!response.ok) {
-                toast.error(data.message || "Failed to fetch roles");
-                return;
+            const response = await api.post("/role/get_all_roles");
+    
+            if (response && response.success) {
+                const updatedData = response.data.map(row => {
+                    const permissions = Object.keys(row).reduce((acc, key) => {
+                        if (typeof row[key] === 'boolean') {
+                            acc[key] = row[key];
+                        }
+                        return acc;
+                    }, {});
+    
+                    return {
+                        ...row,
+                        id: row.role_id,
+                        title: row.role_title,
+                        description: row.role_description,
+                        permissions: permissions
+                    };
+                });
+    
+                setRoleRowData(updatedData);
+            } else {
+                toast.error(response.message || "Failed to fetch roles");
             }
-
-            const updatedData = data.data.map(row => {
-                const permissions = Object.keys(row).reduce((acc, key) => {
-                    if (typeof row[key] === 'boolean') {
-                        acc[key] = row[key];
-                    }
-                    return acc;
-                }, {});
-
-
-                const updatedRow = {
-                    ...row,
-                    id: row.role_id,
-                    title: row.role_title,
-                    description: row.role_description,
-                    permissions: permissions
-                };
-                return updatedRow;
-            });
-            setRoleRowData(updatedData);
         } catch (err) {
             console.error("Error fetching roles:", err);
             toast.error("Something went wrong. Please try again.");
         }
     };
 
+
+    const getPermissions = async () => {
+        try {
+            const response = await api.post("/role/get_all_permissions");
+    
+            if (response && response.success) {
+    
+                const permissions = response.data || [];
+                const permissionObj = permissions.reduce((acc, permission) => {
+                    acc[permission.permission_name] = false;
+                    return acc;
+                }, {});
+    
+                setAddPermissionData(permissionObj);
+            } else {
+                toast.error(response.message || "Failed to fetch roles");
+            }
+        } catch (err) {
+            console.error("Error fetching roles:", err);
+            toast.error("Something went wrong. Please try again.");
+        }
+    };
+            
+    useEffect(() => {
+        getDetails();
+        getPermissions();
+    }, [])
     // add role variables
-
+    
     const [showRoleAddModal, setShowRoleAddModal] = useState(false)
-
+    
     const [addRoleData, setAddRoleData] = useState({
         "role_title": '',
         "role_description": '',
@@ -396,9 +314,8 @@ const RolePage = () => {
     };
 
     const handleAddSaveData = async () => {
-
         var error_flag = false;
-
+    
         if (addRoleData.role_title.trim() === '') {
             error_flag = true;
             setErrorRoleData((prevData) => ({
@@ -406,7 +323,7 @@ const RolePage = () => {
                 role_title: 'Role title is required'
             }));
         }
-
+    
         if (addRoleData.role_description.trim() === '') {
             error_flag = true;
             setErrorRoleData((prevData) => ({
@@ -414,10 +331,9 @@ const RolePage = () => {
                 role_description: 'Role Description is required'
             }));
         }
-
+    
         if (error_flag) {
-            var errorWarning = "Please Check Title and Description";
-            toast.error(errorWarning, {
+            toast.error("Please Check Title and Description", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -429,26 +345,12 @@ const RolePage = () => {
             });
             return;
         }
-
-        const token = localStorage.getItem("auth_token");
-
-
+    
         try {
-
-            const serverURL = process.env.REACT_APP_SERVER_URL;
-            const response = await fetch(`${serverURL}/role/create_role`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': token
-                },
-                body: JSON.stringify(addRoleData),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                toast.error(data.message, {
+            const response = await api.post("/role/create_role", addRoleData);
+    
+            if (!response || !response.success) {
+                toast.error(response.message || "Failed to create role", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -460,8 +362,8 @@ const RolePage = () => {
                 });
                 return;
             }
-
-            toast.success(data && data.message ? data.message : "Role Created Successfully", {
+    
+            toast.success(response.message || "Role Created Successfully", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -471,24 +373,20 @@ const RolePage = () => {
                 progress: undefined,
                 className: "toast-success"
             });
-
-            getDetails();
-
+    
+            getDetails(); // Refresh role list after creation
+    
             setAddRoleData({
                 "transaction_id": "",
                 "role_title": '',
                 "role_description": '',
                 "permissions": addPermissionData
             });
-
+    
             setShowRoleAddModal(false);
-
+            
         } catch (err) {
-            var errMessage = 'Something went wrong. Please try again.'
-            if (err && err.message) {
-                errMessage = err.message;
-            }
-            toast.error(errMessage, {
+            toast.error(err?.message || "Something went wrong. Please try again.", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -498,11 +396,9 @@ const RolePage = () => {
                 progress: undefined,
                 className: "toast-warning",
             });
-            return;
         }
-
     };
-
+    
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setSelectedRole(prevState => ({
@@ -525,7 +421,7 @@ const RolePage = () => {
 
     const handleEditData = async () => {
         var error_flag = false;
-
+    
         if (selectedRole.role_title.trim() === '') {
             error_flag = true;
             setErrorRoleData((prevData) => ({
@@ -533,7 +429,7 @@ const RolePage = () => {
                 role_title: 'Role title is required',
             }));
         }
-
+    
         if (selectedRole.role_description.trim() === '') {
             error_flag = true;
             setErrorRoleData((prevData) => ({
@@ -541,10 +437,9 @@ const RolePage = () => {
                 role_description: 'Role Description is required',
             }));
         }
-
+    
         if (error_flag) {
-            const errorWarning = "Please check title and description";
-            toast.error(errorWarning, {
+            toast.error("Please check title and description", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -556,9 +451,7 @@ const RolePage = () => {
             });
             return;
         }
-
-        const token = localStorage.getItem("auth_token");
-
+    
         const requestData = {
             id: selectedRole.id,
             role_title: selectedRole.role_title,
@@ -566,22 +459,12 @@ const RolePage = () => {
             permissions: selectedRole.permissions,
             transaction_id: selectedRole.transaction_id,
         };
-
+    
         try {
-            const serverURL = process.env.REACT_APP_SERVER_URL;
-            const response = await fetch(`${serverURL}/role/update_role`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': token,
-                },
-                body: JSON.stringify(requestData),
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                toast.error(data.message || "Error updating role", {
+            const response = await api.post("/role/update_role", requestData);
+    
+            if (!response || !response.success) {
+                toast.error(response.message || "Error updating role", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -593,8 +476,8 @@ const RolePage = () => {
                 });
                 return;
             }
-
-            toast.success(data.message || "Role updated successfully", {
+    
+            toast.success(response.message || "Role updated successfully", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -604,12 +487,11 @@ const RolePage = () => {
                 progress: undefined,
                 className: "toast-success",
             });
-
+    
             getDetails();
             setShowEditModal(false);
         } catch (err) {
-            const errMessage = err.message || 'Something went wrong. Please try again.';
-            toast.error(errMessage, {
+            toast.error(err?.message || "Something went wrong. Please try again.", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -621,7 +503,6 @@ const RolePage = () => {
             });
         }
     };
-
 
     return (
         <Box inert={loading ? true : false}>

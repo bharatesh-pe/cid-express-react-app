@@ -41,9 +41,13 @@ module.exports = {
           type: Sequelize.BOOLEAN,
           allowNull: true,
         },
-        order: {  // <-- Added this field
+        order: {
           type: Sequelize.INTEGER,
-          allowNull: true, // Change to false if required
+          allowNull: true,
+        },
+        icon_svg: {
+          type: Sequelize.TEXT,
+          allowNull: true,
         },
       }
     );
