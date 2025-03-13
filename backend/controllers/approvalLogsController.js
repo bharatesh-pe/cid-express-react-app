@@ -1,33 +1,47 @@
-
 const { UiCaseApprovalLog } = require("../models")
-const { adminSendResponse } = require("../services/adminSendResponse")
-
+const fs = require('fs');
+const path = require('path');
+const { userSendResponse } = require("../services/userSendResponse");
 
 const getApprovalLogs = async (req, res) => {
 
-    const { ui_case_id, approval_item_id, approved_by, date_of_approval, comments, transaction_id } = req.body
+    const { data, transaction_id } = req.body
 
     try {
-        const existingLogs = await UiCaseApprovalLog.findOne({
-            where: { transaction_id }
-        })
 
-        if (existingLogs) {
-            const errors = { Approval_logs: "Duplicate transaction detected. Approval log entry already exists." }
-            adminSendResponse(res, 400, false, "Validation Error", null, errors)
+        if (!Array.isArray(data)) {
+            return userSendResponse(res, 400, false, "Data must be an array");
+        }
+        // Check for duplicate transaction
+        if (fs.existsSync(path.join('data/approval_unique/', transaction_id))) {
+            return userSendResponse(res, 400, false, "Duplicate transaction");
         }
 
-        const createNewApprovalLogs = await UiCaseApprovalLog.create({
-            ui_case_id,
-            approval_item_id,
-            approved_by,
-            date_of_approval,
-            comments,
-            transaction_id
-        })
-        adminSendResponse(res, 200, true, "Approval log entry added successfully.", createNewApprovalLogs)
+        //create empty file for uniq transaction
+        fs.writeFileSync(path.join('data/approval_unique/', transaction_id), '');
+
+        // Begin transaction
+        const transaction = await UiCaseApprovalLog.transaction();
+
+        // Add multiple approval log entries
+        const approvalLogs = data.map(item => ({
+            ui_case_id: item.ui_case_id,
+            approval_item_id: item.approval_item_id,
+            approved_by: item.approved_by,
+            date_of_approval: item.date_of_approval,
+            comments: item.comments,
+        }))
+        console.log(approvalLogs)
+        await UiCaseApprovalLog.bulkCreate(approvalLogs, { transaction: transaction });
+        // Commit transaction
+        await transaction.commit();
+        // Delete the file created for uniq transaction
+        fs.unlinkSync(path.join('data/approval_unique/', transaction_id));
+        return userSendResponse(res, 200, true, "Approval logs created successfully");
     } catch (error) {
-        return adminSendResponse(res, 500, false, error.message)
+        // Rollback transaction
+        await transaction.rollback();
+        return userSendResponse(res, 500, false, "Error creating approval logs");
     }
 
 }
