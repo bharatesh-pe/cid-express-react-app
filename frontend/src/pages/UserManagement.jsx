@@ -20,6 +20,7 @@ import ErrorIcon from "../Images/erroricon.png";
 import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText.jsx";
 import NumberField from "../components/form/NumberField.jsx";
+import api from '../services/api';
 
 
 const UserManagement = () => {
@@ -38,19 +39,39 @@ const UserManagement = () => {
   const [validationError, setValidationError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const [users, setUsers] = useState([
-    { id: 1, name: "Manjunath DR", email: "jay.singh@gmail.com", contact: "9562325865", role: "IO officers", kgid: "53414", status: "Active", },
-    { id: 2, name: "Priya Sharma", email: "priya.sharma@example.com", contact: "9988776655", role: "Admin IO", kgid: "53415", status: "Inactive", },
-    { id: 3, name: "Sandeep Kumar", email: "sandeep.kumar@example.com", contact: "8776655443", role: "IO officers", kgid: "53416", status: "Active", },
-    { id: 4, name: "Ravi Patel", email: "ravi.patel@example.com", contact: "9212345678", role: "CID Officers", kgid: "53417", status: "Active", },
-    { id: 5, name: "Neha Reddy", email: "neha.reddy@example.com", contact: "9123456789", role: "IO officers", kgid: "53418", status: "Inactive", },
-    { id: 6, name: "Amit Verma", email: "amit.verma@example.com", contact: "9654321890", role: "Admin IO", kgid: "53419", status: "Active", },
-    { id: 7, name: "Rina Joshi", email: "rina.joshi@example.com", contact: "9632587410", role: "CID Officers", kgid: "53420", status: "Active", },
-    { id: 8, name: "Karan Yadav", email: "karan.yadav@example.com", contact: "9900112233", role: "IO officers", kgid: "53421", status: "Active", },
-    { id: 9, name: "Sonia Malik", email: "sonia.malik@example.com", contact: "9837465821", role: "Admin IO", kgid: "53422", status: "Inactive", },
-    { id: 10, name: "Vikram Singh", email: "vikram.singh@example.com", contact: "9238745632", role: "IO officers", kgid: "53423", status: "Active", },
-  ]);
+  // const [users, setUsers] = useState([
+  //   { id: 1, name: "Manjunath DR", email: "jay.singh@gmail.com", contact: "9562325865", role: "IO officers", kgid: "53414", status: "Active", },
+  //   { id: 2, name: "Priya Sharma", email: "priya.sharma@example.com", contact: "9988776655", role: "Admin IO", kgid: "53415", status: "Inactive", },
+  //   { id: 3, name: "Sandeep Kumar", email: "sandeep.kumar@example.com", contact: "8776655443", role: "IO officers", kgid: "53416", status: "Active", },
+  //   { id: 4, name: "Ravi Patel", email: "ravi.patel@example.com", contact: "9212345678", role: "CID Officers", kgid: "53417", status: "Active", },
+  //   { id: 5, name: "Neha Reddy", email: "neha.reddy@example.com", contact: "9123456789", role: "IO officers", kgid: "53418", status: "Inactive", },
+  //   { id: 6, name: "Amit Verma", email: "amit.verma@example.com", contact: "9654321890", role: "Admin IO", kgid: "53419", status: "Active", },
+  //   { id: 7, name: "Rina Joshi", email: "rina.joshi@example.com", contact: "9632587410", role: "CID Officers", kgid: "53420", status: "Active", },
+  //   { id: 8, name: "Karan Yadav", email: "karan.yadav@example.com", contact: "9900112233", role: "IO officers", kgid: "53421", status: "Active", },
+  //   { id: 9, name: "Sonia Malik", email: "sonia.malik@example.com", contact: "9837465821", role: "Admin IO", kgid: "53422", status: "Inactive", },
+  //   { id: 10, name: "Vikram Singh", email: "vikram.singh@example.com", contact: "9238745632", role: "IO officers", kgid: "53423", status: "Active", },
+  // ]);
 
+
+  const [users, setUsers] = useState([]);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+      fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+      try {
+        const response = await api.get("/user/get_users");
+        console.log("Fetched Users:", response.data.users);
+          setUsers(response.data.users);
+      } catch (err) {
+          console.error("Error fetching users:", err);
+          setError("Failed to fetch users.");
+      } finally {
+          setLoading(false);
+      }
+  };
   const columns = [
     {
       field: 'selection',
@@ -132,27 +153,65 @@ const UserManagement = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!newUser.name) newErrors.name = "Name is required";
-    if (!newUser.email || !/\S+@\S+\.\S+/.test(newUser.email))
-      newErrors.email = "Valid email is required";
-    if (!newUser.contact || newUser.contact.length !== 10)
-      newErrors.contact = "Contact number must be 10 digits";
-    if (!newUser.role) newErrors.role = "Role is required";
-    if (!newUser.kgid) newErrors.kgid = "KGID is required";
-    if (!newUser.designation) newErrors.designation = "Designation is required";
-    if (!newUser.supervisor_designation)
-      newErrors.supervisor_designation = "Supervisor Designation is required";
-    if (!newUser.division) newErrors.division = "Division is required";
-    if (!newUser.department) newErrors.department = "Department is required";
-    if (!newUser.district) newErrors.district = "District is required";
-    if (!newUser.pin) newErrors.pin = "Pin is required";
-    if (newUser.pin !== newUser.confirmPin)
-      newErrors.confirmPin = "Pin do not match";
-    if (!newUser.status) newErrors.status = "Status is required";
 
+    if (!newUser.name) {
+        newErrors.name = "Name is required";
+        console.error("Validation Failed: Name is required");
+    }
+    if (!newUser.email || !/\S+@\S+\.\S+/.test(newUser.email)) {
+        newErrors.email = "Valid email is required";
+        console.error("Validation Failed: Email is invalid or missing");
+    }
+    if (!newUser.contact || newUser.contact.length !== 10) {
+        newErrors.contact = "Contact number must be 10 digits";
+        console.error("Validation Failed: Contact must be 10 digits");
+    }
+    if (!newUser.role) {
+        newErrors.role = "Role is required";
+        console.error("Validation Failed: Role is required");
+    }
+    if (!newUser.kgid) {
+        newErrors.kgid = "KGID is required";
+        console.error("Validation Failed: KGID is required");
+    }
+    if (!newUser.designation || newUser.designation.length === 0) {
+        newErrors.designation = "Designation is required";
+        console.error("Validation Failed: Designation is required");
+    }
+    if (!newUser.supervisor_designation) {
+        newErrors.supervisor_designation = "Supervisor Designation is required";
+        console.error("Validation Failed: Supervisor Designation is required");
+    }
+    if (!newUser.division) {
+        newErrors.division = "Division is required";
+        console.error("Validation Failed: Division is required");
+    }
+    if (!newUser.department) {
+        newErrors.department = "Department is required";
+        console.error("Validation Failed: Department is required");
+    }
+    if (!newUser.district) {
+        newErrors.district = "District is required";
+        console.error("Validation Failed: District is required");
+    }
+    if (!newUser.pin) {
+        newErrors.pin = "Pin is required";
+        console.error("Validation Failed: Pin is required");
+    }
+    if (newUser.pin !== newUser.confirmPin) {
+        newErrors.confirmPin = "Pin does not match";
+        console.error("Validation Failed: Pin does not match");
+    }
+    if (!newUser.status) {
+        newErrors.status = "Status is required";
+        console.error("Validation Failed: Status is required");
+    }
+
+    console.log("Validation Errors:", newErrors);
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+};
 
 
   const totalPages = Math.ceil(users.length / pageSize);
@@ -253,75 +312,111 @@ const UserManagement = () => {
 
 
   const handleSave = async () => {
-    if (!validateForm()) return;
+    console.log("Save button clicked"); 
+    console.log("New User Data Before Save:", newUser);
+
+    if (!validateForm()) {
+        console.error("Validation failed");
+        return;
+    }
 
     setLoading(true);
     setValidationError('');
 
     try {
-      const serverURL = process.env.REACT_APP_SERVER_URL;
-      const endpoint = newUser.id ? '/editUser' : '/createUser';
-      const requestBody = newUser.id
-        ? {
-          user_id: newUser.id,
-          username: newUser.name,
-          role_id: newUser.role,
-          kgid: newUser.kgid,
-          pin: newUser.pin,
-          designation_id: newUser.designation,
-          department_id: newUser.department_id,
-          division_id: newUser.division_id
+        // Determine API endpoint
+        const endpoint = newUser.id ? '/update_user' : '/create_user';
+
+        // Ensure transaction_id is generated
+        if (!newUser.transaction_id) {
+            newUser.transaction_id = `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
         }
-        : {
-          username: newUser.name,
-          role_id: newUser.role,
-          kgid: newUser.kgid,
-          pin: newUser.pin,
-          designation_id: newUser.designation,
-          department_id: newUser.department_id,
-          division_id: newUser.division_id
-        };
 
-      const response = await fetch(`${serverURL}${endpoint}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
-      });
+        // Prepare request body
+        const requestBody = newUser.id
+            ? {
+                user_id: newUser.id,
+                username: newUser.name,
+                role_id: newUser.role,
+                kgid: newUser.kgid,
+                pin: newUser.pin,
+                designation_id: newUser.designation,
+                department_id: newUser.department,
+                division_id: newUser.division
+              }
+            : {
+                transaction_id: newUser.transaction_id,
+                username: newUser.name,
+                role_id: newUser.role,
+                kgid: newUser.kgid,
+                pin: newUser.pin,
+                designation_id: newUser.designation,
+                department_id: newUser.department,
+                division_id: newUser.division,
+                created_by:"1"
+              };
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to save user');
-      }
+        console.log("Sending Request to Backend:", `/user${endpoint}`);
+        console.log("Request Body:", requestBody);
 
-      if (newUser.id) {
-        setUsers(users.map((user) => (user.id === newUser.id ? newUser : user)));
-        setUserUpdatedFlag(true);
-      } else {
-        setUsers([...users, { ...newUser, id: users.length + 1 }]);
-        setUserUpdatedFlag(false);
-      }
+        // API call (ensure `api.post` is properly configured)
+        const response = await api.post(`/user${endpoint}`, requestBody);
 
-      setShowSuccessDialog(true);
-      setIsModalOpen(false);
-      setNewUser({
-        name: "",
-        email: "",
-        contact: "",
-        role: "",
-        kgid: "",
-        status: "Active",
-        designation: "",
-        pin: "",
-        confirmPin: "",
-      });
-      setSelectedUsers([]);
+        // Debug raw response
+        console.log("Raw Response:", response);
+
+        // Handle response based on Axios or Fetch
+        let data;
+        if (response.data) {
+            data = response.data;  // Axios response
+        } else {
+            data = await response.json();  // Fetch response
+        }
+
+        console.log("Parsed Response:", data);
+
+        if (!response.status || response.status >= 400) {
+            throw new Error(data.message || 'Failed to save user');
+        }
+
+        // Update UI after successful response
+        if (newUser.id) {
+            setUsers(users.map((user) => (user.id === newUser.id ? newUser : user)));
+            setUserUpdatedFlag(true);
+        } else {
+            setUsers([...users, { ...newUser, id: users.length + 1 }]);
+            setUserUpdatedFlag(false);
+        }
+
+        setShowSuccessDialog(true);
+        setIsModalOpen(false);
+        
+        // Reset form data
+        setNewUser({
+            name: "",
+            email: "",
+            contact: "",
+            role: "",
+            kgid: "",
+            status: "Active",
+            designation: "",
+            pin: "",
+            confirmPin: "",
+            district: "",
+            supervisor_designation: "",
+            division: "",
+            department: "",
+        });
+
+        setSelectedUsers([]);
+
     } catch (err) {
-      setValidationError(err?.message || 'Something went wrong. Please try again.');
+        console.error("API Error:", err);
+        setValidationError(err?.message || 'Something went wrong. Please try again.');
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
-
+};
 
 
   const handleCloseModal = () => {
@@ -485,8 +580,14 @@ const UserManagement = () => {
                       backgroundColor: "transparent",
                     },
                   }}
-                  onClick={() => setIsModalOpen(true)}
-                >
+                  onClick={() => {
+                    const transactionId = `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+                    setNewUser((prevUser) => ({
+                      ...prevUser,
+                      transaction_id: transactionId,
+                    }));
+                    setIsModalOpen(true);
+                  }}                >
                   Create New Profile
                 </Button>
               </>
@@ -729,6 +830,28 @@ const UserManagement = () => {
                   field={{
                     name: "designation",
                     label: "Designation",
+                    options: [
+                      { name: "DGP", code: "DGP" },
+                      { name: "ADGP", code: "ADGP" },
+                      { name: "IGP", code: "IGP" },
+                      { name: "DIGP", code: "DIGP" },
+                      { name: "DSP", code: "DSP" },
+                      { name: "PI", code: "PI" }
+                    ],
+                    required: true
+                  }}
+                  onChange={handleDropDownChange}
+                />
+
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <MultiSelect
+                  formData={newUser}
+                  errors={errors}
+                  field={{
+                    name: "supervisor_designation",
+                    label: "Supervisor Designation",
                     options: [
                       { name: "DGP", code: "DGP" },
                       { name: "ADGP", code: "ADGP" },
