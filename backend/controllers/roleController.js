@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Role } = require('../models');
-
+const {Permission} = require('../models')
 exports.create_role = async (req, res) => {
   const {
     transaction_id,
@@ -84,6 +84,29 @@ exports.get_all_roles = async (req, res) => {
   }
 };
 
+exports.get_all_permissions = async (req, res) => {
+  try {
+    const permissions = await Permission.findAll();
+
+    if (!permissions.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No permissions found."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Permissions fetched successfully.",
+      data: permissions
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 exports.update_role = async (req, res) => {
 

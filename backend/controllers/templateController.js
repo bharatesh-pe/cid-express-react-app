@@ -29,7 +29,7 @@ const typeMapping = {
 exports.createTemplate = async (req, res, next) => {
 	console.log(">>>>>")
 	try {
-		let { template_name, template_type, fields, sections, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
+		let { template_name, template_type, template_module, fields, sections, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
 		// const iddd = res.locals.admin_user_id;
 
 
@@ -193,6 +193,7 @@ exports.createTemplate = async (req, res, next) => {
 		const saveData = {
 			table_name,
 			template_type,
+			template_module,
 			template_name,
 			fields: JSON.stringify(fields),
 			sections,
@@ -225,221 +226,17 @@ exports.createTemplate = async (req, res, next) => {
 	}
 };
 
-// exports.updateTemplate = async (req, res, next) => {
-// 	try {
-// 		let { template_name, template_type, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
-// 		const iddd = res.locals.admin_user_id;
-// 		const adminUser = await admin_user.findOne({
-// 			where: { admin_user_id: iddd },
-// 			attributes: ['full_name']
-// 		});
-
-// 		let table_name = 'da_' + template_name
-// 			.toLowerCase()
-// 			.replace(/[^a-z0-9\s]/g, '')
-// 			.replace(/\s+/g, '_');
-
-// 		// Check if table exists
-// 		const existingTable = await Template.findOne({ where: { table_name } });
-// 		if (!existingTable) {
-// 			return adminSendResponse(res, 404, false, `Table ${table_name} does not exist.`, null);
-// 		}
-
-// 		// Initialize mutable variables
-// 		let fieldDefinitions = {};
-// 		let indexFields = [];
-// 		let associations = [];
-// 		let currentFieldsInTable = await sequelize.query(`SELECT column_name FROM information_schema.columns WHERE table_name = '${table_name}'`, { type: Sequelize.QueryTypes.SELECT });
-// 		currentFieldsInTable = currentFieldsInTable.map(field => field.column_name); // Extract column names
-
-// 		// Add mandatory fields: id, created_at, updated_at
-// 		fieldDefinitions.id = {
-// 			type: Sequelize.DataTypes.INTEGER,
-// 			primaryKey: true,
-// 			autoIncrement: true,
-// 		};
-// 		fieldDefinitions.created_at = {
-// 			type: Sequelize.DataTypes.DATE,
-// 			allowNull: false,
-// 			defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-// 		};
-// 		fieldDefinitions.updated_at = {
-// 			type: Sequelize.DataTypes.DATE,
-// 			allowNull: false,
-// 			defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
-// 		};
-
-// 		// Process each field
-// 		fields.forEach(field => {
-// 			let {
-// 				name: fieldName,
-// 				new_field_name,
-// 				data_type,
-// 				max_length,
-// 				min_length,
-// 				not_null,
-// 				default_value,
-// 				index,
-// 				unique,
-// 				is_dependent,
-// 				api,
-// 				table,
-// 				forign_key,
-// 				attributes
-// 			} = field;
-
-// 			// Handle renaming of fields if new_field_name is provided
-// 			if (new_field_name && new_field_name !== fieldName) {
-// 				// Rename the column in the database without truncating the data
-// 				sequelize.query(`ALTER TABLE "${table_name}" RENAME COLUMN "${fieldName}" TO "${new_field_name}"`);
-// 				fieldName = new_field_name;
-// 			}
-
-
-// 			// Handle dependent fields (foreign keys)
-// 			if (is_dependent) {
-// 				if (!api || !table || !forign_key || !attributes) {
-// 					const message = `Field ${fieldName} is marked as dependent, but "api", "table", "forign_key", and "attributes" must be provided.`;
-// 					return adminSendResponse(res, 400, false, message, null);
-// 				}
-// 				data_type = "INTEGER"; // Set the data type to INTEGER for foreign keys
-// 			}
-
-// 			// Check data type and apply max_length if applicable
-// 			let sequelizeType;
-// 			if (data_type.toUpperCase() === 'VARCHAR' && max_length) {
-// 				sequelizeType = Sequelize.DataTypes.STRING(max_length);
-// 			} else {
-// 				sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-// 			}
-
-// 			// Create the column definition
-// 			const columnDef = {
-// 				type: sequelizeType,
-// 				allowNull: not_null ? false : true,
-// 				defaultValue: default_value || null,
-// 			};
-// 			if (unique) columnDef.unique = true;
-
-// 			fieldDefinitions[fieldName] = columnDef;
-
-// 			// Handle indexes
-// 			if (index) indexFields.push(fieldName);
-
-// 			// Add associations for dependent fields (foreign keys)
-// 			if (is_dependent) {
-// 				associations.push({ fieldName, tableName: table, foreignKey: forign_key, attributes });
-// 			}
-// 		});
-
-// 		// Handle soft delete if paranoid is true
-// 		if (paranoid) {
-// 			// Ensure deleted_at field exists if paranoid is true
-// 			if (!currentFieldsInTable.includes('deleted_at')) {
-// 				fieldDefinitions.deleted_at = {
-// 					type: Sequelize.DataTypes.DATE,
-// 					allowNull: true,
-// 				};
-// 			}
-// 		}
-
-// 		// Define the model
-// 		const model = sequelize.define(table_name, fieldDefinitions, {
-// 			freezeTableName: true,
-// 			timestamps: true,
-// 			paranoid,
-// 			underscored: true,
-// 			deletedAt: 'deleted_at',
-// 		});
-
-// 		// Alter the table to add new columns or modify existing ones
-// 		for (const [fieldName, columnDef] of Object.entries(fieldDefinitions)) {
-// 			await sequelize.query(`ALTER TABLE "${table_name}" ADD COLUMN IF NOT EXISTS "${fieldName}" ${columnDef.type.toString()}`);
-// 		}
-
-// 		// Drop columns that are no longer in the updated fields, except for mandatory ones like deleted_at
-// 		const fieldNames = fields.map(field => field.name);
-// 		const fieldsToRemove = currentFieldsInTable.filter(column =>
-// 			!fieldNames.includes(column) && column !== 'id' && column !== 'created_at' && column !== 'updated_at' && column !== 'deleted_at');
-
-// 		for (const fieldToRemove of fieldsToRemove) {
-// 			await sequelize.query(`ALTER TABLE "${table_name}" DROP COLUMN IF EXISTS "${fieldToRemove}"`);
-// 		}
-
-// 		// Create indexes
-// 		for (let field of indexFields) {
-// 			await sequelize.query(`CREATE INDEX IF NOT EXISTS idx_${table_name}_${field} ON "${table_name}" ("${field}")`);
-// 		}
-
-// 		// Handle associations for dependent fields
-// 		associations.forEach(({ fieldName, tableName, foreignKey, attributes }) => {
-// 			const referenceModel = sequelize.models[tableName];
-// 			if (!referenceModel) {
-// 				const message = `Referenced model ${tableName} does not exist.`;
-// 				return adminSendResponse(res, 400, false, message, null);
-// 			}
-
-// 			// Add associations dynamically using Sequelize
-// 			model.belongsTo(referenceModel, {
-// 				foreignKey: foreignKey,   // Foreign key in the current table
-// 				targetKey: attributes,    // Field in the referenced model
-// 			});
-// 		});
-
-// 		// Update the table's metadata in Template model
-// 		const updatedFields = fields.map(field => {
-// 			if (field.new_field_name) {
-// 				const updatedField = { ...field };
-// 				updatedField.name = field.new_field_name;
-// 				delete updatedField.new_field_name;
-// 				return updatedField;
-// 			}
-// 			return field;
-// 		});
-
-// 		// Add deleted_at to fields if paranoid is true
-// 		if (paranoid) {
-// 			updatedFields.push({
-// 				name: 'deleted_at',
-// 				data_type: 'DATE',
-// 				not_null: false,
-// 				index: false,
-// 			});
-// 		}
-
-// 		const saveData = {
-// 			table_name,
-// 			template_type,
-// 			template_name,
-// 			fields: JSON.stringify(updatedFields),
-// 			sections,
-// 			no_of_sections,
-// 			is_link_to_leader,
-// 			is_link_to_organization,
-// 			updated_by: adminUser.full_name,
-// 			paranoid,
-// 		};
-
-// 		await Template.update(saveData, { where: { table_name } });
-
-// 		const responseMessage = `Table ${table_name} updated successfully.`;
-// 		return adminSendResponse(res, 200, true, responseMessage, null);
-// 	} catch (error) {
-// 		console.error("Error updating table:", error);
-// 		return adminSendResponse(res, 400, false, "Server error.", error);
-// 	}
-// };
 
 
 
 exports.updateTemplate = async (req, res, next) => {
 	try {
-		let { template_name, template_type, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
-		const iddd = res.locals.admin_user_id;
-		const adminUser = await admin_user.findOne({
-			where: { admin_user_id: iddd },
-			attributes: ['full_name']
-		});
+		let { template_name, template_type, template_module, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
+		// const iddd = res.locals.admin_user_id;
+		// const adminUser = await admin_user.findOne({
+		// 	where: { admin_user_id: iddd },
+		// 	attributes: ['full_name']
+		// });
 		// Convert template_name to a valid table_name
 		// let table_name = template_name
 		// 	.toLowerCase()
@@ -616,6 +413,7 @@ exports.updateTemplate = async (req, res, next) => {
 		const saveData = {
 			table_name,
 			template_type,
+			template_module,
 			template_name,
 			fields: JSON.stringify(updatedFields),
 			sections,
@@ -623,7 +421,7 @@ exports.updateTemplate = async (req, res, next) => {
 
 			is_link_to_leader,
 			is_link_to_organization,
-			updated_by: adminUser.full_name,
+			updated_by: "adminUser.full_name",
 
 			paranoid,
 		};
@@ -756,7 +554,7 @@ exports.paginateTemplate = async (req, res) => {
 			sort_by = 'created_at',
 			order = 'ASC',
 			search = '',
-			admin // Optional admin field
+			template_module = '' // Optional admin field
 		} = req.body;
 		const userId = res.locals.user_id || null;
 		const adminUserId = res.locals.admin_user_id || null;
@@ -775,8 +573,10 @@ exports.paginateTemplate = async (req, res) => {
 		const offset = (page - 1) * limit;
 
 		// Build where clause for searching
+		// Build where clause for searching
 		const whereClause = {};
 
+		// Apply search filter
 		if (search) {
 			const searchConditions = [];
 			searchConditions.push({ table_name: { [Op.iLike]: `%${search}%` } });
@@ -786,11 +586,9 @@ exports.paginateTemplate = async (req, res) => {
 			}
 		}
 
-		// Apply admin-specific filter for template_type
-		if (admin === true) {
-			whereClause.template_type = 'master';
-		} else if (admin === false) {
-			whereClause.template_type = { [Op.ne]: 'master' };
+		// Apply template_module filter if provided
+		if (template_module) {
+			whereClause.template_module = template_module;
 		}
 
 		// Validate if sort_by column exists in Template schema
@@ -802,8 +600,9 @@ exports.paginateTemplate = async (req, res) => {
 			limit,
 			offset,
 			order: [[validSortBy, order.toUpperCase()]],
-			attributes: ['template_id', 'template_name', 'table_name', 'template_type', 'sections', 'no_of_sections', 'is_link_to_leader', 'is_link_to_organization', 'fields'] // Include only necessary fields
+			attributes: ['template_id', 'template_name', 'table_name', 'template_type', 'template_module', 'sections', 'no_of_sections', 'is_link_to_leader', 'is_link_to_organization', 'fields', 'template_module'] // Added template_module for reference
 		});
+
 
 		// const rows = result.rows.map(row => {
 		// 	const parsedRow = row.toJSON();

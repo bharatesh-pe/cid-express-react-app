@@ -20,6 +20,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50),
       allowNull: false,
     },
+    template_module: {
+      type: DataTypes.STRING(50),
+      allowNull: false,
+    },
     fields: {
       type: DataTypes.TEXT,
       allowNull: false,

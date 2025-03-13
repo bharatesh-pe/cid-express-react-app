@@ -21,6 +21,10 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING(50)
       },
+      template_module: {
+        allowNull: false,
+        type: Sequelize.STRING(50)
+      },
 
       fields: {
         allowNull: false,
