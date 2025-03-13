@@ -12,7 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import ClearIcon from '@mui/icons-material/Clear';
 import { CircularProgress } from "@mui/material";
 
-const Profile = () => {
+const Enquiries = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { pagination } = location.state || {};
@@ -28,7 +28,7 @@ const Profile = () => {
         loadTableData(paginationCount);
     }, [paginationCount, tableSortOption]);
 
-    const columns: GridColDef[] = [
+    const columns = [
         { field: 'sl_no', headerName: 'S.No',resizable: false},
         { 
             field: 'template_name', 
@@ -96,8 +96,9 @@ const Profile = () => {
             "sort_by" : tableSortField,
             "order": tableSortOption,
             "search" : searchValue ? searchValue : '',
-            "admin": localStorage.getItem('authAdmin') === "true" ? true : false
+            "template_module": "eq_case"
         }
+
         setLoading(true);
         try {
             const getTemplateResponse = await api.post("/templates/paginateTemplate",getTemplatePayload);
@@ -108,7 +109,7 @@ const Profile = () => {
                         return {
                             ...field,
                             sl_no: (page - 1) * 10 + (index + 1),
-                            id: field.table_name + index, // Create a unique id for each row
+                            id: field.table_name + index,
                         };
                     })
                     setTableData(updatedTableData)
@@ -168,7 +169,7 @@ const Profile = () => {
     <Box p={2} inert={loading ? true : false}>
         <Box sx={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap'}}>
             <Box>
-                <Typography className='Roboto' sx={{fontSize:'20px',fontWeight:'600',color:'#1D2939'}}>{localStorage.getItem('authAdmin') === "true" ? 'Masters' : 'Profiles'}</Typography>
+                <Typography className='Roboto' sx={{fontSize:'20px',fontWeight:'600',color:'#1D2939'}}>Enquiries</Typography>
                 {/* <Typography className='Roboto' sx={{fontSize:'16px',fontWeight:'400',color:'#667085'}}>Overview view of all dossier profile details</Typography> */}
             </Box>
             <TextFieldInput InputProps={{
@@ -220,4 +221,4 @@ const Profile = () => {
   );
 };
 
-export default Profile;
+export default Enquiries;
