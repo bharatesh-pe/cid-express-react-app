@@ -1,3 +1,5 @@
+const fs = require('fs');
+const path = require('path');
 const { Sequelize } = require("sequelize");
 const dbConfig = require("../config/dbConfig");
 const { UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
@@ -12,7 +14,24 @@ const sequelize = new Sequelize(dbConfig.database.database, dbConfig.database.us
 
 // Create user
 exports.create_user = async (req, res) => {
-    const { username, role_id, kgid, pin, designation_id, department_id, division_id, created_by } = req.body;
+    const { username, role_id, kgid, pin, designation_id, department_id, division_id, created_by ,transaction_id } = req.body;
+
+    if(!transaction_id || transaction_id == "")
+    {
+        return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+    }
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+     // Check if directory exists
+    if (fs.existsSync(dirPath)) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate transaction detected.",
+      });
+    }
+    // Create directory
+    fs.mkdirSync(dirPath, { recursive: true });
 
     const t = await sequelize.transaction();
 
@@ -71,10 +90,32 @@ exports.create_user = async (req, res) => {
         console.error("Error creating user:", error);
         return res.status(500).json({ message: "Failed to create user", error: error.message });
     }
+    finally {
+        if (fs.existsSync(dirPath)) {
+        fs.rmdirSync(dirPath, { recursive: true });
+        }
+    }
 };
 
 exports.update_user = async (req, res) => {
-    const { user_id, username, role_id, kgid, pin, designation_id, department_id, division_id } = req.body;
+    const { user_id, username, role_id, kgid, pin, designation_id, department_id, division_id , transaction_id} = req.body;
+
+    if(!transaction_id || transaction_id == "")
+    {
+        return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+    }
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+     // Check if directory exists
+    if (fs.existsSync(dirPath)) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate transaction detected.",
+      });
+    }
+    // Create directory
+    fs.mkdirSync(dirPath, { recursive: true });
 
     const t = await sequelize.transaction();
 
@@ -133,10 +174,32 @@ exports.update_user = async (req, res) => {
         console.error("Error updating user:", error);
         return res.status(500).json({ message: "Failed to update user", error: error.message });
     }
+    finally {
+        if (fs.existsSync(dirPath)) {
+        fs.rmdirSync(dirPath, { recursive: true });
+        }
+    }
 };
 
 exports.user_active_deactive = async (req, res) => {
-    const { user_id, dev_status } = req.body; // dev_status should be true or false
+    const { user_id, dev_status ,transaction_id } = req.body; // dev_status should be true or false
+
+    if(!transaction_id || transaction_id == "")
+    {
+        return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+    }
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+     // Check if directory exists
+    if (fs.existsSync(dirPath)) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate transaction detected.",
+      });
+    }
+    // Create directory
+    fs.mkdirSync(dirPath, { recursive: true });
 
     const t = await sequelize.transaction();
 
@@ -164,6 +227,11 @@ exports.user_active_deactive = async (req, res) => {
         console.error("Error updating user status:", error);
         return res.status(500).json({ message: "Failed to update user status", error: error.message });
     }
+    finally {
+        if (fs.existsSync(dirPath)) {
+        fs.rmdirSync(dirPath, { recursive: true });
+        }
+    }
 };
 
 exports.get_users = async (req, res) => {
@@ -172,7 +240,7 @@ exports.get_users = async (req, res) => {
             include: [
                 {
                     model: UserDesignation,
-                    as: "user_designations",
+                    as: "users_designations",
                     attributes: ["designation_id"],
                     include: [
                         {
@@ -184,7 +252,7 @@ exports.get_users = async (req, res) => {
                 },
                 {
                     model: UsersDepartment,
-                    as: "user_departments",
+                    as: "users_departments",
                     attributes: ["department_id"],
                     include: [
                         {
@@ -196,7 +264,7 @@ exports.get_users = async (req, res) => {
                 },
                 {
                     model: UsersDivision,
-                    as: "user_divisions",
+                    as: "users_divisions",
                     attributes: ["division_id"],
                     include: [
                         {
