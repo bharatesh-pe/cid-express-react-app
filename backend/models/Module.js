@@ -46,6 +46,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true, // Change to false if required
       },
+      icon_svg: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       sequelize,
