@@ -3,12 +3,12 @@ const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
   const UsersDivision = sequelize.define('UsersDivision', {
-    user_division_id: {
+    users_division_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    user_department_id: {
+    users_department_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
