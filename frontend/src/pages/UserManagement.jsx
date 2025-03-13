@@ -25,6 +25,7 @@ import NumberField from "../components/form/NumberField.jsx";
 const UserManagement = () => {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
+  const [getu_master_data, setMasterData] = useState([]);
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(0);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -398,6 +399,32 @@ const UserManagement = () => {
     }));
   };
 
+  // // write useEffect to getmasters data from backend
+  // useEffect(() => {
+  //   if (getu_master_data.length === 0) {
+  //     fetchMasterData();
+  //   }
+  // });
+
+  // const fetchMasterData = async () => {
+  //   const serverURL = process.env.REACT_APP_SERVER_URL;
+  //   const token = localStorage.getItem('auth_token');
+  //   const response = await fetch(`${serverURL}/masters/get_master_data`, {
+  //     method: 'GET',
+  //     headers: { 'Content-Type': 'application/json' },
+  //     token: token
+  //   });
+
+  //   if (!response.ok) {
+  //     throw new Error('Failed to fetch master data');
+  //   }
+
+  //   const data = await response.json();
+  //   console.log("master Data",data);
+
+
+  // }
+
   return (
     <Box p={2}>
       <div className="m-3 ml-4 p-3 bg-white border-round-sm">
@@ -715,27 +742,6 @@ const UserManagement = () => {
                   onChange={handleDropDownChange}
                 />
 
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <AutocompleteField
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "supervisor_designation",
-                    label: "Supervisor Designation",
-                    options: [
-                      { name: "DGP", code: "DGP" },
-                      { name: "ADGP", code: "ADGP" },
-                      { name: "IGP", code: "IGP" },
-                      { name: "DIGP", code: "DIGP" },
-                      { name: "DSP", code: "DSP" },
-                      { name: "PI", code: "PI" }
-                    ],
-                    required: true
-                  }}
-                  onChange={handleDropDownChange}
-                />
               </Grid>
 
               <Grid item xs={12} sm={6}>

@@ -1,26 +1,38 @@
-'use strict';
+"use strict";
+const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  const Permission = sequelize.define('Permission', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true,
-      allowNull: false
-    },
-    permission_name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+  class Permission extends Model {
+    static associate(models) {
+      // Define associations here if needed
     }
-  }, {
-    tableName: 'permissions',
-    timestamps: false
-  });
+  }
+
+  Permission.init(
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      permission_name: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+        unique: true,
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+    },
+    {
+      sequelize,
+      modelName: "Permission",
+      tableName: "permissions",
+      schema: process.env.DB_SCHEMA || "public",
+      timestamps: false,
+    }
+  );
 
   return Permission;
 };
