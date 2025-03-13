@@ -408,6 +408,8 @@ const UserManagement = () => {
   }, []); // Add empty dependency array
 
   const fetch_master_data = async (needed_masters) => {
+    const body_data = {};
+    body_data["needed_masters"] = needed_masters;
     const serverURL = process.env.REACT_APP_SERVER_URL;
     const token = localStorage.getItem('auth_token');
     const response = await fetch(`${serverURL}/master/get_master_data`, {
@@ -416,7 +418,7 @@ const UserManagement = () => {
         'Content-Type': 'application/json',
         'token': token 
       },
-      body: JSON.stringify(needed_masters),
+      body: JSON.stringify(body_data),
     });
 
     if (!response.ok) {
