@@ -5,7 +5,7 @@ const Dashboard = () => {
 
   return (
     <Box sx={{ padding: 3 }}>
-      <Typography variant="h4">Welcome to the Dashboard</Typography>
+      <Typography variant="h4">Welcome to the CID</Typography>
     </Box>
   );
 };
