@@ -554,25 +554,25 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
 
 exports.getTemplateData = async (req, res, next) => {
     const { table_name } = req.body;
-    const userId = res.locals.user_id || null;
-    const adminUserId = res.locals.admin_user_id || null;
-    const actorId = userId || adminUserId;
+    // const userId = res.locals.user_id || null;
+    // const adminUserId = res.locals.admin_user_id || null;
+    // const actorId = userId || adminUserId;
 
 
     // Get actor's name
-    const adminUserName = await admin_user.findOne({
-        where: { admin_user_id: adminUserId },
-        attributes: ['full_name']
-    });
-    const userName = await user.findOne({
-        where: { user_id: userId },
-        attributes: ['user_firstname']
-    });
-    const actorName = adminUserName?.full_name || userName?.user_firstname;
-
-    if (!actorId) {
-        return userSendResponse(res, 403, false, "Unauthorized access.", null);
-    }
+    // const adminUserName = await admin_user.findOne({
+    //     where: { admin_user_id: adminUserId },
+    //     attributes: ['full_name']
+    // });
+    // const userName = await user.findOne({
+    //     where: { user_id: userId },
+    //     attributes: ['user_firstname']
+    // });
+    // const actorName = adminUserName?.full_name || userName?.user_firstname;
+    const actorName = "abc"
+    // if (!actorId) {
+    //     return userSendResponse(res, 403, false, "Unauthorized access.", null);
+    // }
 
     try {
         // Fetch the template metadata
@@ -690,13 +690,13 @@ exports.getTemplateData = async (req, res, next) => {
         });
 
         // Log the user activity
-        await ActivityLog.create({
-            template_id: tableData.template_id,
-            table_row_id: 0,
-            user_id: actorId,
-            actor_name: actorName,
-            activity: `Viewed`,
-        });
+        // await ActivityLog.create({
+        //     template_id: tableData.template_id,
+        //     table_row_id: 0,
+        //     user_id: actorId,
+        //     actor_name: actorName,
+        //     activity: `Viewed`,
+        // });
 
         const responseMessage = `Fetched data successfully from table ${table_name}.`;
         return userSendResponse(res, 200, true, responseMessage, transformedRecords);
