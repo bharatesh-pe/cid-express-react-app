@@ -399,31 +399,33 @@ const UserManagement = () => {
     }));
   };
 
-  // // write useEffect to getmasters data from backend
-  // useEffect(() => {
-  //   if (getu_master_data.length === 0) {
-  //     fetchMasterData();
-  //   }
-  // });
+  // write useEffect to getmasters data from backend
+  useEffect(() => {
+    if (getu_master_data.length === 0) {
+      const needed_masters = ['role', 'designation', 'department', 'division'];
+      fetch_master_data(needed_masters);
+    }
+  }, []); // Add empty dependency array
 
-  // const fetchMasterData = async () => {
-  //   const serverURL = process.env.REACT_APP_SERVER_URL;
-  //   const token = localStorage.getItem('auth_token');
-  //   const response = await fetch(`${serverURL}/masters/get_master_data`, {
-  //     method: 'GET',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     token: token
-  //   });
+  const fetch_master_data = async (needed_masters) => {
+    const serverURL = process.env.REACT_APP_SERVER_URL;
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${serverURL}/master/get_master_data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'token': token 
+      },
+      body: JSON.stringify(needed_masters),
+    });
 
-  //   if (!response.ok) {
-  //     throw new Error('Failed to fetch master data');
-  //   }
+    if (!response.ok) {
+      throw new Error('Failed to fetch master data');
+    }
 
-  //   const data = await response.json();
-  //   console.log("master Data",data);
-
-
-  // }
+    const data = await response.json();
+    console.log("master Data", data);
+  };
 
   return (
     <Box p={2}>
