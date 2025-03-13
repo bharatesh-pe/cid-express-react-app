@@ -240,7 +240,7 @@ exports.get_users = async (req, res) => {
             include: [
                 {
                     model: UserDesignation,
-                    as: "user_designations",
+                    as: "users_designations",
                     attributes: ["designation_id"],
                     include: [
                         {
@@ -252,7 +252,7 @@ exports.get_users = async (req, res) => {
                 },
                 {
                     model: UsersDepartment,
-                    as: "user_departments",
+                    as: "users_departments",
                     attributes: ["department_id"],
                     include: [
                         {
@@ -264,7 +264,7 @@ exports.get_users = async (req, res) => {
                 },
                 {
                     model: UsersDivision,
-                    as: "user_divisions",
+                    as: "users_divisions",
                     attributes: ["division_id"],
                     include: [
                         {
