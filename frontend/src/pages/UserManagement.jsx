@@ -59,8 +59,11 @@ const UserManagement = () => {
         name: user.name,
         role: user.role_id,
         kgid: user.kgid,
+        designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
         designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
+        department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
         department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
+        division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
         division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
         status: user.dev_status ? "Active" : "Inactive",
         dev_status: user.dev_status,
@@ -210,20 +213,42 @@ const UserManagement = () => {
       }
     });
   };
-  const handleEdit = (user) => {
-    if (!user || !user.id) {
-      console.error("Invalid user data for editing.");
-      return;
-    }
-    const transaction_id = `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    setNewUser({
-      ...user,
-      transaction_id: transaction_id,
-    });
 
+  const handleEdit = (selectedUsers) => {
+    if (!selectedUsers || selectedUsers.length === 0) {
+        console.error("No valid user selected for editing.");
+        return;
+    }
+
+    const userToEdit = users.find(user => user.id === selectedUsers[0]);
+
+    if (!userToEdit) {
+        console.error("No matching user found.");
+        return;
+    }
+
+    const designationArray = userToEdit.designation_id
+        ? userToEdit.designation_id.split(",").map(id => id.trim())
+        : [];
+
+    setNewUser((prevState) => ({
+      ...prevState,
+      id: userToEdit.id,
+      name: userToEdit.name ?? "",
+      kgid: userToEdit.kgid ?? "",
+      role: roleOptions.find(option => String(option.code) === String(userToEdit.role))?.code || "",
+      designation: designationOptions
+          .filter(option => designationArray.includes(String(option.code)))
+          .map(option => option.code),
+      department: departmentOptions.find(option => String(option.code) === String(userToEdit.department_id))?.code || "",
+      division: divisionOptions.find(option => String(option.code) === String(userToEdit.division_id))?.code || "",
+      transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+    }));
+    
     setModalTitle("Edit User");
     setIsModalOpen(true);
-  };
+};
+
 
   const [transactionId, setTransactionId] = useState("");
 
@@ -354,6 +379,7 @@ const UserManagement = () => {
 
       const requestBody = newUser.id
         ? {
+          transaction_id: newUser.transaction_id,
           user_id: newUser.id,
           username: newUser.name,
           role_id: newUser.role,
@@ -503,13 +529,13 @@ const UserManagement = () => {
     </span>
   );
 
-  const handleDropDownChange = (name, value) => {
+  const handleDropDownChange = (fieldName, value) => {
     setNewUser((prev) => ({
-      ...prev,
-      [name]: value
+        ...prev,
+        [fieldName]: Array.isArray(value) ? value : String(value), 
     }));
-  };
-
+};
+  
   const handleInputChange = (e) => {
     setNewUser((prev) => ({
       ...prev,
@@ -662,8 +688,8 @@ const UserManagement = () => {
                       backgroundColor: "#f1f5f9",
                     },
                   }}
-                  onClick={() => handleEdit()}  // Pass the selected user
-                >
+                  onClick={() => handleEdit(selectedUsers)} // Pass the user object
+                  >
                   Edit User
                 </Button>
                 
@@ -781,19 +807,19 @@ const UserManagement = () => {
                 />
 
               </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <AutocompleteField
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "role",
-                    label: "Select Role",
-                    options: roleOptions
-                  }}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
+<Grid item xs={12} sm={6}>
+  <AutocompleteField
+    formData={newUser}
+    errors={errors}
+    field={{
+      name: "role",
+      label: "Select Role",
+      options: roleOptions,
+    }}
+    value={newUser.role} // Ensure correct selection
+    onChange={handleDropDownChange}
+  />
+</Grid>
 
 
               <Grid item xs={12} sm={6}>
@@ -822,6 +848,7 @@ const UserManagement = () => {
                     options: designationOptions,
                     required: true
                   }}
+                  value={newUser.designation}
                   onChange={handleDropDownChange}
                 />
 
@@ -837,6 +864,7 @@ const UserManagement = () => {
                     options: departmentOptions,
                     required: true
                   }}
+                  value={newUser.department} // Ensure correct selection
                   onChange={handleDropDownChange}
                 />
               </Grid>
@@ -851,6 +879,7 @@ const UserManagement = () => {
                     options: divisionOptions,
                     required: true
                   }}
+                  value={newUser.division} // Ensure correct selection
                   onChange={handleDropDownChange}
                 />
               </Grid>
@@ -971,14 +1000,11 @@ const UserManagement = () => {
 
             <p style={{ fontSize: "20px", fontWeight: "bold" }}>
               {actionText}{" "}
-              <span style={{ color: actionColor }}>
-                {selectedUsers.length < 10 ? `0${selectedUsers.length}` : selectedUsers.length}
-              </span>{" "}
-              <span style={{ color: actionColor }}> Selected </span> profile(s)
+              <span> Selected </span> profile
             </p>
 
             <p style={{ fontSize: "16px", color: "rgb(156 163 175)", margin: 0 }}>
-              Are you sure you want to {actionText.toLowerCase()} the selected profile(s)? This action
+              Are you sure you want to {actionText.toLowerCase()} the selected profile? This action
               cannot be undone.
             </p>
           </DialogContent>

@@ -59,11 +59,16 @@ exports.create_user = async (req, res) => {
         }, { transaction: t });
 
         // Create user designation
-        await UserDesignation.create({
-            user_id: newUser.user_id,
-            designation_id: designation_id,
-            created_by: created_by
-        }, { transaction: t });
+        const designationIds = designation_id.includes(",")
+        ? designation_id.split(",").map(id => parseInt(id.trim(), 10))
+        : [parseInt(designation_id, 10)];
+        for (const desigId of designationIds) {
+            await UserDesignation.create({
+                user_id: newUser.user_id,
+                designation_id: desigId,
+                created_by: created_by
+            }, { transaction: t });
+        }
             
         // Create user department
         const newUserDepartment = await UsersDepartment.create({
@@ -160,12 +165,12 @@ exports.update_user = async (req, res) => {
             // Update user division
             await UsersDivision.update(
                 { division_id: division_id },
-                { where: { user_department_id: userDepartment.user_department_id }, transaction: t }
+                { where: { users_department_id: userDepartment.users_department_id }, transaction: t }
             );
         }
 
         await t.commit();
-        return res.status(200).json({ message: "User updated successfully" });
+        return res.status(201).json({ success: true, message: "User updated successfully" });
 
     } catch (error) {
         if (t.finished !== "rollback") {
