@@ -630,6 +630,53 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
   }
 
 
+  useEffect(() => {
+    const fetchTemplateData = async () => {
+        try {
+            const apiCalls = newFormConfig
+                .filter(field => field.api === '/templateData/getTemplateData' && field.table)
+                .map(async (field) => {
+                    try {
+                        const response = await api.post(field.api, { table_name: field.table });
+
+                        if (!response.data) return { id: field.id, options: [] };
+
+                        const updatedOptions = response.data.map((templateData) => {
+                            const nameKey = Object.keys(templateData).find(
+                                key => !['id', 'created_at', 'updated_at'].includes(key)
+                            );
+                            return {
+                                name: nameKey ? templateData[nameKey] : '',
+                                code: templateData.id
+                            };
+                        });
+
+                        return { id: field.id, options: updatedOptions };
+
+                    } catch (error) {
+                        return { id: field.id, options: [] };
+                    }
+                });
+
+            const results = await Promise.all(apiCalls);
+
+            setNewFormConfig((prevFormConfig) =>
+                prevFormConfig.map((field) => {
+                    const updatedField = results.find((res) => res.id === field.id);
+                    return updatedField ? { ...field, options: updatedField.options } : field;
+                })
+            );
+        } catch (error) {
+            console.error('Error fetching template data:', error);
+        }
+    };
+
+    if (newFormConfig.length > 0) {
+        fetchTemplateData();
+    }
+
+}, []);
+
 //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
 //   console.log(stepperData, "stepperData stepperData")
   return (

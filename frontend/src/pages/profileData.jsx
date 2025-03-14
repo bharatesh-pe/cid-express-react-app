@@ -1385,7 +1385,7 @@ const ProfileData = () => {
             <>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                        <Box onClick={() => navigate('/Profile', { state: { pagination: pagination } })} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <Box onClick={() => navigate(-1, { state: { pagination: pagination } })} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
                             <img src='./arrow-left.svg' />
                             <Typography variant="h1" align="left" className='ProfileNameText'>
                                 {template_name ? template_name.toLowerCase().replace(/^\w|\s\w/, (c) => c.toUpperCase()) : 'Back'}

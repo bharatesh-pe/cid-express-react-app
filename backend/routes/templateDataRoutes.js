@@ -142,7 +142,7 @@ const upload = multer({
 
 router.post(
     '/insertTemplateData',
-    eitherAuthMiddleware,
+    // eitherAuthMiddleware,
     (req, res, next) => {
         if (req.is('multipart/form-data')) {
             upload.any()(req, res, (err) => {
@@ -166,7 +166,7 @@ router.post(
 
 router.post('/updateTemplateData',
     // userAuthMiddleware,
-    eitherAuthMiddleware,
+    // eitherAuthMiddleware,
     (req, res, next) => {
         // Dynamically decide whether to use file upload middleware based on request
         if (req.is('multipart/form-data')) {
@@ -188,28 +188,28 @@ router.post('/updateTemplateData',
     },
     templateDataController.updateTemplateData)
 router.post('/deleteTemplateData',
-    eitherAuthMiddleware,
+    // eitherAuthMiddleware,
     // userAuthMiddleware,
     templateDataController.deleteTemplateData)
 router.post('/deleteFile',
-    eitherAuthMiddleware,
+    // eitherAuthMiddleware,
     // userAuthMiddleware,
     templateDataController.deleteFileFromTemplate)
 
 
 router.post('/getTemplateData',
-    eitherAuthMiddleware,
+    // eitherAuthMiddleware,
     // userAuthMiddleware,
     [gwtDataValidation],
     templateDataController.getTemplateData)
 
 router.post('/viewTemplateData',
-    eitherAuthMiddleware,
+    // eitherAuthMiddleware,
     // userAuthMiddleware,
     [gwtDataValidation],
     templateDataController.viewTemplateData)
 router.post('/viewMagazineTemplateData',
-    eitherAuthMiddleware,
+    // eitherAuthMiddleware,
     // userAuthMiddleware,
     [gwtDataValidation],
     templateDataController.viewMagazineTemplateData)
@@ -217,18 +217,18 @@ router.post('/viewMagazineTemplateData',
 
 router.post('/paginateTemplateData',
     // adminAuthMiddleware,
-    eitherAuthMiddleware,
+    // eitherAuthMiddleware,
     // userAuthMiddleware,
     [paginateDataValidation],
     templateDataController.paginateTemplateData)
 
 router.post('/downloadExcelData',
-    userAuthMiddleware,
+    // userAuthMiddleware,
 
     templateDataController.downloadExcelData)
 
 router.post('/fetchAndDownloadExcel',
-    userAuthMiddleware,
+    // userAuthMiddleware,
 
 
 
