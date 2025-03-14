@@ -44,7 +44,7 @@ exports.createTemplate = async (req, res, next) => {
 		// 	.toLowerCase()
 		// 	.replace(/[^a-z0-9\s]/g, '')
 		// 	.replace(/\s+/g, '_');
-		let table_name = 'da_' + template_name
+		let table_name = 'cid_' + template_name
 			.toLowerCase()
 			.replace(/[^a-z0-9\s]/g, '')
 			.replace(/\s+/g, '_');
@@ -242,7 +242,7 @@ exports.updateTemplate = async (req, res, next) => {
 		// 	.toLowerCase()
 		// 	.replace(/[^a-z0-9\s]/g, '')
 		// 	.replace(/\s+/g, '_');
-		let table_name = 'da_' + template_name
+		let table_name = 'cid_' + template_name
 			.toLowerCase()
 			.replace(/[^a-z0-9\s]/g, '')
 			.replace(/\s+/g, '_');
@@ -847,7 +847,7 @@ exports.checkDuplicateTemplate = async (req, res, next) => {
 		// 	.toLowerCase()
 		// 	.replace(/[^a-z0-9\s]/g, '')
 		// 	.replace(/\s+/g, '_');
-		let table_name = 'da_' + template_name
+		let table_name = 'cid_' + template_name
 			.toLowerCase()
 			.replace(/[^a-z0-9\s]/g, '')
 			.replace(/\s+/g, '_');

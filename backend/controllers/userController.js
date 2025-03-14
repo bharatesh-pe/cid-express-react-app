@@ -3,7 +3,7 @@ const path = require('path');
 const { Sequelize } = require("sequelize");
 const dbConfig = require("../config/dbConfig");
 const { UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
-
+const { Op } = require('sequelize');
 
 // Initialize Sequelize
 const sequelize = new Sequelize(dbConfig.database.database, dbConfig.database.username, dbConfig.database.password, {
@@ -240,9 +240,20 @@ exports.user_active_deactive = async (req, res) => {
 };
 
 exports.get_users = async (req, res) => {
+    const excluded_role_ids = [1, 10 ,21]; 
     try {
         const users = await Users.findAll({
             include: [
+                 {
+                    model: Role,
+                    as: "role",
+                    attributes: ["role_id","role_title"],
+                    where: {
+                        role_id: {
+                        [Op.notIn]: excluded_role_ids
+                        }
+                    }
+                },
                 {
                     model: UserDesignation,
                     as: "users_designations",
