@@ -161,7 +161,6 @@ exports.update_user = async (req, res) => {
             await UserDesignation.create({
                 user_id: user_id,
                 designation_id: desigId,
-                created_by: created_by
             }, { transaction: t });
         }
 

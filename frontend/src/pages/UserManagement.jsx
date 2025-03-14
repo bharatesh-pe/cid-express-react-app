@@ -40,9 +40,10 @@ const UserManagement = () => {
       headerName: '',
       renderCell: (params) => (
         <Checkbox
-          checked={selectedUsers.includes(params.row.id)}
-          onChange={() => handleSelectUser(params.row.id)}
-        />
+        checked={selectedUsers.includes(params.row.id)}
+        onChange={() => handleSelectUser(params.row.id)}
+        onClick={(e) => e.stopPropagation()}
+      />
       ),
     },
     {
@@ -116,7 +117,10 @@ const UserManagement = () => {
       }
     });
   };
-
+  const handleRowClick = (row) => {
+    handleSelectUser(row.id);
+  };
+  
   const [newUser, setNewUser] = useState({
     name: "",
     role: "",
@@ -159,11 +163,13 @@ const UserManagement = () => {
     if (!newUser.department) {
       newErrors.department = "Department is required";
     }
-    if (!newUser.pin) {
-      newErrors.pin = "Pin is required";
-    }
-    if (newUser.pin !== newUser.confirmPin) {
-      newErrors.confirmPin = "Pin does not match";
+    if (modalTitle !== "Edit User") {
+      if (!newUser.pin) {
+        newErrors.pin = "Pin is required";
+      }
+      if (newUser.pin !== newUser.confirmPin) {
+        newErrors.confirmPin = "Pin does not match";
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -187,7 +193,8 @@ const UserManagement = () => {
         id: user.user_id,
         user_id: user.user_id,
         name: user.name,
-        role: user.role_id,
+        role_id: user.role.role_id,
+        role: user.role.role_title,
         kgid: user.kgid,
         designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
         designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
@@ -238,10 +245,9 @@ const UserManagement = () => {
           username: newUser.name,
           role_id: newUser.role,
           kgid: newUser.kgid,
-          pin: newUser.pin,
           designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,
           department_id: newUser.department,
-          division_id: newUser.division
+          division_id: newUser.division,
         }
         : {
           transaction_id: newUser.transaction_id,
@@ -282,13 +288,13 @@ const UserManagement = () => {
         className: "toast-success"
       });
 
-      // if (newUser.id) {
-      //   setUsers(users.map((user) => (user.id === newUser.id ? newUser : user)));
-      //   setUserUpdatedFlag(true);
-      // } else {
-      //   setUsers([...users, { ...newUser, id: users.length + 1 }]);
-      //   setUserUpdatedFlag(false);
-      // }
+      if (newUser.id) {
+        setUsers(users.map((user) => (user.id === newUser.id ? newUser : user)));
+        setUserUpdatedFlag(true);
+      } else {
+        setUsers([...users, { ...newUser, id: users.length + 1 }]);
+        setUserUpdatedFlag(false);
+      }
 
       setNewUser({
         name: "",
@@ -342,7 +348,7 @@ const UserManagement = () => {
       id: userToEdit.id,
       name: userToEdit.name ?? "",
       kgid: userToEdit.kgid ?? "",
-      role: roleOptions.find(option => String(option.code) === String(userToEdit.role))?.code || "",
+      role: roleOptions.find(option => String(option.code) === String(userToEdit.role_id))?.code || "",
       designation: designationOptions
         .filter(option => designationArray.includes(String(option.code)))
         .map(option => option.code),
@@ -715,7 +721,15 @@ const UserManagement = () => {
       {/* Table View */}
       <div className="pt-4" style={{ overflowX: "auto" }}>
         <Box py={1}>
-          <TableView rows={currentPageRows} columns={columns} handleNext={handleNext} handleBack={handleBack} backBtn={currentPage > 0} nextBtn={currentPage < totalPages - 1} />
+          <TableView 
+            rows={currentPageRows} 
+            columns={columns} 
+            handleRowClick={handleRowClick}
+            handleNext={handleNext}   
+            handleBack={handleBack} 
+            backBtn={currentPage > 0} 
+            nextBtn={currentPage < totalPages - 1} 
+          />
         </Box>
       </div>
 
@@ -874,32 +888,36 @@ const UserManagement = () => {
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <div className="px-2">
-                  <PasswordInput
-                    id="pin"
-                    label="Enter New Pin"
-                    name="pin"
-                    type="password"
-                    value={newUser.pin || ""}
-                    onChange={handleInputChange}
-                    error={errors.pin}
-                  />
-                </div>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <div className="px-2">
-                  <PasswordInput
-                    id="confirmPin"
-                    label="Re-enter New Pin"
-                    name="confirmPin"
-                    type="password"
-                    value={newUser.confirmPin || ""}
-                    onChange={handleInputChange}
-                    error={errors.confirmPin}
-                  />
-                </div>
-              </Grid>
+              {modalTitle !== "Edit User" && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <div className="px-2">
+                      <PasswordInput
+                        id="pin"
+                        label="Enter New Pin"
+                        name="pin"
+                        type="password"
+                        value={newUser.pin || ""}
+                        onChange={handleInputChange}
+                        error={errors.pin}
+                      />
+                    </div>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <div className="px-2">
+                      <PasswordInput
+                        id="confirmPin"
+                        label="Re-enter New Pin"
+                        name="confirmPin"
+                        type="password"
+                        value={newUser.confirmPin || ""}
+                        onChange={handleInputChange}
+                        error={errors.confirmPin}
+                      />
+                    </div>
+                  </Grid>
+                </>
+              )}
             </Grid>
           </form>
         </Modal>
