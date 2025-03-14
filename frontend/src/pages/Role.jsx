@@ -144,6 +144,7 @@ const RolePage = () => {
     };
 
     const deleteRole = async (id) => {
+        setLoading(true);
         if (!id) {
             toast.error("Invalid role ID.");
             return;
@@ -198,10 +199,12 @@ const RolePage = () => {
                 className: "toast-warning",
             });
         }
+         setLoading(false);
     };
     
     
     const get_details = async () => {
+         setLoading(true);
         try {
             const response = await api.post("/role/get_all_roles");
     
@@ -231,10 +234,12 @@ const RolePage = () => {
             console.error("Error fetching roles:", err);
             toast.error("Something went wrong. Please try again.");
         }
+         setLoading(false);
     };
 
 
     const get_permissions = async () => {
+         setLoading(true);
         try {
             const response = await api.post("/role/get_all_permissions");
     
@@ -255,9 +260,11 @@ const RolePage = () => {
             console.error("Error fetching permissions:", err);
             toast.error("Something went wrong. Please try again.");
         }
+         setLoading(false);
     };
         
     const get_module = async () => {
+         setLoading(true);
         try {
             const response = await api.post("/role/get_all_module");
     
@@ -277,6 +284,7 @@ const RolePage = () => {
             console.error("Error fetching module:", err);
             toast.error("Something went wrong. Please try again.");
         }
+         setLoading(false);
     };
         
     useEffect(() => {
@@ -311,7 +319,6 @@ const RolePage = () => {
     }
 
     const handlePermissionData = (name, checked) => {
-        console.log(name, checked)
         setAddRoleData((prevData) => ({
             ...prevData,
             permissions: {
@@ -341,6 +348,7 @@ const RolePage = () => {
     };
 
     const handleAddSaveData = async () => {
+        
         var error_flag = false;
     
         if (addRoleData.role_title.trim() === '') {
@@ -372,7 +380,7 @@ const RolePage = () => {
             });
             return;
         }
-    
+     setLoading(true);
         try {
             const response = await api.post("/role/create_role", addRoleData);
     
@@ -424,6 +432,7 @@ const RolePage = () => {
                 className: "toast-warning",
             });
         }
+         setLoading(false);
     };
     
     const handleInputChange = (e) => {
@@ -434,16 +443,21 @@ const RolePage = () => {
         }));
     };
 
-    const handleCheckboxChange = (e) => {
-        const { value, checked } = e.target;
-        setSelectedRole(prevState => ({
-            ...prevState,
+    const handleCheckboxChange = (event) => {
+        const { id, checked } = event.target;
+        console.log(id, checked);
+        setSelectedRole((prevSelectedRole) => ({
+            ...prevSelectedRole,
             permissions: {
-                ...prevState.permissions,
-                [value]: checked,
+                ...prevSelectedRole.permissions,
+                [id]: checked,
             },
         }));
     };
+
+    useEffect(() => {
+        console.log(selectedRole);
+    }, [selectedRole]);
 
 
     const handleEditData = async () => {
@@ -486,7 +500,7 @@ const RolePage = () => {
             permissions: selectedRole.permissions,
             transaction_id: selectedRole.transaction_id,
         };
-    
+     setLoading(true);
         try {
             const response = await api.post("/role/update_role", requestData);
     
@@ -529,6 +543,7 @@ const RolePage = () => {
                 className: "toast-warning",
             });
         }
+         setLoading(false);
     };
 
     return (
@@ -614,7 +629,6 @@ const RolePage = () => {
                                                             id={module_name}
                                                             value={module_name}
                                                             checked={true}
-                                                            onChange={(e) => handlePermissionData(module_name, e.target.checked)}
                                                         />
                                                         <Typography variant="subtitle1">{module_ui_name}</Typography>
                                                     </Box>
@@ -636,7 +650,6 @@ const RolePage = () => {
                                                                                     id={permission.permission_key}
                                                                                     value={permission.permission_key}
                                                                                     checked={true}
-                                                                                    onChange={(e) => handlePermissionData(permission.permission_key, e.target.checked)}
                                                                                 />
                                                                                 <Typography variant="body2">{permission.permission_name}</Typography>
                                                                             </Grid>
@@ -669,7 +682,7 @@ const RolePage = () => {
 
 
                                         })}
-                                </div>
+                            </div>
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
@@ -745,7 +758,7 @@ const RolePage = () => {
                                         ))}
                                 </Grid> */}
 
-                                <div>
+                                 <div>
                                     <h4 className="form-field-heading">Permissions</h4>
                                     {module_data &&
                                         Object.keys(module_data).map((index) => {
@@ -760,8 +773,8 @@ const RolePage = () => {
                                                         name="addRolePermissions"
                                                         id={module_name}
                                                         value={module_name}
-                                                        checked={addRoleData["permissions"][module_name] === true}
-                                                        onChange={(e) => handlePermissionData(module_name, e.target.checked)}
+                                                        checked={selectedRole['permissions'][module_name] === true}
+                                                        onChange={handleCheckboxChange}
                                                     />
                                                     <Typography variant="subtitle1">{module_ui_name}</Typography>
                                                 </Box>
@@ -779,8 +792,8 @@ const RolePage = () => {
                                                                             name="addRolePermissions"
                                                                             id={permission.permission_key}
                                                                             value={permission.permission_key}
-                                                                            checked={addRoleData["permissions"][permission.permission_key] === true}
-                                                                            onChange={(e) => handlePermissionData(permission.permission_key, e.target.checked)}
+                                                                            checked={selectedRole['permissions'][permission.permission_key] === true}
+                                                                            onChange={handleCheckboxChange}
                                                                         />
                                                                         <Typography variant="body2">{permission.permission_name}</Typography>
                                                                     </Grid>
