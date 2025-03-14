@@ -1,4 +1,4 @@
-import { Box, Button, Checkbox, CircularProgress, FormControl, Grid, IconButton, InputAdornment, TextField, Typography } from "@mui/material"
+import { Box, Button, Checkbox, CircularProgress, FormControl, Grid, IconButton, InputAdornment, TextField, Typography , Accordion, AccordionSummary, AccordionDetails } from "@mui/material"
 import { useEffect, useState } from "react"
 import TableView from "../components/table-view/TableView";
 import TextFieldInput from '@mui/material/TextField';
@@ -10,7 +10,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import api from '../services/api';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -35,6 +35,8 @@ const RolePage = () => {
     });
 
     const [addPermissionData, setAddPermissionData] = useState({});
+    const [permission_data, setPermissionData] = useState({});
+    const [module_data, setModuleData] = useState({});
 
     // table row variable
     const [roleRowData, setRoleRowData] = useState([]);
@@ -182,7 +184,7 @@ const RolePage = () => {
                 className: "toast-success",
             });
     
-            getDetails();
+            get_details();
     
         } catch (err) {
             toast.error(err?.message || "Something went wrong. Please try again.", {
@@ -199,7 +201,7 @@ const RolePage = () => {
     };
     
     
-    const getDetails = async () => {
+    const get_details = async () => {
         try {
             const response = await api.post("/role/get_all_roles");
     
@@ -232,7 +234,7 @@ const RolePage = () => {
     };
 
 
-    const getPermissions = async () => {
+    const get_permissions = async () => {
         try {
             const response = await api.post("/role/get_all_permissions");
     
@@ -245,18 +247,42 @@ const RolePage = () => {
                 }, {});
     
                 setAddPermissionData(permissionObj);
+                setPermissionData(permissions);
             } else {
-                toast.error(response.message || "Failed to fetch roles");
+                toast.error(response.message || "Failed to fetch permissions");
             }
         } catch (err) {
-            console.error("Error fetching roles:", err);
+            console.error("Error fetching permissions:", err);
             toast.error("Something went wrong. Please try again.");
         }
     };
-            
+        
+    const get_module = async () => {
+        try {
+            const response = await api.post("/role/get_all_module");
+    
+            if (response && response.success) {
+    
+                const module = response.data || [];
+                // const module_obj = module.reduce((acc, module) => {
+                //     acc[module.ui_name] = false;
+                //     return acc;
+                // }, {});
+    
+                setModuleData(module);
+            } else {
+                toast.error(response.message || "Failed to fetch module");
+            }
+        } catch (err) {
+            console.error("Error fetching module:", err);
+            toast.error("Something went wrong. Please try again.");
+        }
+    };
+        
     useEffect(() => {
-        getDetails();
-        getPermissions();
+        get_details();
+        get_permissions();
+        get_module();
     }, [])
     // add role variables
     
@@ -374,7 +400,7 @@ const RolePage = () => {
                 className: "toast-success"
             });
     
-            getDetails(); // Refresh role list after creation
+            get_details(); // Refresh role list after creation
     
             setAddRoleData({
                 "transaction_id": "",
@@ -488,7 +514,7 @@ const RolePage = () => {
                 className: "toast-success",
             });
     
-            getDetails();
+            get_details();
             setShowEditModal(false);
         } catch (err) {
             toast.error(err?.message || "Something went wrong. Please try again.", {
@@ -786,7 +812,70 @@ const RolePage = () => {
                                     />
                                 </Box>
 
-                                <h4 className="form-field-heading">Permissions</h4>
+                                <div>
+                                    <h4 className="form-field-heading">Permissions</h4>
+                                    {
+                                        module_data && Object.keys(module_data).map((index) => {
+                                        const module_id = module_data[index].module_id;   
+                                        const module_name = module_data[index].name;
+                                        const module_ui_name = module_data[index].ui_name;
+                                        const sub_modules = module_data[index].sub_modules;
+                                        console.log(module_data)   
+                                        return (
+                                            <Accordion key={module_name}>
+                                            <AccordionSummary
+                                                expandIcon={<ExpandMoreIcon />}
+                                                aria-controls={`panel-${module_name}-content`}
+                                                id={`panel-${module_name}-header`}
+                                            >
+                                                <Checkbox
+                                                name="addRolePermissions"
+                                                id={module_name}
+                                                value={module_name}
+                                                p={0}
+                                                checked={addRoleData['permissions'][module_name] === true}
+                                                onChange={(e) =>
+                                                    handlePermissionData(module_name, e.target.checked)
+                                                }
+                                                />
+                                                <Typography>{module_ui_name}</Typography>
+                                            </AccordionSummary>
+                                            <AccordionDetails>
+                                                { 
+                                                permission_data && Object.keys(permission_data).map((permission_index) => {
+                                                    const permission_belongs_to_module_id = permission_data[permission_index].module_id;
+                                                    const permission_key = permission_data[permission_index].permission_key;
+                                                    const permission_name = permission_data[permission_index].permission_name;
+                                                    if(module_id == permission_belongs_to_module_id)
+                                                    {
+                                                        return (
+                                                            <Grid item xs={12} md={4} key={permission_key} sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <Checkbox
+                                                                    name="addRolePermissions"
+                                                                    id={permission_key}
+                                                                    value={permission_key}
+                                                                    p={0}
+                                                                    checked={addRoleData['permissions'][permission_name] === true ? true : false}
+                                                                    onChange={(e) =>
+                                                                        handlePermissionData(permission_key, e.target.checked)
+                                                                    }
+                                                                />
+                                                                <label htmlFor={permission_name} style={{ fontSize: '14px' }}>
+                                                                    {permission_name}
+                                                                </label>
+                                                            </Grid>
+                                                        )
+                                                    }
+                                                })
+                                        }
+                                            </AccordionDetails>
+                                            </Accordion>
+                                        )
+                                        })
+                                    }
+                                </div>
+
+                                {/* <h4 className="form-field-heading">Permissions</h4>
                                 <Grid container spacing={2}>
                                     {
                                         addPermissionData && Object.keys(addPermissionData).map((fieldName) => {
@@ -809,7 +898,7 @@ const RolePage = () => {
                                             )
                                         })
                                     }
-                                </Grid>
+                                </Grid> */}
 
                             </FormControl>
                         </DialogContentText>
