@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { Sequelize } = require("sequelize");
 const dbConfig = require("../config/dbConfig");
-const { UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
+const {Role ,  UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
 const { Op } = require('sequelize');
 
 // Initialize Sequelize
