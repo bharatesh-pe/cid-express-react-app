@@ -148,11 +148,23 @@ exports.update_user = async (req, res) => {
             { where: { user_id: user_id }, transaction: t }
         );
 
-        // Update user designation
-        await UserDesignation.update(
-            { designation_id: designation_id },
-            { where: { user_id: user_id }, transaction: t }
-        );
+        // Convert designation_id to an array
+        const designationIds = designation_id.includes(",")
+            ? designation_id.split(",").map(id => parseInt(id.trim(), 10))
+            : [parseInt(designation_id, 10)];
+
+        // Remove existing designations for the user
+        await UserDesignation.destroy({ where: { user_id }, transaction: t });
+
+        // Insert new designations
+        for (const desigId of designationIds) {
+            await UserDesignation.create({
+                user_id: user_id,
+                designation_id: desigId,
+                created_by: created_by
+            }, { transaction: t });
+        }
+
 
         // Update user department
         const userDepartment = await UsersDepartment.findOne({ where: { user_id: user_id } });
