@@ -2,7 +2,6 @@ import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Profile from './pages/Profile';
 import Formbuilder from './pages/FormBuilder';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
@@ -28,6 +27,12 @@ import UIView from './pages/cases/UIView';
 import Trail from './pages/trail';
 import Annexure from './pages/annexure'
 import { AuthProvider, useAuth } from "./context/AuthContext";
+
+import UnderInvestigation from './pages/UnderInvestigation';
+import PendingTrail from './pages/PendingTrail';
+import Enquiries from './pages/Enquiries';
+import MastersView from './pages/Masters';
+
 function App() {
   return (
     <Router>
@@ -184,16 +189,48 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Profile />
-                </Layout>
-              </ProtectedRoute>
-            }
-          />
+
+            <Route
+                path="/case/ui_case"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <UnderInvestigation />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/case/pt_case"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <PendingTrail />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/case/enquiry"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Enquiries />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/masters"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <MastersView />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+
           <Route
             path="/create-profile"
             element={

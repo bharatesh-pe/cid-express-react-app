@@ -695,15 +695,11 @@ exports.getMasterTemplates = async (req, res, next) => {
 		}));
 
 		// Additional entries
+
 		const additionalEntries = [
-			{ table: "state", is_master: "false", api: "siims/getStates", is_dependent: "false" },
-			{ table: "district", is_master: "false", api: "siims/getDistricts", is_dependent: "true", dependent_table: ["state"] },
-			{ table: "taluk", is_master: "false", api: "siims/getTaluks", is_dependent: "true", dependent_table: ["district"] },
-			{ table: "leader", is_master: "false", api: "siims/getLeaders", is_dependent: "false" },
-			{ table: "designation", is_master: "false", api: "siims/getDesignations", is_dependent: "false" },
-			{ table: "units", is_master: "false", api: "siims/getUnits", is_dependent: "false" },
-			{ table: "section", is_master: "false", api: "siims/getSections", is_dependent: "true", dependent_table: ["units"] },
-			{ table: "desk", is_master: "false", api: "siims/getDesks", is_dependent: "true", dependent_table: ["units", "section"] },
+			{ table: "Department", is_master: "false", api: "cidMaster/getAllDepartment", is_dependent: "false" },
+			{ table: "Designation", is_master: "false", api: "cidMaster/getAllDesignations", is_dependent: "false" },
+			{ table: "Division", is_master: "false", api: "cidMaster/getAllDivisions", is_dependent: "false" },
 		];
 
 		// Combine master templates and additional entries
