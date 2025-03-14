@@ -103,7 +103,7 @@ exports.create_user = async (req, res) => {
 };
 
 exports.update_user = async (req, res) => {
-    const { user_id, username, role_id, kgid, pin, designation_id, department_id, division_id , transaction_id} = req.body;
+    const { user_id, username, role_id, kgid, designation_id, department_id, division_id , transaction_id} = req.body;
 
     if(!transaction_id || transaction_id == "")
     {
@@ -143,10 +143,10 @@ exports.update_user = async (req, res) => {
         );
 
         // Update auth secure details
-        await AuthSecure.update(
-            { pin: pin },
-            { where: { user_id: user_id }, transaction: t }
-        );
+        // await AuthSecure.update(
+        //     { pin: pin },
+        //     { where: { user_id: user_id }, transaction: t }
+        // );
 
         // Update user designation
         await UserDesignation.update(
