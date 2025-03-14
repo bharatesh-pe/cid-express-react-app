@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import Modal from "../components/Modal/Modal.jsx";
 import PasswordInput from "../components/password_input/password_input";
-import { useNavigate } from "react-router-dom";
 import { Box, Checkbox, Grid } from '@mui/material';
 import MultiSelect from "../components/form/MultiSelect.jsx";
 import { Button } from '@mui/material';
@@ -10,7 +9,6 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import EditIcon from '@mui/icons-material/Edit';
 import DoNotDisturbOnIcon from '@mui/icons-material/DoNotDisturbOn';
 import { Chip } from '@mui/material';
-import { Snackbar, Alert } from '@mui/material';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -24,59 +22,17 @@ import api from '../services/api';
 import { toast } from 'react-toastify';
 
 const UserManagement = () => {
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
-  // const [getu_master_data, setMasterData] = useState([]);
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(0);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState('success');
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeactivationDialogVisible, setDeactivationDialogVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState("Add New User");
-  const [validationError, setValidationError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const response = await api.get("/user/get_users");
-      const users = response.users || response.data?.users;
-      if (!users || !Array.isArray(users)) {
-        throw new Error("Invalid API response format: 'users' is not an array");
-      }
-      const formattedUsers = users.map(user => ({
-        id: user.user_id,
-        user_id: user.user_id,
-        name: user.name,
-        role: user.role_id,
-        kgid: user.kgid,
-        designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
-        designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
-        department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
-        department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
-        division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
-        division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
-        status: user.dev_status ? "Active" : "Inactive",
-        dev_status: user.dev_status,
-      }));
-
-      setUsers(formattedUsers);
-
-    } catch (err) {
-      setError("Failed to fetch users.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const columns = [
     {
@@ -84,9 +40,10 @@ const UserManagement = () => {
       headerName: '',
       renderCell: (params) => (
         <Checkbox
-          checked={selectedUsers.includes(params.row.id)}
-          onChange={() => handleSelectUser(params.row.id)}
-        />
+        checked={selectedUsers.includes(params.row.id)}
+        onChange={() => handleSelectUser(params.row.id)}
+        onClick={(e) => e.stopPropagation()}
+      />
       ),
     },
     {
@@ -135,6 +92,35 @@ const UserManagement = () => {
     }
   ];
 
+  const totalPages = Math.ceil(users.length / pageSize);
+  const currentPageRows = users.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+
+  const handleNext = () => {
+    if (currentPage < totalPages - 1) setCurrentPage(currentPage + 1);
+  };
+
+  const handleBack = () => {
+    if (currentPage > 0) setCurrentPage(currentPage - 1);
+  };
+
+  const handleSelectUser = (userId) => {
+    setSelectedUsers((prevSelected) => {
+      if (prevSelected.includes(userId)) {
+        setNewUser({});
+        return [];
+      } else {
+        const selectedUser = users.find((user) => user.id === userId);
+        if (selectedUser) {
+          setNewUser(selectedUser);
+        }
+        return [userId];
+      }
+    });
+  };
+  const handleRowClick = (row) => {
+    handleSelectUser(row.id);
+  };
+  
   const [newUser, setNewUser] = useState({
     name: "",
     role: "",
@@ -177,185 +163,60 @@ const UserManagement = () => {
     if (!newUser.department) {
       newErrors.department = "Department is required";
     }
-    if (!newUser.pin) {
-      newErrors.pin = "Pin is required";
-    }
-    if (newUser.pin !== newUser.confirmPin) {
-      newErrors.confirmPin = "Pin does not match";
+    if (modalTitle !== "Edit User") {
+      if (!newUser.pin) {
+        newErrors.pin = "Pin is required";
+      }
+      if (newUser.pin !== newUser.confirmPin) {
+        newErrors.confirmPin = "Pin does not match";
+      }
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
 
-  const totalPages = Math.ceil(users.length / pageSize);
-  const currentPageRows = users.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
-  const handleNext = () => {
-    if (currentPage < totalPages - 1) setCurrentPage(currentPage + 1);
-  };
-
-  const handleBack = () => {
-    if (currentPage > 0) setCurrentPage(currentPage - 1);
-  };
-
-  const handleSelectUser = (userId) => {
-    setSelectedUsers((prevSelected) => {
-      if (prevSelected.includes(userId)) {
-        setNewUser({});
-        return [];
-      } else {
-        const selectedUser = users.find((user) => user.id === userId);
-        if (selectedUser) {
-          setNewUser(selectedUser);
-        }
-        return [userId];
-      }
-    });
-  };
-
-  const handleEdit = (selectedUsers) => {
-    if (!selectedUsers || selectedUsers.length === 0) {
-        console.error("No valid user selected for editing.");
-        return;
-    }
-
-    const userToEdit = users.find(user => user.id === selectedUsers[0]);
-
-    if (!userToEdit) {
-        console.error("No matching user found.");
-        return;
-    }
-
-    const designationArray = userToEdit.designation_id
-        ? userToEdit.designation_id.split(",").map(id => id.trim())
-        : [];
-
-    setNewUser((prevState) => ({
-      ...prevState,
-      id: userToEdit.id,
-      name: userToEdit.name ?? "",
-      kgid: userToEdit.kgid ?? "",
-      role: roleOptions.find(option => String(option.code) === String(userToEdit.role))?.code || "",
-      designation: designationOptions
-          .filter(option => designationArray.includes(String(option.code)))
-          .map(option => option.code),
-      department: departmentOptions.find(option => String(option.code) === String(userToEdit.department_id))?.code || "",
-      division: divisionOptions.find(option => String(option.code) === String(userToEdit.division_id))?.code || "",
-      transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-    }));
-    
-    setModalTitle("Edit User");
-    setIsModalOpen(true);
-};
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
 
-  const [transactionId, setTransactionId] = useState("");
-
-  const selectedUsersWithStatus = selectedUsers.map(id =>
-    users.find(user => user.id === id) || { id, dev_status: null }
-  );
-
-  const allUsersInactive = selectedUsersWithStatus.every(user => user.dev_status === false);
-  const actionText = allUsersInactive ? "Activate" : "Deactivate";
-  const actionColor = allUsersInactive ? "#22c55e" : "#ef4444";
-
-  const handleToggleActivation = () => {
-    if (selectedUsers.length === 0) {
-      setSnackbarMessage("Please select users to proceed.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
-      return;
-    }
-
-    const newTransactionId = `toggle_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    setTransactionId(newTransactionId);
-    setDeactivationDialogVisible(true);
-  };
-
-  const handleConfirmToggleActivation = async () => {
-    if (!transactionId) {
-      setSnackbarMessage("Transaction ID is required.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
-      return;
-    }
-
-    if (!selectedUsers || selectedUsers.length === 0) {
-      setSnackbarMessage("Please select users to proceed.");
-      setSnackbarSeverity("error");
-      setOpenSnackbar(true);
-      return;
-    }
-
-    setLoading(true);
-
+  const fetchUsers = async () => {
     try {
-      const userIds = selectedUsers;
-      const newStatus = allUsersInactive;
-
-      const response = await api.post("/user/user_active_deactive", {
-        transaction_id: transactionId,
-        user_id: userIds,
-        dev_status: newStatus,
-      });
-
-      if (!response || !response.success) {
-        toast.error(response.message || "Failed to create role", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-        return;
+      const response = await api.get("/user/get_users");
+      const users = response.users || response.data?.users;
+      if (!users || !Array.isArray(users)) {
+        throw new Error("Invalid API response format: 'users' is not an array");
       }
+      const formattedUsers = users.map(user => ({
+        id: user.user_id,
+        user_id: user.user_id,
+        name: user.name,
+        role_id: user.role.role_id,
+        role: user.role.role_title,
+        kgid: user.kgid,
+        designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
+        designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
+        department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
+        department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
+        division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
+        division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
+        status: user.dev_status ? "Active" : "Inactive",
+        dev_status: user.dev_status,
+      }));
 
-      toast.success(response.message || "Action changedSuccessfully", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-success"
-      });
+      setUsers(formattedUsers);
 
-
-      setUsers(prevUsers =>
-        prevUsers.map(user =>
-          userIds.includes(user.id) ? { ...user, dev_status: newStatus } : user
-        )
-      );
-
-
-
-      fetchUsers();
     } catch (err) {
-      toast.error(err?.message || "Something went wrong. Please try again.", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
+      setError("Failed to fetch users.");
     } finally {
       setLoading(false);
-      setDeactivationDialogVisible(false);
-      setSelectedUsers([]);
     }
   };
 
   const handleSave = async () => {
     setLoading(true);
-    setValidationError('');
 
     if (!validateForm()) {
       toast.error("Validation failed. Please check the form.", {
@@ -384,10 +245,9 @@ const UserManagement = () => {
           username: newUser.name,
           role_id: newUser.role,
           kgid: newUser.kgid,
-          pin: newUser.pin,
           designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,
           department_id: newUser.department,
-          division_id: newUser.division
+          division_id: newUser.division,
         }
         : {
           transaction_id: newUser.transaction_id,
@@ -468,6 +328,161 @@ const UserManagement = () => {
     }
   };
 
+  const handleEdit = (selectedUsers) => {
+    if (!selectedUsers || selectedUsers.length === 0) {
+      console.error("No valid user selected for editing.");
+      return;
+    }
+    const userToEdit = users.find(user => user.id === selectedUsers[0]);
+
+    if (!userToEdit) {
+      console.error("No matching user found.");
+      return;
+    }
+    const designationArray = userToEdit.designation_id
+      ? userToEdit.designation_id.split(",").map(id => id.trim())
+      : [];
+
+    setNewUser((prevState) => ({
+      ...prevState,
+      id: userToEdit.id,
+      name: userToEdit.name ?? "",
+      kgid: userToEdit.kgid ?? "",
+      role: roleOptions.find(option => String(option.code) === String(userToEdit.role_id))?.code || "",
+      designation: designationOptions
+        .filter(option => designationArray.includes(String(option.code)))
+        .map(option => option.code),
+      department: departmentOptions.find(option => String(option.code) === String(userToEdit.department_id))?.code || "",
+      division: divisionOptions.find(option => String(option.code) === String(userToEdit.division_id))?.code || "",
+      transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+    }));
+
+    setModalTitle("Edit User");
+    setIsModalOpen(true);
+  };
+
+
+  const [transactionId, setTransactionId] = useState("");
+
+  const selectedUsersWithStatus = selectedUsers.map(id =>
+    users.find(user => user.id === id) || { id, dev_status: null }
+  );
+
+  const allUsersInactive = selectedUsersWithStatus.every(user => user.dev_status === false);
+  const actionText = allUsersInactive ? "Activate" : "Deactivate";
+  const actionColor = allUsersInactive ? "#22c55e" : "#ef4444";
+
+  const handleToggleActivation = () => {
+    if (selectedUsers.length === 0) {
+      toast.error("Please select users to proceed.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
+
+    const newTransactionId = `toggle_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    setTransactionId(newTransactionId);
+    setDeactivationDialogVisible(true);
+  };
+
+  const handleConfirmToggleActivation = async () => {
+    if (!transactionId) {
+      toast.error("Transaction ID is required.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
+
+    if (!selectedUsers || selectedUsers.length === 0) {
+      toast.error("Please select users to proceed.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
+    setLoading(true);
+
+    try {
+      const userIds = selectedUsers;
+      const newStatus = allUsersInactive;
+
+      const response = await api.post("/user/user_active_deactive", {
+        transaction_id: transactionId,
+        user_id: userIds,
+        dev_status: newStatus,
+      });
+
+      if (!response || !response.success) {
+        toast.error(response.message || "Failed to create role", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+        return;
+      }
+
+      toast.success(response.message || "Action changed Successfully", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-success"
+      });
+
+
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          userIds.includes(user.id) ? { ...user, dev_status: newStatus } : user
+        )
+      );
+      fetchUsers();
+
+    } catch (err) {
+      toast.error(err?.message || "Something went wrong. Please try again.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+    } finally {
+      setLoading(false);
+      setDeactivationDialogVisible(false);
+      setSelectedUsers([]);
+    }
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setModalTitle("Add New User");
@@ -531,11 +546,11 @@ const UserManagement = () => {
 
   const handleDropDownChange = (fieldName, value) => {
     setNewUser((prev) => ({
-        ...prev,
-        [fieldName]: Array.isArray(value) ? value : String(value), 
+      ...prev,
+      [fieldName]: Array.isArray(value) ? value : String(value),
     }));
-};
-  
+  };
+
   const handleInputChange = (e) => {
     setNewUser((prev) => ({
       ...prev,
@@ -551,28 +566,12 @@ const UserManagement = () => {
       fetch_master_data(needed_masters);
     }
   }, []);
-
+  
   const fetch_master_data = async (needed_masters) => {
     try {
       const body_data = { needed_masters };
-      const serverURL = process.env.REACT_APP_SERVER_URL;
-      const token = localStorage.getItem("auth_token");
-
-      const response = await fetch(`${serverURL}/master/get_master_data`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          token: token,
-        },
-        body: JSON.stringify(body_data),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch master data");
-      }
-
-      const data = await response.json();
-
+      const data = await api.post("/master/get_master_data", body_data);
+  
       setMasterData(data);
     } catch (error) {
       console.error("Error fetching master data:", error);
@@ -688,11 +687,11 @@ const UserManagement = () => {
                       backgroundColor: "#f1f5f9",
                     },
                   }}
-                  onClick={() => handleEdit(selectedUsers)} // Pass the user object
-                  >
+                  onClick={() => handleEdit(selectedUsers)}
+                >
                   Edit User
                 </Button>
-                
+
                 <Button
                   variant="outlined"
                   startIcon={allUsersInactive ? <CheckCircleIcon /> : <DoNotDisturbOnIcon />}
@@ -722,7 +721,15 @@ const UserManagement = () => {
       {/* Table View */}
       <div className="pt-4" style={{ overflowX: "auto" }}>
         <Box py={1}>
-          <TableView rows={currentPageRows} columns={columns} handleNext={handleNext} handleBack={handleBack} backBtn={currentPage > 0} nextBtn={currentPage < totalPages - 1} />
+          <TableView 
+            rows={currentPageRows} 
+            columns={columns} 
+            handleRowClick={handleRowClick}
+            handleNext={handleNext}   
+            handleBack={handleBack} 
+            backBtn={currentPage > 0} 
+            nextBtn={currentPage < totalPages - 1} 
+          />
         </Box>
       </div>
 
@@ -807,20 +814,19 @@ const UserManagement = () => {
                 />
 
               </Grid>
-<Grid item xs={12} sm={6}>
-  <AutocompleteField
-    formData={newUser}
-    errors={errors}
-    field={{
-      name: "role",
-      label: "Select Role",
-      options: roleOptions,
-    }}
-    value={newUser.role} // Ensure correct selection
-    onChange={handleDropDownChange}
-  />
-</Grid>
-
+              <Grid item xs={12} sm={6}>
+                <AutocompleteField
+                  formData={newUser}
+                  errors={errors}
+                  field={{
+                    name: "role",
+                    label: "Select Role",
+                    options: roleOptions,
+                  }}
+                  value={newUser.role}
+                  onChange={handleDropDownChange}
+                />
+              </Grid>
 
               <Grid item xs={12} sm={6}>
                 <NumberField
@@ -835,7 +841,6 @@ const UserManagement = () => {
                   errors={errors}
                   onChange={handleInputChange}
                 />
-
               </Grid>
 
               <Grid item xs={12} sm={6}>
@@ -851,7 +856,6 @@ const UserManagement = () => {
                   value={newUser.designation}
                   onChange={handleDropDownChange}
                 />
-
               </Grid>
 
               <Grid item xs={12} sm={6}>
@@ -864,7 +868,7 @@ const UserManagement = () => {
                     options: departmentOptions,
                     required: true
                   }}
-                  value={newUser.department} // Ensure correct selection
+                  value={newUser.department}
                   onChange={handleDropDownChange}
                 />
               </Grid>
@@ -879,95 +883,45 @@ const UserManagement = () => {
                     options: divisionOptions,
                     required: true
                   }}
-                  value={newUser.division} // Ensure correct selection
+                  value={newUser.division}
                   onChange={handleDropDownChange}
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <div className="px-2">
-                  <PasswordInput
-                    id="pin"
-                    label="Enter New Pin"
-                    name="pin"
-                    type="password"
-                    value={newUser.pin || ""}
-                    onChange={handleInputChange}
-                    error={errors.pin}
-                  />
-                </div>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <div className="px-2">
-                  <PasswordInput
-                    id="confirmPin"
-                    label="Re-enter New Pin"
-                    name="confirmPin"
-                    type="password"
-                    value={newUser.confirmPin || ""}
-                    onChange={handleInputChange}
-                    error={errors.confirmPin}
-                  />
-                </div>
-              </Grid>
+              {modalTitle !== "Edit User" && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <div className="px-2">
+                      <PasswordInput
+                        id="pin"
+                        label="Enter New Pin"
+                        name="pin"
+                        type="password"
+                        value={newUser.pin || ""}
+                        onChange={handleInputChange}
+                        error={errors.pin}
+                      />
+                    </div>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <div className="px-2">
+                      <PasswordInput
+                        id="confirmPin"
+                        label="Re-enter New Pin"
+                        name="confirmPin"
+                        type="password"
+                        value={newUser.confirmPin || ""}
+                        onChange={handleInputChange}
+                        error={errors.confirmPin}
+                      />
+                    </div>
+                  </Grid>
+                </>
+              )}
             </Grid>
           </form>
         </Modal>
       )}
-
-      {/* Success Popup */}
-      <div>
-        <Dialog
-          open={showSuccessDialog}
-          onClose={() => setShowSuccessDialog(false)}
-          maxWidth="sm"
-          fullWidth
-          sx={{
-            "& .MuiDialogPaper-root": {
-              borderRadius: "20px",
-            },
-            padding: "15px",
-          }}
-        >
-          <DialogContent sx={{ display: "flex", textAlign: "left", flexDirection: "column" }}>
-            <CheckCircleIcon
-              sx={{
-                backgroundColor: "rgba(209, 250, 223, 1)",
-                border: "15px solid rgba(236, 253, 243, 1)",
-                borderRadius: "50%",
-                fontSize: "24px",
-                color: "green",
-                marginBottom: "2px",
-              }}
-            />
-            <div>
-              <p style={{ fontSize: "20px", fontWeight: "bold", marginBottom: "0px" }}>
-                {modalTitle === "Edit User" ? "Profile Updated Successfully" : "Profile Added Successfully"}
-              </p>
-              <p
-                style={{
-                  fontSize: "16px",
-                  color: "rgb(156, 163, 175)",
-                  margin: 0,
-                }}
-              >
-                {newUser.name}{" "}
-                {modalTitle === "Edit User" ? "details have been updated" : "User Details have been added"}
-              </p>
-            </div>
-          </DialogContent>
-          <DialogActions sx={{ justifyContent: "center", padding: "10px 20px" }}>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={() => setShowSuccessDialog(false)}
-              sx={{ width: "100%", padding: "8px" }}
-            >
-              Done
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </div>
 
       {/* De-activation conformation Popup */}
       <div>
@@ -1047,21 +1001,6 @@ const UserManagement = () => {
           </DialogActions>
         </Dialog>
       </div>
-
-      {/* Success Notification */}
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={2000}
-        onClose={() => setOpenSnackbar(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert
-          onClose={() => setOpenSnackbar(false)}
-          severity={snackbarSeverity}
-          sx={{ width: '100%' }}
-        > {snackbarMessage} </Alert>
-      </Snackbar>
-
     </Box>
   );
 };
