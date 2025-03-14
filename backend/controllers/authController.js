@@ -9,8 +9,9 @@ const get_module = async (req, res) => {
         //const Module = require('../models/Module');
         //const Role = require('../models/Role');
 
-        // Get all modules from the module table
-        const modules = await Module.findAll();
+        const modules = await Module.findAll({
+            order: [["order", "ASC"]] // Change "ASC" to "DESC" for descending order
+        });
 
         // Get the role id from the request (assuming it's in the request body)
         const { role_id } = req.user;
