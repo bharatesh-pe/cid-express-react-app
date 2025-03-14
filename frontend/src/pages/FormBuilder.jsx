@@ -293,19 +293,19 @@ const Formbuilder = () => {
             }
         });
 
-        if(emptyOptions.length > 0){
-            toast.warning(`Please Enter Name and Code for all options in ${emptyOptions.join(', ')}`, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
+        // if(emptyOptions.length > 0){
+        //     toast.warning(`Please Enter Name and Code for all options in ${emptyOptions.join(', ')}`, {
+        //         position: "top-right",
+        //         autoClose: 3000,
+        //         hideProgressBar: false,
+        //         closeOnClick: true,
+        //         pauseOnHover: true,
+        //         draggable: true,
+        //         progress: undefined,
+        //         className: "toast-warning",
+        //     });
+        //     return;
+        // }
 
         const newField = {
             ...field,
@@ -1112,19 +1112,19 @@ const Formbuilder = () => {
             return;
         }
 
-        if(emptyOptions.length > 0){
-            toast.warning(`Please Enter Name and Code for all options in ${emptyOptions.join(', ')}`, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
+        // if(emptyOptions.length > 0){
+        //     toast.warning(`Please Enter Name and Code for all options in ${emptyOptions.join(', ')}`, {
+        //         position: "top-right",
+        //         autoClose: 3000,
+        //         hideProgressBar: false,
+        //         closeOnClick: true,
+        //         pauseOnHover: true,
+        //         draggable: true,
+        //         progress: undefined,
+        //         className: "toast-warning",
+        //     });
+        //     return;
+        // }
 
         // Log the updated fields array to check the result
         var createTemplatePayload = {
@@ -1275,19 +1275,19 @@ const Formbuilder = () => {
             return;
         }
 
-        if(emptyOptions.length > 0){
-            toast.warning(`Please Enter Name and Code for all options in ${emptyOptions.join(', ')} Fields`, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
+        // if(emptyOptions.length > 0){
+        //     toast.warning(`Please Enter Name and Code for all options in ${emptyOptions.join(', ')} Fields`, {
+        //         position: "top-right",
+        //         autoClose: 3000,
+        //         hideProgressBar: false,
+        //         closeOnClick: true,
+        //         pauseOnHover: true,
+        //         draggable: true,
+        //         progress: undefined,
+        //         className: "toast-warning",
+        //     });
+        //     return;
+        // }
 
         var updateTemplatePayload = {
             "template_name": editTemplateDetailsData,
@@ -1537,7 +1537,6 @@ const Formbuilder = () => {
 
     const showMasterTable = async () => {
 
-        return;
         setLoading(true);
 
         try {
@@ -1825,7 +1824,7 @@ const Formbuilder = () => {
                 var getOptionsValue = await api.post('/templateData/getTemplateData', { table_name: selectedMasterOptions.table });
                 setLoading(false);
 
-                if (getOptionsValue && getOptionsValue.success && getOptionsValue.data && getOptionsValue.data.length > 0) {
+                if (getOptionsValue && getOptionsValue.success && getOptionsValue.data) {
 
                     var forignKey = 'id';
                     var attributeKey = [];
@@ -1835,10 +1834,6 @@ const Formbuilder = () => {
                         var nameKey = Object.keys(templateData).find(
                             key => !['id', 'created_at', 'updated_at'].includes(key)
                         );
-
-                        // if(forignKey === ''){
-                        //     forignKey = 'id'
-                        // }
 
                         if(attributeKey.length === 0){
                             attributeKey = [nameKey]
