@@ -64,7 +64,7 @@ exports.create_user = async (req, res) => {
             designation_id: designation_id,
             created_by: created_by
         }, { transaction: t });
-
+            
         // Create user department
         const newUserDepartment = await UsersDepartment.create({
             user_id: newUser.user_id,
@@ -81,7 +81,7 @@ exports.create_user = async (req, res) => {
         }, { transaction: t });
 
         await t.commit();
-        return res.status(201).json({ message: "User created successfully" });
+        return res.status(201).json({ success: true, message: "User created successfully" });
 
     } catch (error) {
         if (t.finished !== "rollback") {
@@ -218,7 +218,7 @@ exports.user_active_deactive = async (req, res) => {
         );
 
         await t.commit();
-        return res.status(200).json({ message: `User ${dev_status ? "activated" : "deactivated"} successfully` });
+        return res.status(200).json({success: true, message: `User ${dev_status ? "activated" : "deactivated"} successfully` });
 
     } catch (error) {
         if (t.finished !== "rollback") {

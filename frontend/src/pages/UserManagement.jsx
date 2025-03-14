@@ -21,12 +21,12 @@ import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText.jsx";
 import NumberField from "../components/form/NumberField.jsx";
 import api from '../services/api';
-
+import { toast } from 'react-toastify';
 
 const UserManagement = () => {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
-  const [getu_master_data, setMasterData] = useState([]);
+  // const [getu_master_data, setMasterData] = useState([]);
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(0);
   const [openSnackbar, setOpenSnackbar] = useState(false);
@@ -39,46 +39,51 @@ const UserManagement = () => {
   const [validationError, setValidationError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // const [users, setUsers] = useState([
-  //   { id: 1, name: "Manjunath DR", email: "jay.singh@gmail.com", contact: "9562325865", role: "IO officers", kgid: "53414", status: "Active", },
-  //   { id: 2, name: "Priya Sharma", email: "priya.sharma@example.com", contact: "9988776655", role: "Admin IO", kgid: "53415", status: "Inactive", },
-  //   { id: 3, name: "Sandeep Kumar", email: "sandeep.kumar@example.com", contact: "8776655443", role: "IO officers", kgid: "53416", status: "Active", },
-  //   { id: 4, name: "Ravi Patel", email: "ravi.patel@example.com", contact: "9212345678", role: "CID Officers", kgid: "53417", status: "Active", },
-  //   { id: 5, name: "Neha Reddy", email: "neha.reddy@example.com", contact: "9123456789", role: "IO officers", kgid: "53418", status: "Inactive", },
-  //   { id: 6, name: "Amit Verma", email: "amit.verma@example.com", contact: "9654321890", role: "Admin IO", kgid: "53419", status: "Active", },
-  //   { id: 7, name: "Rina Joshi", email: "rina.joshi@example.com", contact: "9632587410", role: "CID Officers", kgid: "53420", status: "Active", },
-  //   { id: 8, name: "Karan Yadav", email: "karan.yadav@example.com", contact: "9900112233", role: "IO officers", kgid: "53421", status: "Active", },
-  //   { id: 9, name: "Sonia Malik", email: "sonia.malik@example.com", contact: "9837465821", role: "Admin IO", kgid: "53422", status: "Inactive", },
-  //   { id: 10, name: "Vikram Singh", email: "vikram.singh@example.com", contact: "9238745632", role: "IO officers", kgid: "53423", status: "Active", },
-  // ]);
-
-
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
 
   useEffect(() => {
-      fetchUsers();
+    fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
-      try {
-        const response = await api.get("/user/get_users");
-        console.log("Fetched Users:", response.data.users);
-          setUsers(response.data.users);
-      } catch (err) {
-          console.error("Error fetching users:", err);
-          setError("Failed to fetch users.");
-      } finally {
-          setLoading(false);
+    try {
+      const response = await api.get("/user/get_users");
+      const users = response.users || response.data?.users;
+      if (!users || !Array.isArray(users)) {
+        throw new Error("Invalid API response format: 'users' is not an array");
       }
+      const formattedUsers = users.map(user => ({
+        id: user.user_id,
+        user_id: user.user_id,
+        name: user.name,
+        role: user.role_id,
+        kgid: user.kgid,
+        designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
+        department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
+        division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
+        status: user.dev_status ? "Active" : "Inactive",
+        dev_status: user.dev_status,
+      }));
+
+      setUsers(formattedUsers);
+
+    } catch (err) {
+      setError("Failed to fetch users.");
+    } finally {
+      setLoading(false);
+    }
   };
+
   const columns = [
     {
       field: 'selection',
       headerName: '',
-      flex: 0.5,
       renderCell: (params) => (
-        <Checkbox checked={selectedUsers.includes(params.row.id)} onChange={() => handleSelectUser(params.row.id)} />
+        <Checkbox
+          checked={selectedUsers.includes(params.row.id)}
+          onChange={() => handleSelectUser(params.row.id)}
+        />
       ),
     },
     {
@@ -86,18 +91,6 @@ const UserManagement = () => {
       headerName: 'Name',
       flex: 1,
       sortable: true,
-    },
-    {
-      field: 'email',
-      headerName: 'Email ID',
-      flex: 1.5,
-      sortable: true
-    },
-    {
-      field: 'contact',
-      headerName: 'Contact Number',
-      flex: 1,
-      sortable: true
     },
     {
       field: 'role',
@@ -113,6 +106,24 @@ const UserManagement = () => {
       sortable: true,
     },
     {
+      field: 'designation',
+      headerName: 'Designation',
+      flex: 0.8,
+      sortable: true,
+    },
+    {
+      field: 'department',
+      headerName: 'Department',
+      flex: 0.8,
+      sortable: true,
+    },
+    {
+      field: 'division',
+      headerName: 'Division',
+      flex: 0.8,
+      sortable: true,
+    },
+    {
       field: 'status',
       headerName: 'Status',
       flex: 0.8,
@@ -123,30 +134,21 @@ const UserManagement = () => {
 
   const [newUser, setNewUser] = useState({
     name: "",
-    email: "",
-    contact: "",
     role: "",
     kgid: "",
-    status: "Active",
     designation: "",
     pin: "",
     confirmPin: "",
-    district: "",
-    supervisor_designation: "",
     division: "",
     department: "",
   });
 
   const [errors, setErrors] = useState({
     name: "",
-    email: "",
-    contact: "",
     role: "",
     designation: "",
     pin: "",
     confirmPin: "",
-    district: "",
-    supervisor_designation: "",
     division: "",
     department: "",
   });
@@ -155,63 +157,32 @@ const UserManagement = () => {
     const newErrors = {};
 
     if (!newUser.name) {
-        newErrors.name = "Name is required";
-        console.error("Validation Failed: Name is required");
-    }
-    if (!newUser.email || !/\S+@\S+\.\S+/.test(newUser.email)) {
-        newErrors.email = "Valid email is required";
-        console.error("Validation Failed: Email is invalid or missing");
-    }
-    if (!newUser.contact || newUser.contact.length !== 10) {
-        newErrors.contact = "Contact number must be 10 digits";
-        console.error("Validation Failed: Contact must be 10 digits");
+      newErrors.name = "Name is required";
     }
     if (!newUser.role) {
-        newErrors.role = "Role is required";
-        console.error("Validation Failed: Role is required");
+      newErrors.role = "Role is required";
     }
     if (!newUser.kgid) {
-        newErrors.kgid = "KGID is required";
-        console.error("Validation Failed: KGID is required");
+      newErrors.kgid = "KGID is required";
     }
     if (!newUser.designation || newUser.designation.length === 0) {
-        newErrors.designation = "Designation is required";
-        console.error("Validation Failed: Designation is required");
-    }
-    if (!newUser.supervisor_designation) {
-        newErrors.supervisor_designation = "Supervisor Designation is required";
-        console.error("Validation Failed: Supervisor Designation is required");
+      newErrors.designation = "Designation is required";
     }
     if (!newUser.division) {
-        newErrors.division = "Division is required";
-        console.error("Validation Failed: Division is required");
+      newErrors.division = "Division is required";
     }
     if (!newUser.department) {
-        newErrors.department = "Department is required";
-        console.error("Validation Failed: Department is required");
-    }
-    if (!newUser.district) {
-        newErrors.district = "District is required";
-        console.error("Validation Failed: District is required");
+      newErrors.department = "Department is required";
     }
     if (!newUser.pin) {
-        newErrors.pin = "Pin is required";
-        console.error("Validation Failed: Pin is required");
+      newErrors.pin = "Pin is required";
     }
     if (newUser.pin !== newUser.confirmPin) {
-        newErrors.confirmPin = "Pin does not match";
-        console.error("Validation Failed: Pin does not match");
+      newErrors.confirmPin = "Pin does not match";
     }
-    if (!newUser.status) {
-        newErrors.status = "Status is required";
-        console.error("Validation Failed: Status is required");
-    }
-
-    console.log("Validation Errors:", newErrors);
-    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-};
+  };
 
 
   const totalPages = Math.ceil(users.length / pageSize);
@@ -227,197 +198,249 @@ const UserManagement = () => {
 
   const handleSelectUser = (userId) => {
     setSelectedUsers((prevSelected) => {
-      let newSelectedUsers;
       if (prevSelected.includes(userId)) {
-        newSelectedUsers = prevSelected.filter((id) => id !== userId);
+        setNewUser({});
+        return [];
       } else {
-        newSelectedUsers = [...prevSelected, userId];
         const selectedUser = users.find((user) => user.id === userId);
         if (selectedUser) {
           setNewUser(selectedUser);
         }
+        return [userId];
       }
-      return newSelectedUsers;
     });
   };
-
-  const handleEdit = () => {
-    if (selectedUsers.length === 1) {
-      const userToEdit = selectedUsers[0];
-      setNewUser((prevState) => ({
-        ...prevState,
-        ...userToEdit,
-      }));
-
-      setModalTitle("Edit User");
-      setIsModalOpen(true);
-    } else {
-      setSnackbarMessage("Please select exactly one user to edit.");
-      setSnackbarSeverity('error');
-      setOpenSnackbar(true);
+  const handleEdit = (user) => {
+    if (!user || !user.id) {
+      console.error("Invalid user data for editing.");
+      return;
     }
+    const transaction_id = `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    setNewUser({
+      ...user,
+      transaction_id: transaction_id,
+    });
+
+    setModalTitle("Edit User");
+    setIsModalOpen(true);
   };
 
-  const handleDeactivate = () => {
+  const [transactionId, setTransactionId] = useState("");
+
+  const selectedUsersWithStatus = selectedUsers.map(id =>
+    users.find(user => user.id === id) || { id, dev_status: null }
+  );
+
+  const allUsersInactive = selectedUsersWithStatus.every(user => user.dev_status === false);
+  const actionText = allUsersInactive ? "Activate" : "Deactivate";
+  const actionColor = allUsersInactive ? "#22c55e" : "#ef4444";
+
+  const handleToggleActivation = () => {
     if (selectedUsers.length === 0) {
-      setSnackbarMessage('Please select users to deactivate.');
-      setSnackbarSeverity('error');
+      setSnackbarMessage("Please select users to proceed.");
+      setSnackbarSeverity("error");
       setOpenSnackbar(true);
-    } else {
-      setDeactivationDialogVisible(true);
+      return;
     }
+
+    const newTransactionId = `toggle_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    setTransactionId(newTransactionId);
+    setDeactivationDialogVisible(true);
   };
 
-  const handleConfirmDeactivation = async () => {
-    if (selectedUsers.length === 0) return;
+  const handleConfirmToggleActivation = async () => {
+    if (!transactionId) {
+      setSnackbarMessage("Transaction ID is required.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
+
+    if (!selectedUsers || selectedUsers.length === 0) {
+      setSnackbarMessage("Please select users to proceed.");
+      setSnackbarSeverity("error");
+      setOpenSnackbar(true);
+      return;
+    }
 
     setLoading(true);
 
     try {
-      const serverURL = process.env.REACT_APP_SERVER_URL;
+      const userIds = selectedUsers;
+      const newStatus = allUsersInactive;
 
-      for (const user of selectedUsers) {
-        const response = await fetch(`${serverURL}/deactiveUser`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: user.id, kgid: user.kgid }),
+      const response = await api.post("/user/user_active_deactive", {
+        transaction_id: transactionId,
+        user_id: userIds,
+        dev_status: newStatus,
+      });
+
+      if (!response || !response.success) {
+        toast.error(response.message || "Failed to create role", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
         });
-
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.message || `Failed to deactivate user ID ${user.id}`);
-        }
+        return;
       }
 
-      const updatedUsers = users.map((user) =>
-        selectedUsers.some((selectedUser) => selectedUser.id === user.id)
-          ? { ...user, status: 'Inactive' }
-          : user
+      toast.success(response.message || "Action changedSuccessfully", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-success"
+      });
+
+
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          userIds.includes(user.id) ? { ...user, dev_status: newStatus } : user
+        )
       );
 
-      setUsers(updatedUsers);
-      setSnackbarMessage(`${selectedUsers.length} profiles have been deactivated.`);
-      setSnackbarSeverity('success');
 
+
+      fetchUsers();
     } catch (err) {
-      setSnackbarMessage(err?.message || 'Something went wrong while deactivating users.');
-      setSnackbarSeverity('error');
+      toast.error(err?.message || "Something went wrong. Please try again.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
     } finally {
       setLoading(false);
       setDeactivationDialogVisible(false);
       setSelectedUsers([]);
-      setOpenSnackbar(true);
     }
   };
 
-
   const handleSave = async () => {
-    console.log("Save button clicked"); 
-    console.log("New User Data Before Save:", newUser);
-
-    if (!validateForm()) {
-        console.error("Validation failed");
-        return;
-    }
-
     setLoading(true);
     setValidationError('');
 
+    if (!validateForm()) {
+      toast.error("Validation failed. Please check the form.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
-        // Determine API endpoint
-        const endpoint = newUser.id ? '/update_user' : '/create_user';
+      const endpoint = newUser.id ? '/update_user' : '/create_user';
 
-        // Ensure transaction_id is generated
-        if (!newUser.transaction_id) {
-            newUser.transaction_id = `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+      if (!newUser.transaction_id) {
+        newUser.transaction_id = `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+      }
+
+      const requestBody = newUser.id
+        ? {
+          user_id: newUser.id,
+          username: newUser.name,
+          role_id: newUser.role,
+          kgid: newUser.kgid,
+          pin: newUser.pin,
+          designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,
+          department_id: newUser.department,
+          division_id: newUser.division
         }
+        : {
+          transaction_id: newUser.transaction_id,
+          username: newUser.name,
+          role_id: newUser.role,
+          kgid: newUser.kgid,
+          pin: newUser.pin,
+          designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,
+          department_id: newUser.department,
+          division_id: newUser.division,
+          created_by: "1"
+        };
 
-        // Prepare request body
-        const requestBody = newUser.id
-            ? {
-                user_id: newUser.id,
-                username: newUser.name,
-                role_id: newUser.role,
-                kgid: newUser.kgid,
-                pin: newUser.pin,
-                designation_id: newUser.designation,
-                department_id: newUser.department,
-                division_id: newUser.division
-              }
-            : {
-                transaction_id: newUser.transaction_id,
-                username: newUser.name,
-                role_id: newUser.role,
-                kgid: newUser.kgid,
-                pin: newUser.pin,
-                designation_id: newUser.designation,
-                department_id: newUser.department,
-                division_id: newUser.division,
-                created_by:"1"
-              };
+      const response = await api.post(`/user${endpoint}`, requestBody);
 
-        console.log("Sending Request to Backend:", `/user${endpoint}`);
-        console.log("Request Body:", requestBody);
-
-        // API call (ensure `api.post` is properly configured)
-        const response = await api.post(`/user${endpoint}`, requestBody);
-
-        // Debug raw response
-        console.log("Raw Response:", response);
-
-        // Handle response based on Axios or Fetch
-        let data;
-        if (response.data) {
-            data = response.data;  // Axios response
-        } else {
-            data = await response.json();  // Fetch response
-        }
-
-        console.log("Parsed Response:", data);
-
-        if (!response.status || response.status >= 400) {
-            throw new Error(data.message || 'Failed to save user');
-        }
-
-        // Update UI after successful response
-        if (newUser.id) {
-            setUsers(users.map((user) => (user.id === newUser.id ? newUser : user)));
-            setUserUpdatedFlag(true);
-        } else {
-            setUsers([...users, { ...newUser, id: users.length + 1 }]);
-            setUserUpdatedFlag(false);
-        }
-
-        setShowSuccessDialog(true);
-        setIsModalOpen(false);
-        
-        // Reset form data
-        setNewUser({
-            name: "",
-            email: "",
-            contact: "",
-            role: "",
-            kgid: "",
-            status: "Active",
-            designation: "",
-            pin: "",
-            confirmPin: "",
-            district: "",
-            supervisor_designation: "",
-            division: "",
-            department: "",
+      if (!response || !response.success) {
+        toast.error(response.message || "Failed to create role", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
         });
+        return;
+      }
 
-        setSelectedUsers([]);
+      toast.success(response.message || "User Created Successfully", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-success"
+      });
+
+      if (newUser.id) {
+        setUsers(users.map((user) => (user.id === newUser.id ? newUser : user)));
+        setUserUpdatedFlag(true);
+      } else {
+        setUsers([...users, { ...newUser, id: users.length + 1 }]);
+        setUserUpdatedFlag(false);
+      }
+
+      setNewUser({
+        name: "",
+        role: "",
+        kgid: "",
+        designation: "",
+        pin: "",
+        confirmPin: "",
+        division: "",
+        department: "",
+      });
+
+      setSelectedUsers([]);
+      fetchUsers();
+      setIsModalOpen(false);
 
     } catch (err) {
-        console.error("API Error:", err);
-        setValidationError(err?.message || 'Something went wrong. Please try again.');
-    } finally {
-        setLoading(false);
-    }
-};
+      toast.error(err?.message || "Something went wrong. Please try again.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
 
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
@@ -494,42 +517,69 @@ const UserManagement = () => {
     }));
   };
 
-  // write useEffect to getmasters data from backend
+  const [masterData, setMasterData] = useState({ role: [], designation: [], department: [], division: [] });
+
   useEffect(() => {
-    if (getu_master_data.length === 0) {
-      const needed_masters = ['role', 'designation', 'department', 'division'];
+    if (Object.keys(masterData).length === 0 || masterData.role.length === 0) {
+      const needed_masters = ["role", "designation", "department", "division"];
       fetch_master_data(needed_masters);
     }
-  }, []); // Add empty dependency array
+  }, []);
 
   const fetch_master_data = async (needed_masters) => {
-    const body_data = {};
-    body_data["needed_masters"] = needed_masters;
-    const serverURL = process.env.REACT_APP_SERVER_URL;
-    const token = localStorage.getItem('auth_token');
-    const response = await fetch(`${serverURL}/master/get_master_data`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'token': token 
-      },
-      body: JSON.stringify(body_data),
-    });
+    try {
+      const body_data = { needed_masters };
+      const serverURL = process.env.REACT_APP_SERVER_URL;
+      const token = localStorage.getItem("auth_token");
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch master data');
+      const response = await fetch(`${serverURL}/master/get_master_data`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          token: token,
+        },
+        body: JSON.stringify(body_data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch master data");
+      }
+
+      const data = await response.json();
+
+      setMasterData(data);
+    } catch (error) {
+      console.error("Error fetching master data:", error);
     }
-
-    const data = await response.json();
-    console.log("master Data", data);
   };
+
+  const roleOptions = masterData?.role?.map((item) => ({
+    name: item.name,
+    code: item.code.toString(),
+  })) || [];
+
+  const designationOptions = masterData?.designation?.map((item) => ({
+    name: item.name,
+    code: item.code.toString(),
+  })) || [];
+
+  const departmentOptions = masterData?.department?.map((item) => ({
+    name: item.name,
+    code: item.code.toString(),
+  })) || [];
+
+  const divisionOptions = masterData?.division?.map((item) => ({
+    name: item.name,
+    code: item.code.toString(),
+  })) || [];
+
 
   return (
     <Box p={2}>
       <div className="m-3 ml-4 p-3 bg-white border-round-sm">
         <div className="flex align-items-center" style={{ display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
           <div className="flex flex-column">
-            <div className="flex items-center" style={{ display: "flex", gap: "8px", alignItems: "center"}}>
+            <div className="flex items-center" style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <h1 style={{ fontSize: "24px", fontWeight: "bold", color: "#2d3748", margin: "0" }}>
                 User Management
               </h1>
@@ -612,30 +662,31 @@ const UserManagement = () => {
                       backgroundColor: "#f1f5f9",
                     },
                   }}
-                  onClick={handleEdit}
+                  onClick={() => handleEdit()}  // Pass the selected user
                 >
                   Edit User
                 </Button>
-
+                
                 <Button
                   variant="outlined"
-                  startIcon={<DoNotDisturbOnIcon />}
+                  startIcon={allUsersInactive ? <CheckCircleIcon /> : <DoNotDisturbOnIcon />}
                   sx={{
                     height: "38px",
-                    color: "#ef4444",
-                    borderColor: "#ef4444",
-                    backgroundColor: "#fef2f2",
+                    color: actionColor,
+                    borderColor: actionColor,
+                    backgroundColor: allUsersInactive ? "#dcfce7" : "#fef2f2",
                     borderWidth: "2px",
                     fontWeight: "600",
-                    textTransform: 'none',
+                    textTransform: "none",
                     "&:hover": {
-                      backgroundColor: "#fee2e2",
+                      backgroundColor: allUsersInactive ? "#bbf7d0" : "#fee2e2",
                     },
                   }}
-                  onClick={handleDeactivate}
+                  onClick={handleToggleActivation}
                 >
-                  De-activate Selected User
+                  {actionText} Selected User{selectedUsers.length > 1 ? "s" : ""}
                 </Button>
+
               </>
             )}
           </div>
@@ -645,7 +696,7 @@ const UserManagement = () => {
       {/* Table View */}
       <div className="pt-4" style={{ overflowX: "auto" }}>
         <Box py={1}>
-          <TableView rows={currentPageRows} columns={columns} handleNext={handleNext} handleBack={handleBack} backBtn={currentPage > 0} nextBtn={currentPage < totalPages - 1}/>
+          <TableView rows={currentPageRows} columns={columns} handleNext={handleNext} handleBack={handleBack} backBtn={currentPage > 0} nextBtn={currentPage < totalPages - 1} />
         </Box>
       </div>
 
@@ -680,16 +731,11 @@ const UserManagement = () => {
                   setNewUser({
                     id: null,
                     name: "",
-                    email: "",
-                    contact: "",
                     role: "",
                     kgid: "",
-                    status: "Active",
                     designation: "",
                     pin: "",
                     confirmPin: "",
-                    district: "",
-                    supervisor_designation: "",
                     division: "",
                     department: "",
                   });
@@ -743,49 +789,12 @@ const UserManagement = () => {
                   field={{
                     name: "role",
                     label: "Select Role",
-                    options: [
-                      { name: "Admin IO", code: "Admin IO" },
-                      { name: "CID Officers", code: "CID Officers" },
-                      { name: "IO Officers", code: "IO Officers" }
-                    ],
+                    options: roleOptions
                   }}
                   onChange={handleDropDownChange}
                 />
               </Grid>
 
-              {/* Other Fields */}
-              <Grid item xs={12} sm={6}>
-                <ShortText
-                  field={{
-                    name: "email",
-                    label: "Enter Email ID",
-                    required: true,
-                    pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$", // Correct email pattern
-                  }}
-                  formData={newUser}
-                  errors={errors}
-                  onChange={handleInputChange}
-                />
-
-
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <NumberField
-                  field={{
-                    name: "contact",
-                    label: "Enter Contact Number",
-                    required: true,
-                    minLength: 10,
-                    maxLength: 10,
-                    info: "Enter a valid 10-digit contact number",
-                  }}
-                  formData={newUser}
-                  errors={errors}
-                  onChange={handleInputChange}
-                />
-
-              </Grid>
 
               <Grid item xs={12} sm={6}>
                 <NumberField
@@ -804,66 +813,13 @@ const UserManagement = () => {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <AutocompleteField
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "district",
-                    label: "District",
-                    options: [
-                      { name: "Bengaluru Urban", code: "Bengaluru Urban" },
-                      { name: "Bengaluru Rural", code: "Bengaluru Rural" },
-                      { name: "Chikkaballapur", code: "Chikkaballapur" },
-                      { name: "Ramanagara", code: "Ramanagara" },
-                      { name: "Kolar", code: "Kolar" },
-                      { name: "Hassan", code: "Hassan" },
-                      { name: "Tumkur", code: "Tumkur" },
-                      { name: "Mandya", code: "Mandya" },
-                      { name: "Vijayapura", code: "Vijayapura" }
-                    ],
-                    required: true
-                  }}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
                 <MultiSelect
                   formData={newUser}
                   errors={errors}
                   field={{
                     name: "designation",
                     label: "Designation",
-                    options: [
-                      { name: "DGP", code: "DGP" },
-                      { name: "ADGP", code: "ADGP" },
-                      { name: "IGP", code: "IGP" },
-                      { name: "DIGP", code: "DIGP" },
-                      { name: "DSP", code: "DSP" },
-                      { name: "PI", code: "PI" }
-                    ],
-                    required: true
-                  }}
-                  onChange={handleDropDownChange}
-                />
-
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <MultiSelect
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "supervisor_designation",
-                    label: "Supervisor Designation",
-                    options: [
-                      { name: "DGP", code: "DGP" },
-                      { name: "ADGP", code: "ADGP" },
-                      { name: "IGP", code: "IGP" },
-                      { name: "DIGP", code: "DIGP" },
-                      { name: "DSP", code: "DSP" },
-                      { name: "PI", code: "PI" }
-                    ],
+                    options: designationOptions,
                     required: true
                   }}
                   onChange={handleDropDownChange}
@@ -878,10 +834,7 @@ const UserManagement = () => {
                   field={{
                     name: "department",
                     label: "Department",
-                    options: [
-                      { name: "CID", code: "CID" },
-                      { name: "EO", code: "EO" }
-                    ],
+                    options: departmentOptions,
                     required: true
                   }}
                   onChange={handleDropDownChange}
@@ -895,17 +848,7 @@ const UserManagement = () => {
                   field={{
                     name: "division",
                     label: "Division",
-                    options: [
-                      { name: "Administration", code: "Administration" },
-                      { name: "Homicide and Burglary", code: "Homicide and Burglary" },
-                      { name: "Special Enquiry", code: "Special Enquiry" },
-                      { name: "Anti Human Trafficking Unit", code: "Anti Human Trafficking" },
-                      { name: "Cyber Crime", code: "Cyber Crime" },
-                      { name: "Economic offences", code: "Counter Felt Arms & Narcotics" },
-                      { name: "Financial Intelligence", code: "Financial Intelligence" },
-                      { name: "Deposit Fraud Investigation", code: "Deposit Fraud Investigation" },
-                      { name: "Counter Felt Arms & Narcotics & Idol", code: "Counter Felt Arms & Narcotics & Idol" }
-                    ],
+                    options: divisionOptions,
                     required: true
                   }}
                   onChange={handleDropDownChange}
@@ -1004,26 +947,40 @@ const UserManagement = () => {
           onClose={() => setDeactivationDialogVisible(false)}
           maxWidth="sm"
           fullWidth
-          sx={{ borderRadius: "12px", padding: "15px", }}
+          sx={{ borderRadius: "12px", padding: "15px" }}
         >
           <DialogContent sx={{ textAlign: "left" }}>
             <div style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}>
-              <div style={{ width: "60px", height: "60px", borderRadius: "50%", overflow: "hidden", background: "rgb(250 209 209)", padding: "3px", }}>
-                <img src={ErrorIcon} alt="Warning Icon" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", }} />
+              <div
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  overflow: "hidden",
+                  background: allUsersInactive ? "rgb(209 250 229)" : "rgb(250 209 209)",
+                  padding: "3px",
+                }}
+              >
+                <img
+                  src={ErrorIcon}
+                  alt="Warning Icon"
+                  style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+                />
               </div>
             </div>
 
-            <p style={{ fontSize: "20px", fontWeight: "bold", }}>
-              De-activate{" "}
-              <span style={{ color: "red" }}>
-                {selectedUsers.length < 10 ? `0${selectedUsers.length}` : selectedUsers.length} </span>{" "}
-              <span style={{ color: "red" }}> Selected </span>{" "} profile(s)
+            <p style={{ fontSize: "20px", fontWeight: "bold" }}>
+              {actionText}{" "}
+              <span style={{ color: actionColor }}>
+                {selectedUsers.length < 10 ? `0${selectedUsers.length}` : selectedUsers.length}
+              </span>{" "}
+              <span style={{ color: actionColor }}> Selected </span> profile(s)
             </p>
 
-            <p style={{ fontSize: "16px", color: "rgb(156 163 175)", margin: 0 }} >
-              Are you sure you want to deactivate the selected profile(s)? This action cannot be undone.
+            <p style={{ fontSize: "16px", color: "rgb(156 163 175)", margin: 0 }}>
+              Are you sure you want to {actionText.toLowerCase()} the selected profile(s)? This action
+              cannot be undone.
             </p>
-
           </DialogContent>
 
           <DialogActions sx={{ display: "flex", justifyContent: "center", padding: "10px 20px" }}>
@@ -1049,20 +1006,19 @@ const UserManagement = () => {
               variant="contained"
               sx={{
                 color: "white",
-                backgroundColor: "#ef4444",
+                backgroundColor: actionColor,
                 borderRadius: "5px",
                 "&:hover": {
-                  backgroundColor: "#dc2626",
+                  backgroundColor: allUsersInactive ? "#16a34a" : "#dc2626",
                 },
                 width: "150px",
                 boxShadow: "none",
               }}
-              onClick={handleConfirmDeactivation}
+              onClick={handleConfirmToggleActivation}
             >
-              De-activate
+              {actionText}
             </Button>
           </DialogActions>
-
         </Dialog>
       </div>
 
