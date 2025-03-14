@@ -144,6 +144,7 @@ const RolePage = () => {
     };
 
     const deleteRole = async (id) => {
+        setLoading(true);
         if (!id) {
             toast.error("Invalid role ID.");
             return;
@@ -198,10 +199,12 @@ const RolePage = () => {
                 className: "toast-warning",
             });
         }
+         setLoading(false);
     };
     
     
     const get_details = async () => {
+         setLoading(true);
         try {
             const response = await api.post("/role/get_all_roles");
     
@@ -231,10 +234,12 @@ const RolePage = () => {
             console.error("Error fetching roles:", err);
             toast.error("Something went wrong. Please try again.");
         }
+         setLoading(false);
     };
 
 
     const get_permissions = async () => {
+         setLoading(true);
         try {
             const response = await api.post("/role/get_all_permissions");
     
@@ -255,9 +260,11 @@ const RolePage = () => {
             console.error("Error fetching permissions:", err);
             toast.error("Something went wrong. Please try again.");
         }
+         setLoading(false);
     };
         
     const get_module = async () => {
+         setLoading(true);
         try {
             const response = await api.post("/role/get_all_module");
     
@@ -277,6 +284,7 @@ const RolePage = () => {
             console.error("Error fetching module:", err);
             toast.error("Something went wrong. Please try again.");
         }
+         setLoading(false);
     };
         
     useEffect(() => {
@@ -340,6 +348,7 @@ const RolePage = () => {
     };
 
     const handleAddSaveData = async () => {
+        
         var error_flag = false;
     
         if (addRoleData.role_title.trim() === '') {
@@ -371,7 +380,7 @@ const RolePage = () => {
             });
             return;
         }
-    
+     setLoading(true);
         try {
             const response = await api.post("/role/create_role", addRoleData);
     
@@ -423,6 +432,7 @@ const RolePage = () => {
                 className: "toast-warning",
             });
         }
+         setLoading(false);
     };
     
     const handleInputChange = (e) => {
@@ -433,16 +443,21 @@ const RolePage = () => {
         }));
     };
 
-    const handleCheckboxChange = (e) => {
-        const { value, checked } = e.target;
-        setSelectedRole(prevState => ({
-            ...prevState,
+    const handleCheckboxChange = (event) => {
+        const { id, checked } = event.target;
+        console.log(id, checked);
+        setSelectedRole((prevSelectedRole) => ({
+            ...prevSelectedRole,
             permissions: {
-                ...prevState.permissions,
-                [value]: checked,
+                ...prevSelectedRole.permissions,
+                [id]: checked,
             },
         }));
     };
+
+    useEffect(() => {
+        console.log(selectedRole);
+    }, [selectedRole]);
 
 
     const handleEditData = async () => {
@@ -485,7 +500,7 @@ const RolePage = () => {
             permissions: selectedRole.permissions,
             transaction_id: selectedRole.transaction_id,
         };
-    
+     setLoading(true);
         try {
             const response = await api.post("/role/update_role", requestData);
     
@@ -528,6 +543,7 @@ const RolePage = () => {
                 className: "toast-warning",
             });
         }
+         setLoading(false);
     };
 
     return (
@@ -577,7 +593,7 @@ const RolePage = () => {
                                 />
                             </Box>
 
-                            <h4 className="form-field-heading">Permissions</h4>
+                            {/* <h4 className="form-field-heading">Permissions</h4>
                             <Grid container spacing={2}>
                                 {selectedRole &&
                                     Object.keys(selectedRole)
@@ -595,7 +611,78 @@ const RolePage = () => {
                                                 </label>
                                             </Grid>
                                         ))}
-                            </Grid>
+                            </Grid> */}
+                            <div>
+                                    <h4 className="form-field-heading">Permissions</h4>
+                                    {module_data &&
+                                        Object.keys(module_data).map((index) => {
+                                            const module_id = module_data[index].module_id;
+                                            const module_name = module_data[index].name;
+                                            const module_ui_name = module_data[index].ui_name;
+                                            const sub_modules = JSON.parse(module_data[index].sub_modules || "[]");
+                                            if(selectedRole && selectedRole[module_name])
+                                            {
+                                                const ModuleHeader = (
+                                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                        <Checkbox
+                                                            name="addRolePermissions"
+                                                            id={module_name}
+                                                            value={module_name}
+                                                            checked={true}
+                                                        />
+                                                        <Typography variant="subtitle1">{module_ui_name}</Typography>
+                                                    </Box>
+                                                );
+                                                
+                                                const ModulePermissions = (
+                                                    <Grid container spacing={2} sx={{ marginTop: 1 }}>
+                                                        {permission_data &&
+                                                            Object.keys(permission_data).map((permission_index) => {
+                                                                const permission = permission_data[permission_index];
+                                                                const permission_key = permission.permission_key;
+                                                                if(selectedRole && selectedRole[permission_key])
+                                                                {
+                                                                    if (module_id === permission.module_id) {
+                                                                        return (
+                                                                            <Grid item xs={12} md={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                                <Checkbox
+                                                                                    name="addRolePermissions"
+                                                                                    id={permission.permission_key}
+                                                                                    value={permission.permission_key}
+                                                                                    checked={true}
+                                                                                />
+                                                                                <Typography variant="body2">{permission.permission_name}</Typography>
+                                                                            </Grid>
+                                                                        );
+                                                                    }
+                                                                }
+                                                                return null;
+                                                            })}
+                                                    </Grid>
+                                                );
+                                           
+                                                return (
+                                                    <Box key={module_name} sx={{ marginBottom: 2, padding: 2, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
+                                                        {sub_modules.length > 0 ? (
+                                                            <Accordion>
+                                                                <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
+                                                                    {ModuleHeader}
+                                                                </AccordionSummary>
+                                                                <AccordionDetails>{ModulePermissions}</AccordionDetails>
+                                                            </Accordion>
+                                                        ) : (
+                                                            <Box>
+                                                                {ModuleHeader}
+                                                                {ModulePermissions}
+                                                            </Box>
+                                                        )}
+                                                    </Box>
+                                                );
+                                            }
+
+
+                                        })}
+                            </div>
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
@@ -652,7 +739,7 @@ const RolePage = () => {
                                     />
                                 </Box>
 
-                                <h4 className="form-field-heading">Permissions</h4>
+                                {/* <h4 className="form-field-heading">Permissions</h4>
                                 <Grid container spacing={2}>
                                     {selectedRole.permissions &&
                                         Object.keys(selectedRole.permissions).map((fieldName) => (
@@ -669,7 +756,73 @@ const RolePage = () => {
                                                 </label>
                                             </Grid>
                                         ))}
-                                </Grid>
+                                </Grid> */}
+
+                                 <div>
+                                    <h4 className="form-field-heading">Permissions</h4>
+                                    {module_data &&
+                                        Object.keys(module_data).map((index) => {
+                                            const module_id = module_data[index].module_id;
+                                            const module_name = module_data[index].name;
+                                            const module_ui_name = module_data[index].ui_name;
+                                            const sub_modules = JSON.parse(module_data[index].sub_modules || "[]");
+
+                                            const ModuleHeader = (
+                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                    <Checkbox
+                                                        name="addRolePermissions"
+                                                        id={module_name}
+                                                        value={module_name}
+                                                        checked={selectedRole['permissions'][module_name] === true}
+                                                        onChange={handleCheckboxChange}
+                                                    />
+                                                    <Typography variant="subtitle1">{module_ui_name}</Typography>
+                                                </Box>
+                                            );
+
+                                            const ModulePermissions = (
+                                                <Grid container spacing={2} sx={{ marginTop: 1 }}>
+                                                    {permission_data &&
+                                                        Object.keys(permission_data).map((permission_index) => {
+                                                            const permission = permission_data[permission_index];
+                                                            if (module_id === permission.module_id) {
+                                                                return (
+                                                                    <Grid item xs={12} md={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                        <Checkbox
+                                                                            name="addRolePermissions"
+                                                                            id={permission.permission_key}
+                                                                            value={permission.permission_key}
+                                                                            checked={selectedRole['permissions'][permission.permission_key] === true}
+                                                                            onChange={handleCheckboxChange}
+                                                                        />
+                                                                        <Typography variant="body2">{permission.permission_name}</Typography>
+                                                                    </Grid>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })}
+                                                </Grid>
+                                            );
+
+                                            return (
+                                                <Box key={module_name} sx={{ marginBottom: 2, padding: 2, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
+                                                    {sub_modules.length > 0 ? (
+                                                        <Accordion>
+                                                            <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
+                                                                {ModuleHeader}
+                                                            </AccordionSummary>
+                                                            <AccordionDetails>{ModulePermissions}</AccordionDetails>
+                                                        </Accordion>
+                                                    ) : (
+                                                        <Box>
+                                                            {ModuleHeader}
+                                                            {ModulePermissions}
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                            );
+                                        })}
+                                </div>
                             </FormControl>
                         </DialogContentText>
                     </DialogContent>
@@ -814,66 +967,70 @@ const RolePage = () => {
 
                                 <div>
                                     <h4 className="form-field-heading">Permissions</h4>
-                                    {
-                                        module_data && Object.keys(module_data).map((index) => {
-                                        const module_id = module_data[index].module_id;   
-                                        const module_name = module_data[index].name;
-                                        const module_ui_name = module_data[index].ui_name;
-                                        const sub_modules = module_data[index].sub_modules;
-                                        console.log(module_data)   
-                                        return (
-                                            <Accordion key={module_name}>
-                                            <AccordionSummary
-                                                expandIcon={<ExpandMoreIcon />}
-                                                aria-controls={`panel-${module_name}-content`}
-                                                id={`panel-${module_name}-header`}
-                                            >
-                                                <Checkbox
-                                                name="addRolePermissions"
-                                                id={module_name}
-                                                value={module_name}
-                                                p={0}
-                                                checked={addRoleData['permissions'][module_name] === true}
-                                                onChange={(e) =>
-                                                    handlePermissionData(module_name, e.target.checked)
-                                                }
-                                                />
-                                                <Typography>{module_ui_name}</Typography>
-                                            </AccordionSummary>
-                                            <AccordionDetails>
-                                                { 
-                                                permission_data && Object.keys(permission_data).map((permission_index) => {
-                                                    const permission_belongs_to_module_id = permission_data[permission_index].module_id;
-                                                    const permission_key = permission_data[permission_index].permission_key;
-                                                    const permission_name = permission_data[permission_index].permission_name;
-                                                    if(module_id == permission_belongs_to_module_id)
-                                                    {
-                                                        return (
-                                                            <Grid item xs={12} md={4} key={permission_key} sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                <Checkbox
-                                                                    name="addRolePermissions"
-                                                                    id={permission_key}
-                                                                    value={permission_key}
-                                                                    p={0}
-                                                                    checked={addRoleData['permissions'][permission_name] === true ? true : false}
-                                                                    onChange={(e) =>
-                                                                        handlePermissionData(permission_key, e.target.checked)
-                                                                    }
-                                                                />
-                                                                <label htmlFor={permission_name} style={{ fontSize: '14px' }}>
-                                                                    {permission_name}
-                                                                </label>
-                                                            </Grid>
-                                                        )
-                                                    }
-                                                })
-                                        }
-                                            </AccordionDetails>
-                                            </Accordion>
-                                        )
-                                        })
-                                    }
+                                    {module_data &&
+                                        Object.keys(module_data).map((index) => {
+                                            const module_id = module_data[index].module_id;
+                                            const module_name = module_data[index].name;
+                                            const module_ui_name = module_data[index].ui_name;
+                                            const sub_modules = JSON.parse(module_data[index].sub_modules || "[]");
+
+                                            const ModuleHeader = (
+                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                    <Checkbox
+                                                        name="addRolePermissions"
+                                                        id={module_name}
+                                                        value={module_name}
+                                                        checked={addRoleData["permissions"][module_name] === true}
+                                                        onChange={(e) => handlePermissionData(module_name, e.target.checked)}
+                                                    />
+                                                    <Typography variant="subtitle1">{module_ui_name}</Typography>
+                                                </Box>
+                                            );
+
+                                            const ModulePermissions = (
+                                                <Grid container spacing={2} sx={{ marginTop: 1 }}>
+                                                    {permission_data &&
+                                                        Object.keys(permission_data).map((permission_index) => {
+                                                            const permission = permission_data[permission_index];
+                                                            if (module_id === permission.module_id) {
+                                                                return (
+                                                                    <Grid item xs={12} md={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                        <Checkbox
+                                                                            name="addRolePermissions"
+                                                                            id={permission.permission_key}
+                                                                            value={permission.permission_key}
+                                                                            checked={addRoleData["permissions"][permission.permission_key] === true}
+                                                                            onChange={(e) => handlePermissionData(permission.permission_key, e.target.checked)}
+                                                                        />
+                                                                        <Typography variant="body2">{permission.permission_name}</Typography>
+                                                                    </Grid>
+                                                                );
+                                                            }
+                                                            return null;
+                                                        })}
+                                                </Grid>
+                                            );
+
+                                            return (
+                                                <Box key={module_name} sx={{ marginBottom: 2, padding: 2, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
+                                                    {sub_modules.length > 0 ? (
+                                                        <Accordion>
+                                                            <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
+                                                                {ModuleHeader}
+                                                            </AccordionSummary>
+                                                            <AccordionDetails>{ModulePermissions}</AccordionDetails>
+                                                        </Accordion>
+                                                    ) : (
+                                                        <Box>
+                                                            {ModuleHeader}
+                                                            {ModulePermissions}
+                                                        </Box>
+                                                    )}
+                                                </Box>
+                                            );
+                                        })}
                                 </div>
+
 
                                 {/* <h4 className="form-field-heading">Permissions</h4>
                                 <Grid container spacing={2}>
