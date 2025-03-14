@@ -2,8 +2,8 @@ const fs = require('fs');
 const path = require('path');
 const { Sequelize } = require("sequelize");
 const dbConfig = require("../config/dbConfig");
-const { UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
-
+const {Role ,  UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
+const { Op } = require('sequelize');
 
 // Initialize Sequelize
 const sequelize = new Sequelize(dbConfig.database.database, dbConfig.database.username, dbConfig.database.password, {
@@ -59,12 +59,17 @@ exports.create_user = async (req, res) => {
         }, { transaction: t });
 
         // Create user designation
-        await UserDesignation.create({
-            user_id: newUser.user_id,
-            designation_id: designation_id,
-            created_by: created_by
-        }, { transaction: t });
-
+        const designationIds = designation_id.includes(",")
+        ? designation_id.split(",").map(id => parseInt(id.trim(), 10))
+        : [parseInt(designation_id, 10)];
+        for (const desigId of designationIds) {
+            await UserDesignation.create({
+                user_id: newUser.user_id,
+                designation_id: desigId,
+                created_by: created_by
+            }, { transaction: t });
+        }
+            
         // Create user department
         const newUserDepartment = await UsersDepartment.create({
             user_id: newUser.user_id,
@@ -81,7 +86,7 @@ exports.create_user = async (req, res) => {
         }, { transaction: t });
 
         await t.commit();
-        return res.status(201).json({ message: "User created successfully" });
+        return res.status(201).json({ success: true, message: "User created successfully" });
 
     } catch (error) {
         if (t.finished !== "rollback") {
@@ -98,7 +103,7 @@ exports.create_user = async (req, res) => {
 };
 
 exports.update_user = async (req, res) => {
-    const { user_id, username, role_id, kgid, pin, designation_id, department_id, division_id , transaction_id} = req.body;
+    const { user_id, username, role_id, kgid, designation_id, department_id, division_id , transaction_id} = req.body;
 
     if(!transaction_id || transaction_id == "")
     {
@@ -138,10 +143,10 @@ exports.update_user = async (req, res) => {
         );
 
         // Update auth secure details
-        await AuthSecure.update(
-            { pin: pin },
-            { where: { user_id: user_id }, transaction: t }
-        );
+        // await AuthSecure.update(
+        //     { pin: pin },
+        //     { where: { user_id: user_id }, transaction: t }
+        // );
 
         // Update user designation
         await UserDesignation.update(
@@ -160,12 +165,12 @@ exports.update_user = async (req, res) => {
             // Update user division
             await UsersDivision.update(
                 { division_id: division_id },
-                { where: { user_department_id: userDepartment.user_department_id }, transaction: t }
+                { where: { users_department_id: userDepartment.users_department_id }, transaction: t }
             );
         }
 
         await t.commit();
-        return res.status(200).json({ message: "User updated successfully" });
+        return res.status(201).json({ success: true, message: "User updated successfully" });
 
     } catch (error) {
         if (t.finished !== "rollback") {
@@ -218,7 +223,7 @@ exports.user_active_deactive = async (req, res) => {
         );
 
         await t.commit();
-        return res.status(200).json({ message: `User ${dev_status ? "activated" : "deactivated"} successfully` });
+        return res.status(200).json({success: true, message: `User ${dev_status ? "activated" : "deactivated"} successfully` });
 
     } catch (error) {
         if (t.finished !== "rollback") {
@@ -235,9 +240,20 @@ exports.user_active_deactive = async (req, res) => {
 };
 
 exports.get_users = async (req, res) => {
+    const excluded_role_ids = [1, 10 ,21]; 
     try {
         const users = await Users.findAll({
             include: [
+                 {
+                    model: Role,
+                    as: "role",
+                    attributes: ["role_id","role_title"],
+                    where: {
+                        role_id: {
+                        [Op.notIn]: excluded_role_ids
+                        }
+                    }
+                },
                 {
                     model: UserDesignation,
                     as: "users_designations",

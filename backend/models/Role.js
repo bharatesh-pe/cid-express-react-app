@@ -360,6 +360,12 @@ module.exports = (sequelize, DataTypes) => {
     tableName: 'role',
     timestamps: false
   });
-
+  
+  Role.associate = (models) => {
+    Role.hasMany(models.Users, {
+      foreignKey: 'role_id',
+      as: 'users'
+    });
+  };
   return Role;
 };
