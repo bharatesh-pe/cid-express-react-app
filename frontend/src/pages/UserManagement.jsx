@@ -34,7 +34,6 @@ const UserManagement = () => {
 
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
-
   const columns = [
     {
       field: 'selection',
