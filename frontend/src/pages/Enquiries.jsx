@@ -251,84 +251,87 @@ const ProfileData = () => {
             setLoading(false);
 
             if (getTemplateResponse && getTemplateResponse.success) {
-                if (getTemplateResponse.data && getTemplateResponse.data['data'] && getTemplateResponse.data['data'][0]) {
+                if (getTemplateResponse.data && getTemplateResponse.data['data']) {
 
-                    var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
+                    if(getTemplateResponse.data['data'][0]){
 
-                    const updatedHeader = [
-                        {
-                            field: 'sl_no',
-                            headerName: 'S.No',
-                            resizable: false,
-                            width: 75,
-                            renderCell: (params) => {
-                                return (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        {params.value}
-                                    </Box>
-                                )
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
+
+                        const updatedHeader = [
+                            {
+                                field: 'sl_no',
+                                headerName: 'S.No',
+                                resizable: false,
+                                width: 75,
+                                renderCell: (params) => {
+                                    return (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            {params.value}
+                                        </Box>
+                                    )
+                                },
                             },
-                        },
-                        ...Object.keys(getTemplateResponse.data['data'][0])
-                            .filter((key) => !excludedKeys.includes(key))
-                            .map((key) => {
-                                var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
+                            ...Object.keys(getTemplateResponse.data['data'][0])
+                                .filter((key) => !excludedKeys.includes(key))
+                                .map((key) => {
+                                    var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
 
-                                return {
-                                    field: key,
-                                    headerName: updatedKeyName ? updatedKeyName : '',
-                                    width: 150,
-                                    resizable: true,
-                                    renderHeader: () => (
-                                        <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
-                                            <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
-                                        </div>
-                                    ),
-                                    renderCell: (params) => {
-                                        return tableCellRender(key, params, params.value)
-                                    },
-                                };
-                            }),
-                        {
-                            field: '',
-                            headerName: 'Action',
-                            resizable: false,
-                            width: 300,
-                            renderCell: (params) => {
-                                return (
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
-                                            View
-                                        </Button>
-                                        <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
-                                            Edit
-                                        </Button>
-                                        <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
-                                            Delete
-                                        </Button>
-                                    </Box>
-                                );
+                                    return {
+                                        field: key,
+                                        headerName: updatedKeyName ? updatedKeyName : '',
+                                        width: 150,
+                                        resizable: true,
+                                        renderHeader: () => (
+                                            <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
+                                                <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
+                                            </div>
+                                        ),
+                                        renderCell: (params) => {
+                                            return tableCellRender(key, params, params.value)
+                                        },
+                                    };
+                                }),
+                            {
+                                field: '',
+                                headerName: 'Action',
+                                resizable: false,
+                                width: 300,
+                                renderCell: (params) => {
+                                    return (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
+                                                View
+                                            </Button>
+                                            <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
+                                                Edit
+                                            </Button>
+                                            <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
+                                                Delete
+                                            </Button>
+                                        </Box>
+                                    );
+                                }
                             }
+                        ];
+
+                        if (Array.isArray(getTemplateResponse.data['columns'])) {
+
+                            var updatedHeaderData = getTemplateResponse.data['columns']
+                                .filter((key) => key.name && key.name.trim() !== '')
+                                .map((key) => key.name);
+
+                            setShowDownloadData(updatedHeaderData);
+                            setShowSelectedDownloadData({
+                                downloadHeaders: updatedHeaderData.map((data) => data)
+                            });
+
+                        } else {
+                            setShowDownloadData([]);
+                            setShowSelectedDownloadData({});
                         }
-                    ];
 
-                    if (Array.isArray(getTemplateResponse.data['columns'])) {
-
-                        var updatedHeaderData = getTemplateResponse.data['columns']
-                            .filter((key) => key.name && key.name.trim() !== '')
-                            .map((key) => key.name);
-
-                        setShowDownloadData(updatedHeaderData);
-                        setShowSelectedDownloadData({
-                            downloadHeaders: updatedHeaderData.map((data) => data)
-                        });
-
-                    } else {
-                        setShowDownloadData([]);
-                        setShowSelectedDownloadData({});
+                        setviewTemplateTableData(updatedHeader)
                     }
-
-                    setviewTemplateTableData(updatedHeader)
 
                     var updatedTableData = getTemplateResponse.data['data'].map((field, index) => {
 
