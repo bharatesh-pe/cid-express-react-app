@@ -3,9 +3,9 @@
 module.exports = {
   async up(queryInterface, Sequelize) {
     const schema = process.env.DB_SCHEMA || "public"; // Default to 'public' schema
-console.log(schema,"schema")
+    console.log(schema, "schema")
     await queryInterface.createTable(
-      { schema: schema, tableName: "n" },
+      { schema: schema, tableName: "users_hierarchy" },
       {
         users_hierarchy_id: {
           type: Sequelize.INTEGER,
