@@ -3,7 +3,7 @@ import Modal from "../components/Modal/Modal.jsx";
 import PasswordInput from "../components/password_input/password_input";
 import { Box, Checkbox, Grid } from '@mui/material';
 import MultiSelect from "../components/form/MultiSelect.jsx";
-import { Button } from '@mui/material';
+import { Button, CircularProgress} from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import EditIcon from '@mui/icons-material/Edit';
@@ -184,6 +184,7 @@ const UserManagement = () => {
 
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
       const response = await api.get("/user/get_users");
       const users = response.users || response.data?.users;
@@ -603,6 +604,7 @@ const UserManagement = () => {
   }, []);
   
   const fetch_master_data = async (needed_masters) => {
+    setLoading(true);
     try {
       const body_data = { needed_masters };
       const data = await api.post("/master/get_master_data", body_data);
@@ -611,6 +613,7 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Error fetching master data:", error);
     }
+    setLoading(false);
   };
 
   const roleOptions = masterData?.role?.map((item) => ({
@@ -1058,6 +1061,11 @@ const UserManagement = () => {
           </DialogActions>
         </Dialog>
       </div>
+                  {
+                      loading && <div className='parent_spinner' tabIndex="-1" aria-hidden="true">
+                          <CircularProgress size={100} />
+                      </div>
+                  }
     </Box>
   );
 };
