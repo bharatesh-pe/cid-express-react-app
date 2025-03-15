@@ -2164,6 +2164,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
 
         const table_name = template.table_name;
+        const template_name = template.template_name;
 
 
         if (!table_name) {
@@ -2608,6 +2609,8 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             meta: {
                 page,
                 limit,
+                table_name,
+                template_name,
                 totalItems,
                 totalPages,
                 sort_by: validSortBy,
