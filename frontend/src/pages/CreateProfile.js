@@ -388,9 +388,18 @@ const CreateProfile = () => {
     // Handle input change
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
+
+        var newObj = {
             ...formData,
             [name]: value,
+        }
+
+        if(name === 'type'){
+            newObj['stepper'] = [];
+        }
+
+        setFormData({
+            ...newObj
         });
     };
 
@@ -404,7 +413,8 @@ const CreateProfile = () => {
             try {
 
                 var duplicatePayload = {
-                    "template_name" : formData.profile_name
+                    "template_name" : formData.profile_name,
+                    "template_module" : formData.module
                 }
 
                 var duplicateCheck = await api.post('templates/checkDuplicateTemplate',duplicatePayload);
