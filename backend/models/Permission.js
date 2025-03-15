@@ -15,10 +15,23 @@ module.exports = (sequelize, DataTypes) => {
         primaryKey: true,
         autoIncrement: true,
       },
+      permission_key: {
+        type: DataTypes.STRING(255),
+        allowNull: false,
+        unique: true,
+      },
       permission_name: {
         type: DataTypes.STRING(255),
         allowNull: false,
         unique: true,
+      },
+      module_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'Module',
+          key: 'module_id'
+        }
       },
       created_at: {
         type: DataTypes.DATE,
@@ -33,6 +46,14 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: false,
     }
   );
+
+  Permission.associate = (models) => {
+    // Define the association with Role table
+    Permission.belongsTo(models.Module, {
+      foreignKey: 'module_id',
+      as: 'module'
+    });
+  }
 
   return Permission;
 };

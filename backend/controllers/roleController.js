@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { Role } = require('../models');
+const { Role , Permission , Module } = require('../models');
+const { Op } = require('sequelize');
 
 exports.create_role = async (req, res) => {
   const {
@@ -62,7 +63,15 @@ exports.create_role = async (req, res) => {
 
 exports.get_all_roles = async (req, res) => {
   try {
-    const roles = await Role.findAll();
+
+    const excluded_role_ids = [1]; 
+    const roles = await Role.findAll({
+      where: {
+        role_id: {
+          [Op.notIn]: excluded_role_ids
+        }
+      }
+    });
 
     if (!roles.length) {
       return res.status(404).json({
@@ -84,6 +93,61 @@ exports.get_all_roles = async (req, res) => {
   }
 };
 
+exports.get_all_permissions = async (req, res) => {
+  try {
+    const permissions = await Permission.findAll();
+
+    if (!permissions.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No permissions found."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Permissions fetched successfully.",
+      data: permissions
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
+
+exports.get_all_module = async (req, res) => {
+  try {
+    const modules = await Module.findAll({
+      attributes: ['module_id', 'ui_name', 'sub_modules','name'],
+      order: [['order', 'ASC']],
+      where: {
+        is_sub_module: {
+          [Op.not]: true
+        }
+      }
+    });
+
+    if (!modules.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No module found."
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "module fetched successfully.",
+      data: modules
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+};
 
 exports.update_role = async (req, res) => {
 

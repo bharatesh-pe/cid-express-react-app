@@ -1,7 +1,9 @@
+const fs = require('fs');
+const path = require('path');
 const { Sequelize } = require("sequelize");
 const dbConfig = require("../config/dbConfig");
-const { UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
-
+const {Role ,  UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , Designation , Department , Division } = require("../models");
+const { Op } = require('sequelize');
 
 // Initialize Sequelize
 const sequelize = new Sequelize(dbConfig.database.database, dbConfig.database.username, dbConfig.database.password, {
@@ -12,7 +14,24 @@ const sequelize = new Sequelize(dbConfig.database.database, dbConfig.database.us
 
 // Create user
 exports.create_user = async (req, res) => {
-    const { username, role_id, kgid, pin, designation_id, department_id, division_id, created_by } = req.body;
+    const { username, role_id, kgid, pin, designation_id, department_id, division_id, created_by ,transaction_id } = req.body;
+
+    if(!transaction_id || transaction_id == "")
+    {
+        return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+    }
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+     // Check if directory exists
+    if (fs.existsSync(dirPath)) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate transaction detected.",
+      });
+    }
+    // Create directory
+    fs.mkdirSync(dirPath, { recursive: true });
 
     const t = await sequelize.transaction();
 
@@ -40,12 +59,17 @@ exports.create_user = async (req, res) => {
         }, { transaction: t });
 
         // Create user designation
-        await UserDesignation.create({
-            user_id: newUser.user_id,
-            designation_id: designation_id,
-            created_by: created_by
-        }, { transaction: t });
-
+        const designationIds = designation_id.includes(",")
+        ? designation_id.split(",").map(id => parseInt(id.trim(), 10))
+        : [parseInt(designation_id, 10)];
+        for (const desigId of designationIds) {
+            await UserDesignation.create({
+                user_id: newUser.user_id,
+                designation_id: desigId,
+                created_by: created_by
+            }, { transaction: t });
+        }
+            
         // Create user department
         const newUserDepartment = await UsersDepartment.create({
             user_id: newUser.user_id,
@@ -62,7 +86,7 @@ exports.create_user = async (req, res) => {
         }, { transaction: t });
 
         await t.commit();
-        return res.status(201).json({ message: "User created successfully" });
+        return res.status(201).json({ success: true, message: "User created successfully" });
 
     } catch (error) {
         if (t.finished !== "rollback") {
@@ -71,10 +95,32 @@ exports.create_user = async (req, res) => {
         console.error("Error creating user:", error);
         return res.status(500).json({ message: "Failed to create user", error: error.message });
     }
+    finally {
+        if (fs.existsSync(dirPath)) {
+        fs.rmdirSync(dirPath, { recursive: true });
+        }
+    }
 };
 
 exports.update_user = async (req, res) => {
-    const { user_id, username, role_id, kgid, pin, designation_id, department_id, division_id } = req.body;
+    const { user_id, username, role_id, kgid, designation_id, department_id, division_id , transaction_id} = req.body;
+
+    if(!transaction_id || transaction_id == "")
+    {
+        return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+    }
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+     // Check if directory exists
+    if (fs.existsSync(dirPath)) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate transaction detected.",
+      });
+    }
+    // Create directory
+    fs.mkdirSync(dirPath, { recursive: true });
 
     const t = await sequelize.transaction();
 
@@ -97,16 +143,27 @@ exports.update_user = async (req, res) => {
         );
 
         // Update auth secure details
-        await AuthSecure.update(
-            { pin: pin },
-            { where: { user_id: user_id }, transaction: t }
-        );
+        // await AuthSecure.update(
+        //     { pin: pin },
+        //     { where: { user_id: user_id }, transaction: t }
+        // );
 
-        // Update user designation
-        await UserDesignation.update(
-            { designation_id: designation_id },
-            { where: { user_id: user_id }, transaction: t }
-        );
+        // Convert designation_id to an array
+        const designationIds = designation_id.includes(",")
+            ? designation_id.split(",").map(id => parseInt(id.trim(), 10))
+            : [parseInt(designation_id, 10)];
+
+        // Remove existing designations for the user
+        await UserDesignation.destroy({ where: { user_id }, transaction: t });
+
+        // Insert new designations
+        for (const desigId of designationIds) {
+            await UserDesignation.create({
+                user_id: user_id,
+                designation_id: desigId,
+            }, { transaction: t });
+        }
+
 
         // Update user department
         const userDepartment = await UsersDepartment.findOne({ where: { user_id: user_id } });
@@ -119,12 +176,12 @@ exports.update_user = async (req, res) => {
             // Update user division
             await UsersDivision.update(
                 { division_id: division_id },
-                { where: { user_department_id: userDepartment.user_department_id }, transaction: t }
+                { where: { users_department_id: userDepartment.users_department_id }, transaction: t }
             );
         }
 
         await t.commit();
-        return res.status(200).json({ message: "User updated successfully" });
+        return res.status(201).json({ success: true, message: "User updated successfully" });
 
     } catch (error) {
         if (t.finished !== "rollback") {
@@ -133,10 +190,32 @@ exports.update_user = async (req, res) => {
         console.error("Error updating user:", error);
         return res.status(500).json({ message: "Failed to update user", error: error.message });
     }
+    finally {
+        if (fs.existsSync(dirPath)) {
+        fs.rmdirSync(dirPath, { recursive: true });
+        }
+    }
 };
 
 exports.user_active_deactive = async (req, res) => {
-    const { user_id, dev_status } = req.body; // dev_status should be true or false
+    const { user_id, dev_status ,transaction_id } = req.body; // dev_status should be true or false
+
+    if(!transaction_id || transaction_id == "")
+    {
+        return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+    }
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+     // Check if directory exists
+    if (fs.existsSync(dirPath)) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate transaction detected.",
+      });
+    }
+    // Create directory
+    fs.mkdirSync(dirPath, { recursive: true });
 
     const t = await sequelize.transaction();
 
@@ -155,7 +234,7 @@ exports.user_active_deactive = async (req, res) => {
         );
 
         await t.commit();
-        return res.status(200).json({ message: `User ${dev_status ? "activated" : "deactivated"} successfully` });
+        return res.status(200).json({success: true, message: `User ${dev_status ? "activated" : "deactivated"} successfully` });
 
     } catch (error) {
         if (t.finished !== "rollback") {
@@ -164,15 +243,31 @@ exports.user_active_deactive = async (req, res) => {
         console.error("Error updating user status:", error);
         return res.status(500).json({ message: "Failed to update user status", error: error.message });
     }
+    finally {
+        if (fs.existsSync(dirPath)) {
+        fs.rmdirSync(dirPath, { recursive: true });
+        }
+    }
 };
 
 exports.get_users = async (req, res) => {
+    const excluded_role_ids = [1, 10 ,21]; 
     try {
         const users = await Users.findAll({
             include: [
+                 {
+                    model: Role,
+                    as: "role",
+                    attributes: ["role_id","role_title"],
+                    where: {
+                        role_id: {
+                        [Op.notIn]: excluded_role_ids
+                        }
+                    }
+                },
                 {
                     model: UserDesignation,
-                    as: "user_designations",
+                    as: "users_designations",
                     attributes: ["designation_id"],
                     include: [
                         {
@@ -184,7 +279,7 @@ exports.get_users = async (req, res) => {
                 },
                 {
                     model: UsersDepartment,
-                    as: "user_departments",
+                    as: "users_departments",
                     attributes: ["department_id"],
                     include: [
                         {
@@ -196,7 +291,7 @@ exports.get_users = async (req, res) => {
                 },
                 {
                     model: UsersDivision,
-                    as: "user_divisions",
+                    as: "users_divisions",
                     attributes: ["division_id"],
                     include: [
                         {

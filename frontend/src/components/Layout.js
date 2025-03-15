@@ -267,7 +267,9 @@ const Layout = ({ children }) => {
                                     onClick={() => handleDropdownToggle(element.name)}
                                     className={`sidebarMenus ${mainActiveClass}`}
                                 >
-                                    <ListItemIcon>{icons[element.name]}</ListItemIcon>
+                                    <ListItemIcon>
+                                      <div dangerouslySetInnerHTML={{ __html: element.icon_svg }} />
+                                    </ListItemIcon>
                                     <ListItemText primary={element?.ui_name} />
                                     {openDropdowns[element.name] ? <ExpandLess /> : <ExpandMore />}
                                 </ListItem>
@@ -303,7 +305,9 @@ const Layout = ({ children }) => {
                                 onClick={() => navigate(element.location)}
                                 className={`sidebarMenus ${element?.active_location?.includes(location.pathname) ? "active" : ""}`}
                             >
-                                <ListItemIcon>{icons[element.name]}</ListItemIcon>
+                                <ListItemIcon>
+                                  <div dangerouslySetInnerHTML={{ __html: element.icon_svg }} />
+                                </ListItemIcon>
                                 <ListItemText primary={element?.ui_name} />
                             </ListItem>
                         );
