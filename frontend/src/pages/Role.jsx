@@ -37,9 +37,18 @@ const RolePage = () => {
     const [addPermissionData, setAddPermissionData] = useState({});
     const [permission_data, setPermissionData] = useState({});
     const [module_data, setModuleData] = useState({});
+    const [delete_role_conf,setDeleteRoleConf] = useState(false)
 
     // table row variable
     const [roleRowData, setRoleRowData] = useState([]);
+
+    //function for delete role conformation
+    const showDeleteRoleDialoge = (id) => {
+
+        setDeleteRoleConf(true);
+        deleteRole(id);
+
+    }
 
     // table column variable
     const [roleColumnData, setRoleColumnData] = useState([
@@ -115,7 +124,7 @@ const RolePage = () => {
                                 textAlign: "center",
                                 textTransform: "none",
                             }}
-                            onClick={() => deleteRole(params.row.id)}                                        >
+                            onClick={() => showDeleteRoleDialoge(params.row.id)}                                        >
                             <img
                                 src={trash}
                                 alt="Delete"
@@ -644,7 +653,7 @@ const RolePage = () => {
                                                                 {
                                                                     if (module_id === permission.module_id) {
                                                                         return (
-                                                                            <Grid item xs={12} md={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                            <Grid item xs={6} md={2} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
                                                                                 <Checkbox
                                                                                     name="addRolePermissions"
                                                                                     id={permission.permission_key}
@@ -662,7 +671,7 @@ const RolePage = () => {
                                                 );
                                            
                                                 return (
-                                                    <Box key={module_name} sx={{ marginBottom: 2, padding: 2, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
+                                                    <Box key={module_name} sx={{ marginBottom: 1, padding: 1, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
                                                         {sub_modules.length > 0 ? (
                                                             <Accordion>
                                                                 <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
@@ -787,7 +796,7 @@ const RolePage = () => {
                                                             const permission = permission_data[permission_index];
                                                             if (module_id === permission.module_id) {
                                                                 return (
-                                                                    <Grid item xs={12} md={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                    <Grid item xs={6} md={2} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
                                                                         <Checkbox
                                                                             name="addRolePermissions"
                                                                             id={permission.permission_key}
@@ -805,7 +814,7 @@ const RolePage = () => {
                                             );
 
                                             return (
-                                                <Box key={module_name} sx={{ marginBottom: 2, padding: 2, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
+                                                <Box key={module_name} sx={{ marginBottom: 1, padding: 1, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
                                                     {sub_modules.length > 0 ? (
                                                         <Accordion>
                                                             <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
@@ -994,7 +1003,7 @@ const RolePage = () => {
                                                             const permission = permission_data[permission_index];
                                                             if (module_id === permission.module_id) {
                                                                 return (
-                                                                    <Grid item xs={12} md={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                    <Grid item xs={6} md={2} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
                                                                         <Checkbox
                                                                             name="addRolePermissions"
                                                                             id={permission.permission_key}
@@ -1012,7 +1021,7 @@ const RolePage = () => {
                                             );
 
                                             return (
-                                                <Box key={module_name} sx={{ marginBottom: 2, padding: 2, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
+                                                <Box key={module_name} sx={{ marginBottom: 1, padding: 1, borderRadius: "8px", backgroundColor: "#f9f9f9" }}>
                                                     {sub_modules.length > 0 ? (
                                                         <Accordion>
                                                             <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
