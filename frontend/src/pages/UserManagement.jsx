@@ -216,9 +216,87 @@ const UserManagement = () => {
     }
   };
 
+  const handleFilters = async () => { 
+    setLoading(true);
+    try {
+        const filters = {};
+        if (newUser.name) filters.name = newUser.name;
+        if (newUser.kgid) filters.kgid = newUser.kgid;
+        if (newUser.role) filters.role_id = newUser.role;
+        if (newUser.department) filters.department_id = newUser.department;
+        if (newUser.division) filters.division_id = newUser.division;
+        if (newUser.designation) filters.designation_id = newUser.designation;
+        if (newUser.dev_status !== undefined) filters.dev_status = newUser.dev_status;
+
+        // Call API to fetch filtered users
+        const response = await api.post("/user/filter_users", filters);
+        const users = response.users || response.data?.users;
+
+        if (!users || !Array.isArray(users)) {
+            toast.error("Failed to fetch filtered users.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        // **Reformat the data before setting it**
+        const formattedUsers = users.map(user => ({
+            id: user.user_id, // Ensure unique ID for MUI Data Grid
+            user_id: user.user_id,
+            name: user.name,
+            role_id: user.role?.role_id || "N/A",
+            role: user.role?.role_title || "N/A",
+            kgid: user.kgid,
+            designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
+            designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
+            department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
+            department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
+            division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
+            division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
+            status: user.dev_status ? "Active" : "Inactive",
+            dev_status: user.dev_status,
+        }));
+
+        setUsers(formattedUsers);
+
+        toast.success("Filters applied successfully!", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "toast-success",
+        });
+
+        setIsModalOpen(false);
+        setModalTitle("Add New User");
+
+    } catch (err) {
+        toast.error(err?.message || "Error applying filters. Please try again.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "toast-warning",
+        });
+    } finally {
+        setLoading(false);
+    }
+};
+
+
   const handleSave = async () => {
     setLoading(true);
-
+    
     if (!validateForm()) {
       toast.error("Validation failed. Please check the form.", {
         position: "top-right",
@@ -575,24 +653,23 @@ const UserManagement = () => {
         fontFamily: "Roboto",
       }}
     >
-      {rowData.role}
-    </span>
+    {rowData.role?.role_title ||rowData.role}    </span>
   );
 
   const handleDropDownChange = (fieldName, value) => {
     setNewUser((prev) => ({
       ...prev,
-      [fieldName]: Array.isArray(value) ? value : String(value),
+      [fieldName]: Array.isArray(value) ? value : String(value),    
     }));
   };
-
+    
+  
   const handleInputChange = (e) => {
     setNewUser((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
   };
-
   const [masterData, setMasterData] = useState({ role: [], designation: [], department: [], division: [] });
 
   useEffect(() => {
@@ -635,6 +712,11 @@ const UserManagement = () => {
     code: item.code.toString(),
   })) || [];
 
+  const statusOptions = [
+    { name: "Active", code: "active" },
+    { name: "Inactive", code: "inactive" }
+  ];
+  
 
   return (
     <Box p={2}>
@@ -678,6 +760,20 @@ const UserManagement = () => {
                       backgroundColor: "transparent",
                     },
                   }}
+                  onClick={() => {
+                    setIsModalOpen(true);
+                    setModalTitle("Set Filters");
+                    setNewUser({
+                      id: null,
+                      name: "",
+                      role: "",
+                      kgid: "",
+                      designation: "",
+                      division: "",
+                      department: "",
+                    });
+                  }}
+                
                 >
                   Filter
                 </Button>
@@ -779,6 +875,7 @@ const UserManagement = () => {
           <TableView 
             rows={currentPageRows} 
             columns={columns} 
+            getRowId={(row) => row.user_id} 
             handleRowClick={handleRowClick}
             handleNext={handleNext}   
             handleBack={handleBack} 
@@ -790,7 +887,7 @@ const UserManagement = () => {
 
 
       {/* Modal for Creating New User Or Edit user */}
-      {isModalOpen && (
+      {isModalOpen&& (
         <Modal
           title={modalTitle}
           visible={isModalOpen}
@@ -847,10 +944,10 @@ const UserManagement = () => {
                       backgroundColor: "#1d4ed8",
                     },
                   }}
-                  onClick={handleSave}
-                >
-                  {modalTitle === "Edit User" ? "Update User" : "Save & Close"}
-                </Button>
+                  onClick={modalTitle === "Set Filters" ? handleFilters : handleSave}
+                  >
+                {modalTitle === "Edit User" ? "Update User" : modalTitle === "Set Filters" ? "Set Filters" : "Save & Close"}
+              </Button>
               )}
             </div>
           }
@@ -863,7 +960,6 @@ const UserManagement = () => {
                     name: "name",
                     label: "Enter Full Name",
                     required: true,
-                    pattern: "^[a-zA-Z\\s]+$",
                   }}
                   formData={newUser}
                   errors={errors}
@@ -880,6 +976,7 @@ const UserManagement = () => {
                     name: "role",
                     label: "Select Role",
                     options: roleOptions,
+                    required: modalTitle !== "Set Filters",
                   }}
                   value={newUser.role}
                   onChange={handleDropDownChange}
@@ -891,9 +988,8 @@ const UserManagement = () => {
                   field={{
                     name: "kgid",
                     label: "KGID Number",
-                    required: true,
-                    maxLength: 5,
-                    info: "Enter a valid 5-digit KGID number",
+                    required: modalTitle !== "Set Filters",
+                    // maxLength: 5,
                   }}
                   formData={newUser}
                   errors={errors}
@@ -910,7 +1006,7 @@ const UserManagement = () => {
                     name: "designation",
                     label: "Designation",
                     options: designationOptions,
-                    required: true
+                    required: modalTitle !== "Set Filters",
                   }}
                   value={newUser.designation}
                   onChange={handleDropDownChange}
@@ -925,7 +1021,7 @@ const UserManagement = () => {
                     name: "department",
                     label: "Department",
                     options: departmentOptions,
-                    required: true
+                    required: modalTitle !== "Set Filters",
                   }}
                   value={newUser.department}
                   onChange={handleDropDownChange}
@@ -940,14 +1036,14 @@ const UserManagement = () => {
                     name: "division",
                     label: "Division",
                     options: divisionOptions,
-                    required: true
+                    required: modalTitle !== "Set Filters",
                   }}
                   value={newUser.division}
                   onChange={handleDropDownChange}
                 />
               </Grid>
 
-              {modalTitle !== "Edit User" && modalTitle!== "View User" && (
+              {modalTitle !== "Edit User" && modalTitle!== "View User"  && modalTitle!== "Set Filters" && (
                 <>
                   <Grid item xs={12} sm={6}>
                     <div className="px-2">
@@ -977,6 +1073,25 @@ const UserManagement = () => {
                   </Grid>
                 </>
               )}
+              {/* {modalTitle == "Set Filters" && (
+                <>
+                <Grid item xs={12} sm={6}>
+                <AutocompleteField
+  formData={newUser}
+  errors={errors}
+  field={{
+    name: "status",
+    label: "Status",
+    options: statusOptions,
+    required: modalTitle !== "Set Filters",
+  }}
+  value={statusOptions.find(option => option.code === newUser.status) || null}
+  onChange={(field, value) => handleDropDownChange("status", value)}
+/>
+
+              </Grid>                
+                </>
+              )} */}
             </Grid>
           </form>
         </Modal>

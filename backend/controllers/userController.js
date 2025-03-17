@@ -313,4 +313,56 @@ exports.get_users = async (req, res) => {
     }
 };
 
+exports.filter_users = async (req, res) => {
+    const { name, kgid, role_id, department_id, division_id, designation_id, dev_status } = req.body;
 
+    try {
+        console.log("Received Filters:", req.body);
+
+        const orConditions = [];
+
+        if (name) orConditions.push({ name: { [Op.iLike]: `%${name}%` } });
+        if (kgid) orConditions.push({ kgid });
+        if (role_id) orConditions.push({ role_id });
+        if (department_id) orConditions.push({ "$users_departments.department_id$": department_id });
+        if (division_id) orConditions.push({ "$users_divisions.division_id$": division_id });
+        if (designation_id) orConditions.push({ "$users_designations.designation_id$": designation_id });
+        if (dev_status !== undefined) orConditions.push({ dev_status });
+
+        const filters = orConditions.length > 0 ? { [Op.or]: orConditions } : {}; // Apply OR condition
+
+        console.log("Final Filters:", filters);
+
+        const users = await Users.findAll({
+            include: [
+                { model: Role, as: "role", attributes: ["role_id", "role_title"] },
+                {
+                    model: UserDesignation,
+                    as: "users_designations",
+                    attributes: ["designation_id"],
+                    include: [{ model: Designation, as: "designation", attributes: ["designation_name"] }]
+                },
+                {
+                    model: UsersDepartment,
+                    as: "users_departments",
+                    attributes: ["department_id"],
+                    include: [{ model: Department, as: "department", attributes: ["department_name"] }]
+                },
+                {
+                    model: UsersDivision,
+                    as: "users_divisions",
+                    attributes: ["division_id"],
+                    include: [{ model: Division, as: "division", attributes: ["division_name"] }]
+                }
+            ],
+            where: filters,
+            attributes: ["user_id", "name", "role_id", "kgid", "dev_status"]
+        });
+
+        return res.status(200).json({ users });
+
+    } catch (error) {
+        console.error("Error filtering users:", error);
+        return res.status(500).json({ message: "Failed to filter users", error: error.message });
+    }
+};
