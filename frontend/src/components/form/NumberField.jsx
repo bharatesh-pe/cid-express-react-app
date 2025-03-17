@@ -10,7 +10,7 @@ const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, on
     <Box sx={{ width: '100%' }}>
       {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
       <TextField
-        type='number'
+        type='text'
         error={errors && Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
         fullWidth
         id="outlined-basic"
@@ -77,7 +77,12 @@ const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, on
         }}
         // required={field.required === true}
         disabled={field.disabled === true}
-        onChange={(e) => onChange(e)}
+        onChange={(e) => {
+            const regex = /^[0-9]*$/;
+            if (regex.test(e.target.value)) {
+              onChange(e);
+            }
+          }}
         onFocus={onFocus}
         // focused={isFocused || false}
         sx={{
