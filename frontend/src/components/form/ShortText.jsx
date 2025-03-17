@@ -74,11 +74,17 @@ const ShortText = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
         inputProps={{
           minLength: field.minLength,
           maxLength: field.maxLength,
-          readOnly: readOnly
+          readOnly: readOnly,
         }}
         // required={field.required === true}
         disabled={field.disabled === true}
-        onChange={(e) => onChange(e)}
+        onChange={(e) => {
+            const regex = /^[A-Za-z\s]*$/; // Allow only letters and spaces
+            if (regex.test(e.target.value)) {
+              onChange(e); // Update value only if valid
+            }
+          }}
+                    
         sx={{
           '& .MuiOutlinedInput-root': {
             // backgroundColor: '#fff', // Inner input background color
