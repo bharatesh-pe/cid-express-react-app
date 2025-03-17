@@ -659,8 +659,7 @@ const UserManagement = () => {
   const handleDropDownChange = (fieldName, value) => {
     setNewUser((prev) => ({
       ...prev,
-      [fieldName]: value?.code || "",
-      dev_status: value?.code === "Active"
+      [fieldName]: Array.isArray(value) ? value : String(value),    
     }));
   };
     
