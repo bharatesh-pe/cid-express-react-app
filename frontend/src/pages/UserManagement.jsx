@@ -228,7 +228,6 @@ const UserManagement = () => {
         if (newUser.designation) filters.designation_id = newUser.designation;
         if (newUser.dev_status !== undefined) filters.dev_status = newUser.dev_status;
 
-        // Call API to fetch filtered users
         const response = await api.post("/user/filter_users", filters);
         const users = response.users || response.data?.users;
 
@@ -245,9 +244,8 @@ const UserManagement = () => {
             return;
         }
 
-        // **Reformat the data before setting it**
         const formattedUsers = users.map(user => ({
-            id: user.user_id, // Ensure unique ID for MUI Data Grid
+            id: user.user_id,
             user_id: user.user_id,
             name: user.name,
             role_id: user.role?.role_id || "N/A",
@@ -989,7 +987,7 @@ const UserManagement = () => {
                     name: "kgid",
                     label: "KGID Number",
                     required: modalTitle !== "Set Filters",
-                    // maxLength: 5,
+                    maxLength: 10,
                   }}
                   formData={newUser}
                   errors={errors}
