@@ -3,10 +3,11 @@ import Modal from "../components/Modal/Modal.jsx";
 import PasswordInput from "../components/password_input/password_input";
 import { Box, Checkbox, Grid } from '@mui/material';
 import MultiSelect from "../components/form/MultiSelect.jsx";
-import { Button } from '@mui/material';
+import { Button, CircularProgress} from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import DoNotDisturbOnIcon from '@mui/icons-material/DoNotDisturbOn';
 import { Chip } from '@mui/material';
 import Dialog from "@mui/material/Dialog";
@@ -33,7 +34,6 @@ const UserManagement = () => {
 
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
-
   const columns = [
     {
       field: 'selection',
@@ -183,6 +183,7 @@ const UserManagement = () => {
 
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
       const response = await api.get("/user/get_users");
       const users = response.users || response.data?.users;
@@ -215,9 +216,87 @@ const UserManagement = () => {
     }
   };
 
+  const handleFilters = async () => { 
+    setLoading(true);
+    try {
+        const filters = {};
+        if (newUser.name) filters.name = newUser.name;
+        if (newUser.kgid) filters.kgid = newUser.kgid;
+        if (newUser.role) filters.role_id = newUser.role;
+        if (newUser.department) filters.department_id = newUser.department;
+        if (newUser.division) filters.division_id = newUser.division;
+        if (newUser.designation) filters.designation_id = newUser.designation;
+        if (newUser.dev_status !== undefined) filters.dev_status = newUser.dev_status;
+
+        // Call API to fetch filtered users
+        const response = await api.post("/user/filter_users", filters);
+        const users = response.users || response.data?.users;
+
+        if (!users || !Array.isArray(users)) {
+            toast.error("Failed to fetch filtered users.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        // **Reformat the data before setting it**
+        const formattedUsers = users.map(user => ({
+            id: user.user_id, // Ensure unique ID for MUI Data Grid
+            user_id: user.user_id,
+            name: user.name,
+            role_id: user.role?.role_id || "N/A",
+            role: user.role?.role_title || "N/A",
+            kgid: user.kgid,
+            designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
+            designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
+            department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
+            department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
+            division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
+            division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
+            status: user.dev_status ? "Active" : "Inactive",
+            dev_status: user.dev_status,
+        }));
+
+        setUsers(formattedUsers);
+
+        toast.success("Filters applied successfully!", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "toast-success",
+        });
+
+        setIsModalOpen(false);
+        setModalTitle("Add New User");
+
+    } catch (err) {
+        toast.error(err?.message || "Error applying filters. Please try again.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "toast-warning",
+        });
+    } finally {
+        setLoading(false);
+    }
+};
+
+
   const handleSave = async () => {
     setLoading(true);
-
+    
     if (!validateForm()) {
       toast.error("Validation failed. Please check the form.", {
         position: "top-right",
@@ -360,6 +439,40 @@ const UserManagement = () => {
     setModalTitle("Edit User");
     setIsModalOpen(true);
   };
+
+  const handleView = (selectedUsers) => {
+    if (!selectedUsers || selectedUsers.length === 0) {
+      console.error("No valid user selected for editing.");
+      return;
+    }
+    const userToEdit = users.find(user => user.id === selectedUsers[0]);
+
+    if (!userToEdit) {
+      console.error("No matching user found.");
+      return;
+    }
+    const designationArray = userToEdit.designation_id
+      ? userToEdit.designation_id.split(",").map(id => id.trim())
+      : [];
+
+    setNewUser((prevState) => ({
+      ...prevState,
+      id: userToEdit.id,
+      name: userToEdit.name ?? "",
+      kgid: userToEdit.kgid ?? "",
+      role: roleOptions.find(option => String(option.code) === String(userToEdit.role_id))?.code || "",
+      designation: designationOptions
+        .filter(option => designationArray.includes(String(option.code)))
+        .map(option => option.code),
+      department: departmentOptions.find(option => String(option.code) === String(userToEdit.department_id))?.code || "",
+      division: divisionOptions.find(option => String(option.code) === String(userToEdit.division_id))?.code || "",
+      transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+    }));
+
+    setModalTitle("View User");
+    setIsModalOpen(true);
+  };
+
 
 
   const [transactionId, setTransactionId] = useState("");
@@ -540,24 +653,23 @@ const UserManagement = () => {
         fontFamily: "Roboto",
       }}
     >
-      {rowData.role}
-    </span>
+    {rowData.role?.role_title ||rowData.role}    </span>
   );
 
   const handleDropDownChange = (fieldName, value) => {
     setNewUser((prev) => ({
       ...prev,
-      [fieldName]: Array.isArray(value) ? value : String(value),
+      [fieldName]: Array.isArray(value) ? value : String(value),    
     }));
   };
-
+    
+  
   const handleInputChange = (e) => {
     setNewUser((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
   };
-
   const [masterData, setMasterData] = useState({ role: [], designation: [], department: [], division: [] });
 
   useEffect(() => {
@@ -568,6 +680,7 @@ const UserManagement = () => {
   }, []);
   
   const fetch_master_data = async (needed_masters) => {
+    setLoading(true);
     try {
       const body_data = { needed_masters };
       const data = await api.post("/master/get_master_data", body_data);
@@ -576,6 +689,7 @@ const UserManagement = () => {
     } catch (error) {
       console.error("Error fetching master data:", error);
     }
+    setLoading(false);
   };
 
   const roleOptions = masterData?.role?.map((item) => ({
@@ -598,6 +712,11 @@ const UserManagement = () => {
     code: item.code.toString(),
   })) || [];
 
+  const statusOptions = [
+    { name: "Active", code: "active" },
+    { name: "Inactive", code: "inactive" }
+  ];
+  
 
   return (
     <Box p={2}>
@@ -641,6 +760,20 @@ const UserManagement = () => {
                       backgroundColor: "transparent",
                     },
                   }}
+                  onClick={() => {
+                    setIsModalOpen(true);
+                    setModalTitle("Set Filters");
+                    setNewUser({
+                      id: null,
+                      name: "",
+                      role: "",
+                      kgid: "",
+                      designation: "",
+                      division: "",
+                      department: "",
+                    });
+                  }}
+                
                 >
                   Filter
                 </Button>
@@ -672,6 +805,25 @@ const UserManagement = () => {
               </>
             ) : (
               <>
+                <Button
+                  variant="outlined"
+                  startIcon={<VisibilityIcon />}
+                  sx={{
+                    height: "38px",
+                    color: "black",
+                    borderColor: "#b7bbc2",
+                    backgroundColor: "#f9fafb",
+                    borderWidth: "2px",
+                    fontWeight: "600",
+                    textTransform: 'none',
+                    "&:hover": {
+                      backgroundColor: "#f1f5f9",
+                    },
+                  }}
+                  onClick={() => handleView(selectedUsers)}
+                >
+                  View User
+                </Button>
                 <Button
                   variant="outlined"
                   startIcon={<EditIcon />}
@@ -711,7 +863,6 @@ const UserManagement = () => {
                 >
                   {actionText} Selected User{selectedUsers.length > 1 ? "s" : ""}
                 </Button>
-
               </>
             )}
           </div>
@@ -724,6 +875,7 @@ const UserManagement = () => {
           <TableView 
             rows={currentPageRows} 
             columns={columns} 
+            getRowId={(row) => row.user_id} 
             handleRowClick={handleRowClick}
             handleNext={handleNext}   
             handleBack={handleBack} 
@@ -735,7 +887,7 @@ const UserManagement = () => {
 
 
       {/* Modal for Creating New User Or Edit user */}
-      {isModalOpen && (
+      {isModalOpen&& (
         <Modal
           title={modalTitle}
           visible={isModalOpen}
@@ -774,27 +926,29 @@ const UserManagement = () => {
                   });
                 }}
               >
-                Discard Changes
+                {modalTitle === "View User" ? "Close" : "Discard Changes"}
               </Button>
-
-              <Button
-                variant="outlined"
-                sx={{
-                  color: "white",
-                  width: "10vw",
-                  borderColor: "#2563eb",
-                  backgroundColor: "#2563eb",
-                  borderWidth: "2px",
-                  fontWeight: "700",
-                  textTransform: "none",
-                  "&:hover": {
-                    backgroundColor: "#1d4ed8",
-                  },
-                }}
-                onClick={handleSave}
-              >
-                {modalTitle === "Edit User" ? "Update User" : "Save & Close"}
+          
+              {modalTitle !== "View User" && (
+                <Button
+                  variant="outlined"
+                  sx={{
+                    color: "white",
+                    width: "10vw",
+                    borderColor: "#2563eb",
+                    backgroundColor: "#2563eb",
+                    borderWidth: "2px",
+                    fontWeight: "700",
+                    textTransform: "none",
+                    "&:hover": {
+                      backgroundColor: "#1d4ed8",
+                    },
+                  }}
+                  onClick={modalTitle === "Set Filters" ? handleFilters : handleSave}
+                  >
+                {modalTitle === "Edit User" ? "Update User" : modalTitle === "Set Filters" ? "Set Filters" : "Save & Close"}
               </Button>
+              )}
             </div>
           }
         >
@@ -806,12 +960,12 @@ const UserManagement = () => {
                     name: "name",
                     label: "Enter Full Name",
                     required: true,
-                    pattern: "^[a-zA-Z\\s]+$",
                   }}
                   formData={newUser}
                   errors={errors}
                   onChange={handleInputChange}
-                />
+                  readOnly={modalTitle === "View User"}
+                  />
 
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -822,6 +976,7 @@ const UserManagement = () => {
                     name: "role",
                     label: "Select Role",
                     options: roleOptions,
+                    required: modalTitle !== "Set Filters",
                   }}
                   value={newUser.role}
                   onChange={handleDropDownChange}
@@ -833,13 +988,13 @@ const UserManagement = () => {
                   field={{
                     name: "kgid",
                     label: "KGID Number",
-                    required: true,
-                    maxLength: 5,
-                    info: "Enter a valid 5-digit KGID number",
+                    required: modalTitle !== "Set Filters",
+                    // maxLength: 5,
                   }}
                   formData={newUser}
                   errors={errors}
                   onChange={handleInputChange}
+                  readOnly={modalTitle === "View User"}
                 />
               </Grid>
 
@@ -851,7 +1006,7 @@ const UserManagement = () => {
                     name: "designation",
                     label: "Designation",
                     options: designationOptions,
-                    required: true
+                    required: modalTitle !== "Set Filters",
                   }}
                   value={newUser.designation}
                   onChange={handleDropDownChange}
@@ -866,7 +1021,7 @@ const UserManagement = () => {
                     name: "department",
                     label: "Department",
                     options: departmentOptions,
-                    required: true
+                    required: modalTitle !== "Set Filters",
                   }}
                   value={newUser.department}
                   onChange={handleDropDownChange}
@@ -881,14 +1036,14 @@ const UserManagement = () => {
                     name: "division",
                     label: "Division",
                     options: divisionOptions,
-                    required: true
+                    required: modalTitle !== "Set Filters",
                   }}
                   value={newUser.division}
                   onChange={handleDropDownChange}
                 />
               </Grid>
 
-              {modalTitle !== "Edit User" && (
+              {modalTitle !== "Edit User" && modalTitle!== "View User"  && modalTitle!== "Set Filters" && (
                 <>
                   <Grid item xs={12} sm={6}>
                     <div className="px-2">
@@ -918,6 +1073,25 @@ const UserManagement = () => {
                   </Grid>
                 </>
               )}
+              {/* {modalTitle == "Set Filters" && (
+                <>
+                <Grid item xs={12} sm={6}>
+                <AutocompleteField
+  formData={newUser}
+  errors={errors}
+  field={{
+    name: "status",
+    label: "Status",
+    options: statusOptions,
+    required: modalTitle !== "Set Filters",
+  }}
+  value={statusOptions.find(option => option.code === newUser.status) || null}
+  onChange={(field, value) => handleDropDownChange("status", value)}
+/>
+
+              </Grid>                
+                </>
+              )} */}
             </Grid>
           </form>
         </Modal>
@@ -1001,6 +1175,11 @@ const UserManagement = () => {
           </DialogActions>
         </Dialog>
       </div>
+                  {
+                      loading && <div className='parent_spinner' tabIndex="-1" aria-hidden="true">
+                          <CircularProgress size={100} />
+                      </div>
+                  }
     </Box>
   );
 };

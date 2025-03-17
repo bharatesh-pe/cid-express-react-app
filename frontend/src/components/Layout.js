@@ -81,7 +81,7 @@ const icons = {
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const userName = localStorage.getItem("userName");
+  const userName = localStorage.getItem("username");
 
     const [sidebarMenusObj, setSidebarMenusObj] = useState([]);
 

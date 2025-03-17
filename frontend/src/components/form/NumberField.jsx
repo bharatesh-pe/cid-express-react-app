@@ -5,12 +5,12 @@ import { Box, Tooltip } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly}) => {
   return (
     <Box sx={{ width: '100%' }}>
       {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
       <TextField
-        type='number'
+        type='text'
         error={errors && Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
         fullWidth
         id="outlined-basic"
@@ -73,10 +73,16 @@ const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, on
         // name={textToSnakecase(field.label)}
         value={formData && formData[field.name] || ''}
         helperText={errors && errors?.[field?.name] || field.supportingText || ' '}  // Display the error if it exists, else fallback to supportingText
-        inputProps={{ minLength: field.minLength, maxLength: field.maxLength }}
+        inputProps={{ minLength: field.minLength, maxLength: field.maxLength ,readOnly: readOnly
+        }}
         // required={field.required === true}
         disabled={field.disabled === true}
-        onChange={(e) => onChange(e)}
+        onChange={(e) => {
+            const regex = /^[0-9]*$/;
+            if (regex.test(e.target.value)) {
+              onChange(e);
+            }
+          }}
         onFocus={onFocus}
         // focused={isFocused || false}
         sx={{

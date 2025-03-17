@@ -84,6 +84,7 @@ const Login = () => {
             console.log('data',data);
             console.log('data.user_designation',data.user_designation);
 
+
             if(data && data.users_designation){
                 const users_designation = data.users_designation;
                 console.log("users_designation",users_designation)
@@ -91,6 +92,7 @@ const Login = () => {
                     if(data && data.token){
                         localStorage.setItem('auth_token', data.token);
                         localStorage.setItem('kgid', kgid);
+                        localStorage.setItem('username', data.userRole.name);
                         navigate('/dashboard');
                     }
                 }

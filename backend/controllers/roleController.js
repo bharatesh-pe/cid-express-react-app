@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Role , Permission , Module } = require('../models');
-const { Op } = require('sequelize');
+const { Op, and } = require('sequelize');
 
 exports.create_role = async (req, res) => {
   const {
@@ -119,12 +119,16 @@ exports.get_all_permissions = async (req, res) => {
 
 exports.get_all_module = async (req, res) => {
   try {
+    const exception_modules_id =[4,5];
     const modules = await Module.findAll({
-      attributes: ['module_id', 'ui_name', 'sub_modules','name'],
+      attributes: ['module_id', 'ui_name', 'sub_modules', 'name'],
       order: [['order', 'ASC']],
       where: {
         is_sub_module: {
           [Op.not]: true
+        },
+        module_id: {
+          [Op.notIn]: exception_modules_id 
         }
       }
     });
