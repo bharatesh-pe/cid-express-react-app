@@ -685,14 +685,13 @@ exports.getMasterTemplates = async (req, res, next) => {
 	try {
 		// Fetch all templates with template_type as 'master'
 		const masterTemplates = await Template.findAll({
-			// where: { template_type: 'master' },
+			where: { template_type: 'master' },
 			attributes: ['table_name', 'template_type'],
 		});
 
 		// Add 'is_master: true' to each template object if templates exist
 		const updatedTemplates = masterTemplates.map(template => ({
 			table: template.dataValues.table_name,
-			// is_master: "true",
 			is_master: template.dataValues.template_type === 'master' ? "true" : "false",
 		}));
 
