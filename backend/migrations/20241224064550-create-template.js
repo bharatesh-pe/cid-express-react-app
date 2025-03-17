@@ -25,6 +25,10 @@ module.exports = {
         allowNull: false,
         type: Sequelize.STRING(50)
       },
+      link_module: {
+        allowNull: true,
+        type: Sequelize.STRING(50)
+      },
 
       fields: {
         allowNull: false,

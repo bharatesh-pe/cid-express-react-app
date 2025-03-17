@@ -29,7 +29,7 @@ const typeMapping = {
 exports.createTemplate = async (req, res, next) => {
 	console.log(">>>>>")
 	try {
-		let { template_name, template_type, template_module, fields, sections, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
+		let { template_name, template_type, template_module, link_module, fields, sections, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
 		// const iddd = res.locals.admin_user_id;
 
 
@@ -194,6 +194,7 @@ exports.createTemplate = async (req, res, next) => {
 			table_name,
 			template_type,
 			template_module,
+			link_module,
 			template_name,
 			fields: JSON.stringify(fields),
 			sections,
@@ -231,7 +232,7 @@ exports.createTemplate = async (req, res, next) => {
 
 exports.updateTemplate = async (req, res, next) => {
 	try {
-		let { template_name, template_type, template_module, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
+		let { template_name, template_type, template_module, link_module, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
 		// const iddd = res.locals.admin_user_id;
 		// const adminUser = await admin_user.findOne({
 		// 	where: { admin_user_id: iddd },
@@ -414,6 +415,7 @@ exports.updateTemplate = async (req, res, next) => {
 			table_name,
 			template_type,
 			template_module,
+			link_module,
 			template_name,
 			fields: JSON.stringify(updatedFields),
 			sections,
