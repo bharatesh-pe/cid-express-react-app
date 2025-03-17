@@ -177,7 +177,7 @@ const RolePage = () => {
     
             if (!response || !response.success) {
                 let errorMessage = response.message || "Error deleting role";
-    
+                console.log(errorMessage);
                 if (errorMessage.includes("violates foreign key constraint")) {
                     errorMessage = "This role has been assigned to some officer. Please check.";
                 }
@@ -210,7 +210,16 @@ const RolePage = () => {
             get_details();
     
         } catch (err) {
-            toast.error(err?.message || "Something went wrong. Please try again.", {
+            console.log(err);
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            if (errorMessage.includes("violates foreign key constraint")) {
+                errorMessage = "This role has been assigned to some officer. Please check.";
+            }
+            toast.error(errorMessage , {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,

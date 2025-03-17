@@ -358,14 +358,16 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     tableName: 'role',
-    timestamps: false
+    timestamps: false,
+    underscored: true,
+    schema: 'public'
   });
   
-  // Role.associate = (models) => {
-  //   Role.hasMany(models.Users, {
-  //     foreignKey: 'role_id',
-  //     as: 'users'
-  //   });
-  // };
+  Role.associate = (models) => {
+    Role.hasMany(models.Users, {
+      foreignKey: 'role_id',
+      as: 'users'
+    });
+  };
   return Role;
 };
