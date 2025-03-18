@@ -38,8 +38,9 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import CloseIcon from '@mui/icons-material/Close';
 
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id }) => {
   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
   console.log('template_name', template_name);
   const [formData, setFormData] = useState(storageFormData);
@@ -124,9 +125,13 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
   };
 
   const handleSubmit = (e) => {
+
+    console.log(readOnly,"readOnly")
+    console.log(editData,"editData")
+
     e.preventDefault();
     if (validate()) {
-      !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+      !readOnly && editData && onUpdate ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
     } else {
         toast.warning('Please Fill Mandatory Fields', {
             position: "top-right",
@@ -698,9 +703,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
 //   console.log(stepperData, "stepperData stepperData")
   return (
     <>
-      <Box sx={{ position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0, 0, 0, 0.5)', zIndex: '99', }} />
-      <Box sx={{ position: 'absolute', top: '0', right: '0', left: '256px', height: '100%', background: '#F5F5F5', zIndex: '99', borderRadius: '12px 0 0 12px', overflow: 'hidden' }} inert={loading ? true : false}>
-
+      <Box inert={loading ? true : false}>
         {stepperData && stepperData.length > 0 && (
           <Box px={2} py={1} sx={{ background: '#FFFFFF' }}>
             <Stepper className={'stepperWidth_' + stepperData.length} sx={{ minWidth: '300px', maxWidth: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} activeStep={activeStep} >
@@ -716,9 +719,9 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #636B744D', padding: '16px', background: '#FFFFFF' }}>
-          <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
-            <img src='./arrow-left.svg' />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#FFFFFF' }}>
+          <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '1px' }}>
+            <ArrowBackIcon sx={{ fontSize: '22px', fontWeight: '500', color: '#171A1C' }} />
             <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
               {template_name ? template_name : 'Form'}
             </Typography>
@@ -740,7 +743,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
 
           </Box>
         </Box>
-        <Box sx={{ height: `calc(99% - ${stepperData && stepperData.length > 0 ? '150px' : '100px'})`, overflow: 'auto', background: '#FFFFFF', border: '1px solid #636B744D', borderRadius: '8px' }} mx={2} mt={2}>
+        <Box sx={{ height: `calc(99% - ${stepperData && stepperData.length > 0 ? '150px' : '100px'})`, overflow: 'auto', background: '#FFFFFF', border: '1px solid #636B744D', borderRadius: '8px' }} mx={1} mt={1}>
 
           <Box sx={{ borderBottom: '1px solid #636B744D', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
@@ -1085,4 +1088,4 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
   );
 };
 
-export default DynamicForm;
+export default NormalViewForm;

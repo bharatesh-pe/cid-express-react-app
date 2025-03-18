@@ -24,6 +24,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(50),
       allowNull: false,
     },
+    link_module: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
     fields: {
       type: DataTypes.TEXT,
       allowNull: false,
