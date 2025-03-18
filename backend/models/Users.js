@@ -77,7 +77,7 @@ module.exports = (sequelize, DataTypes) => {
     // Add correct association with UsersDivision
     Users.hasMany(models.UsersDivision, {
       foreignKey: 'user_id',
-      as: 'users_divisions'
+      as: 'users_division'
     });
   };
 

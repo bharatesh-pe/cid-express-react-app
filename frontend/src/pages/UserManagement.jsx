@@ -24,7 +24,7 @@ import { toast } from 'react-toastify';
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -157,7 +157,7 @@ const UserManagement = () => {
     if (!newUser.designation || newUser.designation.length === 0) {
       newErrors.designation = "Designation is required";
     }
-    if (!newUser.division) {
+    if (!newUser.division || newUser.division.length === 0) {
       newErrors.division = "Division is required";
     }
     if (!newUser.department) {
@@ -201,8 +201,8 @@ const UserManagement = () => {
         designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
         department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
         department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
-        division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
-        division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
+        division_id: user.users_division?.map(d => d.division_id).join(", ") || "N/A",
+        division: user.users_division?.map(d => d.division?.division_name).join(", ") || "N/A",
         status: user.dev_status ? "Active" : "Inactive",
         dev_status: user.dev_status,
       }));
@@ -210,7 +210,13 @@ const UserManagement = () => {
       setUsers(formattedUsers);
 
     } catch (err) {
-      setError("Failed to fetch users.");
+      console.log(err);
+      let errorMessage = err.message || "Failed to fetch users.";
+      if(err?.response?.data?.message)
+      {
+          errorMessage = err?.response?.data?.message || "Failed to fetch users.";
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -255,8 +261,8 @@ const UserManagement = () => {
             designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
             department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
             department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
-            division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
-            division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
+            division_id: user.users_division?.map(d => d.division_id).join(", ") || "N/A",
+            division: user.users_division?.map(d => d.division?.division_name).join(", ") || "N/A",
             status: user.dev_status ? "Active" : "Inactive",
             dev_status: user.dev_status,
         }));
@@ -277,7 +283,12 @@ const UserManagement = () => {
         setModalTitle("Add New User");
 
     } catch (err) {
-        toast.error(err?.message || "Error applying filters. Please try again.", {
+        let errorMessage = err.message || "Error applying filters. Please try again.";
+        if(err?.response?.data?.message)
+        {
+            errorMessage = err?.response?.data?.message || "Error applying filters. Please try again.";
+        }
+        toast.error(errorMessage, {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -324,17 +335,19 @@ const UserManagement = () => {
           kgid: newUser.kgid,
           designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,
           department_id: newUser.department,
-          division_id: newUser.division,
+          division_id: Array.isArray(newUser.division) ? newUser.division.join(",") : newUser.division,
+          created_by: "1"
         }
         : {
           transaction_id: newUser.transaction_id,
           username: newUser.name,
+          user_id: newUser.id,
           role_id: newUser.role,
           kgid: newUser.kgid,
           pin: newUser.pin,
           designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,
           department_id: newUser.department,
-          division_id: newUser.division,
+          division_id: Array.isArray(newUser.division) ? newUser.division.join(",") : newUser.division,
           created_by: "1"
         };
 
@@ -389,7 +402,12 @@ const UserManagement = () => {
       setIsModalOpen(false);
 
     } catch (err) {
-      toast.error(err?.message || "Something went wrong. Please try again.", {
+       let errorMessage = err.message || "Something went wrong. Please try again.";
+      if(err?.response?.data?.message)
+      {
+          errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+      }
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -420,6 +438,12 @@ const UserManagement = () => {
       ? userToEdit.designation_id.split(",").map(id => id.trim())
       : [];
 
+
+    const divisionArray = userToEdit.division_id
+      ? userToEdit.division_id.split(",").map(id => id.trim())
+      : [];
+
+
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
@@ -430,7 +454,9 @@ const UserManagement = () => {
         .filter(option => designationArray.includes(String(option.code)))
         .map(option => option.code),
       department: departmentOptions.find(option => String(option.code) === String(userToEdit.department_id))?.code || "",
-      division: divisionOptions.find(option => String(option.code) === String(userToEdit.division_id))?.code || "",
+      division: divisionOptions
+        .filter(option => divisionArray.includes(String(option.code)))
+        .map(option => option.code),
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
 
@@ -453,6 +479,10 @@ const UserManagement = () => {
       ? userToEdit.designation_id.split(",").map(id => id.trim())
       : [];
 
+      const divisionArray = userToEdit.division_id
+      ? userToEdit.division_id.split(",").map(id => id.trim())
+      : [];
+
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
@@ -463,7 +493,9 @@ const UserManagement = () => {
         .filter(option => designationArray.includes(String(option.code)))
         .map(option => option.code),
       department: departmentOptions.find(option => String(option.code) === String(userToEdit.department_id))?.code || "",
-      division: divisionOptions.find(option => String(option.code) === String(userToEdit.division_id))?.code || "",
+      division: divisionOptions
+        .filter(option => divisionArray.includes(String(option.code)))
+        .map(option => option.code),
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
 
@@ -577,7 +609,12 @@ const UserManagement = () => {
       fetchUsers();
 
     } catch (err) {
-      toast.error(err?.message || "Something went wrong. Please try again.", {
+        let errorMessage = err.message || "Something went wrong. Please try again.";
+        if(err?.response?.data?.message)
+        {
+            errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+        }
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -1027,7 +1064,7 @@ const UserManagement = () => {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <AutocompleteField
+                <MultiSelect
                   formData={newUser}
                   errors={errors}
                   field={{

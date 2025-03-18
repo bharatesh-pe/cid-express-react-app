@@ -3,17 +3,17 @@ const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
   const UsersDivision = sequelize.define('UsersDivision', {
-    user_division_id: {
+    users_division_id: {
       type: DataTypes.INTEGER,
       primaryKey: true,
       autoIncrement: true
     },
-    user_department_id: {
+    users_department_id: {
       type: DataTypes.INTEGER,
       allowNull: true,
       references: {
         model: 'UsersDepartment', // name of the target model
-        key: 'user_department_id' // key in the target model that the foreign key refers to
+        key: 'users_department_id' // key in the target model that the foreign key refers to
       }
     },
     division_id: {
