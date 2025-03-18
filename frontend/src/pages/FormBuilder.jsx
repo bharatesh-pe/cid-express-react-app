@@ -13,6 +13,7 @@ import RadioBtn from '../components/form/Radio';
 import FileInput from '../components/form/FileInput';
 import ProfilePicture from '../components/form/ProfilePicture';
 import AutocompleteField from '../components/form/AutoComplete';
+import TabsComponents from '../components/form/Tabs';
 
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -280,6 +281,7 @@ const Formbuilder = () => {
         }
 
         var emptyOptions = [];
+        var tabs_components = [];
 
         fields.filter((field) => field.formType).map((field) => {
             if(field.options){
@@ -290,6 +292,10 @@ const Formbuilder = () => {
                         }                        
                     }
                 })
+            }
+
+            if(field.type === 'tabs'){
+                tabs_components.push(field);
             }
         });
 
@@ -314,6 +320,15 @@ const Formbuilder = () => {
             // options: field.options || [],
             section: steps && steps[activeStep] ? steps[activeStep] : null,
         };
+
+        if(tabs_components.length > 0){
+            var selectedTabOption = tabs_components[0].name;
+
+            if(selectedTabOption && selectedTabOption !== ''){
+                newField['tabOption'] = formData[selectedTabOption];
+            }
+        }
+
         setFields([...fields, newField]);  // Add new field to the fields list
         // setFields([newField]);  // Add new field to the fields list
         setSelectedField(newField);
@@ -972,6 +987,23 @@ const Formbuilder = () => {
                     </Box>
                 );
 
+            case "tabs":
+                return (
+                    <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                        <TabsComponents
+                            key={field.id}
+                            field={field}
+                            formData={formData}
+                            onChange={handleTabChange}
+                            onFocus={(e) => { setSelectedField(field) }}
+                            isFocused={field.label == selectedField.label}
+                        />
+                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                            <img src={deleteBtn} />
+                        </button>
+                    </Box>
+                );
+
             case "radio":
                 return (
                     <Box sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }} key={field.id}>
@@ -1469,6 +1501,22 @@ const Formbuilder = () => {
             }
 
             return prevData;
+        });
+    };
+
+    const handleTabChange = (fieldName, fieldCode, selectedValue) => {
+        setFormData(prevData => {
+            if (selectedValue) {
+                return {
+                    ...prevData,
+                    [fieldName]: fieldCode,
+                };
+            } else {
+                return {
+                    ...prevData,
+                    [fieldName]: [],
+                };
+            }
         });
     };
 
@@ -2147,40 +2195,68 @@ const Formbuilder = () => {
                                                 p={2}
                                                 {...provided.droppableProps}
                                             >
-                                            {steps && steps.length > 0 ? fields?.filter(el => el.section === steps[activeStep])?.map((field, index) => (
-                                                <Draggable key={field.id} draggableId={field.id} index={index}>
-                                                    {(provided) => (
-                                                    <Grid
-                                                        item
-                                                        xs={field.col ? field.col : 12}
-                                                        p={1}
-                                                        py={0}
-                                                        ref={provided.innerRef}
-                                                        {...provided.draggableProps}
-                                                        {...provided.dragHandleProps}
-                                                    >
-                                                        {renderField(field)}
-                                                    </Grid>
-                                                    )}
-                                                </Draggable>
-                                                ))
-                                            : fields.map((field, index) => (
-                                                <Draggable key={field.id} draggableId={field.id} index={index}>
-                                                    {(provided) => (
-                                                    <Grid
-                                                        item
-                                                        xs={field.col ? field.col : 12}
-                                                        p={1}
-                                                        py={0}
-                                                        ref={provided.innerRef}
-                                                        {...provided.draggableProps}
-                                                        {...provided.dragHandleProps}
-                                                    >
-                                                        {renderField(field)}
-                                                    </Grid>
-                                                    )}
-                                                </Draggable>
-                                                ))
+                                            {steps && steps.length > 0 ? fields?.filter(el => el.section === steps[activeStep])?.map((field, index) => {
+                                                if(field && field.tabOption) {
+
+                                                    const tabsField = fields.find(f => f.type === 'tabs');
+                                            
+                                                    const selectedTabOptions = formData[tabsField?.name] || [];
+
+                                                    const shouldHide = tabsField && field.tabOption && selectedTabOptions !== field.tabOption && tabsField.options.some(option => option.code === field.tabOption);
+
+                                                    if (shouldHide) return null;
+
+                                                }
+                                                return (
+                                                    <Draggable key={field.id} draggableId={field.id} index={index}>
+                                                        {(provided) => (
+                                                        <Grid
+                                                            item
+                                                            xs={field.col ? field.col : 12}
+                                                            p={1}
+                                                            py={0}
+                                                            ref={provided.innerRef}
+                                                            {...provided.draggableProps}
+                                                            {...provided.dragHandleProps}
+                                                        >
+                                                            {renderField(field)}
+                                                        </Grid>
+                                                        )}
+                                                    </Draggable>
+                                                )
+                                            })
+                                            : fields.map((field, index) => {
+
+                                                if(field && field.tabOption) {
+
+                                                    const tabsField = fields.find(f => f.type === 'tabs');
+                                            
+                                                    const selectedTabOptions = formData[tabsField?.name] || [];
+
+                                                    const shouldHide = tabsField && field.tabOption && selectedTabOptions !== field.tabOption && tabsField.options.some(option => option.code === field.tabOption);
+                                                
+                                                    if (shouldHide) return null;
+
+                                                }
+                                            
+                                                return (
+                                                    <Draggable key={field.id} draggableId={field.id} index={index}>
+                                                        {(provided) => (
+                                                            <Grid
+                                                                item
+                                                                xs={field.col ? field.col : 12}
+                                                                p={1}
+                                                                py={0}
+                                                                ref={provided.innerRef}
+                                                                {...provided.draggableProps}
+                                                                {...provided.dragHandleProps}
+                                                            >
+                                                                {renderField(field)}
+                                                            </Grid>
+                                                        )}
+                                                    </Draggable>
+                                                );
+                                            })                                            
                                             }
                                                 {provided.placeholder} {/* This is necessary for layout to adjust correctly */}
                                             </Grid>
@@ -2208,7 +2284,7 @@ const Formbuilder = () => {
                                                 {
                                                     Object.keys(selectedField).map((prop) => {
                                                         // Skip specific field
-                                                        const DisplayNoneFields = ['defaultValue', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'disabled', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable'];
+                                                        const DisplayNoneFields = ['defaultValue', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'disabled', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
                                                         if (DisplayNoneFields.includes(prop)) return null;
 
                                                         const increment = (prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;

@@ -60,6 +60,21 @@ const CreateProfile = () => {
         loadTableData(paginationCount);
     }, [paginationCount,tableSortOption]);
 
+    const changeHeaderNameModule = (module)=>{
+        switch(module){
+            case 'ui_case':
+                return 'Under Investigation';
+            case 'pt_case':
+                return 'Pending Trail';
+            case 'eq_case':
+                return 'Enquiries';
+            case 'master':
+                return 'Masters';
+            default:
+                return 'N/A';
+        }
+    }
+
     const columns: GridColDef[] = [
         {
             field: 'sl_no', headerName: 'S.No.', resizable: false
@@ -75,6 +90,29 @@ const CreateProfile = () => {
                     {tableSortOption === 'ASC' ? <ASC sx={{color:'#475467',width:'18px'}} /> : <DESC sx={{color:'#475467',width:'18px'}} /> }
                 </div>
             )
+        },
+        {
+            field: 'template_module',
+            headerName: 'Template Module',
+            width: 200,
+            resizable: false,
+            renderHeader: () => (
+                <div onClick={()=>ApplyTableSort('template_module')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+                    <span style={{color:'#1D2939',fontSize:'15px',fontWeight:'500'}}>Template Module</span>
+                    {tableSortOption === 'ASC' ? <ASC sx={{color:'#475467',width:'18px'}} /> : <DESC sx={{color:'#475467',width:'18px'}} /> }
+                </div>
+            ),
+            renderCell: (params) => {
+                return (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                            {
+                                params && params.row && params.row.template_module ? changeHeaderNameModule(params.row.template_module) : ''
+                            }
+                        </span>
+                    </div>
+                )
+            }
         },
         {
             field: '',
@@ -388,9 +426,18 @@ const CreateProfile = () => {
     // Handle input change
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
+
+        var newObj = {
             ...formData,
             [name]: value,
+        }
+
+        if(name === 'type'){
+            newObj['stepper'] = [];
+        }
+
+        setFormData({
+            ...newObj
         });
     };
 
@@ -404,7 +451,8 @@ const CreateProfile = () => {
             try {
 
                 var duplicatePayload = {
-                    "template_name" : formData.profile_name
+                    "template_name" : formData.profile_name,
+                    "template_module" : formData.module
                 }
 
                 var duplicateCheck = await api.post('templates/checkDuplicateTemplate',duplicatePayload);

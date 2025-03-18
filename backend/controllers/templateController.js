@@ -840,31 +840,33 @@ exports.downloadPdf = async (req, res) => {
 
 exports.checkDuplicateTemplate = async (req, res, next) => {
 	try {
-		let { template_name } = req.body;
+		let { template_name, template_module } = req.body;
 
-		// Convert template_name to a valid table_name
-		// let table_name = template_name
-		// 	.toLowerCase()
-		// 	.replace(/[^a-z0-9\s]/g, '')
-		// 	.replace(/\s+/g, '_');
 		let table_name = 'cid_' + template_name
 			.toLowerCase()
 			.replace(/[^a-z0-9\s]/g, '')
 			.replace(/\s+/g, '_');
 
-		// Check if table already exists
+		// Check if a template with the same template_module exists (except when template_module is 'master')
+		if (template_module !== 'master') {
+			const existingModule = await Template.findOne({ where: { template_module } });
+			if (existingModule) {
+				const message = `A template already exists with the module ${template_module}.`;
+				return adminSendResponse(res, 400, false, message, null);
+			}
+		}
+
+		// Check if a table with the same name already exists
 		const existingTable = await Template.findOne({ where: { table_name } });
 		if (existingTable) {
 			const message = `Table ${table_name} already exists.`;
 			return adminSendResponse(res, 400, false, message, null);
 		}
-		else {
-			const message = `Table ${table_name} is available.`;
-			return adminSendResponse(res, 200, true, message, null);
-		}
 
-	}
-	catch (error) {
+		const message = `Table ${table_name} is available.`;
+		return adminSendResponse(res, 200, true, message, null);
+
+	} catch (error) {
 		console.error("Error in checkDuplicateTemplate API:", error);
 		return adminSendResponse(res, 500, false, "Internal Server Error.", null, error.message);
 	}
