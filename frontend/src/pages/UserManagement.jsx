@@ -210,7 +210,13 @@ const UserManagement = () => {
       setUsers(formattedUsers);
 
     } catch (err) {
-      setError("Failed to fetch users.");
+      console.log(err);
+      let errorMessage = err.message || "Failed to fetch users.";
+      if(err?.response?.data?.message)
+      {
+          errorMessage = err?.response?.data?.message || "Failed to fetch users.";
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -277,7 +283,12 @@ const UserManagement = () => {
         setModalTitle("Add New User");
 
     } catch (err) {
-        toast.error(err?.message || "Error applying filters. Please try again.", {
+        let errorMessage = err.message || "Error applying filters. Please try again.";
+        if(err?.response?.data?.message)
+        {
+            errorMessage = err?.response?.data?.message || "Error applying filters. Please try again.";
+        }
+        toast.error(errorMessage, {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -389,7 +400,12 @@ const UserManagement = () => {
       setIsModalOpen(false);
 
     } catch (err) {
-      toast.error(err?.message || "Something went wrong. Please try again.", {
+       let errorMessage = err.message || "Something went wrong. Please try again.";
+      if(err?.response?.data?.message)
+      {
+          errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+      }
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -577,7 +593,12 @@ const UserManagement = () => {
       fetchUsers();
 
     } catch (err) {
-      toast.error(err?.message || "Something went wrong. Please try again.", {
+        let errorMessage = err.message || "Something went wrong. Please try again.";
+        if(err?.response?.data?.message)
+        {
+            errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+        }
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,

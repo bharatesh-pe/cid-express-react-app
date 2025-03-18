@@ -210,7 +210,6 @@ const RolePage = () => {
             get_details();
     
         } catch (err) {
-            console.log(err);
             let errorMessage = err.message || "Something went wrong. Please try again.";
             if(err?.response?.data?.message)
             {
@@ -264,8 +263,12 @@ const RolePage = () => {
                 toast.error(response.message || "Failed to fetch roles");
             }
         } catch (err) {
-            console.error("Error fetching roles:", err);
-            toast.error("Something went wrong. Please try again.");
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage);
         }
          setLoading(false);
     };
@@ -290,8 +293,12 @@ const RolePage = () => {
                 toast.error(response.message || "Failed to fetch permissions");
             }
         } catch (err) {
-            console.error("Error fetching permissions:", err);
-            toast.error("Something went wrong. Please try again.");
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage);
         }
          setLoading(false);
     };
@@ -314,8 +321,12 @@ const RolePage = () => {
                 toast.error(response.message || "Failed to fetch module");
             }
         } catch (err) {
-            console.error("Error fetching module:", err);
-            toast.error("Something went wrong. Please try again.");
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage);
         }
          setLoading(false);
     };
@@ -454,7 +465,12 @@ const RolePage = () => {
             setShowRoleAddModal(false);
             
         } catch (err) {
-            toast.error(err?.message || "Something went wrong. Please try again.", {
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage, {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -565,7 +581,12 @@ const RolePage = () => {
             get_details();
             setShowEditModal(false);
         } catch (err) {
-            toast.error(err?.message || "Something went wrong. Please try again.", {
+             let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage || "Something went wrong. Please try again.", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
