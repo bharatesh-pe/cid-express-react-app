@@ -44,10 +44,18 @@ exports.createTemplate = async (req, res, next) => {
 		// 	.toLowerCase()
 		// 	.replace(/[^a-z0-9\s]/g, '')
 		// 	.replace(/\s+/g, '_');
-		let table_name = 'cid_' + template_name
+		// let table_name = 'cid_' + template_name
+		// 	.toLowerCase()
+		// 	.replace(/[^a-z0-9\s]/g, '')
+		// 	.replace(/\s+/g, '_');
+		let base_name = template_name
 			.toLowerCase()
-			.replace(/[^a-z0-9\s]/g, '')
-			.replace(/\s+/g, '_');
+			.replace(/[^a-z0-9\s]/g, '') // Remove special characters
+			.replace(/\s+/g, '_'); // Replace spaces with underscores
+
+		let table_name = link_module
+			? 'cid_' + link_module.toLowerCase() + '_' + base_name
+			: 'cid_' + base_name;
 
 		// Check if table already exists
 		const existingTable = await Template.findOne({ where: { table_name } });
@@ -243,11 +251,18 @@ exports.updateTemplate = async (req, res, next) => {
 		// 	.toLowerCase()
 		// 	.replace(/[^a-z0-9\s]/g, '')
 		// 	.replace(/\s+/g, '_');
-		let table_name = 'cid_' + template_name
+		// let table_name = 'cid_' + template_name
+		// 	.toLowerCase()
+		// 	.replace(/[^a-z0-9\s]/g, '')
+		// 	.replace(/\s+/g, '_');
+		let base_name = template_name
 			.toLowerCase()
-			.replace(/[^a-z0-9\s]/g, '')
-			.replace(/\s+/g, '_');
+			.replace(/[^a-z0-9\s]/g, '') // Remove special characters
+			.replace(/\s+/g, '_'); // Replace spaces with underscores
 
+		let table_name = link_module
+			? 'cid_' + link_module.toLowerCase() + '_' + base_name
+			: 'cid_' + base_name;
 		// Check if table exists
 		const existingTable = await Template.findOne({ where: { table_name } });
 		if (!existingTable) {
@@ -535,6 +550,7 @@ exports.viewTemplate = async (req, res, next) => {
 			template_name: template.template_name,
 			template_type: template.template_type,
 			sections: template.sections,
+			link_module: template.link_module,
 			no_of_sections: template.no_of_sections,
 			is_link_to_leader: template.is_link_to_leader,
 			is_link_to_organization: template.is_link_to_organization,
