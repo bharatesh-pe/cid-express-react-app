@@ -221,6 +221,13 @@ router.post('/paginateTemplateData',
     // userAuthMiddleware,
     [paginateDataValidation],
     templateDataController.paginateTemplateData)
+router.post('/paginateTemplateDataForOtherThanMaster',
+    // adminAuthMiddleware,
+    // eitherAuthMiddleware,
+    // userAuthMiddleware,
+    // [paginateDataValidation],
+    templateDataController.paginateTemplateDataForOtherThanMaster)
+
 
 router.post('/downloadExcelData',
     // userAuthMiddleware,

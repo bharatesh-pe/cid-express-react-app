@@ -16,6 +16,7 @@ import FileInput from '../form/FileInput';
 import AutocompleteField from '../form/AutoComplete';
 import DateTimeField from '../form/DateTime';
 import TimeField from '../form/Time';
+import TabsComponents from '../form/Tabs';
 import ProfilePicture from '../form/ProfilePicture';
 import api from '../../services/api';
 import TableView from "../table-view/TableView";
@@ -201,6 +202,22 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
       return prevData;
     });
   };
+
+    const handleTabChange = (fieldName, fieldCode, selectedValue) => {
+        setFormData(prevData => {
+            if (selectedValue) {
+                return {
+                    ...prevData,
+                    [fieldName]: fieldCode,
+                };
+            } else {
+                return {
+                    ...prevData,
+                    [fieldName]: [],
+                };
+            }
+        });
+    };
 
   const handleFileUploadChange = (fieldName, files) => {
     setFormData(prevData => {
@@ -749,6 +766,15 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }} >
             <Grid container sx={{ alignItems: 'center' }}>
               {(stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).map((field, index) => {
+
+                const tabsField = (stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).find(f => f.type === 'tabs');
+                                                            
+                const selectedTabOptions = formData[tabsField?.name] || [];
+
+                const shouldHide = tabsField && field.tabOption && selectedTabOptions !== field.tabOption && tabsField.options.some(option => option.code === field.tabOption);
+
+                if (shouldHide) return null;
+
                 const isRequired = field.required === 'true' || field.required === true;
                 field.disabled = readOnly ? true : '';
                 switch (field.type) {
@@ -976,6 +1002,19 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                           onChange={handleCheckBoxChange}
                         />
                       </Grid>
+                    );
+                  case "tabs":
+                    return (
+                        <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                            <TabsComponents
+                                key={field.id}
+                                field={field}
+                                formData={formData}
+                                errors={errors}
+                                onHistory={() => showHistory(field.name)}
+                                onChange={handleTabChange}
+                            />
+                        </Grid>
                     );
                   case 'divider':
                     return (
