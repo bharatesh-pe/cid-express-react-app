@@ -15,6 +15,62 @@ const sequelize = new Sequelize(dbConfig.database.database, dbConfig.database.us
 // Create user
 exports.create_user = async (req, res) => {
     const { username, role_id, kgid, pin, designation_id, department_id, division_id, created_by ,transaction_id } = req.body;
+    
+    // Username validation
+    if (!username || !username.trim() || username == null || username == "null"  || username == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Name is required"
+        });
+    }
+
+    // Role ID validation
+    if (!role_id || role_id == null  || role_id == "null" || role_id == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Role is required"
+        });
+    }
+
+    // KGID validation
+    if (!kgid || !kgid.trim() || kgid == null || kgid == "null" || kgid == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "KGID is required"
+        });
+    }
+
+    // Designation ID validation
+    if (!designation_id || designation_id == null  || designation_id == "null" || designation_id == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Designation is required"
+        });
+    }
+
+    // Department ID validation
+    if (!department_id || department_id == null || department_id == "null"  || department_id == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Department is required"
+        });
+    }
+
+    // Division ID validation
+    if (!division_id || division_id == null  || division_id == "null"  || division_id == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Division is required"
+        });
+    }
+
+    // PIN validation
+    if (!pin || !pin.trim() || pin == null || pin == "null" || pin == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "PIN is required"
+        });
+    }
 
     if(!transaction_id || transaction_id == "")
     {
