@@ -29,7 +29,7 @@ const typeMapping = {
 exports.createTemplate = async (req, res, next) => {
 	console.log(">>>>>")
 	try {
-		let { template_name, template_type, template_module, fields, sections, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
+		let { template_name, template_type, template_module, link_module, fields, sections, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
 		// const iddd = res.locals.admin_user_id;
 
 
@@ -44,10 +44,18 @@ exports.createTemplate = async (req, res, next) => {
 		// 	.toLowerCase()
 		// 	.replace(/[^a-z0-9\s]/g, '')
 		// 	.replace(/\s+/g, '_');
-		let table_name = 'cid_' + template_name
+		// let table_name = 'cid_' + template_name
+		// 	.toLowerCase()
+		// 	.replace(/[^a-z0-9\s]/g, '')
+		// 	.replace(/\s+/g, '_');
+		let base_name = template_name
 			.toLowerCase()
-			.replace(/[^a-z0-9\s]/g, '')
-			.replace(/\s+/g, '_');
+			.replace(/[^a-z0-9\s]/g, '') // Remove special characters
+			.replace(/\s+/g, '_'); // Replace spaces with underscores
+
+		let table_name = link_module
+			? 'cid_' + link_module.toLowerCase() + '_' + base_name
+			: 'cid_' + base_name;
 
 		// Check if table already exists
 		const existingTable = await Template.findOne({ where: { table_name } });
@@ -194,6 +202,7 @@ exports.createTemplate = async (req, res, next) => {
 			table_name,
 			template_type,
 			template_module,
+			link_module,
 			template_name,
 			fields: JSON.stringify(fields),
 			sections,
@@ -231,7 +240,7 @@ exports.createTemplate = async (req, res, next) => {
 
 exports.updateTemplate = async (req, res, next) => {
 	try {
-		let { template_name, template_type, template_module, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
+		let { template_name, template_type, template_module, link_module, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
 		// const iddd = res.locals.admin_user_id;
 		// const adminUser = await admin_user.findOne({
 		// 	where: { admin_user_id: iddd },
@@ -242,11 +251,18 @@ exports.updateTemplate = async (req, res, next) => {
 		// 	.toLowerCase()
 		// 	.replace(/[^a-z0-9\s]/g, '')
 		// 	.replace(/\s+/g, '_');
-		let table_name = 'cid_' + template_name
+		// let table_name = 'cid_' + template_name
+		// 	.toLowerCase()
+		// 	.replace(/[^a-z0-9\s]/g, '')
+		// 	.replace(/\s+/g, '_');
+		let base_name = template_name
 			.toLowerCase()
-			.replace(/[^a-z0-9\s]/g, '')
-			.replace(/\s+/g, '_');
+			.replace(/[^a-z0-9\s]/g, '') // Remove special characters
+			.replace(/\s+/g, '_'); // Replace spaces with underscores
 
+		let table_name = link_module
+			? 'cid_' + link_module.toLowerCase() + '_' + base_name
+			: 'cid_' + base_name;
 		// Check if table exists
 		const existingTable = await Template.findOne({ where: { table_name } });
 		if (!existingTable) {
@@ -414,6 +430,7 @@ exports.updateTemplate = async (req, res, next) => {
 			table_name,
 			template_type,
 			template_module,
+			link_module,
 			template_name,
 			fields: JSON.stringify(updatedFields),
 			sections,
@@ -533,6 +550,7 @@ exports.viewTemplate = async (req, res, next) => {
 			template_name: template.template_name,
 			template_type: template.template_type,
 			sections: template.sections,
+			link_module: template.link_module,
 			no_of_sections: template.no_of_sections,
 			is_link_to_leader: template.is_link_to_leader,
 			is_link_to_organization: template.is_link_to_organization,
@@ -683,14 +701,13 @@ exports.getMasterTemplates = async (req, res, next) => {
 	try {
 		// Fetch all templates with template_type as 'master'
 		const masterTemplates = await Template.findAll({
-			// where: { template_type: 'master' },
+			where: { template_type: 'master' },
 			attributes: ['table_name', 'template_type'],
 		});
 
 		// Add 'is_master: true' to each template object if templates exist
 		const updatedTemplates = masterTemplates.map(template => ({
 			table: template.dataValues.table_name,
-			// is_master: "true",
 			is_master: template.dataValues.template_type === 'master' ? "true" : "false",
 		}));
 

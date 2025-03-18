@@ -164,7 +164,7 @@ const MastersView = () => {
             "sort_by" : tableSortField,
             "order": tableSortOption,
             "search" : searchValue ? searchValue : '',
-            "template_module" : "masters"
+            "template_module" : "master"
         }
 
         setLoading(true);
