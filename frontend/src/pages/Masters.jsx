@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import ClearIcon from '@mui/icons-material/Clear';
 import { CircularProgress } from "@mui/material";
+import AddIcon from '@mui/icons-material/Add';
 
 const MastersView = () => {
     const navigate = useNavigate();
@@ -167,48 +168,56 @@ const MastersView = () => {
   return (
     <>
     <Box p={2} inert={loading ? true : false}>
-        <Box sx={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap'}}>
-            <Box>
-                <Typography className='Roboto' sx={{fontSize:'20px',fontWeight:'600',color:'#1D2939'}}>Masters</Typography>
-                {/* <Typography className='Roboto' sx={{fontSize:'16px',fontWeight:'400',color:'#667085'}}>Overview view of all dossier profile details</Typography> */}
+
+        <Box p={2}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                    <Box>
+                        <Typography className='Roboto' sx={{ fontSize: '20px', fontWeight: '600', color: '#1D2939' }}>Masters</Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <TextFieldInput InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: '#475467' }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                searchValue && (
+                                    <IconButton sx={{ padding: 0 }} onClick={() => setSearchValue('')} size="small">
+                                        <ClearIcon sx={{ color: '#475467' }} />
+                                    </IconButton>
+                                )
+                            )
+                        }}
+                            onInput={(e) => setSearchValue(e.target.value)}
+                            value={searchValue}
+                            id="tableSearch"
+                            size="small"
+                            placeholder='Search anything'
+                            variant="outlined"
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                }
+                            }}
+                            sx={{
+                                width: '400px', borderRadius: '6px', outline: 'none',
+                                '& .MuiInputBase-input::placeholder': {
+                                    color: '#475467',
+                                    opacity: '1',
+                                    fontSize: '14px',
+                                    fontWeight: '400',
+                                    fontFamily: 'Roboto'
+                                },
+                            }}
+                        />
+                        <Button
+                            sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
+                            Add New
+                        </Button>
+                    </Box>
+                </Box>
             </Box>
-            <TextFieldInput InputProps={{
-                startAdornment: (
-                    <InputAdornment position="start">
-                        <SearchIcon sx={{color:'#475467'}} />
-                    </InputAdornment>
-                    ),
-                endAdornment: (
-                    searchValue && (
-                        <IconButton sx={{padding:0}} onClick={handleClear} size="small">
-                            <ClearIcon sx={{ color: '#475467' }} />
-                        </IconButton>
-                    )
-                )
-                }}
-                onInput={(e)=>setSearchValue(e.target.value)}
-                value={searchValue}
-                id="tableSearch" 
-                size="small"
-                placeholder='Search anything'
-                variant="outlined" 
-                onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                        e.preventDefault();
-                        loadTableData(paginationCount, e.target.value);
-                    }
-                }}
-                sx={{width:'400px',borderRadius:'6px',outline:'none',
-                    '& .MuiInputBase-input::placeholder': {
-                        color: '#475467',
-                        opacity:'1',
-                        fontSize:'14px',
-                        fontWeight:'400',
-                        fontFamily:'Roboto'
-                    },
-                }} 
-            />
-        </Box>
         <Box py={2}>
             <TableView rows={tableData} columns={columns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10}  handleBack={handlePrevPage} handleNext={handleNextPage} />
         </Box>

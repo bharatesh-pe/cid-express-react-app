@@ -698,7 +698,7 @@ const RolePage = () => {
                                                                 {
                                                                     if (module_id === permission.module_id) {
                                                                         return (
-                                                                            <Grid item xs={6} md={2} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                            <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
                                                                                 <Checkbox
                                                                                     name="addRolePermissions"
                                                                                     id={permission.permission_key}
@@ -725,10 +725,12 @@ const RolePage = () => {
                                                                 <AccordionDetails>{ModulePermissions}</AccordionDetails>
                                                             </Accordion>
                                                         ) : (
-                                                            <Box>
+                                                            <Accordion>
+                                                                <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
                                                                 {ModuleHeader}
-                                                                {ModulePermissions}
-                                                            </Box>
+                                                                </AccordionSummary>
+                                                                <AccordionDetails>{ModulePermissions}</AccordionDetails>
+                                                            </Accordion>
                                                         )}
                                                     </Box>
                                                 );
@@ -793,8 +795,13 @@ const RolePage = () => {
                                         label="Description"
                                         name="role_description"
                                         value={selectedRole?.role_description || ""}
-                                        onChange={handleInputChange}
-                                        required
+                                        onChange={(e) => {
+                                            const regex = /^[a-zA-Z0-9\s,.\b]*$/;
+                                            if (regex.test(e.target.value)) {
+                                                handleInputChange(e);
+                                            }
+                                        }}                                       
+                                    required
                                     />
                                 </Box>
 
@@ -846,7 +853,7 @@ const RolePage = () => {
                                                             const permission = permission_data[permission_index];
                                                             if (module_id === permission.module_id) {
                                                                 return (
-                                                                    <Grid item xs={6} md={2} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                    <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
                                                                         <Checkbox
                                                                             name="addRolePermissions"
                                                                             id={permission.permission_key}
@@ -873,10 +880,16 @@ const RolePage = () => {
                                                             <AccordionDetails>{ModulePermissions}</AccordionDetails>
                                                         </Accordion>
                                                     ) : (
-                                                        <Box>
+                                                        // <Box>
+                                                        //     {ModuleHeader}
+                                                        //     {ModulePermissions}
+                                                        // </Box>
+                                                        <Accordion>
+                                                            <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
                                                             {ModuleHeader}
-                                                            {ModulePermissions}
-                                                        </Box>
+                                                            </AccordionSummary>
+                                                            <AccordionDetails>{ModulePermissions}</AccordionDetails>
+                                                        </Accordion>
                                                     )}
                                                 </Box>
                                             );
@@ -1023,7 +1036,12 @@ const RolePage = () => {
                                         name="role_description"
                                         autoComplete='off'
                                         value={addRoleData.role_description}
-                                        onChange={handleAddData}
+                                        onChange={(e) => {
+                                            const regex = /^[a-zA-Z0-9\s,.\b]*$/;
+                                            if (regex.test(e.target.value)) {
+                                                handleAddData(e);
+                                            }
+                                        }}
                                         error={!!errorRoleData.role_description}
                                         required
                                     />
@@ -1058,7 +1076,7 @@ const RolePage = () => {
                                                             const permission = permission_data[permission_index];
                                                             if (module_id === permission.module_id) {
                                                                 return (
-                                                                    <Grid item xs={6} md={2} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
+                                                                    <Grid item xs={12} sm={6} md={4} lg={4} xl={4} key={permission.permission_key} sx={{ display: "flex", alignItems: "center" }}>
                                                                         <Checkbox
                                                                             name="addRolePermissions"
                                                                             id={permission.permission_key}
@@ -1085,10 +1103,16 @@ const RolePage = () => {
                                                             <AccordionDetails>{ModulePermissions}</AccordionDetails>
                                                         </Accordion>
                                                     ) : (
-                                                        <Box>
+                                                        // <Box>
+                                                        //     {ModuleHeader}
+                                                        //     {ModulePermissions}
+                                                        // </Box>
+                                                        <Accordion>
+                                                            <AccordionSummary expandIcon={<ExpandMoreIcon />} aria-controls={`panel-${module_name}-content`} id={`panel-${module_name}-header`}>
                                                             {ModuleHeader}
-                                                            {ModulePermissions}
-                                                        </Box>
+                                                            </AccordionSummary>
+                                                            <AccordionDetails>{ModulePermissions}</AccordionDetails>
+                                                        </Accordion>
                                                     )}
                                                 </Box>
                                             );
