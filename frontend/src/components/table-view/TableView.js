@@ -1,20 +1,61 @@
 import * as React from 'react';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
-import { Box, Button } from '@mui/material';
+import { Box, Button, IconButton, Menu, MenuItem } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const paginationModel = { page: 0, pageSize: 5 };
+import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 
-export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick}) {
+export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle}) {
+
+    const [anchorEl, setAnchorEl] = React.useState(null);
+    const [selectedRow, setSelectedRow] = React.useState(null);
+  
+    const handleMenuOpen = (event, row) => {
+        setAnchorEl(event.currentTarget);
+        setSelectedRow((prev) => (prev === row.id ? null : row.id));
+    };
+  
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+        setSelectedRow(null);
+    };
+  
+    const handleHoverOptionClick = (option, page) => {
+        hoverActionFuncHandle(option);
+        handleMenuClose();
+    };
+  
+    const updatedColumns = [
+        ...columns,
+        ...(hoverTable && hoverTableOptions && hoverTableOptions.length > 0
+          ? [
+              {
+                field: "extraActions",
+                headerName: "Extra Actions",
+                width: 150,
+                renderCell: (params) => (
+                  <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
+                    {selectedRow === params.row.id ? (
+                      <KeyboardArrowUp sx={{ color: "blue" }} />
+                    ) : (
+                      <KeyboardArrowDown sx={{ color: "blue" }} />
+                    )}
+                  </IconButton>
+                ),
+              },
+            ]
+          : []),
+      ];
+
   return (
     <Box sx={{margin : "6px"}}>
 
     <Paper sx={{ width: '100%' }}>
       <DataGrid
         rows={rows}
-        columns={columns}
+        columns={updatedColumns}
         getRowId={getRowId} 
         className='FigmaTableView'
         disableColumnMenu
@@ -26,6 +67,17 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         onRowClick={(params) => handleRowClick && handleRowClick(params.row)}
         />
     </Paper>
+
+    {/* Hover Menu */}
+    {hoverTable &&   
+        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
+            {hoverTableOptions.map((option, index) => (
+                <MenuItem key={index} onClick={() => handleHoverOptionClick(option)}>
+                    {option.name}
+                </MenuItem>
+            ))}
+        </Menu>
+    }
 
     <Box sx={{display:'flex',justifyContent:'space-between'}} pt={2}>
         {handleBack && handleNext && 

@@ -73,7 +73,7 @@ const convertToUnderscore = (str) => {
 const Formbuilder = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
-    const { profile_name, stepper, type, Createdfields, action, pagination, module } = state;
+    const { profile_name, stepper, type, Createdfields, action, pagination, module, link_module } = state;
     const [fields, setFields] = useState([]);
     const [selectedField, setSelectedField] = useState(null);
     const [selectedDropdwonField, setSelectedDropdownField] = useState(null);
@@ -1163,6 +1163,7 @@ const Formbuilder = () => {
             "template_name": editTemplateDetailsData,
             "template_type": type,
             "template_module": module,
+            "link_module": link_module,
             "fields": updatedFields,
             "paranoid": false
         }
@@ -1325,6 +1326,7 @@ const Formbuilder = () => {
             "template_name": editTemplateDetailsData,
             "template_type": type,
             "template_module": module,
+            "link_module": link_module,
             "fields": updatedFields,
             "paranoid": false
         }
