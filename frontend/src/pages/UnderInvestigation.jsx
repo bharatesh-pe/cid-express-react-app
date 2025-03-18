@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import DynamicForm from '../components/dynamic-form/DynamicForm';
+import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
 
@@ -36,7 +37,7 @@ import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import FilterListIcon from "@mui/icons-material/FilterList";
 
-const ProfileData = () => {
+const UnderInvestigation = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -61,6 +62,9 @@ const ProfileData = () => {
     const [selectedRowId, setSelectedRowId] = useState(null);
     const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
+    const [otherFormOpen, setOtherFormOpen] = useState(false);
+    const [optionStepperData, setOptionStepperData] = useState([]);
+    const [optionFormTemplateData, setOptionFormTemplateData] = useState([])
 
     const [showDownloadModal, setShowDownloadModal] = useState(false);
     const [showDownloadData, setShowDownloadData] = useState([]);
@@ -100,6 +104,22 @@ const ProfileData = () => {
             }
         }
     ]);
+
+    const [otherTemplateModalOpen, setOtherTemplateModalOpen] = useState(false);
+    const [selectedOtherTemplate, setselectedOtherTemplate] = useState({});
+    const [otherTemplateData, setOtherTemplateData] = useState([]);
+    const [otherInitialTemplateData, setOtherInitialTemplateData] = useState([]);
+    const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] = useState(false);
+    const [otherEditTemplateData, setOtherEditTemplateData] = useState(false);
+    const [otherRowId, setOtherRowId] = useState(null);
+    const [otherTemplateId, setOtherTemplateId] = useState(null);
+    const [otherTemplateColumn, setOtherTemplateColumn] = useState(
+        [
+            { field: 'sl_no', headerName: 'S.No' }
+        ]
+    );
+
+    const [otherTablePagination, setOtherTablePagination] = useState(1)
 
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
@@ -754,6 +774,510 @@ const ProfileData = () => {
 
     }
 
+
+    const showOptionTemplate = async (table_name) => {
+        if (!table_name || table_name === '') {
+            toast.warning('Please Check The Template', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const viewTableData = {
+            "table_name": table_name
+        }
+        setLoading(true);
+
+        try {
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            setLoading(false);
+            if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                setOtherFormOpen(true);
+                setInitialData({});
+                setviewReadonly(false);
+                setEditTemplateData(false);
+                setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                    setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                }
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const otherTemplateSaveFunc = async (data) => {
+
+        if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
+            toast.warning('Please Check The Template', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning('Data Is Empty Please Check Once', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("table_name", selectedOtherTemplate.table);
+
+        var normalData = {}; // Non-file upload fields
+
+        optionFormTemplateData.forEach((field) => {
+
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    // Append file fields to formData
+                    if (field.type === 'file') {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
+                            var filteredArray = data[field.name].filter(file => file.filename instanceof File);
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename['name']
+                                    }
+                                });
+
+                                formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
+
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    // Add non-file fields to normalData
+                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
+                }
+            }
+        });
+
+        formData.append("data", JSON.stringify(normalData));
+        setLoading(true);
+
+        try {
+            const saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            setLoading(false);
+
+            localStorage.removeItem(selectedOtherTemplate.name + '-formData');
+
+            if (saveTemplateData && saveTemplateData.success) {
+
+                toast.success(saveTemplateData.message || "Data Created Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                });
+
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
+
+    const otherTemplateUpdateFunc = async (data) => {
+
+        if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
+            toast.warning('Please Check The Template', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning('Data Is Empty Please Check Once', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("table_name", selectedOtherTemplate.table);
+        var normalData = {}; // Non-file upload fields
+
+        optionFormTemplateData.forEach((field) => {
+
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    // Append file fields to formData
+                    if (field.type === 'file') {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
+                            var filteredArray = data[field.name].filter(file => file.filename instanceof File);
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename['name']
+                                    }
+                                });
+                                formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    // Add non-file fields to normalData
+                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
+                }
+            }
+        });
+
+        formData.append("data", JSON.stringify(normalData));
+        formData.append("id", data.id);
+        setLoading(true);
+
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+            setLoading(false);
+
+            if (saveTemplateData && saveTemplateData.success) {
+
+                localStorage.removeItem(selectedOtherTemplate.name + '-formData');
+
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                });
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
+
+    const handleOthersTemplateDataView = async (rowData, editData, table_name) => {
+
+        if (!table_name || table_name === '') {
+            toast.warning('Please Check Table Name', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return
+        }
+
+        var viewTemplatePayload = {
+            "table_name": table_name,
+            "id": rowData.id,
+        }
+
+        setLoading(true);
+        try {
+
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData && viewTemplateData.success) {
+
+                setOtherInitialTemplateData(viewTemplateData.data ? viewTemplateData.data : {});
+                setOtherReadOnlyTemplateData(!editData);
+                setOtherEditTemplateData(editData);
+                setOtherRowId(null);
+                setOtherTemplateId(null);
+
+                const viewTableData = {
+                    "table_name": table_name
+                }
+
+                setLoading(true);
+                try {
+
+                    const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+                    setLoading(false);
+
+                    if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                        setOtherFormOpen(true);
+                        setOtherRowId(rowData.id);
+                        setOtherTemplateId(viewTemplateResponse['data'].template_id);
+                        setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                        if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                            setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                        }
+
+                    } else {
+                        const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+
+            } else {
+                const errorMessage = viewTemplateData.message ? viewTemplateData.message : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
+
+    const handleOthersDeleteTemplateData = (rowData, table_name) => {
+
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you want to delete this profile ?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Delete it!',
+            cancelButtonText: 'No',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const deleteTemplateData = {
+                    "table_name": table_name,
+                    "where": { id: rowData.id }
+                }
+                setLoading(true);
+
+                try {
+                    const deleteTemplateDataResponse = await api.post("templateData/deleteTemplateData", deleteTemplateData);
+                    setLoading(false);
+
+                    if (deleteTemplateDataResponse && deleteTemplateDataResponse.success) { 
+                        toast.success(deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Template Deleted Successfully", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-success",
+                            onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                        });
+                    } else {
+                        const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+
+                    }
+
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+
+                    }
+                }
+            } else {
+                console.log("Template deletion canceled.");
+            }
+        });
+    }
+
     const onSaveTemplateData = async (data) => {
 
         if (!table_name || table_name === '') {
@@ -1165,6 +1689,172 @@ const ProfileData = () => {
         console.log("hello calling func")
     }
 
+    const hoverTableOptions = [
+        { name: 'Progress Report', table: 'cid_nsk' },
+        { name: 'FSL', table: 'cid_link_temp' },
+    ]
+
+    const handleOtherTemplateActions = async (options)=>{
+
+        var getTemplatePayload = {
+            "table_name": options.table,
+        }
+
+        setLoading(true);
+
+        try {
+            const getTemplateResponse = await api.post("/templateData/getTemplateData", getTemplatePayload);
+            setLoading(false);
+
+            if (getTemplateResponse && getTemplateResponse.success) {
+
+                if (getTemplateResponse.data && getTemplateResponse.data) {
+
+                    console.log("data inside")
+
+                    if(getTemplateResponse.data[0]){
+
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
+
+                        const updatedHeader = [
+                            {
+                                field: 'sl_no',
+                                headerName: 'S.No',
+                                resizable: false,
+                                width: 75,
+                                renderCell: (params) => {
+                                    return (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            {params.value}
+                                        </Box>
+                                    )
+                                },
+                            },
+                            ...Object.keys(getTemplateResponse.data[0])
+                                .filter((key) => !excludedKeys.includes(key))
+                                .map((key) => {
+                                    var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
+
+                                    return {
+                                        field: key,
+                                        headerName: updatedKeyName ? updatedKeyName : '',
+                                        width: 150,
+                                        resizable: true,
+                                        renderHeader: () => (
+                                            <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
+                                                <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
+                                            </div>
+                                        ),
+                                        renderCell: (params) => {
+                                            return tableCellRender(key, params, params.value)
+                                        },
+                                    };
+                                }),
+                                {
+                                    field: '',
+                                    headerName: 'Action',
+                                    flex: 1,
+                                    renderCell: (params) => {
+                                        return (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                                                <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, false, options.table); }}>
+                                                    View
+                                                </Button>
+                                                <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, true, options.table); }}>
+                                                    Edit
+                                                </Button>
+                                                <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleOthersDeleteTemplateData(params.row, options.table); }}>
+                                                    Delete
+                                                </Button>
+                                            </Box>
+                                        );
+                                    }
+                                }
+                        ];
+
+                        setOtherTemplateColumn(updatedHeader)
+                    }else{
+                        setOtherTemplateColumn([])
+                    }
+
+                    var updatedTableData = getTemplateResponse.data.map((field, index) => {
+
+                        const formatDate = (fieldValue) => {
+                            if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
+
+                            var dateValue = new Date(fieldValue);
+
+                            if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
+                                return fieldValue;
+                            }
+
+                            if (isNaN(dateValue.getTime())) return fieldValue;
+
+                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                            var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
+                            var yearValue = dateValue.getFullYear();
+                            return `${dayValue}/${monthValue}/${yearValue}`;
+                        };
+
+                        const updatedField = {};
+
+                        Object.keys(field).forEach((key) => {
+                            if (field[key] && key !== 'id' && !isNaN(new Date(field[key]).getTime())) {
+                                updatedField[key] = formatDate(field[key]);
+                            } else {
+                                updatedField[key] = field[key];
+                            }
+                        });
+
+                        return {
+                            ...updatedField,
+                            sl_no: (otherTablePagination - 1) * 10 + (index + 1),
+                            ...(field.id ? {} : { id: "unique_id_" + index }),
+                        };
+
+                    });
+
+                    setOtherTemplateData(updatedTableData);
+                    setOtherTemplateModalOpen(true);
+                }
+
+                setselectedOtherTemplate(options);
+
+                setOtherFormOpen(false);
+                setOptionStepperData([]);
+                setOptionFormTemplateData([]);
+
+            } else {
+                const errorMessage = getTemplateResponse.message ? getTemplateResponse.message : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -1303,7 +1993,7 @@ const ProfileData = () => {
                 </Box>
                 }
                 <Box py={2}>
-                    <TableView rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
+                    <TableView hoverTable={true} hoverTableOptions={hoverTableOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
                 </Box>
             </>
             {formOpen &&
@@ -1323,6 +2013,49 @@ const ProfileData = () => {
                     onSubmit={onSaveTemplateData}
                     onError={onSaveTemplateError}
                     closeForm={setFormOpen} />
+            }
+
+            {otherFormOpen &&
+
+                <Dialog
+                    open={otherFormOpen}
+                    onClose={() => setOtherFormOpen(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="xl"
+                    fullWidth
+                >
+                    <DialogContent sx={{ minWidth: '400px' }}>
+                        <DialogContentText id="alert-dialog-description">
+                            <FormControl fullWidth>
+                                <NormalViewForm
+
+                                    table_row_id={otherRowId}
+                                    template_id={otherTemplateId}
+
+                                    template_name={selectedOtherTemplate.name}
+
+                                    readOnly={otherReadOnlyTemplateData}
+                                    editData={otherEditTemplateData}
+
+                                    initialData={otherInitialTemplateData}
+
+                                    formConfig={optionFormTemplateData}
+                                    stepperData={optionStepperData}
+
+                                    onSubmit={otherTemplateSaveFunc}
+                                    onUpdate={otherTemplateUpdateFunc}
+                                    onError={onSaveTemplateError}
+                                    closeForm={setOtherFormOpen} 
+
+                                />
+                            </FormControl>
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: '12px 24px' }}>
+                        <Button onClick={() => setOtherFormOpen(false)}>Cancel</Button>
+                    </DialogActions>
+                </Dialog>
             }
 
             {showOptionModal &&
@@ -1445,8 +2178,46 @@ const ProfileData = () => {
                 </div>
             }
 
+
+            {/* other templates ui */}
+
+            {otherTemplateModalOpen &&
+                <Dialog
+                    open={otherTemplateModalOpen}
+                    onClose={() => setOtherTemplateModalOpen(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="md"
+                    fullWidth
+                    sx={{zIndex:'1'}}
+                >
+                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
+                        {selectedOtherTemplate && selectedOtherTemplate.name }
+                        <Box>
+                            <Button variant="outlined" onClick={() => {showOptionTemplate(selectedOtherTemplate.table)}}>Add</Button>
+                            <IconButton
+                                aria-label="close"
+                                onClick={() => setOtherTemplateModalOpen(false)}
+                                sx={{ color: (theme) => theme.palette.grey[500] }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </Box>
+
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            <Box py={2}>
+                                <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                            </Box>
+                        </DialogContentText>
+                    </DialogContent>
+                </Dialog>
+            }
+
+
         </Box>
     )
 };
 
-export default ProfileData;
+export default UnderInvestigation;

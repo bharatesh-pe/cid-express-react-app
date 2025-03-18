@@ -21,6 +21,7 @@ import { Description } from "@mui/icons-material";
 import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
+import ErrorIcon from "../Images/erroricon.png";
 
 const RolePage = () => {
 
@@ -43,12 +44,23 @@ const RolePage = () => {
     const [roleRowData, setRoleRowData] = useState([]);
 
     //function for delete role conformation
-    const showDeleteRoleDialoge = (id) => {
+    const [roleToDelete, setRoleToDelete] = useState(null);
+    const [roleNameToDelete, setRoleNameToDelete] = useState("");
 
+    const showDeleteRoleDialoge = (id, name) => {
+        setRoleToDelete(id);
+        setRoleNameToDelete(name);
         setDeleteRoleConf(true);
-        deleteRole(id);
+    };
+    
+    const handleDeleteRole = () => {
+        if (roleToDelete !== null) {
+            deleteRole(roleToDelete);
+            setDeleteRoleConf(false);
+            setRoleToDelete(null);
+        }
+    };
 
-    }
 
     // table column variable
     const [roleColumnData, setRoleColumnData] = useState([
@@ -124,7 +136,8 @@ const RolePage = () => {
                                 textAlign: "center",
                                 textTransform: "none",
                             }}
-                            onClick={() => showDeleteRoleDialoge(params.row.id)}                                        >
+                            onClick={() => showDeleteRoleDialoge(params.row.id, params.row.role_title)}
+                            >
                             <img
                                 src={trash}
                                 alt="Delete"
@@ -164,7 +177,7 @@ const RolePage = () => {
     
             if (!response || !response.success) {
                 let errorMessage = response.message || "Error deleting role";
-    
+                console.log(errorMessage);
                 if (errorMessage.includes("violates foreign key constraint")) {
                     errorMessage = "This role has been assigned to some officer. Please check.";
                 }
@@ -197,7 +210,15 @@ const RolePage = () => {
             get_details();
     
         } catch (err) {
-            toast.error(err?.message || "Something went wrong. Please try again.", {
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            if (errorMessage.includes("violates foreign key constraint")) {
+                errorMessage = "This role has been assigned to some officer. Please check.";
+            }
+            toast.error(errorMessage , {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -208,7 +229,9 @@ const RolePage = () => {
                 className: "toast-warning",
             });
         }
-         setLoading(false);
+        finally {
+            setLoading(false);
+        }
     };
     
     
@@ -240,8 +263,12 @@ const RolePage = () => {
                 toast.error(response.message || "Failed to fetch roles");
             }
         } catch (err) {
-            console.error("Error fetching roles:", err);
-            toast.error("Something went wrong. Please try again.");
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage);
         }
          setLoading(false);
     };
@@ -266,8 +293,12 @@ const RolePage = () => {
                 toast.error(response.message || "Failed to fetch permissions");
             }
         } catch (err) {
-            console.error("Error fetching permissions:", err);
-            toast.error("Something went wrong. Please try again.");
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage);
         }
          setLoading(false);
     };
@@ -290,8 +321,12 @@ const RolePage = () => {
                 toast.error(response.message || "Failed to fetch module");
             }
         } catch (err) {
-            console.error("Error fetching module:", err);
-            toast.error("Something went wrong. Please try again.");
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage);
         }
          setLoading(false);
     };
@@ -430,7 +465,12 @@ const RolePage = () => {
             setShowRoleAddModal(false);
             
         } catch (err) {
-            toast.error(err?.message || "Something went wrong. Please try again.", {
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage, {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -541,7 +581,12 @@ const RolePage = () => {
             get_details();
             setShowEditModal(false);
         } catch (err) {
-            toast.error(err?.message || "Something went wrong. Please try again.", {
+             let errorMessage = err.message || "Something went wrong. Please try again.";
+            if(err?.response?.data?.message)
+            {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage || "Something went wrong. Please try again.", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -730,8 +775,13 @@ const RolePage = () => {
                                         label="Title"
                                         name="role_title"
                                         autoComplete="off"
-                                        value={selectedRole?.role_title || ""} 
-                                        onChange={handleInputChange}
+                                        value={selectedRole?.role_title || ""}
+                                        onChange={(e) => {
+                                            const regex = /^[a-zA-Z0-9\s/,.\b]*$/;
+                                            if (regex.test(e.target.value)) {
+                                                handleInputChange(e);
+                                            }
+                                        }}    
                                         required
                                     />
                                 </Box>
@@ -948,7 +998,12 @@ const RolePage = () => {
                                         name="role_title"
                                         autoComplete='off'
                                         value={addRoleData.role_title}
-                                        onChange={handleAddData}
+                                        onChange={(e) => {
+                                            const regex = /^[a-zA-Z0-9\s/,.\b]*$/;
+                                            if (regex.test(e.target.value)) {
+                                                handleAddData(e);
+                                            }
+                                        }}                                        
                                         error={!!errorRoleData.role_title}
                                         required
                                     />
@@ -1075,6 +1130,83 @@ const RolePage = () => {
                     </DialogActions>
                 </Dialog>
             }
+                {/* Delete Role conformation Popup */}
+                  <div>
+                    <Dialog
+                      open={delete_role_conf}
+                      onClose={() => setDeleteRoleConf(false)}
+                      maxWidth="sm"
+                      fullWidth
+                      sx={{ borderRadius: "12px", padding: "15px" }}
+                    >
+                      <DialogContent sx={{ textAlign: "left" }}>
+                        <div style={{ display: "flex", alignItems: "center", marginBottom: "15px" }}>
+                          <div
+                            style={{
+                              width: "60px",
+                              height: "60px",
+                              borderRadius: "50%",
+                              overflow: "hidden",
+                              background:"rgb(250 209 209)",
+                              padding: "3px",
+                            }}
+                          >
+                            <img
+                              src={ErrorIcon}
+                              alt="Warning Icon"
+                              style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center" }}
+                            />
+                          </div>
+                        </div>
+            
+                        <p style={{ fontSize: "20px", fontWeight: "bold" }}>
+                          <span> Delete {roleNameToDelete}</span>
+                        </p>
+            
+                        <p style={{ fontSize: "16px", color: "rgb(156 163 175)", margin: 0 }}>
+                          Are you sure you want to delete the {roleNameToDelete} role? This action
+                          cannot be undone.
+                        </p>
+                      </DialogContent>
+            
+                      <DialogActions sx={{ display: "flex", justifyContent: "center", padding: "10px 20px" }}>
+                        <Button
+                          variant="contained"
+                          color="danger"
+                          onClick={() => setDeleteRoleConf(false)}
+                          sx={{
+                            width: "150px",
+                            marginRight: "10px",
+                            border: "1px solid lightgrey",
+                            boxShadow: "none",
+                            "&:hover": {
+                              backgroundColor: "#f3f4f6",
+                              boxShadow: "none",
+                            },
+                          }}
+                        >
+                          Cancel
+                        </Button>
+            
+                        <Button
+                          variant="contained"
+                          sx={{
+                            color: "white",
+                            backgroundColor: "#ef4444",
+                            borderRadius: "5px",
+                            "&:hover": {
+                              backgroundColor: "#dc2626",
+                            },
+                            width: "150px",
+                            boxShadow: "none",
+                          }}
+                          onClick={() => handleDeleteRole()}
+                        >
+                          Delete
+                        </Button>
+                      </DialogActions>
+                    </Dialog>
+                  </div>
 
             {
                 loading && <div className='parent_spinner' tabIndex="-1" aria-hidden="true">
