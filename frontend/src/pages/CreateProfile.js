@@ -70,6 +70,8 @@ const CreateProfile = () => {
                 return 'Enquiries';
             case 'master':
                 return 'Masters';
+            case 'others':
+                return 'Other Template';
             default:
                 return 'N/A';
         }
@@ -108,6 +110,29 @@ const CreateProfile = () => {
                         <span style={{fontSize:'15px',fontWeight:'400'}}>
                             {
                                 params && params.row && params.row.template_module ? changeHeaderNameModule(params.row.template_module) : ''
+                            }
+                        </span>
+                    </div>
+                )
+            }
+        },
+        {
+            field: 'link_module',
+            headerName: 'Linked Module',
+            width: 200,
+            resizable: false,
+            renderHeader: () => (
+                <div onClick={()=>ApplyTableSort('link_module')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+                    <span style={{color:'#1D2939',fontSize:'15px',fontWeight:'500'}}>Linked Module</span>
+                    {tableSortOption === 'ASC' ? <ASC sx={{color:'#475467',width:'18px'}} /> : <DESC sx={{color:'#475467',width:'18px'}} /> }
+                </div>
+            ),
+            renderCell: (params) => {
+                return (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                            {
+                                params && params.row && params.row.link_module ? changeHeaderNameModule(params.row.link_module) : ''
                             }
                         </span>
                     </div>
@@ -168,6 +193,7 @@ const CreateProfile = () => {
                     Createdfields : viewTemplateResponse.data['fields'],
                     type : viewTemplateResponse.data['template_type'],
                     module : viewTemplateResponse.data['template_module'],
+                    link_module : viewTemplateResponse.data['link_module'] ? viewTemplateResponse.data['link_module'] : null,
                     stepper : viewTemplateResponse.data['sections'] && viewTemplateResponse.data['sections'].length > 0 ? viewTemplateResponse.data['sections'] : [],
                     action : 'edit',
                     pagination: paginationCount,
@@ -504,13 +530,24 @@ const CreateProfile = () => {
     };
 
     const moduleOptions = {
-        id: 'formbuilderOptions',
+        id: 'formbuilderModuleOptions',
         label: 'Choose how do you want to create your template',
         options: [
             { name: 'Under Investigation', code: 'ui_case' },
             { name: 'Pending Trail', code: 'pt_case' },
             { name: 'Enquiries', code: 'eq_case' },
-            { name: 'Masters', code: 'master' }
+            { name: 'Masters', code: 'master' },
+            { name: 'Other Template', code: 'others' }
+        ]
+    };
+
+    const linkModuleOptions = {
+        id: 'formbuilderLinkModuleOptions',
+        label: 'Choose how do you want to create your template',
+        options: [
+            { name: 'Under Investigation', code: 'ui_case' },
+            { name: 'Pending Trail', code: 'pt_case' },
+            { name: 'Enquiries', code: 'eq_case' }
         ]
     };
 
@@ -767,7 +804,7 @@ const CreateProfile = () => {
                                                 checked={isSelected}
                                                 onChange={handleChange}
                                             />
-                                            <label className='Roboto' style={{ color: `${styles.color}`, fontWeight: `${styles.fontWeight}`, fontSize: '14px', cursor: 'pointer' }} htmlFor={`${addNewOptions.id}-${option.code}`}>
+                                            <label className='Roboto' style={{ color: `${styles.color}`, fontWeight: `${styles.fontWeight}`, fontSize: '14px', cursor: 'pointer' }} htmlFor={`${moduleOptions.id}-${option.code}`}>
                                                 {option.name}
                                             </label>
                                         </Box>
@@ -775,6 +812,49 @@ const CreateProfile = () => {
                                 })}
                                 </Box>
                             </Box>
+
+                            {formData.module === 'others' && (
+
+                                <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                    <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
+                                        Choose which module you want to link
+                                    </h4>
+                                    <Box>
+                                    {linkModuleOptions.options?.map((option, index) => {
+                                        const isSelected = formData['link_module'] === option.code;
+
+                                        const styles = {
+                                            border: `1px solid ${isSelected ? '#1570EF' : '#D0D5DD'}`,
+                                            borderRadius: index === 0
+                                                ? '6px 6px 0 0'
+                                                : index === linkModuleOptions.options.length - 1
+                                                    ? '0 0 6px 6px'
+                                                    : '0',
+                                            background: isSelected ? '#EFF8FF' : '#FCFCFD',
+                                            color: isSelected ? '#1D2939' : '#475467',
+                                            fontWeight: isSelected ? '500' : '400',
+                                        };
+
+                                        return (
+                                            <Box key={`${linkModuleOptions.id}-${option.code}`} sx={{ border: styles.border, borderRadius: styles.borderRadius, background: styles.background }}>
+                                                <Radio
+                                                    name="link_module"
+                                                    required
+                                                    id={`${linkModuleOptions.id}-${option.code}`}
+                                                    value={option.code}
+                                                    checked={isSelected}
+                                                    onChange={handleChange}
+                                                />
+                                                <label className='Roboto' style={{ color: `${styles.color}`, fontWeight: `${styles.fontWeight}`, fontSize: '14px', cursor: 'pointer' }} htmlFor={`${linkModuleOptions.id}-${option.code}`}>
+                                                    {option.name}
+                                                </label>
+                                            </Box>
+                                        );
+                                    })}
+                                    </Box>
+                                </Box>
+
+                            )}
 
                             {formData.type === 'multiplesection' && (
                                 <Box sx={{display:'flex',flexDirection:'column',gap:'16px'}}>

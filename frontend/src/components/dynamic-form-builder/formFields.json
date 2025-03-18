@@ -323,6 +323,6 @@
         "options": [],
         "type": "tabs",
         "name": "tabs",
-        "formType": "tabs"
+        "formType": "Tabs"
     }
 ]
