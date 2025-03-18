@@ -1690,7 +1690,7 @@ const UnderInvestigation = () => {
     }
 
     const hoverTableOptions = [
-        { name: 'Progress Report', table: 'cid_nsk' },
+        { name: 'Progress Report', table: 'cid_ui_case_progress_report' },
         { name: 'FSL', table: 'cid_link_temp' },
     ]
 
