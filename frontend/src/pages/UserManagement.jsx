@@ -24,7 +24,7 @@ import { toast } from 'react-toastify';
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -157,7 +157,7 @@ const UserManagement = () => {
     if (!newUser.designation || newUser.designation.length === 0) {
       newErrors.designation = "Designation is required";
     }
-    if (!newUser.division) {
+    if (!newUser.division || newUser.division.length === 0) {
       newErrors.division = "Division is required";
     }
     if (!newUser.department) {
@@ -335,17 +335,19 @@ const UserManagement = () => {
           kgid: newUser.kgid,
           designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,
           department_id: newUser.department,
-          division_id: newUser.division,
+          division_id: Array.isArray(newUser.division) ? newUser.division.join(",") : newUser.division,
+          created_by: "1"
         }
         : {
           transaction_id: newUser.transaction_id,
           username: newUser.name,
+          user_id: newUser.id,
           role_id: newUser.role,
           kgid: newUser.kgid,
           pin: newUser.pin,
           designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,
           department_id: newUser.department,
-          division_id: newUser.division,
+          division_id: Array.isArray(newUser.division) ? newUser.division.join(",") : newUser.division,
           created_by: "1"
         };
 
@@ -436,6 +438,12 @@ const UserManagement = () => {
       ? userToEdit.designation_id.split(",").map(id => id.trim())
       : [];
 
+
+    const divisionArray = userToEdit.division_id
+      ? userToEdit.division_id.split(",").map(id => id.trim())
+      : [];
+
+
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
@@ -446,7 +454,9 @@ const UserManagement = () => {
         .filter(option => designationArray.includes(String(option.code)))
         .map(option => option.code),
       department: departmentOptions.find(option => String(option.code) === String(userToEdit.department_id))?.code || "",
-      division: divisionOptions.find(option => String(option.code) === String(userToEdit.division_id))?.code || "",
+      division: divisionOptions
+        .filter(option => divisionArray.includes(String(option.code)))
+        .map(option => option.code),
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
 
@@ -469,6 +479,10 @@ const UserManagement = () => {
       ? userToEdit.designation_id.split(",").map(id => id.trim())
       : [];
 
+      const divisionArray = userToEdit.division_id
+      ? userToEdit.division_id.split(",").map(id => id.trim())
+      : [];
+
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
@@ -479,7 +493,9 @@ const UserManagement = () => {
         .filter(option => designationArray.includes(String(option.code)))
         .map(option => option.code),
       department: departmentOptions.find(option => String(option.code) === String(userToEdit.department_id))?.code || "",
-      division: divisionOptions.find(option => String(option.code) === String(userToEdit.division_id))?.code || "",
+      division: divisionOptions
+        .filter(option => divisionArray.includes(String(option.code)))
+        .map(option => option.code),
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
 
@@ -1048,7 +1064,7 @@ const UserManagement = () => {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <AutocompleteField
+                <MultiSelect
                   formData={newUser}
                   errors={errors}
                   field={{
