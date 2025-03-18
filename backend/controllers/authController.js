@@ -82,7 +82,7 @@ const verify_OTP = async (req, res) => {
                     }
                 });
                 console.log(users_designation,"users_designation")
-                return res.status(200).json({ success: true, message: 'OTP verified successfully.', token ,users_designation});
+                return res.status(200).json({ success: true, message: 'OTP verified successfully.', token ,users_designation,userRole});
             } else {
                 // Return error if the otp is invalid or has expired
                 return res.status(401).json({ success: false, message: "Invalid OTP or OTP has expired" });
