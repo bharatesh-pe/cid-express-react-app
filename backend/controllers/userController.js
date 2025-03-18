@@ -133,13 +133,28 @@ exports.create_user = async (req, res) => {
             created_by: created_by
         }, { transaction: t });
 
-        // Create user division (Get user_id from department)
-        await UsersDivision.create({
-            users_department_id: newUserDepartment.users_department_id,
-            division_id: division_id,
-            created_by: created_by,
-            user_id: newUserDepartment.user_id
-        }, { transaction: t });
+        // // Create user division (Get user_id from department)
+        // await UsersDivision.create({
+        //     users_department_id: newUserDepartment.users_department_id,
+        //     division_id: division_id,
+        //     created_by: created_by,
+        //     user_id: newUserDepartment.user_id
+        // }, { transaction: t });
+
+        // Convert division_id to an array (similar to designation handling)
+        const divisionIds = division_id.includes(",")
+            ? division_id.split(",").map(id => parseInt(id.trim(), 10))
+            : [parseInt(division_id, 10)];
+
+        // Insert new divisions
+        for (const divId of divisionIds) {
+            await UsersDivision.create({
+                users_department_id: newUserDepartment.users_department_id,
+                division_id: divId,
+                created_by: created_by,
+                user_id: newUserDepartment.user_id
+            }, { transaction: t });
+        }
 
         await t.commit();
         return res.status(201).json({ success: true, message: "User created successfully" });
@@ -159,8 +174,56 @@ exports.create_user = async (req, res) => {
 };
 
 exports.update_user = async (req, res) => {
-    const { user_id, username, role_id, kgid, designation_id, department_id, division_id , transaction_id} = req.body;
+    const { user_id, username, role_id, kgid, designation_id, department_id, division_id , created_by , transaction_id} = req.body;
 
+    // Username validation
+    if (!username || !username.trim() || username == null || username == "null"  || username == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Name is required"
+        });
+    }
+
+    // Role ID validation
+    if (!role_id || role_id == null  || role_id == "null" || role_id == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Role is required"
+        });
+    }
+
+    // KGID validation
+    if (!kgid || !kgid.trim() || kgid == null || kgid == "null" || kgid == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "KGID is required"
+        });
+    }
+
+    // Designation ID validation
+    if (!designation_id || designation_id == null  || designation_id == "null" || designation_id == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Designation is required"
+        });
+    }
+
+    // Department ID validation
+    if (!department_id || department_id == null || department_id == "null"  || department_id == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Department is required"
+        });
+    }
+
+    // Division ID validation
+    if (!division_id || division_id == null  || division_id == "null"  || division_id == undefined) {
+        return res.status(400).json({
+            success: false,
+            message: "Division is required"
+        });
+    }
+    
     if(!transaction_id || transaction_id == "")
     {
         return res.status(400).json({ success: false, message: "Transaction Id is required!" });
@@ -216,6 +279,7 @@ exports.update_user = async (req, res) => {
         for (const desigId of designationIds) {
             await UserDesignation.create({
                 user_id: user_id,
+                created_by:created_by,
                 designation_id: desigId,
             }, { transaction: t });
         }
@@ -230,10 +294,29 @@ exports.update_user = async (req, res) => {
             );
 
             // Update user division
-            await UsersDivision.update(
-                { division_id: division_id },
-                { where: { users_department_id: userDepartment.users_department_id }, transaction: t }
-            );
+            // await UsersDivision.update(
+            //     { division_id: division_id },
+            //     { where: { users_department_id: userDepartment.users_department_id }, transaction: t }
+            // );
+             const divisionIds = division_id.includes(",")
+            ? division_id.split(",").map(id => parseInt(id.trim(), 10))
+            : [parseInt(division_id, 10)];
+
+            const users_department_id = userDepartment.users_department_id;
+
+            // Remove existing designations for the user
+            await UsersDivision.destroy({ where: { users_department_id }, transaction: t });
+
+            // Insert new divisions
+            for (const divId of divisionIds) {
+                await UsersDivision.create({
+                    users_department_id: userDepartment.users_department_id,
+                    division_id: divId,
+                    created_by:created_by,
+                    user_id: userDepartment.user_id
+                }, { transaction: t });
+            }
+
         }
 
         await t.commit();

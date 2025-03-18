@@ -24,7 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
-    master: {
+    masters_meta: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
