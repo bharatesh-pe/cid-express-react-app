@@ -461,7 +461,7 @@ exports.filter_users = async (req, res) => {
         const orConditions = [];
 
         if (name) orConditions.push({ name: { [Op.iLike]: `%${name}%` } });
-        if (kgid) orConditions.push({ kgid });
+        if (kgid) orConditions.push({ kgid: { [Op.iLike]: `%${kgid}%` } });
         if (role_id) orConditions.push({ role_id });
         if (department_id) orConditions.push({ "$users_departments.department_id$": department_id });
         if (division_id) orConditions.push({ "$users_division.division_id$": division_id });

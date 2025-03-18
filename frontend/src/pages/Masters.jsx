@@ -12,6 +12,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import ClearIcon from '@mui/icons-material/Clear';
 import { CircularProgress } from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
+import eyes from "../Images/eye.svg"
+import edit from "../Images/tableEdit.svg";
+import trash from "../Images/tableTrash.svg";
+import ErrorIcon from "../Images/erroricon.png";
 
 const MastersView = () => {
     const navigate = useNavigate();
@@ -29,7 +33,7 @@ const MastersView = () => {
         loadTableData(paginationCount);
     }, [paginationCount, tableSortOption]);
 
-    const columns: GridColDef[] = [
+    const columns = [
         { field: 'sl_no', headerName: 'S.No',resizable: false},
         { 
             field: 'template_name', 
@@ -38,7 +42,7 @@ const MastersView = () => {
             flex: 2,
             renderHeader: () => (
                 <div onClick={()=>ApplyTableSort('table_name')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                    <span style={{color:'#1D2939',fontSize:'15px',fontWeight:'500'}}>Template Name</span>
+                    <span style={{color:'#1D2939',fontSize:'15px',fontWeight:'500'}}>Name</span>
                     {tableSortOption === 'ASC' ? <ASC sx={{color:'#475467',width:'18px'}} /> : <DESC sx={{color:'#475467',width:'18px'}} /> }
                 </div>
             )
@@ -58,15 +62,78 @@ const MastersView = () => {
             headerName: 'Action',
             resizable: false,
             flex: 3,
-            renderCell: (params) => {
-                return (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleView(params.row); }}>
-                            View
-                        </Button>
-                    </Box>
-                );
-            }
+                        renderCell: (params) => {
+                            return (
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                                    <Button
+                                        style={{
+                                            background: "transparent",
+                                            border: "none",
+                                            padding: "0",
+                                            boxShadow: "none",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "6px",
+                                            color: "black",
+                                            fontSize: "14px",
+                                            textAlign: "center",
+                                            textTransform: "none",
+                                        }}
+                                    >
+                                        <img
+                                            src={eyes}
+                                            alt="View"
+                                            style={{ width: "20px", height: "20px" }}
+                                        />
+                                        <span>View</span>
+                                    </Button>
+                                    <Button
+                                        style={{
+                                            background: "transparent",
+                                            border: "none",
+                                            padding: "0",
+                                            boxShadow: "none",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "6px",
+                                            color: "black",
+                                            fontSize: "14px",
+                                            textAlign: "center",
+                                            textTransform: "none",
+                                        }}
+                                    >
+                                        <img
+                                            src={edit}
+                                            alt="Edit"
+                                            style={{ width: "20px", height: "20px" }}
+                                        />
+                                        <span>Edit</span>
+                                    </Button>
+                                    <Button
+                                        style={{
+                                            background: "transparent",
+                                            border: "none",
+                                            padding: "0",
+                                            boxShadow: "none",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "6px",
+                                            color: "Red",
+                                            fontSize: "14px",
+                                            textAlign: "center",
+                                            textTransform: "none",
+                                        }}
+                                        >
+                                        <img
+                                            src={trash}
+                                            alt="Delete"
+                                            style={{ width: "20px", height: "20px" }}
+                                        />
+                                        <span>Delete</span>
+                                    </Button>
+                                </Box>
+                            );
+                        }
         }
     ];
 
