@@ -20,3 +20,13 @@ exports.fetch_masters_meta  = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+exports.fetch_specific_master_data = async (req, res) => {
+    try{
+        
+    }
+    catch (error){
+        console.log('Error fetching specific master data:', error)
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
