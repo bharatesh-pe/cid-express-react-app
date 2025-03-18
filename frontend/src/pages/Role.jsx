@@ -793,8 +793,13 @@ const RolePage = () => {
                                         label="Description"
                                         name="role_description"
                                         value={selectedRole?.role_description || ""}
-                                        onChange={handleInputChange}
-                                        required
+                                        onChange={(e) => {
+                                            const regex = /^[a-zA-Z0-9\s,.\b]*$/;
+                                            if (regex.test(e.target.value)) {
+                                                handleInputChange(e);
+                                            }
+                                        }}                                       
+                                    required
                                     />
                                 </Box>
 
@@ -1023,7 +1028,12 @@ const RolePage = () => {
                                         name="role_description"
                                         autoComplete='off'
                                         value={addRoleData.role_description}
-                                        onChange={handleAddData}
+                                        onChange={(e) => {
+                                            const regex = /^[a-zA-Z0-9\s,.\b]*$/;
+                                            if (regex.test(e.target.value)) {
+                                                handleAddData(e);
+                                            }
+                                        }}
                                         error={!!errorRoleData.role_description}
                                         required
                                     />

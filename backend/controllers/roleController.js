@@ -193,8 +193,13 @@ exports.update_role = async (req, res) => {
     }
 
     // Check if the new role title already exists (excluding the current role)
-    if (role_title && role_title !== existingRole.role_title) {
-      const roleWithSameTitle = await Role.findOne({ where: { role_title } });
+    if (role_title && role_title.toLowerCase() !== existingRole.role_title.toLowerCase()) {
+      const roleWithSameTitle = await Role.findOne({
+        where: {
+          role_title: { [Op.iLike]: role_title },
+          role_id: { [Op.ne]: id } // Exclude current role
+        }
+      });      
       if (roleWithSameTitle) {
         return res.status(400).json({
           success: false,
