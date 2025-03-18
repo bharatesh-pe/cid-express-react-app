@@ -79,7 +79,7 @@ exports.create_user = async (req, res) => {
 
         // Create user division (Get user_id from department)
         await UsersDivision.create({
-            user_department_id: newUserDepartment.user_department_id,
+            users_department_id: newUserDepartment.users_department_id,
             division_id: division_id,
             created_by: created_by,
             user_id: newUserDepartment.user_id

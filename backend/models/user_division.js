@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
       references: {
         model: 'UsersDepartment', // name of the target model
-        key: 'user_department_id' // key in the target model that the foreign key refers to
+        key: 'users_department_id' // key in the target model that the foreign key refers to
       }
     },
     division_id: {
