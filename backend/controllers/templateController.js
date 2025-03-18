@@ -29,7 +29,7 @@ const typeMapping = {
 exports.createTemplate = async (req, res, next) => {
 	console.log(">>>>>")
 	try {
-		let { template_name, template_type, template_module, link_module, fields, sections, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
+		let { template_name, template_type, template_module, link_module, fields, sections, sys_status, no_of_sections, paranoid = false, is_link_to_organization, is_link_to_leader } = req.body;
 		// const iddd = res.locals.admin_user_id;
 
 
@@ -203,6 +203,7 @@ exports.createTemplate = async (req, res, next) => {
 			template_type,
 			template_module,
 			link_module,
+			sys_status,
 			template_name,
 			fields: JSON.stringify(fields),
 			sections,
@@ -240,7 +241,7 @@ exports.createTemplate = async (req, res, next) => {
 
 exports.updateTemplate = async (req, res, next) => {
 	try {
-		let { template_name, template_type, template_module, link_module, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
+		let { template_name, template_type, template_module, link_module, sys_status, fields, sections, no_of_sections, paranoid = false, is_link_to_leader, is_link_to_organization } = req.body;
 		// const iddd = res.locals.admin_user_id;
 		// const adminUser = await admin_user.findOne({
 		// 	where: { admin_user_id: iddd },
@@ -435,7 +436,7 @@ exports.updateTemplate = async (req, res, next) => {
 			fields: JSON.stringify(updatedFields),
 			sections,
 			no_of_sections,
-
+			sys_status,
 			is_link_to_leader,
 			is_link_to_organization,
 			updated_by: "adminUser.full_name",
@@ -552,6 +553,7 @@ exports.viewTemplate = async (req, res, next) => {
 			sections: template.sections,
 			link_module: template.link_module,
 			no_of_sections: template.no_of_sections,
+			sys_status: template.sys_status,
 			is_link_to_leader: template.is_link_to_leader,
 			is_link_to_organization: template.is_link_to_organization,
 			fields: JSON.parse(template.fields),
@@ -865,7 +867,8 @@ exports.checkDuplicateTemplate = async (req, res, next) => {
 			.replace(/\s+/g, '_');
 
 		// Check if a template with the same template_module exists (except when template_module is 'master')
-		if (template_module !== 'master') {
+
+		if (template_module !== 'master' && template_module !== 'others') {
 			const existingModule = await Template.findOne({ where: { template_module } });
 			if (existingModule) {
 				const message = `A template already exists with the module ${template_module}.`;
