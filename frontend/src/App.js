@@ -221,7 +221,7 @@ function App() {
                 }
             />
             <Route
-                path="/masters"
+                path="/master"
                 element={
                     <ProtectedRoute>
                         <Layout>
