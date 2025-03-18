@@ -291,7 +291,7 @@ exports.get_users = async (req, res) => {
                 },
                 {
                     model: UsersDivision,
-                    as: "users_divisions",
+                    as: "users_division",
                     attributes: ["division_id"],
                     include: [
                         {
@@ -325,7 +325,7 @@ exports.filter_users = async (req, res) => {
         if (kgid) orConditions.push({ kgid });
         if (role_id) orConditions.push({ role_id });
         if (department_id) orConditions.push({ "$users_departments.department_id$": department_id });
-        if (division_id) orConditions.push({ "$users_divisions.division_id$": division_id });
+        if (division_id) orConditions.push({ "$users_division.division_id$": division_id });
         if (designation_id) orConditions.push({ "$users_designations.designation_id$": designation_id });
         if (dev_status !== undefined) orConditions.push({ dev_status });
 
@@ -350,7 +350,7 @@ exports.filter_users = async (req, res) => {
                 },
                 {
                     model: UsersDivision,
-                    as: "users_divisions",
+                    as: "users_division",
                     attributes: ["division_id"],
                     include: [{ model: Division, as: "division", attributes: ["division_name"] }]
                 }

@@ -201,8 +201,8 @@ const UserManagement = () => {
         designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
         department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
         department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
-        division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
-        division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
+        division_id: user.users_division?.map(d => d.division_id).join(", ") || "N/A",
+        division: user.users_division?.map(d => d.division?.division_name).join(", ") || "N/A",
         status: user.dev_status ? "Active" : "Inactive",
         dev_status: user.dev_status,
       }));
@@ -255,8 +255,8 @@ const UserManagement = () => {
             designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
             department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
             department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
-            division_id: user.users_divisions?.map(d => d.division_id).join(", ") || "N/A",
-            division: user.users_divisions?.map(d => d.division?.division_name).join(", ") || "N/A",
+            division_id: user.users_division?.map(d => d.division_id).join(", ") || "N/A",
+            division: user.users_division?.map(d => d.division?.division_name).join(", ") || "N/A",
             status: user.dev_status ? "Active" : "Inactive",
             dev_status: user.dev_status,
         }));
