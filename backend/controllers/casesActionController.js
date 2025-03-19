@@ -1,4 +1,4 @@
-const { CasesAction } = require("../models");
+const { CasesAction , Template} = require("../models");
 const { Op } = require("sequelize");
 
 // Get all actions
@@ -216,3 +216,26 @@ exports.delete_action = async (req, res) => {
         });
     }
 }; 
+
+//get other tempelates from template table
+exports.get_other_templates = async (req , res) => {
+    try {
+         // Get paginated actions for the specified module
+        const other_templates = await Template.findAll({
+            where: { template_module: { [Op.iLike]: 'others' } }
+        });
+
+        return res.status(200).json({
+            success: true,
+            other_templates
+        });
+
+    } catch (error) {
+        console.error("Error fetch others template :", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to fetch others template",
+            error: error.message
+        });
+    }
+};
