@@ -35,9 +35,6 @@ import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
 import Enquiries from './pages/Enquiries';
 import MastersView from './pages/Masters';
-// import Judgement from './pages/Judgement';
-// import GovernmentOrder from './pages/Governmentorder';
-
 function App() {
   return (
     <Router>
@@ -54,16 +51,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* <Route
-            path="/repository/:type"
-            element={
-              <ProtectedRoute>
-                <Layout>
-                  <Repository />
-                </Layout>
-              </ProtectedRoute>
-            }
-          /> */}
           <Route
             path="/repository/circular"
             element={
