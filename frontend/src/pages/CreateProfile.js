@@ -70,6 +70,12 @@ const CreateProfile = () => {
                 return 'Enquiries';
             case 'master':
                 return 'Masters';
+            case 'circular':
+                return 'Circular';
+            case 'governmentorder':
+                return 'Government Order';
+            case 'judgement':
+                return 'Judgement';    
             case 'others':
                 return 'Other Template';
             default:
@@ -537,6 +543,9 @@ const CreateProfile = () => {
             { name: 'Pending Trail', code: 'pt_case' },
             { name: 'Enquiries', code: 'eq_case' },
             { name: 'Masters', code: 'master' },
+            { name: 'Circular', code: 'circular' },
+            { name: 'Government Order', code: 'governmentorder' },
+            { name: 'Judgement', code: 'judgement' },
             { name: 'Other Template', code: 'others' }
         ]
     };
@@ -547,7 +556,7 @@ const CreateProfile = () => {
         options: [
             { name: 'Under Investigation', code: 'ui_case' },
             { name: 'Pending Trail', code: 'pt_case' },
-            { name: 'Enquiries', code: 'eq_case' }
+            { name: 'Enquiries', code: 'eq_case' },
         ]
     };
 
