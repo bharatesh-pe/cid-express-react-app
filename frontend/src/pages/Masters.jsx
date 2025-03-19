@@ -252,14 +252,14 @@ const MastersView = () => {
         }
     };
 
-    const [selectedMasters, setSelectedMasters] = useState([]); // Store selected names
+    const [selectedMasters, setSelectedMasters] = useState([]);
 
     const handleCheckboxClick = (master) => {
         setSelectedMasters(prev => {
             if (prev.includes(master.name)) {
-                return prev.filter(name => name !== master.name); // Remove if already selected
+                return prev.filter(name => name !== master.name);
             } else {
-                return [...prev, master.name]; // Add new selection
+                return [...prev, master.name];
             }
         });
         setShowMasters(false);
