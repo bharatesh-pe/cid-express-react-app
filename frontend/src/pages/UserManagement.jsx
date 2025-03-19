@@ -31,7 +31,7 @@ const UserManagement = () => {
   const [isDeactivationDialogVisible, setDeactivationDialogVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState("Add New User");
   const [loading, setLoading] = useState(false);
-
+const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const columns = [
@@ -268,7 +268,9 @@ const UserManagement = () => {
         }));
 
         setUsers(formattedUsers);
-
+        setCurrentPage(0);
+        setIsFilterApplied(true);
+        setNewUser({})
         toast.success("Filters applied successfully!", {
             position: "top-right",
             autoClose: 3000,
@@ -791,6 +793,7 @@ const UserManagement = () => {
                     color: "#1D2939",
                     fontWeight: "600",
                     textTransform: 'none',
+                    display: isFilterApplied ? "none" : "inline-flex",
                     "&:hover": {
                       backgroundColor: "transparent",
                     },
@@ -812,6 +815,29 @@ const UserManagement = () => {
                 >
                   Filter
                 </Button>
+                <Button
+                  variant="outlined"
+                  sx={{
+                    height: "38px",
+                    border: "1px solid #D0D5DD",
+                    borderRadius: "6px",
+                    gap: "8px",
+                    color: "#D32F2F",
+                    fontWeight: "600",
+                    textTransform: 'none',
+                    display: isFilterApplied ? "inline-flex" : "none",
+                    "&:hover": {
+                      backgroundColor: "transparent",
+                    },
+                  }}
+                  onClick={() => {
+                    fetchUsers();
+                    setIsFilterApplied(false);
+                  }}
+                >
+                  Clear Filter
+                </Button>
+
                 <Button
                   variant="outlined"
                   startIcon={<AddCircleIcon />}
@@ -934,15 +960,15 @@ const UserManagement = () => {
               <Button
                 variant="outlined"
                 sx={{
-                  color: "#b7bbc2",
+                  color: "#000000",
                   width: "10vw",
-                  borderColor: "#b7bbc2",
-                  backgroundColor: "#f9fafb",
+                  borderColor: "#6B7280",
+                  backgroundColor: "#F3F4F6",
                   borderWidth: "2px",
                   fontWeight: "600",
                   textTransform: "none",
                   "&:hover": {
-                    backgroundColor: "#f1f5f9",
+                    backgroundColor: "#E5E7EB",
                   },
                 }}
                 onClick={() => {
@@ -959,6 +985,7 @@ const UserManagement = () => {
                     division: "",
                     department: "",
                   });
+                  setErrors({});
                 }}
               >
                 {modalTitle === "View User" ? "Close" : "Discard Changes"}
@@ -970,13 +997,13 @@ const UserManagement = () => {
                   sx={{
                     color: "white",
                     width: "10vw",
-                    borderColor: "#2563eb",
-                    backgroundColor: "#2563eb",
+                    borderColor: "#1F1DAC",
+                    backgroundColor: "#1F1DAC",
                     borderWidth: "2px",
                     fontWeight: "700",
                     textTransform: "none",
                     "&:hover": {
-                      backgroundColor: "#1d4ed8",
+                      backgroundColor: "#1F1DAC",
                     },
                   }}
                   onClick={modalTitle === "Set Filters" ? handleFilters : handleSave}
@@ -994,7 +1021,7 @@ const UserManagement = () => {
                   field={{
                     name: "name",
                     label: "Enter Full Name",
-                    required: true,
+                    required: modalTitle !== "Set Filters",
                   }}
                   formData={newUser}
                   errors={errors}

@@ -779,7 +779,7 @@ const RolePage = () => {
                                         autoComplete="off"
                                         value={selectedRole?.role_title || ""}
                                         onChange={(e) => {
-                                            const regex = /^[a-zA-Z0-9\s/,.\b]*$/;
+                                            const regex = /^[a-zA-Z0-9\s\b]*$/;
                                             if (regex.test(e.target.value)) {
                                                 handleInputChange(e);
                                             }
@@ -796,7 +796,7 @@ const RolePage = () => {
                                         name="role_description"
                                         value={selectedRole?.role_description || ""}
                                         onChange={(e) => {
-                                            const regex = /^[a-zA-Z0-9\s,.\b]*$/;
+                                            const regex = /^[a-zA-Z0-9\s/,.\b]*$/;
                                             if (regex.test(e.target.value)) {
                                                 handleInputChange(e);
                                             }
@@ -1012,7 +1012,7 @@ const RolePage = () => {
                                         autoComplete='off'
                                         value={addRoleData.role_title}
                                         onChange={(e) => {
-                                            const regex = /^[a-zA-Z0-9\s/,.\b]*$/;
+                                            const regex = /^[a-zA-Z0-9\s\b]*$/;
                                             if (regex.test(e.target.value)) {
                                                 handleAddData(e);
                                             }
@@ -1037,7 +1037,7 @@ const RolePage = () => {
                                         autoComplete='off'
                                         value={addRoleData.role_description}
                                         onChange={(e) => {
-                                            const regex = /^[a-zA-Z0-9\s,.\b]*$/;
+                                            const regex = /^[a-zA-Z0-9\s/,.\b]*$/;
                                             if (regex.test(e.target.value)) {
                                                 handleAddData(e);
                                             }
