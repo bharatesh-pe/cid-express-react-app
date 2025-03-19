@@ -9,6 +9,7 @@ const templateDataRoutes = require('./templateDataRoutes');
 const cidMasterRoutes = require('./cidMasterRoutes')
 const masterRoutes = require('./mastersRoute');
 const master_metaRoutes = require('./master_metaRoute');
+const casesActionRoutes = require('./casesActionRoutes');
 router.use('/auth', authRoutes);
 router.use('/user', userRoutes);
 router.use('/role', roleRoutes);
@@ -18,5 +19,6 @@ router.use('/templateData', templateDataRoutes);
 router.use('/cidMaster', cidMasterRoutes);
 router.use('/master', masterRoutes);
 router.use('/master_meta', master_metaRoutes);
+router.use('/action', casesActionRoutes);
 
 module.exports = router;
