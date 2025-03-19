@@ -18,6 +18,9 @@ import PTView from "./pages/cases/PTView";
 import PTCase from "./pages/cases/PTCases"
 import PTCreate from "./pages/cases/PTCreate"
 import Repository from "./pages/repository/repository";
+import Circular  from './pages/Circular';
+import GovernmentOrder from './pages/Governmentorder';
+import Judgement from './pages/Judgement';
 import Report from "./pages/reports";
 import UICreate from './pages/cases/UICreate';
 import UICases from './pages/cases/UICases';
@@ -32,6 +35,8 @@ import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
 import Enquiries from './pages/Enquiries';
 import MastersView from './pages/Masters';
+// import Judgement from './pages/Judgement';
+// import GovernmentOrder from './pages/Governmentorder';
 
 function App() {
   return (
@@ -49,7 +54,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route
+          {/* <Route
             path="/repository/:type"
             element={
               <ProtectedRoute>
@@ -58,7 +63,37 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             }
+          /> */}
+          <Route
+            path="/repository/circular"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <Circular />
+                </Layout>
+              </ProtectedRoute>
+            }
           />
+          <Route
+            path="/repository/gn_order"
+            element={
+              <ProtectedRoute>
+                <Layout>
+                  <GovernmentOrder />
+                </Layout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+          path="/repository/judgements"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Judgement />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
           <Route
             path="/reports"
             element={

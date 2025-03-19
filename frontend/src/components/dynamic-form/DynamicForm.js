@@ -718,7 +718,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #636B744D', padding: '16px', background: '#FFFFFF' }}>
           <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '8px' }}>
-            <img src='./arrow-left.svg' />
+            <img src='../arrow-left.svg' />
             <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
               {template_name ? template_name : 'Form'}
             </Typography>
