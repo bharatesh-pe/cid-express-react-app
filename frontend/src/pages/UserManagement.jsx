@@ -960,7 +960,7 @@ const [isFilterApplied, setIsFilterApplied] = useState(false);
               <Button
                 variant="outlined"
                 sx={{
-                  color: "#6B7280",
+                  color: "#000000",
                   width: "10vw",
                   borderColor: "#6B7280",
                   backgroundColor: "#F3F4F6",
