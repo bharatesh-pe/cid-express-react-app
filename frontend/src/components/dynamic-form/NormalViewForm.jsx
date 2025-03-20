@@ -106,7 +106,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
       });
     }
 
-    console.log('formData', formData);
   };
 
   const validate = () => {
@@ -125,9 +124,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
   };
 
   const handleSubmit = (e) => {
-
-    console.log(readOnly,"readOnly")
-    console.log(editData,"editData")
 
     e.preventDefault();
     if (validate()) {
@@ -181,8 +177,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     }
 
     setFormData(updatedFormData);
-
-    console.log(updatedFormData);
 
   }
 
@@ -779,9 +773,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 if (shouldHide) return null;
 
                 const isRequired = field.required === 'true' || field.required === true;
-
-                console.log(readOnly,"readOnly");
-                console.log(field,"field");
 
                 field.disabled = readOnly ? true : '';
                 switch (field.type) {

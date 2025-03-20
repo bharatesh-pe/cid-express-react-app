@@ -81,6 +81,8 @@ const Enquiries = () => {
 
     const searchParams = new URLSearchParams(location.search);
 
+    const [hoverTableOptions, setHoverTableOptions] = useState([]);
+
     const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
         { field: 'sl_no', headerName: 'S.No' },
         {
@@ -1689,10 +1691,66 @@ const Enquiries = () => {
         console.log("hello calling func")
     }
 
-    const hoverTableOptions = [
-        { name: 'Progress Report', table: 'cid_nsk' },
-        { name: 'FSL', table: 'cid_link_temp' },
-    ]
+
+    useEffect(()=>{
+
+        const getActions = async ()=>{
+
+            var payloadObj = {
+                "module": "eq_case"
+            }
+
+            setLoading(true);
+    
+            try {
+    
+                const getActionsDetails = await api.post("/action/get_actions", payloadObj);
+
+                setLoading(false);
+    
+                if (getActionsDetails && getActionsDetails.success) {
+    
+                    if (getActionsDetails.data && getActionsDetails.data['data']) {
+                        setHoverTableOptions(getActionsDetails.data['data']);
+                    }
+    
+                } else {
+                    
+                    const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                                    
+                }
+    
+            } catch (error) {
+    
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+        }
+
+        getActions();
+
+    },[])
 
     const handleOtherTemplateActions = async (options)=>{
 
