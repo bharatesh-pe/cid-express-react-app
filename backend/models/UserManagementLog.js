@@ -19,17 +19,21 @@ module.exports = (sequelize, DataTypes) => {
           key: "user_id",
         },
       },
-      action: {
-        type: DataTypes.STRING,
+      field: {
+        type: DataTypes.TEXT,
         allowNull: false,
       },
-      timestamp: {
+      info: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      at: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
-        allowNull: false,
+        allowNull: true,
       },
-      details: {
-        type: DataTypes.TEXT,
+      by: {
+        type: DataTypes.INTEGER,
         allowNull: true,
       },
     },

@@ -31,7 +31,7 @@ const UserManagement = () => {
   const [isDeactivationDialogVisible, setDeactivationDialogVisible] = useState(false);
   const [modalTitle, setModalTitle] = useState("Add New User");
   const [loading, setLoading] = useState(false);
-const [isFilterApplied, setIsFilterApplied] = useState(false);
+  const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
   const columns = [
