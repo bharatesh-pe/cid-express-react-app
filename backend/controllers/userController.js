@@ -16,17 +16,6 @@ const {
 } = require("../models");
 const { Op } = require("sequelize");
 
-// Initialize Sequelize
-const sequelize = new Sequelize(
-  dbConfig.database.database,
-  dbConfig.database.username,
-  dbConfig.database.password,
-  {
-    host: dbConfig.database.host,
-    port: dbConfig.database.port,
-    dialect: dbConfig.database.dialect,
-  }
-);
 
 // Create user
 exports.create_user = async (req, res) => {
@@ -148,7 +137,7 @@ exports.create_user = async (req, res) => {
   // Create directory
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const t = await sequelize.transaction();
+  const t = await dbConfig.sequelize.transaction();
 
   try {
     // Check if user already exists
@@ -206,7 +195,7 @@ exports.create_user = async (req, res) => {
 
     // // Create user division (Get user_id from department)
     // await UsersDivision.create({
-    //     users_department_id: newUserDepartment.users_department_id,
+    //     users_department_id: newUserDepartment.users_departmentS  _id,
     //     division_id: division_id,
     //     created_by: created_by,
     //     user_id: newUserDepartment.user_id
@@ -228,6 +217,21 @@ exports.create_user = async (req, res) => {
         },
         { transaction: t }
       );
+    }
+
+    // Prepare logs for user management log
+    const logs = [
+        { user_id: newUser.user_id, field: 'name', info: username, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'role', info: role_id, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'kgid', info: kgid, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'designation', info: designation_id, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'department', info: department_id, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'division', info: division_id, at: new Date(), by: created_by }
+    ];
+
+    // Insert logs into UserManagementLog
+    if (logs.length > 0) {
+        await UserManagementLog.bulkCreate(logs, { transaction: t });
     }
 
     await t.commit();
@@ -275,7 +279,7 @@ exports.update_user = async (req, res) => {
   if (fs.existsSync(dirPath)) return res.status(400).json({ success: false, message: "Duplicate transaction detected." });
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const t = await sequelize.transaction();
+  const t = await dbConfig.sequelize.transaction();
 
   try {
     const existingUser = await Users.findOne({ where: { user_id } });
@@ -285,9 +289,9 @@ exports.update_user = async (req, res) => {
     }
 
     const updatedFields = {};
-    if (existingUser.name !== username) updatedFields.name = username;
-    if (existingUser.role_id !== role_id) updatedFields.role_id = role_id;
-    if (existingUser.kgid !== kgid) updatedFields.kgid = kgid;
+    if (existingUser.name != username) updatedFields.name = username;
+    if (existingUser.role_id != role_id) updatedFields.role = role_id;
+    if (existingUser.kgid != kgid) updatedFields.kgid = kgid;
 
     if (Object.keys(updatedFields).length > 0) {
       await Users.update(updatedFields, { where: { user_id }, transaction: t });
@@ -318,7 +322,7 @@ exports.update_user = async (req, res) => {
         { transaction: t }
       );
       await UserManagementLog.create(
-        { user_id, field: "designation", info: `${newDesignations}`, at: new Date(), by: created_by },
+        { user_id, field: "designation", info: `${designationIds}`, at: new Date(), by: created_by },
         { transaction: t }
       );
     }
@@ -355,7 +359,7 @@ exports.update_user = async (req, res) => {
         { transaction: t }
       );
       await UserManagementLog.create(
-        { user_id, field: "division", info: `${newDivisions}`, at: new Date(), by: created_by },
+        { user_id, field: "division", info: `${divisionIds}`, at: new Date(), by: created_by },
         { transaction: t }
       );
     }
@@ -395,7 +399,7 @@ exports.user_active_deactive = async (req, res) => {
   // Create directory
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const t = await sequelize.transaction();
+  const t = await dbConfig.sequelize.transaction();
 
   try {
     // Check if the user exists
@@ -575,4 +579,158 @@ exports.filter_users = async (req, res) => {
       .status(500)
       .json({ message: "Failed to filter users", error: error.message });
   }
+};
+
+// Function to get user management logs
+exports.get_user_management_logs = async (req, res) => {
+    const { field, user_id } = req.body; // Get field and userId from query parameters
+
+    try {
+        // Fetch logs from the database based on field and userId, sorted in descending order
+        const logs = await UserManagementLog.findAll({
+            where: {
+                user_id: user_id,
+                field: field
+            },
+            order: [['at', 'DESC']], // Order by 'at' in descending order
+        });
+
+        // Check if logs are found
+        if (logs.length === 0) {
+            return res.status(404).json({ message: 'No logs found for the specified user and field.' });
+        }
+
+         // If the field is 'role', get the role names based on the log values
+        if (field === 'role') {
+            // Extract role IDs from the logs
+            const roleIds = logs.map(log => log.info);
+
+            // Fetch role names based on the role IDs
+            const roles = await Role.findAll({
+               attributes:['role_id','role_title'],
+                where: {
+                    role_id: roleIds
+                }
+            });
+
+            // Create a mapping of role IDs to role names
+            const roleMap = {};
+            roles.forEach(role => {
+                roleMap[role.role_id] = role.role_title; // Assuming 'id' is the role ID and 'name' is the role name
+            });
+
+            // Combine logs with role names
+            const formattedLogs = logs.map(log => ({
+                ...log.dataValues,
+                info: roleMap[log.info] || 'Unknown Role' // Add role name to the log object
+            }));
+
+            // Return the logs with role names
+            return res.status(200).json({"logs":formattedLogs});
+        }
+
+        // If the field is 'designation', get the designation names based on the log values
+        if (field === 'designation') {
+            // Extract designation IDs from the logs
+            const designationIds = logs.map(log => log.info); // Assuming 'info' contains the designation IDs
+
+            // Split the designation IDs and flatten the array
+            const idsArray = designationIds.flatMap(idString => idString.split(',').map(id => id.trim()));
+
+            // Fetch designation names based on the designation IDs
+            const designations = await Designation.findAll({
+                attributes:['designation_id','designation_name'],
+                where: {
+                    designation_id: idsArray
+                }
+            });
+
+            // Create a mapping of designation IDs to designation names
+            const designationMap = {};
+            designations.forEach(designation => {
+                designationMap[designation.designation_id] = designation.designation_name; // Assuming 'id' is the designation ID and 'name' is the designation name
+            });
+
+            // Combine logs with designation names
+            const formattedLogs = logs.map(log => ({
+                ...log.dataValues,
+                info: log.info.split(',')
+                    .map(id => designationMap[id.trim()] || 'Unknown Designation') // Get designation names
+                    .join(' , ') // Join the names into a single string
+            }));
+
+            // Return the logs with designation names
+            return res.status(200).json({ "logs": formattedLogs });
+        }
+
+         // If the field is 'department', get the department names based on the log values
+        if (field === 'department') {
+            // Extract department IDs from the logs
+            const departmentIds = logs.map(log => log.info);
+
+            // Fetch department names based on the department IDs
+            const departments = await Department.findAll({
+               attributes:['department_id','department_name'],
+                where: {
+                    department_id: departmentIds
+                }
+            });
+
+            // Create a mapping of department IDs to department names
+            const departmentMap = {};
+            departments.forEach(department => {
+                departmentMap[department.department_id] = department.department_name; // Assuming 'id' is the department ID and 'name' is the department name
+            });
+
+            // Combine logs with department names
+            const formattedLogs = logs.map(log => ({
+                ...log.dataValues,
+                info: departmentMap[log.info] || 'Unknown Department' 
+            }));
+
+            // Return the logs with role names
+            return res.status(200).json({"logs":formattedLogs});
+        }
+
+
+         // If the field is 'division', get the division names based on the log values
+        if (field === 'division') {
+            // Extract division IDs from the logs
+            const divisionIds = logs.map(log => log.info); // Assuming 'info' contains the division IDs
+
+            // Split the division IDs and flatten the array
+            const idsArray = divisionIds.flatMap(idString => idString.split(',').map(id => id.trim()));
+
+            // Fetch division names based on the division IDs
+            const divisions = await Division.findAll({
+                attributes:['division_id','division_name'],
+                where: {
+                    division_id: idsArray
+                }
+            });
+
+            // Create a mapping of division IDs to division names
+            const divisionMap = {};
+            divisions.forEach(division => {
+                divisionMap[division.division_id] = division.division_name; // Assuming 'id' is the designation ID and 'name' is the designation name
+            });
+
+            // Combine logs with designation names
+            const formattedLogs = logs.map(log => ({
+                ...log.dataValues,
+                info: log.info.split(',')
+                    .map(id => divisionMap[id.trim()] || 'Unknown Division') // Get division names
+                    .join(' , ') // Join the names into a single string
+            }));
+
+            // Return the logs with division names
+            return res.status(200).json({ "logs": formattedLogs });
+        }
+
+        // Return the logs as a response
+        return res.status(200).json({"logs":logs});
+    } catch (error) {
+        console.error('Error fetching user management logs:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
 };
