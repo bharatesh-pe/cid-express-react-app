@@ -182,6 +182,37 @@ const UserManagement = () => {
   }, []);
 
 
+  const getUsermanagementFieldLog = async (field) =>{
+    console.log('selected users',selectedUsers);
+    var user_id = '';
+    if(selectedUsers && selectedUsers[0])
+      user_id = selectedUsers[0];
+    else
+    {
+      console.log('the user id is missing please check.')
+      return;
+    }
+    setLoading(true);
+    try {
+      const body_data = { "field" : field , "user" : user_id};
+      const response = await api.post("/user/get_user_management_logs" , body_data);
+      const logs = response.logs || response.data?.logs;
+      if (!logs || !Array.isArray(logs)) {
+        throw new Error("Invalid API response format: 'logs' is not an array");
+      }
+
+    } catch (err) {
+      console.log(err);
+      let errorMessage = err.message || "Failed to fetch field logs.";
+      if(err?.response?.data?.message)
+      {
+          errorMessage = err?.response?.data?.message || "Failed to fetch field logs.";
+      }
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -988,7 +1019,7 @@ const UserManagement = () => {
                   setErrors({});
                 }}
               >
-                {modalTitle === "View User" ? "Close" : "Discard Changes"}
+                {modalTitle === "View User" ? "Close" : "Discard"}
               </Button>
           
               {modalTitle !== "View User" && (
@@ -1022,7 +1053,9 @@ const UserManagement = () => {
                     name: "name",
                     label: "Enter Full Name",
                     required: modalTitle !== "Set Filters",
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'name' : null,
                   }}
+                  onHistory={() => getUsermanagementFieldLog('name')}
                   formData={newUser}
                   errors={errors}
                   onChange={handleInputChange}
@@ -1039,8 +1072,10 @@ const UserManagement = () => {
                     label: "Select Role",
                     options: roleOptions,
                     required: modalTitle !== "Set Filters",
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'role' : null,
                   }}
                   value={newUser.role}
+                  onHistory={() => getUsermanagementFieldLog('role')}
                   onChange={handleDropDownChange}
                 />
               </Grid>
@@ -1052,10 +1087,12 @@ const UserManagement = () => {
                     label: "KGID Number",
                     required: modalTitle !== "Set Filters",
                     maxLength: 10,
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'kgid' : null,
                   }}
                   formData={newUser}
                   errors={errors}
                   onChange={handleInputChange}
+                  onHistory={() => getUsermanagementFieldLog('kgid')}
                   readOnly={modalTitle === "View User"}
                 />
               </Grid>
@@ -1069,8 +1106,10 @@ const UserManagement = () => {
                     label: "Designation",
                     options: designationOptions,
                     required: modalTitle !== "Set Filters",
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'designation' : null,
                   }}
                   value={newUser.designation}
+                  onHistory={() => getUsermanagementFieldLog('designation')}
                   onChange={handleDropDownChange}
                 />
               </Grid>
@@ -1084,8 +1123,10 @@ const UserManagement = () => {
                     label: "Department",
                     options: departmentOptions,
                     required: modalTitle !== "Set Filters",
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'department' : null,
                   }}
                   value={newUser.department}
+                  onHistory={() => getUsermanagementFieldLog('department')}
                   onChange={handleDropDownChange}
                 />
               </Grid>
@@ -1099,8 +1140,10 @@ const UserManagement = () => {
                     label: "Division",
                     options: divisionOptions,
                     required: modalTitle !== "Set Filters",
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'division' : null,
                   }}
                   value={newUser.division}
+                  onHistory={() => getUsermanagementFieldLog('division')}
                   onChange={handleDropDownChange}
                 />
               </Grid>

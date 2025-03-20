@@ -41,7 +41,8 @@ const ShortText = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                             padding: '0px 0px 0px 3px', 
                             fontSize: '20px',
                             verticalAlign: 'middle',
-                            marginBottom:'3px'
+                            marginBottom:'3px',
+                            cursor: 'pointer',
                         }}/>
                     </Tooltip>
                 )}

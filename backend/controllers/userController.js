@@ -591,3 +591,30 @@ exports.filter_users = async (req, res) => {
       .json({ message: "Failed to filter users", error: error.message });
   }
 };
+
+// Function to get user management logs
+exports.get_user_management_logs = async (req, res) => {
+    const { field, user } = req.body; // Get field and userId from query parameters
+
+    try {
+        // Fetch logs from the database based on field and userId, sorted in descending order
+        const logs = await UserManagementLog.findAll({
+            where: {
+                user_id: user,
+                field: field
+            },
+            order: [['at', 'DESC']] // Order by created_at in descending order
+        });
+
+        // Check if logs are found
+        if (logs.length === 0) {
+            return res.status(404).json({ message: 'No logs found for the specified user and field.' });
+        }
+
+        // Return the logs as a response
+        return res.status(200).json(logs);
+    } catch (error) {
+        console.error('Error fetching user management logs:', error);
+        return res.status(500).json({ message: 'Internal server error' });
+    }
+};
