@@ -655,6 +655,7 @@ const CreateProfile = () => {
                                 onInput={(e)=>setSearchValue(e.target.value)}
                                 value={searchValue}
                                 id="tableSearch" 
+                                autoComplete='off'
                                 size="small"
                                 placeholder='Search anything'
                                 variant="outlined" 

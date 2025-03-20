@@ -19,13 +19,6 @@ const CreateField = ({ selectedField, selectedDropdwonField, formFields, handleF
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
         displayEmpty
-        MenuProps={{
-            PaperProps: {
-              sx: {
-                paddingBottom: '100px'
-              },
-            },
-        }}
       >
         {/* Custom Placeholder */}
         <MenuItem disabled value="">
