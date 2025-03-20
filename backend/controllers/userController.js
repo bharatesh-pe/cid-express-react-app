@@ -298,7 +298,7 @@ exports.update_user = async (req, res) => {
         at: new Date(),
         by: created_by,
       }));
-      await UserManagementLog.bulkCreate(logs, { transaction: t });
+      if (logs.length > 0) await UserManagementLog.bulkCreate(logs, { transaction: t });
     }
 
     const designationIds = (designation_id || "")
@@ -312,15 +312,19 @@ exports.update_user = async (req, res) => {
     const newDesignations = designationIds.filter((id) => !existingDesignationIds.includes(id));
     const removedDesignations = existingDesignationIds.filter((id) => !designationIds.includes(id));
 
-    await UserDesignation.bulkCreate(
-      newDesignations.map((desigId) => ({ user_id, designation_id: desigId, created_by })),
-      { transaction: t }
-    );
-    await UserManagementLog.create(
-      { user_id, field: "designation", info: `${newDesignations}`, at: new Date(), by: created_by },
-      { transaction: t }
-    );
-    await UserDesignation.destroy({ where: { user_id, designation_id: removedDesignations }, transaction: t });
+    if (newDesignations.length > 0) {
+      await UserDesignation.bulkCreate(
+        newDesignations.map((desigId) => ({ user_id, designation_id: desigId, created_by })),
+        { transaction: t }
+      );
+      await UserManagementLog.create(
+        { user_id, field: "designation", info: `${newDesignations}`, at: new Date(), by: created_by },
+        { transaction: t }
+      );
+    }
+    if (removedDesignations.length > 0) {
+      await UserDesignation.destroy({ where: { user_id, designation_id: removedDesignations }, transaction: t });
+    }
 
     const userDepartment = await UsersDepartment.findOne({ where: { user_id } });
     if (userDepartment && userDepartment.department_id !== department_id) {
@@ -345,15 +349,19 @@ exports.update_user = async (req, res) => {
     const newDivisions = divisionIds.filter((id) => !existingDivisionIds.includes(id));
     const removedDivisions = existingDivisionIds.filter((id) => !divisionIds.includes(id));
 
-    await UsersDivision.bulkCreate(
-      newDivisions.map((divId) => ({ users_department_id, division_id: divId, created_by, user_id })),
-      { transaction: t }
-    );
-    await UserManagementLog.create(
-      { user_id, field: "division", info: `${newDivisions}`, at: new Date(), by: created_by },
-      { transaction: t }
-    );
-    await UsersDivision.destroy({ where: { users_department_id, division_id: removedDivisions }, transaction: t });
+    if (newDivisions.length > 0) {
+      await UsersDivision.bulkCreate(
+        newDivisions.map((divId) => ({ users_department_id, division_id: divId, created_by, user_id })),
+        { transaction: t }
+      );
+      await UserManagementLog.create(
+        { user_id, field: "division", info: `${newDivisions}`, at: new Date(), by: created_by },
+        { transaction: t }
+      );
+    }
+    if (removedDivisions.length > 0) {
+      await UsersDivision.destroy({ where: { users_department_id, division_id: removedDivisions }, transaction: t });
+    }
 
     await t.commit();
     return res.status(201).json({ success: true, message: "User updated successfully" });
