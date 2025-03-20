@@ -206,7 +206,7 @@ exports.create_user = async (req, res) => {
 
     // // Create user division (Get user_id from department)
     // await UsersDivision.create({
-    //     users_department_id: newUserDepartment.users_department_id,
+    //     users_department_id: newUserDepartment.users_departmentS  _id,
     //     division_id: division_id,
     //     created_by: created_by,
     //     user_id: newUserDepartment.user_id
@@ -228,6 +228,21 @@ exports.create_user = async (req, res) => {
         },
         { transaction: t }
       );
+    }
+
+    // Prepare logs for user management log
+    const logs = [
+        { user_id: newUser.user_id, field: 'name', info: username, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'role', info: role_id, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'kgid', info: kgid, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'designation', info: designation_id, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'department', info: department_id, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'division', info: division_id, at: new Date(), by: created_by }
+    ];
+
+    // Insert logs into UserManagementLog
+    if (logs.length > 0) {
+        await UserManagementLog.bulkCreate(logs, { transaction: t });
     }
 
     await t.commit();
@@ -285,9 +300,9 @@ exports.update_user = async (req, res) => {
     }
 
     const updatedFields = {};
-    if (existingUser.name !== username) updatedFields.name = username;
-    if (existingUser.role_id !== role_id) updatedFields.role_id = role_id;
-    if (existingUser.kgid !== kgid) updatedFields.kgid = kgid;
+    if (existingUser.name != username) updatedFields.name = username;
+    if (existingUser.role_id != role_id) updatedFields.role = role_id;
+    if (existingUser.kgid != kgid) updatedFields.kgid = kgid;
 
     if (Object.keys(updatedFields).length > 0) {
       await Users.update(updatedFields, { where: { user_id }, transaction: t });
@@ -318,7 +333,7 @@ exports.update_user = async (req, res) => {
         { transaction: t }
       );
       await UserManagementLog.create(
-        { user_id, field: "designation", info: `${newDesignations}`, at: new Date(), by: created_by },
+        { user_id, field: "designation", info: `${designationIds}`, at: new Date(), by: created_by },
         { transaction: t }
       );
     }
@@ -355,7 +370,7 @@ exports.update_user = async (req, res) => {
         { transaction: t }
       );
       await UserManagementLog.create(
-        { user_id, field: "division", info: `${newDivisions}`, at: new Date(), by: created_by },
+        { user_id, field: "division", info: `${divisionIds}`, at: new Date(), by: created_by },
         { transaction: t }
       );
     }
