@@ -40,6 +40,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ARRAY(DataTypes.STRING), // Correct for storing an array of strings
       allowNull: true,
     },
+    sys_status: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
     is_link_to_leader: {
       type: DataTypes.BOOLEAN,
       allowNull: false,
