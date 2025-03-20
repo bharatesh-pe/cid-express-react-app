@@ -41,7 +41,7 @@ import CloseIcon from '@mui/icons-material/Close';
 
 const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id }) => {
   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
-  console.log('template_name', template_name);
+//   console.log('template_name', template_name);
   const [formData, setFormData] = useState(storageFormData);
   const [newFormConfig, setNewFormConfig] = useState(formConfig ? formConfig : {})
   const [stepperConfigData, setstepperConfigData] = useState([])
@@ -105,7 +105,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
       });
     }
 
-    console.log('formData', formData);
+    // console.log('formData', formData);
   };
 
   const validate = () => {
@@ -177,7 +177,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
 
     setFormData(updatedFormData);
 
-    console.log(updatedFormData);
+    // console.log(updatedFormData);
 
   }
 
@@ -312,7 +312,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
         }
 
       } else {
-        console.log("no data found");
+        // console.log("no data found");
       }
     }
   }, [selectedField])
@@ -476,7 +476,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                 }
               }
 
-            if (field && field.defaultValue && field.defaultValue !== '') {
+            if (field && field.defaultValue && field.defaultValue !== '' && field.defaultValue !== false && field.defaultValue !== 'false') {
                 defaultValueObj[field.name] = field.defaultValue;
             }
 
@@ -484,7 +484,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
           if (field && field.is_dependent === 'true') {
             return { ...field, options: [] };
           }
-            if (field && field.defaultValue && field.defaultValue !== '') {
+            if (field && field.defaultValue && field.defaultValue !== '' && field.defaultValue !== false && field.defaultValue !== 'false') {
                 defaultValueObj[field.name] = field.defaultValue;
             }
         }
@@ -776,9 +776,6 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                 if (shouldHide) return null;
 
                 const isRequired = field.required === 'true' || field.required === true;
-
-                console.log(readOnly,"readOnly");
-                console.log(field,"field");
 
                 field.disabled = readOnly ? true : '';
                 switch (field.type) {

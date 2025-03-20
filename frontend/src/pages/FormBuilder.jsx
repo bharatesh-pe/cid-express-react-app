@@ -1847,7 +1847,7 @@ const Formbuilder = () => {
                                 table: '',
                                 forign_key : "",
                                 attributes : [],
-                                defaultValue : selectedMasterOptions.is_master
+                                defaultValue : false
                             }));
                         }
                     }catch (error) {
@@ -1902,7 +1902,7 @@ const Formbuilder = () => {
                         options: updatedOptions,
                         forign_key : forignKey,
                         attributes : attributeKey,
-                        defaultValue : selectedMasterOptions.is_master
+                        defaultValue : false
                     }
 
                     setFields(fields.map((field) =>
@@ -1917,7 +1917,7 @@ const Formbuilder = () => {
                         readonlyOption: true,
                         forign_key : forignKey,
                         attributes : attributeKey,
-                        defaultValue : selectedMasterOptions.is_master
+                        defaultValue : false
                     }));
 
                 } else {
@@ -1929,7 +1929,7 @@ const Formbuilder = () => {
                         options: [],
                         forign_key : '',
                         attributes : [],
-                        defaultValue : selectedMasterOptions.is_master
+                        defaultValue : false
                     }
 
                     setFields(fields.map((field) =>
@@ -1944,7 +1944,7 @@ const Formbuilder = () => {
                         readonlyOption: false,
                         forign_key : '',
                         attributes : [],
-                        defaultValue : selectedMasterOptions.is_master
+                        defaultValue : false
                     }));
 
                     toast.error('No Data Found', {
@@ -2277,7 +2277,7 @@ const Formbuilder = () => {
                                 </Box>
 
                             </Box>
-                            <Box sx={{ backgroundColor: '#FFFFFF', zIndex: '99', position: 'relative' }}>
+                            <Box sx={{ backgroundColor: '#FFFFFF', zIndex: '98', position: 'relative' }}>
 
                                 <Box sx={{ maxHeight: '95%', overflow: 'auto' }}>
                                     <div>
