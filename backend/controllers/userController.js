@@ -16,17 +16,6 @@ const {
 } = require("../models");
 const { Op } = require("sequelize");
 
-// Initialize Sequelize
-const sequelize = new Sequelize(
-  dbConfig.database.database,
-  dbConfig.database.username,
-  dbConfig.database.password,
-  {
-    host: dbConfig.database.host,
-    port: dbConfig.database.port,
-    dialect: dbConfig.database.dialect,
-  }
-);
 
 // Create user
 exports.create_user = async (req, res) => {
@@ -148,7 +137,7 @@ exports.create_user = async (req, res) => {
   // Create directory
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const t = await sequelize.transaction();
+  const t = await dbConfig.sequelize.transaction();
 
   try {
     // Check if user already exists
@@ -290,7 +279,7 @@ exports.update_user = async (req, res) => {
   if (fs.existsSync(dirPath)) return res.status(400).json({ success: false, message: "Duplicate transaction detected." });
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const t = await sequelize.transaction();
+  const t = await dbConfig.sequelize.transaction();
 
   try {
     const existingUser = await Users.findOne({ where: { user_id } });
@@ -410,7 +399,7 @@ exports.user_active_deactive = async (req, res) => {
   // Create directory
   fs.mkdirSync(dirPath, { recursive: true });
 
-  const t = await sequelize.transaction();
+  const t = await dbConfig.sequelize.transaction();
 
   try {
     // Check if the user exists
