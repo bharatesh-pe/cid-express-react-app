@@ -18,7 +18,7 @@ import PTView from "./pages/cases/PTView";
 import PTCase from "./pages/cases/PTCases"
 import PTCreate from "./pages/cases/PTCreate"
 import Repository from "./pages/repository/repository";
-import Circular  from './pages/Circular';
+import Circular from './pages/Circular';
 import GovernmentOrder from './pages/Governmentorder';
 import Judgement from './pages/Judgement';
 import Report from "./pages/reports";
@@ -35,6 +35,9 @@ import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
 import Enquiries from './pages/Enquiries';
 import MastersView from './pages/Masters';
+import Designation from './pages/designation';
+import Department from './pages/department';
+import Division from './pages/division';
 function App() {
   return (
     <Router>
@@ -252,7 +255,36 @@ function App() {
                     </ProtectedRoute>
                 }
             />
-
+            <Route
+                path="/master/designation"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Designation />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/master/department"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Department />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/master/division"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Division />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
           <Route
             path="/create-profile"
             element={

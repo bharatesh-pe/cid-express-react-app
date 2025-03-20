@@ -1,9 +1,11 @@
 const express = require('express');
-const { fetch_masters_meta} = require('../controllers/master_metaController');
+const MetaMasterController = require('../controllers/master_metaController');
 const { validate_token } = require("../helper/validations")
-
 const router = express.Router();
-
-router.get('/fetch_masters', [validate_token], fetch_masters_meta);
+router.get('/fetch_masters', [validate_token], MetaMasterController.fetch_masters_meta);
+router.post('/fetch_specific_master_data', [validate_token], MetaMasterController.fetch_specific_master_data);
+router.post('/create_master_data', [validate_token], MetaMasterController.create_master_data);
+router.post('/update_master_data', [validate_token], MetaMasterController.update_master_data);
+router.post('/delete_master_data', [validate_token], MetaMasterController.delete_master_data);
 
 module.exports = router;
