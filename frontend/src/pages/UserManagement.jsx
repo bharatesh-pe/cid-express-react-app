@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import Modal from "../components/Modal/Modal.jsx";
 import PasswordInput from "../components/password_input/password_input";
-import { Box, Checkbox, Grid } from '@mui/material';
+import { Box, Checkbox, Grid  } from '@mui/material';
+import { DialogTitle, Table, TableBody, TableCell, TableContainer, TableHead, TableRow , IconButton} from '@mui/material';
 import MultiSelect from "../components/form/MultiSelect.jsx";
 import { Button, CircularProgress} from '@mui/material';
 import AddCircleIcon from '@mui/icons-material/AddCircle';
@@ -21,6 +22,7 @@ import ShortText from "../components/form/ShortText.jsx";
 import NumberField from "../components/form/NumberField.jsx";
 import api from '../services/api';
 import { toast } from 'react-toastify';
+import CloseIcon from '@mui/icons-material/Close'; 
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
@@ -34,6 +36,9 @@ const UserManagement = () => {
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [users, setUsers] = useState([]);
   const [error, setError] = useState("");
+  const [logs, setLogs] = useState([]);
+  const [openLogDialog, setOpenLogDialog] = useState(false);
+  const [LogDialogTitle, SetLogDialogTitle] = useState('');
   const columns = [
     {
       field: 'selection',
@@ -194,13 +199,16 @@ const UserManagement = () => {
     }
     setLoading(true);
     try {
-      const body_data = { "field" : field , "user" : user_id};
+      const body_data = { "field" : field , "user_id" : user_id};
       const response = await api.post("/user/get_user_management_logs" , body_data);
-      const logs = response.logs || response.data?.logs;
-      if (!logs || !Array.isArray(logs)) {
+      const fetchedLogs = response.logs || response.data?.logs;
+      if (!fetchedLogs || !Array.isArray(fetchedLogs)) {
         throw new Error("Invalid API response format: 'logs' is not an array");
       }
-
+      const log_model_title = field.charAt(0).toUpperCase() + field.slice(1);;
+      setLogs(fetchedLogs);
+      setOpenLogDialog(true);
+      SetLogDialogTitle(log_model_title)
     } catch (err) {
       console.log(err);
       let errorMessage = err.message || "Failed to fetch field logs.";
@@ -208,6 +216,15 @@ const UserManagement = () => {
       {
           errorMessage = err?.response?.data?.message || "Failed to fetch field logs.";
       }
+      toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "toast-warning",
+      });
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -1285,6 +1302,61 @@ const UserManagement = () => {
                           <CircularProgress size={100} />
                       </div>
                   }
+
+      {/* Dialog for displaying logs */}
+      <Dialog open={openLogDialog} onClose={() => setOpenLogDialog(false)}>
+        <DialogTitle>{LogDialogTitle} Logs
+          <IconButton
+              edge="end"
+              color="inherit"
+              onClick={() => setOpenLogDialog(false)} // Close the dialog
+              aria-label="close"
+              style={{ position: 'absolute', right: 20, top: 12 }} // Position the button
+          >
+              <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>S.No</TableCell>
+                <TableCell>Value</TableCell>
+                <TableCell>Updated at</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {logs.map((log, index) => (
+                <TableRow key={index}>
+                  <TableCell>{index+1}</TableCell>
+                  <TableCell>{log.info}</TableCell>
+                  <TableCell>{new Date(log.at).toLocaleString()}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+        {/* <DialogActions>
+           <Button
+                variant="outlined"
+                sx={{
+                  color: "#000000",
+                  width: "10vw",
+                  borderColor: "#6B7280",
+                  backgroundColor: "#F3F4F6",
+                  borderWidth: "2px",
+                  fontWeight: "600",
+                  textTransform: "none",
+                  "&:hover": {
+                    backgroundColor: "#E5E7EB",
+                  },
+                }}
+                onClick={() => setOpenLogDialog(false)}
+              >
+                Close
+              </Button>
+        </DialogActions> */}
+      </Dialog>
     </Box>
   );
 };
