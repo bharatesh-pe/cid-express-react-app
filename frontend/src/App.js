@@ -38,6 +38,7 @@ import MastersView from './pages/Masters';
 import Designation from './pages/designation';
 import Department from './pages/department';
 import Division from './pages/division';
+import CaseActions from './pages/CaseAction';
 function App() {
   return (
     <Router>
@@ -355,6 +356,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+            <Route
+                path="/caseAction"
+                element={
+                <ProtectedRoute>
+                    <Layout>
+                    <CaseActions />
+                    </Layout>
+                </ProtectedRoute>
+                }
+            />
           <Route path="*" element={<Login />} />
         </Routes>
       </AuthProvider>
