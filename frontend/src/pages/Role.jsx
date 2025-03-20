@@ -411,8 +411,24 @@ const RolePage = () => {
             }));
         }
     
+        const hasSelectedPermission = Object.values(addRoleData.permissions).some(value => value === true);
+
+        if (!hasSelectedPermission) {
+            error_flag = true;
+            toast.error("At least one permission must be selected", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    
         if (error_flag) {
-            toast.error("Please Check Title and Description", {
+            toast.error("Please Check Title and Description, and Permissions", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -527,9 +543,24 @@ const RolePage = () => {
                 role_description: 'Role Description is required',
             }));
         }
+        const hasPermissionSelected = Object.values(selectedRole.permissions).some(value => value === true);
+
+        if (!hasPermissionSelected) {
+            error_flag = true;
+            toast.error("At least one permission must be selected.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
     
         if (error_flag) {
-            toast.error("Please check title and description", {
+            toast.error("Please check title and Description, and Permissions", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -899,14 +930,15 @@ const RolePage = () => {
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions sx={{ padding: '12px 24px' }}>
-                        <Button onClick={() => setShowEditModal(false)}>Close</Button>
+                        <Button onClick={() => {
+                            setShowEditModal(false);
+                            setErrorRoleData({ role_title: '', role_description: '' });
+                        }}>Close</Button>
                         <Button variant="outlined" onClick={handleEditData}>Edit Role</Button>
                     </DialogActions>
                 </Dialog>
 
             </Box>
-
-
 
             <Box p={2}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
@@ -1149,7 +1181,10 @@ const RolePage = () => {
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions sx={{ padding: '12px 24px' }}>
-                        <Button onClick={() => setShowRoleAddModal(false)}>Close</Button>
+                        <Button onClick={() => {
+                            setShowRoleAddModal(false);
+                            setErrorRoleData({ role_title: '', role_description: '' });
+                        }}>Close</Button>
                         <Button variant="outlined" onClick={handleAddSaveData}>Add Role</Button>
                     </DialogActions>
                 </Dialog>
