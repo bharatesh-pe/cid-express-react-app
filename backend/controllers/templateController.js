@@ -697,13 +697,11 @@ exports.paginateTemplate = async (req, res) => {
 	}
 };
 
-
-
 exports.getMasterTemplates = async (req, res, next) => {
 	try {
 		// Fetch all templates with template_type as 'master'
 		const masterTemplates = await Template.findAll({
-			where: { template_module: 'master' },
+			// where: { template_module: 'master' },
 			attributes: ['table_name', 'template_type'],
 		});
 
@@ -719,6 +717,7 @@ exports.getMasterTemplates = async (req, res, next) => {
 			{ table: "department", is_master: "false", api: "cidMaster/getAllDepartment", is_dependent: "false" },
 			{ table: "designation", is_master: "false", api: "cidMaster/getAllDesignations", is_dependent: "false" },
 			{ table: "division", is_master: "false", api: "cidMaster/getAllDivisions", is_dependent: "false" },
+			{ table: "users", is_master: "false", api: "cidMaster/getIoUsers", is_dependent: "false" },
 		];
 
 		// Combine master templates and additional entries

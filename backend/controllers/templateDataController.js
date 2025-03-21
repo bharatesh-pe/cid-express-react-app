@@ -1302,7 +1302,7 @@ exports.paginateTemplateData = async (req, res) => {
                 }, {});
             }
 
-            if (type === 'dropdown' && Array.isArray(options)) {
+            if ((type === 'dropdown' || type === 'multidropdown' || type === 'autocomplete') && Array.isArray(options)) {
                 dropdownFieldMappings[columnName] = options.reduce((acc, option) => {
                     acc[option.code] = option.name;
                     return acc;
@@ -2242,7 +2242,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 }, {});
             }
 
-            if (type === 'dropdown' && Array.isArray(options)) {
+            if ((type === 'dropdown' || type === 'multidropdown' || type === 'autocomplete') && Array.isArray(options)) {
                 dropdownFieldMappings[columnName] = options.reduce((acc, option) => {
                     acc[option.code] = option.name;
                     return acc;

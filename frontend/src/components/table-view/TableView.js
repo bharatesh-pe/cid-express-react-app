@@ -14,7 +14,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
   
     const handleMenuOpen = (event, row) => {
         setAnchorEl(event.currentTarget);
-        setSelectedRow((prev) => (prev === row.id ? null : row.id));
+        setSelectedRow((prev) => (prev?.id === row.id ? null : row));
     };
   
     const handleMenuClose = () => {
@@ -23,7 +23,11 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
     };
   
     const handleHoverOptionClick = (option, page) => {
-        hoverActionFuncHandle(option);
+        if (option && typeof option.onclick === "function") {
+            option.onclick(selectedRow);
+        }else{
+            hoverActionFuncHandle(option);
+        }
         handleMenuClose();
     };
   
@@ -37,7 +41,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
                 width: 150,
                 renderCell: (params) => (
                   <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
-                    {selectedRow === params.row.id ? (
+                    {selectedRow?.id === params.row.id ? (
                       <KeyboardArrowUp sx={{ color: "blue" }} />
                     ) : (
                       <KeyboardArrowDown sx={{ color: "blue" }} />
