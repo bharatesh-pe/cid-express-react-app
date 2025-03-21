@@ -631,6 +631,24 @@ const RolePage = () => {
          setLoading(false);
     };
 
+    const [filteredRows, setFilteredRows] = useState(roleRowData);
+    useEffect(() => {
+        if (!searchValue) {
+            setFilteredRows(roleRowData);
+            return;
+        }
+    
+        const lowercasedSearch = searchValue.toLowerCase();
+        const filteredData = roleRowData.filter(row =>
+            Object.values(row).some(value =>
+                typeof value === "string" && value.toLowerCase().includes(lowercasedSearch)
+            )
+        );
+    
+        setFilteredRows(filteredData);
+    }, [searchValue, roleRowData]);
+    
+
     return (
         <Box inert={loading ? true : false}>
             <Dialog
@@ -997,8 +1015,9 @@ const RolePage = () => {
                     </Box>
                 </Box>
                 <Box py={2}>
-                    <TableView rows={roleRowData} columns={roleColumnData} backBtn={tablePagination !== 1} nextBtn={roleRowData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage}
-                        getRowId={(row) => row.id} />
+                <TableView rows={filteredRows} columns={roleColumnData} backBtn={tablePagination !== 1} 
+                    nextBtn={filteredRows.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage}
+                    getRowId={(row) => row.id} />
                 </Box>
             </Box>
 
