@@ -181,6 +181,7 @@ const UserManagement = () => {
   };
 
 
+console.log("newuserrrrr", newUser)
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -370,19 +371,12 @@ const UserManagement = () => {
     }
 
     const fieldDesignations = fetchedTableData.map(item => item.field_designation);
-
+    
     const userDesignations = Array.isArray(newUser.designation) 
         ? newUser.designation 
         : [newUser.designation];
-
-    const designationIdToName = {};
-    masterData?.designation?.forEach(item => {
-        designationIdToName[item.code.toString()] = item.name;
-    });
-
-    const userDesignationNames = userDesignations.map(des => designationIdToName[des]);
-
-    const isValidDesignation = userDesignationNames.every(des => fieldDesignations.includes(des));
+    
+    const isValidDesignation = userDesignations.every(des => fieldDesignations.includes(Number(des)));
     
     if (!isValidDesignation) {
         toast.error("Supervisor designation missing for selected Designation. Please check the Hierarchy", {
@@ -874,7 +868,7 @@ const UserManagement = () => {
       setLoading(true);
   
       try {
-          const getTemplateResponse = await api.post("/templateData/paginateTemplateData", getTemplatePayload);
+          const getTemplateResponse = await api.post("/user/paginateTemplateData", getTemplatePayload);
           setLoading(false);
   
           if (getTemplateResponse && getTemplateResponse.success) {
