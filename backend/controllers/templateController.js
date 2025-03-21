@@ -703,22 +703,22 @@ exports.getMasterTemplates = async (req, res, next) => {
 	try {
 		// Fetch all templates with template_type as 'master'
 		const masterTemplates = await Template.findAll({
-			where: { template_type: 'master' },
+			where: { template_module: 'master' },
 			attributes: ['table_name', 'template_type'],
 		});
 
 		// Add 'is_master: true' to each template object if templates exist
 		const updatedTemplates = masterTemplates.map(template => ({
 			table: template.dataValues.table_name,
-			is_master: template.dataValues.template_type === 'master' ? "true" : "false",
+			is_master: template.dataValues.template_module === 'master' ? "true" : "false",
 		}));
 
 		// Additional entries
 
 		const additionalEntries = [
-			{ table: "Department", is_master: "false", api: "cidMaster/getAllDepartment", is_dependent: "false" },
-			{ table: "Designation", is_master: "false", api: "cidMaster/getAllDesignations", is_dependent: "false" },
-			{ table: "Division", is_master: "false", api: "cidMaster/getAllDivisions", is_dependent: "false" },
+			{ table: "department", is_master: "false", api: "cidMaster/getAllDepartment", is_dependent: "false" },
+			{ table: "designation", is_master: "false", api: "cidMaster/getAllDesignations", is_dependent: "false" },
+			{ table: "division", is_master: "false", api: "cidMaster/getAllDivisions", is_dependent: "false" },
 		];
 
 		// Combine master templates and additional entries
