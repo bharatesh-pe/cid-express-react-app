@@ -392,19 +392,19 @@ exports.updateTemplate = async (req, res, next) => {
 		}
 
 		// Handle associations for dependent fields
-		associations.forEach(({ fieldName, tableName, foreignKey, attributes }) => {
-			const referenceModel = sequelize.models[tableName];
-			if (!referenceModel) {
-				const message = `Referenced model ${tableName} does not exist.`;
-				return adminSendResponse(res, 400, false, message, null);
-			}
+		// associations.forEach(({ fieldName, tableName, foreignKey, attributes }) => {
+		// 	const referenceModel = sequelize.models[tableName];
+		// 	if (!referenceModel) {
+		// 		const message = `Referenced model ${tableName} does not exist.`;
+		// 		return adminSendResponse(res, 400, false, message, null);
+		// 	}
 
-			// Add associations dynamically using Sequelize
-			model.belongsTo(referenceModel, {
-				foreignKey: foreignKey,   // Foreign key in the current table
-				targetKey: attributes,    // Field in the referenced model
-			});
-		});
+		// 	// Add associations dynamically using Sequelize
+		// 	model.belongsTo(referenceModel, {
+		// 		foreignKey: foreignKey,   // Foreign key in the current table
+		// 		targetKey: attributes,    // Field in the referenced model
+		// 	});
+		// });
 
 		// Update the table's metadata in Template model
 		const updatedFields = fields.map(field => {
