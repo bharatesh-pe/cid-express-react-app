@@ -259,6 +259,11 @@ router.post('/getEventsByLeader',
 
     templateDataController.getEventsByLeader)
 
+router.post('/templateDataFieldDuplicateCheck',
+    // userAuthMiddleware,
+
+    templateDataController.templateDataFieldDuplicateCheck)
+
 
 
 
