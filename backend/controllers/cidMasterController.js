@@ -1,7 +1,7 @@
 const { adminSendResponse } = require("../services/adminSendResponse");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
-const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users } = require("../models");
+const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role } = require("../models");
 const { Op } = require("sequelize");
 
 const getAllDepartments = async (req, res) => {
@@ -113,7 +113,7 @@ const getIoUsers = async (req, res) => {
       attributes: ["user_id", "name", "role_id", "kgid", "dev_status"],
     });
 
-    return res.status(200).json({ users });
+    return res.status(200).json({ data : users });
   } catch (error) {
     console.error("Error fetching users:", error);
     return res

@@ -2015,7 +2015,7 @@ const UnderInvestigation = () => {
                                         }
                                     })
 
-                                    setSelectKey(getDivisionField[0].name);
+                                    setSelectKey({name : getDivisionField[0].name, title : 'Division'});
                                     setSelectedRow(rowData);
                                     setOtherTransferField(updatedOptions);
                                     setShowOtherTransferModal(true);
@@ -2090,6 +2090,124 @@ const UnderInvestigation = () => {
 
     }
 
+    const showChangeToUsers = async (rowData)=>{
+
+        const viewTableData = {
+            "table_name": table_name
+        }
+
+        setLoading(true);
+        try {
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            setLoading(false);
+
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse['data']) {
+
+                if(viewTemplateResponse['data'].fields){
+
+                    setFormTemplateData(viewTemplateResponse['data'].fields)
+
+                    var getUsersField = viewTemplateResponse['data'].fields.filter((data)=>{
+                        if(data.table && data.table === 'users'){
+                            return data
+                        }
+                    });
+
+                    if(getUsersField.length > 0){
+
+                        if(getUsersField[0].api){
+                            setLoading(true);
+
+                            try {
+                                var getOptionsValue = await api.post(getUsersField[0].api);
+
+                                setLoading(false);
+        
+                                var updatedOptions = []
+    
+                                if (getOptionsValue && getOptionsValue.data) {
+
+                                    updatedOptions = getOptionsValue.data.map((field, i) => {
+                                        return {
+                                            name: field['name'],
+                                            code: field['user_id']
+                                        }
+                                    })
+
+                                    setSelectKey({name : getUsersField[0].name, title : 'Change of IO'});
+                                    setSelectedRow(rowData);
+                                    setOtherTransferField(updatedOptions);
+                                    setShowOtherTransferModal(true);
+                                }
+                                
+                            }catch (error) {
+                                setLoading(false);
+        
+                                if (error && error.response && error.response.data) {
+                                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Division not found', {
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                    return;
+                                }
+                            }
+                        }
+
+                    }else{
+                        const errorMessage = "Can't able to find Users field";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+                
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get Template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
+
     const handleSaveDivisionChange = ()=>{
 
         if(!selectedOtherFields || !selectedOtherFields.code){
@@ -2109,7 +2227,7 @@ const UnderInvestigation = () => {
 
         var combinedData = {
             ...selectedRow,
-            [selectKey] : selectedOtherFields.code
+            [selectKey.name] : selectedOtherFields.code
         }
 
         // update func
@@ -2129,6 +2247,10 @@ const UnderInvestigation = () => {
         {
             "name": "Transfer to Other Division",
             "onclick": showTransferToOtherDivision
+        },
+        {
+            "name": "Change of IO (Reassign to IO)",
+            "onclick": showChangeToUsers
         },
         {
             "name": "Prosecution Sanction",
@@ -2462,7 +2584,7 @@ const UnderInvestigation = () => {
                 <DialogTitle id="alert-dialog-title"></DialogTitle>
                 <DialogContent sx={{ width: '400px' }}>
                     <DialogContentText id="alert-dialog-description">
-                        <h4 className='form-field-heading'>Select Division</h4>
+                        <h4 className='form-field-heading'>{selectKey?.title}</h4>
                         <FormControl fullWidth>
                             <Autocomplete
                                 id=""
@@ -2474,7 +2596,7 @@ const UnderInvestigation = () => {
                                     <TextField
                                         {...params}
                                         className='selectHideHistory'
-                                        label='Division'
+                                        label={selectKey?.title}
                                     />
                                 }
                             />
