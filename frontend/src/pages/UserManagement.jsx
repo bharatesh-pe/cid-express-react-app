@@ -742,12 +742,21 @@ const UserManagement = () => {
   );
 
   const handleDropDownChange = (fieldName, value) => {
-    setNewUser((prev) => ({
-      ...prev,
-      [fieldName]: Array.isArray(value) ? value : String(value),    
-    }));
+    setNewUser((prev) => {
+      let updatedData = {
+        ...prev,
+        [fieldName]: Array.isArray(value) ? value : String(value),
+      };
+  
+      // Reset division when department changes
+      if (fieldName === "department") {
+        updatedData.division = "";
+      }
+  
+      return updatedData;
+    });
   };
-    
+  
   
   const handleInputChange = (e) => {
     setNewUser((prev) => ({
@@ -756,6 +765,14 @@ const UserManagement = () => {
     }));
   };
   const [masterData, setMasterData] = useState({ role: [], designation: [], department: [], division: [] });
+  const filteredDivisionOptions = newUser.department
+  ? masterData?.division
+      ?.filter((div) => div.department_id.toString() === newUser.department.toString())
+      ?.map((item) => ({
+        name: item.name,
+        code: item.code.toString(),
+      }))
+  : [];
 
   useEffect(() => {
     if (Object.keys(masterData).length === 0 || masterData.role.length === 0) {
@@ -1000,7 +1017,7 @@ const UserManagement = () => {
           <TableView 
             rows={currentPageRows} 
             columns={columns} 
-            getRowId={(row) => row.user_id} 
+            getRowId={(row) => row.id} 
             handleRowClick={handleRowClick}
             handleNext={handleNext}   
             handleBack={handleBack} 
@@ -1163,7 +1180,6 @@ const UserManagement = () => {
                   onChange={handleDropDownChange}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <MultiSelect
                   formData={newUser}
@@ -1171,7 +1187,7 @@ const UserManagement = () => {
                   field={{
                     name: "division",
                     label: "Division",
-                    options: divisionOptions,
+                    options: filteredDivisionOptions,
                     required: modalTitle !== "Set Filters",
                     history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'division' : null,
                   }}
