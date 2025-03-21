@@ -79,12 +79,6 @@ const ShortText = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
         }}
         // required={field.required === true}
         disabled={field.disabled === true}
-        onChange={(e) => {
-            const regex = /^[A-Za-z\s]*$/; // Allow only letters and spaces
-            if (regex.test(e.target.value)) {
-              onChange(e); // Update value only if valid
-            }
-          }}
                     
         sx={{
           '& .MuiOutlinedInput-root': {
