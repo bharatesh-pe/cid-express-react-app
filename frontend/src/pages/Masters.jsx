@@ -2,13 +2,16 @@ import React,{ useEffect, useState,useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
-
+import { Typography, InputAdornment, IconButton } from '@mui/material';
 import { Box, Button, } from "@mui/material";
 import ASC from '@mui/icons-material/North';
 import DESC from '@mui/icons-material/South';
 import 'react-toastify/dist/ReactToastify.css';
 import { GridColDef } from "@mui/x-data-grid";
 import { CircularProgress } from "@mui/material";
+import TextFieldInput from '@mui/material/TextField';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 
 const MastersView = () => {
     const location = useLocation();
@@ -21,6 +24,10 @@ const MastersView = () => {
     const [masters, setMasters] = useState([]);
     const [selectedMaster, setSelectedMaster] = useState("");
     const [showMasters, setShowMasters] = useState(true);
+        const [searchValue,setSearchValue] = useState(null);
+        const handleClear = ()=>{
+            setSearchValue('');
+        }
     
     const columns: GridColDef[] = [
         { field: 'sl_no', headerName: 'S.No', resizable: false },
@@ -106,22 +113,75 @@ const MastersView = () => {
         }
     };
             
-            
+    const [filteredMasters, setFilteredMasters] = useState([]);
+
+    useEffect(() => {
+        if (!searchValue) {
+            setFilteredMasters(masters);
+        } else {
+            const filtered = masters.filter((master) =>
+                master.name.toLowerCase().includes(searchValue.toLowerCase())
+            );
+            setFilteredMasters(filtered);
+        }
+    }, [searchValue, masters]);
+
+    
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
+                    <Box sx={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap'}}>
+                        <Box>
+                            <Typography className='Roboto' sx={{fontSize:'20px',fontWeight:'600',color:'#1D2939'}}>Masters</Typography>
+                            {/* <Typography className='Roboto' sx={{fontSize:'16px',fontWeight:'400',color:'#667085'}}>Overview view of all dossier profile details</Typography> */}
+                        </Box>
+                        <TextFieldInput InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{color:'#475467'}} />
+                                </InputAdornment>
+                                ),
+                            endAdornment: (
+                                searchValue && (
+                                    <IconButton sx={{padding:0}} onClick={handleClear} size="small">
+                                        <ClearIcon sx={{ color: '#475467' }} />
+                                    </IconButton>
+                                )
+                            )
+                            }}
+                            onInput={(e)=>setSearchValue(e.target.value)}
+                            value={searchValue}
+                            id="tableSearch" 
+                            size="small"
+                            placeholder='Search anything'
+                            variant="outlined" 
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                }
+                            }}
+                            sx={{width:'400px',borderRadius:'6px',outline:'none',
+                                '& .MuiInputBase-input::placeholder': {
+                                    color: '#475467',
+                                    opacity:'1',
+                                    fontSize:'14px',
+                                    fontWeight:'400',
+                                    fontFamily:'Roboto'
+                                },
+                            }} 
+                        />
+                    </Box>
                 <Box py={2}>
-                    <TableView 
-                        rows={masters.map((master, index) => ({
-                            id: index + 1, // Add a unique ID
-                            sl_no: index + 1,
-                            template_name: master.name
-                        }))} 
-                        columns={columns} 
-                        paginationCount={paginationCount} 
-                    />
+                <TableView 
+                    rows={filteredMasters.map((master, index) => ({
+                        id: index + 1,
+                        sl_no: index + 1,
+                        template_name: master.name
+                    }))} 
+                    columns={columns} 
+                    paginationCount={paginationCount} 
+                />
                 </Box>
-
                     </>
             {
                 loading && <div className='parent_spinner' tabIndex="-1" aria-hidden="true">

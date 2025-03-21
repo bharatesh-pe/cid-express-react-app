@@ -364,11 +364,34 @@ const UserManagement = () => {
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
+        className: "toast-error",
       });
       setLoading(false);
       return;
     }
 
+    const fieldDesignations = fetchedTableData.map(item => item.field_designation);
+    
+    const userDesignations = Array.isArray(newUser.designation) 
+        ? newUser.designation 
+        : [newUser.designation];
+    
+    const isValidDesignation = userDesignations.every(des => fieldDesignations.includes(Number(des)));
+    
+    if (!isValidDesignation) {
+        toast.error("Supervisor designation missing for selected Designation. Please check the Hierarchy", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "toast-error",
+        });
+        setLoading(false);
+        return;
+    }
+          
     try {
       const endpoint = newUser.id ? '/update_user' : '/create_user';
 
@@ -742,12 +765,21 @@ const UserManagement = () => {
   );
 
   const handleDropDownChange = (fieldName, value) => {
-    setNewUser((prev) => ({
-      ...prev,
-      [fieldName]: Array.isArray(value) ? value : String(value),    
-    }));
+    setNewUser((prev) => {
+      let updatedData = {
+        ...prev,
+        [fieldName]: Array.isArray(value) ? value : String(value),
+      };
+  
+      // Reset division when department changes
+      if (fieldName === "department") {
+        updatedData.division = "";
+      }
+  
+      return updatedData;
+    });
   };
-    
+  
   
   const handleInputChange = (e) => {
     setNewUser((prev) => ({
@@ -756,6 +788,14 @@ const UserManagement = () => {
     }));
   };
   const [masterData, setMasterData] = useState({ role: [], designation: [], department: [], division: [] });
+  const filteredDivisionOptions = newUser.department
+  ? masterData?.division
+      ?.filter((div) => div.department_id.toString() === newUser.department.toString())
+      ?.map((item) => ({
+        name: item.name,
+        code: item.code.toString(),
+      }))
+  : [];
 
   useEffect(() => {
     if (Object.keys(masterData).length === 0 || masterData.role.length === 0) {
@@ -818,6 +858,56 @@ const UserManagement = () => {
     { name: "Inactive", code: "inactive" }
   ];
   
+  
+  const [fetchedTableData, setFetchedTableData] = useState([]);
+
+  const loadTableData = async () => {
+      var getTemplatePayload = {
+          "table_name": "cid_hierarchy",
+      };
+      setLoading(true);
+  
+      try {
+          const getTemplateResponse = await api.post("/templateData/paginateTemplateData", getTemplatePayload);
+          setLoading(false);
+  
+          if (getTemplateResponse && getTemplateResponse.success) {
+              if (getTemplateResponse.data && getTemplateResponse.data['data']) {
+                  console.log("Fetched Table Data:", getTemplateResponse.data['data']);
+                  setFetchedTableData(getTemplateResponse.data['data']); // Store data in state
+              }
+          } else {
+              console.log("Error Response:", getTemplateResponse);
+              toast.error(getTemplateResponse.message || "Failed to fetch data. Please try again.", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+              });
+          }
+      } catch (error) {
+          setLoading(false);
+          console.log("API Error:", error);
+          toast.error(error?.response?.data?.message || "Please Try Again!", {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+          });
+      }
+  };
+  
+  useEffect(() => {
+  loadTableData();
+}, []);
 
   return (
     <Box p={2}>
@@ -1000,7 +1090,7 @@ const UserManagement = () => {
           <TableView 
             rows={currentPageRows} 
             columns={columns} 
-            getRowId={(row) => row.user_id} 
+            getRowId={(row) => row.id} 
             handleRowClick={handleRowClick}
             handleNext={handleNext}   
             handleBack={handleBack} 
@@ -1091,8 +1181,13 @@ const UserManagement = () => {
                   onHistory={() => getUsermanagementFieldLog('name')}
                   formData={newUser}
                   errors={errors}
-                  onChange={handleInputChange}
-                  readOnly={modalTitle === "View User"}
+                  onChange={(e) => {
+                    const regex = /^[a-zA-Z0-9\s\b]*$/;
+                    if (regex.test(e.target.value)) {
+                        handleInputChange(e);
+                    }
+                }} 
+                readOnly={modalTitle === "View User"}
                   />
 
               </Grid>
@@ -1163,7 +1258,6 @@ const UserManagement = () => {
                   onChange={handleDropDownChange}
                 />
               </Grid>
-
               <Grid item xs={12} sm={6}>
                 <MultiSelect
                   formData={newUser}
@@ -1171,7 +1265,7 @@ const UserManagement = () => {
                   field={{
                     name: "division",
                     label: "Division",
-                    options: divisionOptions,
+                    options: filteredDivisionOptions,
                     required: modalTitle !== "Set Filters",
                     history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'division' : null,
                   }}

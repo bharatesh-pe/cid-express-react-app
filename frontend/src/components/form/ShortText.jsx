@@ -79,6 +79,9 @@ const ShortText = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
         }}
         // required={field.required === true}
         disabled={field.disabled === true}
+        onChange={(e) => {
+              onChange(e);
+          }}
                     
         sx={{
           '& .MuiOutlinedInput-root': {
