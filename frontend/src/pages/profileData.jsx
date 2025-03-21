@@ -86,7 +86,7 @@ const ProfileData = () => {
             renderCell: (params) => {
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleMagazineView(params.row, false); }}>
+                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false); }}>
                             View
                         </Button>
                         <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true); }}>
@@ -518,7 +518,7 @@ const ProfileData = () => {
                                 renderCell: (params) => {
                                     return (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); localStorage.getItem('authAdmin') === "true" ? handleTemplateDataView(params.row, false) : handleMagazineView(params.row, false); }}>
+                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false); }}>
                                                 View
                                             </Button>
                                             <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true); }}>
