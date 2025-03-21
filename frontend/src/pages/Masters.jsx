@@ -102,6 +102,10 @@ const MastersView = () => {
             navigate("/master/division");
             return;
         }
+        if (selectedName === "Approval Items") {
+            navigate("/master/approval");
+            return;
+        }
     
         const selectedMasterObj = masters.find(master => master.name === selectedName);
         if (selectedMasterObj) {

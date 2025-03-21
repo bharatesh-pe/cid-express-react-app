@@ -1,4 +1,4 @@
-const { MastersMeta , Role , Designation , Department , Division } = require('../models');
+const { MastersMeta , Role , Designation , Department , Division , ApprovalItem } = require('../models');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
@@ -25,14 +25,14 @@ exports.fetch_specific_master_data = async (req, res) => {
   const { master_name } = req.body;
 
   try {
-      let data;
+        let data;
 
-      switch (master_name) {
-          case 'department':
-              data = await Department.findAll();
-              break;
+        switch (master_name) {
+            case 'department':
+                data = await Department.findAll();
+                break;
 
-              case 'designation':
+            case 'designation':
                 data = await Designation.findAll({
                     attributes: [
                         "designation_id",
@@ -43,32 +43,35 @@ exports.fetch_specific_master_data = async (req, res) => {
                     ]
                 });
                 break;
-            
-          case 'division':
-              data = await Division.findAll();
-              const departmentIds = data.map(division => division.department_id);
-              const departments = await Department.findAll({
-                  where: {
-                      department_id: departmentIds
-                  }
-              });
-              const departmentMap = {};
-              departments.forEach(department => {
-                  departmentMap[department.department_id] = department.department_name;
-              });
+                
+            case 'division':
+                data = await Division.findAll();
+                const departmentIds = data.map(division => division.department_id);
+                const departments = await Department.findAll({
+                    where: {
+                        department_id: departmentIds
+                    }
+                });
+                const departmentMap = {};
+                departments.forEach(department => {
+                    departmentMap[department.department_id] = department.department_name;
+                });
 
-              const formattedDivisions = data.map(division => ({
-                  ...division.dataValues,
-                  department_name: departmentMap[division.department_id] || 'Unknown Department'
-              }));
+                const formattedDivisions = data.map(division => ({
+                    ...division.dataValues,
+                    department_name: departmentMap[division.department_id] || 'Unknown Department'
+                }));
 
-              return res.status(200).json({ divisions: formattedDivisions });
+                return res.status(200).json({ divisions: formattedDivisions });
+            case 'approval_item':
+                data = await ApprovalItem.findAll();
+                break;
 
-          default:
-              return res.status(400).json({ message: 'Invalid master name provided.' });
-      }
+            default:
+                return res.status(400).json({ message: 'Invalid master name provided.' });
+        }
 
-      return res.status(200).json(data);
+        return res.status(200).json(data);
   } catch (error) {
       return res.status(500).json({ message: 'Internal server error' });
   }
@@ -81,11 +84,11 @@ exports.create_master_data = async (req, res) => {
       let newEntry;
 
       switch (master_name) {
-          case 'department':
+            case 'department':
               newEntry = await Department.create(data);
               break;
 
-              case 'designation':
+            case 'designation':
                 newEntry = await Designation.create({
                     designation_name: data.designation_name,
                     description: data.description,
@@ -96,14 +99,17 @@ exports.create_master_data = async (req, res) => {
                 });
                 break;
             
-          case 'division':
-              newEntry = await Division.create({
-                  division_name: data.division_name,
-                  description: data.description,
-                  department_id: data.department_id,
-                  created_by: data.created_by,
-                  created_at: new Date()
-              });
+            case 'division':
+                newEntry = await Division.create({
+                    division_name: data.division_name,
+                    description: data.description,
+                    department_id: data.department_id,
+                    created_by: data.created_by,
+                    created_at: new Date()
+                });
+                break;
+            case 'Approval item':
+              newEntry = await ApprovalItem.create(data);
               break;
 
           default:
@@ -123,37 +129,44 @@ exports.update_master_data = async (req, res) => {
       let whereCondition = {};
 
       switch (master_name) {
-          case 'department':
-              if (!data.department_id) {
-                  return res.status(400).json({ message: "Department ID is required for update." });
-              }
-              whereCondition = { department_id: data.department_id };
-              result = await Department.update(data, { where: whereCondition });
-              break;
+            case 'department':
+                if (!data.department_id) {
+                    return res.status(400).json({ message: "Department ID is required for update." });
+                }
+                whereCondition = { department_id: data.department_id };
+                result = await Department.update(data, { where: whereCondition });
+                break;
 
-          case 'designation':
-              if (!data.designation_id) {
-                  return res.status(400).json({ message: "Designation ID is required for update." });
-              }
-              whereCondition = { designation_id: data.designation_id };
-              result = await Designation.update({
-                  designation_name: data.designation_name,
-                  description: data.description,
-                  created_by: data.created_by
-              }, { where: whereCondition });
-              break;
+            case 'designation':
+                if (!data.designation_id) {
+                    return res.status(400).json({ message: "Designation ID is required for update." });
+                }
+                whereCondition = { designation_id: data.designation_id };
+                result = await Designation.update({
+                    designation_name: data.designation_name,
+                    description: data.description,
+                    created_by: data.created_by
+                }, { where: whereCondition });
+                break;
 
-          case 'division':
-              if (!data.division_id) {
-                  return res.status(400).json({ message: "Division ID is required for update." });
-              }
-              whereCondition = { division_id: data.division_id };
-              result = await Division.update({
-                  division_name: data.division_name,
-                  department_id: data.department_id,
-                  created_by: data.created_by
-              }, { where: whereCondition });
-              break;
+            case 'division':
+                if (!data.division_id) {
+                    return res.status(400).json({ message: "Division ID is required for update." });
+                }
+                whereCondition = { division_id: data.division_id };
+                result = await Division.update({
+                    division_name: data.division_name,
+                    department_id: data.department_id,
+                    created_by: data.created_by
+                }, { where: whereCondition });
+                break;
+            case 'approval_item':
+                if (!data.approval_item_id) {
+                    return res.status(400).json({ message: "Item ID is required for update." });
+                }
+                whereCondition = { approval_item_id: data.approval_item_id };
+                result = await ApprovalItem.update(data, { where: whereCondition });
+                break;
 
           default:
               return res.status(400).json({ message: 'Invalid master name provided.' });

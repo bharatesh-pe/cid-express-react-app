@@ -701,7 +701,7 @@ exports.getMasterTemplates = async (req, res, next) => {
 	try {
 		// Fetch all templates with template_type as 'master'
 		const masterTemplates = await Template.findAll({
-			where: { template_module: 'master' },
+			// where: { template_module: 'master' },
 			attributes: ['table_name', 'template_type'],
 		});
 

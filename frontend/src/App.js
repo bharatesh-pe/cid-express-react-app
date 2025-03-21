@@ -38,6 +38,7 @@ import MastersView from './pages/Masters';
 import Designation from './pages/designation';
 import Department from './pages/department';
 import Division from './pages/division';
+import Approval from './pages/approval';
 import CaseActions from './pages/CaseAction';
 import TemplateMastersView from './pages/templateMasters';
 function App() {
@@ -293,6 +294,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <Division />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+             <Route
+                path="/master/approval"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Approval />
                         </Layout>
                     </ProtectedRoute>
                 }
