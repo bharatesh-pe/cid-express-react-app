@@ -443,7 +443,7 @@ const ProfileData = () => {
                 if (getTemplateResponse.data && getTemplateResponse.data['data']) {
 
                     if (getTemplateResponse.data['data'][0]) {
-                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info","created_by"];
 
                         const updatedHeader = [
                             {
