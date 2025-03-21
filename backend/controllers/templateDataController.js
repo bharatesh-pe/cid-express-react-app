@@ -3061,7 +3061,8 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
         // Check for duplicates
         const conditions = {};
         for (const [key, value] of Object.entries(validData)) {
-            conditions[key] = typeof value === 'string' ? { [Op.Like]: `%${value}%` } : value; 
+            // conditions[key] = typeof value === 'string' ? { [Op.iLike]: `%${value}%` } : value; 
+            conditions[key] = typeof value === 'string' ? { [Op.like]: `%${value}%` } : value; 
         }
 
         const existingRecords = await Model.findAll({ 
