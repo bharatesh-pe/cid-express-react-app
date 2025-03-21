@@ -39,6 +39,7 @@ import Designation from './pages/designation';
 import Department from './pages/department';
 import Division from './pages/division';
 import CaseActions from './pages/CaseAction';
+import TemplateMastersView from './pages/templateMasters';
 function App() {
   return (
     <Router>
@@ -252,6 +253,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <MastersView />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/templatemaster"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <TemplateMastersView />
                         </Layout>
                     </ProtectedRoute>
                 }
