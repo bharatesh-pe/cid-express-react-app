@@ -107,6 +107,7 @@ const fetch_division_data = async () => {
       attributes: [
         ['division_id', 'code'], // Alias division_id as code
         ['division_name', 'name'], // Alias division_name as name
+        'department_id', // Alias department_id as name
       ]
     });
     return divisions;

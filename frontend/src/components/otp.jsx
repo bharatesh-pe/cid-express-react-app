@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef , useEffect } from 'react';
 import { TextField, Box } from '@mui/material';
 import PropTypes from 'prop-types';
 
@@ -26,6 +26,11 @@ const OTPInputComponent = ({ length, value, onChange }) => {
       inputRefs.current[index - 1].focus();
     }
   };
+
+  useEffect(() => {
+      // Set focus on the first TextField when the component mounts
+      inputRefs.current[0]?.focus();
+  }, []);
 
   return (
     <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center' }}>
