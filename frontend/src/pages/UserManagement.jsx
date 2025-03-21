@@ -797,6 +797,22 @@ const UserManagement = () => {
     code: item.code.toString(),
   })) || [];
 
+  // const [divisionOptions,setDivisionOptions] = useState([]);
+
+  // useEffect(() => {
+  //   if (newUser.department) {
+  //     const selectedDepartmentId = newUser.department;
+  //     const filteredDivisions = masterData?.division?.filter(item => item.department_id.toString() === selectedDepartmentId) || [];
+  //     const updatedDivisionOptions = filteredDivisions.map((item) => ({
+  //       name: item.name,
+  //       code: item.code.toString(),
+  //     }));
+  //     setDivisionOptions(updatedDivisionOptions);
+  //   } else {
+  //     setDivisionOptions([]);
+  //   }
+  // }, [newUser.department, masterData]);
+
   const statusOptions = [
     { name: "Active", code: "active" },
     { name: "Inactive", code: "inactive" }

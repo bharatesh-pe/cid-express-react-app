@@ -111,35 +111,43 @@ const generate_OTP = async (req, res) => {
         const user = await AuthSecure.findOne({ where: { kgid } });
         // If user is found
         if (user) {
-            // Check if the provided pin matches the user's pin
-            if (user.pin === pin) {
-                // Generate a random OTP
-                const otp = crypto.randomInt(100000, 999999).toString();
-                // Set the OTP expiration time to 10 minutes from now
-                const expiresAt = moment().add(10, 'minutes').toDate();
-                // Get the current timestamp
-                const currentTimeStamp = moment().toDate();
 
-                // Check if the user has exceeded the maximum number of attempts
-                if (user.no_of_attempts >= 5) {
-                    // Calculate the time for the next attempt
-                    const nextAttemptTime = moment(user.last_attempt_at).add(15, 'minutes');
-                    // If the current time is before the next attempt time, return an error
-                    if (moment().isBefore(nextAttemptTime)) {
-                        return res.status(429).json({ success: false, message: "Too many attempts. Please try again after 15 minutes." });
-                    } else {
-                        // Reset the number of attempts if the time for the next attempt has passed
-                        await user.update({ no_of_attempts: 0 });
-                    }
+             // Check if the user has exceeded the maximum number of attempts
+            if (user.no_of_attempts >= 5) {
+                // Calculate the time for the next attempt
+                const nextAttemptTime = moment(user.last_attempt_at).add(15, 'minutes');
+                // If the current time is before the next attempt time, return an error
+                if (moment().isBefore(nextAttemptTime)) {
+                    return res.status(429).json({ success: false, message: "Too many attempts. Please try again after 15 minutes." });
+                } else {
+                    // Reset the number of attempts if the time for the next attempt has passed
+                    await user.update({ no_of_attempts: 0 });
                 }
-                // Update the user with the new OTP, expiration time, and increment the number of attempts
-                await user.update({ otp, otp_expires_at: expiresAt, no_of_attempts: AuthSecure.sequelize.literal('no_of_attempts + 1'), last_attempt_at: currentTimeStamp });
-                // Return success response
-                return res.status(200).json({ success: true, message: 'OTP generated and sent successfully.' });
-            } else {
-                // Return error if the PIN is invalid
-                return res.status(401).json({ success: false, message: "Invalid credentials" });
             }
+
+            // Check if the entered PIN is correct
+            if (user.pin !== pin) { 
+                // Increment the number of attempts
+                await user.increment('no_of_attempts');
+                user.last_attempt_at = moment(); // Update the last attempt time
+                await user.save(); // Save the user record
+
+                return res.status(401).json({ success: false, message: "Invalid credentials. Please try again." });
+            }
+
+           
+            // Generate a random OTP
+            const otp = crypto.randomInt(100000, 999999).toString();
+            // Set the OTP expiration time to 10 minutes from now
+            const expiresAt = moment().add(10, 'minutes').toDate();
+            // Get the current timestamp
+            const currentTimeStamp = moment().toDate();
+
+            
+            // Update the user with the new OTP, expiration time, and increment the number of attempts
+            await user.update({ otp, otp_expires_at: expiresAt });
+            // Return success response
+            return res.status(200).json({ success: true, message: 'OTP generated and sent successfully.' });
         } else {
             // Return error if the user is not found
             return res.status(404).json({ success: false, message: "User not found" });
