@@ -29,6 +29,7 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Swal from 'sweetalert2';
 
 import { CircularProgress } from "@mui/material";
 
@@ -123,10 +124,78 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+
+        var duplicateCheckKey = formConfig.filter((fields)=>{
+            if(fields && fields.duplicateCheck){
+                return {
+                    ...fields
+                }
+            }
+        });
+
+        if(duplicateCheckKey && duplicateCheckKey.length > 0){
+            
+            var duplicateKeyValues = {};
+
+            duplicateCheckKey.forEach((field) => {
+                if (formData[field.name]) {
+                    duplicateKeyValues[field.name] = formData[field.name];
+                }
+            });
+
+            var payloadForDuplicate = {
+                "table_name" : table_name,
+                "data" : duplicateKeyValues
+            }
+            
+            setLoading(true);
+                
+            try {
+                const getActionsDetails = await api.post("/templateData/templateDataFieldDuplicateCheck", payloadForDuplicate);
+
+                setLoading(false);
+    
+                if (getActionsDetails && !getActionsDetails.success) {
+                    Swal.fire({
+                        title: 'Duplicate Values Found For '+duplicateCheckKey[0].label,
+                        text: "Need to create new one ?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, Continue!',
+                        cancelButtonText: 'No',
+                    }).then(async (result) => {
+                        if (!result.isConfirmed) {
+                            return false;
+                        }else{
+                            !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+                        }
+                    })
+                }
+    
+            } catch (error) {
+    
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    return false
+                }
+            }
+        }else{
+            !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+        }
+
     } else {
         toast.warning('Please Fill Mandatory Fields', {
             position: "top-right",

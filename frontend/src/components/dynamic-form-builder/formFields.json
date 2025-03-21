@@ -14,6 +14,7 @@
         "is_primary_field": false,
         "history": "",
         "info": "",
+        "duplicateCheck": false,
         "minLength": 1,
         "maxLength": 100,
         "type": "text",
@@ -34,6 +35,7 @@
         "table_display_content": true,
         "is_primary_field": false,
         "info": "",
+        "duplicateCheck": false,
         "minLength": 1,
         "maxLength": 100,
         "type": "number",
@@ -54,6 +56,7 @@
         "table_display_content": true,
         "is_primary_field": false,
         "info": "",
+        "duplicateCheck": false,
         "minLength": 1,
         "maxLength": 100,
         "type": "email",
@@ -73,6 +76,7 @@
         "supportingText": "",
         "table_display_content": true,
         "is_primary_field": false,
+        "duplicateCheck": false,
         "info": "",
         "options": [],
         "type": "dropdown",
@@ -93,6 +97,7 @@
         "table_display_content": true,
         "is_primary_field": false,
         "supportingText": "",
+        "duplicateCheck": false,
         "info": "",
         "minLength": 1,
         "maxLength": 100,
@@ -118,6 +123,7 @@
         "maxDate": "",
         "disableFutureDate": true,
         "disablePreviousDate": true,
+        "duplicateCheck": false,
         "type": "date",
         "formType": "Date"
     },
@@ -136,6 +142,7 @@
         "table_display_content": true,
         "is_primary_field": false,
         "info": "",
+        "duplicateCheck": false,
         "type": "time",
         "formType": "Time"
     },
@@ -156,6 +163,7 @@
         "info": "",
         "minDate": "",
         "maxDate": "",
+        "duplicateCheck": false,
         "type": "datetime",
         "formType": "Date & Time"
     },
@@ -173,6 +181,7 @@
         "supportingText": "",
         "table_display_content": true,
         "is_primary_field": false,
+        "duplicateCheck": false,
         "placeholder": "",
         "info": "",
         "type": "textarea",
@@ -192,6 +201,7 @@
         "supportingText": "",
         "table_display_content": true,
         "is_primary_field": false,
+        "duplicateCheck": false,
         "info": "",
         "options": [],
         "type": "autocomplete",
@@ -211,6 +221,7 @@
         "supportingText": "",
         "table_display_content": true,
         "is_primary_field": false,
+        "duplicateCheck": false,
         "info": "",
         "options": [],
         "type": "multidropdown",
@@ -230,6 +241,7 @@
         "options": [],
         "table_display_content": true,
         "is_primary_field": false,
+        "duplicateCheck": false,
         "type": "checkbox",
         "name": "checkbox",
         "formType": "Checkbox"
@@ -248,6 +260,7 @@
         "options": [],
         "table_display_content": true,
         "is_primary_field": false,
+        "duplicateCheck": false,
         "type": "radio",
         "name": "radio",
         "formType": "Radio"
@@ -294,8 +307,7 @@
         "name": "file",
         "formType": "Attachments",
         "multiple": true,
-        "table_display_content": true,
-        "is_primary_field": false
+        "table_display_content": true
     },
     {
         "field_id": 15,
@@ -310,7 +322,6 @@
         "disabled": "",
         "history": "",
         "table_display_content": true,
-        "is_primary_field": false,
         "type": "profilepicture",
         "formType": "Profile Picture"
     },
