@@ -76,12 +76,6 @@ const CreateProfile = () => {
                 return 'Government Order';
             case 'judgement':
                 return 'Judgement';  
-            case 'department':
-                return 'Department';
-            case 'designation':
-                return 'Designation';    
-            case 'division':
-                return 'Division';          
             case 'others':
                 return 'Other Template';
             default:
@@ -552,9 +546,6 @@ const CreateProfile = () => {
             { name: 'Circular', code: 'circular' },
             { name: 'Government Order', code: 'governmentorder' },
             { name: 'Judgement', code: 'judgement' },
-            { name: 'Department', code: 'department' },
-            { name: 'Designation', code: 'designation' },
-            { name: 'Division', code: 'division' },
             { name: 'Other Template', code: 'others' }
         ]
     };

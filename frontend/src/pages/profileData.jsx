@@ -35,6 +35,9 @@ import { CircularProgress } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import eyes from "../Images/eye.svg"
+import edit from "../Images/tableEdit.svg";
+import trash from "../Images/tableTrash.svg";
 
 const ProfileData = () => {
     const location = useLocation();
@@ -86,7 +89,7 @@ const ProfileData = () => {
             renderCell: (params) => {
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleMagazineView(params.row, false); }}>
+                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false); }}>
                             View
                         </Button>
                         <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true); }}>
@@ -440,7 +443,7 @@ const ProfileData = () => {
                 if (getTemplateResponse.data && getTemplateResponse.data['data']) {
 
                     if (getTemplateResponse.data['data'][0]) {
-                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info","created_by"];
 
                         const updatedHeader = [
                             {
@@ -483,7 +486,7 @@ const ProfileData = () => {
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
                                     const fieldData = (selectedFields || []).find((data) => data.name === key);
-
+                                    console.log("updatedKeyName",updatedKeyName)
                                     return {
                                         field: key,
                                         headerName: updatedKeyName ? updatedKeyName : '',
@@ -518,15 +521,72 @@ const ProfileData = () => {
                                 renderCell: (params) => {
                                     return (
                                         <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); localStorage.getItem('authAdmin') === "true" ? handleTemplateDataView(params.row, false) : handleMagazineView(params.row, false); }}>
-                                                View
-                                            </Button>
-                                            <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true); }}>
-                                                Edit
-                                            </Button>
-                                            <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row); }}>
-                                                Delete
-                                            </Button>
+                                                                    <Button
+                                                                        style={{
+                                                                            background: "transparent",
+                                                                            border: "none",
+                                                                            padding: "0",
+                                                                            boxShadow: "none",
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            gap: "6px",
+                                                                            color: "black",
+                                                                            fontSize: "14px",
+                                                                            textAlign: "center",
+                                                                            textTransform: "none",
+                                                                        }}
+                                                                        onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false); }}                                                                    >
+                                                                        <img
+                                                                            src={eyes}
+                                                                            alt="View"
+                                                                            style={{ width: "20px", height: "20px" }}
+                                                                        />
+                                                                        <span>View</span>
+                                                                    </Button>
+                                                                    <Button
+                                                                        style={{
+                                                                            background: "transparent",
+                                                                            border: "none",
+                                                                            padding: "0",
+                                                                            boxShadow: "none",
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            gap: "6px",
+                                                                            color: "black",
+                                                                            fontSize: "14px",
+                                                                            textAlign: "center",
+                                                                            textTransform: "none",
+                                                                        }}
+                                                                        onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true); }}                                                                    >
+                                                                        <img
+                                                                            src={edit}
+                                                                            alt="Edit"
+                                                                            style={{ width: "20px", height: "20px" }}
+                                                                        />
+                                                                        <span>Edit</span>
+                                                                    </Button>
+                                                                    <Button
+                                                                        style={{
+                                                                            background: "transparent",
+                                                                            border: "none",
+                                                                            padding: "0",
+                                                                            boxShadow: "none",
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            gap: "6px",
+                                                                            color: "Red",
+                                                                            fontSize: "14px",
+                                                                            textAlign: "center",
+                                                                            textTransform: "none",
+                                                                        }}
+                                                                        onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row); }}                                                                    >
+                                                                        <img
+                                                                            src={trash}
+                                                                            alt="Delete"
+                                                                            style={{ width: "20px", height: "20px" }}
+                                                                        />
+                                                                        <span>Delete</span>
+                                                                    </Button>
                                         </Box>
                                     );
                                 }
