@@ -3061,7 +3061,7 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
         // Check for duplicates
         const conditions = {};
         for (const [key, value] of Object.entries(validData)) {
-            conditions[key] = typeof value === 'string' ? { [Op.iLike]: `%${value}%` } : value; 
+            conditions[key] = typeof value === 'string' ? { [Op.Like]: `%${value}%` } : value; 
         }
 
         const existingRecords = await Model.findAll({ 
@@ -3069,7 +3069,7 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
         });
 
         if (existingRecords.length > 0) {
-            return userSendResponse(res, 409, false, "Duplicate values found.");
+            return userSendResponse(res, 200, false, "Duplicate values found.");
         }
 
         return userSendResponse(res, 200, true, "No duplicates found.", null);
