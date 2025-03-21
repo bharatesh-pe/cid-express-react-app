@@ -30,6 +30,7 @@ module.exports = {
         type: Sequelize.STRING(50)
       },
 
+
       fields: {
         allowNull: false,
         type: Sequelize.TEXT
@@ -42,6 +43,11 @@ module.exports = {
         type: Sequelize.ARRAY(Sequelize.STRING), // Correct for storing an array of strings
         allowNull: true,
       },
+      sys_status: {
+        allowNull: true,
+        type: Sequelize.STRING(50)
+      },
+
       is_link_to_leader: {
         type: Sequelize.BOOLEAN,
         allowNull: false,

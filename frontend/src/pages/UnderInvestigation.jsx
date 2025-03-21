@@ -53,6 +53,8 @@ const UnderInvestigation = () => {
     const [template_name, setTemplate_name] = useState('')
     const [table_name, setTable_name] = useState('')
 
+    const [sysStatus, setSysSattus] = useState(null);
+
     const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
     const [formTemplateData, setFormTemplateData] = useState([])
@@ -118,6 +120,8 @@ const UnderInvestigation = () => {
             { field: 'sl_no', headerName: 'S.No' }
         ]
     );
+
+    const [hoverTableOptions, setHoverTableOptions] = useState([]);
 
     const [otherTablePagination, setOtherTablePagination] = useState(1)
 
@@ -248,7 +252,7 @@ const UnderInvestigation = () => {
     useEffect(() => {
         loadTableData(paginationCount);
 
-    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag])
+    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, sysStatus])
 
     const loadTableData = async (page, searchValue) => {
 
@@ -261,7 +265,8 @@ const UnderInvestigation = () => {
             "table_name": table_name,
             "is_starred": starFlag,
             "is_read": readFlag,
-            "template_module": "ui_case"
+            "template_module": "ui_case",
+            "sys_status" : sysStatus
         }
         
         setLoading(true);
@@ -1689,10 +1694,66 @@ const UnderInvestigation = () => {
         console.log("hello calling func")
     }
 
-    const hoverTableOptions = [
-        { name: 'Progress Report', table: 'cid_ui_case_progress_report' },
-        { name: 'FSL', table: 'cid_link_temp' },
-    ]
+
+    useEffect(()=>{
+
+        const getActions = async ()=>{
+
+            var payloadObj = {
+                "module": "ui_case"
+            }
+
+            setLoading(true);
+    
+            try {
+    
+                const getActionsDetails = await api.post("/action/get_actions", payloadObj);
+
+                setLoading(false);
+    
+                if (getActionsDetails && getActionsDetails.success) {
+    
+                    if (getActionsDetails.data && getActionsDetails.data['data']) {
+                        setHoverTableOptions(getActionsDetails.data['data']);
+                    }
+    
+                } else {
+                    
+                    const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                                    
+                }
+    
+            } catch (error) {
+    
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+        }
+
+        getActions();
+
+    },[])
 
     const handleOtherTemplateActions = async (options)=>{
 
@@ -1869,58 +1930,6 @@ const UnderInvestigation = () => {
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
-                        {            
-                            localStorage.getItem('authAdmin') === "true" &&
-
-                            <TextFieldInput 
-                            
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon sx={{ color: '#475467' }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            {searchValue && (
-                                                <IconButton sx={{ padding: 0 }} onClick={handleClear} size="small">
-                                                    <ClearIcon sx={{ color: '#475467' }} />
-                                                </IconButton>
-                                            )}
-                                            <IconButton sx={{ padding: 0, border:'1px solid #D0D5DD', borderRadius: '0' }} onClick={handleFilter}>
-                                                <FilterListIcon sx={{ color: '#475467' }} />
-                                            </IconButton>
-                                        </Box>
-                                    )
-                                }}
-
-                                onInput={(e) => setSearchValue(e.target.value)}
-                                value={searchValue}
-                                id="tableSearch"
-                                size="small"
-                                placeholder='Search anything'
-                                variant="outlined"
-                                className="profileSearchClass"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        loadTableData(paginationCount, e.target.value);
-                                    }
-                                }}
-                                
-                                sx={{
-                                    width: '400px', borderRadius: '6px', outline: 'none',
-                                    '& .MuiInputBase-input::placeholder': {
-                                        color: '#475467',
-                                        opacity: '1',
-                                        fontSize: '14px',
-                                        fontWeight: '400',
-                                        fontFamily: 'Roboto'
-                                    },
-                                }}
-                            />
-
-                        }
                         <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
                             Add New
                         </Button>
@@ -1933,24 +1942,29 @@ const UnderInvestigation = () => {
 
                     </Box>
                 </Box>
-                {
-                        localStorage.getItem('authAdmin') === "false" &&
+
                 <Box pt={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
-                        <Box className="parentFilterTabs">
-                            <Box onClick={() => { setStarFlag(null); setReadFlag(null); setPaginationCount(1) }} id="starNull" className={`filterTabs ${(starFlag === null && readFlag === null) ? 'Active' : ''}`} >
-                                All
-                            </Box>
-                            <Box onClick={() => { setStarFlag(true); setReadFlag(null); setPaginationCount(1) }} id="starTrue" className={`filterTabs ${starFlag === true ? 'Active' : ''}`} >
-                                Starred
-                            </Box>
-                            <Box onClick={() => { setStarFlag(null); setReadFlag(true); setPaginationCount(1) }} id="dataUbRead" className={`filterTabs ${readFlag === true ? 'Active' : ''}`} >
-                                Read
-                            </Box>
-                            <Box onClick={() => { setStarFlag(null); setReadFlag(false); setPaginationCount(1) }} id="dataUbRead" className={`filterTabs ${readFlag === false ? 'Active' : ''}`} >
-                                Unread
-                            </Box>
+                    <Box className="parentFilterTabs">
+                        <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
+                            All
                         </Box>
+                        <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
+                            UI Cases
+                        </Box>
+                        <Box onClick={() => { setSysSattus('further_investigation'); setPaginationCount(1) }} id="filterFurtherInvestigation" className={`filterTabs ${sysStatus === 'further_investigation' ? 'Active' : ''}`} >
+                            Further Invesitgtion
+                        </Box>
+                        <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
+                            173(8) Cases
+                        </Box>
+                        <Box onClick={() => { setSysSattus('merge_cases'); setPaginationCount(1) }} id="filterMergeCases" className={`filterTabs ${sysStatus === 'merge_cases' ? 'Active' : ''}`} >
+                            Merged Cases
+                        </Box>
+                        <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
+                            Disposal
+                        </Box>
+                    </Box>
 
                     <TextFieldInput InputProps={{
                         startAdornment: (
@@ -1991,7 +2005,7 @@ const UnderInvestigation = () => {
                     />
 
                 </Box>
-                }
+
                 <Box py={2}>
                     <TableView hoverTable={true} hoverTableOptions={hoverTableOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
                 </Box>

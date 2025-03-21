@@ -59,7 +59,9 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         getRowId={getRowId} 
         className='FigmaTableView'
         disableColumnMenu
+        disableColumnSorting
         hideFooter
+        disableRowSelectionOnClick
         // initialState={{ pagination: { paginationModel } }}
         // pageSizeOptions={[5, 10]}
         checkboxSelection={checkboxSelection}

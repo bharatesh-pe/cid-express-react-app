@@ -35,6 +35,8 @@ import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
 import Enquiries from './pages/Enquiries';
 import MastersView from './pages/Masters';
+import CaseActions from './pages/CaseAction';
+
 function App() {
   return (
     <Router>
@@ -323,6 +325,16 @@ function App() {
               </ProtectedRoute>
             }
           />
+            <Route
+                path="/caseAction"
+                element={
+                <ProtectedRoute>
+                    <Layout>
+                    <CaseActions />
+                    </Layout>
+                </ProtectedRoute>
+                }
+            />
           <Route path="*" element={<Login />} />
         </Routes>
       </AuthProvider>
