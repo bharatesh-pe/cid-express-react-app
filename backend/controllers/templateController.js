@@ -697,8 +697,6 @@ exports.paginateTemplate = async (req, res) => {
 	}
 };
 
-
-
 exports.getMasterTemplates = async (req, res, next) => {
 	try {
 		// Fetch all templates with template_type as 'master'
