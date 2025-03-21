@@ -82,7 +82,7 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const userName = localStorage.getItem("username");
-
+console.log("userName",userName)
     const [sidebarMenusObj, setSidebarMenusObj] = useState([]);
 
     // for dropdowmn sidebars

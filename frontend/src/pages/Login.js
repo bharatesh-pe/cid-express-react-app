@@ -98,6 +98,9 @@ const Login = () => {
                 }
                 else if(users_designation.length > 1){
                     if(data && data.token){
+                        localStorage.setItem('auth_token', data.token);
+                        localStorage.setItem('kgid', kgid);
+                        localStorage.setItem('username', data.userRole.name);
                         setTempToken(data.token);
                     }
                     setDesignation(users_designation);

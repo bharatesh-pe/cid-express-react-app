@@ -28,6 +28,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
+    template_masters: {
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW
+    },
     ui_case: {
       type: DataTypes.BOOLEAN,
       defaultValue: false

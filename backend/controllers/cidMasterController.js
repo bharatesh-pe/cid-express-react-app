@@ -12,10 +12,10 @@ const getAllDepartments = async (req, res) => {
         });
 
         if (!departments || departments.length === 0) {
-            return adminSendResponse(res, 200, true, "Departments retrieved successfully", { data: [] });
+            return adminSendResponse(res, 200, true, "Departments retrieved successfully", []);
         }
 
-        return adminSendResponse(res, 200, true, "Departments retrieved successfully", { data: departments });
+        return adminSendResponse(res, 200, true, "Departments retrieved successfully", [ ...departments ]);
     } catch (error) {
         console.error("Error fetching departments:", error.message);
         return adminSendResponse(res, 500, false, "Internal Server Error");
@@ -30,10 +30,10 @@ const getAllDesignations = async (req, res) => {
         });
 
         if (!designations || designations.length === 0) {
-            return adminSendResponse(res, 200, true, "Designations retrieved successfully", { data: [] });
+            return adminSendResponse(res, 200, true, "Designations retrieved successfully", []);
         }
 
-        return adminSendResponse(res, 200, true, "Designations retrieved successfully", { data: designations });
+        return adminSendResponse(res, 200, true, "Designations retrieved successfully", [ ...designations ]);
     } catch (error) {
         console.error("Error fetching designations:", error.message);
         return adminSendResponse(res, 500, false, "Internal Server Error");
@@ -47,10 +47,10 @@ const getAllDivisions = async (req, res) => {
         });
 
         if (!divisions || divisions.length === 0) {
-            return adminSendResponse(res, 200, true, "Divisions retrieved successfully", { data: [] });
+            return adminSendResponse(res, 200, true, "Divisions retrieved successfully", []);
         }
 
-        return adminSendResponse(res, 200, true, "Divisions retrieved successfully", { data: divisions });
+        return adminSendResponse(res, 200, true, "Divisions retrieved successfully", [ ...divisions ]);
     } catch (error) {
         console.error("Error fetching divisions:", error.message);
         return adminSendResponse(res, 500, false, "Internal Server Error");
