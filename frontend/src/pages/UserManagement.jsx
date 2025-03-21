@@ -181,7 +181,6 @@ const UserManagement = () => {
   };
 
 
-
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -868,7 +867,7 @@ const UserManagement = () => {
       setLoading(true);
   
       try {
-          const getTemplateResponse = await api.post("/templateData/paginateTemplateData", getTemplatePayload);
+          const getTemplateResponse = await api.post("/user/paginateTemplateData", getTemplatePayload);
           setLoading(false);
   
           if (getTemplateResponse && getTemplateResponse.success) {
