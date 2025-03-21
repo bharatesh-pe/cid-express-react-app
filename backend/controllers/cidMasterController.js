@@ -1,7 +1,7 @@
 const { adminSendResponse } = require("../services/adminSendResponse");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
-const { Department, Designation, Division } = require("../models");
+const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users } = require("../models");
 const { Op } = require("sequelize");
 
 const getAllDepartments = async (req, res) => {
@@ -58,8 +58,75 @@ const getAllDivisions = async (req, res) => {
 };
 
 
+const getIoUsers = async (req, res) => {
+  const excluded_role_ids = [1, 10, 21];
+  try {
+    const users = await Users.findAll({
+      include: [
+        {
+          model: Role,
+          as: "role",
+          attributes: ["role_id", "role_title"],
+          where: {
+            role_id: {
+              [Op.notIn]: excluded_role_ids,
+            },
+          },
+        },
+        {
+          model: UserDesignation,
+          as: "users_designations",
+          attributes: ["designation_id"],
+          include: [
+            {
+              model: Designation,
+              as: "designation",
+              attributes: ["designation_name"],
+            },
+          ],
+        },
+        {
+          model: UsersDepartment,
+          as: "users_departments",
+          attributes: ["department_id"],
+          include: [
+            {
+              model: Department,
+              as: "department",
+              attributes: ["department_name"],
+            },
+          ],
+        },
+        {
+          model: UsersDivision,
+          as: "users_division",
+          attributes: ["division_id"],
+          include: [
+            {
+              model: Division,
+              as: "division",
+              attributes: ["division_name"],
+            },
+          ],
+        },
+      ],
+      attributes: ["user_id", "name", "role_id", "kgid", "dev_status"],
+    });
+
+    return res.status(200).json({ users });
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    return res
+      .status(500)
+      .json({ message: "Failed to fetch users", error: error.message });
+  }
+};
+
+
+
 module.exports = {
     getAllDepartments,
     getAllDesignations,
-    getAllDivisions
+    getAllDivisions,
+    getIoUsers
 };
