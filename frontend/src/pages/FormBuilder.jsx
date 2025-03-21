@@ -1787,13 +1787,13 @@ const Formbuilder = () => {
 
                         if (getOptionsValue && getOptionsValue.data) {
 
-                            var forignKey = selectedMasterOptions.table === 'units' ? 'unit_id' : selectedMasterOptions.table + '_id';
-                            var attributeKey = selectedMasterOptions.table === 'units' ? ['unit_name'] : [selectedMasterOptions.table + '_name'];
+                            var forignKey = selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id';
+                            var attributeKey = selectedMasterOptions.table === 'users' ? ['name'] : [selectedMasterOptions.table + '_name'];
                             
                             updatedOptions = getOptionsValue.data.map((field, i) => {
                                 return {
-                                    name: field[selectedMasterOptions.table === 'units' ? 'unit_name' : selectedMasterOptions.table + '_name'],
-                                    code: field[selectedMasterOptions.table === 'units' ? 'unit_id' : selectedMasterOptions.table + '_id']
+                                    name: field[selectedMasterOptions.table === 'users' ? 'name' : selectedMasterOptions.table + '_name'],
+                                    code: field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
                                 }
                             })
 
