@@ -2993,3 +2993,89 @@ exports.getEventsByLeader = async (req, res) => {
         return userSendResponse(res, 500, false, "Server error.", error);
     }
 };
+
+exports.templateDataFieldDuplicateCheck = async (req, res) => {
+    const { table_name, data } = req.body;
+
+    try {
+        // Fetch the table template
+        const tableData = await Template.findOne({ where: { table_name } });
+
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+
+        // Parse schema and request data
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+        const validData = {};
+
+        const parsedData = data;
+        const invalidFields = []; 
+
+        // Loop through the parsedData to check if the requested data is correct
+        for (const key in parsedData) {
+            if (parsedData.hasOwnProperty(key)) {
+                // Check if the key exists in the schema
+                const field = schema.find(field => field.name === key); // Find the field in the schema
+
+                if (field) {
+                    // If the field is found in the schema, validate it
+                    const { not_null } = field;
+
+                    // Check for not null constraint
+                    if (not_null && (parsedData[key] === null || parsedData[key] === '')) {
+                        invalidFields.push(key);
+                    } else {
+                        validData[key] = parsedData[key]; 
+                    }
+                } else {
+                    invalidFields.push(key); 
+                }
+            }
+        }
+
+        if (invalidFields.length > 0) {
+            return userSendResponse(res, 400, false, `Invalid fields: ${invalidFields.join(', ')}`, parsedData);
+        }
+
+
+        // Define Sequelize model dynamically
+        const modelAttributes = {};
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+        });
+
+        // Check for duplicates
+        const conditions = {};
+        for (const [key, value] of Object.entries(validData)) {
+            // conditions[key] = typeof value === 'string' ? { [Op.iLike]: `%${value}%` } : value; 
+            conditions[key] = typeof value === 'string' ? { [Op.like]: `%${value}%` } : value; 
+        }
+
+        const existingRecords = await Model.findAll({ 
+            where: conditions
+        });
+
+        if (existingRecords.length > 0) {
+            return userSendResponse(res, 200, false, "Duplicate values found.");
+        }
+
+        return userSendResponse(res, 200, true, "No duplicates found.", null);
+    } catch (error) {
+        console.error("Error checking duplicate values in fields:", error);
+        return userSendResponse(res, 500, false, "Internal Server error.", error);
+    }
+};

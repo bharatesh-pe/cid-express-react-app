@@ -2017,10 +2017,18 @@ const Formbuilder = () => {
         const { name, checked } = e.target;
 
         if(checked){
-            const alreadyChecked = fields.filter((element) => element.is_primary_field === true);
+            const alreadyChecked = fields.filter((element) => element[name] === true);
     
             if (alreadyChecked && alreadyChecked[0]) {
-                toast.error(`The field "${alreadyChecked[0].label}" is already marked as primary. Please change that field before make this one as primary.`, {
+
+                var propmtMsg = ''
+                if(name === 'duplicateCheck'){
+                    propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as duplicate check. Please change that field before make this one as duplicate check.`
+                }else{
+                    propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as primary. Please change that field before make this one as primary.`
+                }
+
+                toast.error(propmtMsg, {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -2303,7 +2311,7 @@ const Formbuilder = () => {
 
                                                         var switchOnChange = handleSwitch;
 
-                                                        if (prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') {
+                                                        if (prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck') {
                                                             rowColValue = 2;
                                                             colText = (prop === 'required') ? 'Mandatory field' : (prop === 'history') ? 'Enable field history' : 'Disabled';
 
@@ -2317,6 +2325,9 @@ const Formbuilder = () => {
                                                                 colText = 'Display in Table'
                                                             }else if(prop === 'is_primary_field'){
                                                                 colText = 'Is Primary';
+                                                                switchOnChange = changePrimaryValue;
+                                                            }else if(prop === 'duplicateCheck'){
+                                                                colText = 'Duplicate Check';
                                                                 switchOnChange = changePrimaryValue;
                                                             }
                                                         }
@@ -2350,7 +2361,7 @@ const Formbuilder = () => {
                                                                                 </Box>
                                                                             </Box>
                                                                         ) :
-                                                                            prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' ? (
+                                                                            prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                                     <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && type !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
