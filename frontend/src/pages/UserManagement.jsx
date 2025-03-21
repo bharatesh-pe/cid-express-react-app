@@ -181,7 +181,6 @@ const UserManagement = () => {
   };
 
 
-console.log("newuserrrrr", newUser)
   useEffect(() => {
     fetchUsers();
   }, []);
