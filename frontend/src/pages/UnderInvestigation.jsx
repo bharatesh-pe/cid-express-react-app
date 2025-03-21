@@ -6,7 +6,7 @@ import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
 
-import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid } from "@mui/material";
+import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField } from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -124,6 +124,17 @@ const UnderInvestigation = () => {
     const [hoverTableOptions, setHoverTableOptions] = useState([]);
 
     const [otherTablePagination, setOtherTablePagination] = useState(1)
+
+    // for actions
+
+    const [selectedRow, setSelectedRow] = useState({})
+
+    // transfer to other division states
+
+    const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
+    const [otherTransferField, setOtherTransferField] = useState([]);
+    const [selectedOtherFields, setSelectedOtherFields] = useState(null);
+    const [selectKey, setSelectKey] = useState(null);
 
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
@@ -1916,6 +1927,219 @@ const UnderInvestigation = () => {
         }
     }
 
+    
+    const showProsecutionSanction = (rowData)=>{
+        Swal.fire({
+            title: 'Do You Want to move this case',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes',
+            cancelButtonText: 'No',
+        }).then(async (result) => {
+
+            var sanctions = false;
+            
+            if (result.isConfirmed) {
+                sanctions = true;
+            }
+
+            console.log(sanctions,"sanctions");
+            console.log(rowData,"rowData");
+
+        })
+    }
+
+    const show17A_PC_ACT = (rowData)=>{
+        Swal.fire({
+            title: 'Do You Want to move this case',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes',
+            cancelButtonText: 'No',
+        }).then( async (result) => {
+
+            var PC_ACT = false;
+            
+            if (result.isConfirmed) {
+                PC_ACT = true;
+            }
+
+            console.log(PC_ACT,"PC_ACT");
+            console.log(rowData,"rowData");
+
+        })
+    }
+
+    const showTransferToOtherDivision = async (rowData)=>{
+
+        const viewTableData = {
+            "table_name": table_name
+        }
+
+        setLoading(true);
+        try {
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            setLoading(false);
+
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse['data']) {
+
+                if(viewTemplateResponse['data'].fields){
+
+                    setFormTemplateData(viewTemplateResponse['data'].fields)
+
+                    var getDivisionField = viewTemplateResponse['data'].fields.filter((data)=>{
+                        if(data.table && data.table === 'division'){
+                            return data
+                        }
+                    });
+
+                    if(getDivisionField.length > 0){
+
+                        if(getDivisionField[0].api){
+                            setLoading(true);
+
+                            try {
+                                var getOptionsValue = await api.post(getDivisionField[0].api);
+
+                                setLoading(false);
+        
+                                var updatedOptions = []
+    
+                                if (getOptionsValue && getOptionsValue.data) {
+
+                                    updatedOptions = getOptionsValue.data.map((field, i) => {
+                                        return {
+                                            name: field['division_name'],
+                                            code: field['division_id']
+                                        }
+                                    })
+
+                                    setSelectKey(getDivisionField[0].name);
+                                    setSelectedRow(rowData);
+                                    setOtherTransferField(updatedOptions);
+                                    setShowOtherTransferModal(true);
+                                }
+                                
+                            }catch (error) {
+                                setLoading(false);
+        
+                                if (error && error.response && error.response.data) {
+                                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Division not found', {
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                    return;
+                                }
+                            }
+                        }
+
+                    }else{
+                        const errorMessage = "Can't able to find Division field";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+
+
+                }
+                
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get Template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
+
+    const handleSaveDivisionChange = ()=>{
+
+        if(!selectedOtherFields || !selectedOtherFields.code){
+            toast.error('Please Select Data !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+
+            return;
+        }
+
+        var combinedData = {
+            ...selectedRow,
+            [selectKey] : selectedOtherFields.code
+        }
+
+        // update func
+        onUpdateTemplateData(combinedData);
+
+        // reset states
+        setSelectKey(null);
+        setSelectedRow(null);
+        setOtherTransferField([]);
+        setShowOtherTransferModal(false);
+        setSelectedOtherFields(null);
+
+    }
+
+    var hoverExtraOptions = [
+        ...hoverTableOptions,
+        {
+            "name": "Transfer to Other Division",
+            "onclick": showTransferToOtherDivision
+        },
+        {
+            "name": "Prosecution Sanction",
+            "onclick": showProsecutionSanction
+        },
+        {
+            "name": "17A PC ACT",
+            "onclick": show17A_PC_ACT
+        }
+    ];
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -2007,7 +2231,7 @@ const UnderInvestigation = () => {
                 </Box>
 
                 <Box py={2}>
-                    <TableView hoverTable={true} hoverTableOptions={hoverTableOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
+                    <TableView hoverTable={true} hoverTableOptions={hoverExtraOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
                 </Box>
             </>
             {formOpen &&
@@ -2228,6 +2452,40 @@ const UnderInvestigation = () => {
                     </DialogContent>
                 </Dialog>
             }
+
+            <Dialog
+                open={showOtherTransferModal}
+                onClose={() => setShowOtherTransferModal(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title"></DialogTitle>
+                <DialogContent sx={{ width: '400px' }}>
+                    <DialogContentText id="alert-dialog-description">
+                        <h4 className='form-field-heading'>Select Division</h4>
+                        <FormControl fullWidth>
+                            <Autocomplete
+                                id=""
+                                options={otherTransferField}
+                                getOptionLabel={(option) => option.name || ''}
+                                value={otherTransferField.find((option) => option.code === (selectedOtherFields && selectedOtherFields.code)) || null}
+                                onChange={(event, newValue) => setSelectedOtherFields(newValue)}
+                                renderInput={(params) =>
+                                    <TextField
+                                        {...params}
+                                        className='selectHideHistory'
+                                        label='Division'
+                                    />
+                                }
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: '12px 24px' }}>
+                    <Button onClick={() => setShowOtherTransferModal(false)}>Cancel</Button>
+                    <Button className='fillPrimaryBtn' onClick={handleSaveDivisionChange}>Submit</Button>
+                </DialogActions>
+            </Dialog>
 
 
         </Box>

@@ -173,6 +173,8 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                             !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
                         }
                     })
+                }else{
+                    !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
                 }
     
             } catch (error) {
