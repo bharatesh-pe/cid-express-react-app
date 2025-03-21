@@ -71,3 +71,30 @@ exports.create_ui_case_approval = async (req, res) => {
     }
   }
 };
+
+// Function to view all approvals
+exports.view_ui_case_approvals = async (req, res) => {
+  try {
+    const approvals = await UiCaseApproval.findAll({
+      include: [
+        {
+          model: ApprovalItem,
+          as: "approvalItem",
+          attributes: ["approval_item_id", "name"], // Include relevant fields from ApprovalItem
+        },
+        {
+          model: Designation,
+          as: "approvedBy",
+          attributes: ["designation_id", "designation_name"], // Include relevant fields from Designation
+        },
+      ],
+      attributes: ["approval_id", "approval_item", "approved_by", "approval_date", "remarks"], // Specify fields to return
+    });
+
+    return res.status(200).json({ success: true, data: approvals });
+  } catch (error) {
+    console.error("Error fetching UiCaseApprovals:", error);
+    return res.status(500).json({ message: "Failed to fetch UiCaseApprovals", error: error.message });
+  }
+};
+
