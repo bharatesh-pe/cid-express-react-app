@@ -121,7 +121,7 @@ exports.get_actions = async (req, res) => {
 
 // Insert new action
 exports.insert_action = async (req, res) => {
-    const { name, table, module, is_pdf } = req.body;
+    const { name, table, module, is_pdf, field } = req.body;
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -166,7 +166,8 @@ exports.insert_action = async (req, res) => {
             name,
             table,
             module,
-            is_pdf
+            is_pdf,
+            field
         });
 
         return res.status(201).json({
