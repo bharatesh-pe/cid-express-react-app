@@ -3081,57 +3081,92 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
 };
 
 exports.caseSysStatusUpdation = async (req, res) => {
-    const { table_name, id , sys_status } = req.body;
-
     try {
-        // Fetch the table template
-        const tableData = await Template.findOne({ where: { table_name } });
-
-        if (!tableData) {
-            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        const { table_name, data } = req.body;
+        if (!table_name || !data || typeof data !== "object") {
+            return userSendResponse(res, 400, false, "Invalid request format.");
         }
 
-        // Parse schema and request data
+        // Extract id and sys_status
+        const { id, sys_status } = data;
+        if (!id || !sys_status) {
+            return userSendResponse(res, 400, false, "ID and sys_status are required.");
+        }
+
+        // Ensure id is an integer
+        const recordId = parseInt(id, 10);
+        if (isNaN(recordId)) {
+            return userSendResponse(res, 400, false, "Invalid ID format.");
+        }
+
+        // Fetch table schema
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`);
+        }
+
+        // Parse schema
         const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
-        // Define Sequelize model dynamically
-        const modelAttributes = {};
-        for (const field of schema) {
-            const { name, data_type, not_null, default_value } = field;
-            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-            modelAttributes[name] = {
-                type: sequelizeType,
-                allowNull: !not_null,
-                defaultValue: default_value || null,
-            };
+        const completeSchema = [
+            { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+            { name: "sys_status", data_type: "TEXT", not_null: false }, 
+            ...schema
+        ];
+
+        // Check if model already exists
+        let Model = sequelize.models[table_name];
+        if (!Model) {
+            const modelAttributes = {};
+            for (const field of completeSchema) {
+                const { name, data_type, not_null, default_value, primaryKey, autoIncrement } = field;
+                const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+
+                if (primaryKey) modelAttributes[name].primaryKey = true;
+                if (autoIncrement) modelAttributes[name].autoIncrement = true;
+            }
+
+            Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+
+            await Model.sync(); 
         }
 
-        const Model = sequelize.define(table_name, modelAttributes, {
-            freezeTableName: true,
-            timestamps: true,
-            createdAt: 'created_at',
-            updatedAt: 'updated_at',
-        });
+        // Find existing record
+        const record = await Model.findByPk(recordId);
+        if (!record) {
+            return userSendResponse(res, 404, false, `Record with ID ${id} not found in table ${table_name}.`);
+        }
 
 
-        const updatedRecord = await Model.update(
-            {
-                sys_status: sys_status,  
-            },
-            {
-                where: { id: id }
-            }
+        // Update sys_status
+        const [updatedCount] = await Model.update(
+            { sys_status },
+            { where: { id: recordId } }
         );
 
-        if (updatedRecord[0] > 0) {
-            return userSendResponse(res, 200, false, "Case record updated successfully!");
-        }
-        else{
-            return userSendResponse(res, 500, false, "No records updated. Check if the ID exists.");
+
+        if (updatedCount === 0) {
+            return userSendResponse(res, 400, false, "No changes detected or update failed.");
         }
 
+        // // Fetch updated record
+        // const updatedRecord = await Model.findByPk(recordId);
+
+        return userSendResponse(res, 200, true, "Case record updated successfully!");
     } catch (error) {
-        console.error("Error checking duplicate values in fields:", error);
-        return userSendResponse(res, 500, false, "Internal Server error.", error);
+        console.error("Error updating case status:", error);
+        return userSendResponse(res, 500, false, "Internal Server Error.", error);
     }
 };
+
