@@ -2232,41 +2232,45 @@ const UnderInvestigation = () => {
 
             if (getActionsDetails && getActionsDetails.success) {
 
-                var updatedOptions = getActionsDetails.data['approvals'].map((data, index)=>{
+                var updatedOptions = [];
 
-                    const formatDate = (fieldValue) => {
-                        if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
-
-                        var dateValue = new Date(fieldValue);
-
-                        if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
-                            return fieldValue;
-                        }
-
-                        if (isNaN(dateValue.getTime())) return fieldValue;
-
-                        var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                        var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
-                        var yearValue = dateValue.getFullYear();
-                        return `${dayValue}/${monthValue}/${yearValue}`;
-                    };
-
-                    const updatedField = {};
-
-                    Object.keys(data).forEach((key) => {
-                        if (data[key] && key !== 'id' && !isNaN(new Date(data[key]).getTime())) {
-                            updatedField[key] = formatDate(data[key]);
-                        } else {
-                            updatedField[key] = data[key];
+                if(getActionsDetails.data['approvals'].length > 0){
+                    updatedOptions = getActionsDetails.data['approvals'].map((data, index)=>{
+    
+                        const formatDate = (fieldValue) => {
+                            if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
+    
+                            var dateValue = new Date(fieldValue);
+    
+                            if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
+                                return fieldValue;
+                            }
+    
+                            if (isNaN(dateValue.getTime())) return fieldValue;
+    
+                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                            var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
+                            var yearValue = dateValue.getFullYear();
+                            return `${dayValue}/${monthValue}/${yearValue}`;
+                        };
+    
+                        const updatedField = {};
+    
+                        Object.keys(data).forEach((key) => {
+                            if (data[key] && key !== 'id' && !isNaN(new Date(data[key]).getTime())) {
+                                updatedField[key] = formatDate(data[key]);
+                            } else {
+                                updatedField[key] = data[key];
+                            }
+                        });
+    
+                        return{
+                            ...updatedField,
+                            sl_no : index + 1,
+                            id : data.approval_id,
                         }
                     });
-
-                    return{
-                        ...updatedField,
-                        sl_no : index + 1,
-                        id : data.approval_id,
-                    }
-                });
+                }
 
                 setApprovalsData(updatedOptions);
                 setApprovalItem(getActionsDetails.data['approval_item']);
@@ -2918,11 +2922,16 @@ const UnderInvestigation = () => {
                                             <DemoContainer components={['DatePicker']} sx={{width:'100%'}}>
                                                 <DatePicker 
                                                     label="Approval Date" 
-                                                    value={approvalSaveData['approval_date']} 
+                                                    value={approvalSaveData['approval_date'] ? dayjs(approvalSaveData['approval_date']) : null} 
                                                     name="approval_date" 
+                                                    format="DD/MM/YYYY"
                                                     sx={{width:'100%'}}
                                                     onChange={(newValue) => {
-                                                        handleApprovalSaveData("approval_date", newValue ? newValue.toISOString() : null);
+                                                        if (newValue && dayjs.isDayjs(newValue)) {
+                                                            handleApprovalSaveData("approval_date", newValue.toISOString());
+                                                        } else {
+                                                            handleApprovalSaveData("approval_date", null);
+                                                        }
                                                     }}
                                                 />
                                             </DemoContainer>
