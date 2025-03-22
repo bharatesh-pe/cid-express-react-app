@@ -31,6 +31,10 @@ module.exports = {
           type: Sequelize.BOOLEAN,
           allowNull: true,
         },
+        is_approval: {
+          type: Sequelize.BOOLEAN,
+          allowNull: true,
+        },
         created_at: {
           type: Sequelize.DATE,
           defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
