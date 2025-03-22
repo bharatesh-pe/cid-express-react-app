@@ -41,6 +41,7 @@ import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from "dayjs";
 
 const UnderInvestigation = () => {
     const location = useLocation();
@@ -128,7 +129,11 @@ const UnderInvestigation = () => {
 
     const [approvalsData, setApprovalsData] = useState([]);
     const [approvalsColumn, setApprovalsColumn] = useState([
-        { field: 'sl_no', headerName: 'S.No' },
+        { field: 'sl_no', headerName: 'S.No', },
+        { field: 'approvalItem', headerName: 'Approval Item', flex: 1 },
+        { field: 'approvedBy', headerName: 'Approved By', flex: 1 },
+        { field: 'approval_date', headerName: 'Approval Date', flex: 1 },
+        { field: 'remarks', headerName: 'Remarks', flex: 1 }
     ]);
     const [approvalItem, setApprovalItem] = useState([]);
     const [designationData, setDesignationData] = useState([]);
@@ -2148,7 +2153,43 @@ const UnderInvestigation = () => {
 
             if (getActionsDetails && getActionsDetails.success) {
 
-                setApprovalsData(getActionsDetails.data['approvals']);
+                var updatedOptions = getActionsDetails.data['approvals'].map((data, index)=>{
+
+                    const formatDate = (fieldValue) => {
+                        if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
+
+                        var dateValue = new Date(fieldValue);
+
+                        if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
+                            return fieldValue;
+                        }
+
+                        if (isNaN(dateValue.getTime())) return fieldValue;
+
+                        var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                        var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
+                        var yearValue = dateValue.getFullYear();
+                        return `${dayValue}/${monthValue}/${yearValue}`;
+                    };
+
+                    const updatedField = {};
+
+                    Object.keys(data).forEach((key) => {
+                        if (data[key] && key !== 'id' && !isNaN(new Date(data[key]).getTime())) {
+                            updatedField[key] = formatDate(data[key]);
+                        } else {
+                            updatedField[key] = data[key];
+                        }
+                    });
+
+                    return{
+                        ...updatedField,
+                        sl_no : index + 1,
+                        id : data.approval_id,
+                    }
+                });
+
+                setApprovalsData(updatedOptions);
                 setApprovalItem(getActionsDetails.data['approval_item']);
                 setDesignationData(getActionsDetails.data['designation']);
 
