@@ -116,6 +116,76 @@ const UnderInvestigation = () => {
     const [selectedOtherFields, setSelectedOtherFields] = useState(null);
     const [selectKey, setSelectKey] = useState(null);
 
+    // for approve states
+
+    const [approveTableFlag, setApproveTableFlag] = useState(false);
+    const [addApproveFlag, setAddApproveFlag] = useState(false);
+
+    // change sys_status
+
+    const changeSysStatus = async (data, value)=>{
+
+        var payloadSysStatus = {
+            "table_name" : table_name,
+            "data"  :   {  
+                            "id": data.id, 
+                            "sys_status": value
+                        }
+        }
+
+        setLoading(true);
+
+        try {
+            const chnageSysStatus = await api.post("templateData/deleteTemplateData", payloadSysStatus);
+
+            setLoading(false);
+
+            if (chnageSysStatus && chnageSysStatus.success) { 
+                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount)
+                });
+            } else {
+                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+        }
+
+    }
+
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
         if (!table_name || table_name === '') {
@@ -1891,52 +1961,7 @@ const UnderInvestigation = () => {
         }
     }
 
-    
-    const showProsecutionSanction = (rowData)=>{
-        Swal.fire({
-            title: 'Do You Want to move this case',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes',
-            cancelButtonText: 'No',
-        }).then(async (result) => {
-
-            var sanctions = false;
-            
-            if (result.isConfirmed) {
-                sanctions = true;
-            }
-
-            console.log(sanctions,"sanctions");
-            console.log(rowData,"rowData");
-
-        })
-    }
-
-    const show17A_PC_ACT = (rowData)=>{
-        Swal.fire({
-            title: 'Do You Want to move this case',
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes',
-            cancelButtonText: 'No',
-        }).then( async (result) => {
-
-            var PC_ACT = false;
-            
-            if (result.isConfirmed) {
-                PC_ACT = true;
-            }
-
-            console.log(PC_ACT,"PC_ACT");
-            console.log(rowData,"rowData");
-
-        })
-    }
-
     const showTransferToOtherDivision = async (options, selectedRow)=>{
-
-        console.log(options,"options options options")
 
         const viewTableData = {
             "table_name": options.table
@@ -2006,6 +2031,7 @@ const UnderInvestigation = () => {
 
                                     setSelectKey({name : options.field , title : options.name});
                                     setSelectedRow(selectedRow);
+                                    setselectedOtherTemplate(options);
                                     setOtherTransferField(updatedOptions);
                                     setShowOtherTransferModal(true);
                                 }
@@ -2030,6 +2056,7 @@ const UnderInvestigation = () => {
                         }else{
                             setSelectKey({name : options.field , title : options.name});
                             setSelectedRow(selectedRow);
+                            setselectedOtherTemplate(options);
                             setOtherTransferField(getDivisionField[0].options);
                             setShowOtherTransferModal(true);
                         }
@@ -2081,94 +2108,28 @@ const UnderInvestigation = () => {
 
     }
 
-    const showChangeToUsers = async (rowData)=>{
 
-        const viewTableData = {
-            "table_name": table_name
+    const showApprovalPage = async (approveData)=>{
+
+        var payloadObj = {
+            "ui_case_id": approveData.id
         }
 
         setLoading(true);
+
         try {
 
-            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals", payloadObj);
+
             setLoading(false);
 
-            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse['data']) {
+            if (getActionsDetails && getActionsDetails.success) {
 
-                if(viewTemplateResponse['data'].fields){
-
-                    setFormTemplateData(viewTemplateResponse['data'].fields)
-
-                    var getUsersField = viewTemplateResponse['data'].fields.filter((data)=>{
-                        if(data.table && data.table === 'users'){
-                            return data
-                        }
-                    });
-
-                    if(getUsersField.length > 0){
-
-                        if(getUsersField[0].api){
-                            setLoading(true);
-
-                            try {
-                                var getOptionsValue = await api.post(getUsersField[0].api);
-
-                                setLoading(false);
-        
-                                var updatedOptions = []
-    
-                                if (getOptionsValue && getOptionsValue.data) {
-
-                                    updatedOptions = getOptionsValue.data.map((field, i) => {
-                                        return {
-                                            name: field['name'],
-                                            code: field['user_id']
-                                        }
-                                    })
-
-                                    setSelectKey({name : getUsersField[0].name, title : 'Change of IO'});
-                                    setSelectedRow(rowData);
-                                    setOtherTransferField(updatedOptions);
-                                    setShowOtherTransferModal(true);
-                                }
-                                
-                            }catch (error) {
-                                setLoading(false);
-        
-                                if (error && error.response && error.response.data) {
-                                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Division not found', {
-                                        position: "top-right",
-                                        autoClose: 3000,
-                                        hideProgressBar: false,
-                                        closeOnClick: true,
-                                        pauseOnHover: true,
-                                        draggable: true,
-                                        progress: undefined,
-                                        className: "toast-error",
-                                    });
-                                    return;
-                                }
-                            }
-                        }
-
-                    }else{
-                        const errorMessage = "Can't able to find Users field";
-                        toast.error(errorMessage, {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-                    }
-                }
-                
+                console.log(getActionsDetails.data,"getActionsDetails data")
 
             } else {
-                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get Template. Please try again.";
+                
+                const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
                 toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
@@ -2179,12 +2140,13 @@ const UnderInvestigation = () => {
                     progress: undefined,
                     className: "toast-error",
                 });
+                                
             }
 
         } catch (error) {
             setLoading(false);
             if (error && error.response && error.response['data']) {
-                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -2196,10 +2158,19 @@ const UnderInvestigation = () => {
                 });
             }
         }
-
     }
 
-    const handleSaveDivisionChange = ()=>{
+    const showApprovalAddPage = (table)=> {
+        console.log("here add data", table , "table");
+        setAddApproveFlag(true);
+    }
+    
+    const saveApprovalData = (table)=> {
+        console.log("here save data", table , "table");
+        setAddApproveFlag(false);
+    }
+
+    const handleSaveDivisionChange = async ()=>{
 
         if(!selectedOtherFields || !selectedOtherFields.code){
             toast.error('Please Select Data !', {
@@ -2213,6 +2184,11 @@ const UnderInvestigation = () => {
                 className: "toast-error",
             });
 
+            return;
+        }
+
+        if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
+            showApprovalPage(selectedOtherTemplate);
             return;
         }
 
@@ -2230,6 +2206,7 @@ const UnderInvestigation = () => {
         setOtherTransferField([]);
         setShowOtherTransferModal(false);
         setSelectedOtherFields(null);
+        setselectedOtherTemplate(null);
 
     }
 
@@ -2247,6 +2224,14 @@ const UnderInvestigation = () => {
             "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
         },
         ...hoverTableOptions,
+        {
+            "name": "Further Investigation",
+            "onclick": (selectedRow) => changeSysStatus(selectedRow, 'further_investigation')
+        },
+        {
+            "name": "173(8) Cases",
+            "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases')
+        },
     ];
 
     return (
@@ -2556,6 +2541,52 @@ const UnderInvestigation = () => {
                         <DialogContentText id="alert-dialog-description">
                             <Box py={2}>
                                 <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                            </Box>
+                        </DialogContentText>
+                    </DialogContent>
+                </Dialog>
+            }
+
+            {approveTableFlag &&
+                <Dialog
+                    open={approveTableFlag}
+                    onClose={() => setApproveTableFlag(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="lg"
+                    fullWidth
+                    sx={{zIndex:'1'}}
+                >
+                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
+                        Approval Data
+                        <Box>
+                            {
+                                !addApproveFlag ? 
+                                    <Button variant="outlined" onClick={() => {showApprovalAddPage(selectedOtherTemplate.table)}}>Add</Button>
+                                :
+                                    <Button variant="outlined" onClick={() => {saveApprovalData(selectedOtherTemplate.table)}}>Save</Button>
+                            }
+                            <IconButton
+                                aria-label="close"
+                                onClick={() => setApproveTableFlag(false)}
+                                sx={{ color: (theme) => theme.palette.grey[500] }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </Box>
+
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            <Box py={2}>
+                                {
+                                    !addApproveFlag ?
+                                        <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                    :
+                                    <Box>
+                                        Hello here add fields
+                                    </Box>
+                                }
                             </Box>
                         </DialogContentText>
                     </DialogContent>

@@ -840,27 +840,34 @@ const CaseActions = () => {
                                 </>
 
                             :
-
-                            <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                                <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
-                                    Choose which fields do want to update
-                                </h4>
-                                <Autocomplete
-                                    id=""
-                                    options={otherTemplateDataFields}
-                                    required
-                                    getOptionLabel={(option) => option.label || ''}
-                                    value={otherTemplateDataFields.find((option) => option.name === (addActionFormData && addActionFormData['field'])) || null}
-                                    onChange={(event, newValue) => handleOtherTemplateChange('field', newValue.name)}
-                                    renderInput={(params) =>
-                                        <TextField
-                                            {...params}
-                                            className='selectHideHistory'
-                                            label='Select Fields'
+                                <>
+                                    <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                        <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
+                                            Choose which fields do want to update
+                                        </h4>
+                                        <Autocomplete
+                                            id=""
+                                            options={otherTemplateDataFields}
+                                            required
+                                            getOptionLabel={(option) => option.label || ''}
+                                            value={otherTemplateDataFields.find((option) => option.name === (addActionFormData && addActionFormData['field'])) || null}
+                                            onChange={(event, newValue) => handleOtherTemplateChange('field', newValue.name)}
+                                            renderInput={(params) =>
+                                                <TextField
+                                                    {...params}
+                                                    className='selectHideHistory'
+                                                    label='Select Fields'
+                                                />
+                                            }
                                         />
-                                    }
-                                />
-                            </Box>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Switch name={'is_approval'} checked={addActionFormData['is_approval']} onChange={handleSwitch} />
+                                        <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
+                                            Do you want to enable Approval
+                                        </Typography>
+                                    </Box>
+                                </>
                             
                             }
 
