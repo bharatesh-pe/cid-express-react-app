@@ -2144,6 +2144,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             search = '',
             search_field = '',
             template_module = '',
+            sys_status,
             is_starred = false,
             is_read = '',
 
@@ -2483,6 +2484,10 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
 
         const validSortBy = fields[sort_by] ? sort_by : 'id';
+
+        if (sys_status !== null && sys_status !== undefined) {
+            whereClause['sys_status'] = sys_status;
+        }
 
         const result = await DynamicTable.findAndCountAll({
             where: whereClause,
