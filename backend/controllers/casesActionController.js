@@ -121,7 +121,7 @@ exports.get_actions = async (req, res) => {
 
 // Insert new action
 exports.insert_action = async (req, res) => {
-    const { name, table, module, is_pdf } = req.body;
+    const { name, table, module, is_pdf, field } = req.body;
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -166,7 +166,8 @@ exports.insert_action = async (req, res) => {
             name,
             table,
             module,
-            is_pdf
+            is_pdf,
+            field
         });
 
         return res.status(201).json({
@@ -221,9 +222,7 @@ exports.delete_action = async (req, res) => {
 exports.get_other_templates = async (req , res) => {
     try {
          // Get paginated actions for the specified module
-        const other_templates = await Template.findAll({
-            where: { template_module: { [Op.iLike]: 'others' } }
-        });
+        const other_templates = await Template.findAll();
 
         return res.status(200).json({
             success: true,
