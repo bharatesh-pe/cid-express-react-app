@@ -35,7 +35,7 @@ exports.get_overall_actions = async (req, res) => {
         // Get paginated and sorted data
         const actions = await CasesAction.findAll({
             where: whereClause,
-            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'created_at'],
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval', 'created_at'],
             order: [[sort_by, finalSortOrder]],
             offset: offset,
             limit: parseInt(limit)
@@ -83,7 +83,7 @@ exports.get_actions = async (req, res) => {
         // Get paginated actions for the specified module
         const data = await CasesAction.findAll({
             where: { module: { [Op.iLike]: module } },
-            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'created_at'],
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval', 'created_at'],
             limit: parseInt(limit),
             offset: offset,
             order: [['created_at', 'DESC']] // Optional: Order by created_at or any other field
@@ -121,7 +121,7 @@ exports.get_actions = async (req, res) => {
 
 // Insert new action
 exports.insert_action = async (req, res) => {
-    const { name, table, module, is_pdf, field } = req.body;
+    const { name, table, module, is_pdf, field ,is_approval } = req.body;
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -167,7 +167,8 @@ exports.insert_action = async (req, res) => {
             table,
             module,
             is_pdf,
-            field
+            field,
+            is_approval
         });
 
         return res.status(201).json({
