@@ -2795,6 +2795,7 @@ const UnderInvestigation = () => {
                         <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
                             Add
                         </Button>
+                        
                     )
                     : (
                         <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
