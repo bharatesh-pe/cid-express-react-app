@@ -3121,6 +3121,7 @@ exports.checkPdfEntry = async (req, res) => {
         return userSendResponse(res, 500, false, "Internal Server Error.", error);
     }
 };
+
 exports.caseSysStatusUpdation = async (req, res) => {
     try {
         const { table_name, data } = req.body;
@@ -3149,14 +3150,16 @@ exports.caseSysStatusUpdation = async (req, res) => {
         // Parse schema
         const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
+        // Include ID and sys_status in schema
         const completeSchema = [
             { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
-            { name: "sys_status", data_type: "TEXT", not_null: false }, 
+            { name: "sys_status", data_type: "TEXT", not_null: false },
             ...schema
         ];
 
-        // Check if model already exists
+        // Check if model already exists in Sequelize
         let Model = sequelize.models[table_name];
+
         if (!Model) {
             const modelAttributes = {};
             for (const field of completeSchema) {
@@ -3173,14 +3176,18 @@ exports.caseSysStatusUpdation = async (req, res) => {
                 if (autoIncrement) modelAttributes[name].autoIncrement = true;
             }
 
-            Model = sequelize.define(table_name, modelAttributes, {
+            // Define the model only if it does not exist
+            Model = sequelize.define(table_name, {
+                ...modelAttributes,
+                created_at: { type: Sequelize.DATE, allowNull: false },
+                updated_at: { type: Sequelize.DATE, allowNull: false },
+            }, {
                 freezeTableName: true,
-                timestamps: true,
-                createdAt: "created_at",
-                updatedAt: "updated_at",
+                timestamps: true,  // Automatically updates `updated_at`
+                underscored: true,
             });
 
-            await Model.sync(); 
+            await Model.sync({ alter: true }); // Apply changes only if needed
         }
 
         // Find existing record
@@ -3189,20 +3196,15 @@ exports.caseSysStatusUpdation = async (req, res) => {
             return userSendResponse(res, 404, false, `Record with ID ${id} not found in table ${table_name}.`);
         }
 
-
         // Update sys_status
         const [updatedCount] = await Model.update(
             { sys_status },
             { where: { id: recordId } }
         );
 
-
         if (updatedCount === 0) {
             return userSendResponse(res, 400, false, "No changes detected or update failed.");
         }
-
-        // // Fetch updated record
-        // const updatedRecord = await Model.findByPk(recordId);
 
         return userSendResponse(res, 200, true, "Case record updated successfully!");
     } catch (error) {
@@ -3210,8 +3212,6 @@ exports.caseSysStatusUpdation = async (req, res) => {
         return userSendResponse(res, 500, false, "Internal Server Error.", error);
     }
 };
-
-
 
 const dirPath = path.join(__dirname, "../data/file/");
 
