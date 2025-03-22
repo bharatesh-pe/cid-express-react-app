@@ -1,8 +1,9 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
 const sequelize = db.sequelize;
-const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus } = require("../models");
+const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
+const multer = require("multer");
 
 const { Op } = require("sequelize");
 const path = require('path');
@@ -3078,4 +3079,101 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
         console.error("Error checking duplicate values in fields:", error);
         return userSendResponse(res, 500, false, "Internal Server error.", error);
     }
+};
+
+exports.checkPdfEntry = async (req, res) => {
+    const { is_pdf, ui_case_id } = req.body;
+
+    try {
+        if (!ui_case_id) {
+            return userSendResponse(res, 400, false, "ui_case_id is required.", null);
+        }
+
+        // Check if ui_case_id exists in the table
+        const caseExists = await UiProgressReportFileStatus.findOne({
+            where: { ui_case_id }
+        });
+
+        console.log("caseExists",caseExists)
+        if (!caseExists) {
+            return userSendResponse(res, 404, false, "Case ID not found in database.", null);
+        }
+
+        // Check if the PDF entry exists for this case ID
+        const existingEntry = await UiProgressReportFileStatus.findOne({
+            where: { is_pdf, ui_case_id }
+        });
+
+        console.log("existingEntry",existingEntry)
+
+        if (existingEntry) {
+            return userSendResponse(res, 200, true, "Entry found.", existingEntry);
+        } else {
+            return userSendResponse(res, 200, true, "No entry found.", null);
+        }
+    } catch (error) {
+        console.error("Error checking PDF entry:", error);
+        return userSendResponse(res, 500, false, "Internal Server Error.", error);
+    }
+};
+
+
+
+const dirPath = path.join(__dirname, "../data/file/");
+
+// Ensure the directory exists
+if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+}
+
+// Set up Multer storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, dirPath);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
+
+exports.uploadFile = async (req, res) => {
+    upload.single("file")(req, res, async (err) => {
+        if (err) {
+            console.error("File upload error:", err);
+            return res.status(500).json({ success: false, message: "File upload failed." });
+        }
+
+        try {
+            const { ui_case_id, created_by } = req.body;
+
+            if (!ui_case_id || !created_by) {
+                return res.status(400).json({ success: false, message: "Missing required fields." });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({ success: false, message: "No file uploaded." });
+            }
+
+            const file_name = req.file.filename;
+            const file_path = path.join("data/file/", file_name);
+
+            // Save entry in the database
+            await UiProgressReportFileStatus.create({
+                ui_case_id,
+                is_pdf: true, // This is a PDF case
+                file_name,
+                file_path,
+                created_by,
+                created_at: new Date()
+            });
+
+            return res.status(200).json({ success: true, message: "File uploaded successfully.", file_path });
+        } catch (error) {
+            console.error("Error uploading file:", error);
+            return res.status(500).json({ success: false, message: "Internal server error." });
+        }
+    });
 };

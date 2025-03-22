@@ -258,13 +258,18 @@ router.post('/getEventsByLeader',
     // userAuthMiddleware,
 
     templateDataController.getEventsByLeader)
-
+    
 router.post('/templateDataFieldDuplicateCheck',
     // userAuthMiddleware,
 
     templateDataController.templateDataFieldDuplicateCheck)
+router.post('/checkPdfEntry',
+    // userAuthMiddleware,
 
-
+    templateDataController.checkPdfEntry)
+router.post('/uploadFile',
+    // userAuthMiddleware,
+    templateDataController.uploadFile)
 
 
 module.exports = router;
