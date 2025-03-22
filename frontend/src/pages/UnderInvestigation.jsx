@@ -1823,7 +1823,80 @@ const UnderInvestigation = () => {
 
     },[])
 
+
+
+
+
+    
+    const handleFileUpload = async (event, selectedRow) => {
+        console.log("File upload initiated."); // Debugging
+    
+        const file = event.target.files[0];
+    
+        if (!file) {
+            Swal.fire("Error", "Please select a file.", "error");
+            return;
+        }
+    
+        if (!selectedRow || !selectedRow.id) {
+            console.log("Invalid selectedRow inside handleFileUpload:", selectedRow); // Debugging
+            Swal.fire("Error", "Invalid case ID.", "error");
+            return;
+        }
+    
+        const caseId = selectedRow.id; // Use selectedRow.id instead of tableData[0].id
+    
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("ui_case_id", caseId);
+        formData.append("created_by", "0"); // Replace with actual user ID
+    
+        try {
+            const response = await api.post("/templateData/uploadFile", formData);
+    
+            if (response.success) {
+                Swal.fire("Success", "File uploaded successfully.", "success");
+                checkPdfEntryStatus(caseId); // Use selectedRow.id for checking PDF entry
+            } else {
+                Swal.fire("Error", response.message || "Upload failed.", "error");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            Swal.fire("Error", "Failed to upload file.", "error");
+        }
+    };
+
+    const [hasPdfEntry, setHasPdfEntry] = useState(false);
+
+
+    const checkPdfEntryStatus = async (caseId) => {
+        if (!caseId) {
+            console.log("Invalid caseId inside checkPdfEntryStatus:", caseId);
+            setHasPdfEntry(false);
+            return;
+        }
+    
+        console.log("Checking PDF entry for caseId:", caseId);
+    
+        try {
+            const response = await api.post("/templateData/checkPdfEntry", { ui_case_id: caseId, is_pdf: true });
+    
+            if (response.success && response.data) {
+                setHasPdfEntry(true);
+            } else {
+                setHasPdfEntry(false);
+            }
+        } catch (error) {
+            console.error("Error checking PDF entry:", error);
+            setHasPdfEntry(false);
+        }
+    };
+    
     const handleOtherTemplateActions = async (options, selectedRow)=>{
+
+        console.log("selectedRow",selectedRow)
+
+        console.log("options",options)
 
         if(options.table && options.field){
             showTransferToOtherDivision(options, selectedRow)
@@ -1907,6 +1980,8 @@ const UnderInvestigation = () => {
                         ];
 
                         setOtherTemplateColumn(updatedHeader)
+                                                        
+                            
                     }else{
                         setOtherTemplateColumn([])
                     }
@@ -1949,6 +2024,10 @@ const UnderInvestigation = () => {
                     });
 
                     setOtherTemplateData(updatedTableData);
+                    if (options.table === "cid_ui_case_progress_report" && options.is_pdf) {
+                        await checkPdfEntryStatus(selectedRow.id);
+                    }
+
                     setOtherTemplateModalOpen(true);
                 }
 
@@ -2695,40 +2774,74 @@ const UnderInvestigation = () => {
 
 
             {/* other templates ui */}
-
-            {otherTemplateModalOpen &&
-                <Dialog
-                    open={otherTemplateModalOpen}
-                    onClose={() => setOtherTemplateModalOpen(false)}
-                    aria-labelledby="alert-dialog-title"
-                    aria-describedby="alert-dialog-description"
-                    maxWidth="md"
-                    fullWidth
-                    sx={{zIndex:'1'}}
+            {otherTemplateModalOpen && (
+    <Dialog
+        open={otherTemplateModalOpen}
+        onClose={() => setOtherTemplateModalOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        maxWidth="md"
+        fullWidth
+        sx={{ zIndex: '1' }}
+    >
+        <DialogTitle
+            id="alert-dialog-title"
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+            {selectedOtherTemplate && selectedOtherTemplate.name}
+            <Box>
+                {selectedOtherTemplate.table === "cid_ui_case_progress_report"
+                    ? hasPdfEntry && (
+                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
+                            Add
+                        </Button>
+                    )
+                    : (
+                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
+                            Add
+                        </Button>
+                    )
+                }
+                <IconButton
+                    aria-label="close"
+                    onClick={() => setOtherTemplateModalOpen(false)}
+                    sx={{ color: (theme) => theme.palette.grey[500] }}
                 >
-                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                        {selectedOtherTemplate && selectedOtherTemplate.name }
-                        <Box>
-                            <Button variant="outlined" onClick={() => {showOptionTemplate(selectedOtherTemplate.table)}}>Add</Button>
-                            <IconButton
-                                aria-label="close"
-                                onClick={() => setOtherTemplateModalOpen(false)}
-                                sx={{ color: (theme) => theme.palette.grey[500] }}
+                    <CloseIcon />
+                </IconButton>
+            </Box>
+        </DialogTitle>
+        <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+                <Box py={2}>
+                    {selectedOtherTemplate.table === "cid_ui_case_progress_report" ? (
+                        hasPdfEntry ? (
+                            <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                        ) : (
+                            <Box
+                                display="flex"
+                                flexDirection="column"
+                                alignItems="center"
+                                justifyContent="center"
+                                height="200px"
                             >
-                                <CloseIcon />
-                            </IconButton>
-                        </Box>
-
-                    </DialogTitle>
-                    <DialogContent>
-                        <DialogContentText id="alert-dialog-description">
-                            <Box py={2}>
-                                <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                <Typography>Please Upload your Progress Report Pdf</Typography>
+                                <Button variant="contained" component="label">
+                                    Upload File
+                                    <input type="file" hidden accept="application/pdf" onChange={(event) => handleFileUpload(event, selectedOtherTemplate)} />
+                                </Button>
                             </Box>
-                        </DialogContentText>
-                    </DialogContent>
-                </Dialog>
-            }
+                        )
+                    ) : (
+                        <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                    )}
+                </Box>
+            </DialogContentText>
+        </DialogContent>
+    </Dialog>
+)}
+
+
 
             {approveTableFlag &&
                 <Dialog

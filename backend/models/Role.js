@@ -29,8 +29,8 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false
     },
     template_masters: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
     ui_case: {
       type: DataTypes.BOOLEAN,
