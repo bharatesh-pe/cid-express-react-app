@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
         },
         table: {
             type: DataTypes.TEXT,
-            allowNull: false
+            allowNull: true
         },
         module: {
             type: DataTypes.TEXT,
@@ -22,13 +22,17 @@ module.exports = (sequelize, DataTypes) => {
         },
         is_pdf: {
             type: DataTypes.BOOLEAN,
-            allowNull: false
+            allowNull: true
         },
         created_at: {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW,
             allowNull: true
-        }
+        },
+        field: {
+            type: DataTypes.TEXT,
+            allowNull: true
+        },
     }, {
         sequelize,
         modelName: 'CasesAction',

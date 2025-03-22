@@ -9,5 +9,6 @@ router.post('/user_active_deactive', [validate_token], userController.user_activ
 router.get('/get_users', [validate_token], userController.get_users);
 router.post('/filter_users', [validate_token], userController.filter_users);
 router.post('/get_user_management_logs', [validate_token], userController.get_user_management_logs);
+router.post('/paginateTemplateData', [validate_token], userController.paginateTemplateData);
 
 module.exports = router; 

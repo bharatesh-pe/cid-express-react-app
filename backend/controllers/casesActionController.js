@@ -35,7 +35,7 @@ exports.get_overall_actions = async (req, res) => {
         // Get paginated and sorted data
         const actions = await CasesAction.findAll({
             where: whereClause,
-            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'created_at'],
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'created_at'],
             order: [[sort_by, finalSortOrder]],
             offset: offset,
             limit: parseInt(limit)
@@ -83,7 +83,7 @@ exports.get_actions = async (req, res) => {
         // Get paginated actions for the specified module
         const data = await CasesAction.findAll({
             where: { module: { [Op.iLike]: module } },
-            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'created_at'],
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'created_at'],
             limit: parseInt(limit),
             offset: offset,
             order: [['created_at', 'DESC']] // Optional: Order by created_at or any other field

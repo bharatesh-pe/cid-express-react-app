@@ -2,6 +2,11 @@ const fs = require("fs");
 const path = require("path");
 const { Sequelize } = require("sequelize");
 const dbConfig = require("../config/dbConfig");
+const { userSendResponse } = require("../services/userSendResponse");
+const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus } = require("../models");
+const db = require('../models');
+const sequelize = db.sequelize;
+
 const {
   Role,
   UsersDepartment,
@@ -732,5 +737,363 @@ exports.get_user_management_logs = async (req, res) => {
     } catch (error) {
         console.error('Error fetching user management logs:', error);
         return res.status(500).json({ message: 'Internal server error' });
+    }
+};
+exports.paginateTemplateData = async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 5,
+            sort_by = 'template_id',
+            order = 'ASC',
+            search = '',
+            search_field = '',
+            table_name,
+            is_starred = false,
+            is_read = '',
+
+        } = req.body;
+        const { filter = {}, from_date = null, to_date = null } = req.body;
+        const userId = res.locals.user_id || null;
+
+        if (!table_name) {
+            return userSendResponse(res, 400, false, "Table name is required.", null);
+        }
+
+        const tableTemplate = await Template.findOne({ where: { table_name } });
+        if (!tableTemplate) {
+            return userSendResponse(res, 404, false, `Table ${table_name} does not exist.`, null);
+        }
+
+        let fieldsArray;
+        try {
+            fieldsArray = typeof tableTemplate.fields === 'string' ? JSON.parse(tableTemplate.fields) : tableTemplate.fields;
+        } catch (err) {
+            console.error("Error parsing fields:", err);
+            return userSendResponse(res, 500, false, "Invalid table schema format.", null);
+        }
+
+        if (!Array.isArray(fieldsArray)) {
+            return userSendResponse(res, 500, false, "Fields must be an array in the table schema.", null);
+        }
+
+        const fields = {};
+        const associations = [];
+        const radioFieldMappings = {};
+        const checkboxFieldMappings = {};
+        const dropdownFieldMappings = {};
+
+        // Store field configurations by name for easy lookup
+        const fieldConfigs = {};
+
+        for (const field of fieldsArray) {
+            const {
+                name: columnName,
+                data_type,
+                max_length,
+                not_null,
+                default_value,
+                table,
+                forign_key,
+                attributes,
+                options,
+                type,
+                table_display_content
+            } = field;
+
+            if (!table_display_content) continue; // Filter out fields not marked for display
+
+            // Store the complete field configuration for reference
+            fieldConfigs[columnName] = field;
+
+            const sequelizeType = data_type?.toUpperCase() === 'VARCHAR' && max_length
+                ? Sequelize.DataTypes.STRING(max_length)
+                : Sequelize.DataTypes[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+            fields[columnName] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+                displayContent: table_display_content,
+            };
+
+            if (type === 'radio' && Array.isArray(options)) {
+                radioFieldMappings[columnName] = options.reduce((acc, option) => {
+                    acc[option.code] = option.name;
+                    return acc;
+                }, {});
+            }
+
+            if (type === 'checkbox' && Array.isArray(options)) {
+                checkboxFieldMappings[columnName] = options.reduce((acc, option) => {
+                    acc[option.code] = option.name;
+                    return acc;
+                }, {});
+            }
+
+            if ((type === 'dropdown' || type === 'multidropdown' || type === 'autocomplete') && Array.isArray(options)) {
+                dropdownFieldMappings[columnName] = options.reduce((acc, option) => {
+                    acc[option.code] = option.code;
+                    return acc;
+                }, {});
+            }
+
+            if (table && forign_key && attributes) {
+                associations.push({
+                    relatedTable: table,
+                    foreignKey: columnName,
+                    targetAttribute: attributes,
+                });
+            }
+        }
+
+        const DynamicTable = sequelize.define(table_name, fields, {
+            freezeTableName: true,
+            timestamps: true,
+        });
+
+        const include = [];
+        for (const association of associations) {
+            const RelatedModel = require(`../models`)[association.relatedTable];
+            if (RelatedModel) {
+                DynamicTable.belongsTo(RelatedModel, {
+                    foreignKey: association.foreignKey,
+                    as: `${association.relatedTable}Details`,
+                });
+
+                include.push({
+                    model: RelatedModel,
+                    as: `${association.relatedTable}Details`,
+                    attributes: association.targetAttribute || { exclude: ['created_date', 'modified_date'] },
+                });
+            }
+        }
+
+        const offset = (page - 1) * limit;
+        const Op = Sequelize.Op;
+        const whereClause = {};
+
+        // Apply field filters if provided
+        if (filter && typeof filter === 'object') {
+            Object.entries(filter).forEach(([key, value]) => {
+                if (fields[key]) {  // Assuming 'fields' contains the field definitions
+                    whereClause[key] = value; // Direct match for foreign key fields
+                }
+            });
+        }
+        if (from_date || to_date) {
+            whereClause["created_at"] = {};
+
+            if (from_date) {
+                whereClause["created_at"][Op.gte] = new Date(`${from_date}T00:00:00.000Z`);
+            }
+            if (to_date) {
+                whereClause["created_at"][Op.lte] = new Date(`${to_date}T23:59:59.999Z`);
+            }
+        }
+
+        if (is_read === false) {
+            whereClause["$ReadStatus.template_user_status_id$"] = { [Op.is]: null }; // Filter only unread records
+        }
+
+        if (search) {
+            const searchConditions = [];
+
+            if (search_field && fields[search_field]) {
+                // Specific field search
+                const fieldConfig = fieldConfigs[search_field];
+                const fieldType = fields[search_field].type.key;
+                const isForeignKey = associations.some(assoc => assoc.foreignKey === search_field);
+
+                // Handle field type based search
+                if (["STRING", "TEXT"].includes(fieldType)) {
+                    searchConditions.push({ [search_field]: { [Op.iLike]: `%${search}%` } });
+                } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+                    if (!isNaN(search)) {
+                        searchConditions.push({ [search_field]: parseInt(search, 10) });
+                    }
+                } else if (fieldType === "BOOLEAN") {
+                    const boolValue = search.toLowerCase() === "true";
+                    searchConditions.push({ [search_field]: boolValue });
+                } else if (fieldType === "DATE") {
+                    const parsedDate = Date.parse(search);
+                    if (!isNaN(parsedDate)) {
+                        searchConditions.push({ [search_field]: new Date(parsedDate) });
+                    }
+                }
+
+                // Handle dropdown, radio, checkbox special searches
+                if (fieldConfig && fieldConfig.type === 'dropdown' && Array.isArray(fieldConfig.options)) {
+                    // Find option code that matches the search text
+                    const matchingOption = fieldConfig.options.find(option =>
+                        option.name.toLowerCase().includes(search.toLowerCase())
+                    );
+
+                    if (matchingOption) {
+                        searchConditions.push({ [search_field]: matchingOption.code });
+                    }
+                }
+
+                if (fieldConfig && fieldConfig.type === 'radio' && Array.isArray(fieldConfig.options)) {
+                    // Find option code that matches the search text
+                    const matchingOption = fieldConfig.options.find(option =>
+                        option.name.toLowerCase().includes(search.toLowerCase())
+                    );
+
+                    if (matchingOption) {
+                        searchConditions.push({ [search_field]: matchingOption.code });
+                    }
+                }
+
+                // Handle foreign keys
+                if (isForeignKey) {
+                    const association = associations.find(assoc => assoc.foreignKey === search_field);
+                    if (association) {
+                        // Get the included model from the include array
+                        const associatedModel = include.find(inc => inc.as === `${association.relatedTable}Details`);
+
+                        // Only add the condition if the model is properly included
+                        if (associatedModel) {
+                            searchConditions.push({
+                                [`$${association.relatedTable}Details.${association.targetAttribute}$`]: { [Op.iLike]: `%${search}%` }
+                            });
+                        }
+                    }
+                }
+            } else {
+                // General search across all fields
+                Object.keys(fields).forEach((field) => {
+                    const fieldConfig = fieldConfigs[field];
+                    const fieldType = fields[field].type.key;
+                    const isForeignKey = associations.some(assoc => assoc.foreignKey === field);
+
+                    // Standard text and numeric search
+                    if (["STRING", "TEXT"].includes(fieldType)) {
+                        searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
+                    } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+                        if (!isNaN(search)) {
+                            searchConditions.push({ [field]: parseInt(search, 10) });
+                        }
+                    }
+
+                    // Dropdown, radio, checkbox search
+                    if (fieldConfig && fieldConfig.type === 'dropdown' && Array.isArray(fieldConfig.options)) {
+                        // Find option code that matches the search text
+                        const matchingOption = fieldConfig.options.find(option =>
+                            option.name.toLowerCase().includes(search.toLowerCase())
+                        );
+
+                        if (matchingOption) {
+                            searchConditions.push({ [field]: matchingOption.code });
+                        }
+                    }
+
+                    if (fieldConfig && fieldConfig.type === 'radio' && Array.isArray(fieldConfig.options)) {
+                        // Find option code that matches the search text
+                        const matchingOption = fieldConfig.options.find(option =>
+                            option.name.toLowerCase().includes(search.toLowerCase())
+                        );
+
+                        if (matchingOption) {
+                            searchConditions.push({ [field]: matchingOption.code });
+                        }
+                    }
+
+                    // Foreign key search
+                    if (isForeignKey) {
+                        const association = associations.find(assoc => assoc.foreignKey === field);
+                        if (association) {
+                            // Get the included model from the include array
+                            const associatedModel = include.find(inc => inc.as === `${association.relatedTable}Details`);
+
+                            // Only add the condition if the model is properly included
+                            if (associatedModel) {
+                                searchConditions.push({
+                                    [`$${association.relatedTable}Details.${association.targetAttribute}$`]: { [Op.iLike]: `%${search}%` }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+
+            if (searchConditions.length > 0) {
+                whereClause[Op.or] = searchConditions;
+            }
+        }
+
+        const validSortBy = fields[sort_by] ? sort_by : 'id';
+
+        const result = await DynamicTable.findAndCountAll({
+            where: whereClause,
+            limit,
+            offset,
+            order: [[validSortBy, order.toUpperCase()]],
+            attributes: ['id', ...Object.keys(fields).filter(field => fields[field].displayContent)],
+            include,
+        });
+
+        const totalItems = result.count;
+        const totalPages = Math.ceil(totalItems / limit);
+
+        const transformedRows = await Promise.all(
+            result.rows.map(async (record) => {
+                const data = record.toJSON();
+
+                // Map radio, checkbox, and dropdown fields to display values
+                for (const fieldName in radioFieldMappings) {
+                    if (data[fieldName] !== undefined && radioFieldMappings[fieldName][data[fieldName]]) {
+                        data[fieldName] = radioFieldMappings[fieldName][data[fieldName]];
+                    }
+                }
+                for (const fieldName in checkboxFieldMappings) {
+                    if (data[fieldName]) {
+                        const codes = data[fieldName].split(',').map(code => code.trim());
+                        data[fieldName] = codes.map(code => checkboxFieldMappings[fieldName][code] || code).join(', ');
+                    }
+                }
+                for (const fieldName in dropdownFieldMappings) {
+                    if (data[fieldName] !== undefined && dropdownFieldMappings[fieldName][data[fieldName]]) {
+                        data[fieldName] = dropdownFieldMappings[fieldName][data[fieldName]];
+                    }
+                }
+
+                // Fetch linked profile info manually
+                const linkedProfileInfo = [];
+
+                return data;
+            })
+        );
+
+        const responseData = {
+            // data: transformedRows,
+            data: transformedRows.map(row => ({ ...row, created_by: tableTemplate.created_by })),
+            columns: [
+                ...fieldsArray.map(field => ({
+                    name: field.name
+                })),
+                // Manually adding created_at and updated_at timestamps
+                {
+                    name: "created_at",
+                },
+                {
+                    name: "updated_at",
+                }
+            ],
+
+            meta: {
+                page,
+                limit,
+                totalItems,
+                totalPages,
+                sort_by: validSortBy,
+                order,
+            },
+        };
+
+        return userSendResponse(res, 200, true, "Data fetched successfully", responseData);
+    } catch (error) {
+        console.error('Error fetching paginated data:', error);
+        return userSendResponse(res, 500, false, "Server error", error);
     }
 };
