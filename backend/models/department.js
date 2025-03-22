@@ -28,12 +28,5 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: false
   });
 
-  Department.associate = (models) => {
-    Department.hasMany(models.Designation, {
-      foreignKey: 'department_id',
-      as: 'designations'
-    });
-  };
-
   return Department;
 };
