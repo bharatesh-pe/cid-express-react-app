@@ -271,5 +271,12 @@ router.post('/uploadFile',
     // userAuthMiddleware,
     templateDataController.uploadFile)
 
+router.post('/caseSysStatusUpdation',
+
+
+    templateDataController.caseSysStatusUpdation)
+
+
+
 
 module.exports = router;

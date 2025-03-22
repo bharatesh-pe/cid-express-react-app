@@ -1,4 +1,4 @@
-const { UiCaseApproval, ApprovalItem, Designation } = require("../models");
+const { UiCaseApproval, ApprovalItem  , Designation} = require("../models");
 const fs = require("fs");
 const path = require("path");
 const dbConfig = require("../config/dbConfig");
@@ -40,12 +40,6 @@ exports.create_ui_case_approval = async (req, res) => {
       return res.status(400).json({ message: "Invalid approval item ID" });
     }
 
-    // Validate approved_by
-    const existingDesignation = await Designation.findByPk(approved_by);
-    if (!existingDesignation) {
-      await t.rollback();
-      return res.status(400).json({ message: "Invalid approved by designation ID" });
-    }
 
     // Create UiCaseApproval
     const newApproval = await UiCaseApproval.create(
@@ -75,7 +69,7 @@ exports.create_ui_case_approval = async (req, res) => {
 };
 
 // Function to view all approvals
-exports.view_ui_case_approvals = async (req, res) => {
+exports.get_ui_case_approvals = async (req, res) => {
   try {
      const {
       ui_case_id,
@@ -83,26 +77,39 @@ exports.view_ui_case_approvals = async (req, res) => {
 
 
     const approvals = await UiCaseApproval.findAll({
-      include: [
-        {
-          model: ApprovalItem,
-          as: "approvalItem",
-          attributes: ["approval_item_id", "name"], // Include relevant fields from ApprovalItem
-        },
-        {
-          model: Designation,
-          as: "approvedBy",
-          attributes: ["designation_id", "designation_name"], // Include relevant fields from Designation
-        },
-      ],
-      where: { ui_case_id: ui_case_id },
-      attributes: ["approval_id", "approval_item", "approved_by", "approval_date", "remarks"],
+        include: [
+            {
+                model: ApprovalItem,
+                as: "approvalItem",
+                attributes: ["name"],
+            },
+            {
+                model: Designation,
+                as: "approvedBy",
+                attributes: ["designation_name"],
+            },
+        ],
+        where: { ui_case_id: ui_case_id },
+        attributes: ["approval_id", "approval_item", "approved_by", "approval_date", "remarks"],
     });
 
-    return res.status(200).json({ success: true, data: approvals });
+    const formattedApprovals = approvals.map(approval => ({
+        approval_id: approval.approval_id,
+        approval_item: approval.approval_item,
+        approved_by: approval.approved_by,
+        approval_date: approval.approval_date,
+        remarks: approval.remarks,
+        approvalItem: approval.approvalItem?.name || null,  // Extract the name directly
+        approvedBy: approval.approvedBy?.designation_name || null, // Extract the designation_name directly
+    }));
+
+    const approval_item = await ApprovalItem.findAll();
+    
+    const designation = await Designation.findAll();
+
+    return res.status(200).json({ success: true, data: {"approvals":formattedApprovals , 'approval_item' : approval_item , 'designation' :designation}});
   } catch (error) {
     console.error("Error fetching UiCaseApprovals:", error);
     return res.status(500).json({ message: "Failed to fetch UiCaseApprovals", error: error.message });
   }
 };
-
