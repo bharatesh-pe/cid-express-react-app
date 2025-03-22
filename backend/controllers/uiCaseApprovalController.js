@@ -1,4 +1,4 @@
-const { UiCaseApproval, ApprovalItem, Designation } = require("../models");
+const { UiCaseApproval, ApprovalItem } = require("../models");
 const fs = require("fs");
 const path = require("path");
 const dbConfig = require("../config/dbConfig");
@@ -40,12 +40,6 @@ exports.create_ui_case_approval = async (req, res) => {
       return res.status(400).json({ message: "Invalid approval item ID" });
     }
 
-    // Validate approved_by
-    const existingDesignation = await Designation.findByPk(approved_by);
-    if (!existingDesignation) {
-      await t.rollback();
-      return res.status(400).json({ message: "Invalid approved by designation ID" });
-    }
 
     // Create UiCaseApproval
     const newApproval = await UiCaseApproval.create(
@@ -75,7 +69,7 @@ exports.create_ui_case_approval = async (req, res) => {
 };
 
 // Function to view all approvals
-exports.view_ui_case_approvals = async (req, res) => {
+exports.get_ui_case_approvals = async (req, res) => {
   try {
      const {
       ui_case_id,
@@ -105,4 +99,3 @@ exports.view_ui_case_approvals = async (req, res) => {
     return res.status(500).json({ message: "Failed to fetch UiCaseApprovals", error: error.message });
   }
 };
-
