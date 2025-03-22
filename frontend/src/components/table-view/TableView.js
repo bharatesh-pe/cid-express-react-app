@@ -26,7 +26,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         if (option && typeof option.onclick === "function") {
             option.onclick(selectedRow);
         }else{
-            hoverActionFuncHandle(option);
+            hoverActionFuncHandle(option, selectedRow);
         }
         handleMenuClose();
     };
@@ -37,7 +37,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
           ? [
               {
                 field: "extraActions",
-                headerName: "Extra Actions",
+                headerName: "Actions",
                 width: 150,
                 renderCell: (params) => (
                   <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>

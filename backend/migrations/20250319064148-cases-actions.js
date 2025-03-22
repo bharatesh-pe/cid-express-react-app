@@ -21,7 +21,7 @@ module.exports = {
         },
         table: {
           type: Sequelize.TEXT,
-          allowNull: false,
+          allowNull: true,
         },
         module: {
           type: Sequelize.TEXT,
@@ -29,12 +29,16 @@ module.exports = {
         },
         is_pdf: {
           type: Sequelize.BOOLEAN,
-          allowNull: false,
+          allowNull: true,
         },
         created_at: {
           type: Sequelize.DATE,
           defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
           allowNull: true,
+        },
+        field: {
+            type: Sequelize.TEXT,
+            allowNull: true
         },
       }
     );

@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Button, Checkbox, CircularProgress, FormControl, IconButton, InputAdornment, Radio, Switch, TextField, Typography } from "@mui/material"
+import { Autocomplete, Box, Button, Checkbox, CircularProgress, FormControl, IconButton, InputAdornment, Radio, Switch, TextField, Typography, Tabs, Tab } from "@mui/material"
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import TableView from "../components/table-view/TableView";
@@ -73,6 +73,23 @@ const CaseActions = () => {
                 )
             }
         },
+        { 
+            field: 'field', 
+            headerName: 'Selected Field',
+            resizable: true,
+            flex: 2,
+            renderCell: (params) => {
+                return (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                            {
+                                params && params.row && params.row.field ?  params.row.field.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase()) : ''
+                            }
+                        </span>
+                    </div>
+                )
+            }
+        },
         {
             field: '',
             headerName: 'Action',
@@ -119,6 +136,7 @@ const CaseActions = () => {
     // adding data states
     const [actionAddModal, setActionAddModal] = useState(false);
     const [otherTemplateData, setOtherTemplateData] = useState([]);
+    const [otherTemplateDataFields, setOtherTemplateDataFields] = useState([]);
     const [addActionFormData, setAddActionFormData] = useState({});
     const [addActionErrors, setAddActionErrors] = useState({});
 
@@ -131,6 +149,9 @@ const CaseActions = () => {
             { name: 'Enquiries', code: 'eq_case' }
         ]
     };
+
+    // tab actions state 
+    const [tabValue, setTabValue] = useState("template");
     
 
     useEffect(()=>{
@@ -392,11 +413,48 @@ const CaseActions = () => {
 
     };
 
-    const handleOtherTemplateChange = (value) => {
+    const handleOtherTemplateChange = async (name, value) => {
+
+        if(name === 'table' && tabValue === 'field'){
+
+            const viewTableData = {
+                "table_name": value
+            }
+    
+            setLoading(true);
+            setOtherTemplateDataFields([]);
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+
+            setLoading(false);
+    
+            if (viewTemplateResponse && viewTemplateResponse.success) {
+    
+                if(viewTemplateResponse.data && viewTemplateResponse.data['fields'].length > 0){
+                    setOtherTemplateDataFields(viewTemplateResponse.data['fields'])
+                }
+    
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        }
+
         setAddActionFormData({
             ...addActionFormData,
-            ['table']: value,
+            [name]: value,
         });
+
     };
 
     const handleSwitch = (e) => {
@@ -477,7 +535,7 @@ const CaseActions = () => {
         console.log(addActionFormData,"addActionFormData")
 
         if(!addActionFormData || !addActionFormData['name'] || addActionFormData['name'] === ''){
-            toast.error('Please Try Again !',{
+            toast.error('Please Check Action Name !',{
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -491,7 +549,7 @@ const CaseActions = () => {
         }
 
         if(!addActionFormData || !addActionFormData['module'] || addActionFormData['module'] === ''){
-            toast.error('Please Try Again !',{
+            toast.error('Please Check Module !',{
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -505,7 +563,7 @@ const CaseActions = () => {
         }
 
         if(!addActionFormData || !addActionFormData['table'] || addActionFormData['table'] === ''){
-            toast.error('Please Try Again !',{
+            toast.error('Please Select Template !',{
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -516,6 +574,22 @@ const CaseActions = () => {
                 className: "toast-error",
             });
             return;
+        }
+
+        if(tabValue === 'field'){
+            if(!addActionFormData || !addActionFormData['field'] || addActionFormData['field'] === ''){
+                toast.error('Please Select Template Fields !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
         }
 
         setLoading(true);
@@ -545,6 +619,7 @@ const CaseActions = () => {
                 setOtherTemplateData([]);
                 setAddActionFormData({});
                 setActionAddModal(false);
+                setOtherTemplateDataFields([]);
 
             } else {
                 
@@ -666,6 +741,15 @@ const CaseActions = () => {
                     <DialogContentText id="alert-dialog-description">
                         <FormControl sx={{paddingTop: '20px', gap:'32px'}} fullWidth>
 
+                            <Tabs
+                                value={tabValue}
+                                onChange={(e, newValue) => setTabValue(newValue)}
+                                centered
+                            >
+                                <Tab label="Template-Based Action" value="template" />
+                                <Tab label="Field-Based Action" value="field" />
+                            </Tabs>
+
                             <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
                                 <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
                                     Enter Action Name                               
@@ -733,7 +817,7 @@ const CaseActions = () => {
                                     required
                                     getOptionLabel={(option) => option.table_name || ''}
                                     value={otherTemplateData.find((option) => option.table_name === (addActionFormData && addActionFormData['table'])) || null}
-                                    onChange={(event, newValue) => handleOtherTemplateChange(newValue.table_name)}
+                                    onChange={(event, newValue) => handleOtherTemplateChange('table', newValue.table_name)}
                                     renderInput={(params) =>
                                         <TextField
                                             {...params}
@@ -744,12 +828,41 @@ const CaseActions = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Switch name={'is_pdf'} checked={addActionFormData['is_pdf']} onChange={handleSwitch} />
-                                <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
-                                    Do you want to enable PDF Upload
-                                </Typography>
+                            { tabValue === 'template' ? 
+
+                                <>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Switch name={'is_pdf'} checked={addActionFormData['is_pdf']} onChange={handleSwitch} />
+                                        <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
+                                            Do you want to enable PDF Upload
+                                        </Typography>
+                                    </Box>
+                                </>
+
+                            :
+
+                            <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
+                                    Choose which fields do want to update
+                                </h4>
+                                <Autocomplete
+                                    id=""
+                                    options={otherTemplateDataFields}
+                                    required
+                                    getOptionLabel={(option) => option.label || ''}
+                                    value={otherTemplateDataFields.find((option) => option.name === (addActionFormData && addActionFormData['field'])) || null}
+                                    onChange={(event, newValue) => handleOtherTemplateChange('field', newValue.name)}
+                                    renderInput={(params) =>
+                                        <TextField
+                                            {...params}
+                                            className='selectHideHistory'
+                                            label='Select Fields'
+                                        />
+                                    }
+                                />
                             </Box>
+                            
+                            }
 
                         </FormControl>
                     </DialogContentText>
