@@ -3079,3 +3079,59 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
         return userSendResponse(res, 500, false, "Internal Server error.", error);
     }
 };
+
+exports.caseSysStatusUpdation = async (req, res) => {
+    const { table_name, id , sys_status } = req.body;
+
+    try {
+        // Fetch the table template
+        const tableData = await Template.findOne({ where: { table_name } });
+
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+
+        // Parse schema and request data
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+        // Define Sequelize model dynamically
+        const modelAttributes = {};
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: 'created_at',
+            updatedAt: 'updated_at',
+        });
+
+
+        const updatedRecord = await Model.update(
+            {
+                sys_status: sys_status,  
+            },
+            {
+                where: { id: id }
+            }
+        );
+
+        if (updatedRecord[0] > 0) {
+            return userSendResponse(res, 200, false, "Case record updated successfully!");
+        }
+        else{
+            return userSendResponse(res, 500, false, "No records updated. Check if the ID exists.");
+        }
+
+    } catch (error) {
+        console.error("Error checking duplicate values in fields:", error);
+        return userSendResponse(res, 500, false, "Internal Server error.", error);
+    }
+};

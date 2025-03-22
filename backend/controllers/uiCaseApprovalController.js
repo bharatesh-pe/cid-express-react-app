@@ -1,4 +1,4 @@
-const { UiCaseApproval, ApprovalItem } = require("../models");
+const { UiCaseApproval, ApprovalItem  , Designation} = require("../models");
 const fs = require("fs");
 const path = require("path");
 const dbConfig = require("../config/dbConfig");
@@ -93,7 +93,11 @@ exports.get_ui_case_approvals = async (req, res) => {
       attributes: ["approval_id", "approval_item", "approved_by", "approval_date", "remarks"],
     });
 
-    return res.status(200).json({ success: true, data: approvals });
+    const approval_item = await ApprovalItem.findAll();
+    
+    const designation = await Designation.findAll();
+
+    return res.status(200).json({ success: true, data: {"approvals":approvals , 'approval_item' : approval_item , 'designation' :designation}});
   } catch (error) {
     console.error("Error fetching UiCaseApprovals:", error);
     return res.status(500).json({ message: "Failed to fetch UiCaseApprovals", error: error.message });

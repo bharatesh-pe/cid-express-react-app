@@ -265,6 +265,12 @@ router.post('/templateDataFieldDuplicateCheck',
     templateDataController.templateDataFieldDuplicateCheck)
 
 
+router.post('/caseSysStatusUpdation',
+
+
+    templateDataController.caseSysStatusUpdation)
+
+
 
 
 module.exports = router;
