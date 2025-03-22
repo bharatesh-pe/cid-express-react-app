@@ -352,6 +352,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },
+    action_template: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
     created_by: {
       type: DataTypes.INTEGER,
       allowNull: true
