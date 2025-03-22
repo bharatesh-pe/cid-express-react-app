@@ -3122,6 +3122,9 @@ exports.checkPdfEntry = async (req, res) => {
     }
 };
 
+// Cache for dynamically generated models
+const modelCache = {};
+
 exports.caseSysStatusUpdation = async (req, res) => {
     try {
         const { table_name, data } = req.body;
@@ -3157,8 +3160,8 @@ exports.caseSysStatusUpdation = async (req, res) => {
             ...schema
         ];
 
-        // Check if model already exists in Sequelize
-        let Model = sequelize.models[table_name];
+        // Check if model already exists in cache
+        let Model = modelCache[table_name];
 
         if (!Model) {
             const modelAttributes = {};
@@ -3176,18 +3179,25 @@ exports.caseSysStatusUpdation = async (req, res) => {
                 if (autoIncrement) modelAttributes[name].autoIncrement = true;
             }
 
-            // Define the model only if it does not exist
-            Model = sequelize.define(table_name, {
-                ...modelAttributes,
-                created_at: { type: Sequelize.DATE, allowNull: false },
-                updated_at: { type: Sequelize.DATE, allowNull: false },
-            }, {
-                freezeTableName: true,
-                timestamps: true,  // Automatically updates `updated_at`
-                underscored: true,
-            });
+            // Define the model once and store it in the cache
+            Model = sequelize.define(
+                table_name,
+                {
+                    ...modelAttributes,
+                },
+                {
+                    freezeTableName: true,
+                    timestamps: true,
+                    createdAt: "created_at",
+                    updatedAt: "updated_at",
+                    underscored: true,
+                }
+            );
 
-            await Model.sync({ alter: true }); // Apply changes only if needed
+            await Model.sync({ alter: true });
+
+            // Cache the model
+            modelCache[table_name] = Model;
         }
 
         // Find existing record
@@ -3212,6 +3222,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         return userSendResponse(res, 500, false, "Internal Server Error.", error);
     }
 };
+
 
 const dirPath = path.join(__dirname, "../data/file/");
 
