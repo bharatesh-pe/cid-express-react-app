@@ -32,6 +32,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
+    action_template: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
     ui_case: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
