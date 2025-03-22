@@ -221,9 +221,7 @@ exports.delete_action = async (req, res) => {
 exports.get_other_templates = async (req , res) => {
     try {
          // Get paginated actions for the specified module
-        const other_templates = await Template.findAll({
-            where: { template_module: { [Op.iLike]: 'others' } }
-        });
+        const other_templates = await Template.findAll();
 
         return res.status(200).json({
             success: true,

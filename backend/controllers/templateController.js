@@ -152,6 +152,12 @@ exports.createTemplate = async (req, res, next) => {
 			};
 		}
 
+        fieldDefinitions.sys_status = {
+            type: Sequelize.DataTypes.TEXT,
+            allowNull: true,
+			defaultValue: template_module ? template_module : null,
+        };
+
 		// Define the model
 		const model = sequelize.define(table_name, fieldDefinitions, {
 			freezeTableName: true,
@@ -368,6 +374,12 @@ exports.updateTemplate = async (req, res, next) => {
 			};
 		}
 
+        fieldDefinitions.sys_status = {
+            type: Sequelize.DataTypes.TEXT,
+            allowNull: true,
+			defaultValue: template_module ? template_module : null,
+        };
+
 		// Define the model
 		const model = sequelize.define(table_name, fieldDefinitions, {
 			freezeTableName: true,
@@ -392,19 +404,19 @@ exports.updateTemplate = async (req, res, next) => {
 		}
 
 		// Handle associations for dependent fields
-		associations.forEach(({ fieldName, tableName, foreignKey, attributes }) => {
-			const referenceModel = sequelize.models[tableName];
-			if (!referenceModel) {
-				const message = `Referenced model ${tableName} does not exist.`;
-				return adminSendResponse(res, 400, false, message, null);
-			}
+		// associations.forEach(({ fieldName, tableName, foreignKey, attributes }) => {
+		// 	const referenceModel = sequelize.models[tableName];
+		// 	if (!referenceModel) {
+		// 		const message = `Referenced model ${tableName} does not exist.`;
+		// 		return adminSendResponse(res, 400, false, message, null);
+		// 	}
 
-			// Add associations dynamically using Sequelize
-			model.belongsTo(referenceModel, {
-				foreignKey: foreignKey,   // Foreign key in the current table
-				targetKey: attributes,    // Field in the referenced model
-			});
-		});
+		// 	// Add associations dynamically using Sequelize
+		// 	model.belongsTo(referenceModel, {
+		// 		foreignKey: foreignKey,   // Foreign key in the current table
+		// 		targetKey: attributes,    // Field in the referenced model
+		// 	});
+		// });
 
 		// Update the table's metadata in Template model
 		const updatedFields = fields.map(field => {
@@ -554,6 +566,7 @@ exports.viewTemplate = async (req, res, next) => {
 			link_module: template.link_module,
 			no_of_sections: template.no_of_sections,
 			sys_status: template.sys_status,
+			template_module: template.template_module,
 			is_link_to_leader: template.is_link_to_leader,
 			is_link_to_organization: template.is_link_to_organization,
 			fields: JSON.parse(template.fields),
