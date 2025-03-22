@@ -84,27 +84,7 @@ const UnderInvestigation = () => {
     const searchParams = new URLSearchParams(location.search);
 
     const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
-        { field: 'sl_no', headerName: 'S.No' },
-        {
-            field: '',
-            headerName: 'Action',
-            flex: 1,
-            renderCell: (params) => {
-                return (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, table_name); }}>
-                            View
-                        </Button>
-                        <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, table_name); }}>
-                            Edit
-                        </Button>
-                        <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, table_name); }}>
-                            Delete
-                        </Button>
-                    </Box>
-                );
-            }
-        }
+        { field: 'sl_no', headerName: 'S.No' }
     ]);
 
     const [otherTemplateModalOpen, setOtherTemplateModalOpen] = useState(false);
@@ -326,28 +306,7 @@ const UnderInvestigation = () => {
                                             return tableCellRender(key, params, params.value)
                                         },
                                     };
-                                }),
-                            {
-                                field: '',
-                                headerName: 'Action',
-                                resizable: false,
-                                width: 300,
-                                renderCell: (params) => {
-                                    return (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}>
-                                                View
-                                            </Button>
-                                            <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}>
-                                                Edit
-                                            </Button>
-                                            <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}>
-                                                Delete
-                                            </Button>
-                                        </Box>
-                                    );
-                                }
-                            }
+                                })
                         ];
 
                         if (Array.isArray(getTemplateResponse.data['columns'])) {
@@ -1766,7 +1725,12 @@ const UnderInvestigation = () => {
 
     },[])
 
-    const handleOtherTemplateActions = async (options)=>{
+    const handleOtherTemplateActions = async (options, selectedRow)=>{
+
+        if(options.table && options.field){
+            showTransferToOtherDivision(options, selectedRow)
+            return;
+        }
 
         var getTemplatePayload = {
             "table_name": options.table,
@@ -1970,10 +1934,12 @@ const UnderInvestigation = () => {
         })
     }
 
-    const showTransferToOtherDivision = async (rowData)=>{
+    const showTransferToOtherDivision = async (options, selectedRow)=>{
+
+        console.log(options,"options options options")
 
         const viewTableData = {
-            "table_name": table_name
+            "table_name": options.table
         }
 
         setLoading(true);
@@ -1989,7 +1955,7 @@ const UnderInvestigation = () => {
                     setFormTemplateData(viewTemplateResponse['data'].fields)
 
                     var getDivisionField = viewTemplateResponse['data'].fields.filter((data)=>{
-                        if(data.table && data.table === 'division'){
+                        if(data.name === options.field){
                             return data
                         }
                     });
@@ -1999,8 +1965,12 @@ const UnderInvestigation = () => {
                         if(getDivisionField[0].api){
                             setLoading(true);
 
+                            var payloadApi = {
+                                "table_name" : getDivisionField[0].table
+                            }
+
                             try {
-                                var getOptionsValue = await api.post(getDivisionField[0].api);
+                                var getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
 
                                 setLoading(false);
         
@@ -2008,15 +1978,34 @@ const UnderInvestigation = () => {
     
                                 if (getOptionsValue && getOptionsValue.data) {
 
-                                    updatedOptions = getOptionsValue.data.map((field, i) => {
-                                        return {
-                                            name: field['division_name'],
-                                            code: field['division_id']
-                                        }
-                                    })
+                                    if(getDivisionField[0].api === '/templateData/getTemplateData'){
+                                        
+                                        updatedOptions = getOptionsValue.data.map((templateData) => {
 
-                                    setSelectKey({name : getDivisionField[0].name, title : 'Division'});
-                                    setSelectedRow(rowData);
+                                            var nameKey = Object.keys(templateData).find(
+                                                key => !['id', 'created_at', 'updated_at'].includes(key)
+                                            );
+                                        
+                                            return {
+                                                name: nameKey ? templateData[nameKey] : '',
+                                                code: templateData.id
+                                            }
+                                        });
+
+                                    }else{
+
+                                        updatedOptions = getOptionsValue.data.map((field, i) => {
+                                            return {
+                                                name: field[getDivisionField[0].table === 'users' ? 'name' : getDivisionField[0].table + '_name'],
+                                                code: field[getDivisionField[0].table === 'users' ? 'user_id' : getDivisionField[0].table + '_id']
+                                            }
+                                        });
+ 
+                                    }
+
+
+                                    setSelectKey({name : options.field , title : options.name});
+                                    setSelectedRow(selectedRow);
                                     setOtherTransferField(updatedOptions);
                                     setShowOtherTransferModal(true);
                                 }
@@ -2038,6 +2027,11 @@ const UnderInvestigation = () => {
                                     return;
                                 }
                             }
+                        }else{
+                            setSelectKey({name : options.field , title : options.name});
+                            setSelectedRow(selectedRow);
+                            setOtherTransferField(getDivisionField[0].options);
+                            setShowOtherTransferModal(true);
                         }
 
                     }else{
@@ -2053,10 +2047,7 @@ const UnderInvestigation = () => {
                             className: "toast-error",
                         });
                     }
-
-
                 }
-                
 
             } else {
                 const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get Template. Please try again.";
@@ -2226,7 +2217,7 @@ const UnderInvestigation = () => {
         }
 
         var combinedData = {
-            ...selectedRow,
+            id : selectedRow.id,
             [selectKey.name] : selectedOtherFields.code
         }
 
@@ -2243,23 +2234,19 @@ const UnderInvestigation = () => {
     }
 
     var hoverExtraOptions = [
+        {
+            "name": "View",
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
+        },
+        {
+            "name": "Edit",
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
+        },
+        {
+            "name": "Delete",
+            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
+        },
         ...hoverTableOptions,
-        {
-            "name": "Transfer to Other Division",
-            "onclick": showTransferToOtherDivision
-        },
-        {
-            "name": "Change of IO (Reassign to IO)",
-            "onclick": showChangeToUsers
-        },
-        {
-            "name": "Prosecution Sanction",
-            "onclick": showProsecutionSanction
-        },
-        {
-            "name": "17A PC ACT",
-            "onclick": show17A_PC_ACT
-        }
     ];
 
     return (
