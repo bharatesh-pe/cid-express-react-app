@@ -152,6 +152,12 @@ exports.createTemplate = async (req, res, next) => {
 			};
 		}
 
+        fieldDefinitions.sys_status = {
+            type: Sequelize.DataTypes.TEXT,
+            allowNull: true,
+			defaultValue: template_module ? template_module : null,
+        };
+
 		// Define the model
 		const model = sequelize.define(table_name, fieldDefinitions, {
 			freezeTableName: true,
@@ -368,6 +374,12 @@ exports.updateTemplate = async (req, res, next) => {
 			};
 		}
 
+        fieldDefinitions.sys_status = {
+            type: Sequelize.DataTypes.TEXT,
+            allowNull: true,
+			defaultValue: template_module ? template_module : null,
+        };
+
 		// Define the model
 		const model = sequelize.define(table_name, fieldDefinitions, {
 			freezeTableName: true,
@@ -554,6 +566,7 @@ exports.viewTemplate = async (req, res, next) => {
 			link_module: template.link_module,
 			no_of_sections: template.no_of_sections,
 			sys_status: template.sys_status,
+			template_module: template.template_module,
 			is_link_to_leader: template.is_link_to_leader,
 			is_link_to_organization: template.is_link_to_organization,
 			fields: JSON.parse(template.fields),

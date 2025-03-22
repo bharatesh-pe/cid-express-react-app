@@ -41,6 +41,10 @@ module.exports = {
           type: Sequelize.STRING(255), // Adjust length as needed
           allowNull: true,
         },
+        ui_case_id: {
+          type: Sequelize.INTEGER,
+          allowNull: false,
+        },
       }
     );
   },

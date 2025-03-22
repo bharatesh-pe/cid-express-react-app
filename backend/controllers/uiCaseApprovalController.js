@@ -9,6 +9,7 @@ exports.create_ui_case_approval = async (req, res) => {
     approved_by,
     approval_date,
     remarks,
+    ui_case_id,
     transaction_id,
   } = req.body;
 
@@ -53,6 +54,7 @@ exports.create_ui_case_approval = async (req, res) => {
         approved_by,
         approval_date: approval_date || new Date(), // Use current date if not provided
         remarks,
+        ui_case_id,
       },
       { transaction: t }
     );
@@ -75,6 +77,11 @@ exports.create_ui_case_approval = async (req, res) => {
 // Function to view all approvals
 exports.view_ui_case_approvals = async (req, res) => {
   try {
+     const {
+      ui_case_id,
+    } = req.body;
+
+
     const approvals = await UiCaseApproval.findAll({
       include: [
         {
@@ -88,7 +95,8 @@ exports.view_ui_case_approvals = async (req, res) => {
           attributes: ["designation_id", "designation_name"], // Include relevant fields from Designation
         },
       ],
-      attributes: ["approval_id", "approval_item", "approved_by", "approval_date", "remarks"], // Specify fields to return
+      where: { ui_case_id: ui_case_id },
+      attributes: ["approval_id", "approval_item", "approved_by", "approval_date", "remarks"],
     });
 
     return res.status(200).json({ success: true, data: approvals });
