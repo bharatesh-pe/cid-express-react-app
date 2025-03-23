@@ -81,9 +81,14 @@ const Login = () => {
                 throw new Error(data.message);
             }
 
-            console.log('data',data);
-            console.log('data.user_position',data.user_position);
+            // console.log('data',data);
+            // console.log('data.user_position',data.user_position);
+            // console.log('data.user_role_permissions',data.user_role_permissions);
 
+            if(data && data.user_role_permissions)
+            {
+                localStorage.setItem('user_permissions', data.user_role_permissions);
+            }
 
             if(data && data.user_position){
                 const user_position = data.user_position;
@@ -295,7 +300,7 @@ const Login = () => {
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <Box>
                                 <Typography variant="h3" style={{ fontWeight: '400', fontSize: '18px', color: '#1D2939' }}></Typography>
-                                <Typography variant="h5" style={{ fontWeight: '600', fontSize: '24px', color: '#1D2939' }}>Choose Designation</Typography>
+                                <Typography variant="h5" style={{ fontWeight: '600', fontSize: '24px', color: '#1D2939' }}>Choose your position</Typography>
                             </Box>
                             <Box
                                 p={1}
