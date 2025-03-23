@@ -81,9 +81,14 @@ const Login = () => {
                 throw new Error(data.message);
             }
 
-            console.log('data',data);
-            console.log('data.user_position',data.user_position);
+            // console.log('data',data);
+            // console.log('data.user_position',data.user_position);
+            // console.log('data.user_role_permissions',data.user_role_permissions);
 
+            if(data && data.user_role_permissions)
+            {
+                localStorage.setItem('user_permissions', data.user_role_permissions);
+            }
 
             if(data && data.user_position){
                 const user_position = data.user_position;
