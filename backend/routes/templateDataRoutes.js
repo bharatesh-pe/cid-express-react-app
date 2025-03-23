@@ -270,7 +270,10 @@ router.post('/checkPdfEntry',
 router.post('/uploadFile',
     // userAuthMiddleware,
     templateDataController.uploadFile)
-
+    router.post('/getUploadedFiles',
+        // userAuthMiddleware,
+        templateDataController.getUploadedFiles)
+    
 router.post('/caseSysStatusUpdation',
 
 

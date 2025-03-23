@@ -3,11 +3,12 @@ const db = require('../models');
 const sequelize = db.sequelize;
 const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
-const multer = require("multer");
 
 const { Op } = require("sequelize");
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const uuid = require('uuid');
 const ExcelJS = require('exceljs');
 const UPLOADS_FOLDER = path.join(__dirname, '../uploads');
 const typeMapping = {
@@ -3235,31 +3236,48 @@ exports.caseSysStatusUpdation = async (req, res) => {
 };
 
 
-const dirPath = path.join(__dirname, "../data/file/");
+// Define the file upload directory (public directory)
+const dirPath = path.join(__dirname, "../public/files/");
 
 // Ensure the directory exists
 if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
 }
 
-// Set up Multer storage
+// Multer storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, dirPath);
+        cb(null, dirPath);  // Set the destination folder for uploaded files
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+        // Create a unique file name by appending a UUID and original file extension
+        const fileExtension = path.extname(file.originalname);
+        const uniqueName = uuid.v4() + fileExtension;
+        cb(null, uniqueName);
     }
 });
 
-const upload = multer({ storage: storage });
+// Initialize multer with the storage configuration
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+    fileFilter: (req, file, cb) => {
+        // Allow only PDF files
+        if (file.mimetype !== 'application/pdf') {
+            return cb(new Error('Invalid file type. Only PDFs are allowed.'));
+        }
+        cb(null, true);
+    }
+}).single("file");  // Use single file upload
 
 exports.uploadFile = async (req, res) => {
-    upload.single("file")(req, res, async (err) => {
+    upload(req, res, async (err) => {
         if (err) {
-            console.error("File upload error:", err);
-            return res.status(500).json({ success: false, message: "File upload failed." });
+            console.error("File upload error:", err.message);
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ success: false, message: "File size exceeds the 10MB limit." });
+            }
+            return res.status(400).json({ success: false, message: err.message || "File upload failed." });
         }
 
         try {
@@ -3274,22 +3292,50 @@ exports.uploadFile = async (req, res) => {
             }
 
             const file_name = req.file.filename;
-            const file_path = path.join("data/file/", file_name);
+            const file_path = path.join("files", file_name);
 
-            // Save entry in the database
             await UiProgressReportFileStatus.create({
                 ui_case_id,
-                is_pdf: true, // This is a PDF case
+                is_pdf: true,
                 file_name,
                 file_path,
                 created_by,
                 created_at: new Date()
             });
 
-            return res.status(200).json({ success: true, message: "File uploaded successfully.", file_path });
+            return res.status(200).json({
+                success: true,
+                message: "File uploaded successfully.",
+                file_path
+            });
         } catch (error) {
             console.error("Error uploading file:", error);
             return res.status(500).json({ success: false, message: "Internal server error." });
         }
     });
+};
+
+
+exports.getUploadedFiles = async (req, res) => {
+    try {
+        const { ui_case_id } = req.body;
+
+        if (!ui_case_id) {
+            return res.status(400).json({ success: false, message: "Missing required ui_case_id." });
+        }
+
+        const data = await UiProgressReportFileStatus.findAll({
+            where: { ui_case_id },
+            attributes: ["id", "file_name", "file_path", "created_by", "created_at"]
+        });
+
+        if (!data.length) {
+            return res.status(404).json({ success: false, message: "No files found." });
+        }
+
+        return res.status(200).json({ success: true, data });
+    } catch (error) {
+        console.error("Error fetching files:", error);
+        return res.status(500).json({ success: false, message: "Internal server error." });
+    }
 };

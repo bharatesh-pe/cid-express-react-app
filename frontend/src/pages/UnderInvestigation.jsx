@@ -990,7 +990,12 @@ const UnderInvestigation = () => {
         setLoading(true);
 
         try {
-            const saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            let saveTemplateData;
+            if (isUpdatePdf) {
+                saveTemplateData = await api.post("/templateData/updatePdf", formData); // Assuming you have an endpoint like /updatePdf
+            } else {
+                saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            }            
             setLoading(false);
 
             localStorage.removeItem(selectedOtherTemplate.name + '-formData');
@@ -1804,8 +1809,8 @@ const UnderInvestigation = () => {
             } catch (error) {
     
                 setLoading(false);
-                if (error && error.response && error.response['data']) {
-                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                if (error && error.response && error.response.data) {
+                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
                         position: "top-right",
                         autoClose: 3000,
                         hideProgressBar: false,
@@ -1828,8 +1833,10 @@ const UnderInvestigation = () => {
 
 
     
-    const handleFileUpload = async (event, selectedRow) => {
-        console.log("File upload initiated."); // Debugging
+    const [selectedRowData, setSelectedRowData] = useState(null);
+
+    const handleFileUpload = async (event) => {
+        console.log("File upload initiated.");
     
         const file = event.target.files[0];
     
@@ -1838,25 +1845,26 @@ const UnderInvestigation = () => {
             return;
         }
     
-        if (!selectedRow || !selectedRow.id) {
-            console.log("Invalid selectedRow inside handleFileUpload:", selectedRow); // Debugging
+        if (!selectedRowData || !selectedRowData.id) {
+            console.log("Invalid selectedRow inside handleFileUpload:", selectedRowData);
             Swal.fire("Error", "Invalid case ID.", "error");
             return;
         }
     
-        const caseId = selectedRow.id; // Use selectedRow.id instead of tableData[0].id
+        const caseId = selectedRowData.id;
     
         const formData = new FormData();
         formData.append("file", file);
         formData.append("ui_case_id", caseId);
-        formData.append("created_by", "0"); // Replace with actual user ID
+        formData.append("created_by", "0");
     
         try {
             const response = await api.post("/templateData/uploadFile", formData);
     
             if (response.success) {
                 Swal.fire("Success", "File uploaded successfully.", "success");
-                checkPdfEntryStatus(caseId); // Use selectedRow.id for checking PDF entry
+                checkPdfEntryStatus(caseId);
+                getUploadedFiles(selectedRowData);
             } else {
                 Swal.fire("Error", response.message || "Upload failed.", "error");
             }
@@ -1865,7 +1873,31 @@ const UnderInvestigation = () => {
             Swal.fire("Error", "Failed to upload file.", "error");
         }
     };
+    
+    const [uploadedFiles, setUploadedFiles] = useState([]);
 
+    const getUploadedFiles = async (selectedRow) => {
+        console.log("for getting uploaded files", selectedRow)
+        if (!selectedRow || !selectedRow.id) {
+            console.error("Invalid selectedRow for file retrieval:", selectedRow);
+            return;
+        }
+    
+        try {
+            const response = await api.post("/templateData/getUploadedFiles", { ui_case_id: selectedRow.id });
+    
+            if (response && response.success) {
+                console.log("Uploaded files:", response.data);
+                setUploadedFiles(response.data);
+                console.error("Failed to fetch uploaded files:", response.message);
+            }
+        } catch (error) {
+            console.error("Error fetching uploaded files:", error);
+        }
+    };
+    
+    
+   
     const [hasPdfEntry, setHasPdfEntry] = useState(false);
 
 
@@ -1897,6 +1929,7 @@ const UnderInvestigation = () => {
         console.log("selectedRow",selectedRow)
 
         console.log("options",options)
+        setSelectedRowData(selectedRow);
 
         if(options.table && options.field){
             showTransferToOtherDivision(options, selectedRow)
@@ -2026,6 +2059,7 @@ const UnderInvestigation = () => {
                     setOtherTemplateData(updatedTableData);
                     if (options.table === "cid_ui_case_progress_report" && options.is_pdf) {
                         await checkPdfEntryStatus(selectedRow.id);
+                        await getUploadedFiles(selectedRow);
                     }
 
                     setOtherTemplateModalOpen(true);
@@ -2476,6 +2510,8 @@ const UnderInvestigation = () => {
 
     }
 
+    const [isUpdatePdf, setIsUpdatePdf] = useState(false);
+
     var hoverExtraOptions = [
         {
             "name": "View",
@@ -2796,10 +2832,21 @@ const UnderInvestigation = () => {
             <Box>
                 {selectedOtherTemplate.table === "cid_ui_case_progress_report"
                     ? hasPdfEntry && (
-                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
+                        <>
+                        <Button variant="outlined"     onClick={() => {
+        setIsUpdatePdf(false);
+        showOptionTemplate(selectedOtherTemplate.table);
+    }}
+>
                             Add
                         </Button>
-                        
+                        <Button variant="outlined" onClick={() => {
+        setIsUpdatePdf(true);
+        showOptionTemplate(selectedOtherTemplate.table);
+    }} style={{ marginLeft: '10px' }}>
+                        Update PDF
+                    </Button>
+                       </> 
                     )
                     : (
                         <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
@@ -2821,7 +2868,23 @@ const UnderInvestigation = () => {
                 <Box py={2}>
                     {selectedOtherTemplate.table === "cid_ui_case_progress_report" ? (
                         hasPdfEntry ? (
-                            <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                            uploadedFiles.length > 0 ? (
+                                <>
+                                    <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" marginTop={"10px"}>
+                                        <Typography variant="h6">Preview Uploaded PDF</Typography>
+                                        <iframe 
+                                            src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
+                                            width="100%" 
+                                            height="500px"
+                                            style={{ border: "none" }}
+                                        />
+                                    </Box>
+                                </>
+                            ) : (
+                                <Typography>No PDF found.</Typography>
+                            )
+                        
                         ) : (
                             <Box
                                 display="flex"
@@ -2833,7 +2896,7 @@ const UnderInvestigation = () => {
                                 <Typography>Please Upload your Progress Report Pdf</Typography>
                                 <Button variant="contained" component="label">
                                     Upload File
-                                    <input type="file" hidden accept="application/pdf" onChange={(event) => handleFileUpload(event, selectedOtherTemplate)} />
+                                    <input type="file" hidden accept="application/pdf" onChange={(event) => handleFileUpload(event)} />
                                 </Button>
                             </Box>
                         )
