@@ -554,7 +554,7 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
 
 
 exports.getTemplateData = async (req, res, next) => {
-    const { table_name } = req.body;
+    const { table_name , field_case } = req.body;
     // const userId = res.locals.user_id || null;
     // const adminUserId = res.locals.admin_user_id || null;
     // const actorId = userId || adminUserId;
@@ -668,8 +668,14 @@ exports.getTemplateData = async (req, res, next) => {
 
         await Model.sync();
 
+        const whereClause = field_case && field_case != ''  ? { field_case } : {};
+
         // Fetch data with dynamic includes
-        const records = await Model.findAll({ include });
+        const records = await Model.findAll({
+            where: whereClause,
+            include,
+        });
+
 
         // Transform the response to include only primary fields and metadata fields
         const transformedRecords = records.map(record => {

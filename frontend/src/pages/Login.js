@@ -300,7 +300,7 @@ const Login = () => {
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <Box>
                                 <Typography variant="h3" style={{ fontWeight: '400', fontSize: '18px', color: '#1D2939' }}></Typography>
-                                <Typography variant="h5" style={{ fontWeight: '600', fontSize: '24px', color: '#1D2939' }}>Choose Designation</Typography>
+                                <Typography variant="h5" style={{ fontWeight: '600', fontSize: '24px', color: '#1D2939' }}>Choose your position</Typography>
                             </Box>
                             <Box
                                 p={1}
