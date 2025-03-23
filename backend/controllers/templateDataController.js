@@ -3215,19 +3215,16 @@ exports.caseSysStatusUpdation = async (req, res) => {
 
 const dirPath = path.join(__dirname, "../data/file/");
 
-// Ensure the directory exists
 if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
 }
 
-// Set up Multer storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, dirPath);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+        cb(null, path.basename(file.originalname));
     }
 });
 
@@ -3251,13 +3248,12 @@ exports.uploadFile = async (req, res) => {
                 return res.status(400).json({ success: false, message: "No file uploaded." });
             }
 
-            const file_name = req.file.filename;
+            const file_name = req.file.originalname;
             const file_path = path.join("data/file/", file_name);
 
-            // Save entry in the database
             await UiProgressReportFileStatus.create({
                 ui_case_id,
-                is_pdf: true, // This is a PDF case
+                is_pdf: true,
                 file_name,
                 file_path,
                 created_by,
@@ -3270,4 +3266,28 @@ exports.uploadFile = async (req, res) => {
             return res.status(500).json({ success: false, message: "Internal server error." });
         }
     });
+};
+
+exports.getUploadedFiles = async (req, res) => {
+    try {
+        const { ui_case_id } = req.body;
+
+        if (!ui_case_id) {
+            return res.status(400).json({ success: false, message: "Missing required ui_case_id." });
+        }
+
+        const data = await UiProgressReportFileStatus.findAll({
+            where: { ui_case_id },
+            attributes: ["id", "file_name", "file_path", "created_by", "created_at"]
+        });
+
+        if (!data.length) {
+            return res.status(404).json({ success: false, message: "No files found." });
+        }
+
+        return res.status(200).json({ success: true, data });
+    } catch (error) {
+        console.error("Error fetching files:", error);
+        return res.status(500).json({ success: false, message: "Internal server error." });
+    }
 };
