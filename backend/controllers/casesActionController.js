@@ -1,4 +1,4 @@
-const { CasesAction , Template} = require("../models");
+const { CasesAction , Template , ApprovalItem , Permission} = require("../models");
 const { Op } = require("sequelize");
 
 // Get all actions
@@ -222,12 +222,17 @@ exports.delete_action = async (req, res) => {
 //get other tempelates from template table
 exports.get_other_templates = async (req , res) => {
     try {
-         // Get paginated actions for the specified module
+        
+        // Get paginated actions for the specified module
         const other_templates = await Template.findAll();
+        const approval_item = await ApprovalItem.findAll();
+        const permissions = await Permission.findAll();
 
         return res.status(200).json({
             success: true,
-            other_templates
+            other_templates,
+            approval_item,
+            permissions
         });
 
     } catch (error) {
@@ -239,3 +244,5 @@ exports.get_other_templates = async (req , res) => {
         });
     }
 };
+
+
