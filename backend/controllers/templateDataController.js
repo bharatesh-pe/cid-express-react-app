@@ -3121,6 +3121,10 @@ exports.checkPdfEntry = async (req, res) => {
         return userSendResponse(res, 500, false, "Internal Server Error.", error);
     }
 };
+
+// Cache for dynamically generated models
+const modelCache = {};
+
 exports.caseSysStatusUpdation = async (req, res) => {
     try {
         const { table_name, data } = req.body;
@@ -3149,14 +3153,16 @@ exports.caseSysStatusUpdation = async (req, res) => {
         // Parse schema
         const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
+        // Include ID and sys_status in schema
         const completeSchema = [
             { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
-            { name: "sys_status", data_type: "TEXT", not_null: false }, 
+            { name: "sys_status", data_type: "TEXT", not_null: false },
             ...schema
         ];
 
-        // Check if model already exists
-        let Model = sequelize.models[table_name];
+        // Check if model already exists in cache
+        let Model = modelCache[table_name];
+
         if (!Model) {
             const modelAttributes = {};
             for (const field of completeSchema) {
@@ -3173,14 +3179,25 @@ exports.caseSysStatusUpdation = async (req, res) => {
                 if (autoIncrement) modelAttributes[name].autoIncrement = true;
             }
 
-            Model = sequelize.define(table_name, modelAttributes, {
-                freezeTableName: true,
-                timestamps: true,
-                createdAt: "created_at",
-                updatedAt: "updated_at",
-            });
+            // Define the model once and store it in the cache
+            Model = sequelize.define(
+                table_name,
+                {
+                    ...modelAttributes,
+                },
+                {
+                    freezeTableName: true,
+                    timestamps: true,
+                    createdAt: "created_at",
+                    updatedAt: "updated_at",
+                    underscored: true,
+                }
+            );
 
-            await Model.sync(); 
+            await Model.sync({ alter: true });
+
+            // Cache the model
+            modelCache[table_name] = Model;
         }
 
         // Find existing record
@@ -3189,20 +3206,15 @@ exports.caseSysStatusUpdation = async (req, res) => {
             return userSendResponse(res, 404, false, `Record with ID ${id} not found in table ${table_name}.`);
         }
 
-
         // Update sys_status
         const [updatedCount] = await Model.update(
             { sys_status },
             { where: { id: recordId } }
         );
 
-
         if (updatedCount === 0) {
             return userSendResponse(res, 400, false, "No changes detected or update failed.");
         }
-
-        // // Fetch updated record
-        // const updatedRecord = await Model.findByPk(recordId);
 
         return userSendResponse(res, 200, true, "Case record updated successfully!");
     } catch (error) {
@@ -3210,7 +3222,6 @@ exports.caseSysStatusUpdation = async (req, res) => {
         return userSendResponse(res, 500, false, "Internal Server Error.", error);
     }
 };
-
 
 
 const dirPath = path.join(__dirname, "../data/file/");
