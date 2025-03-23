@@ -990,7 +990,12 @@ const UnderInvestigation = () => {
         setLoading(true);
 
         try {
-            const saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            let saveTemplateData;
+            if (isUpdatePdf) {
+                saveTemplateData = await api.post("/templateData/updatePdf", formData); // Assuming you have an endpoint like /updatePdf
+            } else {
+                saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            }            
             setLoading(false);
 
             localStorage.removeItem(selectedOtherTemplate.name + '-formData');
@@ -1804,8 +1809,8 @@ const UnderInvestigation = () => {
             } catch (error) {
     
                 setLoading(false);
-                if (error && error.response && error.response['data']) {
-                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                if (error && error.response && error.response.data) {
+                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
                         position: "top-right",
                         autoClose: 3000,
                         hideProgressBar: false,
@@ -1828,10 +1833,10 @@ const UnderInvestigation = () => {
 
 
     
-    const [selectedRowData, setSelectedRowData] = useState(null); // Store selected row
+    const [selectedRowData, setSelectedRowData] = useState(null);
 
     const handleFileUpload = async (event) => {
-        console.log("File upload initiated."); // Debugging
+        console.log("File upload initiated.");
     
         const file = event.target.files[0];
     
@@ -1841,24 +1846,25 @@ const UnderInvestigation = () => {
         }
     
         if (!selectedRowData || !selectedRowData.id) {
-            console.log("Invalid selectedRow inside handleFileUpload:", selectedRowData); // Debugging
+            console.log("Invalid selectedRow inside handleFileUpload:", selectedRowData);
             Swal.fire("Error", "Invalid case ID.", "error");
             return;
         }
     
-        const caseId = selectedRowData.id; // Use stored selectedRowData
+        const caseId = selectedRowData.id;
     
         const formData = new FormData();
         formData.append("file", file);
         formData.append("ui_case_id", caseId);
-        formData.append("created_by", "0"); // Replace with actual user ID
+        formData.append("created_by", "0");
     
         try {
             const response = await api.post("/templateData/uploadFile", formData);
     
             if (response.success) {
                 Swal.fire("Success", "File uploaded successfully.", "success");
-                checkPdfEntryStatus(caseId); // Check PDF status using selectedRowData.id
+                checkPdfEntryStatus(caseId);
+                getUploadedFiles(selectedRowData);
             } else {
                 Swal.fire("Error", response.message || "Upload failed.", "error");
             }
@@ -1882,8 +1888,7 @@ const UnderInvestigation = () => {
     
             if (response && response.success) {
                 console.log("Uploaded files:", response.data);
-                setUploadedFiles(response.data); // Assuming you have a state variable for storing files
-            } else {
+                setUploadedFiles(response.data);
                 console.error("Failed to fetch uploaded files:", response.message);
             }
         } catch (error) {
@@ -1924,7 +1929,7 @@ const UnderInvestigation = () => {
         console.log("selectedRow",selectedRow)
 
         console.log("options",options)
-        setSelectedRowData(selectedRow); // Store selected row for later use
+        setSelectedRowData(selectedRow);
 
         if(options.table && options.field){
             showTransferToOtherDivision(options, selectedRow)
@@ -2505,6 +2510,8 @@ const UnderInvestigation = () => {
 
     }
 
+    const [isUpdatePdf, setIsUpdatePdf] = useState(false);
+
     var hoverExtraOptions = [
         {
             "name": "View",
@@ -2826,10 +2833,17 @@ const UnderInvestigation = () => {
                 {selectedOtherTemplate.table === "cid_ui_case_progress_report"
                     ? hasPdfEntry && (
                         <>
-                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
+                        <Button variant="outlined"     onClick={() => {
+        setIsUpdatePdf(false);
+        showOptionTemplate(selectedOtherTemplate.table);
+    }}
+>
                             Add
                         </Button>
-                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)} style={{ marginLeft: '10px' }}>
+                        <Button variant="outlined" onClick={() => {
+        setIsUpdatePdf(true);
+        showOptionTemplate(selectedOtherTemplate.table);
+    }} style={{ marginLeft: '10px' }}>
                         Update PDF
                     </Button>
                        </> 
@@ -2859,7 +2873,7 @@ const UnderInvestigation = () => {
                                     <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center">
                                         <Typography variant="h6">Preview Uploaded PDF</Typography>
                                         <iframe 
-                                            src={uploadedFiles[0].file_path} 
+                                            src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
                                             width="100%" 
                                             height="500px"
                                             style={{ border: "none" }}
@@ -2870,6 +2884,7 @@ const UnderInvestigation = () => {
                             ) : (
                                 <Typography>No PDF found.</Typography>
                             )
+                        
                         ) : (
                             <Box
                                 display="flex"
