@@ -2870,7 +2870,8 @@ const UnderInvestigation = () => {
                         hasPdfEntry ? (
                             uploadedFiles.length > 0 ? (
                                 <>
-                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+                                    <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" marginTop={"10px"}>
                                         <Typography variant="h6">Preview Uploaded PDF</Typography>
                                         <iframe 
                                             src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
@@ -2879,7 +2880,6 @@ const UnderInvestigation = () => {
                                             style={{ border: "none" }}
                                         />
                                     </Box>
-                                    <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
                                 </>
                             ) : (
                                 <Typography>No PDF found.</Typography>
