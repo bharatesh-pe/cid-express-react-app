@@ -28,6 +28,14 @@ module.exports = (sequelize, DataTypes) => {
           type: DataTypes.BOOLEAN,
           allowNull: true,
         },
+        permissions: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+        },
+        approval_items: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+        },
         created_at: {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW,

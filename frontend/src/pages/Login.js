@@ -87,7 +87,8 @@ const Login = () => {
 
             if(data && data.user_role_permissions)
             {
-                localStorage.setItem('user_permissions', data.user_role_permissions);
+                // localStorage.setItem('user_permissions', data.user_role_permissions);
+                localStorage.setItem('user_permissions', JSON.stringify(data.user_role_permissions));
             }
 
             if(data && data.user_position){
