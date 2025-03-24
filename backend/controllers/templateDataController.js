@@ -319,6 +319,7 @@ exports.updateTemplateData = async (req, res, next) => {
                 return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
             }
         }
+        
 
         // Define Sequelize model dynamically
         const modelAttributes = {};
