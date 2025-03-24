@@ -26,8 +26,10 @@ const typeMapping = {
 
 exports.insertTemplateData = async (req, res, next) => {
     const { table_name, data, folder_attachment_ids } = req.body;
-    const userId = res.locals.user_id || null;
+    // const userId = res.locals.user_id || null;
     const adminUserId = res.locals.admin_user_id || null;
+    const {user_id} = req.user;
+    const userId = user_id;
     const actorId = userId || adminUserId;
 
     console.log("inserting user", userId, actorId);
