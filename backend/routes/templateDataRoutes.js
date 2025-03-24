@@ -12,6 +12,7 @@ const {
 const { userSendResponse } = require('../services/userSendResponse');
 const jwt = require("jsonwebtoken");
 require('dotenv').config();
+const { validate_token } = require("../helper/validations")
 
 const eitherAuthMiddleware = async (req, res, next) => {
     const token = req.header("Authorization")?.replace("Bearer ", "");
@@ -158,7 +159,7 @@ router.post(
             next();
         }
     },
-    [insertDataValidation],
+    [insertDataValidation],[validate_token],
     templateDataController.insertTemplateData
 );
 

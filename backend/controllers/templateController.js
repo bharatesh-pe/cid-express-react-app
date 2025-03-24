@@ -82,7 +82,6 @@ exports.createTemplate = async (req, res, next) => {
 				unique,
 				is_dependent,
 				api,
-
 				table,
 				forign_key,
 				attributes
@@ -228,7 +227,6 @@ exports.createTemplate = async (req, res, next) => {
 			is_link_to_leader,
 			created_by: "adminUser.full_name",
 			updated_by: "adminUser.full_name",
-
 			paranoid,
 		};
 		if (paranoid) {
