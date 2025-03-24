@@ -316,27 +316,27 @@ const Enquiries = () => {
                                         },
                                     };
                                 }),
-                            {
-                                field: '',
-                                headerName: 'Action',
-                                resizable: false,
-                                width: 300,
-                                renderCell: (params) => {
-                                    return (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
-                                                View
-                                            </Button>
-                                            <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
-                                                Edit
-                                            </Button>
-                                            <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
-                                                Delete
-                                            </Button>
-                                        </Box>
-                                    );
-                                }
-                            }
+                            // {
+                            //     field: '',
+                            //     headerName: 'Action',
+                            //     resizable: false,
+                            //     width: 300,
+                            //     renderCell: (params) => {
+                            //         return (
+                            //             <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                            //                 <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
+                            //                     View
+                            //                 </Button>
+                            //                 <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
+                            //                     Edit
+                            //                 </Button>
+                            //                 <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : ''); }}>
+                            //                     Delete
+                            //                 </Button>
+                            //             </Box>
+                            //         );
+                            //     }
+                            // }
                         ];
 
                         if (Array.isArray(getTemplateResponse.data['columns'])) {
@@ -1408,6 +1408,71 @@ const Enquiries = () => {
 
     }
 
+
+        const changeSysStatus = async (data, value)=>{
+    
+            var payloadSysStatus = {
+                "table_name" : table_name,
+                "data"  :   {  
+                                "id": data.id, 
+                                "sys_status": value
+                            }
+            }
+    
+            setLoading(true);
+    
+            try {
+                const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+    
+                setLoading(false);
+    
+                if (chnageSysStatus && chnageSysStatus.success) { 
+                    toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => loadTableData(paginationCount)
+                    });
+                } else {
+                    const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+    
+                }
+    
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+    
+                }
+            }
+    
+        }
+    
+    
     const onUpdateTemplateData = async (data) => {
 
         if (!table_name || table_name === '') {
@@ -1477,7 +1542,7 @@ const Enquiries = () => {
                 }
             }
         });
-
+        normalData["sys_status"] = data["field_status"];
         formData.append("data", JSON.stringify(normalData));
         formData.append("id", data.id);
         setLoading(true);
@@ -1499,6 +1564,8 @@ const Enquiries = () => {
                     className: "toast-success",
                     onOpen: () => loadTableData(paginationCount)
                 });
+                changeSysStatus(data,data["field_status"])
+
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
                 toast.error(errorMessage, {
@@ -1695,65 +1762,65 @@ const Enquiries = () => {
     }
 
 
-    useEffect(()=>{
+    // useEffect(()=>{
 
-        const getActions = async ()=>{
+    //     const getActions = async ()=>{
 
-            var payloadObj = {
-                "module": "eq_case"
-            }
+    //         var payloadObj = {
+    //             "module": "eq_case"
+    //         }
 
-            setLoading(true);
+    //         setLoading(true);
     
-            try {
+    //         try {
     
-                const getActionsDetails = await api.post("/action/get_actions", payloadObj);
+    //             const getActionsDetails = await api.post("/action/get_actions", payloadObj);
 
-                setLoading(false);
+    //             setLoading(false);
     
-                if (getActionsDetails && getActionsDetails.success) {
+    //             if (getActionsDetails && getActionsDetails.success) {
     
-                    if (getActionsDetails.data && getActionsDetails.data['data']) {
-                        setHoverTableOptions(getActionsDetails.data['data']);
-                    }
+    //                 if (getActionsDetails.data && getActionsDetails.data['data']) {
+    //                     setHoverTableOptions(getActionsDetails.data['data']);
+    //                 }
     
-                } else {
+    //             } else {
                     
-                    const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
-                    toast.error(errorMessage, {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
+    //                 const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+    //                 toast.error(errorMessage, {
+    //                     position: "top-right",
+    //                     autoClose: 3000,
+    //                     hideProgressBar: false,
+    //                     closeOnClick: true,
+    //                     pauseOnHover: true,
+    //                     draggable: true,
+    //                     progress: undefined,
+    //                     className: "toast-error",
+    //                 });
                                     
-                }
+    //             }
     
-            } catch (error) {
+    //         } catch (error) {
     
-                setLoading(false);
-                if (error && error.response && error.response['data']) {
-                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                }
-            }
-        }
+    //             setLoading(false);
+    //             if (error && error.response && error.response['data']) {
+    //                 toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+    //                     position: "top-right",
+    //                     autoClose: 3000,
+    //                     hideProgressBar: false,
+    //                     closeOnClick: true,
+    //                     pauseOnHover: true,
+    //                     draggable: true,
+    //                     progress: undefined,
+    //                     className: "toast-error",
+    //                 });
+    //             }
+    //         }
+    //     }
 
-        getActions();
+    //     getActions();
 
-    },[])
+    // },[])
 
     const handleOtherTemplateActions = async (options)=>{
 
@@ -1916,6 +1983,23 @@ const Enquiries = () => {
         }
     }
 
+
+    var hoverExtraOptions = [
+        {
+            "name": "View",
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
+        },
+        {
+            "name": "Edit",
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
+        },
+        {
+            "name": "Delete",
+            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
+        },
+        ...hoverTableOptions,
+    ];
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -1952,10 +2036,10 @@ const Enquiries = () => {
                         <Box onClick={() => { setSysSattus('Completed'); setPaginationCount(1) }} id="filterCompleted" className={`filterTabs ${sysStatus === 'Completed' ? 'Active' : ''}`} >
                             Completed
                         </Box>
-                        <Box onClick={() => { setSysSattus('closed'); setPaginationCount(1) }} id="filterClosed" className={`filterTabs ${sysStatus === 'closed' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('Closed'); setPaginationCount(1) }} id="filterClosed" className={`filterTabs ${sysStatus === 'Closed' ? 'Active' : ''}`} >
                             Closed
                         </Box>
-                        <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('Disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'Disposal' ? 'Active' : ''}`} >
                             Disposal
                         </Box>
                     </Box>
@@ -2001,7 +2085,7 @@ const Enquiries = () => {
                 </Box>
 
                 <Box py={2}>
-                    <TableView hoverTable={true} hoverTableOptions={hoverTableOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
+                    <TableView hoverTable={true} hoverTableOptions={hoverExtraOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
                 </Box>
             </>
             {formOpen &&
