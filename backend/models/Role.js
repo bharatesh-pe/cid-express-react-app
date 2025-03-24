@@ -29,8 +29,12 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false
     },
     template_masters: {
-      type: DataTypes.DATE,
-      defaultValue: DataTypes.NOW
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    action_template: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
     },
     ui_case: {
       type: DataTypes.BOOLEAN,
@@ -349,6 +353,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true
     },
     circular: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    action_template: {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },

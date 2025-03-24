@@ -990,7 +990,12 @@ const UnderInvestigation = () => {
         setLoading(true);
 
         try {
-            const saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            let saveTemplateData;
+            if (isUpdatePdf) {
+                saveTemplateData = await api.post("/templateData/updatePdf", formData); // Assuming you have an endpoint like /updatePdf
+            } else {
+                saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            }            
             setLoading(false);
 
             localStorage.removeItem(selectedOtherTemplate.name + '-formData');
@@ -1804,8 +1809,8 @@ const UnderInvestigation = () => {
             } catch (error) {
     
                 setLoading(false);
-                if (error && error.response && error.response['data']) {
-                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                if (error && error.response && error.response.data) {
+                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
                         position: "top-right",
                         autoClose: 3000,
                         hideProgressBar: false,
@@ -1823,7 +1828,108 @@ const UnderInvestigation = () => {
 
     },[])
 
+
+
+
+
+    
+    const [selectedRowData, setSelectedRowData] = useState(null);
+
+    const handleFileUpload = async (event) => {
+        console.log("File upload initiated.");
+    
+        const file = event.target.files[0];
+    
+        if (!file) {
+            Swal.fire("Error", "Please select a file.", "error");
+            return;
+        }
+    
+        if (!selectedRowData || !selectedRowData.id) {
+            console.log("Invalid selectedRow inside handleFileUpload:", selectedRowData);
+            Swal.fire("Error", "Invalid case ID.", "error");
+            return;
+        }
+    
+        const caseId = selectedRowData.id;
+    
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("ui_case_id", caseId);
+        formData.append("created_by", "0");
+    
+        try {
+            const response = await api.post("/templateData/uploadFile", formData);
+    
+            if (response.success) {
+                Swal.fire("Success", "File uploaded successfully.", "success");
+                checkPdfEntryStatus(caseId);
+                getUploadedFiles(selectedRowData);
+            } else {
+                Swal.fire("Error", response.message || "Upload failed.", "error");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            Swal.fire("Error", "Failed to upload file.", "error");
+        }
+    };
+    
+    const [uploadedFiles, setUploadedFiles] = useState([]);
+
+    const getUploadedFiles = async (selectedRow) => {
+        console.log("for getting uploaded files", selectedRow)
+        if (!selectedRow || !selectedRow.id) {
+            console.error("Invalid selectedRow for file retrieval:", selectedRow);
+            return;
+        }
+    
+        try {
+            const response = await api.post("/templateData/getUploadedFiles", { ui_case_id: selectedRow.id });
+    
+            if (response && response.success) {
+                console.log("Uploaded files:", response.data);
+                setUploadedFiles(response.data);
+                console.error("Failed to fetch uploaded files:", response.message);
+            }
+        } catch (error) {
+            console.error("Error fetching uploaded files:", error);
+        }
+    };
+    
+    
+   
+    const [hasPdfEntry, setHasPdfEntry] = useState(false);
+
+
+    const checkPdfEntryStatus = async (caseId) => {
+        if (!caseId) {
+            console.log("Invalid caseId inside checkPdfEntryStatus:", caseId);
+            setHasPdfEntry(false);
+            return;
+        }
+    
+        console.log("Checking PDF entry for caseId:", caseId);
+    
+        try {
+            const response = await api.post("/templateData/checkPdfEntry", { ui_case_id: caseId, is_pdf: true });
+    
+            if (response.success && response.data) {
+                setHasPdfEntry(true);
+            } else {
+                setHasPdfEntry(false);
+            }
+        } catch (error) {
+            console.error("Error checking PDF entry:", error);
+            setHasPdfEntry(false);
+        }
+    };
+    
     const handleOtherTemplateActions = async (options, selectedRow)=>{
+
+        console.log("selectedRow",selectedRow)
+
+        console.log("options",options)
+        setSelectedRowData(selectedRow);
 
         if(options.table && options.field){
             showTransferToOtherDivision(options, selectedRow)
@@ -1907,6 +2013,8 @@ const UnderInvestigation = () => {
                         ];
 
                         setOtherTemplateColumn(updatedHeader)
+                                                        
+                            
                     }else{
                         setOtherTemplateColumn([])
                     }
@@ -1949,6 +2057,11 @@ const UnderInvestigation = () => {
                     });
 
                     setOtherTemplateData(updatedTableData);
+                    if (options.table === "cid_ui_case_progress_report" && options.is_pdf) {
+                        await checkPdfEntryStatus(selectedRow.id);
+                        await getUploadedFiles(selectedRow);
+                    }
+
                     setOtherTemplateModalOpen(true);
                 }
 
@@ -2397,6 +2510,8 @@ const UnderInvestigation = () => {
 
     }
 
+    const [isUpdatePdf, setIsUpdatePdf] = useState(false);
+
     var hoverExtraOptions = [
         {
             "name": "View",
@@ -2699,40 +2814,102 @@ const UnderInvestigation = () => {
 
 
             {/* other templates ui */}
-
-            {otherTemplateModalOpen &&
-                <Dialog
-                    open={otherTemplateModalOpen}
-                    onClose={() => setOtherTemplateModalOpen(false)}
-                    aria-labelledby="alert-dialog-title"
-                    aria-describedby="alert-dialog-description"
-                    maxWidth="md"
-                    fullWidth
-                    sx={{zIndex:'1'}}
+            {otherTemplateModalOpen && (
+    <Dialog
+        open={otherTemplateModalOpen}
+        onClose={() => setOtherTemplateModalOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        maxWidth="md"
+        fullWidth
+        sx={{ zIndex: '1' }}
+    >
+        <DialogTitle
+            id="alert-dialog-title"
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+            {selectedOtherTemplate && selectedOtherTemplate.name}
+            <Box>
+                {selectedOtherTemplate.table === "cid_ui_case_progress_report"
+                    ? hasPdfEntry && (
+                        <>
+                        <Button variant="outlined"     onClick={() => {
+        setIsUpdatePdf(false);
+        showOptionTemplate(selectedOtherTemplate.table);
+    }}
+>
+                            Add
+                        </Button>
+                        <Button variant="outlined" onClick={() => {
+        setIsUpdatePdf(true);
+        showOptionTemplate(selectedOtherTemplate.table);
+    }} style={{ marginLeft: '10px' }}>
+                        Update PDF
+                    </Button>
+                       </> 
+                    )
+                    : (
+                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
+                            Add
+                        </Button>
+                    )
+                }
+                <IconButton
+                    aria-label="close"
+                    onClick={() => setOtherTemplateModalOpen(false)}
+                    sx={{ color: (theme) => theme.palette.grey[500] }}
                 >
-                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                        {selectedOtherTemplate && selectedOtherTemplate.name }
-                        <Box>
-                            <Button variant="outlined" onClick={() => {showOptionTemplate(selectedOtherTemplate.table)}}>Add</Button>
-                            <IconButton
-                                aria-label="close"
-                                onClick={() => setOtherTemplateModalOpen(false)}
-                                sx={{ color: (theme) => theme.palette.grey[500] }}
+                    <CloseIcon />
+                </IconButton>
+            </Box>
+        </DialogTitle>
+        <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+                <Box py={2}>
+                    {selectedOtherTemplate.table === "cid_ui_case_progress_report" ? (
+                        hasPdfEntry ? (
+                            uploadedFiles.length > 0 ? (
+                                <>
+                                    <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" marginTop={"10px"}>
+                                        <Typography variant="h6">Preview Uploaded PDF</Typography>
+                                        <iframe 
+                                            src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
+                                            width="100%" 
+                                            height="500px"
+                                            style={{ border: "none" }}
+                                        />
+                                    </Box>
+                                </>
+                            ) : (
+                                <Typography>No PDF found.</Typography>
+                            )
+                        
+                        ) : (
+                            <Box
+                                display="flex"
+                                flexDirection="column"
+                                alignItems="center"
+                                justifyContent="center"
+                                height="200px"
                             >
-                                <CloseIcon />
-                            </IconButton>
-                        </Box>
-
-                    </DialogTitle>
-                    <DialogContent>
-                        <DialogContentText id="alert-dialog-description">
-                            <Box py={2}>
-                                <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                <Typography>Please Upload your Progress Report Pdf</Typography>
+                                <Button variant="contained" component="label">
+                                    Upload File
+                                    <input type="file" hidden accept="application/pdf" onChange={(event) => handleFileUpload(event)} />
+                                </Button>
                             </Box>
-                        </DialogContentText>
-                    </DialogContent>
-                </Dialog>
-            }
+                        )
+                    ) : (
+                        <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                    )}
+                </Box>
+            </DialogContentText>
+        </DialogContent>
+    </Dialog>
+)}
+
+
 
             {approveTableFlag &&
                 <Dialog

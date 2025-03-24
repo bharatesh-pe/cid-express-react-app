@@ -28,6 +28,16 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Serve static files from the 'public' directory
+app.use('/files', express.static(path.join(__dirname, 'public/files')));
+
+// Example route to serve a PDF file
+app.get('/files/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const filePath = path.join(__dirname, 'public/files', filename);
+    res.sendFile(filePath);
+});
+
 // Serve static files from the React app's build directory
 // app.use(express.static(path.join(__dirname, '../../cid-react/build')));
 
@@ -81,11 +91,11 @@ io.on('connection', (socket) => {
 app.set('socketio', io);
 
 
-// Server listens on port 3000
-const PORT = process.env.PORT || 3000;
+// Server listens on port 3001
+const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
 
 

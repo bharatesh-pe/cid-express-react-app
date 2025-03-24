@@ -166,6 +166,7 @@ console.log("userName",userName)
             localStorage.removeItem("userName");
             localStorage.removeItem("authAdmin");
             localStorage.removeItem("kgid");
+            localStorage.removeItem("user_permissions");
             navigate("/");
         } catch (err) {
             var errMessage = 'Something went wrong. Please try again.'

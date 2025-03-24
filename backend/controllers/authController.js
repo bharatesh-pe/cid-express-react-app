@@ -1,4 +1,4 @@
-const { AuthSecure ,Role , Module , Users , UserDesignation , Designation } = require('../models'); // Correct import
+const { AuthSecure ,Role , Module , Users , UserDesignation , Designation , Division , UsersDivision } = require('../models'); // Correct import
 const crypto = require('crypto');
 const moment = require('moment');
 const { generateUserToken } = require("../helper/validations");
@@ -78,11 +78,35 @@ const verify_OTP = async (req, res) => {
                     include: {
                         model: Designation,
                         as: 'designation',
-                        attributes: ['designation_name', 'description']
+                        attributes: ['designation_name']
                     }
                 });
-                console.log(users_designation,"users_designation")
-                return res.status(200).json({ success: true, message: 'OTP verified successfully.', token ,users_designation,userRole});
+
+                const users_division = await UsersDivision.findAll({
+                    where: { user_id: user.user_id },
+                    include: {
+                        model: Division,
+                        as: 'division',
+                        attributes: ['division_name']
+                    }
+                });
+
+                // Extract division name (assuming a user has only one division)
+                const divisionName = users_division.length > 0 ? users_division[0].division.division_name : null;
+
+                // Map designations with division name
+                const formattedResponse = users_designation.map(designation => ({
+                    designation: designation.designation.designation_name,
+                    division: divisionName
+                }));
+
+                const user_role_permissions = await Role.findAll({
+                where: {
+                    role_id: userRole.role_id
+                }
+                });
+
+                return res.status(200).json({ success: true, message: 'OTP verified successfully.', token ,users_designation , users_division , "user_position":formattedResponse ,userRole ,user_role_permissions});
             } else {
                 // Return error if the otp is invalid or has expired
                 return res.status(401).json({ success: false, message: "Invalid OTP or OTP has expired" });

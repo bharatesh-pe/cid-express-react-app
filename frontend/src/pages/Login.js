@@ -19,7 +19,7 @@ const Login = () => {
     const navigate = useNavigate();
     const [showOtp, setShowOtp] = useState(false);
     const [showDesignation, setShowDesignation] = useState(false);
-    const [designation, setDesignation] = useState([]);
+    const [user_position, setUserPosition] = useState([]);
     const [tempToken, setTempToken] = useState('');
     
     const handleSubmit = async (e) => {
@@ -81,14 +81,19 @@ const Login = () => {
                 throw new Error(data.message);
             }
 
-            console.log('data',data);
-            console.log('data.user_designation',data.user_designation);
+            // console.log('data',data);
+            // console.log('data.user_position',data.user_position);
+            // console.log('data.user_role_permissions',data.user_role_permissions);
 
+            if(data && data.user_role_permissions)
+            {
+                localStorage.setItem('user_permissions', data.user_role_permissions);
+            }
 
-            if(data && data.users_designation){
-                const users_designation = data.users_designation;
-                console.log("users_designation",users_designation)
-                if(users_designation.length === 1){
+            if(data && data.user_position){
+                const user_position = data.user_position;
+                console.log("user_position",user_position)
+                if(user_position.length === 1){
                     if(data && data.token){
                         localStorage.setItem('auth_token', data.token);
                         localStorage.setItem('kgid', kgid);
@@ -96,14 +101,14 @@ const Login = () => {
                         navigate('/dashboard');
                     }
                 }
-                else if(users_designation.length > 1){
+                else if(user_position.length > 1){
                     if(data && data.token){
                         localStorage.setItem('auth_token', data.token);
                         localStorage.setItem('kgid', kgid);
                         localStorage.setItem('username', data.userRole.name);
                         setTempToken(data.token);
                     }
-                    setDesignation(users_designation);
+                    setUserPosition(user_position);
                     setShowDesignation(true);
                 }
 
@@ -295,7 +300,7 @@ const Login = () => {
                         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <Box>
                                 <Typography variant="h3" style={{ fontWeight: '400', fontSize: '18px', color: '#1D2939' }}></Typography>
-                                <Typography variant="h5" style={{ fontWeight: '600', fontSize: '24px', color: '#1D2939' }}>Choose Designation</Typography>
+                                <Typography variant="h5" style={{ fontWeight: '600', fontSize: '24px', color: '#1D2939' }}>Choose your position</Typography>
                             </Box>
                             <Box
                                 p={1}
@@ -328,7 +333,7 @@ const Login = () => {
                         </Box>
                     </DialogTitle>
                     <DialogContent>
-                        {designation.map((item) => (
+                        {user_position.map((item) => (
                             <Box
                                 sx={{
                                     display: "flex",
@@ -343,8 +348,8 @@ const Login = () => {
                                  onClick={() => designationClick(item)}
                             >
                                 <Box>
-                                    <Typography variant="h6" style={{ fontWeight: '600', fontSize: '18px', color: '#1D2939' }}>{item.designation.designation_name}</Typography>
-                                    <Typography variant="h6" style={{ fontWeight: '400', fontSize: '14px', color: '#667085' }}>{item.designation.description}</Typography>
+                                    <Typography variant="h6" style={{ fontWeight: '600', fontSize: '18px', color: '#1D2939' }}>{item.designation}</Typography>
+                                    <Typography variant="h6" style={{ fontWeight: '400', fontSize: '14px', color: '#667085' }}>{item.division}</Typography>
                                 </Box>
                             </Box>
                         ))}

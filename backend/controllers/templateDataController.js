@@ -1,12 +1,14 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
 const sequelize = db.sequelize;
-const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus } = require("../models");
+const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 
 const { Op } = require("sequelize");
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+const uuid = require('uuid');
 const ExcelJS = require('exceljs');
 const UPLOADS_FOLDER = path.join(__dirname, '../uploads');
 const typeMapping = {
@@ -553,7 +555,7 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
 
 
 exports.getTemplateData = async (req, res, next) => {
-    const { table_name } = req.body;
+    const { table_name , field_case } = req.body;
     // const userId = res.locals.user_id || null;
     // const adminUserId = res.locals.admin_user_id || null;
     // const actorId = userId || adminUserId;
@@ -667,8 +669,14 @@ exports.getTemplateData = async (req, res, next) => {
 
         await Model.sync();
 
+        const whereClause = field_case && field_case != ''  ? { field_case } : {};
+
         // Fetch data with dynamic includes
-        const records = await Model.findAll({ include });
+        const records = await Model.findAll({
+            where: whereClause,
+            include,
+        });
+
 
         // Transform the response to include only primary fields and metadata fields
         const transformedRecords = records.map(record => {
@@ -2486,8 +2494,13 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         const validSortBy = fields[sort_by] ? sort_by : 'id';
 
         if (sys_status !== null && sys_status !== undefined) {
-            whereClause['sys_status'] = sys_status;
+            if (sys_status === "ui_case") {
+                whereClause['sys_status'] = { [Op.in]: ['ui_case', 'pt_case', 'ui_to_pt'] };
+            } else {
+                whereClause['sys_status'] = sys_status;
+            }
         }
+
 
         const result = await DynamicTable.findAndCountAll({
             where: whereClause,
@@ -3085,6 +3098,45 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
     }
 };
 
+exports.checkPdfEntry = async (req, res) => {
+    const { is_pdf, ui_case_id } = req.body;
+
+    try {
+        if (!ui_case_id) {
+            return userSendResponse(res, 400, false, "ui_case_id is required.", null);
+        }
+
+        // Check if ui_case_id exists in the table
+        const caseExists = await UiProgressReportFileStatus.findOne({
+            where: { ui_case_id }
+        });
+
+        console.log("caseExists",caseExists)
+        if (!caseExists) {
+            return userSendResponse(res, 404, false, "Case ID not found in database.", null);
+        }
+
+        // Check if the PDF entry exists for this case ID
+        const existingEntry = await UiProgressReportFileStatus.findOne({
+            where: { is_pdf, ui_case_id }
+        });
+
+        console.log("existingEntry",existingEntry)
+
+        if (existingEntry) {
+            return userSendResponse(res, 200, true, "Entry found.", existingEntry);
+        } else {
+            return userSendResponse(res, 200, true, "No entry found.", null);
+        }
+    } catch (error) {
+        console.error("Error checking PDF entry:", error);
+        return userSendResponse(res, 500, false, "Internal Server Error.", error);
+    }
+};
+
+// Cache for dynamically generated models
+const modelCache = {};
+
 exports.caseSysStatusUpdation = async (req, res) => {
     try {
         const { table_name, data } = req.body;
@@ -3113,14 +3165,16 @@ exports.caseSysStatusUpdation = async (req, res) => {
         // Parse schema
         const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
+        // Include ID and sys_status in schema
         const completeSchema = [
             { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
-            { name: "sys_status", data_type: "TEXT", not_null: false }, 
+            { name: "sys_status", data_type: "TEXT", not_null: false },
             ...schema
         ];
 
-        // Check if model already exists
-        let Model = sequelize.models[table_name];
+        // Check if model already exists in cache
+        let Model = modelCache[table_name];
+
         if (!Model) {
             const modelAttributes = {};
             for (const field of completeSchema) {
@@ -3137,14 +3191,25 @@ exports.caseSysStatusUpdation = async (req, res) => {
                 if (autoIncrement) modelAttributes[name].autoIncrement = true;
             }
 
-            Model = sequelize.define(table_name, modelAttributes, {
-                freezeTableName: true,
-                timestamps: true,
-                createdAt: "created_at",
-                updatedAt: "updated_at",
-            });
+            // Define the model once and store it in the cache
+            Model = sequelize.define(
+                table_name,
+                {
+                    ...modelAttributes,
+                },
+                {
+                    freezeTableName: true,
+                    timestamps: true,
+                    createdAt: "created_at",
+                    updatedAt: "updated_at",
+                    underscored: true,
+                }
+            );
 
-            await Model.sync(); 
+            await Model.sync({ alter: true });
+
+            // Cache the model
+            modelCache[table_name] = Model;
         }
 
         // Find existing record
@@ -3153,20 +3218,15 @@ exports.caseSysStatusUpdation = async (req, res) => {
             return userSendResponse(res, 404, false, `Record with ID ${id} not found in table ${table_name}.`);
         }
 
-
         // Update sys_status
         const [updatedCount] = await Model.update(
             { sys_status },
             { where: { id: recordId } }
         );
 
-
         if (updatedCount === 0) {
             return userSendResponse(res, 400, false, "No changes detected or update failed.");
         }
-
-        // // Fetch updated record
-        // const updatedRecord = await Model.findByPk(recordId);
 
         return userSendResponse(res, 200, true, "Case record updated successfully!");
     } catch (error) {
@@ -3175,3 +3235,107 @@ exports.caseSysStatusUpdation = async (req, res) => {
     }
 };
 
+
+// Define the file upload directory (public directory)
+const dirPath = path.join(__dirname, "../public/files/");
+
+// Ensure the directory exists
+if (!fs.existsSync(dirPath)) {
+    fs.mkdirSync(dirPath, { recursive: true });
+}
+
+// Multer storage configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, dirPath);  // Set the destination folder for uploaded files
+    },
+    filename: (req, file, cb) => {
+        // Create a unique file name by appending a UUID and original file extension
+        const fileExtension = path.extname(file.originalname);
+        const uniqueName = uuid.v4() + fileExtension;
+        cb(null, uniqueName);
+    }
+});
+
+// Initialize multer with the storage configuration
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+    fileFilter: (req, file, cb) => {
+        // Allow only PDF files
+        if (file.mimetype !== 'application/pdf') {
+            return cb(new Error('Invalid file type. Only PDFs are allowed.'));
+        }
+        cb(null, true);
+    }
+}).single("file");  // Use single file upload
+
+exports.uploadFile = async (req, res) => {
+    upload(req, res, async (err) => {
+        if (err) {
+            console.error("File upload error:", err.message);
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({ success: false, message: "File size exceeds the 10MB limit." });
+            }
+            return res.status(400).json({ success: false, message: err.message || "File upload failed." });
+        }
+
+        try {
+            const { ui_case_id, created_by } = req.body;
+
+            if (!ui_case_id || !created_by) {
+                return res.status(400).json({ success: false, message: "Missing required fields." });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({ success: false, message: "No file uploaded." });
+            }
+
+            const file_name = req.file.filename;
+            const file_path = path.join("files", file_name);
+
+            await UiProgressReportFileStatus.create({
+                ui_case_id,
+                is_pdf: true,
+                file_name,
+                file_path,
+                created_by,
+                created_at: new Date()
+            });
+
+            return res.status(200).json({
+                success: true,
+                message: "File uploaded successfully.",
+                file_path
+            });
+        } catch (error) {
+            console.error("Error uploading file:", error);
+            return res.status(500).json({ success: false, message: "Internal server error." });
+        }
+    });
+};
+
+
+exports.getUploadedFiles = async (req, res) => {
+    try {
+        const { ui_case_id } = req.body;
+
+        if (!ui_case_id) {
+            return res.status(400).json({ success: false, message: "Missing required ui_case_id." });
+        }
+
+        const data = await UiProgressReportFileStatus.findAll({
+            where: { ui_case_id },
+            attributes: ["id", "file_name", "file_path", "created_by", "created_at"]
+        });
+
+        if (!data.length) {
+            return res.status(404).json({ success: false, message: "No files found." });
+        }
+
+        return res.status(200).json({ success: true, data });
+    } catch (error) {
+        console.error("Error fetching files:", error);
+        return res.status(500).json({ success: false, message: "Internal server error." });
+    }
+};
