@@ -5,6 +5,7 @@ import DynamicForm from '../components/dynamic-form/DynamicForm';
 import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
+import { InputLabel, Select, MenuItem } from '@mui/material';
 
 import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid } from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
@@ -78,6 +79,10 @@ const Enquiries = () => {
 
     const [starFlag, setStarFlag] = useState(null);
     const [readFlag, setReadFlag] = useState(null);
+
+    const [StatusUpdateVisible, setStatusUpdateVisible] = useState(false);
+    const [selectedStatus, setSelectedStatus] = useState(null);
+    const [selectedRow, setSelectedRow] = useState(null);
 
     const [loading, setLoading] = useState(false); // State for loading indicator
 
@@ -254,6 +259,70 @@ const Enquiries = () => {
 
     }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, sysStatus])
 
+    const changeSysStatus = async (selectedRow, status) => {
+        
+                var payloadSysStatus = {
+                "table_name" : table_name,
+                "data"  :   {  
+                                "id": selectedRow.id, 
+                                "sys_status": status
+                            }
+            }
+    
+            setLoading(true);
+    
+            try {
+                const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+    
+                setLoading(false);
+    
+                if (chnageSysStatus && chnageSysStatus.success) { 
+                    toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => loadTableData(paginationCount)
+                    });
+                    setStatusUpdateVisible(false); 
+                } else {
+                    const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+    
+                }
+    
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+    
+                }
+            }
+    
+        }
+    
     const loadTableData = async (page, searchValue) => {
 
         var getTemplatePayload = {
@@ -1408,71 +1477,6 @@ const Enquiries = () => {
 
     }
 
-
-        const changeSysStatus = async (data, value)=>{
-    
-            var payloadSysStatus = {
-                "table_name" : table_name,
-                "data"  :   {  
-                                "id": data.id, 
-                                "sys_status": value
-                            }
-            }
-    
-            setLoading(true);
-    
-            try {
-                const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
-    
-                setLoading(false);
-    
-                if (chnageSysStatus && chnageSysStatus.success) { 
-                    toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-success",
-                        onOpen: () => loadTableData(paginationCount)
-                    });
-                } else {
-                    const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
-                    toast.error(errorMessage, {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-    
-                }
-    
-            } catch (error) {
-                setLoading(false);
-                if (error && error.response && error.response['data']) {
-                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-    
-                }
-            }
-    
-        }
-    
-    
     const onUpdateTemplateData = async (data) => {
 
         if (!table_name || table_name === '') {
@@ -1542,7 +1546,7 @@ const Enquiries = () => {
                 }
             }
         });
-        normalData["sys_status"] = data["field_status"];
+
         formData.append("data", JSON.stringify(normalData));
         formData.append("id", data.id);
         setLoading(true);
@@ -1564,8 +1568,6 @@ const Enquiries = () => {
                     className: "toast-success",
                     onOpen: () => loadTableData(paginationCount)
                 });
-                changeSysStatus(data,data["field_status"])
-
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
                 toast.error(errorMessage, {
@@ -1821,7 +1823,7 @@ const Enquiries = () => {
     //     getActions();
 
     // },[])
-
+    
     const handleOtherTemplateActions = async (options)=>{
 
         var getTemplatePayload = {
@@ -1983,7 +1985,6 @@ const Enquiries = () => {
         }
     }
 
-
     var hoverExtraOptions = [
         {
             "name": "View",
@@ -1997,12 +1998,75 @@ const Enquiries = () => {
             "name": "Delete",
             "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
         },
-        ...hoverTableOptions,
+        {
+            "name": "Status Update",
+            "onclick": (row) => {
+                    setSelectedRow(row);
+                    setSelectedStatus('');
+                    setStatusUpdateVisible(true);
+                },
+        },
+        
     ];
 
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
+            <Dialog
+                open={StatusUpdateVisible}
+                onClose={() => setStatusUpdateVisible(false)}
+                maxWidth="sm"
+                fullWidth
+                sx={{
+                "& .MuiDialogPaper-root": { borderRadius: "12px", padding: "15px" },
+                }}
+            >
+            <DialogTitle style={{ fontWeight: "600", fontSize: "18px", textAlign: "left" }}>
+            Status Update
+            </DialogTitle>
+
+            <DialogContent style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <FormControl fullWidth>
+                <InputLabel>Choose Status</InputLabel>
+                <Select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                label="Choose Status"
+                >
+                {["Completed", "Closed", "Disposal"].map((status) => (
+                    <MenuItem key={status} value={status}>
+                    {status}
+                    </MenuItem>
+                ))}
+                </Select>
+            </FormControl>
+            </DialogContent>
+
+            <DialogActions style={{ justifyContent: "flex-end", padding: "10px 20px" }}>
+            <Button
+                variant="outlined"
+                color="primary"
+                onClick={() => setStatusUpdateVisible(false)}
+                style={{ width: "150px" }}
+            >
+                Cancel
+            </Button>
+            <Button
+                variant="contained"
+                style={{
+                width: "150px",
+                backgroundColor: "rgb(31, 29, 172)",
+                color: "#fff",
+                textTransform: "none",
+                }}
+                onClick={() => changeSysStatus(selectedRow, selectedStatus)}
+                disabled={!selectedStatus}
+            >
+                Update
+            </Button>
+            </DialogActions>
+        </Dialog>
+
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
                         <Box sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
