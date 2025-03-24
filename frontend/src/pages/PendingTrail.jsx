@@ -2569,7 +2569,7 @@ const PendingTrail = () => {
                         <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
                             All
                         </Box>
-                        <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('pt_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'pt_case' ? 'Active' : ''}`} >
                             PT Cases
                         </Box>
                         <Box onClick={() => { setSysSattus('further_investigation'); setPaginationCount(1) }} id="filterFurtherInvestigation" className={`filterTabs ${sysStatus === 'further_investigation' ? 'Active' : ''}`} >
@@ -2830,17 +2830,18 @@ const PendingTrail = () => {
                 {selectedOtherTemplate.table === "cid_ui_case_progress_report"
                     ? hasPdfEntry && (
                         <>
-                        <Button variant="outlined"     onClick={() => {
-        setIsUpdatePdf(false);
-        showOptionTemplate(selectedOtherTemplate.table);
-    }}
->
-                            Add
+                        <Button variant="outlined"     
+                        onClick={() => {
+                                setIsUpdatePdf(false);
+                                showOptionTemplate(selectedOtherTemplate.table);
+                            }}
+                        >
+                        Add
                         </Button>
                         <Button variant="outlined" onClick={() => {
-        setIsUpdatePdf(true);
-        showOptionTemplate(selectedOtherTemplate.table);
-    }} style={{ marginLeft: '10px' }}>
+                            setIsUpdatePdf(true);
+                            showOptionTemplate(selectedOtherTemplate.table);
+                        }} style={{ marginLeft: '10px' }}>
                         Update PDF
                     </Button>
                        </> 
