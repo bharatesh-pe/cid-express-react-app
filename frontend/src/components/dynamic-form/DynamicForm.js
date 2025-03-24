@@ -800,12 +800,12 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
             {!readOnly && editData && onUpdate ?
 
               <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto">
-                Update Profile
+                Update
               </Button>
 
               : !readOnly && onSubmit &&
               <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto">
-                Save Profile
+                Save
               </Button>
             }
 

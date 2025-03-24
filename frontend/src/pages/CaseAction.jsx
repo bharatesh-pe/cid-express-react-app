@@ -644,6 +644,10 @@ const CaseActions = () => {
 
         addActionFormData['is_pdf'] = addActionFormData['is_pdf'] ? addActionFormData['is_pdf'] : false ;
 
+        if(addActionFormData['permissions']){
+            addActionFormData['permissions'] = JSON.stringify(addActionFormData['permissions']);
+        }
+
         try {
 
             const insertActionOptions = await api.post("/action/insert_action", addActionFormData);
@@ -956,10 +960,10 @@ const CaseActions = () => {
                                             limitTags={3}
                                             getOptionLabel={(option) => option.permission_name}
                                             value={permissionData.filter(option => 
-                                                [].concat(addActionFormData?.['permissions'] || []).includes(option.id)
+                                                [].concat(addActionFormData?.['permissions'] || []).includes(option.permission_key)
                                             )}
                                             onChange={(event, newValue) => {
-                                                const selectedCodes = newValue ? newValue.map(item => item.id) : [];
+                                                const selectedCodes = newValue ? newValue.map(item => item.permission_key) : [];
                                                 handleOtherTemplateChange('permissions', selectedCodes);
                                             }}
                                             renderInput={(params) =>

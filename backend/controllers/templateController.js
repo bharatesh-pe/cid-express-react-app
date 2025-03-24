@@ -158,6 +158,16 @@ exports.createTemplate = async (req, res, next) => {
 			defaultValue: template_module ? template_module : null,
         };
 
+        fieldDefinitions.created_by = {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true
+        };
+
+        fieldDefinitions.updated_by = {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true
+        };
+
 		// Define the model
 		const model = sequelize.define(table_name, fieldDefinitions, {
 			freezeTableName: true,
