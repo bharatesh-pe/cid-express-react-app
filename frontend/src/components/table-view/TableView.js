@@ -38,7 +38,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
               {
                 field: "extraActions",
                 headerName: "Actions",
-                width: 150,
+                flex: 2,
                 renderCell: (params) => (
                   <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
                     {selectedRow?.id === params.row.id ? (
@@ -61,7 +61,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         rows={rows}
         columns={updatedColumns}
         getRowId={getRowId} 
-        className='FigmaTableView'
+        className={` ${rows.length === 10 ? 'heightScroll' : ''} FigmaTableView`}
         disableColumnMenu
         disableColumnSorting
         hideFooter

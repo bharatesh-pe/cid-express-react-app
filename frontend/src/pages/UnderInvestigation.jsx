@@ -2573,7 +2573,7 @@ const UnderInvestigation = () => {
                             UI Cases
                         </Box>
                         <Box onClick={() => { setSysSattus('further_investigation'); setPaginationCount(1) }} id="filterFurtherInvestigation" className={`filterTabs ${sysStatus === 'further_investigation' ? 'Active' : ''}`} >
-                            Further Invesitgtion
+                            Further Investigation
                         </Box>
                         <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
                             173(8) Cases

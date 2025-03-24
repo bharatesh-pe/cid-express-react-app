@@ -900,3 +900,7 @@ div::first-letter {
     .addNewFieldMenu{
         overflow-y: auto !important;
     }
+
+    .FigmaTableView .MuiDataGrid-main .MuiDataGrid-virtualScroller {
+        overflow: auto !important;
+    }
