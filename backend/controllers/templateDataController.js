@@ -26,8 +26,10 @@ const typeMapping = {
 
 exports.insertTemplateData = async (req, res, next) => {
     const { table_name, data, folder_attachment_ids } = req.body;
-    const userId = res.locals.user_id || null;
+    // const userId = res.locals.user_id || null;
     const adminUserId = res.locals.admin_user_id || null;
+    const {user_id} = req.user;
+    const userId = user_id;
     const actorId = userId || adminUserId;
 
     console.log("inserting user", userId, actorId);
@@ -319,6 +321,7 @@ exports.updateTemplateData = async (req, res, next) => {
                 return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
             }
         }
+
 
         // Define Sequelize model dynamically
         const modelAttributes = {};
@@ -2494,11 +2497,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         const validSortBy = fields[sort_by] ? sort_by : 'id';
 
         if (sys_status !== null && sys_status !== undefined) {
-            if (sys_status === "ui_case") {
-                whereClause['sys_status'] = { [Op.in]: ['ui_case', 'pt_case', 'ui_to_pt'] };
-            } else {
+            // if (sys_status === "ui_case") {
+            //     whereClause['sys_status'] = { [Op.in]: ['ui_case', 'pt_case', 'ui_to_pt'] };
+            // } else {
                 whereClause['sys_status'] = sys_status;
-            }
+            // }
         }
 
 
