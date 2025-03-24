@@ -40,7 +40,8 @@ exports.get_overall_actions = async (req, res) => {
         // Get paginated and sorted data
         const actions = await CasesAction.findAll({
             where: whereClause,
-            order: [[sort_by, finalSortOrder]], // Simplified sort
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval', 'permissions', 'approval_items', 'created_at'],
+            order: [[sort_by, finalSortOrder]],
             offset: offset,
             limit: limitNum
         });
@@ -82,7 +83,7 @@ exports.get_actions = async (req, res) => {
         // Get paginated actions for the specified module
         const data = await CasesAction.findAll({
             where: { module: { [Op.iLike]: module } },
-            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval','permissions', 'approval_items', 'created_at'],
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval','permissions', 'approval_items', 'created_at']
         });
 
         return res.status(200).json({

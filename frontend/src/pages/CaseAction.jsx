@@ -48,19 +48,19 @@ const CaseActions = () => {
             field: 'name', 
             headerName: 'Action Name',
             resizable: true,
-            flex: 2
+            flex: 1
         },
         { 
             field: 'table', 
             headerName: 'Selected Template',
             resizable: true,
-            flex: 2
+            flex: 1
         },
         { 
             field: 'module', 
             headerName: 'Selected Module',
             resizable: true,
-            flex: 2,
+            flex: 1,
             renderCell: (params) => {
                 return (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
@@ -77,7 +77,7 @@ const CaseActions = () => {
             field: 'field', 
             headerName: 'Selected Field',
             resizable: true,
-            flex: 2,
+            flex: 1,
             renderCell: (params) => {
                 return (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
@@ -90,11 +90,45 @@ const CaseActions = () => {
                 )
             }
         },
+        { 
+            field: 'is_pdf', 
+            headerName: 'PDF',
+            resizable: true,
+            flex: 1,
+            renderCell: (params) => {
+                return (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                            {
+                                params && params.row && params.row.is_pdf ? 'True' : ''
+                            }
+                        </span>
+                    </div>
+                )
+            }
+        },
+        { 
+            field: 'is_approval', 
+            headerName: 'Approval',
+            resizable: true,
+            flex: 1,
+            renderCell: (params) => {
+                return (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                            {
+                                params && params.row && params.row.is_approval ? 'True' : ''
+                            }
+                        </span>
+                    </div>
+                )
+            }
+        },
         {
             field: '',
             headerName: 'Action',
             resizable: false,
-            flex: 3,
+            flex : 1.5,
             renderCell: (params) => {
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
@@ -138,6 +172,8 @@ const CaseActions = () => {
     const [otherTemplateData, setOtherTemplateData] = useState([]);
     const [otherTemplateDataFields, setOtherTemplateDataFields] = useState([]);
     const [addActionFormData, setAddActionFormData] = useState({});
+    const [permissionData, setPermissionData] = useState([]);
+    const [approvalItemsData, setApprovalItemsData] = useState([]);
     const [addActionErrors, setAddActionErrors] = useState({});
 
     const moduleOptions = {
@@ -415,7 +451,7 @@ const CaseActions = () => {
 
     const handleOtherTemplateChange = async (name, value) => {
 
-        if(name === 'table' && tabValue === 'field'){
+        if(name === 'table' && tabValue === 'field' && value){
 
             const viewTableData = {
                 "table_name": value
@@ -448,6 +484,8 @@ const CaseActions = () => {
                 });
             }
 
+        }else if(name === 'table' && tabValue === 'field' && !value){
+            setOtherTemplateDataFields([]);
         }
 
         setAddActionFormData({
@@ -492,7 +530,17 @@ const CaseActions = () => {
             if (getOtherTemplateOnly && getOtherTemplateOnly.success) {
 
                 if (getOtherTemplateOnly.other_templates) {
+
                     setOtherTemplateData(getOtherTemplateOnly.other_templates);
+
+                    if(getOtherTemplateOnly.permissions){
+                        setPermissionData(getOtherTemplateOnly.permissions)
+                    }
+
+                    if(getOtherTemplateOnly.approval_item){
+                        setApprovalItemsData(getOtherTemplateOnly.approval_item)
+                    }
+
                     setActionAddModal(true);
                 }
 
@@ -596,6 +644,10 @@ const CaseActions = () => {
 
         addActionFormData['is_pdf'] = addActionFormData['is_pdf'] ? addActionFormData['is_pdf'] : false ;
 
+        if(addActionFormData['permissions']){
+            addActionFormData['permissions'] = JSON.stringify(addActionFormData['permissions']);
+        }
+
         try {
 
             const insertActionOptions = await api.post("/action/insert_action", addActionFormData);
@@ -655,6 +707,8 @@ const CaseActions = () => {
         }
 
     }
+
+    console.log(permissionData,"permissionData ")
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -817,7 +871,7 @@ const CaseActions = () => {
                                     required
                                     getOptionLabel={(option) => option.table_name || ''}
                                     value={otherTemplateData.find((option) => option.table_name === (addActionFormData && addActionFormData['table'])) || null}
-                                    onChange={(event, newValue) => handleOtherTemplateChange('table', newValue.table_name)}
+                                    onChange={(event, newValue) => handleOtherTemplateChange('table', newValue?.table_name)}
                                     renderInput={(params) =>
                                         <TextField
                                             {...params}
@@ -851,7 +905,7 @@ const CaseActions = () => {
                                             required
                                             getOptionLabel={(option) => option.label || ''}
                                             value={otherTemplateDataFields.find((option) => option.name === (addActionFormData && addActionFormData['field'])) || null}
-                                            onChange={(event, newValue) => handleOtherTemplateChange('field', newValue.name)}
+                                            onChange={(event, newValue) => handleOtherTemplateChange('field', newValue?.name)}
                                             renderInput={(params) =>
                                                 <TextField
                                                     {...params}
@@ -867,9 +921,61 @@ const CaseActions = () => {
                                             Do you want to enable Approval
                                         </Typography>
                                     </Box>
+                                    {
+                                        addActionFormData['is_approval'] && 
+                                        <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                            <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
+                                                Do you want to set default value for approval items
+                                            </h4>
+                                            <Autocomplete
+                                                id=""
+                                                options={approvalItemsData}
+                                                required
+                                                getOptionLabel={(option) => option.name || ''}
+                                                value={approvalItemsData.find((option) => option.approval_item_id === (addActionFormData && addActionFormData['approval_items'])) || null}
+                                                onChange={(event, newValue) => handleOtherTemplateChange('approval_items', newValue?.approval_item_id)}
+                                                renderInput={(params) =>
+                                                    <TextField
+                                                        {...params}
+                                                        className='selectHideHistory'
+                                                        label='Select Approval Items'
+                                                    />
+                                                }
+                                            />
+                                        </Box>
+                                    }
                                 </>
                             
                             }
+
+                                    <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                        <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
+                                            Choose which permission do you want to add
+                                        </h4>
+                                        <Autocomplete
+                                            id=""
+                                            options={permissionData}
+                                            required
+                                            multiple
+                                            limitTags={3}
+                                            getOptionLabel={(option) => option.permission_name}
+                                            value={permissionData.filter(option => 
+                                                [].concat(addActionFormData?.['permissions'] || []).includes(option.permission_key)
+                                            )}
+                                            onChange={(event, newValue) => {
+                                                const selectedCodes = newValue ? newValue.map(item => item.permission_key) : [];
+                                                handleOtherTemplateChange('permissions', selectedCodes);
+                                            }}
+                                            renderInput={(params) =>
+                                                <TextField
+                                                    {...params}
+                                                    className='selectHideHistory'
+                                                    label='Select Permission'
+                                                />
+                                            }
+                                        />
+                                    </Box>
+
 
                         </FormControl>
                     </DialogContentText>

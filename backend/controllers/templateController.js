@@ -157,14 +157,14 @@ exports.createTemplate = async (req, res, next) => {
 			defaultValue: template_module ? template_module : null,
         };
 
-		fieldDefinitions.created_by = {
+        fieldDefinitions.created_by = {
             type: Sequelize.DataTypes.STRING,
-            allowNull: true,
+            allowNull: true
         };
 
-		fieldDefinitions.updated_by = {
+        fieldDefinitions.updated_by = {
             type: Sequelize.DataTypes.STRING,
-            allowNull: true,
+            allowNull: true
         };
 
 		// Define the model
