@@ -871,6 +871,8 @@ const UnderInvestigation = () => {
         try {
 
             const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            console.log("viewTemplateResponseviewTemplateResponse",viewTemplateResponse)
+
             setLoading(false);
             if (viewTemplateResponse && viewTemplateResponse.success) {
 
@@ -916,6 +918,7 @@ const UnderInvestigation = () => {
 
     const otherTemplateSaveFunc = async (data) => {
 
+        console.log("for update pdf selectedOtherTemplate",selectedRowData)
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
             toast.warning('Please Check The Template', {
                 position: "top-right",
@@ -992,8 +995,9 @@ const UnderInvestigation = () => {
         try {
             let saveTemplateData;
             if (isUpdatePdf) {
-                saveTemplateData = await api.post("/templateData/updatePdf", formData); // Assuming you have an endpoint like /updatePdf
-            } else {
+                const appendText = JSON.stringify(normalData);
+                saveTemplateData = await api.post("/templateData/appendToLastLineOfPDF", { ui_case_id: selectedRowData.id, appendText });
+            }else {
                 saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
             }            
             setLoading(false);
@@ -2834,16 +2838,16 @@ const UnderInvestigation = () => {
                     ? hasPdfEntry && (
                         <>
                         <Button variant="outlined"     onClick={() => {
-        setIsUpdatePdf(false);
-        showOptionTemplate(selectedOtherTemplate.table);
-    }}
->
+                                setIsUpdatePdf(false);
+                                showOptionTemplate(selectedOtherTemplate.table);
+                            }}
+                        >
                             Add
                         </Button>
                         <Button variant="outlined" onClick={() => {
-        setIsUpdatePdf(true);
-        showOptionTemplate(selectedOtherTemplate.table);
-    }} style={{ marginLeft: '10px' }}>
+                            setIsUpdatePdf(true);
+                            showOptionTemplate(selectedOtherTemplate.table);
+                        }} style={{ marginLeft: '10px' }}>
                         Update PDF
                     </Button>
                        </> 
