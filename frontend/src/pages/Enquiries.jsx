@@ -1995,16 +1995,16 @@ const Enquiries = () => {
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
         },
         {
-            "name": "Delete",
-            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
-        },
-        {
             "name": "Status Update",
             "onclick": (row) => {
                     setSelectedRow(row);
                     setSelectedStatus('');
                     setStatusUpdateVisible(true);
                 },
+        },
+        {
+            "name": "Delete",
+            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
         },
         
     ];
