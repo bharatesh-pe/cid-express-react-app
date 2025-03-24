@@ -6,7 +6,7 @@ import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
 
-import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid } from "@mui/material";
+import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField } from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -36,6 +36,12 @@ import { CircularProgress } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import FilterListIcon from "@mui/icons-material/FilterList";
+
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from "dayjs";
 
 const PendingTrail = () => {
     const location = useLocation();
@@ -83,30 +89,8 @@ const PendingTrail = () => {
 
     const searchParams = new URLSearchParams(location.search);
 
-    const [hoverTableOptions, setHoverTableOptions] = useState([]);
-
     const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
-        { field: 'sl_no', headerName: 'S.No' },
-        {
-            field: '',
-            headerName: 'Action',
-            flex: 1,
-            renderCell: (params) => {
-                return (
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, table_name); }}>
-                            View
-                        </Button>
-                        <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, table_name); }}>
-                            Edit
-                        </Button>
-                        <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, table_name); }}>
-                            Delete
-                        </Button>
-                    </Box>
-                );
-            }
-        }
+        { field: 'sl_no', headerName: 'S.No' }
     ]);
 
     const [otherTemplateModalOpen, setOtherTemplateModalOpen] = useState(false);
@@ -123,7 +107,112 @@ const PendingTrail = () => {
         ]
     );
 
+    const [hoverTableOptions, setHoverTableOptions] = useState([]);
+
     const [otherTablePagination, setOtherTablePagination] = useState(1)
+
+    // for actions
+
+    const [selectedRow, setSelectedRow] = useState({})
+
+    // transfer to other division states
+
+    const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
+    const [otherTransferField, setOtherTransferField] = useState([]);
+    const [selectedOtherFields, setSelectedOtherFields] = useState(null);
+    const [selectKey, setSelectKey] = useState(null);
+
+    // for approve states
+
+    const [approveTableFlag, setApproveTableFlag] = useState(false);
+    const [addApproveFlag, setAddApproveFlag] = useState(false);
+
+    const [approvalsData, setApprovalsData] = useState([]);
+    const [approvalsColumn, setApprovalsColumn] = useState([
+        { field: 'sl_no', headerName: 'S.No', },
+        { field: 'approvalItem', headerName: 'Approval Item', flex: 1 },
+        { field: 'approvedBy', headerName: 'Approved By', flex: 1 },
+        { field: 'approval_date', headerName: 'Approval Date', flex: 1 },
+        { field: 'remarks', headerName: 'Remarks', flex: 1 }
+    ]);
+    const [approvalItem, setApprovalItem] = useState([]);
+    const [designationData, setDesignationData] = useState([]);
+
+    const [randomApprovalId, setRandomApprovalId] = useState(0);
+
+    const [approvalSaveData, setApprovalSaveData] = useState({});
+
+    const handleApprovalSaveData = (name, value)=>{
+        setApprovalSaveData({
+            ...approvalSaveData,
+            [name] : value
+        })
+    }
+
+    // change sys_status
+
+    const changeSysStatus = async (data, value)=>{
+
+        var payloadSysStatus = {
+            "table_name" : table_name,
+            "data"  :   {  
+                            "id": data.id, 
+                            "sys_status": value
+                        }
+        }
+
+        setLoading(true);
+
+        try {
+            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+
+            setLoading(false);
+
+            if (chnageSysStatus && chnageSysStatus.success) { 
+                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount)
+                });
+            } else {
+                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+        }
+
+    }
 
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
@@ -266,7 +355,7 @@ const PendingTrail = () => {
             "is_starred": starFlag,
             "is_read": readFlag,
             "template_module": "pt_case",
-            "sys_status": sysStatus
+            "sys_status" : sysStatus
         }
         
         setLoading(true);
@@ -279,6 +368,7 @@ const PendingTrail = () => {
                 if (getTemplateResponse.data && getTemplateResponse.data['data']) {
 
                     if(getTemplateResponse.data['data'][0]){
+
                         var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
 
                         const updatedHeader = [
@@ -314,28 +404,7 @@ const PendingTrail = () => {
                                             return tableCellRender(key, params, params.value)
                                         },
                                     };
-                                }),
-                            {
-                                field: '',
-                                headerName: 'Action',
-                                resizable: false,
-                                width: 300,
-                                renderCell: (params) => {
-                                    return (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}>
-                                                View
-                                            </Button>
-                                            <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}>
-                                                Edit
-                                            </Button>
-                                            <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}>
-                                                Delete
-                                            </Button>
-                                        </Box>
-                                    );
-                                }
-                            }
+                                })
                         ];
 
                         if (Array.isArray(getTemplateResponse.data['columns'])) {
@@ -921,7 +990,12 @@ const PendingTrail = () => {
         setLoading(true);
 
         try {
-            const saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            let saveTemplateData;
+            if (isUpdatePdf) {
+                saveTemplateData = await api.post("/templateData/updatePdf", formData); // Assuming you have an endpoint like /updatePdf
+            } else {
+                saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            }            
             setLoading(false);
 
             localStorage.removeItem(selectedOtherTemplate.name + '-formData');
@@ -1699,7 +1773,7 @@ const PendingTrail = () => {
         const getActions = async ()=>{
 
             var payloadObj = {
-                "module": "pt_case"
+                "module": "ui_case"
             }
 
             setLoading(true);
@@ -1735,8 +1809,8 @@ const PendingTrail = () => {
             } catch (error) {
     
                 setLoading(false);
-                if (error && error.response && error.response['data']) {
-                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                if (error && error.response && error.response.data) {
+                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
                         position: "top-right",
                         autoClose: 3000,
                         hideProgressBar: false,
@@ -1754,7 +1828,113 @@ const PendingTrail = () => {
 
     },[])
 
-    const handleOtherTemplateActions = async (options)=>{
+
+
+
+
+    
+    const [selectedRowData, setSelectedRowData] = useState(null);
+
+    const handleFileUpload = async (event) => {
+        console.log("File upload initiated.");
+    
+        const file = event.target.files[0];
+    
+        if (!file) {
+            Swal.fire("Error", "Please select a file.", "error");
+            return;
+        }
+    
+        if (!selectedRowData || !selectedRowData.id) {
+            console.log("Invalid selectedRow inside handleFileUpload:", selectedRowData);
+            Swal.fire("Error", "Invalid case ID.", "error");
+            return;
+        }
+    
+        const caseId = selectedRowData.id;
+    
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("ui_case_id", caseId);
+        formData.append("created_by", "0");
+    
+        try {
+            const response = await api.post("/templateData/uploadFile", formData);
+    
+            if (response.success) {
+                Swal.fire("Success", "File uploaded successfully.", "success");
+                checkPdfEntryStatus(caseId);
+                getUploadedFiles(selectedRowData);
+            } else {
+                Swal.fire("Error", response.message || "Upload failed.", "error");
+            }
+        } catch (error) {
+            console.error("Upload error:", error);
+            Swal.fire("Error", "Failed to upload file.", "error");
+        }
+    };
+    
+    const [uploadedFiles, setUploadedFiles] = useState([]);
+
+    const getUploadedFiles = async (selectedRow) => {
+        console.log("for getting uploaded files", selectedRow)
+        if (!selectedRow || !selectedRow.id) {
+            console.error("Invalid selectedRow for file retrieval:", selectedRow);
+            return;
+        }
+    
+        try {
+            const response = await api.post("/templateData/getUploadedFiles", { ui_case_id: selectedRow.id });
+    
+            if (response && response.success) {
+                console.log("Uploaded files:", response.data);
+                setUploadedFiles(response.data);
+                console.error("Failed to fetch uploaded files:", response.message);
+            }
+        } catch (error) {
+            console.error("Error fetching uploaded files:", error);
+        }
+    };
+    
+    
+   
+    const [hasPdfEntry, setHasPdfEntry] = useState(false);
+
+
+    const checkPdfEntryStatus = async (caseId) => {
+        if (!caseId) {
+            console.log("Invalid caseId inside checkPdfEntryStatus:", caseId);
+            setHasPdfEntry(false);
+            return;
+        }
+    
+        console.log("Checking PDF entry for caseId:", caseId);
+    
+        try {
+            const response = await api.post("/templateData/checkPdfEntry", { ui_case_id: caseId, is_pdf: true });
+    
+            if (response.success && response.data) {
+                setHasPdfEntry(true);
+            } else {
+                setHasPdfEntry(false);
+            }
+        } catch (error) {
+            console.error("Error checking PDF entry:", error);
+            setHasPdfEntry(false);
+        }
+    };
+    
+    const handleOtherTemplateActions = async (options, selectedRow)=>{
+
+        console.log("selectedRow",selectedRow)
+
+        console.log("options",options)
+        setSelectedRowData(selectedRow);
+
+        if(options.table && options.field){
+            showTransferToOtherDivision(options, selectedRow)
+            return;
+        }
 
         var getTemplatePayload = {
             "table_name": options.table,
@@ -1833,6 +2013,8 @@ const PendingTrail = () => {
                         ];
 
                         setOtherTemplateColumn(updatedHeader)
+                                                        
+                            
                     }else{
                         setOtherTemplateColumn([])
                     }
@@ -1875,6 +2057,11 @@ const PendingTrail = () => {
                     });
 
                     setOtherTemplateData(updatedTableData);
+                    if (options.table === "cid_ui_case_progress_report" && options.is_pdf) {
+                        await checkPdfEntryStatus(selectedRow.id);
+                        await getUploadedFiles(selectedRow);
+                    }
+
                     setOtherTemplateModalOpen(true);
                 }
 
@@ -1915,6 +2102,440 @@ const PendingTrail = () => {
         }
     }
 
+    const showTransferToOtherDivision = async (options, selectedRow)=>{
+
+        const viewTableData = {
+            "table_name": options.table
+        }
+
+        setLoading(true);
+        try {
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            setLoading(false);
+
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse['data']) {
+
+                if(viewTemplateResponse['data'].fields){
+
+                    setFormTemplateData(viewTemplateResponse['data'].fields)
+
+                    var getDivisionField = viewTemplateResponse['data'].fields.filter((data)=>{
+                        if(data.name === options.field){
+                            return data
+                        }
+                    });
+
+                    if(getDivisionField.length > 0){
+
+                        if(getDivisionField[0].api){
+                            setLoading(true);
+
+                            var payloadApi = {
+                                "table_name" : getDivisionField[0].table
+                            }
+
+                            try {
+                                var getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
+
+                                setLoading(false);
+        
+                                var updatedOptions = []
+    
+                                if (getOptionsValue && getOptionsValue.data) {
+
+                                    if(getDivisionField[0].api === '/templateData/getTemplateData'){
+                                        
+                                        updatedOptions = getOptionsValue.data.map((templateData) => {
+
+                                            var nameKey = Object.keys(templateData).find(
+                                                key => !['id', 'created_at', 'updated_at'].includes(key)
+                                            );
+                                        
+                                            return {
+                                                name: nameKey ? templateData[nameKey] : '',
+                                                code: templateData.id
+                                            }
+                                        });
+
+                                    }else{
+
+                                        updatedOptions = getOptionsValue.data.map((field, i) => {
+                                            return {
+                                                name: field[getDivisionField[0].table === 'users' ? 'name' : getDivisionField[0].table + '_name'],
+                                                code: field[getDivisionField[0].table === 'users' ? 'user_id' : getDivisionField[0].table + '_id']
+                                            }
+                                        });
+ 
+                                    }
+
+
+                                    setSelectKey({name : options.field , title : options.name});
+                                    setSelectedRow(selectedRow);
+                                    setselectedOtherTemplate(options);
+                                    setOtherTransferField(updatedOptions);
+                                    setShowOtherTransferModal(true);
+                                }
+                                
+                            }catch (error) {
+                                setLoading(false);
+        
+                                if (error && error.response && error.response.data) {
+                                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Division not found', {
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                    return;
+                                }
+                            }
+                        }else{
+                            setSelectKey({name : options.field , title : options.name});
+                            setSelectedRow(selectedRow);
+                            setselectedOtherTemplate(options);
+                            setOtherTransferField(getDivisionField[0].options);
+                            setShowOtherTransferModal(true);
+                        }
+
+                    }else{
+                        const errorMessage = "Can't able to find Division field";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get Template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
+
+
+    const showApprovalPage = async (approveData)=>{
+
+        var payloadObj = {
+            "ui_case_id": approveData.id
+        }
+
+        setLoading(true);
+
+        try {
+
+            const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals", payloadObj);
+
+            setLoading(false);
+
+            if (getActionsDetails && getActionsDetails.success) {
+
+                var updatedOptions = [];
+
+                if(getActionsDetails.data['approvals'].length > 0){
+                    updatedOptions = getActionsDetails.data['approvals'].map((data, index)=>{
+    
+                        const formatDate = (fieldValue) => {
+                            if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
+    
+                            var dateValue = new Date(fieldValue);
+    
+                            if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
+                                return fieldValue;
+                            }
+    
+                            if (isNaN(dateValue.getTime())) return fieldValue;
+    
+                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                            var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
+                            var yearValue = dateValue.getFullYear();
+                            return `${dayValue}/${monthValue}/${yearValue}`;
+                        };
+    
+                        const updatedField = {};
+    
+                        Object.keys(data).forEach((key) => {
+                            if (data[key] && key !== 'id' && !isNaN(new Date(data[key]).getTime())) {
+                                updatedField[key] = formatDate(data[key]);
+                            } else {
+                                updatedField[key] = data[key];
+                            }
+                        });
+    
+                        return{
+                            ...updatedField,
+                            sl_no : index + 1,
+                            id : data.approval_id,
+                        }
+                    });
+                }
+
+                setApprovalsData(updatedOptions);
+                setApprovalItem(getActionsDetails.data['approval_item']);
+                setDesignationData(getActionsDetails.data['designation']);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(true);
+
+                const randomId = `approval_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                setRandomApprovalId(randomId);
+
+            } else {
+                
+                const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                                
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const showApprovalAddPage = (table)=> {
+        console.log("here add data", table , "table");
+        setAddApproveFlag(true);
+    }
+    
+    const saveApprovalData = async (table)=> {
+
+        if(!approvalSaveData || !approvalSaveData['approval_item']){
+            toast.error('Please Select Approval Item !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+
+            return;
+        }
+
+        if(!approvalSaveData || !approvalSaveData['approved_by']){
+            toast.error('Please Select Designation !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+
+            return;
+        }
+
+        var payloadApproveData = {
+            ...approvalSaveData,
+            "ui_case_id" : selectedOtherTemplate.id,
+            "transaction_id" : randomApprovalId
+        }
+
+        setLoading(true);
+
+        try {
+            const chnageSysStatus = await api.post("/ui_approval/create_ui_case_approval", payloadApproveData);
+
+            setLoading(false);
+
+            if (chnageSysStatus && chnageSysStatus.success) { 
+                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Approval Added Successfully Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success"
+                });
+
+
+                var combinedData = {
+                    id : selectedRow.id,
+                    [selectKey.name] : selectedOtherFields.code
+                }
+        
+                // update func
+                onUpdateTemplateData(combinedData);
+        
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+
+                setApprovalsData([]);
+                setApprovalItem([]);
+                setDesignationData([]);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
+
+            } else {
+                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to add approval. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+        }
+
+    }
+
+    const handleSaveDivisionChange = async ()=>{
+
+        if(!selectedOtherFields || !selectedOtherFields.code){
+            toast.error('Please Select Data !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+
+            return;
+        }
+
+        if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
+            showApprovalPage(selectedOtherTemplate);
+            return;
+        }
+
+        var combinedData = {
+            id : selectedRow.id,
+            [selectKey.name] : selectedOtherFields.code
+        }
+
+        // update func
+        onUpdateTemplateData(combinedData);
+
+        // reset states
+        setSelectKey(null);
+        setSelectedRow(null);
+        setOtherTransferField([]);
+        setShowOtherTransferModal(false);
+        setSelectedOtherFields(null);
+        setselectedOtherTemplate(null);
+
+    }
+
+    const [isUpdatePdf, setIsUpdatePdf] = useState(false);
+
+    var hoverExtraOptions = [
+        {
+            "name": "View",
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
+        },
+        {
+            "name": "Edit",
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
+        },
+        {
+            "name": "Delete",
+            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
+        },
+        ...hoverTableOptions,
+        {
+            "name": "Further Investigation",
+            "onclick": (selectedRow) => changeSysStatus(selectedRow, 'further_investigation')
+        },
+        {
+            "name": "173(8) Cases",
+            "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases')
+        },
+    ];
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -1948,11 +2569,11 @@ const PendingTrail = () => {
                         <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
                             All
                         </Box>
-                        <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('pt_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'pt_case' ? 'Active' : ''}`} >
                             PT Cases
                         </Box>
                         <Box onClick={() => { setSysSattus('further_investigation'); setPaginationCount(1) }} id="filterFurtherInvestigation" className={`filterTabs ${sysStatus === 'further_investigation' ? 'Active' : ''}`} >
-                            Further Invesitgtion
+                            Further Investigation
                         </Box>
                         <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
                             173(8) Cases
@@ -2003,7 +2624,7 @@ const PendingTrail = () => {
                 </Box>
 
                 <Box py={2}>
-                    <TableView hoverTable={true} hoverTableOptions={hoverTableOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
+                    <TableView hoverTable={true} hoverTableOptions={hoverExtraOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
                 </Box>
             </>
             {formOpen &&
@@ -2190,24 +2811,126 @@ const PendingTrail = () => {
 
 
             {/* other templates ui */}
+            {otherTemplateModalOpen && (
+    <Dialog
+        open={otherTemplateModalOpen}
+        onClose={() => setOtherTemplateModalOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        maxWidth="md"
+        fullWidth
+        sx={{ zIndex: '1' }}
+    >
+        <DialogTitle
+            id="alert-dialog-title"
+            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+            {selectedOtherTemplate && selectedOtherTemplate.name}
+            <Box>
+                {selectedOtherTemplate.table === "cid_ui_case_progress_report"
+                    ? hasPdfEntry && (
+                        <>
+                        <Button variant="outlined"     
+                        onClick={() => {
+                                setIsUpdatePdf(false);
+                                showOptionTemplate(selectedOtherTemplate.table);
+                            }}
+                        >
+                        Add
+                        </Button>
+                        <Button variant="outlined" onClick={() => {
+                            setIsUpdatePdf(true);
+                            showOptionTemplate(selectedOtherTemplate.table);
+                        }} style={{ marginLeft: '10px' }}>
+                        Update PDF
+                    </Button>
+                       </> 
+                    )
+                    : (
+                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
+                            Add
+                        </Button>
+                    )
+                }
+                <IconButton
+                    aria-label="close"
+                    onClick={() => setOtherTemplateModalOpen(false)}
+                    sx={{ color: (theme) => theme.palette.grey[500] }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            </Box>
+        </DialogTitle>
+        <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+                <Box py={2}>
+                    {selectedOtherTemplate.table === "cid_ui_case_progress_report" ? (
+                        hasPdfEntry ? (
+                            uploadedFiles.length > 0 ? (
+                                <>
+                                    <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" marginTop={"10px"}>
+                                        <Typography variant="h6">Preview Uploaded PDF</Typography>
+                                        <iframe 
+                                            src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
+                                            width="100%" 
+                                            height="500px"
+                                            style={{ border: "none" }}
+                                        />
+                                    </Box>
+                                </>
+                            ) : (
+                                <Typography>No PDF found.</Typography>
+                            )
+                        
+                        ) : (
+                            <Box
+                                display="flex"
+                                flexDirection="column"
+                                alignItems="center"
+                                justifyContent="center"
+                                height="200px"
+                            >
+                                <Typography>Please Upload your Progress Report Pdf</Typography>
+                                <Button variant="contained" component="label">
+                                    Upload File
+                                    <input type="file" hidden accept="application/pdf" onChange={(event) => handleFileUpload(event)} />
+                                </Button>
+                            </Box>
+                        )
+                    ) : (
+                        <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                    )}
+                </Box>
+            </DialogContentText>
+        </DialogContent>
+    </Dialog>
+)}
 
-            {otherTemplateModalOpen &&
+
+
+            {approveTableFlag &&
                 <Dialog
-                    open={otherTemplateModalOpen}
-                    onClose={() => setOtherTemplateModalOpen(false)}
+                    open={approveTableFlag}
+                    onClose={() => setApproveTableFlag(false)}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
-                    maxWidth="md"
+                    maxWidth="lg"
                     fullWidth
                     sx={{zIndex:'1'}}
                 >
                     <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                        {selectedOtherTemplate && selectedOtherTemplate.name }
+                        Approval Data
                         <Box>
-                            <Button variant="outlined" onClick={() => {showOptionTemplate(selectedOtherTemplate.table)}}>Add</Button>
+                            {
+                                !addApproveFlag ? 
+                                    <Button variant="outlined" onClick={() => {showApprovalAddPage(selectedOtherTemplate.table)}}>Add</Button>
+                                :
+                                    <Button variant="outlined" onClick={() => {saveApprovalData(selectedOtherTemplate.table)}}>Save</Button>
+                            }
                             <IconButton
                                 aria-label="close"
-                                onClick={() => setOtherTemplateModalOpen(false)}
+                                onClick={() => setApproveTableFlag(false)}
                                 sx={{ color: (theme) => theme.palette.grey[500] }}
                             >
                                 <CloseIcon />
@@ -2218,12 +2941,113 @@ const PendingTrail = () => {
                     <DialogContent>
                         <DialogContentText id="alert-dialog-description">
                             <Box py={2}>
-                                <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                {
+                                    !addApproveFlag ?
+                                        <TableView rows={approvalsData} columns={approvalsColumn} />
+                                    :
+                                    <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
+
+                                        <Autocomplete
+                                            id=""
+                                            options={approvalItem}
+                                            getOptionLabel={(option) => option.name || ''}
+                                            name={'approval_item'}
+                                            value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData && approvalSaveData['approval_item'])) || null}
+                                            onChange={(e,value)=>handleApprovalSaveData('approval_item',value?.approval_item_id)}
+                                            renderInput={(params) =>
+                                                <TextField
+                                                    {...params}
+                                                    className='selectHideHistory'
+                                                    label={'Approval Item'}
+                                                />
+                                            }
+                                        />
+
+                                        <Autocomplete
+                                            id=""
+                                            options={designationData}
+                                            getOptionLabel={(option) => option.designation_name || ''}
+                                            name={'approved_by'}
+                                            value={designationData.find((option) => option.designation_id === (approvalSaveData && approvalSaveData['approved_by'])) || null}
+                                            onChange={(e,value)=>handleApprovalSaveData('approved_by',value?.designation_id)}
+                                            renderInput={(params) =>
+                                                <TextField
+                                                    {...params}
+                                                    className='selectHideHistory'
+                                                    label={'Designation'}
+                                                />
+                                            }
+                                        />
+
+                                        <LocalizationProvider dateAdapter={AdapterDayjs} sx={{width:'100%'}}>
+                                            <DemoContainer components={['DatePicker']} sx={{width:'100%'}}>
+                                                <DatePicker 
+                                                    label="Approval Date" 
+                                                    value={approvalSaveData['approval_date'] ? dayjs(approvalSaveData['approval_date']) : null} 
+                                                    name="approval_date" 
+                                                    format="DD/MM/YYYY"
+                                                    sx={{width:'100%'}}
+                                                    onChange={(newValue) => {
+                                                        if (newValue && dayjs.isDayjs(newValue)) {
+                                                            handleApprovalSaveData("approval_date", newValue.toISOString());
+                                                        } else {
+                                                            handleApprovalSaveData("approval_date", null);
+                                                        }
+                                                    }}
+                                                />
+                                            </DemoContainer>
+                                        </LocalizationProvider>
+
+                                        <TextField
+                                            rows={8}
+                                            label={'Comments'}
+                                            sx={{width:'100%'}}
+                                            name="remarks"
+                                            value={approvalSaveData['remarks']}
+                                            onChange={(e)=>handleApprovalSaveData('remarks', e.target.value)}
+                                        />
+
+                                    </Box>
+                                }
                             </Box>
                         </DialogContentText>
                     </DialogContent>
                 </Dialog>
             }
+
+            <Dialog
+                open={showOtherTransferModal}
+                onClose={() => setShowOtherTransferModal(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+            >
+                <DialogTitle id="alert-dialog-title"></DialogTitle>
+                <DialogContent sx={{ width: '400px' }}>
+                    <DialogContentText id="alert-dialog-description">
+                        <h4 className='form-field-heading'>{selectKey?.title}</h4>
+                        <FormControl fullWidth>
+                            <Autocomplete
+                                id=""
+                                options={otherTransferField}
+                                getOptionLabel={(option) => option.name || ''}
+                                value={otherTransferField.find((option) => option.code === (selectedOtherFields && selectedOtherFields.code)) || null}
+                                onChange={(event, newValue) => setSelectedOtherFields(newValue)}
+                                renderInput={(params) =>
+                                    <TextField
+                                        {...params}
+                                        className='selectHideHistory'
+                                        label={selectKey?.title}
+                                    />
+                                }
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: '12px 24px' }}>
+                    <Button onClick={() => setShowOtherTransferModal(false)}>Cancel</Button>
+                    <Button className='fillPrimaryBtn' onClick={handleSaveDivisionChange}>Submit</Button>
+                </DialogActions>
+            </Dialog>
 
 
         </Box>
