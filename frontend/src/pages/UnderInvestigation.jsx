@@ -2420,7 +2420,7 @@ const UnderInvestigation = () => {
 
         var payloadApproveData = {
             ...approvalSaveData,
-            "ui_case_id" : selectedOtherTemplate.id,
+            "ui_case_id" : selectedRow.id,
             "transaction_id" : randomApprovalId
         }
 
@@ -2520,7 +2520,7 @@ const UnderInvestigation = () => {
         }
 
         if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
-            showApprovalPage(selectedOtherTemplate);
+            showApprovalPage(selectedRow);
             return;
         }
 
@@ -2541,6 +2541,93 @@ const UnderInvestigation = () => {
         setselectedOtherTemplate(null);
 
     }
+
+    useEffect(()=>{
+
+        if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] === 'field_nature_of_disposal' && selectedOtherFields && selectedOtherFields['name']){
+
+            if(selectedOtherFields && selectedOtherFields['name'] === 'A'){
+
+                console.log(selectedOtherFields['name'],"selectedOtherFields['name']");
+
+            }else if(selectedOtherFields['name'] === 'B' || selectedOtherFields['name'] === 'C' || selectedOtherFields['name'] === 'others'){
+                Swal.fire({
+                    title: selectedOtherFields['name'] === 'B' ? 'Approved by Court' : 'Are You Sure ?',
+                    text: selectedOtherFields['name'] === 'B' ? '' : 'Do you want to move this case !',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes !',
+                    cancelButtonText: 'No',
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        var payloadSysStatus = {
+                            "table_name" : table_name,
+                            "data"  :   {  
+                                            "id": selectedRow.id, 
+                                            "sys_status": 'disposal'
+                                        }
+                        }
+
+                        setLoading(true);
+
+                        try {
+                            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+
+                            setLoading(false);
+
+                            if (chnageSysStatus && chnageSysStatus.success) { 
+                                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-success",
+                                    onOpen: () => handleSaveDivisionChange()
+                                });
+                            } else {
+                                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
+                                toast.error(errorMessage, {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+
+                            }
+
+                        } catch (error) {
+                            setLoading(false);
+                            if (error && error.response && error.response['data']) {
+                                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+
+                            }
+                        }
+                    } else {
+                        console.log("sys status updation canceled.");
+                    }
+                });
+            }
+
+        }
+
+    },[selectedOtherFields]);
+
 
     const [isUpdatePdf, setIsUpdatePdf] = useState(false);
 
@@ -2569,13 +2656,15 @@ const UnderInvestigation = () => {
             "name": "Further Investigation (173) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
         },
+        sysStatus === 'disposal'
+        ? 
         {
-            "name": "Reinvestigation",
+            "name": "Re Open",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, 'Reinvestigation', 'Do you want to update this case to Reinvestigation ?')
-        },
+        }
+        : null
+        
     ].filter(Boolean);;
-
-    console.log(JSON.parse(localStorage.getItem('user_permissions')),"JSON.parse(localStorage.getItem('user_permissions')")
 
     return (
         <Box p={2} inert={loading ? true : false}>
