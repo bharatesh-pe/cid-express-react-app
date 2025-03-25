@@ -51,6 +51,7 @@ const UnderInvestigation = () => {
     const [paginationCount, setPaginationCount] = useState(1);
     const [tableSortOption, settableSortOption] = useState('DESC');
     const [tableSortKey, setTableSortKey] = useState('');
+    const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
     const [tableData, setTableData] = useState([]);
     const [isValid, setIsValid] = useState(false);
     const [searchValue, setSearchValue] = useState(null);
@@ -357,6 +358,20 @@ const UnderInvestigation = () => {
 
     }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, sysStatus])
 
+    const handleCheckboxChangeField = (event, row) => {
+        const isSelected = event.target.checked;
+        setTableData((prevData) =>
+            prevData.map((data) =>
+                data.id === row.id ? { ...data, isSelected } : data
+            )
+        );
+    };
+
+    useEffect(() => {
+        const anySelected = tableData.some(data => data.isSelected);
+        setIsCheckboxSelected(anySelected);
+    }, [tableData]);
+
     const loadTableData = async (page, searchValue) => {
 
         var getTemplatePayload = {
@@ -387,18 +402,31 @@ const UnderInvestigation = () => {
 
                         const updatedHeader = [
                             {
-                                field: 'sl_no',
-                                headerName: 'S.No',
-                                resizable: false,
-                                width: 75,
+                                field: 'select',
+                                headerName: '',
+                                width: 50,
                                 renderCell: (params) => {
                                     return (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            {params.value}
-                                        </Box>
-                                    )
+                                        <Checkbox
+                                            checked={params.row.isSelected || false}
+                                            onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                        />
+                                    );
                                 },
                             },
+                            // {
+                            //     field: 'sl_no',
+                            //     headerName: 'S.No',
+                            //     resizable: false,
+                            //     width: 75,
+                            //     renderCell: (params) => {
+                            //         return (
+                            //             <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            //                 {params.value}
+                            //             </Box>
+                            //         )
+                            //     },
+                            // },
                             ...Object.keys(getTemplateResponse.data['data'][0])
                                 .filter((key) => !excludedKeys.includes(key))
                                 .map((key) => {
@@ -1002,7 +1030,7 @@ const UnderInvestigation = () => {
                 }
             }
         });
-
+        normalData['ui_case_id'] = selectedRowData.id;
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
@@ -1963,6 +1991,7 @@ const UnderInvestigation = () => {
     const handleOtherTemplateActions = async (options, selectedRow)=>{
 
         setSelectedRowData(selectedRow);
+        console.log("selectedRow",selectedRow)
 
         if(options.table && options.field){
             showTransferToOtherDivision(options, selectedRow)
@@ -1971,6 +2000,7 @@ const UnderInvestigation = () => {
 
         var getTemplatePayload = {
             "table_name": options.table,
+            "ui_case_id": selectedRow.id,
         }
 
         setLoading(true);
@@ -2683,46 +2713,6 @@ const UnderInvestigation = () => {
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-
-                        {
-                            JSON.parse(localStorage.getItem('user_permissions')) && JSON.parse(localStorage.getItem('user_permissions'))[0].create_case &&
-                            <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
-                                Add New
-                            </Button>
-                        }
-                        {
-                            localStorage.getItem('authAdmin') === "false" &&
-                            <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
-                                Download Report
-                            </Button>
-                        }
-
-                    </Box>
-                </Box>
-
-                <Box pt={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-
-                    <Box className="parentFilterTabs">
-                        <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
-                            All
-                        </Box>
-                        <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
-                            UI Cases
-                        </Box>
-                        <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
-                            Further Investigation (173) Case
-                        </Box>
-                        <Box onClick={() => { setSysSattus('merge_cases'); setPaginationCount(1) }} id="filterMergeCases" className={`filterTabs ${sysStatus === 'merge_cases' ? 'Active' : ''}`} >
-                            Merged Cases
-                        </Box>
-                        <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
-                            Disposal
-                        </Box>
-                        <Box onClick={() => { setSysSattus('Reinvestigation'); setPaginationCount(1) }} id="filterReinvestigation" className={`filterTabs ${sysStatus === 'Reinvestigation' ? 'Active' : ''}`} >
-                            Reinvestigation
-                        </Box>
-                    </Box>
-
                     <TextFieldInput InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
@@ -2750,7 +2740,7 @@ const UnderInvestigation = () => {
                             }
                         }}
                         sx={{
-                            width: '400px', borderRadius: '6px', outline: 'none',
+                            width: '300px', borderRadius: '6px', outline: 'none',
                             '& .MuiInputBase-input::placeholder': {
                                 color: '#475467',
                                 opacity: '1',
@@ -2760,7 +2750,85 @@ const UnderInvestigation = () => {
                             },
                         }}
                     />
+                      {isCheckboxSelected && (
+                        <>
+                            <Button
+                                variant="contained"
+                                startIcon={
+                                    <svg
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 20 18"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M1 18V12H3V16H7V18H1ZM13 18V16H17V12H19V18H13ZM5.175 12.825L3.75 11.425L5.175 10H0V8H5.175L3.75 6.575L5.175 5.175L9 9L5.175 12.825ZM14.825 12.825L11 9L14.825 5.175L16.25 6.575L14.825 8H20V10H14.825L16.25 11.425L14.825 12.825ZM1 6V0H7V2H3V6H1ZM17 6V2H13V0H19V6H17Z"
+                                            fill="black"
+                                        />
+                                    </svg>
+                                }
+                                sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
+                                Merge
+                            </Button>
+                            <Button
+                                variant="contained"
+                                startIcon={
+                                    <svg fill="#000000"                                         
+                                        width="22"
+                                        height="22"
+                                        viewBox="0 0 20 18"
+                                        xmlns="http://www.w3.org/2000/svg" class="cf-icon-svg">
+                                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                        <g id="SVGRepo_iconCarrier">
+                                            <path d="M5.857 3.882v3.341a1.03 1.03 0 0 1-2.058 0v-.97a5.401 5.401 0 0 0-1.032 2.27 1.03 1.03 0 1 1-2.02-.395A7.462 7.462 0 0 1 2.235 4.91h-.748a1.03 1.03 0 1 1 0-2.058h3.34a1.03 1.03 0 0 1 1.03 1.03zm-3.25 9.237a1.028 1.028 0 0 1-1.358-.523 7.497 7.497 0 0 1-.37-1.036 1.03 1.03 0 1 1 1.983-.55 5.474 5.474 0 0 0 .269.751 1.029 1.029 0 0 1-.524 1.358zm2.905 2.439a1.028 1.028 0 0 1-1.42.322 7.522 7.522 0 0 1-.885-.652 1.03 1.03 0 0 1 1.34-1.563 5.435 5.435 0 0 0 .643.473 1.03 1.03 0 0 1 .322 1.42zm3.68.438a1.03 1.03 0 0 1-1.014 1.044h-.106a7.488 7.488 0 0 1-.811-.044 1.03 1.03 0 0 1 .224-2.046 5.41 5.41 0 0 0 .664.031h.014a1.03 1.03 0 0 1 1.03 1.015zm.034-12.847a1.03 1.03 0 0 1-1.029 1.01h-.033a1.03 1.03 0 0 1 .017-2.06h.017l.019.001a1.03 1.03 0 0 1 1.009 1.05zm3.236 11.25a1.029 1.029 0 0 1-.3 1.425 7.477 7.477 0 0 1-.797.453 1.03 1.03 0 1 1-.905-1.849 5.479 5.479 0 0 0 .578-.328 1.03 1.03 0 0 1 1.424.3zM10.475 3.504a1.029 1.029 0 0 1 1.41-.359l.018.011a1.03 1.03 0 1 1-1.06 1.764l-.01-.006a1.029 1.029 0 0 1-.358-1.41zm4.26 9.445a7.5 7.5 0 0 1-.315.56 1.03 1.03 0 1 1-1.749-1.086 5.01 5.01 0 0 0 .228-.405 1.03 1.03 0 1 1 1.836.93zm-1.959-6.052a1.03 1.03 0 0 1 1.79-1.016l.008.013a1.03 1.03 0 1 1-1.79 1.017zm2.764 2.487a9.327 9.327 0 0 1 0 .366 1.03 1.03 0 0 1-1.029 1.005h-.025A1.03 1.03 0 0 1 13.482 9.7a4.625 4.625 0 0 0 0-.266 1.03 1.03 0 0 1 1.003-1.055h.026a1.03 1.03 0 0 1 1.029 1.004z"></path>
+                                        </g></svg>
+                                }
+                                sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
+                                Massive Division
+                            </Button>
+                        </>    
+                        )}
 
+                        {
+                            JSON.parse(localStorage.getItem('user_permissions')) && JSON.parse(localStorage.getItem('user_permissions'))[0].create_case &&
+                            <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
+                                Add New
+                            </Button>
+                        }
+                        {
+                            localStorage.getItem('authAdmin') === "false" &&
+                            <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
+                                Download Report
+                            </Button>
+                        }
+
+                    </Box>
+                </Box>
+
+                <Box pt={1} sx={{ display: 'flex',   }}>
+
+                    <Box className="parentFilterTabs">
+                        <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
+                            All
+                        </Box>
+                        <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
+                            UI Cases
+                        </Box>
+                        <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
+                            Further Investigation (173) Case
+                        </Box>
+                        <Box onClick={() => { setSysSattus('merge_cases'); setPaginationCount(1) }} id="filterMergeCases" className={`filterTabs ${sysStatus === 'merge_cases' ? 'Active' : ''}`} >
+                            Merged Cases
+                        </Box>
+                        <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
+                            Disposal
+                        </Box>
+                        <Box onClick={() => { setSysSattus('Reinvestigation'); setPaginationCount(1) }} id="filterReinvestigation" className={`filterTabs ${sysStatus === 'Reinvestigation' ? 'Active' : ''}`} >
+                            Reinvestigation
+                        </Box>
+                    </Box>
                 </Box>
 
                 <Box py={2}>
@@ -2913,6 +2981,7 @@ const UnderInvestigation = () => {
                                 <h4 className="form-field-heading">Columns of Reports</h4>
                                 <Grid container spacing={2}>
                                     {
+
                                         showDownloadData && showDownloadData.map((fieldName, index) => {
                                             return (
                                                 <Grid item xs={12} md={6} key={index}>
