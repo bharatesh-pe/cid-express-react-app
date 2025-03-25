@@ -82,7 +82,6 @@ exports.createTemplate = async (req, res, next) => {
 				unique,
 				is_dependent,
 				api,
-
 				table,
 				forign_key,
 				attributes
@@ -158,6 +157,16 @@ exports.createTemplate = async (req, res, next) => {
 			defaultValue: template_module ? template_module : null,
         };
 
+        fieldDefinitions.created_by = {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true
+        };
+
+        fieldDefinitions.updated_by = {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true
+        };
+
 		// Define the model
 		const model = sequelize.define(table_name, fieldDefinitions, {
 			freezeTableName: true,
@@ -218,7 +227,6 @@ exports.createTemplate = async (req, res, next) => {
 			is_link_to_leader,
 			created_by: "adminUser.full_name",
 			updated_by: "adminUser.full_name",
-
 			paranoid,
 		};
 		if (paranoid) {

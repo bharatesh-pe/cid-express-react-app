@@ -151,66 +151,80 @@ const UnderInvestigation = () => {
 
     // change sys_status
 
-    const changeSysStatus = async (data, value)=>{
+    const changeSysStatus = async (data, value, text)=>{
 
-        var payloadSysStatus = {
-            "table_name" : table_name,
-            "data"  :   {  
-                            "id": data.id, 
-                            "sys_status": value
-                        }
-        }
+        Swal.fire({
+            title: 'Are you sure?',
+            text: text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes !',
+            cancelButtonText: 'No',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
 
-        setLoading(true);
+                var payloadSysStatus = {
+                    "table_name" : table_name,
+                    "data"  :   {  
+                                    "id": data.id, 
+                                    "sys_status": value
+                                }
+                }
 
-        try {
-            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+                setLoading(true);
 
-            setLoading(false);
+                try {
+                    const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
 
-            if (chnageSysStatus && chnageSysStatus.success) { 
-                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount)
-                });
+                    setLoading(false);
+
+                    if (chnageSysStatus && chnageSysStatus.success) { 
+                        toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-success",
+                            onOpen: () => loadTableData(paginationCount)
+                        });
+                    } else {
+                        const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+
+                    }
+
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+
+                    }
+                }
             } else {
-                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-
+                console.log("sys status updation canceled.");
             }
-
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response['data']) {
-                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-
-            }
-        }
+        });
 
     }
 
@@ -1791,7 +1805,25 @@ const UnderInvestigation = () => {
                 if (getActionsDetails && getActionsDetails.success) {
     
                     if (getActionsDetails.data && getActionsDetails.data['data']) {
-                        setHoverTableOptions(getActionsDetails.data['data']);
+
+                        var userPermissions = JSON.parse(localStorage.getItem('user_permissions'));
+                        var updatedActions = getActionsDetails.data['data'].filter((action) => {
+                            if (action.permissions) {
+                                var parsedPermissions = JSON.parse(action.permissions);
+                        
+                                const hasValidPermission = parsedPermissions.some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                        
+                                if (hasValidPermission) {
+                                    return false;
+                                }
+                            }
+                        
+                            return action;
+                        });
+
+                        setHoverTableOptions(updatedActions);
                     }
     
                 } else {
@@ -1930,9 +1962,6 @@ const UnderInvestigation = () => {
     
     const handleOtherTemplateActions = async (options, selectedRow)=>{
 
-        console.log("selectedRow",selectedRow)
-
-        console.log("options",options)
         setSelectedRowData(selectedRow);
 
         if(options.table && options.field){
@@ -2107,6 +2136,8 @@ const UnderInvestigation = () => {
     }
 
     const showTransferToOtherDivision = async (options, selectedRow)=>{
+
+        console.log(selectedRow,"selectedRow")
 
         const viewTableData = {
             "table_name": options.table
@@ -2354,8 +2385,9 @@ const UnderInvestigation = () => {
     }
 
     const showApprovalAddPage = (table)=> {
-        console.log("here add data", table , "table");
+
         setAddApproveFlag(true);
+        handleApprovalSaveData('approval_item', Number(selectedOtherTemplate?.approval_items));
     }
     
     const saveApprovalData = async (table)=> {
@@ -2392,7 +2424,7 @@ const UnderInvestigation = () => {
 
         var payloadApproveData = {
             ...approvalSaveData,
-            "ui_case_id" : selectedOtherTemplate.id,
+            "ui_case_id" : selectedRow.id,
             "transaction_id" : randomApprovalId
         }
 
@@ -2492,7 +2524,7 @@ const UnderInvestigation = () => {
         }
 
         if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
-            showApprovalPage(selectedOtherTemplate);
+            showApprovalPage(selectedRow);
             return;
         }
 
@@ -2514,31 +2546,129 @@ const UnderInvestigation = () => {
 
     }
 
+    useEffect(()=>{
+
+        if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] === 'field_nature_of_disposal' && selectedOtherFields && selectedOtherFields['name']){
+
+            if(selectedOtherFields && selectedOtherFields['name'] === 'A'){
+
+                console.log(selectedOtherFields['name'],"selectedOtherFields['name']");
+
+            }else if(selectedOtherFields['name'] === 'B' || selectedOtherFields['name'] === 'C' || selectedOtherFields['name'] === 'others'){
+                Swal.fire({
+                    title: selectedOtherFields['name'] === 'B' ? 'Approved by Court' : 'Are You Sure ?',
+                    text: selectedOtherFields['name'] === 'B' ? '' : 'Do you want to move this case !',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes !',
+                    cancelButtonText: 'No',
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        var payloadSysStatus = {
+                            "table_name" : table_name,
+                            "data"  :   {  
+                                            "id": selectedRow.id, 
+                                            "sys_status": 'disposal'
+                                        }
+                        }
+
+                        setLoading(true);
+
+                        try {
+                            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+
+                            setLoading(false);
+
+                            if (chnageSysStatus && chnageSysStatus.success) { 
+                                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-success",
+                                    onOpen: () => handleSaveDivisionChange()
+                                });
+                            } else {
+                                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
+                                toast.error(errorMessage, {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+
+                            }
+
+                        } catch (error) {
+                            setLoading(false);
+                            if (error && error.response && error.response['data']) {
+                                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+
+                            }
+                        }
+                    } else {
+                        console.log("sys status updation canceled.");
+                    }
+                });
+            }
+
+        }
+
+    },[selectedOtherFields]);
+
+
     const [isUpdatePdf, setIsUpdatePdf] = useState(false);
 
+    var userPermissions = JSON.parse(localStorage.getItem('user_permissions')) || [];
     var hoverExtraOptions = [
-        {
+        userPermissions[0]?.view_case
+        ? {
             "name": "View",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
-        },
-        {
+        }
+        : null,
+        userPermissions[0]?.edit_case
+        ? {
             "name": "Edit",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
-        },
-        {
+        }
+        : null,
+        userPermissions[0]?.delete_case
+        ? {
             "name": "Delete",
             "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
-        },
+        }
+        : null,
         ...hoverTableOptions,
         {
-            "name": "Further Investigation",
-            "onclick": (selectedRow) => changeSysStatus(selectedRow, 'further_investigation')
+            "name": "Further Investigation (173) Case",
+            "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
         },
+        sysStatus === 'disposal'
+        ? 
         {
-            "name": "173(8) Cases",
-            "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases')
-        },
-    ];
+            "name": "Re Open",
+            "onclick": (selectedRow) => changeSysStatus(selectedRow, 'Reinvestigation', 'Do you want to update this case to Reinvestigation ?')
+        }
+        : null
+        
+    ].filter(Boolean);;
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -2554,9 +2684,12 @@ const UnderInvestigation = () => {
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
 
-                        <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
-                            Add New
-                        </Button>
+                        {
+                            JSON.parse(localStorage.getItem('user_permissions')) && JSON.parse(localStorage.getItem('user_permissions'))[0].create_case &&
+                            <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
+                                Add New
+                            </Button>
+                        }
                         {
                             localStorage.getItem('authAdmin') === "false" &&
                             <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
@@ -2576,17 +2709,17 @@ const UnderInvestigation = () => {
                         <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
                             UI Cases
                         </Box>
-                        <Box onClick={() => { setSysSattus('further_investigation'); setPaginationCount(1) }} id="filterFurtherInvestigation" className={`filterTabs ${sysStatus === 'further_investigation' ? 'Active' : ''}`} >
-                            Further Invesitgtion
-                        </Box>
                         <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
-                            173(8) Cases
+                            Further Investigation (173) Case
                         </Box>
                         <Box onClick={() => { setSysSattus('merge_cases'); setPaginationCount(1) }} id="filterMergeCases" className={`filterTabs ${sysStatus === 'merge_cases' ? 'Active' : ''}`} >
                             Merged Cases
                         </Box>
                         <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
                             Disposal
+                        </Box>
+                        <Box onClick={() => { setSysSattus('Reinvestigation'); setPaginationCount(1) }} id="filterReinvestigation" className={`filterTabs ${sysStatus === 'Reinvestigation' ? 'Active' : ''}`} >
+                            Reinvestigation
                         </Box>
                     </Box>
 
