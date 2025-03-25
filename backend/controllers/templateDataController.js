@@ -345,10 +345,14 @@ exports.updateTemplateData = async (req, res, next) => {
         });
 
         // Find existing record by ID
-        const record = await Model.findByPk(id);
-        if (!record) {
-            return userSendResponse(res, 400, false, `Record with ID ${id} does not exist in table ${table_name}.`, null);
-        }
+        const ids = id.split(',').map(id => id.trim());
+
+        for (const singleId of ids) {
+            // Find existing record by ID
+            const record = await Model.findByPk(singleId);
+            if (!record) {
+                return userSendResponse(res, 400, false, `Record with ID ${singleId} does not exist in table ${table_name}.`, null);
+            }
 
         const originalData = record.toJSON();
         const updatedFields = {};
@@ -454,11 +458,11 @@ exports.updateTemplateData = async (req, res, next) => {
             for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
                 await Model.update(
                     { [fieldname]: filenames },
-                    { where: { id } }
+                    { where: { id: singleId } }
                 );
             }
         }
-
+    }
 
 
         // await TemplateUserStatus.destroy({
