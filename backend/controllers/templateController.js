@@ -167,6 +167,16 @@ exports.createTemplate = async (req, res, next) => {
             allowNull: true
         };
 
+		fieldDefinitions.ui_case_id = {
+            type: Sequelize.DataTypes.INTEGER,
+            allowNull: true
+        };
+
+        fieldDefinitions.pt_case_id = {
+            type: Sequelize.DataTypes.INTEGER,
+            allowNull: true
+        };
+
 		// Define the model
 		const model = sequelize.define(table_name, fieldDefinitions, {
 			freezeTableName: true,

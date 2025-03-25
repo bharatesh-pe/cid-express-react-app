@@ -157,7 +157,8 @@ const PendingTrail = () => {
             "table_name" : table_name,
             "data"  :   {  
                             "id": data.id, 
-                            "sys_status": value
+                            "sys_status": value,
+                            "default_status":"pt_case"
                         }
         }
 
@@ -986,6 +987,8 @@ const PendingTrail = () => {
             }
         });
 
+        normalData.sys_status = "pt_case";
+
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
@@ -1427,6 +1430,8 @@ const PendingTrail = () => {
                 }
             }
         });
+
+        normalData.sys_status = "pt_case";
 
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
