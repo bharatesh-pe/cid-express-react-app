@@ -2693,7 +2693,7 @@ const UnderInvestigation = () => {
         : null,
         ...hoverTableOptions,
         {
-            "name": "Further Investigation 173(18) Case",
+            "name": "Further Investigation 173(8) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
         },
         sysStatus === 'disposal'
