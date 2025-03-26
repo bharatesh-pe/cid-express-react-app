@@ -1994,14 +1994,14 @@ const Enquiries = () => {
             "name": "Edit",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
         },
-        {
+        ...(sysStatus !== 'Disposal' ? [{
             "name": "Status Update",
             "onclick": (row) => {
-                    setSelectedRow(row);
-                    setSelectedStatus('');
-                    setStatusUpdateVisible(true);
-                },
-        },
+                setSelectedRow(row);
+                setSelectedStatus('');
+                setStatusUpdateVisible(true);
+            },
+        }] : []),
         {
             "name": "Delete",
             "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
