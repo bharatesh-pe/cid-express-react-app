@@ -3,6 +3,7 @@ const db = require('../models');
 const sequelize = db.sequelize;
 const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
+const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
 const { Op } = require("sequelize");
 const fs = require('fs');
@@ -359,10 +360,14 @@ exports.updateTemplateData = async (req, res, next) => {
         });
 
         // Find existing record by ID
-        const record = await Model.findByPk(id);
-        if (!record) {
-            return userSendResponse(res, 400, false, `Record with ID ${id} does not exist in table ${table_name}.`, null);
-        }
+        const ids = id.split(',').map(id => id.trim());
+
+        for (const singleId of ids) {
+            // Find existing record by ID
+            const record = await Model.findByPk(singleId);
+            if (!record) {
+                return userSendResponse(res, 400, false, `Record with ID ${singleId} does not exist in table ${table_name}.`, null);
+            }
 
         const originalData = record.toJSON();
         const updatedFields = {};
@@ -468,11 +473,11 @@ exports.updateTemplateData = async (req, res, next) => {
             for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
                 await Model.update(
                     { [fieldname]: filenames },
-                    { where: { id } }
+                    { where: { id: singleId } }
                 );
             }
         }
-
+    }
 
 
         // await TemplateUserStatus.destroy({
@@ -3358,3 +3363,55 @@ exports.getUploadedFiles = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal server error." });
     }
 };
+
+exports.appendToLastLineOfPDF = async (req, res) => {
+    const { ui_case_id, appendText } = req.body;
+  
+    if (!ui_case_id || !appendText) {
+      return res.status(400).json({ success: false, message: "Missing required fields." });
+    }
+  
+    try {
+      // Fetch the latest uploaded PDF for the given ui_case_id
+      const latestFile = await UiProgressReportFileStatus.findOne({
+        where: { ui_case_id, is_pdf: true },
+        order: [['created_at', 'DESC']],
+      });
+  
+      if (!latestFile) {
+        return res.status(404).json({ success: false, message: "No PDF file found for the given case ID." });
+      }
+  
+      const pdfPath = path.join(__dirname, "../public", latestFile.file_path);
+      const outputPath = path.join(__dirname, "../public/files", `updated_${latestFile.file_name}`);
+  
+      const existingPdfBytes = fs.readFileSync(pdfPath);
+      const pdfDoc = await PDFDocument.load(existingPdfBytes);
+      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+      // Create a new page and add it to the document
+      const newPage = pdfDoc.addPage();
+      newPage.drawText(appendText, {
+        x: 50,
+        y: newPage.getHeight() - 50, // Adjust Y based on where you want to place the text
+        size: 12,
+        font,
+        color: rgb(0, 0, 0),
+      });
+  
+      const pdfBytes = await pdfDoc.save();
+      fs.writeFileSync(outputPath, pdfBytes);
+      console.log(`Appended text to ${outputPath}`);
+  
+      // Update the existing database entry with the new file path
+      await UiProgressReportFileStatus.update(
+        { file_path: path.join("files", `updated_${latestFile.file_name}`) },
+        { where: { id: latestFile.id } }
+      );
+  
+      return res.status(200).json({ success: true, message: "PDF updated successfully.", file_path: outputPath });
+    } catch (err) {
+      console.error('Error appending to PDF:', err.message);
+      return res.status(500).json({ success: false, message: "Internal server error." });
+    }
+  };
