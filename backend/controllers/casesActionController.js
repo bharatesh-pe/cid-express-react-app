@@ -71,19 +71,28 @@ exports.get_overall_actions = async (req, res) => {
 
 // Get actions by module
 exports.get_actions = async (req, res) => {
-    const {module} = req.body; // Get pagination parameters from the request body
+    const {module, tab} = req.body; // Get pagination parameters from the request body
 
 
     try {
+        
         // Get total count for pagination
         const total = await CasesAction.count({
             where: { module: { [Op.iLike]: module } }
         });
 
+        const whereCondition = {
+            module: { [Op.iLike]: module }
+        };
+
+        if (typeof tab === "string") {
+            whereCondition.tab = { [Op.iLike]: `%${tab}%` };
+        }
+
         // Get paginated actions for the specified module
         const data = await CasesAction.findAll({
-            where: { module: { [Op.iLike]: module } },
-            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval','permissions', 'approval_items', 'created_at']
+            where: whereCondition,
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval','permissions', 'approval_items', 'created_at', 'tab']
         });
 
         return res.status(200).json({

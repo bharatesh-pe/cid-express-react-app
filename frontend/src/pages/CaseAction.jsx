@@ -648,6 +648,10 @@ const CaseActions = () => {
             addActionFormData['permissions'] = JSON.stringify(addActionFormData['permissions']);
         }
 
+        if(addActionFormData['tab']){
+            addActionFormData['tab'] = JSON.stringify(addActionFormData['tab']);
+        }
+
         try {
 
             const insertActionOptions = await api.post("/action/insert_action", addActionFormData);

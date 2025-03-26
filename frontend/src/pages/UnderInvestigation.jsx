@@ -1821,11 +1821,10 @@ const UnderInvestigation = () => {
 
 
     useEffect(()=>{
-
         const getActions = async ()=>{
 
             var payloadObj = {
-                "module": "ui_case"
+                "module": "ui_case",
             }
 
             setLoading(true);
