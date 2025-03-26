@@ -265,7 +265,8 @@ const Enquiries = () => {
                 "table_name" : table_name,
                 "data"  :   {  
                                 "id": selectedRow.id, 
-                                "sys_status": status
+                                "sys_status": status,
+                                "default_status":"eq_case"
                             }
             }
     
@@ -987,7 +988,7 @@ const Enquiries = () => {
                 }
             }
         });
-
+        normalData.sys_status ='eq_case';
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
@@ -1424,7 +1425,7 @@ const Enquiries = () => {
                 }
             }
         });
-
+        normalData.sys_status ='eq_case';
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
