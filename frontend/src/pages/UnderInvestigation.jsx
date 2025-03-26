@@ -1811,12 +1811,10 @@ const UnderInvestigation = () => {
                                     (permission) => userPermissions[permission] === true
                                 );
                         
-                                if (hasValidPermission) {
-                                    return false;
-                                }
+                                return hasValidPermission;
                             }
                         
-                            return action;
+                            return true;
                         });
 
                         setHoverTableOptions(updatedActions);
