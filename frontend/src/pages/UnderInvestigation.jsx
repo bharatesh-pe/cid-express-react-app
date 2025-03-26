@@ -60,7 +60,7 @@ const UnderInvestigation = () => {
     const [template_name, setTemplate_name] = useState('')
     const [table_name, setTable_name] = useState('')
 
-    const [sysStatus, setSysSattus] = useState(null);
+    const [sysStatus, setSysSattus] = useState('all');
 
     const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
@@ -1821,11 +1821,10 @@ const UnderInvestigation = () => {
 
 
     useEffect(()=>{
-
         const getActions = async ()=>{
 
             var payloadObj = {
-                "module": "ui_case"
+                "module": "ui_case",
             }
 
             setLoading(true);
@@ -1849,12 +1848,10 @@ const UnderInvestigation = () => {
                                     (permission) => userPermissions[permission] === true
                                 );
                         
-                                if (hasValidPermission) {
-                                    return false;
-                                }
+                                return hasValidPermission;
                             }
                         
-                            return action;
+                            return true;
                         });
 
                         setHoverTableOptions(updatedActions);
@@ -2559,6 +2556,11 @@ const UnderInvestigation = () => {
             return;
         }
 
+        if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] === 'field_nature_of_disposal' && selectedOtherFields && selectedOtherFields['name']){
+            checkDisposalValues();
+            return;
+        }
+
         if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
             showApprovalPage(selectedRow);
             return;
@@ -2582,7 +2584,7 @@ const UnderInvestigation = () => {
 
     }
 
-    useEffect(()=>{
+    const checkDisposalValues = ()=> {
 
         if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] === 'field_nature_of_disposal' && selectedOtherFields && selectedOtherFields['name']){
 
@@ -2625,8 +2627,24 @@ const UnderInvestigation = () => {
                                     draggable: true,
                                     progress: undefined,
                                     className: "toast-success",
-                                    onOpen: () => handleSaveDivisionChange()
                                 });
+
+                                // update func
+                                var combinedData = {
+                                    id : selectedRow.id,
+                                    [selectKey.name] : selectedOtherFields.code
+                                }
+
+                                onUpdateTemplateData(combinedData);
+
+                                // reset states
+                                setSelectKey(null);
+                                setSelectedRow(null);
+                                setOtherTransferField([]);
+                                setShowOtherTransferModal(false);
+                                setSelectedOtherFields(null);
+                                setselectedOtherTemplate(null);
+
                             } else {
                                 const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
                                 toast.error(errorMessage, {
@@ -2659,14 +2677,18 @@ const UnderInvestigation = () => {
                             }
                         }
                     } else {
-                        console.log("sys status updation canceled.");
+                        setSelectKey(null);
+                        setSelectedRow(null);
+                        setOtherTransferField([]);
+                        setShowOtherTransferModal(false);
+                        setSelectedOtherFields(null);
+                        setselectedOtherTemplate(null);
                     }
                 });
             }
 
         }
-
-    },[selectedOtherFields]);
+    };
 
 
     const [isUpdatePdf, setIsUpdatePdf] = useState(false);
@@ -2818,7 +2840,7 @@ const UnderInvestigation = () => {
                 <Box pt={1} sx={{ display: 'flex',   }}>
 
                     <Box className="parentFilterTabs">
-                        <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('all'); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === 'all' ? 'Active' : ''}`} >
                             All
                         </Box>
                         <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
