@@ -187,6 +187,7 @@ router.post('/updateTemplateData',
             next();
         }
     },
+    [validate_token],
     templateDataController.updateTemplateData)
 router.post('/deleteTemplateData',
     // eitherAuthMiddleware,
@@ -227,6 +228,7 @@ router.post('/paginateTemplateDataForOtherThanMaster',
     // eitherAuthMiddleware,
     // userAuthMiddleware,
     // [paginateDataValidation],
+    [validate_token],
     templateDataController.paginateTemplateDataForOtherThanMaster)
 
 
@@ -276,7 +278,6 @@ router.post('/uploadFile',
         templateDataController.getUploadedFiles)
     
 router.post('/caseSysStatusUpdation',
-
 
     templateDataController.caseSysStatusUpdation)
 

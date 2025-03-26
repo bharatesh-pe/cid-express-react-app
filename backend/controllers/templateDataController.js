@@ -1,7 +1,7 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
 const sequelize = db.sequelize;
-const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
+const { Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
@@ -26,47 +26,45 @@ const typeMapping = {
 
 
 exports.insertTemplateData = async (req, res, next) => {
-    const { table_name, data, folder_attachment_ids } = req.body;
-    // const userId = res.locals.user_id || null;
-    const adminUserId = res.locals.admin_user_id || null;
-    const {user_id} = req.user;
-    const userId = user_id;
-    const actorId = userId || adminUserId;
-
-    console.log("inserting user", userId, actorId);
-    // const adminUserName = await admin_user.findOne({
-    //     where: { admin_user_id: adminUserId },
-    //     attributes: ['full_name']
-    // });
-
-    // const userName = await user.findOne({
-    //     where: { user_id: userId },
-    //     attributes: ['user_firstname']
-    // });
-    // const actorName = adminUserName?.full_name || userName?.user_firstname;
-    const actorName = "abc"
-
-
-
-    // if (!actorId) {
-    //     return userSendResponse(res, 403, false, "Unauthorized access.", null);
-    // }
-
     try {
-        const tableData = await Template.findOne({ where: { table_name } });
-        console.log("?????????????", tableData)
+        const { table_name, data, folder_attachment_ids } = req.body;
+        const userId = req.user?.user_id || null;
+        const adminUserId = res.locals.admin_user_id || null;
+        const actorId = userId || adminUserId;
 
-        if (!tableData) {
-            const message = `Table ${table_name} does not exist.`;
-            return userSendResponse(res, 400, false, message, null);
+        if (!actorId) {
+            return userSendResponse(res, 403, false, "Unauthorized access.", null);
         }
 
-        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+        // Fetch user data
+        const userData = await Users.findOne({
+            where: { user_id: userId },
+            attributes: ["name"],
+        });
+
+        const userName = userData?.name || "Unknown";
+
+        // Fetch table metadata
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+
+        const schema = tableData?.fields
+            ? typeof tableData.fields === "string"
+                ? JSON.parse(tableData.fields)
+                : tableData.fields
+            : [];
+
+        // Parse incoming data
+        let parsedData;
+        try {
+            parsedData = JSON.parse(data);
+        } catch (err) {
+            return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+        }
+
         const validData = {};
-
-        const cleanedData = data.replace(/\/\/.*|\/\*[\s\S]*?\*\/|,\s*}/g, match => (match.includes(",") ? "}" : ""));
-        const parsedData = JSON.parse(cleanedData);
-
         for (const field of schema) {
             const { name, not_null, default_value } = field;
 
@@ -79,17 +77,24 @@ exports.insertTemplateData = async (req, res, next) => {
             }
         }
 
+        validData.created_by = userName;
+        validData.created_by_id = userId;
+
+        // Include additional system fields dynamically
         const completeSchema = parsedData?.sys_status
-             ? [
-                 {
-                     name: "sys_status",
-                     data_type: "TEXT",
-                     not_null: false,
-                     default_value: parsedData.sys_status.trim() // Add trim() to clean the input
-                 },
-                 ...schema
-             ]
-             : schema;
+            ? [
+                  { name: "sys_status", data_type: "TEXT", not_null: false, default_value: parsedData.sys_status.trim() },
+                  { name: "created_by", data_type: "TEXT", not_null: false },
+                  { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                  ...schema,
+              ]
+            : [
+                  { name: "created_by", data_type: "TEXT", not_null: false },
+                  { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                  ...schema,
+              ];
+
+        // Define dynamic model
         const modelAttributes = {};
         for (const field of completeSchema) {
             const { name, data_type, not_null, default_value } = field;
@@ -104,38 +109,31 @@ exports.insertTemplateData = async (req, res, next) => {
         const Model = sequelize.define(table_name, modelAttributes, {
             freezeTableName: true,
             timestamps: true,
-            createdAt: 'created_at',
-            updatedAt: 'updated_at',
+            createdAt: "created_at",
+            updatedAt: "updated_at",
         });
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>", modelAttributes)
+
+        console.log("Model Attributes:", modelAttributes);
+
+        // Sync model to ensure table exists
+        await Model.sync(); // Only use `sync()` when necessary to prevent performance overhead
+
+        // Insert data
         const insertedData = await Model.create(validData);
 
-        // await ActivityLog.create({
-        //     template_id: tableData.template_id,
-        //     table_row_id: insertedData.id,
-        //     user_id: actorId,
-        //     actor_name: actorName,
-        //     activity: `Created`,
-        // });
+        // Handle file uploads if any
+        if (req.files?.length > 0) {
+            const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : [];
 
-        const fileUpdates = {};
-
-
-        if (req.files && req.files.length > 0) {
-            const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : []; // Parse if provided, else empty array
-
-            for (const file of req.files) {
+            const fileRecords = req.files.map((file) => {
                 const { originalname, size, key, fieldname } = file;
                 const fileExtension = path.extname(originalname);
 
-                // Find matching folder_id from the payload (if any)
                 const matchingFolder = folderAttachments.find(
-                    attachment => attachment.filename === originalname && attachment.field_name === fieldname
+                    (att) => att.filename === originalname && att.field_name === fieldname
                 );
 
-                const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
-
-                await ProfileAttachment.create({
+                return {
                     template_id: tableData.template_id,
                     table_row_id: insertedData.id,
                     attachment_name: originalname,
@@ -143,40 +141,16 @@ exports.insertTemplateData = async (req, res, next) => {
                     attachment_size: size,
                     s3_key: key,
                     field_name: fieldname,
-                    folder_id: folderId, // Store NULL if no folder_id provided
-                });
+                    folder_id: matchingFolder?.folder_id || null,
+                };
+            });
 
-                if (!fileUpdates[fieldname]) {
-                    fileUpdates[fieldname] = originalname;
-                } else {
-                    fileUpdates[fieldname] += `,${originalname}`;
-                }
-            }
-
-            // Update the model with file arrays
-            for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-                await Model.update(
-                    { [fieldname]: filenames },
-                    { where: { id: insertedData.id } }
-                );
-            }
+            await ProfileAttachment.bulkCreate(fileRecords);
         }
-
 
         return userSendResponse(res, 200, true, `Data inserted successfully into table ${table_name}.`, null);
-
     } catch (error) {
-        if (error.name === "SequelizeUniqueConstraintError") {
-            const uniqueErrorField = error.errors[0]?.path || "a unique field";
-            return userSendResponse(res, 400, false, `${uniqueErrorField} already exists.`, null);
-        }
-
-        if (error.name === "SequelizeValidationError") {
-            const validationErrorField = error.errors[0]?.path || "a required field";
-            return userSendResponse(res, 400, false, `${validationErrorField} is required.`, null);
-        }
-
-        console.error("Error inserting data:", error);
+        console.error("Error inserting data:", error.stack);
         return userSendResponse(res, 500, false, "Server error.", error);
     }
 };
@@ -286,24 +260,22 @@ async function getDisplayValueForField(field, value, schema) {
 }
 exports.updateTemplateData = async (req, res, next) => {
     const { table_name, id, data, folder_attachment_ids } = req.body;
-    // const userId = res.locals.user_id || null;
-    // const adminUserId = res.locals.admin_user_id || null;
-    // const actorId = userId || adminUserId;
 
-    // const adminUserName = await admin_user.findOne({
-    //     where: { admin_user_id: adminUserId },
-    //     attributes: ['full_name']
-    // });
+    const userId = req.user?.user_id || null;
+    const adminUserId = res.locals.admin_user_id || null;
+    const actorId = userId || adminUserId;
 
-    // const userName = await user.findOne({
-    //     where: { user_id: userId },
-    //     attributes: ['user_firstname']
-    // });
-    // const actorName = adminUserName?.full_name || userName?.user_firstname;
-    const actorName = "kvn"
-    // if (!actorId) {
-    //     return userSendResponse(res, 403, false, "Unauthorized access.", null);
-    // }
+    if (!actorId) {
+        return userSendResponse(res, 403, false, "Unauthorized access.", null);
+    }
+
+    // Fetch user data
+    const userData = await Users.findOne({
+        where: { user_id: userId },
+        attributes: ["name"],
+    });
+
+    const userName = userData?.name || "Unknown";
 
     try {
         // Fetch the table template
@@ -318,10 +290,16 @@ exports.updateTemplateData = async (req, res, next) => {
         const validData = {};
 
         // Parse incoming JSON payload
-        const cleanedData = data.replace(/\/\/.*|\/\*[\s\S]*?\*\/|,\s*}/g, match => {
-            return match.includes(",") ? "}" : "";
-        });
-        const parsedData = JSON.parse(cleanedData);
+        // const cleanedData = data.replace(/\/\/.*|\/\*[\s\S]*?\*\/|,\s*}/g, match => {
+        //     return match.includes(",") ? "}" : "";
+        // });
+        // const parsedData = JSON.parse(cleanedData);
+        let parsedData;
+        try {
+            parsedData = JSON.parse(data);
+        } catch (err) {
+            return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+        }
 
         // Validate and filter data for schema-based fields
         for (const field of schema) {
@@ -333,12 +311,31 @@ exports.updateTemplateData = async (req, res, next) => {
                 return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
             }
         }
+
+        
+        validData.updated_by = userName;
+        validData.updated_by_id = userId;
+
+        // Include additional system fields dynamically
+        const completeSchema = parsedData?.sys_status
+            ? [
+                  { name: "sys_status", data_type: "TEXT", not_null: false, default_value: parsedData.sys_status.trim() },
+                  { name: "updated_by", data_type: "TEXT", not_null: false },
+                  { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                  ...schema,
+              ]
+            : [
+                  { name: "updated_by", data_type: "TEXT", not_null: false },
+                  { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                  ...schema,
+              ];
+
         
 
 
         // Define Sequelize model dynamically
         const modelAttributes = {};
-        for (const field of schema) {
+        for (const field of completeSchema) {
             const { name, data_type, not_null, default_value } = field;
             const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
             modelAttributes[name] = {
@@ -482,8 +479,6 @@ exports.updateTemplateData = async (req, res, next) => {
         //         table_row_id: id
         //     }
         // });
-
-
         return userSendResponse(res, 200, true, `Data updated successfully in table ${table_name}.`, null);
     } catch (error) {
         if (error.name === "SequelizeUniqueConstraintError") {
@@ -2179,7 +2174,17 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         } = req.body;
         const { filter = {}, from_date = null, to_date = null } = req.body;
-        const userId = res.locals.user_id || null;
+        const {user_id} = req.user;
+        const userId = user_id;
+
+        // const userDivision = await UsersDivision.findAll({ where: { users_id : userId ,  } , attributes: ['division_id'] })
+        // const userData = await Users.findOne({
+        //     where: { user_id: userId },
+        //     attributes: ['name'] 
+        // });
+
+        // const userName = userData ? userData.name : null;
+
         if (!template_module) {
 
             return userSendResponse(res, 400, false, "Template module is required", null);
@@ -2522,8 +2527,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             // }
         }
 
+
+        
         // Create base attributes array
-        let attributesArray = ['id'];
+        let attributesArray = [];
+
         // Add sys_status only if get_sys is true
         if (get_sys) {
             attributesArray.push('sys_status');
@@ -2533,6 +2541,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             ...attributesArray,
             ...Object.keys(fields).filter(field => fields[field].displayContent)
         ];
+
+        attributesArray.push('id','created_by');
+
         const result = await DynamicTable.findAndCountAll({
             where: whereClause,
             limit,
@@ -2541,7 +2552,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             attributes: attributesArray,
             include,
         });
-
+    
         const totalItems = result.count;
         const totalPages = Math.ceil(totalItems / limit);
 
@@ -2641,7 +2652,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         const responseData = {
             // data: transformedRows,
-            data: transformedRows.map(row => ({ ...row, created_by: tableTemplate.created_by })),
+            data: transformedRows.map(row => ({ ...row})),
             columns: [
                 ...fieldsArray.map(field => ({
                     name: field.name
@@ -3199,7 +3210,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         // Include ID and sys_status in schema
         const completeSchema = [
             { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
-            { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status },
+            { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status},
             ...schema
         ];
 

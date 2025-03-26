@@ -2811,7 +2811,8 @@ const UnderInvestigation = () => {
                             "table_name" : table_name,
                             "data"  :   {  
                                             "id": selectedRow.id, 
-                                            "sys_status": 'disposal'
+                                            "sys_status": 'disposal',
+                                            "default_status":"ui_case"
                                         }
                         }
 
