@@ -8,29 +8,34 @@ exports.get_overall_actions = async (req, res) => {
             page = 1,
             limit = 10,
             search = '',
-            sort_by = 'id',
-            sort_order = 'ASC'
-        } = req.body;
+            sort_by = 'created_at',
+            sort_order = 'DESC'
+        } = req.query;
 
-        const offset = (parseInt(page) - 1) * parseInt(limit);
-        const finalSortOrder = sort_order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-        var whereClause = {};
+        // Validate pagination parameters
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.max(1, parseInt(limit) || 10);
+        const offset = (pageNum - 1) * limitNum;
+
+        // Validate sort order
+        const finalSortOrder = String(sort_order).toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
         // Build where clause for search
-        if(search && search !='')
-        {
-            whereClause = search 
-                ? {
-                    [Op.or]: [
-                        { name: { [Op.iLike]: `%${search}%` } },
-                        { module: { [Op.iLike]: `%${search}%` } },
-                        { table: { [Op.iLike]: `%${search}%` } }
-                    ]
-                } 
-                : {};
-        }
+        const whereClause = search.trim() 
+            ? {
+                [Op.or]: [
+                    { name: { [Op.iLike]: `%${search.trim()}%` } },
+                    { module: { [Op.iLike]: `%${search.trim()}%` } },
+                    { table: { [Op.iLike]: `%${search.trim()}%` } }
+                ]
+            } 
+            : {};
 
         // Get total count for pagination
-        const total = await CasesAction.count({ where: whereClause });
+        const total = await CasesAction.count({
+            where: whereClause,
+            distinct: true
+        });
 
         // Get paginated and sorted data
         const actions = await CasesAction.findAll({
@@ -38,25 +43,21 @@ exports.get_overall_actions = async (req, res) => {
             attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval', 'permissions', 'approval_items', 'created_at'],
             order: [[sort_by, finalSortOrder]],
             offset: offset,
-            limit: parseInt(limit)
+            limit: limitNum
         });
 
-        // Calculate pagination details
-        const totalPages = Math.ceil(total / limit);
-
-        // Format the response as an array of objects
-        const response = {
-            data: actions.map(action => action.toJSON()), // Convert actions to JSON
+        return res.status(200).json({
+            success: true,
+            data: actions,
             meta: {
                 total,
-                totalPages,
-                currentPage: parseInt(page),
-                hasNextPage: page < totalPages,
-                hasPrevPage: page > 1
+                totalPages: Math.ceil(total / limitNum),
+                currentPage: pageNum,
+                hasNextPage: pageNum < Math.ceil(total / limitNum),
+                hasPrevPage: pageNum > 1,
+                limit: limitNum
             }
-        };
-
-        return res.status(200).json(response);
+        });
 
     } catch (error) {
         console.error("Error fetching actions:", error);
@@ -70,9 +71,8 @@ exports.get_overall_actions = async (req, res) => {
 
 // Get actions by module
 exports.get_actions = async (req, res) => {
-    const { page = 1, limit = 10 , module} = req.body; // Get pagination parameters from the request body
+    const {module} = req.body; // Get pagination parameters from the request body
 
-    const offset = (parseInt(page) - 1) * parseInt(limit);
 
     try {
         // Get total count for pagination
@@ -83,29 +83,13 @@ exports.get_actions = async (req, res) => {
         // Get paginated actions for the specified module
         const data = await CasesAction.findAll({
             where: { module: { [Op.iLike]: module } },
-            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval','permissions', 'approval_items', 'created_at'],
-            limit: parseInt(limit),
-            offset: offset,
-            order: [['created_at', 'DESC']] // Optional: Order by created_at or any other field
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval','permissions', 'approval_items', 'created_at']
         });
-
-        // Calculate pagination details
-        const totalPages = Math.ceil(total / limit);
-        const hasNextPage = page < totalPages;
-        const hasPrevPage = page > 1;
 
         return res.status(200).json({
             success: true,
             data: {
-                data,
-                meta: {
-                    total,
-                    totalPages,
-                    currentPage: parseInt(page),
-                    limit: parseInt(limit),
-                    hasNextPage,
-                    hasPrevPage
-                }
+                data
             }
         });
 

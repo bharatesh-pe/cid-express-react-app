@@ -2527,12 +2527,8 @@ const PendingTrail = () => {
         },
         ...hoverTableOptions,
         {
-            "name": "Further Investigation",
-            "onclick": (selectedRow) => changeSysStatus(selectedRow, 'further_investigation')
-        },
-        {
-            "name": "173(8) Cases",
-            "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases')
+            "name": "Further Investigation (173) Case",
+            "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
         },
     ];
 
@@ -2572,11 +2568,8 @@ const PendingTrail = () => {
                         <Box onClick={() => { setSysSattus('pt_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'pt_case' ? 'Active' : ''}`} >
                             PT Cases
                         </Box>
-                        <Box onClick={() => { setSysSattus('further_investigation'); setPaginationCount(1) }} id="filterFurtherInvestigation" className={`filterTabs ${sysStatus === 'further_investigation' ? 'Active' : ''}`} >
-                            Further Investigation
-                        </Box>
                         <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
-                            173(8) Cases
+                            Further Investigation (173) Case
                         </Box>
                         <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
                             Disposal
