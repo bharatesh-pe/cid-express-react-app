@@ -158,21 +158,21 @@ exports.createTemplate = async (req, res, next) => {
         };
 
         fieldDefinitions.created_by = {
-            type: Sequelize.DataTypes.STRING,
+            type: Sequelize.DataTypes.TEXT,
             allowNull: true
         };
 
         fieldDefinitions.updated_by = {
-            type: Sequelize.DataTypes.STRING,
+            type: Sequelize.DataTypes.TEXT,
             allowNull: true
         };
 
-		fieldDefinitions.ui_case_id = {
+		 fieldDefinitions.created_by_id = {
             type: Sequelize.DataTypes.INTEGER,
             allowNull: true
         };
 
-        fieldDefinitions.pt_case_id = {
+        fieldDefinitions.updated_by_id = {
             type: Sequelize.DataTypes.INTEGER,
             allowNull: true
         };
