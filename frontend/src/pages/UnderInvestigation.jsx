@@ -169,7 +169,8 @@ const UnderInvestigation = () => {
                     "table_name" : table_name,
                     "data"  :   {  
                                     "id": data.id, 
-                                    "sys_status": value
+                                    "sys_status": value,
+                                    "default_status": "ui_case"
                                 }
                 }
 
@@ -1036,6 +1037,7 @@ const UnderInvestigation = () => {
                 }
             }
         });
+        normalData.sys_status = 'ui_case';
         normalData['ui_case_id'] = selectedRowData.id;
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
@@ -1479,7 +1481,7 @@ const UnderInvestigation = () => {
                 }
             }
         });
-
+        normalData.sys_status = 'ui_case';
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
