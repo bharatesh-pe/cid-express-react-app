@@ -774,7 +774,9 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
                 const isRequired = field.required === 'true' || field.required === true;
 
-                field.disabled = readOnly ? true : '';
+                if(!field.disabled){
+                    field.disabled = readOnly ? true : '';
+                }
                 switch (field.type) {
                   case 'text':
                     return (
