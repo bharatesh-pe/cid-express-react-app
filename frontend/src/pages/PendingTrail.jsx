@@ -2527,7 +2527,7 @@ const PendingTrail = () => {
         },
         ...hoverTableOptions,
         {
-            "name": "Further Investigation (173) Case",
+            "name": "Further Investigation 173(8) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
         },
     ];
@@ -2569,7 +2569,7 @@ const PendingTrail = () => {
                             PT Cases
                         </Box>
                         <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
-                            Further Investigation (173) Case
+                            Further Investigation 173(8) Case
                         </Box>
                         <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
                             Disposal

@@ -2693,7 +2693,7 @@ const UnderInvestigation = () => {
         : null,
         ...hoverTableOptions,
         {
-            "name": "Further Investigation (173) Case",
+            "name": "Further Investigation 173(18) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
         },
         sysStatus === 'disposal'
@@ -2825,7 +2825,7 @@ const UnderInvestigation = () => {
                             UI Cases
                         </Box>
                         <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
-                            Further Investigation (173) Case
+                            Further Investigation 173(8) Case
                         </Box>
                         <Box onClick={() => { setSysSattus('merge_cases'); setPaginationCount(1) }} id="filterMergeCases" className={`filterTabs ${sysStatus === 'merge_cases' ? 'Active' : ''}`} >
                             Merged Cases
