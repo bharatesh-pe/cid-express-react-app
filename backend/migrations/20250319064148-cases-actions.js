@@ -39,6 +39,10 @@ module.exports = {
           type: Sequelize.TEXT,
           allowNull: true,
         },
+        tab: {
+          type: Sequelize.TEXT,
+          allowNull: true,
+        },
         approval_items: {
           type: Sequelize.TEXT,
           allowNull: true,

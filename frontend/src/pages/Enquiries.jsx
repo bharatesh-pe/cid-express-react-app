@@ -335,7 +335,8 @@ const Enquiries = () => {
             "is_starred": starFlag,
             "is_read": readFlag,
             "template_module": "eq_case",
-            "sys_status": sysStatus
+            "sys_status": sysStatus,
+            "get_sys": true
         }
         
         setLoading(true);
@@ -346,7 +347,7 @@ const Enquiries = () => {
 
             if (getTemplateResponse && getTemplateResponse.success) {
                 if (getTemplateResponse.data && getTemplateResponse.data['data']) {
-
+                    
                     if(getTemplateResponse.data['data'][0]){
 
                         var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
