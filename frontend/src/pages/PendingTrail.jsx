@@ -59,7 +59,7 @@ const PendingTrail = () => {
     const [template_name, setTemplate_name] = useState('')
     const [table_name, setTable_name] = useState('')
 
-    const [sysStatus, setSysSattus] = useState(null);
+    const [sysStatus, setSysSattus] = useState("all");
 
     const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
@@ -1774,7 +1774,8 @@ const PendingTrail = () => {
         const getActions = async ()=>{
 
             var payloadObj = {
-                "module": "ui_case"
+                "module": "ui_case",
+                "tab": sysStatus
             }
 
             setLoading(true);
@@ -1827,7 +1828,7 @@ const PendingTrail = () => {
 
         getActions();
 
-    },[])
+    },[sysStatus])
 
 
 
@@ -2600,7 +2601,7 @@ const PendingTrail = () => {
                 <Box pt={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
                     <Box className="parentFilterTabs">
-                        <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus("all"); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === "all" ? 'Active' : ''}`} >
                             All
                         </Box>
                         <Box onClick={() => { setSysSattus('pt_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'pt_case' ? 'Active' : ''}`} >
