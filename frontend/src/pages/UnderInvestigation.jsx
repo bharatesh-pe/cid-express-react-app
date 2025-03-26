@@ -152,7 +152,9 @@ const UnderInvestigation = () => {
     }
 
     const [showPtCaseModal, setShowPtCaseModal] = useState(false);
-    const [ptCaseTableName, setPtCaseTableName] = useState(null)
+    const [ptCaseTableName, setPtCaseTableName] = useState(null);
+
+    const [selectedRowData, setSelectedRowData] = useState(null);
 
     // change sys_status
 
@@ -899,8 +901,8 @@ const UnderInvestigation = () => {
     }
 
 
-    const showOptionTemplate = async (table_name) => {
-        if (!table_name || table_name === '') {
+    const showOptionTemplate = async (tableName) => {
+        if (!tableName || tableName === '') {
             toast.warning('Please Check The Template', {
                 position: "top-right",
                 autoClose: 3000,
@@ -915,7 +917,7 @@ const UnderInvestigation = () => {
         }
 
         const viewTableData = {
-            "table_name": table_name
+            "table_name": tableName
         }
         setLoading(true);
 
@@ -927,11 +929,28 @@ const UnderInvestigation = () => {
             setLoading(false);
             if (viewTemplateResponse && viewTemplateResponse.success) {
 
+                var caseFields = []
+                var getCaseIdFields = viewTemplateResponse.data['fields'].map((field)=>{
+                    if(field && field.table && field.table === table_name){
+                        caseFields = field;
+                        field.disabled = true
+                    }
+
+                    return field;
+                });
+
+                var initialData = {}
+                if(caseFields && caseFields['name']){
+                    initialData = {
+                        [caseFields['name']] : selectedRowData.id
+                    }
+                }
+
                 setOtherFormOpen(true);
-                setInitialData({});
+                setOtherInitialTemplateData(initialData);
                 setviewReadonly(false);
                 setEditTemplateData(false);
-                setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
                 if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
                     setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
                 }
@@ -1984,11 +2003,6 @@ const UnderInvestigation = () => {
     },[])
 
 
-
-
-
-    
-    const [selectedRowData, setSelectedRowData] = useState(null);
 
     const handleFileUpload = async (event) => {
         console.log("File upload initiated.");
