@@ -848,7 +848,9 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
 
                 const isRequired = field.required === 'true' || field.required === true;
 
-                field.disabled = readOnly ? true : '';
+                if(!field.disabled){
+                    field.disabled = readOnly ? true : '';
+                }
                 switch (field.type) {
                   case 'text':
                     return (

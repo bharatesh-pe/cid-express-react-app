@@ -640,6 +640,20 @@ const CaseActions = () => {
             }
         }
 
+        if(!addActionFormData['tab'] || addActionFormData['tab'].length === 0){
+            toast.error('Please Select Tab Filters Before Submit Actions !',{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
         setLoading(true);
 
         addActionFormData['is_pdf'] = addActionFormData['is_pdf'] ? addActionFormData['is_pdf'] : false ;
@@ -1029,7 +1043,7 @@ const CaseActions = () => {
                                                 <TextField
                                                     {...params}
                                                     className='selectHideHistory'
-                                                    label='Select Permission'
+                                                    label='Select Tab Filters'
                                                 />
                                             }
                                         />
