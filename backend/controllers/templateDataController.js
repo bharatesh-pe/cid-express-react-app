@@ -2530,7 +2530,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         
         // Create base attributes array
-        let attributesArray = ['id'];
+        let attributesArray = [];
 
         // Add sys_status only if get_sys is true
         if (get_sys) {
@@ -2541,6 +2541,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             ...attributesArray,
             ...Object.keys(fields).filter(field => fields[field].displayContent)
         ];
+
+        attributesArray.push('id','created_by');
+
         const result = await DynamicTable.findAndCountAll({
             where: whereClause,
             limit,
@@ -2649,7 +2652,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         const responseData = {
             // data: transformedRows,
-            data: transformedRows.map(row => ({ ...row, created_by: tableTemplate.created_by })),
+            data: transformedRows.map(row => ({ ...row})),
             columns: [
                 ...fieldsArray.map(field => ({
                     name: field.name
