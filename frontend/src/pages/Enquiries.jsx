@@ -2077,6 +2077,43 @@ const Enquiries = () => {
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <TextFieldInput InputProps={{
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon sx={{ color: '#475467' }} />
+                            </InputAdornment>
+                        ),
+                        endAdornment: (
+                            searchValue && (
+                                <IconButton sx={{ padding: 0 }} onClick={handleClear} size="small">
+                                    <ClearIcon sx={{ color: '#475467' }} />
+                                </IconButton>
+                            )
+                        )
+                    }}
+                        onInput={(e) => setSearchValue(e.target.value)}
+                        value={searchValue}
+                        id="tableSearch"
+                        size="small"
+                        placeholder='Search anything'
+                        variant="outlined"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                loadTableData(paginationCount, e.target.value);
+                            }
+                        }}
+                        sx={{
+                            width: '300px', borderRadius: '6px', outline: 'none',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: '1',
+                                fontSize: '14px',
+                                fontWeight: '400',
+                                fontFamily: 'Roboto'
+                            },
+                        }}
+                    />
 
                         <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
                             Add New
@@ -2107,45 +2144,6 @@ const Enquiries = () => {
                             Disposal
                         </Box>
                     </Box>
-
-                    <TextFieldInput InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon sx={{ color: '#475467' }} />
-                            </InputAdornment>
-                        ),
-                        endAdornment: (
-                            searchValue && (
-                                <IconButton sx={{ padding: 0 }} onClick={handleClear} size="small">
-                                    <ClearIcon sx={{ color: '#475467' }} />
-                                </IconButton>
-                            )
-                        )
-                    }}
-                        onInput={(e) => setSearchValue(e.target.value)}
-                        value={searchValue}
-                        id="tableSearch"
-                        size="small"
-                        placeholder='Search anything'
-                        variant="outlined"
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                e.preventDefault();
-                                loadTableData(paginationCount, e.target.value);
-                            }
-                        }}
-                        sx={{
-                            width: '400px', borderRadius: '6px', outline: 'none',
-                            '& .MuiInputBase-input::placeholder': {
-                                color: '#475467',
-                                opacity: '1',
-                                fontSize: '14px',
-                                fontWeight: '400',
-                                fontFamily: 'Roboto'
-                            },
-                        }}
-                    />
-
                 </Box>
 
                 <Box py={2}>
