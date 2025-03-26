@@ -640,12 +640,30 @@ const CaseActions = () => {
             }
         }
 
+        if(!addActionFormData['tab'] || addActionFormData['tab'].length === 0){
+            toast.error('Please Select Tab Filters Before Submit Actions !',{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
         setLoading(true);
 
         addActionFormData['is_pdf'] = addActionFormData['is_pdf'] ? addActionFormData['is_pdf'] : false ;
 
         if(addActionFormData['permissions']){
             addActionFormData['permissions'] = JSON.stringify(addActionFormData['permissions']);
+        }
+
+        if(addActionFormData['tab']){
+            addActionFormData['tab'] = JSON.stringify(addActionFormData['tab']);
         }
 
         try {
@@ -708,7 +726,34 @@ const CaseActions = () => {
 
     }
 
-    console.log(permissionData,"permissionData ")
+    const tabModuleObj = {
+        "ui_case" : [
+            {
+                name : 'All',
+                code : 'all'
+            },
+            {
+                name : 'UI Cases',
+                code : 'ui_case'
+            },
+            {
+                name : 'Further Investigation 173(8) Case',
+                code : '178_cases'
+            },
+            {
+                name : 'Merged Cases',
+                code : 'merge_cases'
+            },
+            {
+                name : 'Disposal',
+                code : 'disposal'
+            },
+            {
+                name : 'Reinvestigation',
+                code : 'Reinvestigation'
+            },
+        ]
+    }
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -971,6 +1016,34 @@ const CaseActions = () => {
                                                     {...params}
                                                     className='selectHideHistory'
                                                     label='Select Permission'
+                                                />
+                                            }
+                                        />
+                                    </Box>
+
+                                    <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                        <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
+                                            Choose which action do want to add
+                                        </h4>
+                                        <Autocomplete
+                                            id=""
+                                            options={tabModuleObj?.[addActionFormData?.['module']] || []}
+                                            required
+                                            multiple
+                                            limitTags={3}
+                                            getOptionLabel={(option) => option.name}
+                                            value={(tabModuleObj?.[addActionFormData?.['module']] || []).filter(option =>
+                                                [].concat(addActionFormData?.['tab'] || []).includes(option.code)
+                                            )}
+                                            onChange={(event, newValue) => {
+                                                const selectedCodes = newValue ? newValue.map(item => item.code) : [];
+                                                handleOtherTemplateChange('tab', selectedCodes);
+                                            }}
+                                            renderInput={(params) =>
+                                                <TextField
+                                                    {...params}
+                                                    className='selectHideHistory'
+                                                    label='Select Tab Filters'
                                                 />
                                             }
                                         />

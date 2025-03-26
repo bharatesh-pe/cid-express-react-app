@@ -59,7 +59,7 @@ const PendingTrail = () => {
     const [template_name, setTemplate_name] = useState('')
     const [table_name, setTable_name] = useState('')
 
-    const [sysStatus, setSysSattus] = useState(null);
+    const [sysStatus, setSysSattus] = useState("all");
 
     const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
@@ -158,7 +158,7 @@ const PendingTrail = () => {
             "data"  :   {  
                             "id": data.id, 
                             "sys_status": value,
-                            "default_status":"pt_case"
+                            "default_status": "pt_case"
                         }
         }
 
@@ -986,9 +986,7 @@ const PendingTrail = () => {
                 }
             }
         });
-
-        normalData.sys_status = "pt_case";
-
+        normalData.sys_status ='pt_case';
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
@@ -1430,9 +1428,7 @@ const PendingTrail = () => {
                 }
             }
         });
-
-        normalData.sys_status = "pt_case";
-
+        normalData.sys_status ='pt_case';
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
@@ -1778,7 +1774,8 @@ const PendingTrail = () => {
         const getActions = async ()=>{
 
             var payloadObj = {
-                "module": "ui_case"
+                "module": "ui_case",
+                "tab": sysStatus
             }
 
             setLoading(true);
@@ -1831,7 +1828,7 @@ const PendingTrail = () => {
 
         getActions();
 
-    },[])
+    },[sysStatus])
 
 
 
@@ -2532,7 +2529,7 @@ const PendingTrail = () => {
         },
         ...hoverTableOptions,
         {
-            "name": "Further Investigation (173) Case",
+            "name": "Further Investigation 173(8) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
         },
     ];
@@ -2550,37 +2547,6 @@ const PendingTrail = () => {
                         </Box>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-
-                        <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
-                            Add New
-                        </Button>
-                        {
-                            localStorage.getItem('authAdmin') === "false" &&
-                            <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
-                                Download Report
-                            </Button>
-                        }
-
-                    </Box>
-                </Box>
-
-                <Box pt={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-
-                    <Box className="parentFilterTabs">
-                        <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
-                            All
-                        </Box>
-                        <Box onClick={() => { setSysSattus('pt_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'pt_case' ? 'Active' : ''}`} >
-                            PT Cases
-                        </Box>
-                        <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
-                            Further Investigation (173) Case
-                        </Box>
-                        <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
-                            Disposal
-                        </Box>
-                    </Box>
-
                     <TextFieldInput InputProps={{
                         startAdornment: (
                             <InputAdornment position="start">
@@ -2608,7 +2574,7 @@ const PendingTrail = () => {
                             }
                         }}
                         sx={{
-                            width: '400px', borderRadius: '6px', outline: 'none',
+                            width: '300px', borderRadius: '6px', outline: 'none',
                             '& .MuiInputBase-input::placeholder': {
                                 color: '#475467',
                                 opacity: '1',
@@ -2619,6 +2585,35 @@ const PendingTrail = () => {
                         }}
                     />
 
+                        <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
+                            Add New
+                        </Button>
+                        {
+                            localStorage.getItem('authAdmin') === "false" &&
+                            <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
+                                Download Report
+                            </Button>
+                        }
+
+                    </Box>
+                </Box>
+
+                <Box pt={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+
+                    <Box className="parentFilterTabs">
+                        <Box onClick={() => { setSysSattus("all"); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === "all" ? 'Active' : ''}`} >
+                            All
+                        </Box>
+                        <Box onClick={() => { setSysSattus('pt_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'pt_case' ? 'Active' : ''}`} >
+                            PT Cases
+                        </Box>
+                        <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1) }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
+                            Further Investigation 173(8) Case
+                        </Box>
+                        <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
+                            Disposal
+                        </Box>
+                    </Box>
                 </Box>
 
                 <Box py={2}>

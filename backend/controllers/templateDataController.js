@@ -2519,7 +2519,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         const validSortBy = fields[sort_by] ? sort_by : 'id';
 
-        if (sys_status !== null && sys_status !== undefined) {
+        if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
             // if (sys_status === "ui_case") {
             //     whereClause['sys_status'] = { [Op.in]: ['ui_case', 'pt_case', 'ui_to_pt'] };
             // } else {
@@ -2536,13 +2536,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         if (get_sys) {
             attributesArray.push('sys_status');
         }
-
         // Add other fields from fields object
         attributesArray = [
             ...attributesArray,
             ...Object.keys(fields).filter(field => fields[field].displayContent)
         ];
-
         const result = await DynamicTable.findAndCountAll({
             where: whereClause,
             limit,
@@ -3186,7 +3184,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         }
 
         // Extract id and sys_status
-        const { id, sys_status , default_status} = data;
+        const { id, sys_status, default_status } = data;
         if (!id || !sys_status) {
             return userSendResponse(res, 400, false, "ID and sys_status are required.");
         }
