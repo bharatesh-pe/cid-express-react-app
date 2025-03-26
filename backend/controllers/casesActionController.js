@@ -105,7 +105,7 @@ exports.get_actions = async (req, res) => {
 
 // Insert new action
 exports.insert_action = async (req, res) => {
-    const { name, table, module, is_pdf, field ,is_approval ,permissions , approval_items } = req.body;
+    const { name, table, module, is_pdf, field ,is_approval ,permissions , approval_items , tab} = req.body;
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -154,7 +154,8 @@ exports.insert_action = async (req, res) => {
             field,
             is_approval,
             permissions, 
-            approval_items
+            approval_items,
+            tab
         });
 
         return res.status(201).json({
