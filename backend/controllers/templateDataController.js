@@ -79,8 +79,19 @@ exports.insertTemplateData = async (req, res, next) => {
             }
         }
 
+        const completeSchema = parsedData?.sys_status
+             ? [
+                 {
+                     name: "sys_status",
+                     data_type: "TEXT",
+                     not_null: false,
+                     default_value: parsedData.sys_status.trim() // Add trim() to clean the input
+                 },
+                 ...schema
+             ]
+             : schema;
         const modelAttributes = {};
-        for (const field of schema) {
+        for (const field of completeSchema) {
             const { name, data_type, not_null, default_value } = field;
             const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
             modelAttributes[name] = {
@@ -3165,7 +3176,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         }
 
         // Extract id and sys_status
-        const { id, sys_status } = data;
+        const { id, sys_status, default_status } = data;
         if (!id || !sys_status) {
             return userSendResponse(res, 400, false, "ID and sys_status are required.");
         }
@@ -3188,7 +3199,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         // Include ID and sys_status in schema
         const completeSchema = [
             { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
-            { name: "sys_status", data_type: "TEXT", not_null: false },
+            { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status },
             ...schema
         ];
 
