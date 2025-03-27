@@ -125,12 +125,12 @@ exports.create_user = async (req, res) => {
     });
   }
 
-  if(!mobile || !mobile.trim() || mobile == null || mobile == "null" || mobile == undefined) {
-    return res.status(400).json({
-      success: false,
-      message: "Mobile is required",
-    });
-  }
+  // if(!mobile || !mobile.trim() || mobile == null || mobile == "null" || mobile == undefined) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message: "Mobile is required",
+  //   });
+  // }
 
   if (!transaction_id || transaction_id == "") {
     return res
