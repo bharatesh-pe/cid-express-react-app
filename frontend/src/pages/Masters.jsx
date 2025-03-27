@@ -106,6 +106,10 @@ const MastersView = () => {
             navigate("/master/approval");
             return;
         }
+        if (selectedName === "KGID") {
+            navigate("/master/kgid");
+            return;
+        }
     
         const selectedMasterObj = masters.find(master => master.name === selectedName);
         if (selectedMasterObj) {

@@ -1,4 +1,4 @@
-const { MastersMeta , Role , Designation , Department , Division , ApprovalItem } = require('../models');
+const { MastersMeta , Role , Designation , Department, KGID , Division , ApprovalItem } = require('../models');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
@@ -66,6 +66,9 @@ exports.fetch_specific_master_data = async (req, res) => {
             case 'approval_item':
                 data = await ApprovalItem.findAll();
                 break;
+            case 'kgid':
+                data = await KGID.findAll();
+                break;
 
             default:
                 return res.status(400).json({ message: 'Invalid master name provided.' });
@@ -79,6 +82,11 @@ exports.fetch_specific_master_data = async (req, res) => {
 
 exports.create_master_data = async (req, res) => {
   const { master_name, data } = req.body;
+
+    // Get the role id from the request (assuming it's in the request body)
+    const { user_id } = req.user;
+
+    data.created_by = user_id;
 
   try {
       let newEntry;
@@ -112,6 +120,17 @@ exports.create_master_data = async (req, res) => {
               newEntry = await ApprovalItem.create(data);
               break;
 
+            case 'kgid':
+              newEntry = await KGID.create({
+                    kgid: data.kgid,
+                    name: data.name,
+                    mobile: data.mobile,
+                    start_date: new Date(),
+                    end_date: data.end_date || null,  // Ensure end_date is explicitly set
+                    created_by: data.created_by,
+                });
+              break;
+
           default:
               return res.status(400).json({ message: 'Invalid master name provided.' });
       }
@@ -123,6 +142,9 @@ exports.create_master_data = async (req, res) => {
 };
 exports.update_master_data = async (req, res) => {
   const { master_name, data } = req.body;
+
+  const { user_id } = req.user;
+  data.updated_by = user_id;
 
   try {
       let result;
@@ -145,7 +167,7 @@ exports.update_master_data = async (req, res) => {
                 result = await Designation.update({
                     designation_name: data.designation_name,
                     description: data.description,
-                    created_by: data.created_by
+                    updated_by: data.updated_by
                 }, { where: whereCondition });
                 break;
 
@@ -157,7 +179,7 @@ exports.update_master_data = async (req, res) => {
                 result = await Division.update({
                     division_name: data.division_name,
                     department_id: data.department_id,
-                    created_by: data.created_by
+                    updated_by: data.updated_by
                 }, { where: whereCondition });
                 break;
             case 'approval_item':
@@ -166,6 +188,19 @@ exports.update_master_data = async (req, res) => {
                 }
                 whereCondition = { approval_item_id: data.approval_item_id };
                 result = await ApprovalItem.update(data, { where: whereCondition });
+                break;
+            case 'kgid':
+                if (!data.kgid) {
+                    return res.status(400).json({ message: "KGID is required for update." });
+                }
+                whereCondition = { kgid: data.kgid };
+                result = await KGID.update({
+                    name: data.name,
+                    mobile: data.mobile,
+                    start_date: data.start_date,
+                    end_date: data.end_date,
+                    updated_by: data.updated_by
+                }, { where: whereCondition });
                 break;
 
           default:
@@ -213,7 +248,13 @@ exports.delete_master_data = async (req, res) => {
               whereCondition = { division_id: id };
               result = await Division.destroy({ where: whereCondition });
               break;
-
+            case 'kgid':
+                if (!id) {
+                    return res.status(400).json({ message: "KGID is required for deletion." });
+                }
+                whereCondition = { id: id };
+                result = await KGID.destroy({ where: whereCondition });
+                break;
           default:
               return res.status(400).json({ message: 'Invalid master name provided.' });
       }
