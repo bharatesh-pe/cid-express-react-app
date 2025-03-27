@@ -467,7 +467,14 @@ const CaseActions = () => {
             if (viewTemplateResponse && viewTemplateResponse.success) {
     
                 if(viewTemplateResponse.data && viewTemplateResponse.data['fields'].length > 0){
-                    setOtherTemplateDataFields(viewTemplateResponse.data['fields'])
+
+                    var updatedOptions = viewTemplateResponse.data['fields'].filter((element)=>{
+                        if(element && element.options){
+                            return element;
+                        }
+                    });
+
+                    setOtherTemplateDataFields(updatedOptions)
                 }
     
             } else {
