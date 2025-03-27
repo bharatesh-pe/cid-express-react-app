@@ -33,7 +33,7 @@ module.exports = {
           type: Sequelize.STRING,
           allowNull: true,
         },
-        cug_no: {
+        mobile: {
           type: Sequelize.STRING,
           allowNull: true,
         },
