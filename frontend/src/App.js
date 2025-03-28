@@ -39,6 +39,8 @@ import Designation from './pages/designation';
 import Department from './pages/department';
 import Division from './pages/division';
 import Approval from './pages/approval';
+// import Kgid from './pages/kgid';
+import Hierarchy from './pages/hierarchy';
 import CaseActions from './pages/CaseAction';
 import TemplateMastersView from './pages/templateMasters';
 function App() {
@@ -304,6 +306,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <Approval />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/master/hierarchy"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Hierarchy />
                         </Layout>
                     </ProtectedRoute>
                 }
