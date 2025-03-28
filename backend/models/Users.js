@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      cug_no: {
+      mobile: {
         type: DataTypes.STRING,
         allowNull: true,
       },
