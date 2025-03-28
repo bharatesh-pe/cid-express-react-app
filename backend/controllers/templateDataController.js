@@ -3295,6 +3295,12 @@ exports.caseSysStatusUpdation = async (req, res) => {
         const completeSchema = [
             { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
             { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status},
+            { name: "created_by", data_type: "TEXT", not_null: false },
+            { name: "updated_by", data_type: "TEXT", not_null: false },
+            { name: "created_by_id", data_type: "INTEGER", not_null: false},
+            { name: "updated_by_id", data_type: "INTEGER", not_null: false},
+            { name: "ui_case_id", data_type: "INTEGER", not_null: false},
+            { name: "pt_case_id", data_type: "INTEGER", not_null: false},
             ...schema
         ];
 
