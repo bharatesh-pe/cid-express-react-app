@@ -65,6 +65,11 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'kgid_id',
       as: 'users'
     });
+
+    KGID.hasMany(models.AuthSecure, {
+      foreignKey: 'kgid_id',
+      as: 'auth_secure'
+    });
   };
 
   return KGID;

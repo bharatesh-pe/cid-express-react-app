@@ -154,7 +154,7 @@ exports.create_user = async (req, res) => {
 
   try {
     // Check if user already exists
-    const existingUser = await Users.findOne({ where: { kgid: kgid } });
+    const existingUser = await Users.findOne({ where: { kgid_id: kgid } });
     if (existingUser) {
       await t.rollback();
       return res.status(400).json({ message: "User already exists" });
@@ -166,17 +166,17 @@ exports.create_user = async (req, res) => {
         name: username,
         role_id: role_id,
         kgid_id: kgid,
-        mobile: mobile||null,
         created_by: created_by,
       },
       { transaction: t }
     );
 
+
     // Create auth secure
     await AuthSecure.create(
       {
         user_id: newUser.user_id,
-        kgid: kgid,
+        kgid_id: kgid,
         pin: pin,
       },
       { transaction: t }
@@ -317,6 +317,11 @@ exports.update_user = async (req, res) => {
         by: created_by,
       }));
       if (logs.length > 0) await UserManagementLog.bulkCreate(logs, { transaction: t });
+
+      if(updatedFields.kgid_id)
+      {
+        await AuthSecure.update({ kgid_id: kgid }, { where: { user_id }, transaction: t });
+      }
     }
 
     const designationIds = (designation_id || "")
