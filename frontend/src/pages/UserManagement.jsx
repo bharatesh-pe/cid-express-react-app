@@ -798,7 +798,7 @@ const UserManagement = () => {
 
   useEffect(() => {
     if (Object.keys(masterData).length === 0 || masterData.role.length === 0) {
-      const needed_masters = ["role", "designation", "department", "division"];
+      const needed_masters = ["role", "designation", "department", "division","kgid"];
       fetch_master_data(needed_masters);
     }
   }, []);

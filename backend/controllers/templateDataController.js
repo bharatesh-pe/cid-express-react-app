@@ -81,7 +81,7 @@ exports.insertTemplateData = async (req, res, next) => {
         validData.created_by_id = userId;
 
         // Include additional system fields dynamically
-        const completeSchema = parsedData?.sys_status
+        let completeSchema = parsedData?.sys_status
             ? [
                   { name: "sys_status", data_type: "TEXT", not_null: false, default_value: parsedData.sys_status.trim() },
                   { name: "created_by", data_type: "TEXT", not_null: false },
@@ -93,6 +93,23 @@ exports.insertTemplateData = async (req, res, next) => {
                   { name: "created_by_id", data_type: "INTEGER", not_null: false },
                   ...schema,
               ];
+        
+        //like sys_status i need to check ui_case_id and pt_case_id
+       if(parsedData.ui_case_id && parsedData.ui_case_id != ''){
+            completeSchema = [
+                { name: "ui_case_id", data_type: "INTEGER", not_null: false},
+                ...completeSchema,
+            ]
+            validData.ui_case_id = parsedData.ui_case_id;
+        }
+
+        if(parsedData.pt_case_id && parsedData.pt_case_id != ''){
+            completeSchema = [
+                { name: "pt_case_id", data_type: "INTEGER", not_null: false},
+                ...completeSchema,
+            ]
+            validData.pt_case_id = parsedData.pt_case_id ;
+        }
 
         // Define dynamic model
         const modelAttributes = {};
@@ -317,7 +334,7 @@ exports.updateTemplateData = async (req, res, next) => {
         validData.updated_by_id = userId;
 
         // Include additional system fields dynamically
-        const completeSchema = parsedData?.sys_status
+        let completeSchema = parsedData?.sys_status
             ? [
                   { name: "sys_status", data_type: "TEXT", not_null: false, default_value: parsedData.sys_status.trim() },
                   { name: "updated_by", data_type: "TEXT", not_null: false },
@@ -329,6 +346,22 @@ exports.updateTemplateData = async (req, res, next) => {
                   { name: "updated_by_id", data_type: "INTEGER", not_null: false },
                   ...schema,
               ];
+
+        if(parsedData?.ui_case_id && parsedData.ui_case_id != ''){
+            completeSchema = [
+                { name: "ui_case_id", data_type: "INTEGER", not_null: false},
+                ...completeSchema,
+            ]
+            validData.ui_case_id = parsedData.ui_case_id;
+        }
+
+        if(parsedData?.pt_case_id && parsedData.pt_case_id != ''){
+            completeSchema = [
+                { name: "pt_case_id", data_type: "INTEGER", not_null: false},
+                ...completeSchema,
+            ]
+            validData.pt_case_id = parsedData.pt_case_id ;
+        }
 
         
 
@@ -570,7 +603,7 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
 
 
 exports.getTemplateData = async (req, res, next) => {
-    const { table_name , field_case } = req.body;
+    const { table_name , ui_case_id , pt_case_id } = req.body;
     // const userId = res.locals.user_id || null;
     // const adminUserId = res.locals.admin_user_id || null;
     // const actorId = userId || adminUserId;
@@ -684,7 +717,15 @@ exports.getTemplateData = async (req, res, next) => {
 
         await Model.sync();
 
-        const whereClause = field_case && field_case != ''  ? { field_case } : {};
+        let whereClause = {};
+        if(ui_case_id && ui_case_id != '' && pt_case_id && pt_case_id != ''){
+            whereClause = { ui_case_id , pt_case_id }
+        }else if(ui_case_id && ui_case_id != ''){
+            whereClause = { ui_case_id }
+        }else if(pt_case_id && pt_case_id != ''){
+            whereClause = { pt_case_id }
+        }
+
 
         // Fetch data with dynamic includes
         const records = await Model.findAll({
