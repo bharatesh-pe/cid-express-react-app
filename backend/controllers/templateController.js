@@ -11,6 +11,7 @@ const { Op } = require("sequelize");
 const { admin_user, TemplateUserStatus } = require('../models');
 const { AuthSecure, Role, Module, Users, UserDesignation, Designation } = require('../models');
 const sharp = require("sharp");
+const { type } = require("os");
 const typeMapping = {
 	STRING: Sequelize.DataTypes.STRING,
 	INTEGER: Sequelize.DataTypes.INTEGER,
@@ -176,6 +177,18 @@ exports.createTemplate = async (req, res, next) => {
             type: Sequelize.DataTypes.INTEGER,
             allowNull: true
         };
+
+		if(template_module === 'others'){
+			fieldDefinitions.ui_case_id = {
+				type: Sequelize.DataTypes.INTEGER,
+				allowNull: true
+			};
+
+			fieldDefinitions.pt_case_id = {
+				type: Sequelize.DataTypes.INTEGER,
+				allowNull: true
+			};
+		}
 
 		// Define the model
 		const model = sequelize.define(table_name, fieldDefinitions, {

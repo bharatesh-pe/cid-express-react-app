@@ -1,4 +1,4 @@
-const { Role , UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , UsersHierarchy , Designation , Department , Division } = require('../models');
+const { Role , UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , UsersHierarchy , Designation , Department , Division , KGID} = require('../models');
 const { Op } = require('sequelize');
 
 const get_master_data = async (req, res) => {
@@ -40,6 +40,12 @@ const get_master_data = async (req, res) => {
         case 'division':
           // Fetch division data
           master_data.division = await fetch_division_data();
+          break;
+        case 'kgid':
+          // Fetch kgid data
+          master_data.kgid = await KGID.findAll({
+            attributes: ['kgid', 'name' , 'mobile'],
+          });
           break;
         default:
           return res.status(400).json({ error: `Unknown master: ${master}` });
