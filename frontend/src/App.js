@@ -36,6 +36,7 @@ import PendingTrail from './pages/PendingTrail';
 import Enquiries from './pages/Enquiries';
 import MastersView from './pages/Masters';
 import Designation from './pages/designation';
+import KGID from './pages/kgid';
 import Department from './pages/department';
 import Division from './pages/division';
 import Approval from './pages/approval';
@@ -274,6 +275,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <Designation />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/master/kgid"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <KGID />
                         </Layout>
                     </ProtectedRoute>
                 }
