@@ -164,9 +164,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
             var duplicateKeyValues = {};
 
             duplicateCheckKey.forEach((field) => {
-                if (formData[field.name]) {
-                    duplicateKeyValues[field.name] = formData[field.name];
-                }
+                duplicateKeyValues[field.name] = formData[field.name] ? formData[field.name] : '';
             });
 
             var payloadForDuplicate = {

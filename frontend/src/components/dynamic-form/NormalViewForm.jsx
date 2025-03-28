@@ -29,6 +29,7 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import Swal from 'sweetalert2';
 
 import { CircularProgress } from "@mui/material";
 
@@ -123,11 +124,101 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     return Object.keys(tempErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
 
     e.preventDefault();
     if (validate()) {
-      !readOnly && editData && onUpdate ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+
+        var errorMsg = {};
+      
+        formConfig.forEach((fields) => {
+            if (fields?.validation) {
+                try {
+                    var regex = new RegExp(fields.validation);
+                    var value = formData[fields.name]?.trim() || "";
+                    
+                    if (!regex.test(value)) {
+                        errorMsg[fields.name] = `Please provide the correct format for ${fields.label}`;
+                    }
+                } catch (error) {
+                    console.log("validation not found");
+                }
+            }
+        });
+        
+        if (Object.keys(errorMsg).length > 0 && onError) {
+            setErrors(errorMsg);
+            onError(true);
+            return;
+        }
+
+        var duplicateCheckKey = formConfig.filter((fields)=>{
+            if(fields && fields.duplicateCheck){
+                return {
+                    ...fields
+                }
+            }
+        });
+
+        if(duplicateCheckKey && duplicateCheckKey.length > 0){
+            
+            var duplicateKeyValues = {};
+
+            duplicateCheckKey.forEach((field) => {
+                duplicateKeyValues[field.name] = formData[field.name] ? formData[field.name] : '';
+            });
+
+            var payloadForDuplicate = {
+                "table_name" : table_name,
+                "data" : duplicateKeyValues
+            }
+            
+            setLoading(true);
+                
+            try {
+                const getActionsDetails = await api.post("/templateData/templateDataFieldDuplicateCheck", payloadForDuplicate);
+
+                setLoading(false);
+    
+                if (getActionsDetails && !getActionsDetails.success) {
+                    Swal.fire({
+                        title: 'Duplicate Values Found For '+duplicateCheckKey[0].label,
+                        text: "Need to create new one ?",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Yes, Continue!',
+                        cancelButtonText: 'No',
+                    }).then(async (result) => {
+                        if (!result.isConfirmed) {
+                            return false;
+                        }else{
+                            !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+                        }
+                    })
+                }else{
+                    !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+                }
+    
+            } catch (error) {
+    
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    return false
+                }
+            }
+        }else{
+            !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+        }
     } else {
         toast.warning('Please Fill Mandatory Fields', {
             position: "top-right",
@@ -763,6 +854,10 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }} >
             <Grid container sx={{ alignItems: 'center' }}>
               {(stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).map((field, index) => {
+
+                if(field?.hide_from_ux){
+                    return null
+                }
 
                 const tabsField = (stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).find(f => f.type === 'tabs');
                                                             

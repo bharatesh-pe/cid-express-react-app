@@ -967,6 +967,10 @@ const CaseActions = () => {
                                             }
                                         />
                                     </Box>
+                                </>
+
+                            }
+
                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                         <Switch name={'is_approval'} checked={addActionFormData['is_approval']} onChange={handleSwitch} />
                                         <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
@@ -996,9 +1000,6 @@ const CaseActions = () => {
                                             />
                                         </Box>
                                     }
-                                </>
-                            
-                            }
 
                                     <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
                                         <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
