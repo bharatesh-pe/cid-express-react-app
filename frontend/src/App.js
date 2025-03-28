@@ -40,7 +40,6 @@ import KGID from './pages/kgid';
 import Department from './pages/department';
 import Division from './pages/division';
 import Approval from './pages/approval';
-// import Kgid from './pages/kgid';
 import Hierarchy from './pages/hierarchy';
 import CaseActions from './pages/CaseAction';
 import TemplateMastersView from './pages/templateMasters';

@@ -18,6 +18,14 @@ module.exports = (sequelize, DataTypes) => {
           key: "role_id",
         },
       },
+      kgid_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: "kgid",
+          key: "id",
+        },
+      },
       name: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -57,6 +65,11 @@ module.exports = (sequelize, DataTypes) => {
     Users.belongsTo(models.Role, {
       foreignKey: "role_id",
       as: "role",
+    });
+
+    Users.belongsTo(models.KGID, {
+      foreignKey: "kgid_id",
+      as: "kgidDetails",
     });
 
     Users.hasMany(models.UserDesignation, {

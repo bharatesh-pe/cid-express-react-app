@@ -58,7 +58,6 @@ const Hierarchy = () => {
     const [addRoleData, setAddRoleData] = useState({
         officer_designation_id: "",
         supervisor_designation_id: "",
-        created_by: "0",
     });
     const [HierarchyRowData, setHierarchyRowData] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
@@ -398,7 +397,6 @@ const Hierarchy = () => {
             setAddRoleData({
                 officer_designation_id: '',
                 supervisor_designation_id: '',
-                created_by: '0',
             });
             setSelectedDesignation("");
             setShowRoleAddModal(false);

@@ -44,7 +44,12 @@ const get_master_data = async (req, res) => {
         case 'kgid':
           // Fetch kgid data
           master_data.kgid = await KGID.findAll({
-            attributes: ['kgid', 'name' , 'mobile'],
+            attributes: [
+              ['id', 'code'], 
+              ['kgid', 'kgid'],
+              ['name', 'name'], 
+              ['mobile', 'mobile'],
+            ],
           });
           break;
         default:

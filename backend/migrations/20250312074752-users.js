@@ -25,6 +25,16 @@ module.exports = {
           onUpdate: 'CASCADE',
           onDelete: 'SET NULL',
         },
+        kgid_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+          references: {
+            model: { tableName: 'kgid', schema }, // Reference role table in schema
+            key: 'id',
+          },
+          onUpdate: 'CASCADE',
+          onDelete: 'SET NULL',
+        },
         name: {
           type: Sequelize.STRING,
           allowNull: true,
