@@ -128,6 +128,29 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
     e.preventDefault();
     if (validate()) {
 
+        var errorMsg = {};
+
+        formConfig.forEach((fields) => {
+            if (fields?.validation) {
+                try {
+                    var regex = new RegExp(fields.validation);
+                    var value = formData[fields.name]?.trim() || "";
+                    
+                    if (!regex.test(value)) {
+                        errorMsg[fields.name] = `Please provide the correct format for ${fields.label}`;
+                    }
+                } catch (error) {
+                    console.log("validation not found");
+                }
+            }
+        });
+        
+        if (Object.keys(errorMsg).length > 0 && onError) {
+            setErrors(errorMsg);
+            onError(true);
+            return;
+        }
+
         var duplicateCheckKey = formConfig.filter((fields)=>{
             if(fields && fields.duplicateCheck){
                 return {
@@ -837,6 +860,10 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }} >
             <Grid container sx={{ alignItems: 'center' }}>
               {(stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).map((field, index) => {
+
+                if(field?.hide_from_ux){
+                    return null
+                }
 
                 const tabsField = (stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).find(f => f.type === 'tabs');
                                                             
