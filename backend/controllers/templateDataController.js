@@ -1,7 +1,7 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
 const sequelize = db.sequelize;
-const { Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
+const { UsersHierarchy , UserDesignation , Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
@@ -2176,6 +2176,51 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         const { filter = {}, from_date = null, to_date = null } = req.body;
         const {user_id} = req.user;
         const userId = user_id;
+        const offset = (page - 1) * limit;
+        const Op = Sequelize.Op;
+        const whereClause = {};
+
+        // Fetch all designations of the logged-in user
+        const userDesignations = await UserDesignation.findAll({
+            where: { user_id },
+            attributes: ["designation_id"],
+        });
+
+        if (!userDesignations.length) {
+            return res.status(404).json({ message: "User has no designations assigned" });
+        }
+
+        // Extract the supervisor's designation IDs
+        const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+
+        // Get officer_designation_ids under the supervisor's designations
+        const subordinates = await UsersHierarchy.findAll({
+            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+            attributes: ["officer_designation_id"],
+        });
+
+        // Extract officer designations under the current user
+        const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+
+        if (!officerDesignationIds.length) {
+            console.log("No subordinates found");
+        }
+
+        // Get user IDs of subordinates who have the officer designations
+        const subordinateUsers = await UserDesignation.findAll({
+            where: { designation_id: { [Op.in]: officerDesignationIds } },
+            attributes: ["user_id"], // Only fetch user_id to optimize performance
+        });
+
+        // Extract user IDs of subordinates
+        const subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+
+        // Include the current user's ID in the filter
+        const allowedUserIds = [userId, ...subordinateUserIds];
+
+        if (allowedUserIds.length) {
+            whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+        }
 
         // const userDivision = await UsersDivision.findAll({ where: { users_id : userId ,  } , attributes: ['division_id'] })
         // const userData = await Users.findOne({
@@ -2353,9 +2398,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         //     attributes: ['template_user_status_id']
         // });
 
-        const offset = (page - 1) * limit;
-        const Op = Sequelize.Op;
-        const whereClause = {};
+        
 
         // Apply field filters if provided
         if (filter && typeof filter === 'object') {

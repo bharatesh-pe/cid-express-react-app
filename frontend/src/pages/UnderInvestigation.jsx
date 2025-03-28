@@ -1930,29 +1930,23 @@ const UnderInvestigation = () => {
 
 
     useEffect(()=>{
-        getActions("all");
+        const getActions = async ()=>{
+            var payloadObj = {
+                "module": "ui_case",
+                "tab" : sysStatus
+            }
 
-    },[])
+            setLoading(true);
 
+            try {
 
-    const getActions = async (current_tab)=>{
+                const getActionsDetails = await api.post("/action/get_actions", payloadObj);
 
-        var payloadObj = {
-            "module": "ui_case",
-            "tab" : current_tab
-        }
+                setLoading(false);
 
-        setLoading(true);
+                if (getActionsDetails && getActionsDetails.success) {
 
-        try {
-
-            const getActionsDetails = await api.post("/action/get_actions", payloadObj);
-
-            setLoading(false);
-
-            if (getActionsDetails && getActionsDetails.success) {
-
-                if (getActionsDetails.data && getActionsDetails.data['data']) {
+                    if (getActionsDetails.data && getActionsDetails.data['data']) {
 
                     var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
                     const userPermissions = userPermissionsArray[0] || {}; 
@@ -1970,41 +1964,47 @@ const UnderInvestigation = () => {
                         return true;
                     });
 
-                    setHoverTableOptions(updatedActions);
+                        setHoverTableOptions(updatedActions);
+                    }
+
+                } else {
+                    
+                    const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                                    
                 }
 
-            } else {
-                
-                const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-                                
-            }
-
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response.data) {
-                toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response.data) {
+                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
             }
         }
-    }
+        getActions();
+
+    },[sysStatus])
+
+
+    
 
     const handleFileUpload = async (event) => {
         console.log("File upload initiated.");
@@ -3047,22 +3047,22 @@ const UnderInvestigation = () => {
                 <Box pt={1} sx={{ display: 'flex',   }}>
 
                     <Box className="parentFilterTabs">
-                        <Box onClick={() => { setSysSattus('all'); setPaginationCount(1); getActions('all') }} id="filterAll" className={`filterTabs ${sysStatus === 'all' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('all'); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === 'all' ? 'Active' : ''}`} >
                             All
                         </Box>
-                        <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1);getActions('ui_case')  }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('ui_case'); setPaginationCount(1) }} id="filterUiCase" className={`filterTabs ${sysStatus === 'ui_case' ? 'Active' : ''}`} >
                             UI Cases
                         </Box>
-                        <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1);getActions('178_cases')  }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('178_cases'); setPaginationCount(1)  }} id="filter178Cases" className={`filterTabs ${sysStatus === '178_cases' ? 'Active' : ''}`} >
                             Further Investigation 173(8) Case
                         </Box>
-                        <Box onClick={() => { setSysSattus('merge_cases'); setPaginationCount(1);getActions('merge_cases')  }} id="filterMergeCases" className={`filterTabs ${sysStatus === 'merge_cases' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('merge_cases'); setPaginationCount(1) }} id="filterMergeCases" className={`filterTabs ${sysStatus === 'merge_cases' ? 'Active' : ''}`} >
                             Merged Cases
                         </Box>
-                        <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1);getActions('disposal')  }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('disposal'); setPaginationCount(1)  }} id="filterDisposal" className={`filterTabs ${sysStatus === 'disposal' ? 'Active' : ''}`} >
                             Disposal
                         </Box>
-                        <Box onClick={() => { setSysSattus('Reinvestigation'); setPaginationCount(1);getActions('Reinvestigation')  }} id="filterReinvestigation" className={`filterTabs ${sysStatus === 'Reinvestigation' ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('Reinvestigation'); setPaginationCount(1) }} id="filterReinvestigation" className={`filterTabs ${sysStatus === 'Reinvestigation' ? 'Active' : ''}`} >
                             Reinvestigation
                         </Box>
                     </Box>

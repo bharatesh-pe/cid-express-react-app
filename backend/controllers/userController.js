@@ -34,6 +34,7 @@ exports.create_user = async (req, res) => {
     division_id,
     created_by,
     transaction_id,
+    mobile,
   } = req.body;
 
   // Username validation
@@ -124,6 +125,13 @@ exports.create_user = async (req, res) => {
     });
   }
 
+  // if(!mobile || !mobile.trim() || mobile == null || mobile == "null" || mobile == undefined) {
+  //   return res.status(400).json({
+  //     success: false,
+  //     message: "Mobile is required",
+  //   });
+  // }
+
   if (!transaction_id || transaction_id == "") {
     return res
       .status(400)
@@ -158,6 +166,7 @@ exports.create_user = async (req, res) => {
         name: username,
         role_id: role_id,
         kgid: kgid,
+        mobile: mobile||null,
         created_by: created_by,
       },
       { transaction: t }
