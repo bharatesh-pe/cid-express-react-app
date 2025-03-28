@@ -115,7 +115,10 @@ const UnderInvestigation = () => {
 
     // for actions
 
-    const [selectedRow, setSelectedRow] = useState({})
+    const [selectedRow, setSelectedRow] = useState({});
+    const [templateApproval, setTemplateApproval] = useState(false);
+    const [templateApprovalData, setTemplateApprovalData] = useState({});
+    const [disposalUpdate, setDisposalUpdate] = useState(false);
 
     // transfer to other division states
 
@@ -987,9 +990,8 @@ const UnderInvestigation = () => {
         }
     }
 
-    const otherTemplateSaveFunc = async (data) => {
+    const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
 
-        console.log("for update pdf selectedOtherTemplate",selectedRowData)
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
             toast.warning('Please Check The Template', {
                 position: "top-right",
@@ -1017,6 +1019,16 @@ const UnderInvestigation = () => {
             });
             return;
         }
+
+        if(selectedOtherTemplate && selectedOtherTemplate.is_approval && !alreadySavedApproval){
+            showApprovalPage(selectedRow);
+            setTemplateApprovalData(data);
+            setTemplateApproval(true);
+            return;
+        }
+
+        console.log(showPtCaseModal,"showPtCaseModal showPtCaseModal");
+        console.log(alreadySavedApproval,"alreadySavedApproval alreadySavedApproval")
 
         const formData = new FormData();
         formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
@@ -1087,8 +1099,15 @@ const UnderInvestigation = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    ...(!showPtCaseModal && { onOpen: () => handleOtherTemplateActions(selectedOtherTemplate) }) 
+                    ...(!showPtCaseModal && { onOpen: () => handleOtherTemplateActions(selectedOtherTemplate, selectedRow) }) 
                 });
+
+                setTemplateApprovalData({});
+                setTemplateApproval(false);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
 
                 if(showPtCaseModal){
                     setPtCaseTableName(null);
@@ -1297,8 +1316,19 @@ const UnderInvestigation = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
                 });
+
+                setOtherEditTemplateData(false);
+                setOtherReadOnlyTemplateData(false);
+
+                setTemplateApprovalData({});
+                setTemplateApproval(false);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
+
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
                 toast.error(errorMessage, {
@@ -1478,7 +1508,7 @@ const UnderInvestigation = () => {
                             draggable: true,
                             progress: undefined,
                             className: "toast-success",
-                            onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                            onOpen: () => handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
                         });
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
@@ -2104,6 +2134,8 @@ const UnderInvestigation = () => {
             return;
         }
 
+        setSelectedRow(selectedRow);
+
         var getTemplatePayload = {
             "table_name": options.table,
             "ui_case_id": selectedRow.id,
@@ -2270,8 +2302,6 @@ const UnderInvestigation = () => {
     }
 
     const showTransferToOtherDivision = async (options, selectedRow)=>{
-
-        console.log(selectedRow,"selectedRow")
 
         const viewTableData = {
             "table_name": options.table
@@ -2581,6 +2611,15 @@ const UnderInvestigation = () => {
                     className: "toast-success"
                 });
 
+                if((selectedOtherTemplate.field === null || selectedOtherTemplate.field === 'field_nature_of_disposal') && templateApproval){
+                    otherTemplateSaveFunc(templateApprovalData, true);
+                    return;
+                }
+
+                if(disposalUpdate){
+                    updateSysStatusDisposal();
+                    return;
+                }
 
                 var combinedData = {
                     id : selectedRow.id,
@@ -2730,9 +2769,11 @@ const UnderInvestigation = () => {
                             if (viewTemplateResponse && viewTemplateResponse.success) {
 
                                 setOtherFormOpen(true);
-                                setInitialData({});
-                                setviewReadonly(false);
-                                setEditTemplateData(false);
+                                setOtherInitialTemplateData({});
+
+                                setOtherReadOnlyTemplateData(false);
+                                setOtherEditTemplateData(false);
+
                                 setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
                                 if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
                                     setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
@@ -2797,8 +2838,9 @@ const UnderInvestigation = () => {
             if(selectedOtherFields && selectedOtherFields['name'] === 'A'){
 
                 showPtCaseTemplate();
+                setDisposalUpdate(true);
 
-            }else if(selectedOtherFields['name'] === 'B' || selectedOtherFields['name'] === 'C' || selectedOtherFields['name'] === 'others'){
+            }else{
                 Swal.fire({
                     title: selectedOtherFields['name'] === 'B' ? 'Approved by Court' : 'Are You Sure ?',
                     text: selectedOtherFields['name'] === 'B' ? '' : 'Do you want to move this case !',
@@ -2808,81 +2850,15 @@ const UnderInvestigation = () => {
                     cancelButtonText: 'No',
                 }).then(async (result) => {
                     if (result.isConfirmed) {
-                        var payloadSysStatus = {
-                            "table_name" : table_name,
-                            "data"  :   {  
-                                            "id": selectedRow.id, 
-                                            "sys_status": 'disposal',
-                                            "default_status":"ui_case"
-                                        }
+
+                        if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
+                            showApprovalPage(selectedRow);
+                            setDisposalUpdate(true);
+                            return;
                         }
 
-                        setLoading(true);
+                        updateSysStatusDisposal();
 
-                        try {
-                            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
-
-                            setLoading(false);
-
-                            if (chnageSysStatus && chnageSysStatus.success) { 
-                                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
-                                    position: "top-right",
-                                    autoClose: 3000,
-                                    hideProgressBar: false,
-                                    closeOnClick: true,
-                                    pauseOnHover: true,
-                                    draggable: true,
-                                    progress: undefined,
-                                    className: "toast-success",
-                                });
-
-                                // update func
-                                var combinedData = {
-                                    id : selectedRow.id,
-                                    [selectKey.name] : selectedOtherFields.code
-                                }
-
-                                onUpdateTemplateData(combinedData);
-
-                                // reset states
-                                setSelectKey(null);
-                                setSelectedRow(null);
-                                setOtherTransferField([]);
-                                setShowOtherTransferModal(false);
-                                setSelectedOtherFields(null);
-                                setselectedOtherTemplate(null);
-
-                            } else {
-                                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
-                                toast.error(errorMessage, {
-                                    position: "top-right",
-                                    autoClose: 3000,
-                                    hideProgressBar: false,
-                                    closeOnClick: true,
-                                    pauseOnHover: true,
-                                    draggable: true,
-                                    progress: undefined,
-                                    className: "toast-error",
-                                });
-
-                            }
-
-                        } catch (error) {
-                            setLoading(false);
-                            if (error && error.response && error.response['data']) {
-                                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                                    position: "top-right",
-                                    autoClose: 3000,
-                                    hideProgressBar: false,
-                                    closeOnClick: true,
-                                    pauseOnHover: true,
-                                    draggable: true,
-                                    progress: undefined,
-                                    className: "toast-error",
-                                });
-
-                            }
-                        }
                     } else {
                         setSelectKey(null);
                         setSelectedRow(null);
@@ -2896,6 +2872,87 @@ const UnderInvestigation = () => {
 
         }
     };
+
+    const updateSysStatusDisposal = async ()=> {
+
+        var payloadSysStatus = {
+            "table_name" : table_name,
+            "data"  :   {  
+                            "id": selectedRow.id, 
+                            "sys_status": 'disposal',
+                            "default_status":"ui_case"
+                        }
+        }
+
+        setLoading(true);
+
+        try {
+            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+
+            setLoading(false);
+
+            if (chnageSysStatus && chnageSysStatus.success) { 
+                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                // update func
+                var combinedData = {
+                    id : selectedRow.id,
+                    [selectKey.name] : selectedOtherFields.code
+                }
+
+                onUpdateTemplateData(combinedData);
+
+                setDisposalUpdate(false);
+
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+
+            } else {
+                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+        }
+    }
 
 
     const [isUpdatePdf, setIsUpdatePdf] = useState(false);
@@ -3109,7 +3166,8 @@ const UnderInvestigation = () => {
                                     table_row_id={otherRowId}
                                     template_id={otherTemplateId}
 
-                                    template_name={selectedOtherTemplate.name}
+                                    template_name={selectedOtherTemplate?.name}
+                                    table_name={showPtCaseModal ? ptCaseTableName : selectedOtherTemplate?.table}
 
                                     readOnly={otherReadOnlyTemplateData}
                                     editData={otherEditTemplateData}
