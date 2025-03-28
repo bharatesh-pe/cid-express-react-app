@@ -1948,22 +1948,21 @@ const UnderInvestigation = () => {
 
                     if (getActionsDetails.data && getActionsDetails.data['data']) {
 
-                        var userPermissions = JSON.parse(localStorage.getItem('user_permissions'));
-                        console.log(userPermissions);
-                        var updatedActions = getActionsDetails.data['data'].filter((action) => {
-                            if (action.permissions) {
-                                var parsedPermissions = JSON.parse(action.permissions);
-                        
-                                const hasValidPermission = parsedPermissions.some(
-                                    (permission) => userPermissions[permission] === true
-                                );
-                        
-                                return hasValidPermission;
-                            }
-                        
-                            return true;
-                        });
-                        console.log(updatedActions);
+                    var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
+                    const userPermissions = userPermissionsArray[0] || {}; 
+                    var updatedActions = getActionsDetails.data['data'].filter((action) => {
+                        if (action.permissions) {
+                            var parsedPermissions = JSON.parse(action.permissions);
+                    
+                            const hasValidPermission = parsedPermissions.some(
+                                (permission) => userPermissions[permission] === true
+                            );
+                    
+                            return hasValidPermission;
+                        }
+                    
+                        return true;
+                    });
 
                         setHoverTableOptions(updatedActions);
                     }
