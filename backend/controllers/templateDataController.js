@@ -334,7 +334,7 @@ exports.updateTemplateData = async (req, res, next) => {
         validData.updated_by_id = userId;
 
         // Include additional system fields dynamically
-        const completeSchema = parsedData?.sys_status
+        let completeSchema = parsedData?.sys_status
             ? [
                   { name: "sys_status", data_type: "TEXT", not_null: false, default_value: parsedData.sys_status.trim() },
                   { name: "updated_by", data_type: "TEXT", not_null: false },
@@ -346,6 +346,22 @@ exports.updateTemplateData = async (req, res, next) => {
                   { name: "updated_by_id", data_type: "INTEGER", not_null: false },
                   ...schema,
               ];
+
+        if(parsedData?.ui_case_id && parsedData.ui_case_id != ''){
+            completeSchema = [
+                { name: "ui_case_id", data_type: "INTEGER", not_null: false},
+                ...completeSchema,
+            ]
+            validData.ui_case_id = parsedData.ui_case_id;
+        }
+
+        if(parsedData?.pt_case_id && parsedData.pt_case_id != ''){
+            completeSchema = [
+                { name: "pt_case_id", data_type: "INTEGER", not_null: false},
+                ...completeSchema,
+            ]
+            validData.pt_case_id = parsedData.pt_case_id ;
+        }
 
         
 
