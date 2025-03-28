@@ -74,6 +74,7 @@ const MastersView = () => {
     }, []);
     
     const fetchMasters = async () => {
+        setLoading(true);
         try {
             const response = await api.get("/master_meta/fetch_masters");
             if (response.success) {
@@ -81,6 +82,9 @@ const MastersView = () => {
             }
         } catch (error) {
             console.error("Error fetching master data:", error);
+        }
+        finally {
+            setLoading(false);
         }
     };
     
@@ -108,6 +112,9 @@ const MastersView = () => {
         }
         if (selectedName === "KGID") {
             navigate("/master/kgid");
+            return;
+        }if (selectedName === "Hierarchy") {
+            navigate("/master/hierarchy");
             return;
         }
     

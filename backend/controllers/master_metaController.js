@@ -1,4 +1,4 @@
-const { MastersMeta , Role , Designation , Department, KGID , Division , ApprovalItem } = require('../models');
+const { MastersMeta , Role , Designation , Department, KGID , Division , ApprovalItem, UsersHierarchy} = require('../models');
 const { Op } = require('sequelize');
 const fs = require('fs');
 const path = require('path');
@@ -69,6 +69,9 @@ exports.fetch_specific_master_data = async (req, res) => {
             case 'kgid':
                 data = await KGID.findAll();
                 break;
+            case 'hierarchy':
+                data = await UsersHierarchy.findAll();
+                break;
 
             default:
                 return res.status(400).json({ message: 'Invalid master name provided.' });
@@ -130,6 +133,15 @@ exports.create_master_data = async (req, res) => {
                     created_by: data.created_by,
                 });
               break;
+
+            case 'hierarchy':
+            newEntry = await UsersHierarchy.create({
+                  supervisor_designation_id: data.supervisor_designation_id,
+                  officer_designation_id: data.officer_designation_id,                
+                  created_by: data.created_by,
+                  created_at: new Date()
+                  });
+                break; 
 
           default:
               return res.status(400).json({ message: 'Invalid master name provided.' });
@@ -202,6 +214,18 @@ exports.update_master_data = async (req, res) => {
                     updated_by: data.updated_by
                 }, { where: whereCondition });
                 break;
+            
+            case 'hierarchy':
+                if (!data.hierarchy_id) {
+                    return res.status(400).json({ message: "Hierarchy ID is required for update." });
+                }
+                whereCondition = { users_hierarchy_id: data.hierarchy_id };
+                result = await UsersHierarchy.update({
+                    users_hierarchy_id: data.hierarchy_id,
+                    officer_designation_id: data.officer_designation_id,
+                    supervisor_designation_id: data.supervisor_designation_id,
+                }, { where: whereCondition });
+                break;
 
           default:
               return res.status(400).json({ message: 'Invalid master name provided.' });
@@ -255,6 +279,14 @@ exports.delete_master_data = async (req, res) => {
                 whereCondition = { id: id };
                 result = await KGID.destroy({ where: whereCondition });
                 break;
+
+          case 'hierarchy':
+              if (!id) {
+                  return res.status(400).json({ message: "Hierarchy ID is required for deletion." });
+              }
+              whereCondition = { users_hierarchy_id: id };
+              result = await UsersHierarchy.destroy({ where: whereCondition });
+              break;
           default:
               return res.status(400).json({ message: 'Invalid master name provided.' });
       }

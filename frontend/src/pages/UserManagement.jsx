@@ -71,6 +71,12 @@ const UserManagement = () => {
       sortable: true,
     },
     {
+      field: 'mobile',
+      headerName: 'Mobile No',
+      flex: 0.8,
+      sortable: true,
+    },
+    {
       field: 'designation',
       headerName: 'Designation',
       flex: 0.8,
@@ -130,7 +136,9 @@ const UserManagement = () => {
     name: "",
     role: "",
     kgid: "",
+    mobile:"",
     designation: "",
+    supervisor_designation: "",
     pin: "",
     confirmPin: "",
     division: "",
@@ -140,7 +148,9 @@ const UserManagement = () => {
   const [errors, setErrors] = useState({
     name: "",
     role: "",
+    mobile: "",
     designation: "",
+    supervisor_designation: "",
     pin: "",
     confirmPin: "",
     division: "",
@@ -159,9 +169,15 @@ const UserManagement = () => {
     if (!newUser.kgid) {
       newErrors.kgid = "KGID is required";
     }
+    if (!newUser.mobile) {
+      newErrors.mobile = "Mobile is required";
+    }
     if (!newUser.designation || newUser.designation.length === 0) {
       newErrors.designation = "Designation is required";
     }
+    // if (!newUser.supervisor_designation || newUser.supervisor_designation.length === 0) {
+    //   newErrors.supervisor_designation = "Supervisor Designation is required";
+    // }
     if (!newUser.division || newUser.division.length === 0) {
       newErrors.division = "Division is required";
     }
@@ -240,10 +256,11 @@ const UserManagement = () => {
       const formattedUsers = users.map(user => ({
         id: user.user_id,
         user_id: user.user_id,
-        name: user.name,
+        name: user.kgidDetails.name,
         role_id: user.role.role_id,
         role: user.role.role_title,
-        kgid: user.kgid,
+        kgid: user.kgidDetails.kgid,
+        mobile: user.kgidDetails.mobile,
         designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
         designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
         department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
@@ -369,14 +386,22 @@ const UserManagement = () => {
       return;
     }
 
-    const fieldDesignations = fetchedTableData.map(item => item.field_designation);
+    const supervisorDesignationMap = masterData.supervisor_designation || {};
     
     const userDesignations = Array.isArray(newUser.designation) 
         ? newUser.designation 
         : [newUser.designation];
     
-    const isValidDesignation = userDesignations.every(des => fieldDesignations.includes(Number(des)));
-    
+        console.log("userDesignations",userDesignations);
+        console.log("supervisorDesignationMap",supervisorDesignationMap);
+        const isValidDesignation = userDesignations
+        .map((des) => parseInt(des, 10))
+        .every((des) => {
+          return Object.values(supervisorDesignationMap).some((validSupervisors) =>
+            validSupervisors.includes(des)
+          );
+        });
+
     if (!isValidDesignation) {
         toast.error("Supervisor designation missing for selected Designation. Please check the Hierarchy", {
             position: "top-right",
@@ -461,8 +486,10 @@ const UserManagement = () => {
       setNewUser({
         name: "",
         role: "",
+        mobile: "",
         kgid: "",
         designation: "",
+        supervisor_designation: "",
         pin: "",
         confirmPin: "",
         division: "",
@@ -515,12 +542,17 @@ const UserManagement = () => {
       ? userToEdit.division_id.split(",").map(id => id.trim())
       : [];
 
+      const selectedKgid = kgidOptions.find(option => String(option.name) === String(userToEdit.kgid));
+
+      console.log("KGID Options:", kgidOptions);
+      console.log("User KGID:", userToEdit.kgid);
 
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
       name: userToEdit.name ?? "",
-      kgid: userToEdit.kgid ?? "",
+      mobile: selectedKgid?.mobile ?? userToEdit.mobile ?? "",
+      kgid: selectedKgid?.code ?? userToEdit.kgid ?? "",
       role: roleOptions.find(option => String(option.code) === String(userToEdit.role_id))?.code || "",
       designation: designationOptions
         .filter(option => designationArray.includes(String(option.code)))
@@ -555,12 +587,17 @@ const UserManagement = () => {
       ? userToEdit.division_id.split(",").map(id => id.trim())
       : [];
 
+      const selectedKgid = kgidOptions.find(option => String(option.name) === String(userToEdit.kgid));
+
+      console.log("KGID Options:", kgidOptions);
+console.log("User KGID:", userToEdit.kgid);
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
       name: userToEdit.name ?? "",
-      kgid: userToEdit.kgid ?? "",
-      role: roleOptions.find(option => String(option.code) === String(userToEdit.role_id))?.code || "",
+      mobile: selectedKgid?.mobile ?? userToEdit.mobile ?? "", // Use mobile from kgidOptions if available
+      kgid: selectedKgid?.code ?? userToEdit.kgid ?? "", // Use kgid from kgidOptions if available
+        role: roleOptions.find(option => String(option.code) === String(userToEdit.role_id))?.code || "",
       designation: designationOptions
         .filter(option => designationArray.includes(String(option.code)))
         .map(option => option.code),
@@ -711,7 +748,7 @@ const UserManagement = () => {
       id: "",
       name: "",
       email: "",
-      contact: "",
+      mobile: "",
       role: "",
       kgid: "",
       status: "Active",
@@ -770,6 +807,17 @@ const UserManagement = () => {
         [fieldName]: Array.isArray(value) ? value : String(value),
       };
   
+      // Autofill name and mobile when KGID is selected
+      if (fieldName === "kgid") {
+        const selectedKgid = kgidOptions.find((item) => item.code === value);
+        console.log("Selected KGID Data:", selectedKgid); // Debugging
+      
+        if (selectedKgid) {
+          updatedData.name = selectedKgid.kgid;
+          updatedData.mobile = selectedKgid.mobile || ""; // Ensure mobile is set
+        }
+      }
+          
       // Reset division when department changes
       if (fieldName === "department") {
         updatedData.division = "";
@@ -835,6 +883,14 @@ const UserManagement = () => {
     name: item.name,
     code: item.code.toString(),
   })) || [];
+
+  const kgidOptions = masterData?.kgid?.map((item) => ({
+    name: item.kgid,
+    kgid: item.name,    
+    mobile: item.mobile,
+    code: item.code.toString(),
+  })) || [];
+
 
   // const [divisionOptions,setDivisionOptions] = useState([]);
 
@@ -957,9 +1013,11 @@ const UserManagement = () => {
                     setNewUser({
                       id: null,
                       name: "",
+                      mobile: "",
                       role: "",
                       kgid: "",
                       designation: "",
+                      supervisor_designation: "",
                       division: "",
                       department: "",
                     });
@@ -1130,9 +1188,11 @@ const UserManagement = () => {
                   setNewUser({
                     id: null,
                     name: "",
+                    mobile: "",
                     role: "",
                     kgid: "",
                     designation: "",
+                    supervisor_designation: "",
                     pin: "",
                     confirmPin: "",
                     division: "",
@@ -1186,7 +1246,8 @@ const UserManagement = () => {
                         handleInputChange(e);
                     }
                 }} 
-                readOnly={modalTitle === "View User"}
+                readOnly={true}
+                value={newUser.name}
                   />
 
               </Grid>
@@ -1208,21 +1269,40 @@ const UserManagement = () => {
               </Grid>
 
               <Grid item xs={12} sm={6}>
-                <NumberField
+              <AutocompleteField
+                  formData={newUser}
+                  errors={errors}
                   field={{
                     name: "kgid",
-                    label: "KGID Number",
+                    label: "Select KGID",
+                    options: kgidOptions,
+                    required: modalTitle !== "Set Filters",
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'role' : null,
+                  }}
+                  value={newUser.kgid}
+                  onHistory={() => getUsermanagementFieldLog('kgid')}
+                  onChange={handleDropDownChange}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <NumberField
+                  field={{
+                    name: "mobile",
+                    label: "Mobile Number",
                     required: modalTitle !== "Set Filters",
                     maxLength: 10,
-                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'kgid' : null,
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'mobile' : null,
                   }}
+                  value={newUser.mobile}
                   formData={newUser}
                   errors={errors}
                   onChange={handleInputChange}
-                  onHistory={() => getUsermanagementFieldLog('kgid')}
-                  readOnly={modalTitle === "View User"}
-                />
+                  onHistory={() => getUsermanagementFieldLog('mobile')}
+                  readOnly={true}
+                  />
               </Grid>
+
 
               <Grid item xs={12} sm={6}>
                 <MultiSelect
@@ -1239,6 +1319,26 @@ const UserManagement = () => {
                   onHistory={() => getUsermanagementFieldLog('designation')}
                   onChange={handleDropDownChange}
                 />
+                {newUser.designation && (
+                    <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
+                      Supervisor Designation:{" "}
+                      {newUser.designation
+                        .map((des) => {
+                          const supervisorKeys = Object.keys(masterData.supervisor_designation)
+                            .filter((key) => masterData.supervisor_designation[key].includes(parseInt(des, 10)));
+
+                          const supervisorNames = supervisorKeys
+                            .map((key) => {
+                              const designation = designationOptions.find((option) => String(option.code) === String(key));
+                              return designation ? designation.name : "Unknown";
+                            })
+                            .join(", ");
+
+                          return supervisorNames || "None";
+                        })
+                        .join(" | ")}
+                    </p>
+                  )}           
               </Grid>
 
               <Grid item xs={12} sm={6}>

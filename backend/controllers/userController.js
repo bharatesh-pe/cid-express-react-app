@@ -3,7 +3,7 @@ const path = require("path");
 const { Sequelize } = require("sequelize");
 const dbConfig = require("../config/dbConfig");
 const { userSendResponse } = require("../services/userSendResponse");
-const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus } = require("../models");
+const { Template, admin_user, user, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus ,KGID} = require("../models");
 const db = require('../models');
 const sequelize = db.sequelize;
 
@@ -165,7 +165,7 @@ exports.create_user = async (req, res) => {
       {
         name: username,
         role_id: role_id,
-        kgid: kgid,
+        kgid_id: kgid,
         mobile: mobile||null,
         created_by: created_by,
       },
@@ -305,7 +305,7 @@ exports.update_user = async (req, res) => {
     const updatedFields = {};
     if (existingUser.name != username) updatedFields.name = username;
     if (existingUser.role_id != role_id) updatedFields.role = role_id;
-    if (existingUser.kgid != kgid) updatedFields.kgid = kgid;
+    if (existingUser.kgid_id != kgid) updatedFields.kgid_id = kgid;
 
     if (Object.keys(updatedFields).length > 0) {
       await Users.update(updatedFields, { where: { user_id }, transaction: t });
@@ -463,6 +463,11 @@ exports.get_users = async (req, res) => {
               [Op.notIn]: excluded_role_ids,
             },
           },
+        },
+        {
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"],
         },
         {
           model: UserDesignation,

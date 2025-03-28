@@ -1774,7 +1774,7 @@ const PendingTrail = () => {
         const getActions = async ()=>{
 
             var payloadObj = {
-                "module": "ui_case",
+                "module": "pt_case",
                 "tab": sysStatus
             }
 

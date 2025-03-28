@@ -60,6 +60,12 @@ module.exports = (sequelize, DataTypes) => {
       underscored: true,
     }
   );
+  KGID.associate = (models) => {
+    KGID.hasMany(models.Users, {
+      foreignKey: 'kgid_id',
+      as: 'users'
+    });
+  };
 
   return KGID;
 };
