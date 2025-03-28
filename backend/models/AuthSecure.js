@@ -22,6 +22,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    kgid_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "kgid",
+        key: "id",
+      },
+    },
     pin: {
       type: DataTypes.TEXT,
       allowNull: true
@@ -60,6 +68,12 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'user_id',
       as: 'user'
     });
+
+    AuthSecure.belongsTo(models.KGID, {
+      foreignKey: "kgid_id",
+      as: "kgidDetails",
+    });
+
   };
 
   return AuthSecure;
