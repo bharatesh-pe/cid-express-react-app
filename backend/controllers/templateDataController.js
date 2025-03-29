@@ -111,6 +111,8 @@ exports.insertTemplateData = async (req, res, next) => {
             validData.pt_case_id = parsedData.pt_case_id ;
         }
 
+        console.log('validData',validData);
+
         // Define dynamic model
         const modelAttributes = {};
         for (const field of completeSchema) {
@@ -2626,7 +2628,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             ...Object.keys(fields).filter(field => fields[field].displayContent)
         ];
 
-        attributesArray.push('id','created_by');
+        attributesArray.push('id','created_by','ui_case_id','pt_case_id');
 
         const result = await DynamicTable.findAndCountAll({
             where: whereClause,

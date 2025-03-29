@@ -304,7 +304,7 @@ exports.update_user = async (req, res) => {
 
     const updatedFields = {};
     if (existingUser.name != username) updatedFields.name = username;
-    if (existingUser.role_id != role_id) updatedFields.role = role_id;
+    if (existingUser.role_id != role_id) updatedFields.role_id = role_id;
     if (existingUser.kgid_id != kgid) updatedFields.kgid_id = kgid;
 
     if (Object.keys(updatedFields).length > 0) {
