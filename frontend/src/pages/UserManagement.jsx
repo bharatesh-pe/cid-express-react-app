@@ -1264,28 +1264,31 @@ console.log("User KGID:", userToEdit.kgid);
                   value={newUser.designation}
                   onHistory={() => getUsermanagementFieldLog('designation')}
                   onChange={handleDropDownChange}
-                />
-                {newUser.designation && (
-                    <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
-                      Supervisor Designation:{" "}
-                      {newUser.designation
-                        .map((des) => {
-                          const supervisorKeys = Object.keys(masterData.supervisor_designation)
-                            .filter((key) => masterData.supervisor_designation[key].includes(parseInt(des, 10)));
-
-                          const supervisorNames = supervisorKeys
-                            .map((key) => {
-                              const designation = designationOptions.find((option) => String(option.code) === String(key));
-                              return designation ? designation.name : "Unknown";
-                            })
-                            .join(", ");
-
-                          return supervisorNames || "None";
-                        })
-                        .join(" | ")}
-                    </p>
-                  )}           
+                />         
               </Grid>
+                  <Grid item xs={12} sm={6}>
+                  {newUser.designation && (
+                        <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
+                          Supervisor Designation:{" "}
+                          <br />
+                          {newUser.designation
+                            .map((des) => {
+                              const supervisorKeys = Object.keys(masterData.supervisor_designation)
+                                .filter((key) => masterData.supervisor_designation[key].includes(parseInt(des, 10)));
+    
+                              const supervisorNames = supervisorKeys
+                                .map((key) => {
+                                  const designation = designationOptions.find((option) => String(option.code) === String(key));
+                                  return designation ? designation.name : "Unknown";
+                                })
+                                .join(", ");
+    
+                              return supervisorNames || "None";
+                            })
+                            .join(" | ")}
+                        </p>
+                      )}  
+                    </Grid> 
 
               <Grid item xs={12} sm={6}>
                 <AutocompleteField
@@ -1320,8 +1323,6 @@ console.log("User KGID:", userToEdit.kgid);
                 />
               </Grid>
 
-              <Grid item xs={12} sm={6}>
-                </Grid> 
               {modalTitle !== "Edit User" && modalTitle!== "View User"  && modalTitle!== "Set Filters" && (
                 <>
                   <Grid item xs={12} sm={6}>
@@ -1352,25 +1353,6 @@ console.log("User KGID:", userToEdit.kgid);
                   </Grid>
                 </>
               )}
-              {/* {modalTitle == "Set Filters" && (
-                <>
-                <Grid item xs={12} sm={6}>
-                <AutocompleteField
-  formData={newUser}
-  errors={errors}
-  field={{
-    name: "status",
-    label: "Status",
-    options: statusOptions,
-    required: modalTitle !== "Set Filters",
-  }}
-  value={statusOptions.find(option => option.code === newUser.status) || null}
-  onChange={(field, value) => handleDropDownChange("status", value)}
-/>
-
-              </Grid>                
-                </>
-              )} */}
             </Grid>
           </form>
         </Modal>
