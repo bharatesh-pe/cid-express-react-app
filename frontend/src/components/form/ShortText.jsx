@@ -5,7 +5,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import InfoIcon from '@mui/icons-material/Info';
 import { Tooltip } from '@mui/material';
 
-const ShortText = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly}) => {
+const ShortText = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly, disabled}) => {
   return (
     <div style={{ width: '100%' }}>
       {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}

@@ -5,7 +5,7 @@ import { Box, Tooltip } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly}) => {
+const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly, disabled}) => {
   return (
     <Box sx={{ width: '100%' }}>
       {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}

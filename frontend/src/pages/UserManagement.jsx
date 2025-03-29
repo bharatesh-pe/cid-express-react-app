@@ -1179,6 +1179,22 @@ console.log("User KGID:", userToEdit.kgid);
         >
           <form className="py-4 px-4">
             <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <AutocompleteField
+                  formData={newUser}
+                  errors={errors}
+                  field={{
+                    name: "kgid",
+                    label: "Select KGID",
+                    options: kgidOptions,
+                    required: modalTitle !== "Set Filters",
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'role' : null,
+                  }}
+                  value={newUser.kgid}
+                  onHistory={() => getUsermanagementFieldLog('kgid')}
+                  onChange={handleDropDownChange}
+                />
+              </Grid>
               <Grid item xs={12} sm={6}>
                 <ShortText
                   field={{
@@ -1186,6 +1202,7 @@ console.log("User KGID:", userToEdit.kgid);
                     label: "Enter Full Name",
                     required: modalTitle !== "Set Filters",
                     history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'name' : null,
+                    disabled: true,
                   }}
                   onHistory={() => getUsermanagementFieldLog('name')}
                   formData={newUser}
@@ -1196,10 +1213,25 @@ console.log("User KGID:", userToEdit.kgid);
                         handleInputChange(e);
                     }
                 }} 
-                readOnly={true}
                 value={newUser.name}
                   />
 
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <NumberField
+                  field={{
+                    name: "mobile",
+                    label: "Mobile Number",
+                    required: modalTitle !== "Set Filters",
+                    maxLength: 10,
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'mobile' : null,
+                    disabled: true,
+                  }}
+                  value={newUser.mobile}
+                  formData={newUser}
+                  errors={errors}
+                  onHistory={() => getUsermanagementFieldLog('mobile')}
+                  />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <AutocompleteField
@@ -1217,42 +1249,6 @@ console.log("User KGID:", userToEdit.kgid);
                   onChange={handleDropDownChange}
                 />
               </Grid>
-
-              <Grid item xs={12} sm={6}>
-              <AutocompleteField
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "kgid",
-                    label: "Select KGID",
-                    options: kgidOptions,
-                    required: modalTitle !== "Set Filters",
-                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'role' : null,
-                  }}
-                  value={newUser.kgid}
-                  onHistory={() => getUsermanagementFieldLog('kgid')}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <NumberField
-                  field={{
-                    name: "mobile",
-                    label: "Mobile Number",
-                    required: modalTitle !== "Set Filters",
-                    maxLength: 10,
-                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'mobile' : null,
-                  }}
-                  value={newUser.mobile}
-                  formData={newUser}
-                  errors={errors}
-                  onChange={handleInputChange}
-                  onHistory={() => getUsermanagementFieldLog('mobile')}
-                  readOnly={true}
-                  />
-              </Grid>
-
 
               <Grid item xs={12} sm={6}>
                 <MultiSelect
@@ -1324,6 +1320,8 @@ console.log("User KGID:", userToEdit.kgid);
                 />
               </Grid>
 
+              <Grid item xs={12} sm={6}>
+                </Grid> 
               {modalTitle !== "Edit User" && modalTitle!== "View User"  && modalTitle!== "Set Filters" && (
                 <>
                   <Grid item xs={12} sm={6}>
