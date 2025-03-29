@@ -1266,29 +1266,29 @@ console.log("User KGID:", userToEdit.kgid);
                   onChange={handleDropDownChange}
                 />         
               </Grid>
-                  <Grid item xs={12} sm={6}>
-                  {newUser.designation && (
-                        <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
-                          Supervisor Designation:{" "}
-                          <br />
-                          {newUser.designation
-                            .map((des) => {
-                              const supervisorKeys = Object.keys(masterData.supervisor_designation)
-                                .filter((key) => masterData.supervisor_designation[key].includes(parseInt(des, 10)));
-    
-                              const supervisorNames = supervisorKeys
-                                .map((key) => {
-                                  const designation = designationOptions.find((option) => String(option.code) === String(key));
-                                  return designation ? designation.name : "Unknown";
-                                })
-                                .join(", ");
-    
-                              return supervisorNames || "None";
+              <Grid item xs={12} sm={6}>
+                <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
+                  Supervisor Designation:{" "}
+                  <br />
+                  {newUser.designation && newUser.designation.length > 0
+                    ? newUser.designation
+                        .map((des) => {
+                          const supervisorKeys = Object.keys(masterData.supervisor_designation)
+                            .filter((key) => masterData.supervisor_designation[key].includes(parseInt(des, 10)));
+
+                          const supervisorNames = supervisorKeys
+                            .map((key) => {
+                              const designation = designationOptions.find((option) => String(option.code) === String(key));
+                              return designation ? designation.name : "Unknown";
                             })
-                            .join(" | ")}
-                        </p>
-                      )}  
-                    </Grid> 
+                            .join(", ");
+
+                          return supervisorNames || "None";
+                        })
+                        .join(" | ")
+                    : ""}
+                </p>
+              </Grid>
 
               <Grid item xs={12} sm={6}>
                 <AutocompleteField
