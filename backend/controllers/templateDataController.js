@@ -606,6 +606,8 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
 
 exports.getTemplateData = async (req, res, next) => {
     const { table_name , ui_case_id , pt_case_id } = req.body;
+    const Op = Sequelize.Op;
+
     // const userId = res.locals.user_id || null;
     // const adminUserId = res.locals.admin_user_id || null;
     // const actorId = userId || adminUserId;
@@ -719,13 +721,16 @@ exports.getTemplateData = async (req, res, next) => {
 
         await Model.sync();
 
+
         let whereClause = {};
-        if(ui_case_id && ui_case_id != '' && pt_case_id && pt_case_id != ''){
-            whereClause = { ui_case_id , pt_case_id }
-        }else if(ui_case_id && ui_case_id != ''){
-            whereClause = { ui_case_id }
-        }else if(pt_case_id && pt_case_id != ''){
-            whereClause = { pt_case_id }
+        if (ui_case_id && ui_case_id != '' && pt_case_id && pt_case_id != '') {
+            whereClause = {
+                [Op.or]: [{ ui_case_id }, { pt_case_id }]
+            };
+        } else if (ui_case_id && ui_case_id != '') {
+            whereClause = { ui_case_id };
+        } else if (pt_case_id && pt_case_id != '') {
+            whereClause = { pt_case_id };
         }
 
 
