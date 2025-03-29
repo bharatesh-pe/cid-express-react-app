@@ -220,8 +220,12 @@ const KGID = () => {
             get_department_details();
 
         } catch (err) {
-            let errorMessage = err.response?.message || "Something went wrong. Please try again.";
+            let errorMessage = err.response?.data?.error || err.response?.message || "Something went wrong. Please try again.";
 
+            if (errorMessage.includes("violates foreign key constraint")) {
+                errorMessage = "This KGID is assigned to a user and cannot be deleted.";
+            }
+            
             toast.error(errorMessage, {
                 position: "top-right",
                 autoClose: 3000,

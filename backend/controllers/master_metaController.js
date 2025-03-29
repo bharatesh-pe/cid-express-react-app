@@ -301,6 +301,9 @@ exports.delete_master_data = async (req, res) => {
       });
 
   } catch (error) {
-      return res.status(500).json({ message: 'Internal server error' });
-  }
+    return res.status(500).json({ 
+        message: 'Failed to delete master data.', 
+        error: error.message
+    });
+}
 };
