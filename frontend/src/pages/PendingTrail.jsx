@@ -43,7 +43,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from "dayjs";
 
-const PendingTrail = () => {
+const UnderInvestigation = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -51,6 +51,7 @@ const PendingTrail = () => {
     const [paginationCount, setPaginationCount] = useState(1);
     const [tableSortOption, settableSortOption] = useState('DESC');
     const [tableSortKey, setTableSortKey] = useState('');
+    const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
     const [tableData, setTableData] = useState([]);
     const [isValid, setIsValid] = useState(false);
     const [searchValue, setSearchValue] = useState(null);
@@ -59,7 +60,7 @@ const PendingTrail = () => {
     const [template_name, setTemplate_name] = useState('')
     const [table_name, setTable_name] = useState('')
 
-    const [sysStatus, setSysSattus] = useState("all");
+    const [sysStatus, setSysSattus] = useState('all');
 
     const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
@@ -68,6 +69,7 @@ const PendingTrail = () => {
     const [viewReadonly, setviewReadonly] = useState(false);
     const [editTemplateData, setEditTemplateData] = useState(false);
     const [selectedRowId, setSelectedRowId] = useState(null);
+    const [selectedRowIds, setSelectedRowIds] = useState([]);
     const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
     const [otherFormOpen, setOtherFormOpen] = useState(false);
@@ -113,7 +115,10 @@ const PendingTrail = () => {
 
     // for actions
 
-    const [selectedRow, setSelectedRow] = useState({})
+    const [selectedRow, setSelectedRow] = useState({});
+    const [templateApproval, setTemplateApproval] = useState(false);
+    const [templateApprovalData, setTemplateApprovalData] = useState({});
+    const [disposalUpdate, setDisposalUpdate] = useState(false);
 
     // transfer to other division states
 
@@ -149,69 +154,89 @@ const PendingTrail = () => {
         })
     }
 
+    const [showPtCaseModal, setShowPtCaseModal] = useState(false);
+    const [ptCaseTableName, setPtCaseTableName] = useState(null);
+    const [ptCaseTemplateName, setPtCaseTemplateName] = useState(null);
+
+    const [selectedRowData, setSelectedRowData] = useState(null);
+
     // change sys_status
 
-    const changeSysStatus = async (data, value)=>{
+    const changeSysStatus = async (data, value, text)=>{
 
-        var payloadSysStatus = {
-            "table_name" : table_name,
-            "data"  :   {  
-                            "id": data.id, 
-                            "sys_status": value,
-                            "default_status": "pt_case"
-                        }
-        }
+        Swal.fire({
+            title: 'Are you sure?',
+            text: text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes !',
+            cancelButtonText: 'No',
+        }).then(async (result) => {
+            if (result.isConfirmed) {
 
-        setLoading(true);
+                var payloadSysStatus = {
+                    "table_name" : table_name,
+                    "data"  :   {  
+                                    "id": data.id, 
+                                    "sys_status": value,
+                                    "default_status": "pt_case"
+                                }
+                }
 
-        try {
-            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+                setLoading(true);
 
-            setLoading(false);
+                try {
+                    const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
 
-            if (chnageSysStatus && chnageSysStatus.success) { 
-                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount)
-                });
+                    setLoading(false);
+
+                    if (chnageSysStatus && chnageSysStatus.success) { 
+                        toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-success",
+                            onOpen: () => loadTableData(paginationCount)
+                        });
+                    } else {
+                        const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+
+                    }
+
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+
+                    }
+                }
             } else {
-                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-
+                console.log("sys status updation canceled.");
             }
-
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response['data']) {
-                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-
-            }
-        }
+        });
 
     }
 
@@ -344,6 +369,25 @@ const PendingTrail = () => {
 
     }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, sysStatus])
 
+
+    const handleCheckboxChangeField = (event, row) => {
+        const isSelected = event.target.checked;
+        setTableData((prevData) =>
+            prevData.map((data) =>
+                data.id === row.id ? { ...data, isSelected } : data
+            )
+        );
+        if (isSelected) {
+            setSelectedRowIds((prevIds) => [...prevIds, row.id]); 
+        } else {
+            setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id)); 
+        }
+    };
+    useEffect(() => {
+        const anySelected = tableData.some(data => data.isSelected);
+        setIsCheckboxSelected(anySelected);
+    }, [tableData]);
+
     const loadTableData = async (page, searchValue) => {
 
         var getTemplatePayload = {
@@ -370,20 +414,20 @@ const PendingTrail = () => {
 
                     if(getTemplateResponse.data['data'][0]){
 
-                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info", "ui_case_id", "pt_case_id"];
 
                         const updatedHeader = [
                             {
-                                field: 'sl_no',
-                                headerName: 'S.No',
-                                resizable: false,
-                                width: 75,
+                                field: 'select',
+                                headerName: '',
+                                width: 50,
                                 renderCell: (params) => {
                                     return (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            {params.value}
-                                        </Box>
-                                    )
+                                        <Checkbox
+                                            checked={params.row.isSelected || false}
+                                            onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                        />
+                                    );
                                 },
                             },
                             ...Object.keys(getTemplateResponse.data['data'][0])
@@ -849,8 +893,8 @@ const PendingTrail = () => {
     }
 
 
-    const showOptionTemplate = async (table_name) => {
-        if (!table_name || table_name === '') {
+    const showOptionTemplate = async (tableName) => {
+        if (!tableName || tableName === '') {
             toast.warning('Please Check The Template', {
                 position: "top-right",
                 autoClose: 3000,
@@ -865,21 +909,40 @@ const PendingTrail = () => {
         }
 
         const viewTableData = {
-            "table_name": table_name
+            "table_name": tableName
         }
         setLoading(true);
 
         try {
 
             const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            console.log("viewTemplateResponseviewTemplateResponse",viewTemplateResponse)
+
             setLoading(false);
             if (viewTemplateResponse && viewTemplateResponse.success) {
 
+                var caseFields = []
+                var getCaseIdFields = viewTemplateResponse.data['fields'].map((field)=>{
+                    if(field && field.table && field.table === table_name){
+                        caseFields = field;
+                        field.disabled = true
+                    }
+
+                    return field;
+                });
+
+                var initialData = {}
+                if(caseFields && caseFields['name']){
+                    initialData = {
+                        [caseFields['name']] : selectedRowData.id
+                    }
+                }
+
                 setOtherFormOpen(true);
-                setInitialData({});
+                setOtherInitialTemplateData(initialData);
                 setviewReadonly(false);
                 setEditTemplateData(false);
-                setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
                 if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
                     setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
                 }
@@ -915,7 +978,7 @@ const PendingTrail = () => {
         }
     }
 
-    const otherTemplateSaveFunc = async (data) => {
+    const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
 
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
             toast.warning('Please Check The Template', {
@@ -945,8 +1008,15 @@ const PendingTrail = () => {
             return;
         }
 
+        if(selectedOtherTemplate && selectedOtherTemplate.is_approval && !alreadySavedApproval){
+            showApprovalPage(selectedRow);
+            setTemplateApprovalData(data);
+            setTemplateApproval(true);
+            return;
+        }
+
         const formData = new FormData();
-        formData.append("table_name", selectedOtherTemplate.table);
+        formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
 
         var normalData = {}; // Non-file upload fields
 
@@ -986,15 +1056,19 @@ const PendingTrail = () => {
                 }
             }
         });
-        normalData.sys_status ='pt_case';
+        normalData.sys_status = 'pt_case';
+        normalData['pt_case_id'] = selectedRowData.id;
+        normalData['ui_case_id'] = selectedRowData?.ui_case_id;
+
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
         try {
             let saveTemplateData;
             if (isUpdatePdf) {
-                saveTemplateData = await api.post("/templateData/updatePdf", formData); // Assuming you have an endpoint like /updatePdf
-            } else {
+                const appendText = JSON.stringify(normalData);
+                saveTemplateData = await api.post("/templateData/appendToLastLineOfPDF", { pt_case_id: selectedRowData.id, appendText });
+            }else {
                 saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
             }            
             setLoading(false);
@@ -1012,8 +1086,100 @@ const PendingTrail = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                    ...(!showPtCaseModal && { onOpen: () => handleOtherTemplateActions(selectedOtherTemplate, selectedRow) }) 
                 });
+
+                setTemplateApprovalData({});
+                setTemplateApproval(false);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
+
+                if(showPtCaseModal){
+                    setPtCaseTableName(null);
+                    setShowPtCaseModal(false);
+                    setOtherFormOpen(false);
+                    setOptionStepperData([]);
+                    setOptionFormTemplateData([]);
+
+                    var payloadSysStatus = {
+                        "table_name" : table_name,
+                        "data"  :   {  
+                                        "id": selectedRow.id, 
+                                        "sys_status": 'disposal'
+                                    }
+                    }
+
+                    setLoading(true);
+
+                    try {
+
+                        const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+
+                        setLoading(false);
+
+                        if (chnageSysStatus && chnageSysStatus.success) { 
+                            toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-success",
+                            });
+
+                            // update func
+                            var combinedData = {
+                                id : selectedRow.id,
+                                [selectKey.name] : selectedOtherFields.code
+                            }
+
+                            onUpdateTemplateData(combinedData);
+
+                            // reset states
+                            setSelectKey(null);
+                            setSelectedRow(null);
+                            setOtherTransferField([]);
+                            setShowOtherTransferModal(false);
+                            setSelectedOtherFields(null);
+                            setselectedOtherTemplate(null);
+
+                        } else {
+                            const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
+                            toast.error(errorMessage, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+
+                        }
+
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response['data']) {
+                            toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+
+                        }
+                    }
+
+                }
 
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
@@ -1137,8 +1303,19 @@ const PendingTrail = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
                 });
+
+                setOtherEditTemplateData(false);
+                setOtherReadOnlyTemplateData(false);
+
+                setTemplateApprovalData({});
+                setTemplateApproval(false);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
+
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
                 toast.error(errorMessage, {
@@ -1318,7 +1495,7 @@ const PendingTrail = () => {
                             draggable: true,
                             progress: undefined,
                             className: "toast-success",
-                            onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                            onOpen: () => handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
                         });
                     } else {
                         const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
@@ -1428,7 +1605,7 @@ const PendingTrail = () => {
                 }
             }
         });
-        normalData.sys_status ='pt_case';
+        normalData.sys_status = 'pt_case';
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
@@ -1770,28 +1947,43 @@ const PendingTrail = () => {
 
 
     useEffect(()=>{
-
         const getActions = async ()=>{
-
             var payloadObj = {
                 "module": "pt_case",
-                "tab": sysStatus
+                "tab" : sysStatus
             }
 
             setLoading(true);
-    
+
             try {
-    
+
                 const getActionsDetails = await api.post("/action/get_actions", payloadObj);
 
                 setLoading(false);
-    
+
                 if (getActionsDetails && getActionsDetails.success) {
-    
+
                     if (getActionsDetails.data && getActionsDetails.data['data']) {
-                        setHoverTableOptions(getActionsDetails.data['data']);
+
+                    var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
+                    const userPermissions = userPermissionsArray[0] || {}; 
+                    var updatedActions = getActionsDetails.data['data'].filter((action) => {
+                        if (action.permissions) {
+                            var parsedPermissions = JSON.parse(action.permissions);
+                    
+                            const hasValidPermission = parsedPermissions.some(
+                                (permission) => userPermissions[permission] === true
+                            );
+                    
+                            return hasValidPermission;
+                        }
+                    
+                        return true;
+                    });
+
+                        setHoverTableOptions(updatedActions);
                     }
-    
+
                 } else {
                     
                     const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
@@ -1807,9 +1999,8 @@ const PendingTrail = () => {
                     });
                                     
                 }
-    
+
             } catch (error) {
-    
                 setLoading(false);
                 if (error && error.response && error.response.data) {
                     toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
@@ -1825,17 +2016,12 @@ const PendingTrail = () => {
                 }
             }
         }
-
         getActions();
 
     },[sysStatus])
 
 
-
-
-
     
-    const [selectedRowData, setSelectedRowData] = useState(null);
 
     const handleFileUpload = async (event) => {
         console.log("File upload initiated.");
@@ -1857,7 +2043,7 @@ const PendingTrail = () => {
     
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("ui_case_id", caseId);
+        formData.append("pt_case_id", caseId);
         formData.append("created_by", "0");
     
         try {
@@ -1886,7 +2072,7 @@ const PendingTrail = () => {
         }
     
         try {
-            const response = await api.post("/templateData/getUploadedFiles", { ui_case_id: selectedRow.id });
+            const response = await api.post("/templateData/getUploadedFiles", { pt_case_id: selectedRow.id });
     
             if (response && response.success) {
                 console.log("Uploaded files:", response.data);
@@ -1913,7 +2099,7 @@ const PendingTrail = () => {
         console.log("Checking PDF entry for caseId:", caseId);
     
         try {
-            const response = await api.post("/templateData/checkPdfEntry", { ui_case_id: caseId, is_pdf: true });
+            const response = await api.post("/templateData/checkPdfEntry", { pt_case_id: caseId, is_pdf: true });
     
             if (response.success && response.data) {
                 setHasPdfEntry(true);
@@ -1928,9 +2114,6 @@ const PendingTrail = () => {
     
     const handleOtherTemplateActions = async (options, selectedRow)=>{
 
-        console.log("selectedRow",selectedRow)
-
-        console.log("options",options)
         setSelectedRowData(selectedRow);
 
         if(options.table && options.field){
@@ -1938,8 +2121,11 @@ const PendingTrail = () => {
             return;
         }
 
+        setSelectedRow(selectedRow);
+
         var getTemplatePayload = {
             "table_name": options.table,
+            "pt_case_id": selectedRow.id,
         }
 
         setLoading(true);
@@ -1951,8 +2137,6 @@ const PendingTrail = () => {
             if (getTemplateResponse && getTemplateResponse.success) {
 
                 if (getTemplateResponse.data && getTemplateResponse.data) {
-
-                    console.log("data inside")
 
                     if(getTemplateResponse.data[0]){
 
@@ -2255,7 +2439,7 @@ const PendingTrail = () => {
     const showApprovalPage = async (approveData)=>{
 
         var payloadObj = {
-            "ui_case_id": approveData.id
+            "pt_case_id": approveData.id
         }
 
         setLoading(true);
@@ -2352,8 +2536,9 @@ const PendingTrail = () => {
     }
 
     const showApprovalAddPage = (table)=> {
-        console.log("here add data", table , "table");
+
         setAddApproveFlag(true);
+        handleApprovalSaveData('approval_item', Number(selectedOtherTemplate?.approval_items));
     }
     
     const saveApprovalData = async (table)=> {
@@ -2390,7 +2575,7 @@ const PendingTrail = () => {
 
         var payloadApproveData = {
             ...approvalSaveData,
-            "ui_case_id" : selectedOtherTemplate.id,
+            "pt_case_id" : selectedRow.id,
             "transaction_id" : randomApprovalId
         }
 
@@ -2413,6 +2598,15 @@ const PendingTrail = () => {
                     className: "toast-success"
                 });
 
+                if((selectedOtherTemplate.field === null || selectedOtherTemplate.field === 'field_nature_of_disposal') && templateApproval){
+                    otherTemplateSaveFunc(templateApprovalData, true);
+                    return;
+                }
+
+                if(disposalUpdate){
+                    updateSysStatusDisposal();
+                    return;
+                }
 
                 var combinedData = {
                     id : selectedRow.id,
@@ -2489,8 +2683,13 @@ const PendingTrail = () => {
             return;
         }
 
+        if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] === 'field_nature_of_disposal' && selectedOtherFields && selectedOtherFields['name']){
+            checkDisposalValues();
+            return;
+        }
+
         if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
-            showApprovalPage(selectedOtherTemplate);
+            showApprovalPage(selectedRow);
             return;
         }
 
@@ -2512,27 +2711,275 @@ const PendingTrail = () => {
 
     }
 
+     const showPtCaseTemplate = async () => {
+
+        var getTemplatePayload = {
+            "page": 1,
+            "limit": 0,
+            "template_module": "pt_case",
+        }
+        
+        setLoading(true);
+
+        try {
+            const getTemplateResponse = await api.post("/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
+            setLoading(false);
+
+            if (getTemplateResponse && getTemplateResponse.success) {
+                
+                if(getTemplateResponse.data && getTemplateResponse.data['meta']){
+
+                    if (!getTemplateResponse.data['meta'].table_name || getTemplateResponse.data['meta'].table_name === '') {
+                        toast.warning('Please Check The Template', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-warning",
+                        });
+                        return;
+                    }
+
+                    const viewTableData = {
+                        "table_name": getTemplateResponse.data['meta'].table_name
+                    }
+                    setLoading(true);
+
+                        try {
+
+                            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+
+                            setLoading(false);
+                            if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                                setOtherFormOpen(true);
+                                setOtherInitialTemplateData({});
+
+                                setOtherReadOnlyTemplateData(false);
+                                setOtherEditTemplateData(false);
+
+                                setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                                if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                                    setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                                }
+
+                                setPtCaseTableName(getTemplateResponse.data['meta'].table_name);
+                                setPtCaseTemplateName(getTemplateResponse.data['meta'].template_name);
+                                setShowPtCaseModal(true);
+
+                            } else {
+                                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                                toast.error(errorMessage, {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                            }
+
+                        } catch (error) {
+                            setLoading(false);
+                            if (error && error.response && error.response['data']) {
+                                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                            }
+                        }
+                    }
+                }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const checkDisposalValues = ()=> {
+
+        if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] === 'field_nature_of_disposal' && selectedOtherFields && selectedOtherFields['name']){
+
+            if(selectedOtherFields && selectedOtherFields['name'] === 'A'){
+
+                showPtCaseTemplate();
+                setDisposalUpdate(true);
+
+            }else{
+                Swal.fire({
+                    title: selectedOtherFields['name'] === 'B' ? 'Approved by Court' : 'Are You Sure ?',
+                    text: selectedOtherFields['name'] === 'B' ? '' : 'Do you want to move this case !',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes !',
+                    cancelButtonText: 'No',
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+
+                        if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
+                            showApprovalPage(selectedRow);
+                            setDisposalUpdate(true);
+                            return;
+                        }
+
+                        updateSysStatusDisposal();
+
+                    } else {
+                        setSelectKey(null);
+                        setSelectedRow(null);
+                        setOtherTransferField([]);
+                        setShowOtherTransferModal(false);
+                        setSelectedOtherFields(null);
+                        setselectedOtherTemplate(null);
+                    }
+                });
+            }
+
+        }
+    };
+
+    const updateSysStatusDisposal = async ()=> {
+
+        var payloadSysStatus = {
+            "table_name" : table_name,
+            "data"  :   {  
+                            "id": selectedRow.id, 
+                            "sys_status": 'disposal',
+                            "default_status":"pt_case"
+                        }
+        }
+
+        setLoading(true);
+
+        try {
+            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+
+            setLoading(false);
+
+            if (chnageSysStatus && chnageSysStatus.success) { 
+                toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                // update func
+                var combinedData = {
+                    id : selectedRow.id,
+                    [selectKey.name] : selectedOtherFields.code
+                }
+
+                onUpdateTemplateData(combinedData);
+
+                setDisposalUpdate(false);
+
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+
+                setApprovalsData([]);
+                setApprovalItem([]);
+                setDesignationData([]);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
+
+            } else {
+                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+        }
+    }
+
+
     const [isUpdatePdf, setIsUpdatePdf] = useState(false);
 
+    var userPermissions = JSON.parse(localStorage.getItem('user_permissions')) || [];
+
     var hoverExtraOptions = [
-        {
+        userPermissions[0]?.view_case
+        ? {
             "name": "View",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
-        },
-        {
+        }
+        : null,
+        userPermissions[0]?.edit_case
+        ? {
             "name": "Edit",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
-        },
-        {
+        }
+        : null,
+        userPermissions[0]?.delete_case
+        ? {
             "name": "Delete",
             "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
-        },
+        }
+        : null,
         ...hoverTableOptions,
         {
             "name": "Further Investigation 173(8) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
-        },
-    ];
+        }
+    ].filter(Boolean);;
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -2584,10 +3031,55 @@ const PendingTrail = () => {
                             },
                         }}
                     />
+                      {isCheckboxSelected && (
+                        <>
+                            <Button
+                                variant="contained"
+                                startIcon={
+                                    <svg
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 20 18"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M1 18V12H3V16H7V18H1ZM13 18V16H17V12H19V18H13ZM5.175 12.825L3.75 11.425L5.175 10H0V8H5.175L3.75 6.575L5.175 5.175L9 9L5.175 12.825ZM14.825 12.825L11 9L14.825 5.175L16.25 6.575L14.825 8H20V10H14.825L16.25 11.425L14.825 12.825ZM1 6V0H7V2H3V6H1ZM17 6V2H13V0H19V6H17Z"
+                                            fill="black"
+                                        />
+                                    </svg>
+                                }
+                                sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
+                                Merge
+                            </Button>
+                            <Button
+                                variant="contained"
+                                startIcon={
+                                    <svg fill="#000000"                                         
+                                        width="22"
+                                        height="22"
+                                        viewBox="0 0 20 18"
+                                        xmlns="http://www.w3.org/2000/svg" class="cf-icon-svg">
+                                        <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+                                        <g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g>
+                                        <g id="SVGRepo_iconCarrier">
+                                            <path d="M5.857 3.882v3.341a1.03 1.03 0 0 1-2.058 0v-.97a5.401 5.401 0 0 0-1.032 2.27 1.03 1.03 0 1 1-2.02-.395A7.462 7.462 0 0 1 2.235 4.91h-.748a1.03 1.03 0 1 1 0-2.058h3.34a1.03 1.03 0 0 1 1.03 1.03zm-3.25 9.237a1.028 1.028 0 0 1-1.358-.523 7.497 7.497 0 0 1-.37-1.036 1.03 1.03 0 1 1 1.983-.55 5.474 5.474 0 0 0 .269.751 1.029 1.029 0 0 1-.524 1.358zm2.905 2.439a1.028 1.028 0 0 1-1.42.322 7.522 7.522 0 0 1-.885-.652 1.03 1.03 0 0 1 1.34-1.563 5.435 5.435 0 0 0 .643.473 1.03 1.03 0 0 1 .322 1.42zm3.68.438a1.03 1.03 0 0 1-1.014 1.044h-.106a7.488 7.488 0 0 1-.811-.044 1.03 1.03 0 0 1 .224-2.046 5.41 5.41 0 0 0 .664.031h.014a1.03 1.03 0 0 1 1.03 1.015zm.034-12.847a1.03 1.03 0 0 1-1.029 1.01h-.033a1.03 1.03 0 0 1 .017-2.06h.017l.019.001a1.03 1.03 0 0 1 1.009 1.05zm3.236 11.25a1.029 1.029 0 0 1-.3 1.425 7.477 7.477 0 0 1-.797.453 1.03 1.03 0 1 1-.905-1.849 5.479 5.479 0 0 0 .578-.328 1.03 1.03 0 0 1 1.424.3zM10.475 3.504a1.029 1.029 0 0 1 1.41-.359l.018.011a1.03 1.03 0 1 1-1.06 1.764l-.01-.006a1.029 1.029 0 0 1-.358-1.41zm4.26 9.445a7.5 7.5 0 0 1-.315.56 1.03 1.03 0 1 1-1.749-1.086 5.01 5.01 0 0 0 .228-.405 1.03 1.03 0 1 1 1.836.93zm-1.959-6.052a1.03 1.03 0 0 1 1.79-1.016l.008.013a1.03 1.03 0 1 1-1.79 1.017zm2.764 2.487a9.327 9.327 0 0 1 0 .366 1.03 1.03 0 0 1-1.029 1.005h-.025A1.03 1.03 0 0 1 13.482 9.7a4.625 4.625 0 0 0 0-.266 1.03 1.03 0 0 1 1.003-1.055h.026a1.03 1.03 0 0 1 1.029 1.004z"></path>
+                                        </g></svg>
+                                }
+                                sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}
+                                onClick={() => showTransferToOtherDivision({table : 'cid_under_investigation', field : 'field_division', name : 'Massive Division'}, { id: selectedRowIds })}
+                                >
+                                Massive Division
+                            </Button>
+                        </>    
+                        )}
 
-                        <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
-                            Add New
-                        </Button>
+                        {
+                            JSON.parse(localStorage.getItem('user_permissions')) && JSON.parse(localStorage.getItem('user_permissions'))[0].create_case &&
+                            <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
+                                Add New
+                            </Button>
+                        }
                         {
                             localStorage.getItem('authAdmin') === "false" &&
                             <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
@@ -2597,6 +3089,7 @@ const PendingTrail = () => {
 
                     </Box>
                 </Box>
+
 
                 <Box pt={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
@@ -2643,7 +3136,7 @@ const PendingTrail = () => {
 
                 <Dialog
                     open={otherFormOpen}
-                    onClose={() => setOtherFormOpen(false)}
+                    onClose={() => {setOtherFormOpen(false); setShowPtCaseModal(false); }}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
                     maxWidth="xl"
@@ -2657,7 +3150,8 @@ const PendingTrail = () => {
                                     table_row_id={otherRowId}
                                     template_id={otherTemplateId}
 
-                                    template_name={selectedOtherTemplate.name}
+                                    template_name={showPtCaseModal ? ptCaseTemplateName : selectedOtherTemplate?.name}
+                                    table_name={showPtCaseModal ? ptCaseTableName : selectedOtherTemplate?.table}
 
                                     readOnly={otherReadOnlyTemplateData}
                                     editData={otherEditTemplateData}
@@ -2766,6 +3260,7 @@ const PendingTrail = () => {
                                 <h4 className="form-field-heading">Columns of Reports</h4>
                                 <Grid container spacing={2}>
                                     {
+
                                         showDownloadData && showDownloadData.map((fieldName, index) => {
                                             return (
                                                 <Grid item xs={12} md={6} key={index}>
@@ -2823,13 +3318,12 @@ const PendingTrail = () => {
                 {selectedOtherTemplate.table === "cid_ui_case_progress_report"
                     ? hasPdfEntry && (
                         <>
-                        <Button variant="outlined"     
-                        onClick={() => {
+                        <Button variant="outlined"     onClick={() => {
                                 setIsUpdatePdf(false);
                                 showOptionTemplate(selectedOtherTemplate.table);
                             }}
                         >
-                        Add
+                            Add
                         </Button>
                         <Button variant="outlined" onClick={() => {
                             setIsUpdatePdf(true);
@@ -2913,7 +3407,7 @@ const PendingTrail = () => {
                     sx={{zIndex:'1'}}
                 >
                     <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                        Approval Data
+                        Approval
                         <Box>
                             {
                                 !addApproveFlag ? 
@@ -3047,4 +3541,4 @@ const PendingTrail = () => {
     )
 };
 
-export default PendingTrail;
+export default UnderInvestigation;
