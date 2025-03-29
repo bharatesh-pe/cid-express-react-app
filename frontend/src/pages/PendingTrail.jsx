@@ -1058,7 +1058,7 @@ const UnderInvestigation = () => {
         });
         normalData.sys_status = 'pt_case';
         normalData['pt_case_id'] = selectedRowData.id;
-        normalData['ui_case_id'] = selectedRowData.ui_case_id;
+        normalData['ui_case_id'] = selectedRowData?.ui_case_id;
 
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
