@@ -913,56 +913,6 @@ console.log("User KGID:", userToEdit.kgid);
     { name: "Inactive", code: "inactive" }
   ];
   
-  
-  const [fetchedTableData, setFetchedTableData] = useState([]);
-
-  const loadTableData = async () => {
-      var getTemplatePayload = {
-          "table_name": "cid_hierarchy",
-      };
-      setLoading(true);
-  
-      try {
-          const getTemplateResponse = await api.post("/user/paginateTemplateData", getTemplatePayload);
-          setLoading(false);
-  
-          if (getTemplateResponse && getTemplateResponse.success) {
-              if (getTemplateResponse.data && getTemplateResponse.data['data']) {
-                  console.log("Fetched Table Data:", getTemplateResponse.data['data']);
-                  setFetchedTableData(getTemplateResponse.data['data']); // Store data in state
-              }
-          } else {
-              console.log("Error Response:", getTemplateResponse);
-              toast.error(getTemplateResponse.message || "Failed to fetch data. Please try again.", {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-error",
-              });
-          }
-      } catch (error) {
-          setLoading(false);
-          console.log("API Error:", error);
-          toast.error(error?.response?.data?.message || "Please Try Again!", {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-          });
-      }
-  };
-  
-  useEffect(() => {
-  loadTableData();
-}, []);
 
   return (
     <Box p={2}>
@@ -1229,6 +1179,22 @@ console.log("User KGID:", userToEdit.kgid);
         >
           <form className="py-4 px-4">
             <Grid container spacing={2}>
+            <Grid item xs={12} sm={6}>
+              <AutocompleteField
+                  formData={newUser}
+                  errors={errors}
+                  field={{
+                    name: "kgid",
+                    label: "Select KGID",
+                    options: kgidOptions,
+                    required: modalTitle !== "Set Filters",
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'role' : null,
+                  }}
+                  value={newUser.kgid}
+                  onHistory={() => getUsermanagementFieldLog('kgid')}
+                  onChange={handleDropDownChange}
+                />
+              </Grid>
               <Grid item xs={12} sm={6}>
                 <ShortText
                   field={{
@@ -1236,6 +1202,7 @@ console.log("User KGID:", userToEdit.kgid);
                     label: "Enter Full Name",
                     required: modalTitle !== "Set Filters",
                     history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'name' : null,
+                    disabled: true,
                   }}
                   onHistory={() => getUsermanagementFieldLog('name')}
                   formData={newUser}
@@ -1246,10 +1213,25 @@ console.log("User KGID:", userToEdit.kgid);
                         handleInputChange(e);
                     }
                 }} 
-                readOnly={true}
                 value={newUser.name}
                   />
 
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <NumberField
+                  field={{
+                    name: "mobile",
+                    label: "Mobile Number",
+                    required: modalTitle !== "Set Filters",
+                    maxLength: 10,
+                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'mobile' : null,
+                    disabled: true,
+                  }}
+                  value={newUser.mobile}
+                  formData={newUser}
+                  errors={errors}
+                  onHistory={() => getUsermanagementFieldLog('mobile')}
+                  />
               </Grid>
               <Grid item xs={12} sm={6}>
                 <AutocompleteField
@@ -1269,42 +1251,6 @@ console.log("User KGID:", userToEdit.kgid);
               </Grid>
 
               <Grid item xs={12} sm={6}>
-              <AutocompleteField
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "kgid",
-                    label: "Select KGID",
-                    options: kgidOptions,
-                    required: modalTitle !== "Set Filters",
-                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'role' : null,
-                  }}
-                  value={newUser.kgid}
-                  onHistory={() => getUsermanagementFieldLog('kgid')}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <NumberField
-                  field={{
-                    name: "mobile",
-                    label: "Mobile Number",
-                    required: modalTitle !== "Set Filters",
-                    maxLength: 10,
-                    history: (modalTitle === "View User" || modalTitle === "Edit User") ? 'mobile' : null,
-                  }}
-                  value={newUser.mobile}
-                  formData={newUser}
-                  errors={errors}
-                  onChange={handleInputChange}
-                  onHistory={() => getUsermanagementFieldLog('mobile')}
-                  readOnly={true}
-                  />
-              </Grid>
-
-
-              <Grid item xs={12} sm={6}>
                 <MultiSelect
                   formData={newUser}
                   errors={errors}
@@ -1318,11 +1264,14 @@ console.log("User KGID:", userToEdit.kgid);
                   value={newUser.designation}
                   onHistory={() => getUsermanagementFieldLog('designation')}
                   onChange={handleDropDownChange}
-                />
-                {newUser.designation && (
-                    <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
-                      Supervisor Designation:{" "}
-                      {newUser.designation
+                />         
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <p style={{ fontSize: "14px", color: "#6B7280", marginTop: "8px" }}>
+                  Supervisor Designation:{" "}
+                  <br />
+                  {newUser.designation && newUser.designation.length > 0
+                    ? newUser.designation
                         .map((des) => {
                           const supervisorKeys = Object.keys(masterData.supervisor_designation)
                             .filter((key) => masterData.supervisor_designation[key].includes(parseInt(des, 10)));
@@ -1336,9 +1285,9 @@ console.log("User KGID:", userToEdit.kgid);
 
                           return supervisorNames || "None";
                         })
-                        .join(" | ")}
-                    </p>
-                  )}           
+                        .join(" | ")
+                    : ""}
+                </p>
               </Grid>
 
               <Grid item xs={12} sm={6}>
@@ -1404,25 +1353,6 @@ console.log("User KGID:", userToEdit.kgid);
                   </Grid>
                 </>
               )}
-              {/* {modalTitle == "Set Filters" && (
-                <>
-                <Grid item xs={12} sm={6}>
-                <AutocompleteField
-  formData={newUser}
-  errors={errors}
-  field={{
-    name: "status",
-    label: "Status",
-    options: statusOptions,
-    required: modalTitle !== "Set Filters",
-  }}
-  value={statusOptions.find(option => option.code === newUser.status) || null}
-  onChange={(field, value) => handleDropDownChange("status", value)}
-/>
-
-              </Grid>                
-                </>
-              )} */}
             </Grid>
           </form>
         </Modal>
