@@ -156,6 +156,7 @@ const UnderInvestigation = () => {
 
     const [showPtCaseModal, setShowPtCaseModal] = useState(false);
     const [ptCaseTableName, setPtCaseTableName] = useState(null);
+    const [ptCaseTemplateName, setPtCaseTemplateName] = useState(null);
 
     const [selectedRowData, setSelectedRowData] = useState(null);
 
@@ -413,7 +414,7 @@ const UnderInvestigation = () => {
 
                     if(getTemplateResponse.data['data'][0]){
 
-                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info", "ui_case_id", "pt_case_id"];
 
                         const updatedHeader = [
                             {
@@ -1026,9 +1027,6 @@ const UnderInvestigation = () => {
             setTemplateApproval(true);
             return;
         }
-
-        console.log(showPtCaseModal,"showPtCaseModal showPtCaseModal");
-        console.log(alreadySavedApproval,"alreadySavedApproval alreadySavedApproval")
 
         const formData = new FormData();
         formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
@@ -2780,6 +2778,7 @@ const UnderInvestigation = () => {
                                 }
 
                                 setPtCaseTableName(getTemplateResponse.data['meta'].table_name);
+                                setPtCaseTemplateName(getTemplateResponse.data['meta'].template_name);
                                 setShowPtCaseModal(true);
 
                             } else {
@@ -2920,6 +2919,14 @@ const UnderInvestigation = () => {
                 setShowOtherTransferModal(false);
                 setSelectedOtherFields(null);
                 setselectedOtherTemplate(null);
+
+                setApprovalsData([]);
+                setApprovalItem([]);
+                setDesignationData([]);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
 
             } else {
                 const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
@@ -3152,7 +3159,7 @@ const UnderInvestigation = () => {
 
                 <Dialog
                     open={otherFormOpen}
-                    onClose={() => setOtherFormOpen(false)}
+                    onClose={() => {setOtherFormOpen(false); setShowPtCaseModal(false); }}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
                     maxWidth="xl"
@@ -3166,7 +3173,7 @@ const UnderInvestigation = () => {
                                     table_row_id={otherRowId}
                                     template_id={otherTemplateId}
 
-                                    template_name={selectedOtherTemplate?.name}
+                                    template_name={showPtCaseModal ? ptCaseTemplateName : selectedOtherTemplate?.name}
                                     table_name={showPtCaseModal ? ptCaseTableName : selectedOtherTemplate?.table}
 
                                     readOnly={otherReadOnlyTemplateData}
@@ -3423,7 +3430,7 @@ const UnderInvestigation = () => {
                     sx={{zIndex:'1'}}
                 >
                     <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                        Approval Data
+                        Approval
                         <Box>
                             {
                                 !addApproveFlag ? 

@@ -759,6 +759,24 @@ const CaseActions = () => {
                 name : 'Reinvestigation',
                 code : 'Reinvestigation'
             },
+        ],
+        "pt_case" : [
+            {
+                name : 'All',
+                code : 'all'
+            },
+            {
+                name : 'PT Cases',
+                code : 'pt_case'
+            },
+            {
+                name : 'Further Investigation 173(8) Case',
+                code : '178_cases'
+            },
+            {
+                name : 'Disposal',
+                code : 'disposal'
+            }
         ]
     }
 
