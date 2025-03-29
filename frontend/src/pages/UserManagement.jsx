@@ -913,56 +913,6 @@ console.log("User KGID:", userToEdit.kgid);
     { name: "Inactive", code: "inactive" }
   ];
   
-  
-  const [fetchedTableData, setFetchedTableData] = useState([]);
-
-  const loadTableData = async () => {
-      var getTemplatePayload = {
-          "table_name": "cid_hierarchy",
-      };
-      setLoading(true);
-  
-      try {
-          const getTemplateResponse = await api.post("/user/paginateTemplateData", getTemplatePayload);
-          setLoading(false);
-  
-          if (getTemplateResponse && getTemplateResponse.success) {
-              if (getTemplateResponse.data && getTemplateResponse.data['data']) {
-                  console.log("Fetched Table Data:", getTemplateResponse.data['data']);
-                  setFetchedTableData(getTemplateResponse.data['data']); // Store data in state
-              }
-          } else {
-              console.log("Error Response:", getTemplateResponse);
-              toast.error(getTemplateResponse.message || "Failed to fetch data. Please try again.", {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-error",
-              });
-          }
-      } catch (error) {
-          setLoading(false);
-          console.log("API Error:", error);
-          toast.error(error?.response?.data?.message || "Please Try Again!", {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-          });
-      }
-  };
-  
-  useEffect(() => {
-  loadTableData();
-}, []);
 
   return (
     <Box p={2}>
