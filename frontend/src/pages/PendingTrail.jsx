@@ -2127,6 +2127,7 @@ const UnderInvestigation = () => {
         var getTemplatePayload = {
             "table_name": options.table,
             "pt_case_id": selectedRow.id,
+            'ui_case_id': selectedRow?.ui_case_id
         }
 
         setLoading(true);
