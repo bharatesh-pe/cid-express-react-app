@@ -3273,7 +3273,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         }
 
         // Extract id and sys_status
-        const { id, sys_status, default_status } = data;
+        const { id, sys_status, default_status, ui_case_id} = data;
         if (!id || !sys_status) {
             return userSendResponse(res, 400, false, "ID and sys_status are required.");
         }
@@ -3362,6 +3362,61 @@ exports.caseSysStatusUpdation = async (req, res) => {
             return userSendResponse(res, 400, false, "No changes detected or update failed.");
         }
 
+
+        if (ui_case_id && sys_status === "178_cases") {
+            const investigationTable = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+            if (!investigationTable) {
+                return userSendResponse(res, 400, false, "Investigation table not found.");
+            }
+                
+            const invSchema = typeof investigationTable.fields === "string"
+                ? JSON.parse(investigationTable.fields)
+                : investigationTable.fields;
+        
+            const completeInvSchema = [
+                { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+                { name: "sys_status", data_type: "TEXT", not_null: false },
+                { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+                { name: "created_by", data_type: "TEXT", not_null: false },
+                { name: "updated_by", data_type: "TEXT", not_null: false },
+                { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                ...invSchema
+            ];
+                
+            let InvModel = modelCache["cid_under_investigation"];
+            if (!InvModel) {
+                const invModelAttributes = {};
+                for (const field of completeInvSchema) {
+                    const { name, data_type, not_null, primaryKey, autoIncrement } = field;
+                    const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+        
+                    invModelAttributes[name] = {
+                        type: sequelizeType,
+                        allowNull: !not_null
+                    };
+        
+                    if (primaryKey) invModelAttributes[name].primaryKey = true;
+                    if (autoIncrement) invModelAttributes[name].autoIncrement = true;
+                }
+        
+                InvModel = sequelize.define("cid_under_investigation", invModelAttributes, {
+                    freezeTableName: true,
+                    timestamps: false
+                });
+        
+                await InvModel.sync({ alter: true });
+                modelCache["cid_under_investigation"] = InvModel;
+            }
+                
+            const invRecord = await InvModel.findOne({ where: { id: ui_case_id } });
+            if (invRecord) {
+                await InvModel.update({ sys_status: "178_cases" }, { where: { id: ui_case_id } });
+            } else {
+                console.log("No matching record found in `cid_under_investigation` for id:", ui_case_id);
+            }
+        }
+        
         return userSendResponse(res, 200, true, "Case record updated successfully!");
     } catch (error) {
         console.error("Error updating case status:", error);

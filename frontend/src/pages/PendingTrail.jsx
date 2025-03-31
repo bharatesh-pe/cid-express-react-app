@@ -179,7 +179,8 @@ const UnderInvestigation = () => {
                     "data"  :   {  
                                     "id": data.id, 
                                     "sys_status": value,
-                                    "default_status": "pt_case"
+                                    "default_status": "pt_case",
+                                    "ui_case_id": data.ui_case_id ? data.ui_case_id : null,
                                 }
                 }
 
