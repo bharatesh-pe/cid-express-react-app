@@ -75,6 +75,12 @@ const verify_OTP = async (req, res) => {
                     await user.update({ otp: null, otp_expires_at: null });
                     // Generate a token for the user
                     const userRole = await Users.findOne({ where: { user_id: user.user_id } });
+                    if (userRole && userRole.dev_status === false) {
+                        return res.status(500).json({
+                            success: false,
+                            message: "User deactivated, please contact admin",
+                        });
+                    }
                     const token = generateUserToken(user_detail.kgid, userRole.role_id, user.user_id, userRole.role_id);
                     // Return success response with token
                     // console.log(token,"token")
@@ -152,7 +158,13 @@ const generate_OTP = async (req, res) => {
             const user = await AuthSecure.findOne({ where: { kgid_id } });
             // If user is found
             if (user) {
-
+                const userRole = await Users.findOne({ where: { user_id: user.user_id } });
+                if (userRole && userRole.dev_status === false) {
+                    return res.status(500).json({
+                        success: false,
+                        message: "User deactivated, please contact admin",
+                    });
+                }
                 // Check if the user has exceeded the maximum number of attempts
                 if (user.no_of_attempts >= 5) {
                     // Calculate the time for the next attempt
