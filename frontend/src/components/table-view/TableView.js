@@ -79,7 +79,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
             {hoverTableOptions.map((option, index) => (
                 <MenuItem key={index} onClick={() => handleHoverOptionClick(option)}>
-                    {option.name}
+                    {option?.name} 
                 </MenuItem>
             ))}
         </Menu>

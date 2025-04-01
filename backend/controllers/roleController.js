@@ -100,8 +100,10 @@ exports.get_all_roles = async (req, res) => {
 
 exports.get_all_permissions = async (req, res) => {
   try {
-    const permissions = await Permission.findAll();
-
+    const permissions = await Permission.findAll({
+      order: [['order_by', 'ASC']],
+    });
+        
     if (!permissions.length) {
       return res.status(404).json({
         success: false,

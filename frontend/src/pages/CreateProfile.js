@@ -77,7 +77,7 @@ const CreateProfile = () => {
             case 'judgement':
                 return 'Judgement';  
             case 'others':
-                return 'Other Template';
+                return 'Other Actions';
             default:
                 return 'N/A';
         }
@@ -203,7 +203,6 @@ const CreateProfile = () => {
                     stepper : viewTemplateResponse.data['sections'] && viewTemplateResponse.data['sections'].length > 0 ? viewTemplateResponse.data['sections'] : [],
                     action : 'edit',
                     pagination: paginationCount,
-                    enable_edit: viewTemplateResponse.data['enable_edit'] ? viewTemplateResponse.data['enable_edit'] : false,
                 }
                 navigate('/formbuilder', { state: formData });
             }
@@ -547,7 +546,7 @@ const CreateProfile = () => {
             { name: 'Circular', code: 'circular' },
             { name: 'Government Order', code: 'governmentorder' },
             { name: 'Judgement', code: 'judgement' },
-            { name: 'Other Template', code: 'others' }
+            { name: 'Other Actions', code: 'others' }
         ]
     };
 
@@ -644,7 +643,7 @@ const CreateProfile = () => {
                                     )
                                 )
                                 }}
-                                onInput={(e)=>setSearchValue(e.target.value)}
+                                onChange={(e)=>setSearchValue(e.target.value)}
                                 value={searchValue}
                                 id="tableSearch" 
                                 autoComplete='off'

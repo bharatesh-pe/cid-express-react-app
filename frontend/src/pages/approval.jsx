@@ -31,11 +31,20 @@ const Approval = () => {
         description: '',
         permissions: {},
     });
-
     const [delete_role_conf, setDeleteRoleConf] = useState(false)
-
     const [roleToDelete, setRoleToDelete] = useState(null);
     const [roleNameToDelete, setRoleNameToDelete] = useState("");
+    const [addRoleData, setAddRoleData] = useState({
+        "name": '',
+        "description": '',
+        "created_by": '0',
+    });
+    const [approvalItemRowData, setApprovalItemRowData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [showRoleAddModal, setShowRoleAddModal] = useState(false)
+    const [errorRoleData, setErrorRoleData] = useState({})
+    const [searchValue, setSearchValue] = useState(null);
+    const pageSize = 10;
 
     const showDeleteRoleDialoge = (id, name) => {
         setRoleToDelete(id);
@@ -50,17 +59,21 @@ const Approval = () => {
             setRoleToDelete(null);
         }
     };
-    const [addRoleData, setAddRoleData] = useState({
-        "name": '',
-        "description": '',
-        "created_by": '0',
-    });
-    const [approvalItemRowData, setApprovalItemRowData] = useState([]);
-    const [currentPage, setCurrentPage] = useState(0);
-    const pageSize = 10;
 
-    const totalPages = Math.ceil(approvalItemRowData.length / pageSize);
-    const currentPageRows = approvalItemRowData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+    const getFilteredRows = () => {
+        if (!searchValue) {
+            return approvalItemRowData;
+        }
+    
+        return approvalItemRowData.filter((row) =>
+            row.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+            row.description.toLowerCase().includes(searchValue.toLowerCase())
+        );
+    };
+    
+    const filteredRows = getFilteredRows();
+    const totalPages = Math.ceil(filteredRows.length / pageSize);
+    const currentPageRows = filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
     const handleNext = () => {
         if (currentPage < totalPages - 1) {
@@ -262,23 +275,6 @@ const Approval = () => {
     useEffect(() => {
         get_approval_items_details();
     }, []);
-
-    const [showRoleAddModal, setShowRoleAddModal] = useState(false)
-
-
-    const [errorRoleData, setErrorRoleData] = useState({})
-
-    const [tablePagination, setTablePagination] = useState(1);
-
-    const [searchValue, setSearchValue] = useState(null);
-
-    const handleNextPage = () => {
-        setTablePagination((prev) => prev + 1)
-    }
-
-    const handlePrevPage = () => {
-        setTablePagination((prev) => prev - 1)
-    }
 
 
     const handleAddData = (e) => {
@@ -520,7 +516,12 @@ const Approval = () => {
                             ),
                             endAdornment: (
                                 searchValue && (
-                                    <IconButton sx={{ padding: 0 }} onClick={() => setSearchValue('')} size="small">
+                                    <IconButton sx={{ padding: 0 }}  
+                                    onClick={() => {
+                                        setSearchValue('');
+                                        setCurrentPage(0);
+                                    }} 
+                                    size="small">
                                         <ClearIcon sx={{ color: '#475467' }} />
                                     </IconButton>
                                 )

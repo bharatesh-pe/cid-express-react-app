@@ -32,11 +32,23 @@ const Division = () => {
         description: '',
         permissions: {},
     });
-
     const [delete_role_conf, setDeleteRoleConf] = useState(false)
-
     const [roleToDelete, setRoleToDelete] = useState(null);
     const [roleNameToDelete, setRoleNameToDelete] = useState("");
+    const [showRoleAddModal, setShowRoleAddModal] = useState(false)
+    const [errorRoleData, setErrorRoleData] = useState({})
+    const [searchValue, setSearchValue] = useState(null);
+    const [addRoleData, setAddRoleData] = useState({
+        division_name: "",
+        description: "",
+        department_id: "",
+        created_by: "0",
+    });
+    const [departments, setDepartments] = useState([]);
+    const [selectedDepartment, setSelectedDepartment] = useState(null);
+    const [DivisionRowData, setDivisionRowData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(0);
+    const pageSize = 10;
 
     const showDeleteRoleDialoge = (id, name) => {
         setRoleToDelete(id);
@@ -51,19 +63,23 @@ const Division = () => {
             setRoleToDelete(null);
         }
     };
-    const [addRoleData, setAddRoleData] = useState({
-        division_name: "",
-        description: "",
-        department_id: "",
-        created_by: "0",
-    });
-    const [DivisionRowData, setDivisionRowData] = useState([]);
-    const [currentPage, setCurrentPage] = useState(0);
-    const pageSize = 10;
 
-    const totalPages = Math.ceil(DivisionRowData.length / pageSize);
-    const currentPageRows = DivisionRowData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-
+    const getFilteredRows = () => {
+        if (!searchValue) {
+            return DivisionRowData;
+        }
+    
+        return DivisionRowData.filter((row) =>
+            row.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+            row.description.toLowerCase().includes(searchValue.toLowerCase()) ||
+            row.department.toLowerCase().includes(searchValue.toLowerCase())
+        );
+    };
+    
+    const filteredRows = getFilteredRows();
+    const totalPages = Math.ceil(filteredRows.length / pageSize);
+    const currentPageRows = filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+        
     const handleNext = () => {
         if (currentPage < totalPages - 1) {
             setCurrentPage((prev) => prev + 1);
@@ -75,8 +91,6 @@ const Division = () => {
             setCurrentPage((prev) => prev - 1);
         }
     };
-    const [departments, setDepartments] = useState([]);
-    const [selectedDepartment, setSelectedDepartment] = useState(null);
 
     const get_departments = async () => {
         try {
@@ -310,12 +324,6 @@ const Division = () => {
             setLoading(false);
         }
     };
-    const [showRoleAddModal, setShowRoleAddModal] = useState(false)
-
-
-    const [errorRoleData, setErrorRoleData] = useState({})
-
-    const [searchValue, setSearchValue] = useState(null);
 
     const handleAddData = (e) => {
         const { name, value } = e.target;
@@ -583,7 +591,11 @@ const Division = () => {
                             ),
                             endAdornment: (
                                 searchValue && (
-                                    <IconButton sx={{ padding: 0 }} onClick={() => setSearchValue('')} size="small">
+                                    <IconButton sx={{ padding: 0 }} onClick={() => {
+                                        setSearchValue('');
+                                        setCurrentPage(0);
+                                    }} 
+                                    size="small">
                                         <ClearIcon sx={{ color: '#475467' }} />
                                     </IconButton>
                                 )

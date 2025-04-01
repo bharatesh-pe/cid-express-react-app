@@ -288,6 +288,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
+    delete_pt: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    delete_enquiry: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
     create_new_judgement: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
