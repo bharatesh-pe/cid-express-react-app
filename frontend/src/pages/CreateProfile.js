@@ -643,7 +643,7 @@ const CreateProfile = () => {
                                     )
                                 )
                                 }}
-                                onInput={(e)=>setSearchValue(e.target.value)}
+                                onChange={(e)=>setSearchValue(e.target.value)}
                                 value={searchValue}
                                 id="tableSearch" 
                                 autoComplete='off'
