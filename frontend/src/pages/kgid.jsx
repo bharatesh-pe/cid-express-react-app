@@ -34,11 +34,20 @@ const KGID = () => {
         end: '',
         permissions: {},
     });
-
     const [delete_role_conf, setDeleteRoleConf] = useState(false)
-
     const [roleToDelete, setRoleToDelete] = useState(null);
     const [roleNameToDelete, setRoleNameToDelete] = useState("");
+    const [addRoleData, setAddRoleData] = useState({
+        'kgid':'',
+        'name': '',
+        'mobile': ''
+    });
+    const [departmentRowData, setDepartmentRowData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(0);
+    const [showRoleAddModal, setShowRoleAddModal] = useState(false)
+    const [errorRoleData, setErrorRoleData] = useState({})
+    const [searchValue, setSearchValue] = useState(null);
+    const pageSize = 10;
 
     const showDeleteRoleDialoge = (id, name) => {
         setRoleToDelete(id);
@@ -53,24 +62,26 @@ const KGID = () => {
             setRoleToDelete(null);
         }
     };
-    const [addRoleData, setAddRoleData] = useState({
-        'kgid':'',
-        'name': '',
-        'mobile': ''
-    });
-    const [departmentRowData, setDepartmentRowData] = useState([]);
-    const [currentPage, setCurrentPage] = useState(0);
-    const pageSize = 10;
 
-    const totalPages = Math.ceil(departmentRowData.length / pageSize);
-    const currentPageRows = departmentRowData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-
+    const getFilteredRows = () => {
+        if (!searchValue) {
+            return departmentRowData;
+        }
+        return departmentRowData.filter((row) =>
+            row.kgid.toLowerCase().includes(searchValue.toLowerCase()) ||
+            row.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+            row.mobile.toLowerCase().includes(searchValue.toLowerCase())
+        );
+    };
+    
+    const filteredRows = getFilteredRows();
+    const totalPages = Math.ceil(filteredRows.length / pageSize);
+    const currentPageRows = filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
     const handleNext = () => {
         if (currentPage < totalPages - 1) {
             setCurrentPage((prev) => prev + 1);
         }
     };
-
     const handleBack = () => {
         if (currentPage > 0) {
             setCurrentPage((prev) => prev - 1);
@@ -92,7 +103,6 @@ const KGID = () => {
 
         setShowEditModal(true);
     };
-
 
     const departmentColumnData = [
         { field: 'kgid', headerName: 'KGID', width: 200 },
@@ -273,24 +283,6 @@ const KGID = () => {
         get_department_details();
     }, []);
 
-    const [showRoleAddModal, setShowRoleAddModal] = useState(false)
-
-
-    const [errorRoleData, setErrorRoleData] = useState({})
-
-    const [tablePagination, setTablePagination] = useState(1);
-
-    const [searchValue, setSearchValue] = useState(null);
-
-    const handleNextPage = () => {
-        setTablePagination((prev) => prev + 1)
-    }
-
-    const handlePrevPage = () => {
-        setTablePagination((prev) => prev - 1)
-    }
-
-
     const handleAddData = (e) => {
         const { name, value } = e.target;
 
@@ -312,17 +304,39 @@ const KGID = () => {
 
     const handleAddSaveData = async () => {
         var error_flag = false;
+        let errorMessage = '';
+        let errorCount = 0;
 
         if (addRoleData.kgid.trim() === '') {
             error_flag = true;
+            errorMessage = 'KGID is required';
+            errorCount++;
             setErrorRoleData((prevData) => ({
                 ...prevData,
                 kgid: 'KGID is required'
+            }));
+        }else if (addRoleData.kgid.trim().length < 5) {
+            error_flag = true;
+            errorMessage = 'KGID must be at least 5 characters long';
+            errorCount++;
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                kgid: 'KGID must be at least 5 characters long',
+            }));
+        } else if (addRoleData.kgid.trim().length > 10) {
+            error_flag = true;
+            errorMessage = 'KGID must not exceed 10 characters';
+            errorCount++;
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                kgid: 'KGID must not exceed 10 characters',
             }));
         }
 
         if (addRoleData.name.trim() === '') {
             error_flag = true;
+            errorMessage = 'Name is required';
+            errorCount++;
             setErrorRoleData((prevData) => ({
                 ...prevData,
                 name: 'Name is required'
@@ -331,14 +345,27 @@ const KGID = () => {
 
         if (addRoleData.mobile.trim() === '') {
             error_flag = true;
+            errorMessage = 'Mobile is required';
+            errorCount++;
             setErrorRoleData((prevData) => ({
                 ...prevData,
                 mobile: 'Mobile is required'
             }));
-        }
+        } else if (addRoleData.mobile.trim().length !== 10) {
+            error_flag = true;
+            errorMessage = 'Mobile must be 10 digits';
+            errorCount++;
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                mobile: 'Mobile must be 10 digits'
+            }));
+        }    
 
         if (error_flag) {
-            toast.error(" Please Check the Fields", {
+            if (errorCount > 1) {
+                errorMessage = "Please check fields";
+            }
+            toast.error(errorMessage , {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -425,17 +452,33 @@ const KGID = () => {
 
     const handleEditData = async () => {
         var error_flag = false;
-
+        let errorMessage = '';
         if (selectedRole.kgid.trim() === '') {
             error_flag = true;
+            errorMessage = 'KGID is required';
             setErrorRoleData((prevData) => ({
                 ...prevData,
                 kgid: 'KGID is required',
+            }));
+        }else if (selectedRole.kgid.trim().length < 5) {
+            error_flag = true;
+            errorMessage = 'KGID must be at least 5 characters long';
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                kgid: 'KGID must be at least 5 characters long',
+            }));
+        } else if (selectedRole.kgid.trim().length > 10) {
+            error_flag = true;
+            errorMessage = 'KGID must not exceed 10 characters';
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                kgid: 'KGID must not exceed 10 characters',
             }));
         }
 
         if (selectedRole.name.trim() === '') {
             error_flag = true;
+            if (!errorMessage) errorMessage = 'Name is required';
             setErrorRoleData((prevData) => ({
                 ...prevData,
                 name: 'Name is required',
@@ -444,14 +487,22 @@ const KGID = () => {
 
         if (selectedRole.mobile.trim() === '') {
             error_flag = true;
+            if (!errorMessage) errorMessage = 'Mobile is required';
             setErrorRoleData((prevData) => ({
                 ...prevData,
-                mobile: 'Mobile is required',
+                mobile: 'Mobile is required'
             }));
-        }
+        } else if (selectedRole.mobile.trim().length !== 10) {
+            error_flag = true;
+            if (!errorMessage) errorMessage = 'Mobile must be 10 digits';
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                mobile: 'Mobile must be 10 digits'
+            }));
+        }    
 
         if (error_flag) {
-            toast.error("Please check fields", {
+            toast.error(errorMessage || "Please check fields", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -547,7 +598,12 @@ const KGID = () => {
                             ),
                             endAdornment: (
                                 searchValue && (
-                                    <IconButton sx={{ padding: 0 }} onClick={() => setSearchValue('')} size="small">
+                                    <IconButton sx={{ padding: 0 }}  
+                                    onClick={() => {
+                                        setSearchValue('');
+                                        setCurrentPage(0);
+                                    }} 
+                                    size="small">
                                         <ClearIcon sx={{ color: '#475467' }} />
                                     </IconButton>
                                 )
@@ -650,8 +706,10 @@ const KGID = () => {
                                     autoComplete="off"
                                     value={showRoleAddModal ? addRoleData.kgid : selectedRole?.kgid || ""}
                                     onChange={(e) => {
-                                        const regex = /^[a-zA-Z0-9\s\b]*$/;
-                                        if (regex.test(e.target.value)) {
+                                        const regex = /^[0-9\b]*$/;
+                                        const value = e.target.value;
+
+                                        if (regex.test(value) && value.length <= 10) {
                                             showRoleAddModal ? handleAddData(e) : handleInputChange(e);
                                         }
                                     }}
@@ -673,7 +731,7 @@ const KGID = () => {
                                     onChange={(e) => {
                                         if (showViewModal) return;
 
-                                        const regex = /^[a-zA-Z0-9\s\b]*$/;
+                                        const regex = /^[a-zA-Z\s]*$/;                                        
                                         if (regex.test(e.target.value)) {
                                             if (showRoleAddModal) {
                                                 handleAddData(e);
@@ -702,7 +760,7 @@ const KGID = () => {
                                         if (showViewModal) return;
 
                                         const regex = /^[0-9\b]*$/;
-                                        if (regex.test(e.target.value)) {
+                                        if (regex.test(e.target.value) && e.target.value.length <= 10) {
                                             if (showRoleAddModal) {
                                                 handleAddData(e);
                                             } else {
