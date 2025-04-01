@@ -77,7 +77,7 @@ const CreateProfile = () => {
             case 'judgement':
                 return 'Judgement';  
             case 'others':
-                return 'Other Template';
+                return 'Other Actions';
             default:
                 return 'N/A';
         }
@@ -546,7 +546,7 @@ const CreateProfile = () => {
             { name: 'Circular', code: 'circular' },
             { name: 'Government Order', code: 'governmentorder' },
             { name: 'Judgement', code: 'judgement' },
-            { name: 'Other Template', code: 'others' }
+            { name: 'Other Actions', code: 'others' }
         ]
     };
 
