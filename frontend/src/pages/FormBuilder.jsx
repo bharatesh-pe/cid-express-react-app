@@ -73,7 +73,7 @@ const convertToUnderscore = (str) => {
 const Formbuilder = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
-    const { profile_name, stepper, type, Createdfields, action, pagination, module, link_module } = state;
+    const { profile_name, stepper, type, Createdfields, action, pagination, module, link_module, enable_edit } = state;
     const [fields, setFields] = useState([]);
     const [selectedField, setSelectedField] = useState(null);
     const [selectedDropdwonField, setSelectedDropdownField] = useState(null);
@@ -87,6 +87,7 @@ const Formbuilder = () => {
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [stepperPercentage, setstepperPercentage] = useState({});
     const [allFormFields,setAllFormFields] = useState([]);
+    const [updateFieldReadonly, setUpdateFieldReadonly] = useState(false);
 
     const [editTemplateDetailsModal,setEditTemplateDetailsModal] = useState(false);
     const [previousProfileName,setPreviousProfileName] = useState(profile_name);
@@ -121,6 +122,12 @@ const Formbuilder = () => {
         }
     }, [])
 
+    useEffect(() => {
+        if (enable_edit === false && selectedField && Createdfields && Createdfields.length > 0) {
+            var existingData = Createdfields.some((element) => element.id === selectedField.id);
+            setUpdateFieldReadonly(existingData);
+        }
+    }, [selectedField, Createdfields]);
 
     useEffect(()=>{
 
@@ -628,9 +635,12 @@ const Formbuilder = () => {
     };
 
     const renderField = (field) => {
-        const isRequired = field.required === "true" || field.required === true;
-        // console.log(field.label);
-        // console.log(selectedField.label);
+
+        var existingData = null
+
+        if (enable_edit === false && Createdfields && Createdfields.length > 0) {
+            existingData = Createdfields.some((element) => element.id === field.id);
+        }
 
         switch (field.type) {
             case "text":
@@ -645,9 +655,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
             case "number":
@@ -663,9 +675,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
 
@@ -682,9 +696,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
 
@@ -701,9 +717,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
             case "dropdown":
@@ -825,29 +843,17 @@ const Formbuilder = () => {
                                 </FormHelperText>
                             </FormControl>
                         </Box>
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
 
             case "textarea":
                 return (
                     <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-
-                        {/* <TextField
-                            key={field.id}
-                            label={field.label}
-                            name={field.name}
-                            value={formData[field.id] || ""} // Make sure textarea is updated based on formData
-                            onChange={(e) => handleDropdownChange(field.id, e.target.value)} // Handle change
-                            fullWidth
-                            multiline
-                            rows={4}
-                            required={isRequired}
-                            errors=""
-                            onFocus={(e) => { setSelectedField(field) }}
-                        /> */}
                         <LongText
                             key={field.id}
                             field={field}
@@ -866,22 +872,6 @@ const Formbuilder = () => {
             case "date":
                 return (
                     <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-
-                        {/* <TextField
-                            key={field.id}
-                            label={field.label}
-                            name={field.name}
-                            value={formData[field.id] || ""} // Ensure date is updated
-                            onChange={(e) => handleDropdownChange(field.id, e.target.value)} // Handle change
-                            fullWidth
-                            type="date"
-                            InputLabelProps={{
-                                shrink: true,
-                            }}
-                            required={isRequired}
-                            errors=""
-                            onFocus={(e) => { setSelectedField(field) }}
-                        /> */}
                         <DateField
                             key={field.id}
                             field={field}
@@ -892,9 +882,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
             case "time":
@@ -905,14 +897,15 @@ const Formbuilder = () => {
                             field={field}
                             formData={formData} // Passing formData
                             errors=""
-                            // onChange={handleChange} // Handle changes
                             onChange={(value) => handleDropdownChange(field.name, value)} // Handle change
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
             case "datetime":
@@ -923,14 +916,15 @@ const Formbuilder = () => {
                             field={field}
                             formData={formData} // Passing formData
                             errors=""
-                            // onChange={handleChange} // Handle changes
                             onChange={(value) => handleDropdownChange(field.name, value)} // Handle change
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
 
@@ -946,9 +940,11 @@ const Formbuilder = () => {
                             onChange={(name, selectedCode) => handleAutocomplete(field.name, selectedCode)}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
 
@@ -964,9 +960,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
 
@@ -981,9 +979,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </Box>
                 );
 
@@ -998,9 +998,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </Box>
                 );
 
@@ -1015,9 +1017,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </Box>
                 );
             case 'file':
@@ -1031,9 +1035,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
             case 'profilepicture':
@@ -1047,9 +1053,11 @@ const Formbuilder = () => {
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
-                        <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
-                            <img src={deleteBtn} />
-                        </button>
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
                     </div>
                 );
             case 'divider':
@@ -2365,7 +2373,7 @@ const Formbuilder = () => {
                                                                         ) :
                                                                         prop === 'hide_from_ux' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                                    <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && type !== 'master') ? true : false} />
+                                                                                    <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={((prop === 'is_primary_field' && selectedField.options && type !== 'master') || updateFieldReadonly) ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
                                                                                         {colText}
                                                                                     </Typography>
@@ -2374,7 +2382,7 @@ const Formbuilder = () => {
                                                                                 :
                                                                                 prop === 'dependent' ? (
                                                                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                                        <Switch name={prop} checked={selectedField[prop]} onChange={handleSwitch} />
+                                                                                        <Switch disabled={updateFieldReadonly} name={prop} checked={selectedField[prop]} onChange={handleSwitch} />
                                                                                         <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
                                                                                             enable dependent
                                                                                         </Typography>
@@ -2388,7 +2396,7 @@ const Formbuilder = () => {
                                                                                                     <Typography sx={{ color: '#475467', fontWeight: '500', fontSize: '16px' }} className='Roboto'>
                                                                                                         Enter dropdown values below
                                                                                                     </Typography>
-                                                                                                    <Button onClick={() => deleteAllOptions()} sx={{ color: '#F04438', fontSize: '16px', fontWeight: '500', textTransform: 'none' }} className='Roboto'>
+                                                                                                    <Button disabled={updateFieldReadonly} onClick={() => deleteAllOptions()} sx={{ color: '#F04438', fontSize: '16px', fontWeight: '500', textTransform: 'none' }} className='Roboto'>
                                                                                                         Delete all
                                                                                                     </Button>
                                                                                                 </Box>
@@ -2397,7 +2405,7 @@ const Formbuilder = () => {
                                                                                                         <Box py={1} key={index} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
                                                                                                             <TextField
                                                                                                                 label="Option Name"
-                                                                                                                disabled={selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
+                                                                                                                disabled={updateFieldReadonly ? updateFieldReadonly : selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
                                                                                                                 value={option.name}
                                                                                                                 onChange={(e) => handleOptionChange(index, selectedField, e.target.value, "name")}
                                                                                                                 fullWidth
@@ -2422,6 +2430,7 @@ const Formbuilder = () => {
                                                                                                                         name={'defaultValue'}
                                                                                                                         id={`default_value_${option.code}`}
                                                                                                                         value={option.code}
+                                                                                                                        disabled={updateFieldReadonly}
                                                                                                                         checked={selectedField['defaultValue'] === option.code}
                                                                                                                         onChange={() => handleDefaultValue('defaultValue', selectedField, option.code)}
                                                                                                                     />
@@ -2431,10 +2440,10 @@ const Formbuilder = () => {
                                                                                                                 </Box>
                                                                                                             }
                                                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveOption(index)}>
+                                                                                                                <button disabled={updateFieldReadonly} style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveOption(index)}>
                                                                                                                     <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
                                                                                                                 </button>
-                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddOption}>
+                                                                                                                <button disabled={updateFieldReadonly} style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddOption}>
                                                                                                                     <AddCircleOutlineIcon />
                                                                                                                 </button>
                                                                                                             </Box>
@@ -2443,7 +2452,7 @@ const Formbuilder = () => {
                                                                                                         <Box py={1} key={0} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
                                                                                                             <TextField
                                                                                                                 label="Option Name"
-                                                                                                                disabled={selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
+                                                                                                                disabled={updateFieldReadonly ? updateFieldReadonly : selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
                                                                                                                 value=''
                                                                                                                 onChange={(e) => handleOptionChange(0, selectedField, e.target.value, "name")}
                                                                                                                 fullWidth
@@ -2462,10 +2471,10 @@ const Formbuilder = () => {
                                                                                                                 margin="dense" // Adjust the margin to control spacing
                                                                                                             />
                                                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveOption(0)}>
+                                                                                                                <button disabled={updateFieldReadonly} style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveOption(0)}>
                                                                                                                     <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
                                                                                                                 </button>
-                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddOption}>
+                                                                                                                <button disabled={updateFieldReadonly} style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddOption}>
                                                                                                                     <AddCircleOutlineIcon />
                                                                                                                 </button>
                                                                                                             </Box>
@@ -2473,11 +2482,11 @@ const Formbuilder = () => {
                                                                                                     }
                                                                                                 </Box>
                                                                                                 <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '4px', gap: '14px', background: '#F2F4F7' }}>
-                                                                                                    <Button sx={{ width: '45%', color: '#FFFFFF', fontSize: '16px', fontWeight: '500', textTransform: 'none', borderRadius: '4px', background: '#1570EF' }} className='Roboto'>
+                                                                                                    <Button disabled={updateFieldReadonly} sx={{ width: '45%', color: '#FFFFFF', fontSize: '16px', fontWeight: '500', textTransform: 'none', borderRadius: '4px', background: '#1570EF', display: 'none' }} className='Roboto'>
                                                                                                         Import data from excel
                                                                                                     </Button>
                                                                                                     <Box sx={{ border: '1px solid #D0D5DD', height: '12px', alignSelf: 'auto' }}></Box>
-                                                                                                    <Button onClick={showMasterTable} sx={{ width: '45%', color: '#1D2939', fontSize: '16px', fontWeight: '500', textTransform: 'none', border: '1px solid #D0D5DD', borderRadius: '4px' }} className='Roboto'>
+                                                                                                    <Button disabled={updateFieldReadonly} onClick={showMasterTable} sx={{ width: '45%', color: '#1D2939', fontSize: '16px', fontWeight: '500', textTransform: 'none', border: '1px solid #D0D5DD', borderRadius: '4px' }} className='Roboto'>
                                                                                                         Import from data base
                                                                                                     </Button>
                                                                                                 </Box>
@@ -2495,7 +2504,7 @@ const Formbuilder = () => {
                                                                                                     maxLength : prop === 'label' ? 50 : undefined
                                                                                                 }}
                                                                                                 fullWidth
-                                                                                                disabled={prop === "type"}
+                                                                                                disabled={updateFieldReadonly ? updateFieldReadonly : prop === "type"}
                                                                                                 size="small" // Default size is "medium"
                                                                                                 margin="none" // Adjust the margin to control spacing
                                                                                             />

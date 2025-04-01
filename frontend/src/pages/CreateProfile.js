@@ -203,6 +203,7 @@ const CreateProfile = () => {
                     stepper : viewTemplateResponse.data['sections'] && viewTemplateResponse.data['sections'].length > 0 ? viewTemplateResponse.data['sections'] : [],
                     action : 'edit',
                     pagination: paginationCount,
+                    enable_edit: viewTemplateResponse.data['enable_edit'] ? viewTemplateResponse.data['enable_edit'] : false,
                 }
                 navigate('/formbuilder', { state: formData });
             }
