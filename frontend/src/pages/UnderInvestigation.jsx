@@ -1114,6 +1114,27 @@ const UnderInvestigation = () => {
                     setOptionStepperData([]);
                     setOptionFormTemplateData([]);
 
+                    if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] !== 'field_nature_of_disposal'){
+
+                        // update func
+                        var combinedData = {
+                            id : selectedRow.id,
+                            [selectKey.name] : selectedOtherFields.code
+                        }
+
+                        onUpdateTemplateData(combinedData);
+
+                        // reset states
+                        setSelectKey(null);
+                        setSelectedRow(null);
+                        setOtherTransferField([]);
+                        setShowOtherTransferModal(false);
+                        setSelectedOtherFields(null);
+                        setselectedOtherTemplate(null);
+
+                        return;
+                    }
+
                     var payloadSysStatus = {
                         "table_name" : table_name,
                         "data"  :   {  
@@ -1190,6 +1211,20 @@ const UnderInvestigation = () => {
                         }
                     }
 
+                }else{
+                    setPtCaseTableName(null);
+                    setShowPtCaseModal(false);
+                    setOtherFormOpen(false);
+                    setOptionStepperData([]);
+                    setOptionFormTemplateData([]);
+
+                    // reset states
+                    setSelectKey(null);
+                    setSelectedRow(null);
+                    setOtherTransferField([]);
+                    setShowOtherTransferModal(false);
+                    setSelectedOtherFields(null);
+                    setselectedOtherTemplate(null);
                 }
 
             } else {
@@ -2694,7 +2729,7 @@ const UnderInvestigation = () => {
             return;
         }
 
-        if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] === 'field_nature_of_disposal' && selectedOtherFields && selectedOtherFields['name']){
+        if(selectedOtherTemplate && selectedOtherTemplate['field'] && (selectedOtherTemplate['field'] === 'field_nature_of_disposal' || selectedOtherTemplate['field'] === 'field_prosecution_sanction' || selectedOtherTemplate['field'] === 'field_17a_pc_act') && selectedOtherFields && selectedOtherFields['name']){
             checkDisposalValues();
             return;
         }
@@ -2830,6 +2865,66 @@ const UnderInvestigation = () => {
         }
     }
 
+    const showActionsOptionsTemplate = async (table) => {
+
+        const viewTableData = {
+            "table_name": table
+        }
+
+        setLoading(true);
+
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+
+            setLoading(false);
+            if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                setOtherFormOpen(true);
+                setOtherInitialTemplateData({});
+
+                setOtherReadOnlyTemplateData(false);
+                setOtherEditTemplateData(false);
+
+                setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                    setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                }
+
+                setPtCaseTableName(table);
+                setPtCaseTemplateName(viewTemplateResponse?.data?.template_name);
+                setShowPtCaseModal(true);
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
     const checkDisposalValues = ()=> {
 
         if(selectedOtherTemplate && selectedOtherTemplate['field'] && selectedOtherTemplate['field'] === 'field_nature_of_disposal' && selectedOtherFields && selectedOtherFields['name']){
@@ -2867,6 +2962,37 @@ const UnderInvestigation = () => {
                         setselectedOtherTemplate(null);
                     }
                 });
+            }
+
+        }else if(selectedOtherTemplate && selectedOtherTemplate['field'] && (selectedOtherTemplate['field'] === 'field_prosecution_sanction' || selectedOtherTemplate['field'] === 'field_17a_pc_act') && selectedOtherFields && selectedOtherFields['name']){
+
+            if(selectedOtherFields && selectedOtherFields['name'] && selectedOtherFields['name'].toLowerCase() === 'yes' && selectedOtherTemplate['field'] === 'field_prosecution_sanction'){
+                showActionsOptionsTemplate('cid_ui_case_order_of_prosecution_sanction');
+                return;
+            }else if(selectedOtherFields && selectedOtherFields['name'] && selectedOtherFields['name'].toLowerCase() === 'yes' && selectedOtherTemplate['field'] === 'field_17a_pc_act'){
+                showActionsOptionsTemplate('cid_ui_case_order_of_17a_pc_act');
+                return;
+            }else{
+
+                if(selectedOtherTemplate && selectedOtherTemplate.is_approval){
+                    showApprovalPage(selectedRow);
+                    return;
+                }
+        
+                var combinedData = {
+                    id : selectedRow.id,
+                    [selectKey.name] : selectedOtherFields.code
+                }
+        
+                onUpdateTemplateData(combinedData);
+        
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
             }
 
         }
