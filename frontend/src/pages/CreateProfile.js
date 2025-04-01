@@ -203,7 +203,6 @@ const CreateProfile = () => {
                     stepper : viewTemplateResponse.data['sections'] && viewTemplateResponse.data['sections'].length > 0 ? viewTemplateResponse.data['sections'] : [],
                     action : 'edit',
                     pagination: paginationCount,
-                    enable_edit: viewTemplateResponse.data['enable_edit'] ? viewTemplateResponse.data['enable_edit'] : false,
                 }
                 navigate('/formbuilder', { state: formData });
             }
@@ -946,32 +945,6 @@ const CreateProfile = () => {
                     onClose={() => setShowOptionModal(false)}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
-                >
-                    <DialogTitle id="alert-dialog-title">Filters</DialogTitle>
-                    <DialogContent sx={{ minWidth: '400px' }}>
-                        <DialogContentText id="alert-dialog-description">
-                            <FormControl fullWidth>
-
-                            </FormControl>
-                        </DialogContentText>
-                    </DialogContent>
-                    <DialogActions sx={{ padding: '12px 24px' }}>
-                        <Button onClick={() => setShowOptionModal(false)}>Cancel</Button>
-                        <Button className='fillPrimaryBtn'>Submit</Button>
-                    </DialogActions>
-                </Dialog>
-            }
-
-            {loading && <div className='parent_spinner' tabIndex="-1" aria-hidden="true">
-                            <CircularProgress size={100} />
-                        </div>}
-            
-
-        </Box>
-    );
-};
-
-on"
                 >
                     <DialogTitle id="alert-dialog-title">Filters</DialogTitle>
                     <DialogContent sx={{ minWidth: '400px' }}>
