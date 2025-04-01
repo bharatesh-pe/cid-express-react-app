@@ -37,10 +37,16 @@ const Hierarchy = () => {
         officer_designation_id: '',
         supervisor_designation_id: '',
     });
-
     const [delete_role_conf, setDeleteRoleConf] = useState(false)
     const [roleToDelete, setRoleToDelete] = useState(null);
     const [roleNameToDelete, setRoleNameToDelete] = useState("");
+    const [addRoleData, setAddRoleData] = useState({
+        officer_designation_id: "",
+        supervisor_designation_id: "",
+    });
+    const [HierarchyRowData, setHierarchyRowData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(0);
+    const pageSize = 10;
 
     const showDeleteRoleDialoge = (id, name) => {
         setRoleToDelete(id);
@@ -55,17 +61,20 @@ const Hierarchy = () => {
             setRoleToDelete(null);
         }
     };
-    const [addRoleData, setAddRoleData] = useState({
-        officer_designation_id: "",
-        supervisor_designation_id: "",
-    });
-    const [HierarchyRowData, setHierarchyRowData] = useState([]);
-    const [currentPage, setCurrentPage] = useState(0);
-    const pageSize = 10;
 
-    const totalPages = Math.ceil(HierarchyRowData.length / pageSize);
-    const currentPageRows = HierarchyRowData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-
+    const getFilteredRows = () => {
+        if (!searchValue) {
+            return HierarchyRowData;
+        }
+        return HierarchyRowData.filter((row) =>
+            row.officer_designation_name.toLowerCase().includes(searchValue.toLowerCase()) ||
+            row.supervisor_designation_name.toLowerCase().includes(searchValue.toLowerCase())
+        );
+    };
+    
+    const filteredRows = getFilteredRows();
+    const totalPages = Math.ceil(filteredRows.length / pageSize);
+    const currentPageRows = filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
     const handleNext = () => {
         if (currentPage < totalPages - 1) {
             setCurrentPage((prev) => prev + 1);
@@ -544,7 +553,12 @@ const Hierarchy = () => {
                             ),
                             endAdornment: (
                                 searchValue && (
-                                    <IconButton sx={{ padding: 0 }} onClick={() => setSearchValue('')} size="small">
+                                    <IconButton sx={{ padding: 0 }}  
+                                    onClick={() => {
+                                        setSearchValue('');
+                                        setCurrentPage(0);
+                                    }}
+                                    size="small">
                                         <ClearIcon sx={{ color: '#475467' }} />
                                     </IconButton>
                                 )

@@ -1987,15 +1987,21 @@ const Enquiries = () => {
         }
     }
 
+    var userPermissions = JSON.parse(localStorage.getItem('user_permissions')) || [];
+
     var hoverExtraOptions = [
-        {
+        userPermissions[0]?.view_enquiry
+        ? {
             "name": "View",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
-        },
-        {
+        }
+        : null,
+        userPermissions[0]?.edit_enquiry
+        ? {
             "name": "Edit",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
-        },
+        }
+        : null,
         ...(sysStatus !== 'Disposal' ? [{
             "name": "Status Update",
             "onclick": (row) => {
@@ -2004,11 +2010,12 @@ const Enquiries = () => {
                 setStatusUpdateVisible(true);
             },
         }] : []),
-        {
+        userPermissions[0]?.delete_enquiry
+        ? {
             "name": "Delete",
             "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
-        },
-        
+        }
+        : null,        
     ];
 
     return (
@@ -2117,9 +2124,12 @@ const Enquiries = () => {
                         }}
                     />
 
-                        <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
-                            Add New
-                        </Button>
+                        {
+                            JSON.parse(localStorage.getItem('user_permissions')) && JSON.parse(localStorage.getItem('user_permissions'))[0].create_enquiry &&
+                            <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
+                                Add New
+                            </Button>
+                        }
                         {
                             localStorage.getItem('authAdmin') === "false" &&
                             <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>

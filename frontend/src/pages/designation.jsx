@@ -30,11 +30,20 @@ const Designation = () => {
         description: '',
         permissions: {},
     });
-
+    const [showRoleAddModal, setShowRoleAddModal] = useState(false)
+    const [errorRoleData, setErrorRoleData] = useState({})
+    const [searchValue, setSearchValue] = useState(null);
     const [delete_role_conf, setDeleteRoleConf] = useState(false)
-
     const [roleToDelete, setRoleToDelete] = useState(null);
     const [roleNameToDelete, setRoleNameToDelete] = useState("");
+    const [addRoleData, setAddRoleData] = useState({
+        "designation_name": '',
+        "description": '',
+        "created_by": '0',
+    });
+    const [designationRowData, setDesignationRowData] = useState([]);
+    const [currentPage, setCurrentPage] = useState(0);
+    const pageSize = 10;
 
     const showDeleteRoleDialoge = (id, name) => {
         setRoleToDelete(id);
@@ -49,17 +58,20 @@ const Designation = () => {
             setRoleToDelete(null);
         }
     };
-    const [addRoleData, setAddRoleData] = useState({
-        "designation_name": '',
-        "description": '',
-        "created_by": '0',
-    });
-    const [designationRowData, setDesignationRowData] = useState([]);
-    const [currentPage, setCurrentPage] = useState(0);
-    const pageSize = 10;
 
-    const totalPages = Math.ceil(designationRowData.length / pageSize);
-    const currentPageRows = designationRowData.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+    const getFilteredRows = () => {
+        if (!searchValue) {
+            return designationRowData;
+        }
+        return designationRowData.filter((row) =>
+            row.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+            row.description.toLowerCase().includes(searchValue.toLowerCase())
+        );
+    };
+    
+    const filteredRows = getFilteredRows();
+    const totalPages = Math.ceil(filteredRows.length / pageSize);
+    const currentPageRows = filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
 
     const handleNext = () => {
         if (currentPage < totalPages - 1) {
@@ -86,7 +98,6 @@ const Designation = () => {
         });
         setShowEditModal(true);
     };
-
 
     const designationColumnData = [
         { field: 'name', headerName: 'Designation', width: 200 },
@@ -230,7 +241,6 @@ const Designation = () => {
         }
     };
 
-
     const get_designation_details = async () => {
         setLoading(true);
         try {
@@ -260,24 +270,6 @@ const Designation = () => {
     useEffect(() => {
         get_designation_details();
     }, []);
-
-    const [showRoleAddModal, setShowRoleAddModal] = useState(false)
-
-
-    const [errorRoleData, setErrorRoleData] = useState({})
-
-    const [tablePagination, setTablePagination] = useState(1);
-
-    const [searchValue, setSearchValue] = useState(null);
-
-    const handleNextPage = () => {
-        setTablePagination((prev) => prev + 1)
-    }
-
-    const handlePrevPage = () => {
-        setTablePagination((prev) => prev - 1)
-    }
-
 
     const handleAddData = (e) => {
         const { name, value } = e.target;
@@ -393,7 +385,6 @@ const Designation = () => {
 
         setLoading(false);
     };
-
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -519,7 +510,12 @@ const Designation = () => {
                             ),
                             endAdornment: (
                                 searchValue && (
-                                    <IconButton sx={{ padding: 0 }} onClick={() => setSearchValue('')} size="small">
+                                    <IconButton sx={{ padding: 0 }}  
+                                    onClick={() => {
+                                        setSearchValue('');
+                                        setCurrentPage(0);
+                                    }} 
+                                    size="small">
                                         <ClearIcon sx={{ color: '#475467' }} />
                                     </IconButton>
                                 )
@@ -690,7 +686,6 @@ const Designation = () => {
                     )}
                 </DialogActions>
             </Dialog>
-
 
             {/* Delete Role conformation Popup */}
             <div>

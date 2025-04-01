@@ -2958,19 +2958,19 @@ const UnderInvestigation = () => {
     var userPermissions = JSON.parse(localStorage.getItem('user_permissions')) || [];
 
     var hoverExtraOptions = [
-        userPermissions[0]?.view_case
+        userPermissions[0]?.view_pt
         ? {
             "name": "View",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
         }
         : null,
-        userPermissions[0]?.edit_case
+        userPermissions[0]?.edit_pt_case
         ? {
             "name": "Edit",
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
         }
         : null,
-        userPermissions[0]?.delete_case
+        userPermissions[0]?.delete_pt
         ? {
             "name": "Delete",
             "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
@@ -3077,7 +3077,7 @@ const UnderInvestigation = () => {
                         )}
 
                         {
-                            JSON.parse(localStorage.getItem('user_permissions')) && JSON.parse(localStorage.getItem('user_permissions'))[0].create_case &&
+                            JSON.parse(localStorage.getItem('user_permissions')) && JSON.parse(localStorage.getItem('user_permissions'))[0].create_pt &&
                             <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
                                 Add New
                             </Button>
