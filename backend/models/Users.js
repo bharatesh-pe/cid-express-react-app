@@ -26,18 +26,6 @@ module.exports = (sequelize, DataTypes) => {
           key: "id",
         },
       },
-      name: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      kgid: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      mobile: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
       created_by: {
         type: DataTypes.INTEGER,
         allowNull: true,
