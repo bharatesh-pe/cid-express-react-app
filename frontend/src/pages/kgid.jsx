@@ -200,7 +200,7 @@ const KGID = () => {
             return;
         }
         try {
-            const response = await api.post("/master_meta/delete_master_data", { master_name: "kgid", id });
+            const response = await api.post("/master_meta/delete_master_data", { master_name: "Kgid", id });
             if (!response || !response.success) {
                 let errorMessage = response.message || "Error deleting kgid";
                 toast.error(errorMessage, {
@@ -382,7 +382,7 @@ const KGID = () => {
 
         try {
             const requestData = {
-                master_name: "kgid",
+                master_name: "Kgid",
                 data: addRoleData
             };
             const response = await api.post("/master_meta/create_master_data", requestData);
@@ -516,7 +516,7 @@ const KGID = () => {
         }
 
         const requestData = {
-            master_name: "kgid",
+            master_name: "Kgid",
             data: {
                 id: selectedRole.id,
                 kgid: selectedRole.kgid,

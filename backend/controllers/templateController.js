@@ -250,6 +250,7 @@ exports.createTemplate = async (req, res, next) => {
 			updated_by: "adminUser.full_name",
 			paranoid,
 		};
+		console.log("name checking ", saveData.fields)
 		if (paranoid) {
 			const fieldsJson = JSON.parse(saveData.fields); // Parse to modify the fields object
 			fieldsJson.push({
@@ -263,7 +264,7 @@ exports.createTemplate = async (req, res, next) => {
 
 		await Template.create(saveData);
 
-		const responseMessage = `Table ${table_name} created successfully.`;
+		const responseMessage = `New Template ${template_name} created successfully.`;
 		return adminSendResponse(res, 200, true, responseMessage, null);
 	} catch (error) {
 		console.error("Error creating table:", error);
@@ -517,7 +518,7 @@ exports.updateTemplate = async (req, res, next) => {
 
 		await Template.update(saveData, { where: { table_name } });
 
-		const responseMessage = `Table ${table_name} updated successfully.`;
+		const responseMessage = `Template ${template_name} updated successfully.`;
 		return adminSendResponse(res, 200, true, responseMessage, null);
 	} catch (error) {
 		console.error("Error updating table:", error);
@@ -528,7 +529,7 @@ exports.updateTemplate = async (req, res, next) => {
 
 exports.deleteTemplate = async (req, res, next) => {
 	try {
-		const { table_name } = req.body;
+		const { table_name , template_name} = req.body;
 
 		// Validate input
 		if (!table_name || typeof table_name !== "string") {
@@ -558,7 +559,7 @@ exports.deleteTemplate = async (req, res, next) => {
 				res,
 				400,
 				false,
-				`Cannot delete table ${table_name} as it contains ${entryCount} record(s). Please delete the records first.`,
+				`Cannot delete template ${template_name} as it contains ${entryCount} record(s). Please delete the records first.`,
 				{ recordCount: entryCount }
 			);
 		}
@@ -582,7 +583,7 @@ exports.deleteTemplate = async (req, res, next) => {
 			res,
 			200,
 			true,
-			`Template ${table_name} deleted successfully.`,
+			`Template ${template_name} deleted successfully.`,
 			null
 		);
 	} catch (error) {
@@ -610,7 +611,7 @@ exports.viewTemplate = async (req, res, next) => {
 		const template = await Template.findOne({ where: { table_name } });
 
 		if (!template) {
-			return adminSendResponse(res, 404, false, `Table ${table_name} does not exist.`, null);
+			return adminSendResponse(res, 404, false, `Template ${template_name} does not exist.`, null);
 		}
 
 
@@ -950,7 +951,7 @@ exports.checkDuplicateTemplate = async (req, res, next) => {
 		// Check if a table with the same name already exists
 		const existingTable = await Template.findOne({ where: { table_name } });
 		if (existingTable) {
-			const message = `Table ${table_name} already exists.`;
+			const message = `Template ${template_name} already exists.`;
 			return adminSendResponse(res, 400, false, message, null);
 		}
 

@@ -528,6 +528,7 @@ exports.filter_users = async (req, res) => {
     name,
     kgid,
     role_id,
+    mobile,
     department_id,
     division_id,
     designation_id,
@@ -540,7 +541,7 @@ exports.filter_users = async (req, res) => {
     const orConditions = [];
 
     if (name) orConditions.push({ name: { [Op.iLike]: `%${name}%` } });
-    if (kgid) orConditions.push({ kgid: { [Op.iLike]: `%${kgid}%` } });
+    // if (kgid) orConditions.push({ kgid: { [Op.iLike]: `%${kgid}%` } });
     if (role_id) orConditions.push({ role_id });
     if (department_id)
       orConditions.push({ "$users_departments.department_id$": department_id });
@@ -551,7 +552,9 @@ exports.filter_users = async (req, res) => {
         "$users_designations.designation_id$": designation_id,
       });
     if (dev_status !== undefined) orConditions.push({ dev_status });
-
+    if (kgid) {
+      orConditions.push({ "$kgidDetails.kgid$": kgid }); // Filter by the `kgid` field in the `KGID` model
+    }
     const filters = orConditions.length > 0 ? { [Op.or]: orConditions } : {}; // Apply OR condition
 
     console.log("Final Filters:", filters);
@@ -559,6 +562,11 @@ exports.filter_users = async (req, res) => {
     const users = await Users.findAll({
       include: [
         { model: Role, as: "role", attributes: ["role_id", "role_title"] },
+        {
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"], // Include KGID details
+        },
         {
           model: UserDesignation,
           as: "users_designations",

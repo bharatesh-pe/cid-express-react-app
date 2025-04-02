@@ -134,7 +134,6 @@ const Hierarchy = () => {
                         supervisor_designation_id: row.supervisor_designation_id
                     };
                 });
-
                 setHierarchyRowData(updatedData);
             } else {
                 toast.error("Failed to fetch Hierarchy");
@@ -178,7 +177,7 @@ const Hierarchy = () => {
         if (!role) return;
 
         setSelectedRole({
-            users_hierarchy_id: role.users_hierarchy_id ?? "",
+            users_hierarchy_id: role.id ?? "",
             officer_designation_id: role.officer_designation_id ?? "",
             supervisor_designation_id: role.supervisor_designation_id ?? "",
         });
@@ -287,7 +286,7 @@ const Hierarchy = () => {
             return;
         }
         try {
-            const response = await api.post("/master_meta/delete_master_data", { master_name: "hierarchy", id });
+            const response = await api.post("/master_meta/delete_master_data", { master_name: "Hierarchy", id });
             if (!response || !response.success) {
                 let errorMessage = response.message || "Error deleting hierarchy";
                 toast.error(errorMessage, {
@@ -370,7 +369,7 @@ const Hierarchy = () => {
 
         try {
             const requestData = {
-                master_name: "hierarchy",
+                master_name: "Hierarchy",
                 data: addRoleData
             };
 
@@ -464,9 +463,9 @@ const Hierarchy = () => {
         }
 
         const requestData = {
-            master_name: "hierarchy",
+            master_name: "Hierarchy",
             data: {
-                hierarchy_id: selectedRole.id,
+                hierarchy_id: selectedRole.users_hierarchy_id,
                 officer_designation_id: selectedRole.officer_designation_id,
                 supervisor_designation_id: selectedRole.supervisor_designation_id,
             }

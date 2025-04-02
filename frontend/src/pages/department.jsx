@@ -197,7 +197,7 @@ const Department = () => {
             return;
         }
         try {
-            const response = await api.post("/master_meta/delete_master_data", { master_name: "department", id });
+            const response = await api.post("/master_meta/delete_master_data", { master_name: "Department", id });
             if (!response || !response.success) {
                 let errorMessage = response.message || "Error deleting department";
                 toast.error(errorMessage, {
@@ -331,7 +331,7 @@ const Department = () => {
 
         try {
             const requestData = {
-                master_name: "department",
+                master_name: "Department",
                 data: addRoleData
             };
             const response = await api.post("/master_meta/create_master_data", requestData);
@@ -433,7 +433,7 @@ const Department = () => {
         }
 
         const requestData = {
-            master_name: "department",
+            master_name: "Department",
             data: {
                 department_id: selectedRole.id,
                 department_name: selectedRole.department_name,

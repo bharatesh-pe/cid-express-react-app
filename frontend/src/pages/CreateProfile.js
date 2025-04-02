@@ -313,7 +313,8 @@ const CreateProfile = () => {
         }).then( async (result) => {
             if (result.isConfirmed) {
                 const deleteTableData = {
-                    "table_name": row.table_name.split(' ').join("_")
+                    "table_name": row.table_name.split(' ').join("_"),
+                    "template_name": row.template_name,
                 }
                 setLoading(true);
                 try {

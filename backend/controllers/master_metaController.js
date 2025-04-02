@@ -95,11 +95,11 @@ exports.create_master_data = async (req, res) => {
       let newEntry;
 
       switch (master_name) {
-            case 'department':
+            case 'Department':
               newEntry = await Department.create(data);
               break;
 
-            case 'designation':
+            case 'Designation':
                 newEntry = await Designation.create({
                     designation_name: data.designation_name,
                     description: data.description,
@@ -110,7 +110,7 @@ exports.create_master_data = async (req, res) => {
                 });
                 break;
             
-            case 'division':
+            case 'Division':
                 newEntry = await Division.create({
                     division_name: data.division_name,
                     description: data.description,
@@ -119,11 +119,11 @@ exports.create_master_data = async (req, res) => {
                     created_at: new Date()
                 });
                 break;
-            case 'Approval item':
+            case 'Approval Item':
               newEntry = await ApprovalItem.create(data);
               break;
 
-            case 'kgid':
+            case 'Kgid':
               newEntry = await KGID.create({
                     kgid: data.kgid,
                     name: data.name,
@@ -134,7 +134,7 @@ exports.create_master_data = async (req, res) => {
                 });
               break;
 
-            case 'hierarchy':
+            case 'Hierarchy':
             newEntry = await UsersHierarchy.create({
                   supervisor_designation_id: data.supervisor_designation_id,
                   officer_designation_id: data.officer_designation_id,                
@@ -163,7 +163,7 @@ exports.update_master_data = async (req, res) => {
       let whereCondition = {};
 
       switch (master_name) {
-            case 'department':
+            case 'Department':
                 if (!data.department_id) {
                     return res.status(400).json({ message: "Department ID is required for update." });
                 }
@@ -171,7 +171,7 @@ exports.update_master_data = async (req, res) => {
                 result = await Department.update(data, { where: whereCondition });
                 break;
 
-            case 'designation':
+            case 'Designation':
                 if (!data.designation_id) {
                     return res.status(400).json({ message: "Designation ID is required for update." });
                 }
@@ -183,7 +183,7 @@ exports.update_master_data = async (req, res) => {
                 }, { where: whereCondition });
                 break;
 
-            case 'division':
+            case 'Division':
                 if (!data.division_id) {
                     return res.status(400).json({ message: "Division ID is required for update." });
                 }
@@ -194,14 +194,14 @@ exports.update_master_data = async (req, res) => {
                     updated_by: data.updated_by
                 }, { where: whereCondition });
                 break;
-            case 'approval_item':
+            case 'Approval Item':
                 if (!data.approval_item_id) {
                     return res.status(400).json({ message: "Item ID is required for update." });
                 }
                 whereCondition = { approval_item_id: data.approval_item_id };
                 result = await ApprovalItem.update(data, { where: whereCondition });
                 break;
-            case 'kgid':
+            case 'Kgid':
                 if (!data.kgid) {
                     return res.status(400).json({ message: "KGID is required for update." });
                 }
@@ -215,7 +215,7 @@ exports.update_master_data = async (req, res) => {
                 }, { where: whereCondition });
                 break;
             
-            case 'hierarchy':
+            case 'Hierarchy':
                 if (!data.hierarchy_id) {
                     return res.status(400).json({ message: "Hierarchy ID is required for update." });
                 }
@@ -249,7 +249,7 @@ exports.delete_master_data = async (req, res) => {
       let whereCondition = {};
 
       switch (master_name) {
-          case 'department':
+          case 'Department':
               if (!id) {
                   return res.status(400).json({ message: "Department ID is required for deletion." });
               }
@@ -257,7 +257,7 @@ exports.delete_master_data = async (req, res) => {
               result = await Department.destroy({ where: whereCondition });
               break;
 
-          case 'designation':
+          case 'Designation':
               if (!id) {
                   return res.status(400).json({ message: "Designation ID is required for deletion." });
               }
@@ -265,22 +265,28 @@ exports.delete_master_data = async (req, res) => {
               result = await Designation.destroy({ where: whereCondition });
               break;
 
-          case 'division':
+          case 'Division':
               if (!id) {
                   return res.status(400).json({ message: "Division ID is required for deletion." });
               }
               whereCondition = { division_id: id };
               result = await Division.destroy({ where: whereCondition });
               break;
-            case 'kgid':
+            case 'Kgid':
                 if (!id) {
                     return res.status(400).json({ message: "KGID is required for deletion." });
                 }
                 whereCondition = { id: id };
                 result = await KGID.destroy({ where: whereCondition });
                 break;
-
-          case 'hierarchy':
+            case 'Approval Item':
+                if (!id) {
+                    return res.status(400).json({ message: "Item ID is required for deletion." });
+                }
+                whereCondition = { approval_item_id: id };
+                result = await ApprovalItem.destroy({ where: whereCondition });
+                break;
+          case 'Hierarchy':
               if (!id) {
                   return res.status(400).json({ message: "Hierarchy ID is required for deletion." });
               }
