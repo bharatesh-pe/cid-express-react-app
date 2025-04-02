@@ -553,7 +553,7 @@ exports.filter_users = async (req, res) => {
       });
     if (dev_status !== undefined) orConditions.push({ dev_status });
     if (kgid) {
-      orConditions.push({ "$kgidDetails.kgid$": kgid }); // Filter by the `kgid` field in the `KGID` model
+      orConditions.push({ "$kgidDetails.kgid$": kgid });
     }
     const filters = orConditions.length > 0 ? { [Op.or]: orConditions } : {}; // Apply OR condition
 
@@ -565,7 +565,7 @@ exports.filter_users = async (req, res) => {
         {
           model: KGID,
           as: "kgidDetails",
-          attributes: ["kgid", "name", "mobile"], // Include KGID details
+          attributes: ["kgid", "name", "mobile"],
         },
         {
           model: UserDesignation,
