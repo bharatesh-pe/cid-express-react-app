@@ -141,6 +141,7 @@ const UnderInvestigation = () => {
         { field: 'remarks', headerName: 'Remarks', flex: 1 }
     ]);
     const [approvalItem, setApprovalItem] = useState([]);
+    const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
     const [designationData, setDesignationData] = useState([]);
 
     const [randomApprovalId, setRandomApprovalId] = useState(0);
@@ -2489,6 +2490,7 @@ const UnderInvestigation = () => {
         }
 
         setLoading(true);
+        setApprovalItemDisabled(false);
 
         try {
 
@@ -2540,6 +2542,7 @@ const UnderInvestigation = () => {
 
                 setApprovalsData(updatedOptions);
                 setApprovalItem(getActionsDetails.data['approval_item']);
+                setApprovalItemDisabled(true);
                 setDesignationData(getActionsDetails.data['designation']);
 
                 setAddApproveFlag(false);
@@ -2672,6 +2675,7 @@ const UnderInvestigation = () => {
 
                 setApprovalsData([]);
                 setApprovalItem([]);
+                setApprovalItemDisabled(false);
                 setDesignationData([]);
 
                 setAddApproveFlag(false);
@@ -3048,6 +3052,7 @@ const UnderInvestigation = () => {
 
                 setApprovalsData([]);
                 setApprovalItem([]);
+                setApprovalItemDisabled(false);
                 setDesignationData([]);
 
                 setAddApproveFlag(false);
@@ -3123,7 +3128,7 @@ const UnderInvestigation = () => {
         }
         : null
         
-    ].filter(Boolean);;
+    ].filter(Boolean);
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -3588,6 +3593,7 @@ const UnderInvestigation = () => {
                                             options={approvalItem}
                                             getOptionLabel={(option) => option.name || ''}
                                             name={'approval_item'}
+                                            disabled={approvalItemDisabled}
                                             value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData && approvalSaveData['approval_item'])) || null}
                                             onChange={(e,value)=>handleApprovalSaveData('approval_item',value?.approval_item_id)}
                                             renderInput={(params) =>
