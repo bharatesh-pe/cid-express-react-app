@@ -2490,7 +2490,6 @@ const UnderInvestigation = () => {
         }
 
         setLoading(true);
-        setApprovalItemDisabled(false);
 
         try {
 
@@ -2542,7 +2541,6 @@ const UnderInvestigation = () => {
 
                 setApprovalsData(updatedOptions);
                 setApprovalItem(getActionsDetails.data['approval_item']);
-                setApprovalItemDisabled(true);
                 setDesignationData(getActionsDetails.data['designation']);
 
                 setAddApproveFlag(false);
@@ -2588,6 +2586,12 @@ const UnderInvestigation = () => {
 
         setAddApproveFlag(true);
         handleApprovalSaveData('approval_item', Number(selectedOtherTemplate?.approval_items));
+
+        if(selectedOtherTemplate?.approval_items){
+            setApprovalItemDisabled(true);
+        }else{
+            setApprovalItemDisabled(false);
+        }
     }
     
     const saveApprovalData = async (table)=> {
