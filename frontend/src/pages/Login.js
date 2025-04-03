@@ -98,7 +98,7 @@ const Login = () => {
                     if(data && data.token){
                         localStorage.setItem('auth_token', data.token);
                         localStorage.setItem('kgid', kgid);
-                        localStorage.setItem('username', data.userRole.name);
+                        localStorage.setItem('username', data.user_detail.name);
                         navigate('/dashboard');
                     }
                 }
@@ -106,7 +106,7 @@ const Login = () => {
                     if(data && data.token){
                         localStorage.setItem('auth_token', data.token);
                         localStorage.setItem('kgid', kgid);
-                        localStorage.setItem('username', data.userRole.name);
+                        localStorage.setItem('username', data.user_detail.name);
                         setTempToken(data.token);
                     }
                     setUserPosition(user_position);

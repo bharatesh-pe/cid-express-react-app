@@ -38,11 +38,17 @@ exports.insertTemplateData = async (req, res, next) => {
 
         // Fetch user data
         const userData = await Users.findOne({
+            include: [
+                {
+                model: KGID,
+                as: "kgidDetails",
+                attributes: ["kgid", "name", "mobile"],
+                },
+            ],
             where: { user_id: userId },
-            attributes: ["name"],
         });
 
-        const userName = userData?.name || "Unknown";
+        const userName = userData?.kgidDetails?.name || "Unknown";
 
         // Fetch table metadata
         const tableData = await Template.findOne({ where: { table_name } });
@@ -290,11 +296,17 @@ exports.updateTemplateData = async (req, res, next) => {
 
     // Fetch user data
     const userData = await Users.findOne({
+        include: [
+            {
+            model: KGID,
+            as: "kgidDetails",
+            attributes: ["kgid", "name", "mobile"],
+            },
+        ],
         where: { user_id: userId },
-        attributes: ["name"],
     });
 
-    const userName = userData?.name || "Unknown";
+    const userName = userData?.kgidDetails?.name || "Unknown";
 
     try {
         // Fetch the table template

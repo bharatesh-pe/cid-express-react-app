@@ -3120,10 +3120,12 @@ const UnderInvestigation = () => {
         }
         : null,
         ...hoverTableOptions,
+        sysStatus === 'ui_case' && sysStatus === 'all'
+        ? 
         {
             "name": "Further Investigation 173(8) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
-        },
+        }:null,
         sysStatus === 'disposal'
         ? 
         {
