@@ -194,7 +194,7 @@ const Designation = () => {
             return;
         }
         try {
-            const response = await api.post("/master_meta/delete_master_data", { master_name: "designation", id });
+            const response = await api.post("/master_meta/delete_master_data", { master_name: "Designation", id });
             if (!response || !response.success) {
                 let errorMessage = response.message || "Error deleting designation";
                 toast.error(errorMessage, {
@@ -327,7 +327,7 @@ const Designation = () => {
 
         try {
             const requestData = {
-                master_name: "designation",
+                master_name: "Designation",
                 data: addRoleData
             };
             const response = await api.post("/master_meta/create_master_data", requestData);
@@ -428,7 +428,7 @@ const Designation = () => {
         }
 
         const requestData = {
-            master_name: "designation",
+            master_name: "Designation",
             data: {
                 designation_id: selectedRole.id,
                 designation_name: selectedRole.designation_name,

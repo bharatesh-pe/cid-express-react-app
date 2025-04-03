@@ -164,7 +164,7 @@ const TemplateMastersView = () => {
     <Box p={2} inert={loading ? true : false}>
         <Box sx={{display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap'}}>
             <Box>
-                <Typography className='Roboto' sx={{fontSize:'20px',fontWeight:'600',color:'#1D2939'}}>Masters</Typography>
+                <Typography className='Roboto' sx={{fontSize:'20px',fontWeight:'600',color:'#1D2939'}}>Template Masters</Typography>
                 {/* <Typography className='Roboto' sx={{fontSize:'16px',fontWeight:'400',color:'#667085'}}>Overview view of all dossier profile details</Typography> */}
             </Box>
             <TextFieldInput InputProps={{

@@ -293,6 +293,7 @@ const UserManagement = () => {
         if (newUser.name) filters.name = newUser.name;
         if (newUser.kgid) filters.kgid = newUser.kgid;
         if (newUser.role) filters.role_id = newUser.role;
+        if(newUser.mobile) filters.mobile = newUser.mobile;
         if (newUser.department) filters.department_id = newUser.department;
         if (newUser.division) filters.division_id = newUser.division;
         if (newUser.designation) filters.designation_id = newUser.designation;
@@ -315,22 +316,23 @@ const UserManagement = () => {
         }
 
         const formattedUsers = users.map(user => ({
-            id: user.user_id,
-            user_id: user.user_id,
-            name: user.name,
-            role_id: user.role?.role_id || "N/A",
-            role: user.role?.role_title || "N/A",
-            kgid: user.kgid,
-            designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
-            designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
-            department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
-            department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
-            division_id: user.users_division?.map(d => d.division_id).join(", ") || "N/A",
-            division: user.users_division?.map(d => d.division?.division_name).join(", ") || "N/A",
-            status: user.dev_status ? "Active" : "Inactive",
-            dev_status: user.dev_status,
+          id: user.user_id,
+          user_id: user.user_id,
+          name: user.kgidDetails.name,
+          role_id: user.role.role_id,
+          role: user.role.role_title,
+          kgid: user.kgidDetails.kgid,
+          mobile: user.kgidDetails.mobile,
+          designation_id: user.users_designations?.map(d => d.designation_id).join(", ") || "N/A",
+          designation: user.users_designations?.map(d => d.designation?.designation_name).join(", ") || "N/A",
+          department_id: user.users_departments?.map(d => d.department_id).join(", ") || "N/A",
+          department: user.users_departments?.map(d => d.department?.department_name).join(", ") || "N/A",
+          division_id: user.users_division?.map(d => d.division_id).join(", ") || "N/A",
+          division: user.users_division?.map(d => d.division?.division_name).join(", ") || "N/A",
+          status: user.dev_status ? "Active" : "Inactive",
+          dev_status: user.dev_status,
         }));
-
+        
         setUsers(formattedUsers);
         setCurrentPage(0);
         setIsFilterApplied(true);

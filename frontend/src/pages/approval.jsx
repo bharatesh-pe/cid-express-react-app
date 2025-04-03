@@ -198,7 +198,7 @@ const Approval = () => {
             return;
         }
         try {
-            const response = await api.post("/master_meta/delete_master_data", { master_name: "approval_item", id });
+            const response = await api.post("/master_meta/delete_master_data", { master_name: "Approval Item", id });
             if (!response || !response.success) {
                 let errorMessage = response.message || "Error deleting item";
                 toast.error(errorMessage, {
@@ -333,7 +333,7 @@ const Approval = () => {
 
         try {
             const requestData = {
-                master_name: "Approval item",
+                master_name: "Approval Item",
                 data: addRoleData
             };
             const response = await api.post("/master_meta/create_master_data", requestData);
@@ -435,7 +435,7 @@ const Approval = () => {
         }
 
         const requestData = {
-            master_name: "approval_item",
+            master_name: "Approval Item",
             data: {
                 approval_item_id: selectedRole.id,
                 name: selectedRole.name,
