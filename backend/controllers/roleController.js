@@ -126,7 +126,7 @@ exports.get_all_permissions = async (req, res) => {
 
 exports.get_all_module = async (req, res) => {
   try {
-    const exception_modules_id =[4,5];
+    const exception_modules_id =[4,5,1,2,3,15];
     const modules = await Module.findAll({
       attributes: ['module_id', 'ui_name', 'sub_modules', 'name'],
       order: [['order', 'ASC']],
