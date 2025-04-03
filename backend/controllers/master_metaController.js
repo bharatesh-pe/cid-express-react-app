@@ -123,16 +123,38 @@ exports.create_master_data = async (req, res) => {
               newEntry = await ApprovalItem.create(data);
               break;
 
-            case 'Kgid':
-              newEntry = await KGID.create({
+              case 'Kgid':
+                const existingKgid = await KGID.findOne({
+                    where: { kgid: data.kgid }
+                });
+
+                if (existingKgid) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'KGID already exists.'
+                    });
+                }
+
+                const existingMobile = await KGID.findOne({
+                    where: { mobile: data.mobile }
+                });
+
+                if (existingMobile) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Mobile already exists.'
+                    });
+                }
+
+                newEntry = await KGID.create({
                     kgid: data.kgid,
                     name: data.name,
                     mobile: data.mobile,
                     start_date: new Date(),
-                    end_date: data.end_date || null,  // Ensure end_date is explicitly set
+                    end_date: data.end_date || null,
                     created_by: data.created_by,
                 });
-              break;
+                break;
 
             case 'Hierarchy':
             newEntry = await UsersHierarchy.create({
