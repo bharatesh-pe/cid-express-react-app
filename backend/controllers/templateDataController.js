@@ -2279,7 +2279,23 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         const allowedUserIds = [userId, ...subordinateUserIds];
 
         if (allowedUserIds.length) {
-            whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+           if (template_module === "ui_case") {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: allowedUserIds } },
+                    { field_name_of_the_io: String(userId) } 
+                ];
+            }
+            else if(template_module === "pt_case" )
+            {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+            else if(template_module === "eq_case" )
+            {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+            else{
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
         }
 
         // const userDivision = await UsersDivision.findAll({ where: { users_id : userId ,  } , attributes: ['division_id'] })
@@ -2784,6 +2800,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         return userSendResponse(res, 200, true, "Data fetched successfully", responseData);
     } catch (error) {
         console.error('Error fetching paginated data:', error);
+        
         return userSendResponse(res, 500, false, "Server error", error);
     }
 };
@@ -2959,6 +2976,7 @@ exports.fetchAndDownloadExcel = async (req, res) => {
 
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { Readable } = require('stream');
+const e = require("express");
 
 // AWS S3 Configuration
 const s3Client = new S3Client({
