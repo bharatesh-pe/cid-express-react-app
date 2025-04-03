@@ -141,6 +141,7 @@ const UnderInvestigation = () => {
         { field: 'remarks', headerName: 'Remarks', flex: 1 }
     ]);
     const [approvalItem, setApprovalItem] = useState([]);
+    const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
     const [designationData, setDesignationData] = useState([]);
 
     const [randomApprovalId, setRandomApprovalId] = useState(0);
@@ -2585,6 +2586,12 @@ const UnderInvestigation = () => {
 
         setAddApproveFlag(true);
         handleApprovalSaveData('approval_item', Number(selectedOtherTemplate?.approval_items));
+
+        if(selectedOtherTemplate?.approval_items){
+            setApprovalItemDisabled(true);
+        }else{
+            setApprovalItemDisabled(false);
+        }
     }
     
     const saveApprovalData = async (table)=> {
@@ -2672,6 +2679,7 @@ const UnderInvestigation = () => {
 
                 setApprovalsData([]);
                 setApprovalItem([]);
+                setApprovalItemDisabled(false);
                 setDesignationData([]);
 
                 setAddApproveFlag(false);
@@ -3048,6 +3056,7 @@ const UnderInvestigation = () => {
 
                 setApprovalsData([]);
                 setApprovalItem([]);
+                setApprovalItemDisabled(false);
                 setDesignationData([]);
 
                 setAddApproveFlag(false);
@@ -3125,7 +3134,7 @@ const UnderInvestigation = () => {
         }
         : null
         
-    ].filter(Boolean);;
+    ].filter(Boolean);
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -3466,7 +3475,7 @@ const UnderInvestigation = () => {
         >
             {selectedOtherTemplate && selectedOtherTemplate.name}
             <Box>
-                {selectedOtherTemplate.table === "cid_ui_case_progress_report"
+                {selectedOtherTemplate?.table === "cid_ui_case_progress_report"
                     ? hasPdfEntry && (
                         <>
                         <Button variant="outlined"     onClick={() => {
@@ -3502,7 +3511,7 @@ const UnderInvestigation = () => {
         <DialogContent>
             <DialogContentText id="alert-dialog-description">
                 <Box py={2}>
-                    {selectedOtherTemplate.table === "cid_ui_case_progress_report" ? (
+                    {selectedOtherTemplate?.table === "cid_ui_case_progress_report" ? (
                         hasPdfEntry ? (
                             uploadedFiles.length > 0 ? (
                                 <>
@@ -3590,6 +3599,7 @@ const UnderInvestigation = () => {
                                             options={approvalItem}
                                             getOptionLabel={(option) => option.name || ''}
                                             name={'approval_item'}
+                                            disabled={approvalItemDisabled}
                                             value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData && approvalSaveData['approval_item'])) || null}
                                             onChange={(e,value)=>handleApprovalSaveData('approval_item',value?.approval_item_id)}
                                             renderInput={(params) =>

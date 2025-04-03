@@ -709,6 +709,10 @@ div::first-letter {
         z-index: 98 !important;
     }
 
+    .MuiPopover-root {
+        z-index: 1300 !important;
+    }
+
     .attachmentTableBtn{
         border: 1px solid #D0D5DD;
         border-radius: 6px;
