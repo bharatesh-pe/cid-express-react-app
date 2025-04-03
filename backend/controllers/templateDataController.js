@@ -2282,7 +2282,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
            if (template_module === "ui_case") {
                 whereClause[Op.or] = [
                     { created_by_id: { [Op.in]: allowedUserIds } },
-                    { field_name_of_the_io: String(userId) } 
+                    { field_name_of_the_io: { [Op.in]: allowedUserIds } } 
                 ];
             }
             else if(template_module === "pt_case" )
