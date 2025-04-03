@@ -236,6 +236,7 @@ exports.create_user = async (req, res) => {
     // Prepare logs for user management log
     const logs = [
         { user_id: newUser.user_id, field: 'name', info: username, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'mobile', info: mobile, at: new Date(), by: created_by },
         { user_id: newUser.user_id, field: 'role', info: role_id, at: new Date(), by: created_by },
         { user_id: newUser.user_id, field: 'kgid', info: kgid, at: new Date(), by: created_by },
         { user_id: newUser.user_id, field: 'designation', info: designation_id, at: new Date(), by: created_by },
@@ -278,6 +279,7 @@ exports.update_user = async (req, res) => {
     division_id,
     created_by,
     transaction_id,
+    mobile,
   } = req.body;
 
   // Validation checks
