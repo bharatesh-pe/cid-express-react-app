@@ -78,44 +78,46 @@ const getIoUsers = async (req, res) => {
                   as: "kgidDetails",
                   attributes: ["kgid", "name", "mobile"], // Fetch name here
               },
-              {
-                  model: UserDesignation,
-                  as: "users_designations",
-                  attributes: ["designation_id"],
-                  include: [
-                      {
-                          model: Designation,
-                          as: "designation",
-                          attributes: ["designation_name"],
-                      },
-                  ],
-              },
-              {
-                  model: UsersDepartment,
-                  as: "users_departments",
-                  attributes: ["department_id"],
-                  include: [
-                      {
-                          model: Department,
-                          as: "department",
-                          attributes: ["department_name"],
-                      },
-                  ],
-              },
-              {
-                  model: UsersDivision,
-                  as: "users_division",
-                  attributes: ["division_id"],
-                  include: [
-                      {
-                          model: Division,
-                          as: "division",
-                          attributes: ["division_name"],
-                      },
-                  ],
-              },
+              // {
+              //     model: UserDesignation,
+              //     as: "users_designations",
+              //     attributes: ["designation_id"],
+              //     include: [
+              //         {
+              //             model: Designation,
+              //             as: "designation",
+              //             attributes: ["designation_name"],
+              //         },
+              //     ],
+              // },
+              // {
+              //     model: UsersDepartment,
+              //     as: "users_departments",
+              //     attributes: ["department_id"],
+              //     include: [
+              //         {
+              //             model: Department,
+              //             as: "department",
+              //             attributes: ["department_name"],
+              //         },
+              //     ],
+              // },
+              // {
+              //     model: UsersDivision,
+              //     as: "users_division",
+              //     attributes: ["division_id"],
+              //     include: [
+              //         {
+              //             model: Division,
+              //             as: "division",
+              //             attributes: ["division_name"],
+              //         },
+              //     ],
+              // },
           ],
-          attributes: ["user_id"]
+          attributes: ["user_id"],
+          raw: true, // Flatten the result
+          nest: true, // Keeps relations grouped
       });
 
     // Transform output to move kgidDetails.name to the top level
