@@ -903,19 +903,6 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
                           />
-                          {!errors[field.name] && field.supportingText && (
-                            <p style={{ color: '#98A2B3', margin: '2px 0', fontSize: '14px' }}>
-                              {field.supportingText}
-                            </p>
-                          )}
-                          {/* {errors[field.name] && (
-                      <p className="error_msg_class">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'red' }}>
-                          <i style={{ rotate: '180deg' }} className='pi pi-info error_icon_field'></i>
-                          <span>{errors[field.name]}</span>
-                        </div>
-                      </p>
-                    )} */}
                         </div>
                       </Grid>
                     );

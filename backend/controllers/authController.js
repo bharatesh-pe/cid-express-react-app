@@ -64,7 +64,8 @@ const verify_OTP = async (req, res) => {
         if(user_detail){
             const mobile = user_detail.mobile;
             const kgid_id = user_detail.id;
-            // Find the user by kgid
+            const user_name = user_detail.name;
+	    // Find the user by kgid
             const user = await AuthSecure.findOne({ where: { kgid_id } });
             // If user is found
             if (user) {

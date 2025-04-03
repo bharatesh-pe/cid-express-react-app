@@ -307,21 +307,21 @@ exports.updateTemplate = async (req, res, next) => {
 		}
 
 		// Check if there are any entries in the dynamic table itself
-		const tableEntries = await sequelize.query(
-			`SELECT COUNT(*) AS count FROM "${table_name}"`,
-			{ type: sequelize.QueryTypes.SELECT }
-		);
+		// const tableEntries = await sequelize.query(
+		// 	`SELECT COUNT(*) AS count FROM "${table_name}"`,
+		// 	{ type: sequelize.QueryTypes.SELECT }
+		// );
 
-		const entryCount = parseInt(tableEntries[0].count, 10);
-		if (entryCount > 0) {
-			return adminSendResponse(
-				res,
-				400,
-				false,
-				`Cannot Update the table ${table_name} as it contains ${entryCount} record(s). Please delete the records first.`,
-				{ recordCount: entryCount }
-			);
-		}
+		// const entryCount = parseInt(tableEntries[0].count, 10);
+		// if (entryCount > 0) {
+		// 	return adminSendResponse(
+		// 		res,
+		// 		400,
+		// 		false,
+		// 		`Cannot Update the table ${table_name} as it contains ${entryCount} record(s). Please delete the records first.`,
+		// 		{ recordCount: entryCount }
+		// 	);
+		// }
 
 
 		// Initialize mutable variables
@@ -607,6 +607,7 @@ exports.viewTemplate = async (req, res, next) => {
 			});
 		}
 
+        var enable_edit = true;
 
 		const template = await Template.findOne({ where: { table_name } });
 
@@ -614,7 +615,15 @@ exports.viewTemplate = async (req, res, next) => {
 			return adminSendResponse(res, 404, false, `Template ${template_name} does not exist.`, null);
 		}
 
+		const tableEntries = await sequelize.query(
+			`SELECT COUNT(*) AS count FROM "${table_name}"`,
+			{ type: sequelize.QueryTypes.SELECT }
+		);
 
+		const entryCount = parseInt(tableEntries[0].count, 10);
+		if (entryCount > 0) {
+            enable_edit = false;
+		}
 
 
 		return adminSendResponse(res, 200, true, `Template details for table ${table_name}.`, {
@@ -631,6 +640,7 @@ exports.viewTemplate = async (req, res, next) => {
 			is_link_to_organization: template.is_link_to_organization,
 			fields: JSON.parse(template.fields),
 			paranoid: template.paranoid,
+            enable_edit : enable_edit
 		});
 	} catch (error) {
 		console.error("Error viewing template:", error);

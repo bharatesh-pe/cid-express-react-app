@@ -141,6 +141,7 @@ const UnderInvestigation = () => {
         { field: 'remarks', headerName: 'Remarks', flex: 1 }
     ]);
     const [approvalItem, setApprovalItem] = useState([]);
+    const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
     const [designationData, setDesignationData] = useState([]);
 
     const [randomApprovalId, setRandomApprovalId] = useState(0);
@@ -2588,6 +2589,12 @@ const UnderInvestigation = () => {
 
         setAddApproveFlag(true);
         handleApprovalSaveData('approval_item', Number(selectedOtherTemplate?.approval_items));
+
+        if(selectedOtherTemplate?.approval_items){
+            setApprovalItemDisabled(true);
+        }else{
+            setApprovalItemDisabled(false);
+        }
     }
     
     const saveApprovalData = async (table)=> {
@@ -2675,6 +2682,7 @@ const UnderInvestigation = () => {
 
                 setApprovalsData([]);
                 setApprovalItem([]);
+                setApprovalItemDisabled(false);
                 setDesignationData([]);
 
                 setAddApproveFlag(false);
@@ -3051,6 +3059,7 @@ const UnderInvestigation = () => {
 
                 setApprovalsData([]);
                 setApprovalItem([]);
+                setApprovalItemDisabled(false);
                 setDesignationData([]);
 
                 setAddApproveFlag(false);
@@ -3114,10 +3123,12 @@ const UnderInvestigation = () => {
         }
         : null,
         ...hoverTableOptions,
+        sysStatus === 'ui_case' && sysStatus === 'all'
+        ? 
         {
             "name": "Further Investigation 173(8) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
-        },
+        }:null,
         sysStatus === 'disposal'
         ? 
         {
@@ -3126,7 +3137,7 @@ const UnderInvestigation = () => {
         }
         : null
         
-    ].filter(Boolean);;
+    ].filter(Boolean);
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -3592,6 +3603,7 @@ const UnderInvestigation = () => {
                                             options={approvalItem}
                                             getOptionLabel={(option) => option.name || ''}
                                             name={'approval_item'}
+                                            disabled={approvalItemDisabled}
                                             value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData && approvalSaveData['approval_item'])) || null}
                                             onChange={(e,value)=>handleApprovalSaveData('approval_item',value?.approval_item_id)}
                                             renderInput={(params) =>

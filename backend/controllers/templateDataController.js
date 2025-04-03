@@ -1,7 +1,7 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
 const sequelize = db.sequelize;
-const { UsersHierarchy , UserDesignation , Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
+const { KGID , UsersHierarchy , UserDesignation , Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
@@ -38,11 +38,17 @@ exports.insertTemplateData = async (req, res, next) => {
 
         // Fetch user data
         const userData = await Users.findOne({
+            include: [
+                {
+                model: KGID,
+                as: "kgidDetails",
+                attributes: ["kgid", "name", "mobile"],
+                },
+            ],
             where: { user_id: userId },
-            attributes: ["name"],
         });
 
-        const userName = userData?.name || "Unknown";
+        const userName = userData?.kgidDetails?.name || "Unknown";
 
         // Fetch table metadata
         const tableData = await Template.findOne({ where: { table_name } });
@@ -290,11 +296,17 @@ exports.updateTemplateData = async (req, res, next) => {
 
     // Fetch user data
     const userData = await Users.findOne({
+        include: [
+            {
+            model: KGID,
+            as: "kgidDetails",
+            attributes: ["kgid", "name", "mobile"],
+            },
+        ],
         where: { user_id: userId },
-        attributes: ["name"],
     });
 
-    const userName = userData?.name || "Unknown";
+    const userName = userData?.kgidDetails?.name || "Unknown";
 
     try {
         // Fetch the table template
