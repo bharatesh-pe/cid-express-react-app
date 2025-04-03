@@ -236,6 +236,7 @@ exports.create_user = async (req, res) => {
     // Prepare logs for user management log
     const logs = [
         { user_id: newUser.user_id, field: 'name', info: username, at: new Date(), by: created_by },
+        { user_id: newUser.user_id, field: 'mobile', info: mobile, at: new Date(), by: created_by },
         { user_id: newUser.user_id, field: 'role', info: role_id, at: new Date(), by: created_by },
         { user_id: newUser.user_id, field: 'kgid', info: kgid, at: new Date(), by: created_by },
         { user_id: newUser.user_id, field: 'designation', info: designation_id, at: new Date(), by: created_by },
@@ -278,6 +279,7 @@ exports.update_user = async (req, res) => {
     division_id,
     created_by,
     transaction_id,
+    mobile,
   } = req.body;
 
   // Validation checks
@@ -302,20 +304,40 @@ exports.update_user = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const updatedFields = {};
+    let updatedFields = {};
+    let tempUpdatedFields = {};
     if (existingUser.name != username) updatedFields.name = username;
     if (existingUser.role_id != role_id) updatedFields.role_id = role_id;
-    if (existingUser.kgid_id != kgid) updatedFields.kgid_id = kgid;
+    if (existingUser.kgid_id != kgid)
+      {
+        updatedFields.kgid_id = kgid;
+        tempUpdatedFields.kgid = kgid;
+        tempUpdatedFields.name = username;
+        tempUpdatedFields.mobile = mobile;
+      } 
 
     if (Object.keys(updatedFields).length > 0) {
       await Users.update(updatedFields, { where: { user_id }, transaction: t });
-      const logs = Object.entries(updatedFields).map(([field, newValue]) => ({
-        user_id,
-        field,
-        info: `${newValue}`,
-        at: new Date(),
-        by: created_by,
-      }));
+      if(tempUpdatedFields.name || tempUpdatedFields.mobile)
+      {
+          logs = Object.entries(tempUpdatedFields).map(([field, newValue]) => ({
+            user_id,
+            field,
+            info: `${newValue}`,
+            at: new Date(),
+            by: created_by,
+          }));
+      }
+      else
+      {
+        logs = Object.entries(updatedFields).map(([field, newValue]) => ({
+          user_id,
+          field,
+          info: `${newValue}`,
+          at: new Date(),
+          by: created_by,
+        }));
+      }
       if (logs.length > 0) await UserManagementLog.bulkCreate(logs, { transaction: t });
 
       if(updatedFields.kgid_id)
@@ -757,6 +779,34 @@ exports.get_user_management_logs = async (req, res) => {
 
             // Return the logs with division names
             return res.status(200).json({ "logs": formattedLogs });
+        }
+
+        if (field === 'kgid') {
+            // Extract department IDs from the logs
+            const kgidIds = logs.map(log => log.info);
+
+            // Fetch department names based on the department IDs
+            const kgidId = await KGID.findAll({
+               attributes:['id','kgid'],
+                where: {
+                    id: kgidIds
+                }
+            });
+
+            // Create a mapping of department IDs to department names
+            const kgidMap = {};
+            kgidId.forEach(kgid => {
+                kgidMap[kgid.id] = kgid.kgid;
+            });
+
+            // Combine logs with kgid names
+            const formattedLogs = logs.map(log => ({
+                ...log.dataValues,
+                info: kgidMap[log.info] || 'Unknown KGID' 
+            }));
+
+            // Return the logs with role names
+            return res.status(200).json({"logs":formattedLogs});
         }
 
         // Return the logs as a response
