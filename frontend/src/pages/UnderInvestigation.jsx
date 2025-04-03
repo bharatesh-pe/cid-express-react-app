@@ -3473,7 +3473,7 @@ const UnderInvestigation = () => {
         >
             {selectedOtherTemplate && selectedOtherTemplate.name}
             <Box>
-                {selectedOtherTemplate.table === "cid_ui_case_progress_report"
+                {selectedOtherTemplate?.table === "cid_ui_case_progress_report"
                     ? hasPdfEntry && (
                         <>
                         <Button variant="outlined"     onClick={() => {
@@ -3509,7 +3509,7 @@ const UnderInvestigation = () => {
         <DialogContent>
             <DialogContentText id="alert-dialog-description">
                 <Box py={2}>
-                    {selectedOtherTemplate.table === "cid_ui_case_progress_report" ? (
+                    {selectedOtherTemplate?.table === "cid_ui_case_progress_report" ? (
                         hasPdfEntry ? (
                             uploadedFiles.length > 0 ? (
                                 <>
