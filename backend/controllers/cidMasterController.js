@@ -115,9 +115,7 @@ const getIoUsers = async (req, res) => {
                   ],
               },
           ],
-          attributes: ["user_id"],
-          raw: true, // Flatten the result
-          nest: true, // Keeps relations grouped
+          attributes: ["user_id"]
       });
 
     // Transform output to move kgidDetails.name to the top level
