@@ -1,7 +1,7 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
 const sequelize = db.sequelize;
-const { UsersHierarchy , UserDesignation , Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
+const { KGID , UsersHierarchy , UserDesignation , Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
