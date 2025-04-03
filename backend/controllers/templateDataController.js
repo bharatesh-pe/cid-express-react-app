@@ -1,7 +1,7 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
 const sequelize = db.sequelize;
-const { KGID , UsersHierarchy , UserDesignation , Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
+const { UsersHierarchy , UserDesignation , Template, admin_user, Users,KGID, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
@@ -38,17 +38,11 @@ exports.insertTemplateData = async (req, res, next) => {
 
         // Fetch user data
         const userData = await Users.findOne({
-            include: [
-                {
-                model: KGID,
-                as: "kgidDetails",
-                attributes: ["kgid", "name", "mobile"],
-                },
-            ],
             where: { user_id: userId },
+            attributes: ["name"],
         });
 
-        const userName = userData?.kgidDetails?.name || "Unknown";
+        const userName = userData?.name || "Unknown";
 
         // Fetch table metadata
         const tableData = await Template.findOne({ where: { table_name } });
@@ -296,17 +290,11 @@ exports.updateTemplateData = async (req, res, next) => {
 
     // Fetch user data
     const userData = await Users.findOne({
-        include: [
-            {
-            model: KGID,
-            as: "kgidDetails",
-            attributes: ["kgid", "name", "mobile"],
-            },
-        ],
         where: { user_id: userId },
+        attributes: ["name"],
     });
 
-    const userName = userData?.kgidDetails?.name || "Unknown";
+    const userName = userData?.name || "Unknown";
 
     try {
         // Fetch the table template
@@ -3554,6 +3542,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     }
 
     try {
+        // Fetch the latest PDF file
         const latestFile = await UiProgressReportFileStatus.findOne({
             where: { ui_case_id, is_pdf: true },
             order: [['created_at', 'DESC']],
@@ -3570,8 +3559,11 @@ exports.appendToLastLineOfPDF = async (req, res) => {
         const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-        let newPage = pdfDoc.addPage();
-        const pageHeight = newPage.getHeight();
+        const pageWidth = 595.276;  // A4 width in points (approx 210mm)
+        const pageHeight = 841.890; // A4 height in points (approx 297mm)
+
+
+        let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
         const marginTop = pageHeight - 50;
 
         const data = JSON.parse(appendText);
@@ -3602,9 +3594,33 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
         delete data.field_ui_case_id;
         delete data.ui_case_id;
+        delete data.sys_status;
+
+        if (data.field_assigned_to) {
+            const user = await Users.findOne({
+                where: { user_id: data.field_assigned_to },
+                attributes: ['kgid_id'],
+            });
+                
+            if (user && user.kgid_id) {
+        
+                const kgidRecord = await KGID.findOne({
+                    where: { id: user.kgid_id },
+                    attributes: ['name'],
+                });
+                
+                if (kgidRecord) {
+                    data.field_assigned_to = kgidRecord.name;
+                } else {
+                    data.field_assigned_to = 'Unknown';
+                }
+            } else {
+                data.field_assigned_to = 'Unknown';
+            }
+        }        
 
         const entries = Object.entries(data);
-        let xPos = 50; 
+        let xPos = 50;
         let yPos = marginTop;
 
         const lineHeight = 20;
@@ -3620,7 +3636,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
             newPage.drawText(`${formattedLabel}:`, {
                 x: xPos,
                 y: yPos,
-                size: 14,  
+                size: 14,
                 font: boldFont,
                 color: rgb(0, 0, 0),
             });
