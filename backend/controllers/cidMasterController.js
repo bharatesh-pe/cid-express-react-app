@@ -61,63 +61,71 @@ const getAllDivisions = async (req, res) => {
 const getIoUsers = async (req, res) => {
   const excluded_role_ids = [1, 10, 21];
   try {
-    const users = await Users.findAll({
-      
-      include: [
-        {
-          model: Role,
-          as: "role",
-          attributes: ["role_id", "role_title"],
-          where: {
-            role_id: {
-              [Op.notIn]: excluded_role_ids,
-            },
-          },
-        },
-        {
-          model: KGID,
-          as: "kgidDetails",
-          attributes: ["kgid", "name", "mobile"],
-        },
-        {
-          model: UserDesignation,
-          as: "users_designations",
-          attributes: ["designation_id"],
+      const usersData = await Users.findAll({
           include: [
-            {
-              model: Designation,
-              as: "designation",
-              attributes: ["designation_name"],
-            },
+              {
+                  model: Role,
+                  as: "role",
+                  attributes: ["role_id", "role_title"],
+                  where: {
+                      role_id: {
+                          [Op.notIn]: excluded_role_ids,
+                      },
+                  },
+              },
+              {
+                  model: KGID,
+                  as: "kgidDetails",
+                  attributes: ["kgid", "name", "mobile"], // Fetch name here
+              },
+              {
+                  model: UserDesignation,
+                  as: "users_designations",
+                  attributes: ["designation_id"],
+                  include: [
+                      {
+                          model: Designation,
+                          as: "designation",
+                          attributes: ["designation_name"],
+                      },
+                  ],
+              },
+              {
+                  model: UsersDepartment,
+                  as: "users_departments",
+                  attributes: ["department_id"],
+                  include: [
+                      {
+                          model: Department,
+                          as: "department",
+                          attributes: ["department_name"],
+                      },
+                  ],
+              },
+              {
+                  model: UsersDivision,
+                  as: "users_division",
+                  attributes: ["division_id"],
+                  include: [
+                      {
+                          model: Division,
+                          as: "division",
+                          attributes: ["division_name"],
+                      },
+                  ],
+              },
           ],
-        },
-        {
-          model: UsersDepartment,
-          as: "users_departments",
-          attributes: ["department_id"],
-          include: [
-            {
-              model: Department,
-              as: "department",
-              attributes: ["department_name"],
-            },
-          ],
-        },
-        {
-          model: UsersDivision,
-          as: "users_division",
-          attributes: ["division_id"],
-          include: [
-            {
-              model: Division,
-              as: "division",
-              attributes: ["division_name"],
-            },
-          ],
-        },
-      ],
-      attributes: ["user_id", "role_id", "kgid", "dev_status"],
-    });
+          attributes: ["user_id"],
+          raw: true, // Flatten the result
+          nest: true, // Keeps relations grouped
+      });
+
+    // Transform output to move kgidDetails.name to the top level
+    const users = usersData.map(user => ({
+        ...user,
+        name: user.kgidDetails?.name || "Unknown", // Move name to top level
+        kgidDetails: undefined // Remove the nested object if not needed
+    }));
 
     return res.status(200).json({ data : users });
   } catch (error) {
