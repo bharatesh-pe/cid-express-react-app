@@ -511,7 +511,7 @@ exports.get_users = async (req, res) => {
           ],
         },
       ],
-      attributes: ["user_id", "name", "role_id", "kgid", "dev_status"],
+      attributes: ["user_id", "role_id", "kgid", "dev_status"],
     });
 
     return res.status(200).json({ users });
@@ -560,6 +560,11 @@ exports.filter_users = async (req, res) => {
       include: [
         { model: Role, as: "role", attributes: ["role_id", "role_title"] },
         {
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"],
+        },
+        {
           model: UserDesignation,
           as: "users_designations",
           attributes: ["designation_id"],
@@ -593,7 +598,7 @@ exports.filter_users = async (req, res) => {
         },
       ],
       where: filters,
-      attributes: ["user_id", "name", "role_id", "kgid", "dev_status"],
+      attributes: ["user_id", "role_id", "kgid", "dev_status"],
     });
 
     return res.status(200).json({ users });

@@ -1,7 +1,7 @@
 const { adminSendResponse } = require("../services/adminSendResponse");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
-const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role } = require("../models");
+const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID} = require("../models");
 const { Op } = require("sequelize");
 
 const getAllDepartments = async (req, res) => {
@@ -62,6 +62,7 @@ const getIoUsers = async (req, res) => {
   const excluded_role_ids = [1, 10, 21];
   try {
     const users = await Users.findAll({
+      
       include: [
         {
           model: Role,
@@ -72,6 +73,11 @@ const getIoUsers = async (req, res) => {
               [Op.notIn]: excluded_role_ids,
             },
           },
+        },
+        {
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"],
         },
         {
           model: UserDesignation,
@@ -110,7 +116,7 @@ const getIoUsers = async (req, res) => {
           ],
         },
       ],
-      attributes: ["user_id", "name", "role_id", "kgid", "dev_status"],
+      attributes: ["user_id", "role_id", "kgid", "dev_status"],
     });
 
     return res.status(200).json({ data : users });
