@@ -151,8 +151,8 @@ const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, on
             </MenuItem>
           ))}
         </Select>
-        <FormHelperText style={{ color: errors[field.name] ? '#d32f2f' : '' }}>
-          {errors[field.name] || field.supportingText || ' '}
+        <FormHelperText style={{ color: errors?.[field.name] ? '#d32f2f' : '' }}>
+          {errors?.[field.name] || field.supportingText || ' '}
         </FormHelperText>
       </FormControl>
     </>
