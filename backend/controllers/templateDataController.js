@@ -1,7 +1,7 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
 const sequelize = db.sequelize;
-const { KGID , UsersHierarchy , UserDesignation , Template, admin_user, Users, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
+const { UsersHierarchy , UserDesignation , Template, admin_user, Users,KGID, ActivityLog, Download, ProfileAttachment, ProfileHistory, event, event_tag_organization, event_tag_leader, event_summary, ProfileLeader, ProfileOrganization, TemplateStar, TemplateUserStatus, UiProgressReportFileStatus} = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require('pdf-lib');
 
@@ -48,7 +48,7 @@ exports.insertTemplateData = async (req, res, next) => {
             where: { user_id: userId },
         });
 
-        const userName = userData?.kgidDetails?.name || "Unknown";
+        let userName = userData?.kgidDetails?.name || null;
 
         // Fetch table metadata
         const tableData = await Template.findOne({ where: { table_name } });
@@ -306,7 +306,7 @@ exports.updateTemplateData = async (req, res, next) => {
         where: { user_id: userId },
     });
 
-    const userName = userData?.kgidDetails?.name || "Unknown";
+    let userName = userData?.kgidDetails?.name || null;
 
     try {
         // Fetch the table template
@@ -2279,7 +2279,23 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         const allowedUserIds = [userId, ...subordinateUserIds];
 
         if (allowedUserIds.length) {
-            whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+           if (template_module === "ui_case") {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: allowedUserIds } },
+                    { field_io_name: { [Op.in]: allowedUserIds } } 
+                ];
+            }
+            else if(template_module === "pt_case" )
+            {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+            else if(template_module === "eq_case" )
+            {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+            else{
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
         }
 
         // const userDivision = await UsersDivision.findAll({ where: { users_id : userId ,  } , attributes: ['division_id'] })
@@ -2784,6 +2800,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         return userSendResponse(res, 200, true, "Data fetched successfully", responseData);
     } catch (error) {
         console.error('Error fetching paginated data:', error);
+        
         return userSendResponse(res, 500, false, "Server error", error);
     }
 };
@@ -2959,6 +2976,7 @@ exports.fetchAndDownloadExcel = async (req, res) => {
 
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 const { Readable } = require('stream');
+const e = require("express");
 
 // AWS S3 Configuration
 const s3Client = new S3Client({
@@ -3548,52 +3566,141 @@ exports.getUploadedFiles = async (req, res) => {
 
 exports.appendToLastLineOfPDF = async (req, res) => {
     const { ui_case_id, appendText } = req.body;
-  
+
     if (!ui_case_id || !appendText) {
-      return res.status(400).json({ success: false, message: "Missing required fields." });
+        return res.status(400).json({ success: false, message: "Missing required fields." });
     }
-  
+
     try {
-      // Fetch the latest uploaded PDF for the given ui_case_id
-      const latestFile = await UiProgressReportFileStatus.findOne({
-        where: { ui_case_id, is_pdf: true },
-        order: [['created_at', 'DESC']],
-      });
-  
-      if (!latestFile) {
-        return res.status(404).json({ success: false, message: "No PDF file found for the given case ID." });
-      }
-  
-      const pdfPath = path.join(__dirname, "../public", latestFile.file_path);
-      const outputPath = path.join(__dirname, "../public/files", `updated_${latestFile.file_name}`);
-  
-      const existingPdfBytes = fs.readFileSync(pdfPath);
-      const pdfDoc = await PDFDocument.load(existingPdfBytes);
-      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  
-      // Create a new page and add it to the document
-      const newPage = pdfDoc.addPage();
-      newPage.drawText(appendText, {
-        x: 50,
-        y: newPage.getHeight() - 50, // Adjust Y based on where you want to place the text
-        size: 12,
-        font,
-        color: rgb(0, 0, 0),
-      });
-  
-      const pdfBytes = await pdfDoc.save();
-      fs.writeFileSync(outputPath, pdfBytes);
-      console.log(`Appended text to ${outputPath}`);
-  
-      // Update the existing database entry with the new file path
-      await UiProgressReportFileStatus.update(
-        { file_path: path.join("files", `updated_${latestFile.file_name}`) },
-        { where: { id: latestFile.id } }
-      );
-  
-      return res.status(200).json({ success: true, message: "PDF updated successfully.", file_path: outputPath });
+        // Fetch the latest PDF file
+        const latestFile = await UiProgressReportFileStatus.findOne({
+            where: { ui_case_id, is_pdf: true },
+            order: [['created_at', 'DESC']],
+        });
+
+        if (!latestFile) {
+            return res.status(404).json({ success: false, message: "No PDF file found for the given case ID." });
+        }
+
+        const pdfPath = path.join(__dirname, "../public", latestFile.file_path);
+        const outputPath = path.join(__dirname, "../public/files", `updated_${latestFile.file_name}`);
+        const existingPdfBytes = fs.readFileSync(pdfPath);
+        const pdfDoc = await PDFDocument.load(existingPdfBytes);
+        const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+        const pageWidth = 595.276;  // A4 width in points (approx 210mm)
+        const pageHeight = 841.890; // A4 height in points (approx 297mm)
+
+
+        let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
+        const marginTop = pageHeight - 50;
+
+        const data = JSON.parse(appendText);
+
+        const formatDate = (isoDate) => {
+            const date = new Date(isoDate);
+
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const year = date.getFullYear();
+
+            return `${month}/${day}/${year}`;
+        };
+
+        const formatLabel = (label) => {
+            label = label.startsWith('field_') ? label.slice(6) : label;
+            label = label.replace(/_/g, ' ');
+            return label.replace(/\b\w/g, char => char.toUpperCase());
+        };
+
+        if (data.field_date_created) {
+            data.field_date_created = formatDate(data.field_date_created);
+        }
+
+        if (data.field_last_updated) {
+            data.field_last_updated = formatDate(data.field_last_updated);
+        }
+
+        delete data.field_ui_case_id;
+        delete data.ui_case_id;
+        delete data.sys_status;
+
+        if (data.field_assigned_to) {
+            const user = await Users.findOne({
+                where: { user_id: data.field_assigned_to },
+                attributes: ['kgid_id'],
+            });
+                
+            if (user && user.kgid_id) {
+        
+                const kgidRecord = await KGID.findOne({
+                    where: { id: user.kgid_id },
+                    attributes: ['name'],
+                });
+                
+                if (kgidRecord) {
+                    data.field_assigned_to = kgidRecord.name;
+                } else {
+                    data.field_assigned_to = 'Unknown';
+                }
+            } else {
+                data.field_assigned_to = 'Unknown';
+            }
+        }        
+
+        const entries = Object.entries(data);
+        let xPos = 50;
+        let yPos = marginTop;
+
+        const lineHeight = 20;
+        const spaceBetweenRows = 30;
+
+        for (let i = 0; i < entries.length; i++) {
+            const [label, value] = entries[i];
+
+            const valueString = value.toString();
+
+            const formattedLabel = formatLabel(label);
+
+            newPage.drawText(`${formattedLabel}:`, {
+                x: xPos,
+                y: yPos,
+                size: 14,
+                font: boldFont,
+                color: rgb(0, 0, 0),
+            });
+
+            yPos -= lineHeight;
+
+            newPage.drawText(valueString, {
+                x: xPos,
+                y: yPos,
+                size: 12,
+                font: regularFont,
+                color: rgb(0, 0, 0),
+            });
+
+            yPos -= (lineHeight * 1) + spaceBetweenRows;
+
+            if (yPos <= 50) {
+                yPos = pageHeight - 50;
+                newPage = pdfDoc.addPage();
+            }
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        fs.writeFileSync(outputPath, pdfBytes);
+        console.log(`Appended text to ${outputPath}`);
+
+        await UiProgressReportFileStatus.update(
+            { file_path: path.join("files", `updated_${latestFile.file_name}`) },
+            { where: { id: latestFile.id } }
+        );
+
+        return res.status(200).json({ success: true, message: "PDF updated successfully.", file_path: outputPath });
     } catch (err) {
-      console.error('Error appending to PDF:', err.message);
-      return res.status(500).json({ success: false, message: "Internal server error." });
+        console.error('Error appending to PDF:', err.message);
+        return res.status(500).json({ success: false, message: err.message || "Internal server error." });
     }
-  };
+};

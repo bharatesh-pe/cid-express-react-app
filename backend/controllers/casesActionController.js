@@ -92,7 +92,7 @@ exports.get_actions = async (req, res) => {
         // Get paginated actions for the specified module
         const data = await CasesAction.findAll({
             where: whereCondition,
-            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval','permissions', 'approval_items', 'created_at', 'tab']
+            attributes: ['id', 'name', 'table', 'module', 'is_pdf', 'field', 'is_approval','permissions', 'approval_items', 'created_at', 'tab', 'icon']
         });
 
         return res.status(200).json({
@@ -114,7 +114,8 @@ exports.get_actions = async (req, res) => {
 
 // Insert new action
 exports.insert_action = async (req, res) => {
-    const { name, table, module, is_pdf, field ,is_approval ,permissions , approval_items , tab} = req.body;
+    const { name, table, module, is_pdf, field ,is_approval ,permissions , approval_items , tab, icon} = req.body;
+    console.log(req.body, "Request body received in backend");
 
     // Validate required fields
     if (!name || !name.trim()) {
@@ -164,7 +165,8 @@ exports.insert_action = async (req, res) => {
             is_approval,
             permissions, 
             approval_items,
-            tab
+            tab,
+            icon
         });
 
         return res.status(201).json({

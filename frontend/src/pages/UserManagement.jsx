@@ -430,6 +430,7 @@ const UserManagement = () => {
           transaction_id: newUser.transaction_id,
           user_id: newUser.id,
           username: newUser.name,
+          mobile: newUser.mobile,
           role_id: newUser.role,
           kgid: newUser.kgid,
           designation_id: Array.isArray(newUser.designation) ? newUser.designation.join(",") : newUser.designation,

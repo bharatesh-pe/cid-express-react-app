@@ -118,9 +118,8 @@ const verify_OTP = async (req, res) => {
                         role_id: userRole.role_id
                     }
                     });
-	            
-			userRole['name'] = user_detail.name;
-                    return res.status(200).json({ success: true, message: 'OTP verified successfully.', token , user_detail ,users_designation , users_division , "user_position":formattedResponse ,userRole ,user_role_permissions});
+
+                    return res.status(200).json({ success: true, message: 'OTP verified successfully.', user_detail, token ,users_designation , users_division , "user_position":formattedResponse ,userRole ,user_role_permissions});
                 } else {
                     // Return error if the otp is invalid or has expired
                     return res.status(401).json({ success: false, message: "Invalid OTP or OTP has expired" });
