@@ -511,7 +511,7 @@ exports.get_users = async (req, res) => {
           ],
         },
       ],
-      attributes: ["user_id", "role_id", "kgid", "dev_status"],
+      attributes: ["user_id", "role_id", "dev_status"],
     });
 
     return res.status(200).json({ users });
@@ -601,7 +601,7 @@ exports.filter_users = async (req, res) => {
         },
       ],
       where: filters,
-      attributes: ["user_id", "role_id", "kgid", "dev_status"],
+      attributes: ["user_id", "role_id", "dev_status"],
     });
 
     return res.status(200).json({ users });
