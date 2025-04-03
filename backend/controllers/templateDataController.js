@@ -3536,52 +3536,113 @@ exports.getUploadedFiles = async (req, res) => {
 
 exports.appendToLastLineOfPDF = async (req, res) => {
     const { ui_case_id, appendText } = req.body;
-  
+
     if (!ui_case_id || !appendText) {
-      return res.status(400).json({ success: false, message: "Missing required fields." });
+        return res.status(400).json({ success: false, message: "Missing required fields." });
     }
-  
+
     try {
-      // Fetch the latest uploaded PDF for the given ui_case_id
-      const latestFile = await UiProgressReportFileStatus.findOne({
-        where: { ui_case_id, is_pdf: true },
-        order: [['created_at', 'DESC']],
-      });
-  
-      if (!latestFile) {
-        return res.status(404).json({ success: false, message: "No PDF file found for the given case ID." });
-      }
-  
-      const pdfPath = path.join(__dirname, "../public", latestFile.file_path);
-      const outputPath = path.join(__dirname, "../public/files", `updated_${latestFile.file_name}`);
-  
-      const existingPdfBytes = fs.readFileSync(pdfPath);
-      const pdfDoc = await PDFDocument.load(existingPdfBytes);
-      const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
-  
-      // Create a new page and add it to the document
-      const newPage = pdfDoc.addPage();
-      newPage.drawText(appendText, {
-        x: 50,
-        y: newPage.getHeight() - 50, // Adjust Y based on where you want to place the text
-        size: 12,
-        font,
-        color: rgb(0, 0, 0),
-      });
-  
-      const pdfBytes = await pdfDoc.save();
-      fs.writeFileSync(outputPath, pdfBytes);
-      console.log(`Appended text to ${outputPath}`);
-  
-      // Update the existing database entry with the new file path
-      await UiProgressReportFileStatus.update(
-        { file_path: path.join("files", `updated_${latestFile.file_name}`) },
-        { where: { id: latestFile.id } }
-      );
-  
-      return res.status(200).json({ success: true, message: "PDF updated successfully.", file_path: outputPath });
+        const latestFile = await UiProgressReportFileStatus.findOne({
+            where: { ui_case_id, is_pdf: true },
+            order: [['created_at', 'DESC']],
+        });
+
+        if (!latestFile) {
+            return res.status(404).json({ success: false, message: "No PDF file found for the given case ID." });
+        }
+
+        const pdfPath = path.join(__dirname, "../public", latestFile.file_path);
+        const outputPath = path.join(__dirname, "../public/files", `updated_${latestFile.file_name}`);
+        const existingPdfBytes = fs.readFileSync(pdfPath);
+        const pdfDoc = await PDFDocument.load(existingPdfBytes);
+        const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+        const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+
+        let newPage = pdfDoc.addPage();
+        const pageHeight = newPage.getHeight();
+        const marginTop = pageHeight - 50;
+
+        const data = JSON.parse(appendText);
+
+        const formatDate = (isoDate) => {
+            const date = new Date(isoDate);
+
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            const year = date.getFullYear();
+
+            return `${month}/${day}/${year}`;
+        };
+
+        const formatLabel = (label) => {
+            label = label.startsWith('field_') ? label.slice(6) : label;
+            label = label.replace(/_/g, ' ');
+            return label.replace(/\b\w/g, char => char.toUpperCase());
+        };
+
+        if (data.field_date_created) {
+            data.field_date_created = formatDate(data.field_date_created);
+        }
+
+        if (data.field_last_updated) {
+            data.field_last_updated = formatDate(data.field_last_updated);
+        }
+
+        delete data.field_ui_case_id;
+        delete data.ui_case_id;
+
+        const entries = Object.entries(data);
+        let xPos = 50; 
+        let yPos = marginTop;
+
+        const lineHeight = 20;
+        const spaceBetweenRows = 30;
+
+        for (let i = 0; i < entries.length; i++) {
+            const [label, value] = entries[i];
+
+            const valueString = value.toString();
+
+            const formattedLabel = formatLabel(label);
+
+            newPage.drawText(`${formattedLabel}:`, {
+                x: xPos,
+                y: yPos,
+                size: 14,  
+                font: boldFont,
+                color: rgb(0, 0, 0),
+            });
+
+            yPos -= lineHeight;
+
+            newPage.drawText(valueString, {
+                x: xPos,
+                y: yPos,
+                size: 12,
+                font: regularFont,
+                color: rgb(0, 0, 0),
+            });
+
+            yPos -= (lineHeight * 1) + spaceBetweenRows;
+
+            if (yPos <= 50) {
+                yPos = pageHeight - 50;
+                newPage = pdfDoc.addPage();
+            }
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        fs.writeFileSync(outputPath, pdfBytes);
+        console.log(`Appended text to ${outputPath}`);
+
+        await UiProgressReportFileStatus.update(
+            { file_path: path.join("files", `updated_${latestFile.file_name}`) },
+            { where: { id: latestFile.id } }
+        );
+
+        return res.status(200).json({ success: true, message: "PDF updated successfully.", file_path: outputPath });
     } catch (err) {
-      console.error('Error appending to PDF:', err.message);
-      return res.status(500).json({ success: false, message: "Internal server error." });
+        console.error('Error appending to PDF:', err.message);
+        return res.status(500).json({ success: false, message: err.message || "Internal server error." });
     }
-  };
+};

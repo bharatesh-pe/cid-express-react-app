@@ -2071,7 +2071,7 @@ const UnderInvestigation = () => {
 
     const handleFileUpload = async (event) => {
         console.log("File upload initiated.");
-    
+        setLoading(true)
         const file = event.target.files[0];
     
         if (!file) {
@@ -2105,6 +2105,9 @@ const UnderInvestigation = () => {
         } catch (error) {
             console.error("Upload error:", error);
             Swal.fire("Error", "Failed to upload file.", "error");
+        }
+        finally{
+            setLoading(false)
         }
     };
     
@@ -3458,32 +3461,33 @@ const UnderInvestigation = () => {
         fullWidth
         sx={{ zIndex: '1' }}
     >
+        {console.log("selectedOtherTemplate", selectedOtherTemplate)}
         <DialogTitle
             id="alert-dialog-title"
             sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
         >
-            {selectedOtherTemplate && selectedOtherTemplate.name}
+            {selectedOtherTemplate?.name}
             <Box>
-                {selectedOtherTemplate.table === "cid_ui_case_progress_report"
+                {selectedOtherTemplate?.table === "cid_ui_case_progress_report"
                     ? hasPdfEntry && (
                         <>
                         <Button variant="outlined"     onClick={() => {
                                 setIsUpdatePdf(false);
-                                showOptionTemplate(selectedOtherTemplate.table);
+                                showOptionTemplate(selectedOtherTemplate?.table);
                             }}
                         >
                             Add
                         </Button>
                         <Button variant="outlined" onClick={() => {
                             setIsUpdatePdf(true);
-                            showOptionTemplate(selectedOtherTemplate.table);
+                            showOptionTemplate(selectedOtherTemplate?.table);
                         }} style={{ marginLeft: '10px' }}>
                         Update PDF
                     </Button>
                        </> 
                     )
                     : (
-                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate.table)}>
+                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}>
                             Add
                         </Button>
                     )
@@ -3500,7 +3504,7 @@ const UnderInvestigation = () => {
         <DialogContent>
             <DialogContentText id="alert-dialog-description">
                 <Box py={2}>
-                    {selectedOtherTemplate.table === "cid_ui_case_progress_report" ? (
+                    {selectedOtherTemplate?.table === "cid_ui_case_progress_report" ? (
                         hasPdfEntry ? (
                             uploadedFiles.length > 0 ? (
                                 <>
