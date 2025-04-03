@@ -1103,7 +1103,7 @@ const UnderInvestigation = () => {
 
                 setTemplateApprovalData({});
                 setTemplateApproval(false);
-
+                setIsUpdatePdf(false);
                 setAddApproveFlag(false);
                 setApproveTableFlag(false);
                 setApprovalSaveData({});
