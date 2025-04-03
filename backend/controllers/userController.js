@@ -305,9 +305,15 @@ exports.update_user = async (req, res) => {
     }
 
     const updatedFields = {};
+    const tempUpdatedFields = {};
     if (existingUser.name != username) updatedFields.name = username;
     if (existingUser.role_id != role_id) updatedFields.role_id = role_id;
-    if (existingUser.kgid_id != kgid) updatedFields.kgid_id = kgid;
+    if (existingUser.kgid_id != kgid)
+      {
+        updatedFields.kgid_id = kgid;
+        tempUpdatedFields.name = username;
+        tempUpdatedFields.mobile = mobile;
+      } 
 
     if (Object.keys(updatedFields).length > 0) {
       await Users.update(updatedFields, { where: { user_id }, transaction: t });
