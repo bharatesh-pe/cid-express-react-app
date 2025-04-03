@@ -54,13 +54,13 @@ const CaseActions = () => {
         },
         { 
             field: 'table', 
-            headerName: 'Selected Template',
+            headerName: 'Template',
             resizable: true,
             flex: 1
         },
         { 
             field: 'module', 
-            headerName: 'Selected Module',
+            headerName: 'Module',
             resizable: true,
             flex: 1,
             renderCell: (params) => {
@@ -77,7 +77,7 @@ const CaseActions = () => {
         },
         { 
             field: 'field', 
-            headerName: 'Selected Field',
+            headerName: 'Field',
             resizable: true,
             flex: 1,
             renderCell: (params) => {
