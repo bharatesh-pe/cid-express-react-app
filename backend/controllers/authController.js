@@ -64,7 +64,8 @@ const verify_OTP = async (req, res) => {
         if(user_detail){
             const mobile = user_detail.mobile;
             const kgid_id = user_detail.id;
-            // Find the user by kgid
+            const user_name = user_detail.name;
+	    // Find the user by kgid
             const user = await AuthSecure.findOne({ where: { kgid_id } });
             // If user is found
             if (user) {
@@ -117,8 +118,9 @@ const verify_OTP = async (req, res) => {
                         role_id: userRole.role_id
                     }
                     });
-
-                    return res.status(200).json({ success: true, message: 'OTP verified successfully.', token ,users_designation , users_division , "user_position":formattedResponse ,userRole ,user_role_permissions});
+	            
+			userRole['name'] = user_detail.name;
+                    return res.status(200).json({ success: true, message: 'OTP verified successfully.', token , user_detail ,users_designation , users_division , "user_position":formattedResponse ,userRole ,user_role_permissions});
                 } else {
                     // Return error if the otp is invalid or has expired
                     return res.status(401).json({ success: false, message: "Invalid OTP or OTP has expired" });
