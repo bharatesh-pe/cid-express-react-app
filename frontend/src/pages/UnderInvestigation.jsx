@@ -926,7 +926,7 @@ const UnderInvestigation = () => {
             "table_name": tableName
         }
         setLoading(true);
-
+        setOtherReadOnlyTemplateData(false)
         try {
 
             const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
