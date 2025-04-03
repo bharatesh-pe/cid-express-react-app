@@ -49,6 +49,10 @@ module.exports = (sequelize, DataTypes) => {
             type: DataTypes.TEXT,
             allowNull: true
         },
+        icon: {
+            type: DataTypes.TEXT,
+            allowNull: true,
+          },
     }, {
         sequelize,
         modelName: 'CasesAction',
