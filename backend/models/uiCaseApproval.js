@@ -34,7 +34,7 @@ module.exports = (sequelize, DataTypes) => {
       approval_date: {
         type: DataTypes.DATE,
         allowNull: false,
-       defaultValue: DataTypes.NOW,
+        defaultValue: DataTypes.NOW,
       },
       remarks: {
         type: DataTypes.STRING(255), // Adjust length as needed
@@ -42,7 +42,15 @@ module.exports = (sequelize, DataTypes) => {
       },
       ui_case_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
+      },
+      pt_case_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      eq_case_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
     },
     {
@@ -55,4 +63,4 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   return UiCaseApproval;
-}; 
+};

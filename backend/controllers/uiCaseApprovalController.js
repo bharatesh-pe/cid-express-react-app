@@ -1,7 +1,8 @@
-const { UiCaseApproval, ApprovalItem  , Designation} = require("../models");
+const { UiCaseApproval, ApprovalItem, Designation } = require("../models");
 const fs = require("fs");
 const path = require("path");
 const dbConfig = require("../config/dbConfig");
+const { where } = require("sequelize");
 
 exports.create_ui_case_approval = async (req, res) => {
   const {
@@ -10,15 +11,22 @@ exports.create_ui_case_approval = async (req, res) => {
     approval_date,
     remarks,
     ui_case_id,
+    pt_case_id,
+    eq_case_id,
     transaction_id,
   } = req.body;
 
   // Transaction ID validation
   if (!transaction_id || transaction_id === "") {
-    return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+    return res
+      .status(400)
+      .json({ success: false, message: "Transaction Id is required!" });
   }
 
-  const dirPath = path.join(__dirname, `../data/ui_case_approval_unique/${transaction_id}`);
+  const dirPath = path.join(
+    __dirname,
+    `../data/ui_case_approval_unique/${transaction_id}`
+  );
 
   // Check if directory exists
   if (fs.existsSync(dirPath)) {
@@ -40,7 +48,6 @@ exports.create_ui_case_approval = async (req, res) => {
       return res.status(400).json({ message: "Invalid approval item ID" });
     }
 
-
     // Create UiCaseApproval
     const newApproval = await UiCaseApproval.create(
       {
@@ -48,19 +55,28 @@ exports.create_ui_case_approval = async (req, res) => {
         approved_by,
         approval_date: approval_date || new Date(), // Use current date if not provided
         remarks,
-        ui_case_id,
+        pt_case_id: pt_case_id || null,
+        eq_case_id: eq_case_id || null,
+        ui_case_id: ui_case_id || null,
       },
       { transaction: t }
     );
 
     await t.commit();
-    return res.status(201).json({ success: true, message: "UiCaseApproval created successfully", data: newApproval });
+    return res.status(201).json({
+      success: true,
+      message: "UiCaseApproval created successfully",
+      data: newApproval,
+    });
   } catch (error) {
     if (t.finished !== "rollback") {
       await t.rollback();
     }
-    console.error("Error creating UiCaseApproval:", error);
-    return res.status(500).json({ message: "Failed to create UiCaseApproval", error: error.message });
+    console.error("Error creating Approval:", error);
+    return res.status(500).json({
+      message: "Failed to create Approval",
+      error: error.message,
+    });
   } finally {
     if (fs.existsSync(dirPath)) {
       fs.rmdirSync(dirPath, { recursive: true });
@@ -71,45 +87,70 @@ exports.create_ui_case_approval = async (req, res) => {
 // Function to view all approvals
 exports.get_ui_case_approvals = async (req, res) => {
   try {
-     const {
-      ui_case_id,
-    } = req.body;
+    const { ui_case_id, pt_case_id, eq_case_id } = req.body;
+    let whereCondition = {};
 
+    // Dynamically add conditions
+    if (ui_case_id) {
+      whereCondition.ui_case_id = ui_case_id;
+    }
+    if (pt_case_id) {
+      whereCondition.pt_case_id = pt_case_id;
+    }
+    if (eq_case_id) {
+      whereCondition.eq_case_id = eq_case_id;
+    }
 
     const approvals = await UiCaseApproval.findAll({
-        include: [
-            {
-                model: ApprovalItem,
-                as: "approvalItem",
-                attributes: ["name"],
-            },
-            {
-                model: Designation,
-                as: "approvedBy",
-                attributes: ["designation_name"],
-            },
-        ],
-        where: { ui_case_id: ui_case_id },
-        attributes: ["approval_id", "approval_item", "approved_by", "approval_date", "remarks"],
+      include: [
+        {
+          model: ApprovalItem,
+          as: "approvalItem",
+          attributes: ["name"],
+        },
+        {
+          model: Designation,
+          as: "approvedBy",
+          attributes: ["designation_name"],
+        },
+      ],
+      where: whereCondition,
+      attributes: [
+        "approval_id",
+        "approval_item",
+        "approved_by",
+        "approval_date",
+        "remarks",
+      ],
     });
 
-    const formattedApprovals = approvals.map(approval => ({
-        approval_id: approval.approval_id,
-        approval_item: approval.approval_item,
-        approved_by: approval.approved_by,
-        approval_date: approval.approval_date,
-        remarks: approval.remarks,
-        approvalItem: approval.approvalItem?.name || null,  // Extract the name directly
-        approvedBy: approval.approvedBy?.designation_name || null, // Extract the designation_name directly
+    const formattedApprovals = approvals.map((approval) => ({
+      approval_id: approval.approval_id,
+      approval_item: approval.approval_item,
+      approved_by: approval.approved_by,
+      approval_date: approval.approval_date,
+      remarks: approval.remarks,
+      approvalItem: approval.approvalItem?.name || null, // Extract the name directly
+      approvedBy: approval.approvedBy?.designation_name || null, // Extract the designation_name directly
     }));
 
     const approval_item = await ApprovalItem.findAll();
-    
+
     const designation = await Designation.findAll();
 
-    return res.status(200).json({ success: true, data: {"approvals":formattedApprovals , 'approval_item' : approval_item , 'designation' :designation}});
+    return res.status(200).json({
+      success: true,
+      data: {
+        approvals: formattedApprovals,
+        approval_item: approval_item,
+        designation: designation,
+      },
+    });
   } catch (error) {
-    console.error("Error fetching UiCaseApprovals:", error);
-    return res.status(500).json({ message: "Failed to fetch UiCaseApprovals", error: error.message });
+    console.error("Error fetching Approvals:", error);
+    return res.status(500).json({
+      message: "Failed to fetch Approvals",
+      error: error.message,
+    });
   }
 };
