@@ -202,6 +202,7 @@ const CreateProfile = () => {
                     link_module : viewTemplateResponse.data['link_module'] ? viewTemplateResponse.data['link_module'] : null,
                     stepper : viewTemplateResponse.data['sections'] && viewTemplateResponse.data['sections'].length > 0 ? viewTemplateResponse.data['sections'] : [],
                     action : 'edit',
+                    enable_edit : viewTemplateResponse.data['enable_edit'] ? viewTemplateResponse.data['enable_edit'] : false,
                     pagination: paginationCount,
                 }
                 navigate('/formbuilder', { state: formData });
