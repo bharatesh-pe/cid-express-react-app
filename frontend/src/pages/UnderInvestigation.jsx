@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import DynamicForm from '../components/dynamic-form/DynamicForm';
@@ -42,6 +42,9 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from "dayjs";
+import SelectField from "../components/form/Select";
+import MultiSelect from "../components/form/MultiSelect";
+import AutocompleteField from "../components/form/AutoComplete";
 
 const UnderInvestigation = () => {
     const location = useLocation();
@@ -161,6 +164,18 @@ const UnderInvestigation = () => {
     const [selectedRowData, setSelectedRowData] = useState(null);
     const [uploadedFiles, setUploadedFiles] = useState([]);
 
+    // filter states
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filterDropdownObj, setfilterDropdownObj] = useState([]);
+    const [filterValues, setFilterValues] = useState({});
+    const [fromDateValue, setFromDateValue] = useState(null);
+    const [toDateValue, setToDateValue] = useState(null);
+    const [forceTableLoad, setForceTableLoad] = useState(false);
+
+    const [furtherInvestigationPtCase, setFurtherInvestigationPtCase] = useState(false);
+    const [furtherInvestigationSelectedRow, setFurtherInvestigationSelectedRow] = useState([]);
+    const [furtherInvestigationSelectedValue, setFurtherInvestigationSelectedValue] = useState(null);
+
     // change sys_status
 
     const changeSysStatus = async (data, value, text)=>{
@@ -175,11 +190,302 @@ const UnderInvestigation = () => {
         }).then(async (result) => {
             if (result.isConfirmed) {
 
+                var getTemplatePayload = {
+                    "page": 1,
+                    "limit": 0,
+                    "template_module": "pt_case",
+                }
+                
+                setLoading(true);
+        
+                try {
+                    const getTemplateResponse = await api.post("/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
+                    setLoading(false);
+        
+                    if (getTemplateResponse && getTemplateResponse.success) {
+                        
+                        if(getTemplateResponse.data && getTemplateResponse.data['meta']){
+        
+                            if (!getTemplateResponse.data['meta'].table_name || getTemplateResponse.data['meta'].table_name === '') {
+                                toast.warning('Please Check The Template', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-warning",
+                                });
+                                return;
+                            }
+        
+                            const viewTableData = {
+                                "table_name": getTemplateResponse.data['meta'].table_name
+                            }
+                            setLoading(true);
+        
+                                try {
+        
+                                    const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+        
+                                    setLoading(false);
+                                    if (viewTemplateResponse && viewTemplateResponse.success) {
+        
+                                        setFurtherInvestigationPtCase(true);
+                                        setOtherInitialTemplateData({});
+        
+                                        setOtherReadOnlyTemplateData(false);
+                                        setOtherEditTemplateData(false);
+        
+                                        setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                                        if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                                            setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                                        }
+        
+                                        setPtCaseTableName(getTemplateResponse.data['meta'].table_name);
+                                        setPtCaseTemplateName(getTemplateResponse.data['meta'].template_name);
+
+                                        setFurtherInvestigationSelectedRow(data);
+                                        setFurtherInvestigationSelectedValue(value);
+        
+                                    } else {
+                                        const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                                        toast.error(errorMessage, {
+                                            position: "top-right",
+                                            autoClose: 3000,
+                                            hideProgressBar: false,
+                                            closeOnClick: true,
+                                            pauseOnHover: true,
+                                            draggable: true,
+                                            progress: undefined,
+                                            className: "toast-error",
+                                        });
+                                    }
+        
+                                } catch (error) {
+                                    setLoading(false);
+                                    if (error && error.response && error.response['data']) {
+                                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                            position: "top-right",
+                                            autoClose: 3000,
+                                            hideProgressBar: false,
+                                            closeOnClick: true,
+                                            pauseOnHover: true,
+                                            draggable: true,
+                                            progress: undefined,
+                                            className: "toast-error",
+                                        });
+                                    }
+                                }
+                            }
+                        }
+        
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+
+
+                // var payloadSysStatus = {
+                //     "table_name" : table_name,
+                //     "data"  :   {  
+                //                     "id": data.id, 
+                //                     "sys_status": value,
+                //                     "default_status": "ui_case"
+                //                 }
+                // }
+
+                // setLoading(true);
+
+                // try {
+                //     const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+
+                //     setLoading(false);
+
+                //     if (chnageSysStatus && chnageSysStatus.success) { 
+                //         toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                //             position: "top-right",
+                //             autoClose: 3000,
+                //             hideProgressBar: false,
+                //             closeOnClick: true,
+                //             pauseOnHover: true,
+                //             draggable: true,
+                //             progress: undefined,
+                //             className: "toast-success",
+                //             onOpen: () => loadTableData(paginationCount)
+                //         });
+                //     } else {
+                //         const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
+                //         toast.error(errorMessage, {
+                //             position: "top-right",
+                //             autoClose: 3000,
+                //             hideProgressBar: false,
+                //             closeOnClick: true,
+                //             pauseOnHover: true,
+                //             draggable: true,
+                //             progress: undefined,
+                //             className: "toast-error",
+                //         });
+
+                //     }
+
+                // } catch (error) {
+                //     setLoading(false);
+                //     if (error && error.response && error.response['data']) {
+                //         toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                //             position: "top-right",
+                //             autoClose: 3000,
+                //             hideProgressBar: false,
+                //             closeOnClick: true,
+                //             pauseOnHover: true,
+                //             draggable: true,
+                //             progress: undefined,
+                //             className: "toast-error",
+                //         });
+
+                //     }
+                // }
+            } else {
+                console.log("sys status updation canceled.");
+            }
+        });
+
+    }
+
+    const furtherInvestigationPtCaseSave = async (data, alreadySavedApproval)=>{
+
+        if (!ptCaseTableName || ptCaseTableName === '') {
+            toast.warning('Please Check The Template', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning('Data Is Empty Please Check Once', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if(!alreadySavedApproval){
+            showApprovalPage(furtherInvestigationSelectedRow);
+            setTemplateApprovalData(data);
+            setTemplateApproval(true);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("table_name", ptCaseTableName);
+
+        var normalData = {}; // Non-file upload fields
+
+        optionFormTemplateData.forEach((field) => {
+
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    // Append file fields to formData
+                    if (field.type === 'file') {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
+                            var filteredArray = data[field.name].filter(file => file.filename instanceof File);
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename['name']
+                                    }
+                                });
+
+                                formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
+
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    // Add non-file fields to normalData
+                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
+                }
+            }
+        });
+        normalData.sys_status = 'ui_case';
+        normalData['ui_case_id'] = furtherInvestigationSelectedRow.id;
+        formData.append("data", JSON.stringify(normalData));
+        setLoading(true);
+
+        try {
+
+            var saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            setLoading(false);
+
+            localStorage.removeItem(selectedOtherTemplate.name + '-formData');
+
+            if (saveTemplateData && saveTemplateData.success) {
+
+                toast.success(saveTemplateData.message || "Data Created Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success"
+                });
+
+                setTemplateApprovalData({});
+                setTemplateApproval(false);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
+
+                setPtCaseTableName(null);
+                setShowPtCaseModal(false);
+                setOtherFormOpen(false);
+                setOptionStepperData([]);
+                setOptionFormTemplateData([]);
+
+
                 var payloadSysStatus = {
                     "table_name" : table_name,
                     "data"  :   {  
-                                    "id": data.id, 
-                                    "sys_status": value,
+                                    "id": furtherInvestigationSelectedRow.id, 
+                                    "sys_status": furtherInvestigationSelectedValue,
                                     "default_status": "ui_case"
                                 }
                 }
@@ -187,6 +493,7 @@ const UnderInvestigation = () => {
                 setLoading(true);
 
                 try {
+
                     const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
 
                     setLoading(false);
@@ -203,8 +510,21 @@ const UnderInvestigation = () => {
                             className: "toast-success",
                             onOpen: () => loadTableData(paginationCount)
                         });
+
+                        // reset states
+                        setSelectKey(null);
+                        setSelectedRow(null);
+                        setOtherTransferField([]);
+                        setShowOtherTransferModal(false);
+                        setSelectedOtherFields(null);
+                        setselectedOtherTemplate(null);
+
+                        setFurtherInvestigationPtCase(false);
+                        setFurtherInvestigationSelectedRow([]);
+                        setFurtherInvestigationSelectedValue(null);
+
                     } else {
-                        const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
+                        const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
                         toast.error(errorMessage, {
                             position: "top-right",
                             autoClose: 3000,
@@ -235,12 +555,34 @@ const UnderInvestigation = () => {
                     }
                 }
             } else {
-                console.log("sys status updation canceled.");
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
             }
-        });
-
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
     }
-
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
         if (!table_name || table_name === '') {
@@ -368,7 +710,7 @@ const UnderInvestigation = () => {
     useEffect(() => {
         loadTableData(paginationCount);
 
-    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, sysStatus])
+    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, sysStatus, forceTableLoad])
 
 
     const handleCheckboxChangeField = (event, row) => {
@@ -401,7 +743,10 @@ const UnderInvestigation = () => {
             "is_starred": starFlag,
             "is_read": readFlag,
             "template_module": "ui_case",
-            "sys_status" : sysStatus
+            "sys_status" : sysStatus,
+            "from_date": fromDateValue,
+            "to_date": toDateValue,
+            "filter": filterValues
         }
         
         setLoading(true);
@@ -1892,11 +2237,6 @@ const UnderInvestigation = () => {
         setPaginationCount((prev) => prev - 1)
     }
 
-    const handleClear = () => {
-        setSearchValue('');
-        loadTableData(paginationCount);
-    }
-
     const showIndivitualAttachment = async (attachmentName) => {
         if (showAttachmentKey['attachments'] && showAttachmentKey['attachments'].length > 0) {
             var payloadFile = showAttachmentKey['attachments'].filter((attachment) => attachment.attachment_name === attachmentName);
@@ -2037,13 +2377,14 @@ const UnderInvestigation = () => {
         }
     },[])
 
-
-    // Advance filter functions
-
-    const handleFilter = ()=> {
-        console.log("hello calling func")
-    }
-
+    function createSvgIcon(svgString) {
+        return () => (
+            <span
+                dangerouslySetInnerHTML={{ __html: svgString }}
+                className="tableActionIcon"
+            />
+        );
+    }    
 
     useEffect(()=>{
         const getActions = async ()=>{
@@ -2064,21 +2405,27 @@ const UnderInvestigation = () => {
 
                     if (getActionsDetails.data && getActionsDetails.data['data']) {
 
-                    var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
-                    const userPermissions = userPermissionsArray[0] || {}; 
-                    var updatedActions = getActionsDetails.data['data'].filter((action) => {
-                        if (action.permissions) {
-                            var parsedPermissions = JSON.parse(action.permissions);
-                    
-                            const hasValidPermission = parsedPermissions.some(
-                                (permission) => userPermissions[permission] === true
-                            );
-                    
-                            return hasValidPermission;
-                        }
-                    
-                        return true;
-                    });
+                        var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
+                        const userPermissions = userPermissionsArray[0] || {};
+
+                        var updatedActions = getActionsDetails.data['data'].map((action) => {
+
+                            if (action?.icon) {
+                                action.icon = createSvgIcon(action.icon);
+                            }
+                        
+                            if (action.permissions) {
+                                var parsedPermissions = JSON.parse(action.permissions);
+                        
+                                const hasValidPermission = parsedPermissions.some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                        
+                                return hasValidPermission ? action : null;
+                            }
+                        
+                            return action;
+                        }).filter(Boolean);
 
                         setHoverTableOptions(updatedActions);
                     }
@@ -2665,7 +3012,7 @@ const UnderInvestigation = () => {
 
         var payloadApproveData = {
             ...approvalSaveData,
-            "ui_case_id" : selectedRow.id,
+            "ui_case_id" : furtherInvestigationSelectedRow && furtherInvestigationSelectedRow.id ? furtherInvestigationSelectedRow.id : selectedRow.id,
             "transaction_id" : randomApprovalId
         }
 
@@ -2687,6 +3034,11 @@ const UnderInvestigation = () => {
                     progress: undefined,
                     className: "toast-success"
                 });
+
+                if(furtherInvestigationPtCase){
+                    furtherInvestigationPtCaseSave(templateApprovalData, true);
+                    return;
+                }
 
                 if((selectedOtherTemplate.field === null || selectedOtherTemplate.field === 'field_nature_of_disposal') && templateApproval){
                     otherTemplateSaveFunc(templateApprovalData, true);
@@ -3140,26 +3492,79 @@ const UnderInvestigation = () => {
         userPermissions[0]?.view_case
         ? {
             "name": "View",
-            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name),
+            "icon": () => (
+                <span className="tableActionViewIcon" style={{marginTop: '1px', marginRight: '12px', marginLeft: '2px'}}>
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path d="M12 4.5C7.305 4.5 3.125 7.498 1 12c2.125 4.502 6.305 7.5 11 7.5s8.875-2.998 11-7.5c-2.125-4.502-6.305-7.5-11-7.5zm0 13c-3.038 0-5.5-2.462-5.5-5.5s2.462-5.5 5.5-5.5 5.5 2.462 5.5 5.5-2.462 5.5-5.5 5.5zm0-9c-1.932 0-3.5 1.568-3.5 3.5s1.568 3.5 3.5 3.5 3.5-1.568 3.5-3.5-1.568-3.5-3.5-3.5z"/>
+                    </svg>
+                </span>
+            )
         }
         : null,
         userPermissions[0]?.edit_case
         ? {
             "name": "Edit",
-            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name),
+            "icon": () => (
+                <span className="tableActionIcon">
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 34 34"
+                        fill=""
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <circle cx="12" cy="12" r="12" fill=""/>
+                        <mask id="mask0_1120_40631" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
+                            <rect x="4" y="4" width="16" height="16" fill=""/>
+                        </mask>
+                        <g mask="url(#mask0_1120_40631)">
+                            <path d="M5.6001 20V17.4666H18.4001V20H5.6001ZM7.53343 15.1423V13.177L14.2399 6.4628C14.3365 6.36625 14.4368 6.29875 14.5409 6.2603C14.6452 6.22186 14.7524 6.20264 14.8628 6.20264C14.9774 6.20264 15.0856 6.22186 15.1873 6.2603C15.2889 6.29875 15.3865 6.3638 15.4801 6.45547L16.2129 7.18464C16.3053 7.28119 16.3717 7.3803 16.4123 7.48197C16.4528 7.58375 16.4731 7.69325 16.4731 7.81047C16.4731 7.91769 16.4531 8.02453 16.4131 8.13097C16.3731 8.23753 16.308 8.33586 16.2179 8.42597L9.5001 15.1423H7.53343ZM14.7438 8.67314L15.6064 7.8103L14.8654 7.0693L14.0026 7.93197L14.7438 8.67314Z" fill=""/>
+                        </g>
+                    </svg>
+                </span>
+            )
         }
         : null,
         userPermissions[0]?.delete_case
         ? {
             "name": "Delete",
-            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
+            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name),
+            "icon": () => (
+                <span className="tableActionIcon">
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 34 34"
+                        fill=""
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <circle cx="12" cy="12" r="12" fill="" />
+                        <mask id="mask0_1120_40636" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
+                            <rect x="4" y="4" width="16" height="16" fill="" />
+                        </mask>
+                        <g mask="url(#mask0_1120_40636)">
+                            <path d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z" fill="" />
+                        </g>
+                    </svg>
+                </span>
+            )
         }
         : null,
-        ...hoverTableOptions,
-        ...(sysStatus === 'ui_case' || sysStatus === 'all' ? [{
+        ...hoverTableOptions,    
+        sysStatus === 'ui_case' || sysStatus === 'all' ? 
+        {
             "name": "Further Investigation 173(8) Case",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, '178_cases', 'Do you want to update this case to 173(8) ?')
-        }] : []),
+        }
+        : null,
 
         sysStatus === 'disposal'
         ? 
@@ -3175,6 +3580,195 @@ const UnderInvestigation = () => {
         
     ].filter(Boolean);
 
+        // Advance filter functions
+
+        const handleFilter = async () => {
+
+            const viewTableData = {
+                "table_name": table_name
+            }
+    
+            setLoading(true);
+            try {
+    
+                const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+                setLoading(false);
+    
+                if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+    
+                    var templateFields = viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []
+    
+                    var validFilterFields = ["dropdown", "autocomplete", "multidropdown"]
+    
+                    var getOnlyDropdown = templateFields
+                        .filter((element) => validFilterFields.includes(element.type))
+                        .map((field) => {
+                            const existingField = filterDropdownObj?.find((item) => item.name === field.name);
+                            return {
+                                ...field,
+                                history: false,
+                                info: false,
+                                required: false,
+                                ...(field.is_dependent === 'true' && {
+                                    options: existingField?.options ? [...existingField.options] : [],
+                                }),
+                            };
+                        });
+    
+                    // const today = dayjs().format("YYYY-MM-DD");
+    
+                    setfilterDropdownObj(getOnlyDropdown);
+                    // if(fromDateValue == null || toDateValue === null){
+                    //     setFromDateValue(today);
+                    //     setToDateValue(today);
+                    // }
+    
+                    setShowFilterModal(true);
+    
+                } else {
+                    const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+    
+    
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+        }
+
+        const handleClear = () => {
+            setSearchValue('');
+            setFilterValues({});
+            setFromDateValue(null);
+            setToDateValue(null);
+            setForceTableLoad((prev) => !prev);
+        };
+
+        const setFilterData = () => {
+            setPaginationCount(1);
+            setShowFilterModal(false);
+            setForceTableLoad((prev) => !prev);
+        }
+
+        const handleAutocomplete = (field, selectedValue) => {
+
+            let updatedFormData = { ...filterValues, [field.name]: selectedValue };
+    
+            setFilterValues(updatedFormData);
+    
+            if (field?.api && field?.table) {
+    
+                var dependent_field = filterDropdownObj.filter((element) => {
+                    return (
+                        element.dependent_table &&
+                        element.dependent_table.length > 0 &&
+                        element.dependent_table.includes(field.table)
+                    );
+                });
+    
+                if (dependent_field && dependent_field[0] && dependent_field[0].api) {
+                    var apiPayload = {}
+                    if (dependent_field[0].dependent_table.length === 1) {
+    
+                        const key = field.table === 'units' ? 'unit_id' : `${field.table}_id`;
+                        apiPayload = {
+                            [key]: updatedFormData[field.name]
+                        }
+    
+                    } else {
+    
+                        var dependentFields = filterDropdownObj.filter((element) => {
+                            return dependent_field[0].dependent_table.includes(element.table)
+                        })
+    
+                        apiPayload = dependentFields.reduce((payload, element) => {
+                            if (updatedFormData && updatedFormData[element.name]) {
+                                const key = element.table === 'units' ? 'unit_id' : `${element.table}_id`;
+                                payload[key] = updatedFormData[element.name];
+                            }
+                            return payload;
+                        }, {});
+                    }
+    
+                    const callApi = async () => {
+                        setLoading(true);
+    
+                        try {
+                            var getOptionsValue = await api.post(dependent_field[0].api, apiPayload);
+                            setLoading(false);
+    
+                            var updatedOptions = []
+    
+                            if (getOptionsValue && getOptionsValue.data) {
+                                updatedOptions = getOptionsValue.data.map((element, i) => {
+                                    return {
+                                        name: element[dependent_field[0].table === 'units' ? 'unit_name' : dependent_field[0].table + '_name'],
+                                        code: element[dependent_field[0].table === 'units' ? 'unit_id' : dependent_field[0].table + '_id']
+                                    }
+                                })
+                            }
+    
+                            var userUpdateFields = {
+                                options: updatedOptions
+                            }
+    
+                            setfilterDropdownObj(filterDropdownObj.map((element) =>
+                                (element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                            ));
+    
+                            dependent_field.map((data) => {
+                                delete filterValues[data.name]
+                            });
+    
+                            dependent_field.forEach((data) => {
+                                delete updatedFormData[data.name];
+                            });
+    
+                            setFilterValues(updatedFormData);
+    
+                        } catch (error) {
+                            setLoading(false);
+                            if (error && error.response && error.response.data) {
+                                toast.error(error.response?.data?.message || 'Need dependent Fields', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+                        }
+                    }
+                    callApi()
+                }
+            }
+        }
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -3187,44 +3781,54 @@ const UnderInvestigation = () => {
                             </Typography>
                         </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <TextFieldInput InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon sx={{ color: '#475467' }} />
-                            </InputAdornment>
-                        ),
-                        endAdornment: (
-                            searchValue && (
-                                <IconButton sx={{ padding: 0 }} onClick={handleClear} size="small">
-                                    <ClearIcon sx={{ color: '#475467' }} />
-                                </IconButton>
-                            )
-                        )
-                    }}
-                        onInput={(e) => setSearchValue(e.target.value)}
-                        value={searchValue}
-                        id="tableSearch"
-                        size="small"
-                        placeholder='Search anything'
-                        variant="outlined"
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                e.preventDefault();
-                                loadTableData(paginationCount, e.target.value);
-                            }
-                        }}
-                        sx={{
-                            width: '300px', borderRadius: '6px', outline: 'none',
-                            '& .MuiInputBase-input::placeholder': {
-                                color: '#475467',
-                                opacity: '1',
-                                fontSize: '14px',
-                                fontWeight: '400',
-                                fontFamily: 'Roboto'
-                            },
-                        }}
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                        <TextFieldInput 
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: '#475467' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        <IconButton sx={{ padding: '0 5px', borderRadius: '0' }} onClick={handleFilter}>
+                                            <FilterListIcon sx={{ color: '#475467' }} />
+                                        </IconButton>
+                                    </Box>
+                                )
+                            }}
+                            onInput={(e) => setSearchValue(e.target.value)}
+                            value={searchValue}
+                            id="tableSearch"
+                            size="small"
+                            placeholder='Search anything'
+                            variant="outlined"
+                            className="profileSearchClass"
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    loadTableData(paginationCount, e.target.value);
+                                }
+                            }}
+                            sx={{
+                                width: '300px', borderRadius: '6px', outline: 'none',
+                                '& .MuiInputBase-input::placeholder': {
+                                    color: '#475467',
+                                    opacity: '1',
+                                    fontSize: '14px',
+                                    fontWeight: '400',
+                                    fontFamily: 'Roboto'
+                                },
+                            }}
+                        />
+                        {(searchValue || fromDateValue || toDateValue || Object.keys(filterValues).length > 0) && (
+                            <Typography onClick={handleClear} sx={{ fontSize: '13px', fontWeight: '500', textDecoration: 'underline', cursor: 'pointer' }} mt={1}>
+                                Clear Filter
+                            </Typography>
+                        )}
+                    </Box>
+
                       {isCheckboxSelected && (
                         <>
                             <Button
@@ -3792,6 +4396,261 @@ const UnderInvestigation = () => {
                 </DialogActions>
             </Dialog>
 
+            {showFilterModal &&
+                <Dialog
+                    open={showFilterModal}
+                    onClose={() => setShowFilterModal(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
+                        Filter
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setShowFilterModal(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ minWidth: '400px' }}>
+                        <DialogContentText id="alert-dialog-description">
+                            <Grid container sx={{ alignItems: 'center' }}>
+
+                                <Grid item xs={12} md={6} p={2}>
+
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DatePicker
+                                            format="DD-MM-YYYY"
+                                            sx={{
+                                                width: '100%',
+                                            }}
+                                            label="From Date"
+                                            value={fromDateValue ? dayjs(fromDateValue) : null}
+                                            onChange={(e) => setFromDateValue(e ? e.format("YYYY-MM-DD") : null)}
+                                        />
+                                    </LocalizationProvider>
+
+                                </Grid>
+
+                                <Grid item xs={12} md={6} p={2}>
+
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DatePicker
+                                            format="DD-MM-YYYY"
+                                            sx={{
+                                                width: '100%',
+                                            }}
+                                            label="To Date"
+                                            value={toDateValue ? dayjs(toDateValue) : null}
+                                            onChange={(e) => setToDateValue(e ? e.format("YYYY-MM-DD") : null)}
+                                        />
+                                    </LocalizationProvider>
+
+                                </Grid>
+
+                                {
+                                    filterDropdownObj.map((field) => {
+                                        switch (field.type) {
+                                            case 'dropdown':
+                                                return (
+                                                    <Grid item xs={12} md={6} p={2}>
+                                                        <div className='form-field-wrapper_selectedField'>
+                                                            <SelectField
+                                                                key={field.id}
+                                                                field={field}
+                                                                formData={filterValues}
+                                                                onChange={(value) => handleAutocomplete(field, value.target.value)} />
+                                                        </div>
+                                                    </Grid>
+                                                );
+
+                                            case "multidropdown":
+                                                return (
+                                                    <Grid item xs={12} md={6} p={2}>
+                                                        <MultiSelect
+                                                            key={field.id}
+                                                            field={field}
+                                                            formData={filterValues}
+                                                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                        />
+                                                    </Grid>
+                                                );
+
+                                            case "autocomplete":
+                                                return (
+                                                    <Grid item xs={12} md={6} p={2}>
+                                                        <AutocompleteField
+                                                            key={field.id}
+                                                            field={field}
+                                                            formData={filterValues}
+                                                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                        />
+                                                    </Grid>
+                                                )
+                                        }
+                                    })
+                                }
+                            </Grid>
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: '12px 24px' }}>
+                        <Button onClick={() => setShowFilterModal(false)}>Close</Button>
+                        <Button className="fillPrimaryBtn" sx={{ minWidth: '100px' }} onClick={() => setFilterData()}>Apply</Button>
+                    </DialogActions>
+                </Dialog>
+            }
+
+            {approveTableFlag &&
+                <Dialog
+                    open={approveTableFlag}
+                    onClose={() => setApproveTableFlag(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="lg"
+                    fullWidth
+                    sx={{zIndex:'1'}}
+                >
+                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
+                        Approval
+                        <Box>
+                            {
+                                !addApproveFlag ? 
+                                    <Button variant="outlined" onClick={() => {showApprovalAddPage(selectedOtherTemplate.table)}}>Add</Button>
+                                :
+                                    <Button variant="outlined" onClick={() => {saveApprovalData(selectedOtherTemplate.table)}}>Save</Button>
+                            }
+                            <IconButton
+                                aria-label="close"
+                                onClick={() => setApproveTableFlag(false)}
+                                sx={{ color: (theme) => theme.palette.grey[500] }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </Box>
+
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            <Box py={2}>
+                                {
+                                    !addApproveFlag ?
+                                        <TableView rows={approvalsData} columns={approvalsColumn} />
+                                    :
+                                    <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
+
+                                        <Autocomplete
+                                            id=""
+                                            options={approvalItem}
+                                            getOptionLabel={(option) => option.name || ''}
+                                            name={'approval_item'}
+                                            disabled={approvalItemDisabled}
+                                            value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData && approvalSaveData['approval_item'])) || null}
+                                            onChange={(e,value)=>handleApprovalSaveData('approval_item',value?.approval_item_id)}
+                                            renderInput={(params) =>
+                                                <TextField
+                                                    {...params}
+                                                    className='selectHideHistory'
+                                                    label={'Approval Item'}
+                                                />
+                                            }
+                                        />
+
+                                        <Autocomplete
+                                            id=""
+                                            options={designationData}
+                                            getOptionLabel={(option) => option.designation_name || ''}
+                                            name={'approved_by'}
+                                            value={designationData.find((option) => option.designation_id === (approvalSaveData && approvalSaveData['approved_by'])) || null}
+                                            onChange={(e,value)=>handleApprovalSaveData('approved_by',value?.designation_id)}
+                                            renderInput={(params) =>
+                                                <TextField
+                                                    {...params}
+                                                    className='selectHideHistory'
+                                                    label={'Designation'}
+                                                />
+                                            }
+                                        />
+
+                                        <LocalizationProvider dateAdapter={AdapterDayjs} sx={{width:'100%'}}>
+                                            <DemoContainer components={['DatePicker']} sx={{width:'100%'}}>
+                                                <DatePicker 
+                                                    label="Approval Date" 
+                                                    value={approvalSaveData['approval_date'] ? dayjs(approvalSaveData['approval_date']) : null} 
+                                                    name="approval_date" 
+                                                    format="DD/MM/YYYY"
+                                                    sx={{width:'100%'}}
+                                                    onChange={(newValue) => {
+                                                        if (newValue && dayjs.isDayjs(newValue)) {
+                                                            handleApprovalSaveData("approval_date", newValue.toISOString());
+                                                        } else {
+                                                            handleApprovalSaveData("approval_date", null);
+                                                        }
+                                                    }}
+                                                />
+                                            </DemoContainer>
+                                        </LocalizationProvider>
+
+                                        <TextField
+                                            rows={8}
+                                            label={'Comments'}
+                                            sx={{width:'100%'}}
+                                            name="remarks"
+                                            value={approvalSaveData['remarks']}
+                                            onChange={(e)=>handleApprovalSaveData('remarks', e.target.value)}
+                                        />
+
+                                    </Box>
+                                }
+                            </Box>
+                        </DialogContentText>
+                    </DialogContent>
+                </Dialog>
+            }
+
+            {furtherInvestigationPtCase &&
+                <Dialog
+                    open={furtherInvestigationPtCase}
+                    onClose={() => {setOtherFormOpen(false);}}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="xl"
+                    fullWidth
+                >
+                    <DialogContent sx={{ minWidth: '400px' }}>
+                        <DialogContentText id="alert-dialog-description">
+                            <FormControl fullWidth>
+                                <NormalViewForm
+
+                                    table_row_id={otherRowId}
+                                    template_id={otherTemplateId}
+
+                                    template_name={showPtCaseModal ? ptCaseTemplateName : selectedOtherTemplate?.name}
+                                    table_name={showPtCaseModal ? ptCaseTableName : selectedOtherTemplate?.table}
+
+                                    readOnly={otherReadOnlyTemplateData}
+                                    editData={otherEditTemplateData}
+
+                                    initialData={otherInitialTemplateData}
+
+                                    formConfig={optionFormTemplateData}
+                                    stepperData={optionStepperData}
+
+                                    onSubmit={furtherInvestigationPtCaseSave}
+                                    onError={onSaveTemplateError}
+                                    closeForm={setOtherFormOpen} 
+
+                                />
+                            </FormControl>
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: '12px 24px' }}>
+                        <Button onClick={() => setOtherFormOpen(false)}>Cancel</Button>
+                    </DialogActions>
+                </Dialog>
+            }
 
         </Box>
     )
