@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TextField, Button, Box, Typography , Divider , Link } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import cidLogo from "../Images/cid_logo.png";
 import OTPInputComponent from '../components/otp';
@@ -13,6 +14,7 @@ import { CircularProgress } from "@mui/material";
 const Login = () => {
     const [kgid, setKGID] = useState('');
     const [pin, setPin] = useState('');
+    const [confirmPin, setConfirmPin] = useState('');
     const [otp, setOtp] = useState('');
     const [validationError, setValidationError] = useState('');
     const [loading, setLoading] = useState(false); // State for loading indicator
@@ -21,7 +23,9 @@ const Login = () => {
     const [showDesignation, setShowDesignation] = useState(false);
     const [user_position, setUserPosition] = useState([]);
     const [tempToken, setTempToken] = useState('');
-    
+    const [forgotPassword, setForgotPassword] = useState(false);
+    const [forgotVerifyOtp, setForgotVerifyOtp] = useState(false);
+    const [forgotPin, setForgotPin] = useState(false);
     const handleSubmit = async (e) => {
         setValidationError('');
         e.preventDefault();
@@ -61,6 +65,134 @@ const Login = () => {
             setValidationError(errMessage);
         }
     }
+    const handleForgotPin = async (e) => {
+        setValidationError('');
+        e.preventDefault();
+        setLoading(true);
+       
+        try {
+           
+            if(!kgid || isNaN(kgid)){
+                setValidationError('Please enter valid KGID');
+                setLoading(false);
+                return;
+            }
+
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(`${serverURL}/auth/generate_OTP_without_pin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ kgid: kgid}),
+            });
+            
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+            setShowOtp(false);
+            setForgotVerifyOtp(true);
+            setForgotPassword(false);
+            setLoading(false);
+        } catch (err) {
+            //in err Error: You have exceeded the maximum number of attempts
+            setLoading(false);
+            setLoading(false);
+            var errMessage = 'Something went wrong. Please try again.'
+            if(err && err.message){
+                errMessage = err.message;
+            }
+            setValidationError(errMessage);
+        }
+    }
+    
+
+    const handleforgotOtpVerify = async (e) => {
+        setValidationError('');
+        e.preventDefault();
+        setLoading(true);
+       
+        try {
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(`${serverURL}/auth/verify_OTP_without_pin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ kgid: kgid, otp: otp }),
+            });
+            
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+            setShowOtp(false);
+            setForgotVerifyOtp(false);
+            setForgotPassword(false);
+            setForgotPin(true);
+            setLoading(false);
+        } catch (err) {
+            //in err Error: You have exceeded the maximum number of attempts
+            setLoading(false);
+            setLoading(false);
+            var errMessage = 'Something went wrong. Please try again.'
+            if(err && err.message){
+                errMessage = err.message;
+            }
+            setValidationError(errMessage);
+        }
+    }
+
+    const handleforgotPinLogin = async (e) => {
+        setValidationError('');
+        e.preventDefault();
+        setLoading(true);
+    
+        try {
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(`${serverURL}/auth/update_pin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ kgid: kgid, pin: pin }),
+            });
+    
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+            if(response && response.success){
+            toast.success(response.message || "PIN updated successfully", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-success",
+            });
+            }
+            setTimeout(() => {
+                setShowOtp(false);
+                setForgotVerifyOtp(false);
+                setForgotPassword(false);
+                setForgotPin(false);
+                setConfirmPin('');
+                setPin('');
+                setKGID('');
+                setOtp('');
+                setLoading(false);
+                navigate('/dashboard');
+            }, 3000);
+        } catch (err) {
+            setLoading(false);
+            const errMessage = err?.message || 'Something went wrong. Please try again.';
+            setValidationError(errMessage);
+        }
+    };    
 
     const verifyOtp = async (e) => {
         setValidationError('');
@@ -219,7 +351,7 @@ const Login = () => {
                     <Divider sx={{ marginTop: 1 }} />
                 </Box>
                 {validationError && <Typography color="error">{validationError}</Typography>}
-                { !showOtp && <form onSubmit={handleSubmit}>
+                { !showOtp && !forgotPassword && !forgotVerifyOtp && !forgotPin && <form onSubmit={handleSubmit}>
                     <TextField
                         label="KGID"
                         variant="outlined"
@@ -242,6 +374,21 @@ const Login = () => {
                         Generate OTP
                     </Button>
                 </form> }
+                {!showOtp && forgotPassword && (
+                    <form onSubmit={handleForgotPin}>
+                        <TextField
+                            label="KGID"
+                            variant="outlined"
+                            fullWidth
+                            margin="normal"
+                            value={kgid}
+                            onChange={(e) => setKGID(e.target.value)}
+                        />
+                        <Button type="submit" variant="contained" fullWidth sx={{ marginTop: 2 }}>
+                            Generate OTP
+                        </Button>
+                    </form>
+                )}
 
                 { showOtp && <form onSubmit={verifyOtp}>
                     <Typography className='poppins' align="left" variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
@@ -253,7 +400,44 @@ const Login = () => {
                         Login
                     </Button>
                 </form> }
-                { !showOtp && <Box
+                { !showOtp && forgotVerifyOtp && <form onSubmit={handleforgotOtpVerify}>
+                    <Typography className='poppins' align="left" variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
+                        Enter OTP
+                    </Typography>
+                    <OTPInputComponent length={6} value={otp} onChange={setOtp} />
+                  
+                    <Button type="submit" variant="contained" fullWidth sx={{ marginTop: 2 }}>
+                        Verify Otp
+                    </Button>
+                </form> }
+
+                { !showOtp && !forgotPassword && !forgotVerifyOtp && forgotPin && <form onSubmit={handleforgotPinLogin}>
+                    <TextField
+                        label="PIN"
+                        type="password"
+                        variant="outlined"
+                        fullWidth
+                        margin="normal"
+                        value={pin}
+                        onChange={(e) => setPin(e.target.value)}
+                    />
+                    <TextField
+                        label="Confirm PIN"
+                        type="password"
+                        variant="outlined"
+                        fullWidth
+                        margin="normal"
+                        value={confirmPin}
+                        onChange={(e) => setConfirmPin(e.target.value)}
+                    />
+
+                    <Button type="submit" variant="contained" fullWidth sx={{ marginTop: 2 }}>
+                        Update Pin
+                    </Button>
+
+                </form> }
+
+                { !showOtp && !forgotPassword && !forgotVerifyOtp && !forgotPin && <Box
                     sx={{
                         padding: 1,
                         display: "flex",
@@ -263,11 +447,31 @@ const Login = () => {
                         marginTop: 2,
                     }}
                     >
-                        <Link href="#" underline="none">
-                            {'Forgot Password?'}
+                       <Link href="#" underline="none" onClick={() => setForgotPassword(true)}>
+                            {'Forgot Pin?'}
                         </Link>
                        
                     </Box> }
+                { !showOtp && forgotPassword && <Box
+                    sx={{
+                        padding: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "end",
+                        borderBottom: "1px solid #D0D5DD",
+                        marginTop: 2,
+                    }}
+                >
+                    <Link 
+                        href="#" 
+                        underline="none" 
+                        onClick={() => setForgotPassword(false)}
+                        sx={{ color: "red" }}auth
+                    >
+                        {'Cancel'}
+                    </Link>
+                       
+                </Box> }    
 
                 {  showOtp && <Box
                     sx={{
