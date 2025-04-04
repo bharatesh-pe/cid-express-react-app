@@ -11,6 +11,8 @@ exports.create_ui_case_approval = async (req, res) => {
     approval_date,
     remarks,
     ui_case_id,
+    pt_case_id,
+    eq_case_id,
     transaction_id,
   } = req.body;
 
@@ -53,7 +55,9 @@ exports.create_ui_case_approval = async (req, res) => {
         approved_by,
         approval_date: approval_date || new Date(), // Use current date if not provided
         remarks,
-        ui_case_id,
+        pt_case_id: pt_case_id || null,
+        eq_case_id: eq_case_id || null,
+        ui_case_id: ui_case_id || null,
       },
       { transaction: t }
     );
@@ -68,9 +72,9 @@ exports.create_ui_case_approval = async (req, res) => {
     if (t.finished !== "rollback") {
       await t.rollback();
     }
-    console.error("Error creating UiCaseApproval:", error);
+    console.error("Error creating Approval:", error);
     return res.status(500).json({
-      message: "Failed to create UiCaseApproval",
+      message: "Failed to create Approval",
       error: error.message,
     });
   } finally {
@@ -86,24 +90,17 @@ exports.get_ui_case_approvals = async (req, res) => {
     const { ui_case_id, pt_case_id, eq_case_id } = req.body;
     let whereCondition = {};
 
+    // Dynamically add conditions
     if (ui_case_id) {
-      whereCondition: {
-        ui_case_id: ui_case_id;
-      }
-    } else if (pt_case_id) {
-      whereCondition: {
-        pt_case_id: pt_case_id;
-      }
-    } else if (eq_case_id) {
-      whereCondition: {
-        eq_case_id: eq_case_id;
-      }
-    } else {
-      return res.status(400).json({
-        success: false,
-        message: "Please provide either ui_case_id, pt_case_id or eq_case_id",
-      });
+      whereCondition.ui_case_id = ui_case_id;
     }
+    if (pt_case_id) {
+      whereCondition.pt_case_id = pt_case_id;
+    }
+    if (eq_case_id) {
+      whereCondition.eq_case_id = eq_case_id;
+    }
+
     const approvals = await UiCaseApproval.findAll({
       include: [
         {
@@ -150,9 +147,9 @@ exports.get_ui_case_approvals = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching UiCaseApprovals:", error);
+    console.error("Error fetching Approvals:", error);
     return res.status(500).json({
-      message: "Failed to fetch UiCaseApprovals",
+      message: "Failed to fetch Approvals",
       error: error.message,
     });
   }
