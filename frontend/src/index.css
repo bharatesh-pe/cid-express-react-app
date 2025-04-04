@@ -908,3 +908,53 @@ div::first-letter {
     .FigmaTableView .MuiDataGrid-main .MuiDataGrid-virtualScroller {
         overflow: auto !important;
     }
+
+    .activeIconSelect svg{
+        fill: #E46E0B !important;
+    }
+
+    .normalViewIconSelect svg{
+        fill: #D9D9D9 !important;
+        font-size: 22px !important;
+    }
+
+    .activeIconSelect svg g{
+        fill: #FFFFFF !important;
+    }
+
+    .normalViewIconSelect svg g{
+        fill: #1C1B1F !important;
+    }
+
+    .tableActionIcon svg{
+        fill: #FFFFFF !important;
+        width: 50px !important;
+        height: 50px !important;
+    }
+
+    .tableActionIcon svg g{
+        fill: #1C1B1F !important;
+    }
+
+    .actionHoverOnTable:hover .tableActionIcon svg{
+        fill: #E46E0B !important;
+    }
+    .actionHoverOnTable:hover .tableActionIcon svg g {
+        fill: #FFFFFF !important;
+    }
+    .actionHoverOnTable:hover{
+        background: #F7EFE8 !important;
+    }
+
+    .tableActionViewIcon svg{
+        fill: #1C1B1F !important;
+        width: 25px !important;
+        height: 25px !important;
+        padding: 3px;
+    }
+
+    .actionHoverOnTable:hover .tableActionViewIcon svg{
+        fill: #FFFFFF !important;
+        background-color: #E46E0B !important;
+        border-radius: 50%;
+    }

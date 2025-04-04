@@ -2325,6 +2325,14 @@ const UnderInvestigation = () => {
         }
     },[])
 
+    function createSvgIcon(svgString) {
+        return () => (
+            <span
+                dangerouslySetInnerHTML={{ __html: svgString }}
+                className="tableActionIcon"
+            />
+        );
+    }    
 
     useEffect(()=>{
         const getActions = async ()=>{
@@ -2345,21 +2353,27 @@ const UnderInvestigation = () => {
 
                     if (getActionsDetails.data && getActionsDetails.data['data']) {
 
-                    var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
-                    const userPermissions = userPermissionsArray[0] || {}; 
-                    var updatedActions = getActionsDetails.data['data'].filter((action) => {
-                        if (action.permissions) {
-                            var parsedPermissions = JSON.parse(action.permissions);
-                    
-                            const hasValidPermission = parsedPermissions.some(
-                                (permission) => userPermissions[permission] === true
-                            );
-                    
-                            return hasValidPermission;
-                        }
-                    
-                        return true;
-                    });
+                        var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
+                        const userPermissions = userPermissionsArray[0] || {};
+
+                        var updatedActions = getActionsDetails.data['data'].map((action) => {
+
+                            if (action?.icon) {
+                                action.icon = createSvgIcon(action.icon);
+                            }
+                        
+                            if (action.permissions) {
+                                var parsedPermissions = JSON.parse(action.permissions);
+                        
+                                const hasValidPermission = parsedPermissions.some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                        
+                                return hasValidPermission ? action : null;
+                            }
+                        
+                            return action;
+                        }).filter(Boolean);
 
                         setHoverTableOptions(updatedActions);
                     }
@@ -3445,22 +3459,73 @@ const UnderInvestigation = () => {
         userPermissions[0]?.view_case
         ? {
             "name": "View",
-            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name),
+            "icon": () => (
+                <span className="tableActionViewIcon" style={{marginTop: '1px', marginRight: '12px', marginLeft: '2px'}}>
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path d="M12 4.5C7.305 4.5 3.125 7.498 1 12c2.125 4.502 6.305 7.5 11 7.5s8.875-2.998 11-7.5c-2.125-4.502-6.305-7.5-11-7.5zm0 13c-3.038 0-5.5-2.462-5.5-5.5s2.462-5.5 5.5-5.5 5.5 2.462 5.5 5.5-2.462 5.5-5.5 5.5zm0-9c-1.932 0-3.5 1.568-3.5 3.5s1.568 3.5 3.5 3.5 3.5-1.568 3.5-3.5-1.568-3.5-3.5-3.5z"/>
+                    </svg>
+                </span>
+            )
         }
         : null,
         userPermissions[0]?.edit_case
         ? {
             "name": "Edit",
-            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name),
+            "icon": () => (
+                <span className="tableActionIcon">
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 34 34"
+                        fill=""
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <circle cx="12" cy="12" r="12" fill=""/>
+                        <mask id="mask0_1120_40631" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
+                            <rect x="4" y="4" width="16" height="16" fill=""/>
+                        </mask>
+                        <g mask="url(#mask0_1120_40631)">
+                            <path d="M5.6001 20V17.4666H18.4001V20H5.6001ZM7.53343 15.1423V13.177L14.2399 6.4628C14.3365 6.36625 14.4368 6.29875 14.5409 6.2603C14.6452 6.22186 14.7524 6.20264 14.8628 6.20264C14.9774 6.20264 15.0856 6.22186 15.1873 6.2603C15.2889 6.29875 15.3865 6.3638 15.4801 6.45547L16.2129 7.18464C16.3053 7.28119 16.3717 7.3803 16.4123 7.48197C16.4528 7.58375 16.4731 7.69325 16.4731 7.81047C16.4731 7.91769 16.4531 8.02453 16.4131 8.13097C16.3731 8.23753 16.308 8.33586 16.2179 8.42597L9.5001 15.1423H7.53343ZM14.7438 8.67314L15.6064 7.8103L14.8654 7.0693L14.0026 7.93197L14.7438 8.67314Z" fill=""/>
+                        </g>
+                    </svg>
+                </span>
+            )
         }
         : null,
         userPermissions[0]?.delete_case
         ? {
             "name": "Delete",
-            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
+            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name),
+            "icon": () => (
+                <span className="tableActionIcon">
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 34 34"
+                        fill=""
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <circle cx="12" cy="12" r="12" fill="" />
+                        <mask id="mask0_1120_40636" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
+                            <rect x="4" y="4" width="16" height="16" fill="" />
+                        </mask>
+                        <g mask="url(#mask0_1120_40636)">
+                            <path d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z" fill="" />
+                        </g>
+                    </svg>
+                </span>
+            )
         }
         : null,
-        ...hoverTableOptions,
+        ...hoverTableOptions,    
         sysStatus === 'ui_case' || sysStatus === 'all' ? 
         {
             "name": "Further Investigation 173(8) Case",
