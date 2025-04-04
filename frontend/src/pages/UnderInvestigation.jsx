@@ -108,9 +108,8 @@ const UnderInvestigation = () => {
             { field: 'sl_no', headerName: 'S.No' }
         ]
     );
-
+    const [hasPdfEntry, setHasPdfEntry] = useState(false);
     const [hoverTableOptions, setHoverTableOptions] = useState([]);
-
     const [otherTablePagination, setOtherTablePagination] = useState(1)
 
     // for actions
@@ -160,6 +159,7 @@ const UnderInvestigation = () => {
     const [ptCaseTemplateName, setPtCaseTemplateName] = useState(null);
 
     const [selectedRowData, setSelectedRowData] = useState(null);
+    const [uploadedFiles, setUploadedFiles] = useState([]);
 
     // change sys_status
 
@@ -930,7 +930,6 @@ const UnderInvestigation = () => {
         try {
 
             const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
-            console.log("viewTemplateResponseviewTemplateResponse",viewTemplateResponse)
 
             setLoading(false);
             if (viewTemplateResponse && viewTemplateResponse.success) {
@@ -991,9 +990,64 @@ const UnderInvestigation = () => {
             }
         }
     }
+    const prUpdatePdf = async (data) => {
+        try {
+            setLoading(true);
+    
+            const parsedAppendText = JSON.parse(data.appendText);
+    
+            const payload = {
+                ui_case_id: parsedAppendText[0]?.field_ui_case_id,
+                appendText: JSON.stringify(parsedAppendText),
+            };
 
+            const saveTemplateData = await api.post("/templateData/appendToLastLineOfPDF", payload);
+    
+            setLoading(false);
+    
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data appended successfully.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+                setOtherTemplateModalOpen(false)
+            } else {
+                const errorMessage = saveTemplateData.message || "Failed to append data. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error?.response?.data) {
+                toast.error(error.response.data.message || "Please try again!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+       
     const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
-
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
             toast.warning('Please Check The Template', {
                 position: "top-right",
@@ -1070,6 +1124,10 @@ const UnderInvestigation = () => {
                 }
             }
         });
+
+        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+            normalData['field_pr_status'] = "No";
+        }
         normalData.sys_status = 'ui_case';
         normalData['ui_case_id'] = selectedRowData.id;
         formData.append("data", JSON.stringify(normalData));
@@ -1077,12 +1135,7 @@ const UnderInvestigation = () => {
 
         try {
             let saveTemplateData;
-            if (isUpdatePdf) {
-                const appendText = JSON.stringify(normalData);
-                saveTemplateData = await api.post("/templateData/appendToLastLineOfPDF", { ui_case_id: selectedRowData.id, appendText });
-            }else {
-                saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
-            }            
+            saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
             setLoading(false);
 
             localStorage.removeItem(selectedOtherTemplate.name + '-formData');
@@ -1103,7 +1156,6 @@ const UnderInvestigation = () => {
 
                 setTemplateApprovalData({});
                 setTemplateApproval(false);
-                setIsUpdatePdf(false);
                 setAddApproveFlag(false);
                 setApproveTableFlag(false);
                 setApprovalSaveData({});
@@ -2071,7 +2123,6 @@ const UnderInvestigation = () => {
     
 
     const handleFileUpload = async (event) => {
-        console.log("File upload initiated.");
         setLoading(true)
         const file = event.target.files[0];
     
@@ -2081,7 +2132,6 @@ const UnderInvestigation = () => {
         }
     
         if (!selectedRowData || !selectedRowData.id) {
-            console.log("Invalid selectedRow inside handleFileUpload:", selectedRowData);
             Swal.fire("Error", "Invalid case ID.", "error");
             return;
         }
@@ -2112,42 +2162,27 @@ const UnderInvestigation = () => {
         }
     };
     
-    const [uploadedFiles, setUploadedFiles] = useState([]);
-
     const getUploadedFiles = async (selectedRow) => {
-        console.log("for getting uploaded files", selectedRow)
         if (!selectedRow || !selectedRow.id) {
             console.error("Invalid selectedRow for file retrieval:", selectedRow);
             return;
         }
-    
         try {
             const response = await api.post("/templateData/getUploadedFiles", { ui_case_id: selectedRow.id });
     
             if (response && response.success) {
-                console.log("Uploaded files:", response.data);
                 setUploadedFiles(response.data);
-                console.error("Failed to fetch uploaded files:", response.message);
             }
         } catch (error) {
             console.error("Error fetching uploaded files:", error);
         }
     };
     
-    
-   
-    const [hasPdfEntry, setHasPdfEntry] = useState(false);
-
-
     const checkPdfEntryStatus = async (caseId) => {
         if (!caseId) {
-            console.log("Invalid caseId inside checkPdfEntryStatus:", caseId);
             setHasPdfEntry(false);
             return;
         }
-    
-        console.log("Checking PDF entry for caseId:", caseId);
-    
         try {
             const response = await api.post("/templateData/checkPdfEntry", { ui_case_id: caseId, is_pdf: true });
     
@@ -2163,7 +2198,6 @@ const UnderInvestigation = () => {
     };
     
     const handleOtherTemplateActions = async (options, selectedRow)=>{
-
         setSelectedRowData(selectedRow);
 
         if(options.table && options.field){
@@ -2207,7 +2241,7 @@ const UnderInvestigation = () => {
                                 },
                             },
                             ...Object.keys(getTemplateResponse.data[0])
-                                .filter((key) => !excludedKeys.includes(key))
+                            .filter((key) => !excludedKeys.includes(key) && key !== 'field_pt_case_id' && key !== 'field_ui_case_id' && key !== 'field_pr_status' && key !== 'field_evidence_file'  && key !== 'created_at')
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
 
@@ -3100,7 +3134,6 @@ const UnderInvestigation = () => {
     }
 
 
-    const [isUpdatePdf, setIsUpdatePdf] = useState(false);
 
     var userPermissions = JSON.parse(localStorage.getItem('user_permissions')) || [];
     var hoverExtraOptions = [
@@ -3134,7 +3167,11 @@ const UnderInvestigation = () => {
             "name": "Re Open",
             "onclick": (selectedRow) => changeSysStatus(selectedRow, 'Reinvestigation', 'Do you want to update this case to Reinvestigation ?')
         }
-        : null
+        : null,
+        {
+            "name": "Download and print",
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
+        }
         
     ].filter(Boolean);
 
@@ -3462,100 +3499,155 @@ const UnderInvestigation = () => {
 
             {/* other templates ui */}
             {otherTemplateModalOpen && (
-    <Dialog
-        open={otherTemplateModalOpen}
-        onClose={() => setOtherTemplateModalOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        maxWidth="md"
-        fullWidth
-        sx={{ zIndex: '1' }}
-    >
-        {console.log("selectedOtherTemplate", selectedOtherTemplate)}
-        <DialogTitle
-            id="alert-dialog-title"
-            sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-        >
-            {selectedOtherTemplate?.name}
-            <Box>
-                {selectedOtherTemplate?.table === "cid_ui_case_progress_report"
-                    ? hasPdfEntry && (
-                        <>
-                        <Button variant="outlined"     onClick={() => {
-                                setIsUpdatePdf(false);
-                                showOptionTemplate(selectedOtherTemplate?.table);
-                            }}
-                        >
-                            Add
-                        </Button>
-                        <Button variant="outlined" onClick={() => {
-                            setIsUpdatePdf(true);
-                            showOptionTemplate(selectedOtherTemplate?.table);
-                        }} style={{ marginLeft: '10px' }}>
-                        Update PDF
-                    </Button>
-                       </> 
-                    )
-                    : (
-                        <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}>
-                            Add
-                        </Button>
-                    )
-                }
-                <IconButton
-                    aria-label="close"
-                    onClick={() => setOtherTemplateModalOpen(false)}
-                    sx={{ color: (theme) => theme.palette.grey[500] }}
+                <Dialog
+                    open={otherTemplateModalOpen}
+                    onClose={() => setOtherTemplateModalOpen(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="md"
+                    fullWidth
+                    sx={{ zIndex: '1' }}
                 >
-                    <CloseIcon />
-                </IconButton>
-            </Box>
-        </DialogTitle>
-        <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-                <Box py={2}>
-                    {selectedOtherTemplate?.table === "cid_ui_case_progress_report" ? (
-                        hasPdfEntry ? (
-                            uploadedFiles.length > 0 ? (
-                                <>
-                                    <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
-                                    <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" marginTop={"10px"}>
-                                        <Typography variant="h6">Preview Uploaded PDF</Typography>
-                                        <iframe 
-                                            src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
-                                            width="100%" 
-                                            height="500px"
-                                            style={{ border: "none" }}
-                                        />
-                                    </Box>
-                                </>
-                            ) : (
-                                <Typography>No PDF found.</Typography>
-                            )
-                        
-                        ) : (
-                            <Box
-                                display="flex"
-                                flexDirection="column"
-                                alignItems="center"
-                                justifyContent="center"
-                                height="200px"
+                    <DialogTitle
+                        id="alert-dialog-title"
+                        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                    >
+                        {selectedOtherTemplate?.name}
+                        <Box>
+                            {selectedOtherTemplate?.table === "cid_ui_case_progress_report"
+                                ? hasPdfEntry && (
+                                    <>
+                                    <Button variant="outlined"     onClick={() => {
+                                            showOptionTemplate(selectedOtherTemplate?.table);
+                                        }}
+                                    >
+                                        Add
+                                    </Button>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={async () => {
+                                            const getTemplatePayload = {
+                                                table_name: selectedOtherTemplate?.table,
+                                                ui_case_id: selectedRowData?.id,
+                                            };
+
+                                            setLoading(true);
+                                            try {
+                                                const getTemplateResponse = await api.post("/templateData/getTemplateData", getTemplatePayload);
+                                                setLoading(false);
+
+                                                if (getTemplateResponse && getTemplateResponse.success) {
+                                                    const dataToAppend = getTemplateResponse.data.filter(item => item.field_pr_status === "No");
+
+                                                    if (dataToAppend.length > 0) {
+                                                        const appendText = JSON.stringify(dataToAppend);
+
+                                                        await prUpdatePdf({ appendText });
+                                        
+                                                    } else {
+                                                        toast.error("No data to append.Already upto date", {
+                                                            position: "top-right",
+                                                            autoClose: 3000,
+                                                            hideProgressBar: false,
+                                                            closeOnClick: true,
+                                                            pauseOnHover: true,
+                                                            draggable: true,
+                                                            progress: undefined,
+                                                            className: "toast-warning",
+                                                        });
+                                                    }
+                                                } else {
+                                                    toast.error("Failed to fetch template data. Please try again.", {
+                                                        position: "top-right",
+                                                        autoClose: 3000,
+                                                        hideProgressBar: false,
+                                                        closeOnClick: true,
+                                                        pauseOnHover: true,
+                                                        draggable: true,
+                                                        progress: undefined,
+                                                        className: "toast-error",
+                                                    });
+                                                }
+                                            } catch (error) {
+                                                setLoading(false);
+                                                toast.error("Error fetching template data. Please try again.", {
+                                                    position: "top-right",
+                                                    autoClose: 3000,
+                                                    hideProgressBar: false,
+                                                    closeOnClick: true,
+                                                    pauseOnHover: true,
+                                                    draggable: true,
+                                                    progress: undefined,
+                                                    className: "toast-error",
+                                                });
+                                            }
+                                        }}
+                                        style={{ marginLeft: '10px' }}
+                                    >
+                                        Update PDF
+                                    </Button>
+                                </> 
+                                )
+                                : (
+                                    <Button variant="outlined" onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}>
+                                        Add
+                                    </Button>
+                                )
+                            }
+                            <IconButton
+                                aria-label="close"
+                                onClick={() => setOtherTemplateModalOpen(false)}
+                                sx={{ color: (theme) => theme.palette.grey[500] }}
                             >
-                                <Typography>Please Upload your Progress Report Pdf</Typography>
-                                <Button variant="contained" component="label">
-                                    Upload File
-                                    <input type="file" hidden accept="application/pdf" onChange={(event) => handleFileUpload(event)} />
-                                </Button>
+                                <CloseIcon />
+                            </IconButton>
+                        </Box>
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                            <Box py={2}>
+                                {selectedOtherTemplate?.table === "cid_ui_case_progress_report" ? (
+                                    hasPdfEntry ? (
+                                        uploadedFiles.length > 0 ? (
+                                            <>
+                                                <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                                <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" marginTop={"10px"}>
+                                                    <Typography variant="h6">Preview Uploaded PDF</Typography>
+                                                    <iframe 
+                                                        src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
+                                                        width="100%" 
+                                                        height="500px"
+                                                        style={{ border: "none" }}
+                                                    />
+                                                </Box>
+                                            </>
+                                        ) : (
+                                            <Typography>No PDF found.</Typography>
+                                        )
+                                    
+                                    ) : (
+                                        <Box
+                                            display="flex"
+                                            flexDirection="column"
+                                            alignItems="center"
+                                            justifyContent="center"
+                                            height="200px"
+                                        >
+                                            <Typography>Please Upload your Progress Report Pdf</Typography>
+                                            <Button variant="contained" component="label">
+                                                Upload File
+                                                <input type="file" hidden accept="application/pdf" onChange={(event) => handleFileUpload(event)} />
+                                            </Button>
+                                        </Box>
+                                    )
+                                ) : (
+                                    <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
+                                )}
                             </Box>
-                        )
-                    ) : (
-                        <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
-                    )}
-                </Box>
-            </DialogContentText>
-        </DialogContent>
-    </Dialog>
-)}
+                        </DialogContentText>
+                    </DialogContent>
+                </Dialog>
+            )}
 
 
 

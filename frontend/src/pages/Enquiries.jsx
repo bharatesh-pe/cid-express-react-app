@@ -2015,7 +2015,11 @@ const Enquiries = () => {
             "name": "Delete",
             "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
         }
-        : null,        
+        : null,  
+        {
+            "name": "Download and Print",
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
+        }      
     ];
 
     return (

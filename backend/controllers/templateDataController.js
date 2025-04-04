@@ -653,7 +653,7 @@ exports.getTemplateData = async (req, res, next) => {
         const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
         // Filter fields that have is_primary_field as true
-        const filteredSchema = schema.filter(field => field.is_primary_field === true);
+        const relevantSchema = table_name === "cid_ui_case_progress_report" ? schema : schema.filter(field => field.is_primary_field === true);
 
         // Define model attributes based on filtered schema
         const modelAttributes = {
@@ -673,7 +673,7 @@ exports.getTemplateData = async (req, res, next) => {
         };
         const associations = [];
 
-        for (const field of filteredSchema) {
+        for (const field of relevantSchema) {
             const { name: columnName, data_type, not_null, default_value, table, forign_key, attributes } = field;
 
             if (!columnName || !data_type) {
@@ -754,23 +754,52 @@ exports.getTemplateData = async (req, res, next) => {
 
 
         // Transform the response to include only primary fields and metadata fields
-        const transformedRecords = records.map(record => {
+        const transformedRecords= await Promise.all(
+            records.map(async (record) => {
             const data = record.toJSON();
-            const filteredData = {
-                id: data.id,
-                created_at: data.created_at,
-                updated_at: data.updated_at,
-            };
 
-            // Include only fields that are primary
-            filteredSchema.forEach(field => {
-                if (field.is_primary_field === true) {
-                    filteredData[field.name] = data[field.name];
+            let filteredData;
+        
+            if (table_name === "cid_ui_case_progress_report") {
+                filteredData = { ...data };
+            
+                if (data.field_assigned_to) {
+                    try {
+                        const user = await Users.findOne({
+                            where: { user_id: data.field_assigned_to },
+                            attributes: ["kgid_id"],
+                        });
+            
+                        if (user && user.kgid_id) {
+                            const kgidRecord = await KGID.findOne({
+                                where: { id: user.kgid_id },
+                                attributes: ["name"],
+                            });
+            
+                            filteredData.field_assigned_to = kgidRecord ? kgidRecord.name : "Unknown";
+                        } else {
+                            filteredData.field_assigned_to = "Unknown";
+                        }
+                    } catch (error) {
+                        filteredData.field_assigned_to = "Unknown";
+                    }
                 }
-            });
-
+            
+            }else {
+                filteredData = {
+                    id: data.id,
+                    created_at: data.created_at,
+                    updated_at: data.updated_at,
+                };
+        
+                schema.filter(field => field.is_primary_field === true).forEach(field => {
+                    filteredData[field.name] = data[field.name];
+                });
+            }
+        
             return filteredData;
-        });
+        })
+    );
 
         // Log the user activity
         // await ActivityLog.create({
@@ -3460,39 +3489,32 @@ exports.caseSysStatusUpdation = async (req, res) => {
 };
 
 
-// Define the file upload directory (public directory)
 const dirPath = path.join(__dirname, "../public/files/");
 
-// Ensure the directory exists
 if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
 }
-
-// Multer storage configuration
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, dirPath);  // Set the destination folder for uploaded files
+        cb(null, dirPath);
     },
     filename: (req, file, cb) => {
-        // Create a unique file name by appending a UUID and original file extension
         const fileExtension = path.extname(file.originalname);
         const uniqueName = uuid.v4() + fileExtension;
         cb(null, uniqueName);
     }
 });
 
-// Initialize multer with the storage configuration
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10MB
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
-        // Allow only PDF files
         if (file.mimetype !== 'application/pdf') {
             return cb(new Error('Invalid file type. Only PDFs are allowed.'));
         }
         cb(null, true);
     }
-}).single("file");  // Use single file upload
+}).single("file");
 
 exports.uploadFile = async (req, res) => {
     upload(req, res, async (err) => {
@@ -3572,7 +3594,6 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     }
 
     try {
-        // Fetch the latest PDF file
         const latestFile = await UiProgressReportFileStatus.findOne({
             where: { ui_case_id, is_pdf: true },
             order: [['created_at', 'DESC']],
@@ -3589,22 +3610,19 @@ exports.appendToLastLineOfPDF = async (req, res) => {
         const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
         const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-        const pageWidth = 595.276;  // A4 width in points (approx 210mm)
-        const pageHeight = 841.890; // A4 height in points (approx 297mm)
-
+        const pageWidth = 595.276;
+        const pageHeight = 841.890;
 
         let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
         const marginTop = pageHeight - 50;
 
-        const data = JSON.parse(appendText);
+        const dataArray = JSON.parse(appendText);
 
         const formatDate = (isoDate) => {
             const date = new Date(isoDate);
-
             const month = (date.getMonth() + 1).toString().padStart(2, '0');
             const day = date.getDate().toString().padStart(2, '0');
             const year = date.getFullYear();
-
             return `${month}/${day}/${year}`;
         };
 
@@ -3614,79 +3632,65 @@ exports.appendToLastLineOfPDF = async (req, res) => {
             return label.replace(/\b\w/g, char => char.toUpperCase());
         };
 
-        if (data.field_date_created) {
-            data.field_date_created = formatDate(data.field_date_created);
-        }
-
-        if (data.field_last_updated) {
-            data.field_last_updated = formatDate(data.field_last_updated);
-        }
-
-        delete data.field_ui_case_id;
-        delete data.ui_case_id;
-        delete data.sys_status;
-
-        if (data.field_assigned_to) {
-            const user = await Users.findOne({
-                where: { user_id: data.field_assigned_to },
-                attributes: ['kgid_id'],
-            });
-                
-            if (user && user.kgid_id) {
-        
-                const kgidRecord = await KGID.findOne({
-                    where: { id: user.kgid_id },
-                    attributes: ['name'],
-                });
-                
-                if (kgidRecord) {
-                    data.field_assigned_to = kgidRecord.name;
-                } else {
-                    data.field_assigned_to = 'Unknown';
-                }
-            } else {
-                data.field_assigned_to = 'Unknown';
-            }
-        }        
-
-        const entries = Object.entries(data);
         let xPos = 50;
         let yPos = marginTop;
-
         const lineHeight = 20;
         const spaceBetweenRows = 30;
 
-        for (let i = 0; i < entries.length; i++) {
-            const [label, value] = entries[i];
-
-            const valueString = value.toString();
-
-            const formattedLabel = formatLabel(label);
-
-            newPage.drawText(`${formattedLabel}:`, {
-                x: xPos,
-                y: yPos,
-                size: 14,
-                font: boldFont,
-                color: rgb(0, 0, 0),
-            });
-
-            yPos -= lineHeight;
-
-            newPage.drawText(valueString, {
-                x: xPos,
-                y: yPos,
-                size: 12,
-                font: regularFont,
-                color: rgb(0, 0, 0),
-            });
-
-            yPos -= (lineHeight * 1) + spaceBetweenRows;
-
-            if (yPos <= 50) {
-                yPos = pageHeight - 50;
-                newPage = pdfDoc.addPage();
+        for (const data of dataArray) {
+            if (data.field_date_created) {
+                data.field_date_created = formatDate(data.field_date_created);
             }
+
+            if (data.field_last_updated) {
+                data.field_last_updated = formatDate(data.field_last_updated);
+            }
+
+            delete data.field_ui_case_id;
+            delete data.ui_case_id;
+            delete data.sys_status;
+            delete data.created_at;
+            delete data.updated_at;
+            delete data.id;
+            delete data.field_pt_case_id;
+            delete data.field_evidence_file;
+            delete data.field_pr_status;
+
+
+            const entries = Object.entries(data);
+
+            for (let i = 0; i < entries.length; i++) {
+                const [label, value] = entries[i];
+                const valueString = value ? value.toString() : "N/A";
+                const formattedLabel = formatLabel(label);
+
+                newPage.drawText(`${formattedLabel}:`, {
+                    x: xPos,
+                    y: yPos,
+                    size: 14,
+                    font: boldFont,
+                    color: rgb(0, 0, 0),
+                });
+
+                yPos -= lineHeight;
+
+                newPage.drawText(valueString, {
+                    x: xPos,
+                    y: yPos,
+                    size: 12,
+                    font: regularFont,
+                    color: rgb(0, 0, 0),
+                });
+
+                yPos -= (lineHeight * 1) + spaceBetweenRows;
+
+                if (yPos <= 50) {
+                    yPos = pageHeight - 50;
+                    newPage = pdfDoc.addPage();
+                }
+            }
+
+            yPos -= spaceBetweenRows;
         }
 
         const pdfBytes = await pdfDoc.save();
@@ -3698,6 +3702,36 @@ exports.appendToLastLineOfPDF = async (req, res) => {
             { where: { id: latestFile.id } }
         );
 
+        const tableName = "cid_ui_case_progress_report"; 
+        const Model = sequelize.define(
+            tableName,
+            {
+                id: {
+                    type: Sequelize.DataTypes.INTEGER,
+                    primaryKey: true,
+                    autoIncrement: true,
+                },
+                field_pr_status: {
+                    type: Sequelize.DataTypes.STRING,
+                    allowNull: true,
+                },
+                field_ui_case_id: {
+                    type: Sequelize.DataTypes.INTEGER,
+                    allowNull: false,
+                },
+            },
+            {
+                freezeTableName: true,
+                timestamps: true, 
+                createdAt: 'created_at',
+                updatedAt: 'updated_at',
+            }
+        );
+
+        await Model.update(
+            { field_pr_status: "Yes" },
+            { where: { field_ui_case_id: ui_case_id } }
+        );
         return res.status(200).json({ success: true, message: "PDF updated successfully.", file_path: outputPath });
     } catch (err) {
         console.error('Error appending to PDF:', err.message);
