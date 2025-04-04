@@ -2373,7 +2373,7 @@ const Formbuilder = () => {
                                                                         ) :
                                                                         prop === 'hide_from_ux' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                                    <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={((prop === 'is_primary_field' && selectedField.options && type !== 'master') || updateFieldReadonly) ? true : false} />
+                                                                                    <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options &&   !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
                                                                                         {colText}
                                                                                     </Typography>
@@ -2382,7 +2382,7 @@ const Formbuilder = () => {
                                                                                 :
                                                                                 prop === 'dependent' ? (
                                                                                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                                        <Switch disabled={updateFieldReadonly} name={prop} checked={selectedField[prop]} onChange={handleSwitch} />
+                                                                                        <Switch name={prop} checked={selectedField[prop]} onChange={handleSwitch} />
                                                                                         <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
                                                                                             enable dependent
                                                                                         </Typography>
@@ -2396,7 +2396,7 @@ const Formbuilder = () => {
                                                                                                     <Typography sx={{ color: '#475467', fontWeight: '500', fontSize: '16px' }} className='Roboto'>
                                                                                                         Enter dropdown values below
                                                                                                     </Typography>
-                                                                                                    <Button disabled={updateFieldReadonly} onClick={() => deleteAllOptions()} sx={{ color: '#F04438', fontSize: '16px', fontWeight: '500', textTransform: 'none' }} className='Roboto'>
+                                                                                                    <Button onClick={() => deleteAllOptions()} sx={{ color: '#F04438', fontSize: '16px', fontWeight: '500', textTransform: 'none' }} className='Roboto'>
                                                                                                         Delete all
                                                                                                     </Button>
                                                                                                 </Box>
@@ -2405,7 +2405,7 @@ const Formbuilder = () => {
                                                                                                         <Box py={1} key={index} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
                                                                                                             <TextField
                                                                                                                 label="Option Name"
-                                                                                                                disabled={updateFieldReadonly ? updateFieldReadonly : selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
+                                                                                                                disabled={selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
                                                                                                                 value={option.name}
                                                                                                                 onChange={(e) => handleOptionChange(index, selectedField, e.target.value, "name")}
                                                                                                                 fullWidth
@@ -2430,7 +2430,6 @@ const Formbuilder = () => {
                                                                                                                         name={'defaultValue'}
                                                                                                                         id={`default_value_${option.code}`}
                                                                                                                         value={option.code}
-                                                                                                                        disabled={updateFieldReadonly}
                                                                                                                         checked={selectedField['defaultValue'] === option.code}
                                                                                                                         onChange={() => handleDefaultValue('defaultValue', selectedField, option.code)}
                                                                                                                     />
@@ -2440,10 +2439,10 @@ const Formbuilder = () => {
                                                                                                                 </Box>
                                                                                                             }
                                                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                                                <button disabled={updateFieldReadonly} style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveOption(index)}>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveOption(index)}>
                                                                                                                     <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
                                                                                                                 </button>
-                                                                                                                <button disabled={updateFieldReadonly} style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddOption}>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddOption}>
                                                                                                                     <AddCircleOutlineIcon />
                                                                                                                 </button>
                                                                                                             </Box>
@@ -2452,7 +2451,7 @@ const Formbuilder = () => {
                                                                                                         <Box py={1} key={0} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
                                                                                                             <TextField
                                                                                                                 label="Option Name"
-                                                                                                                disabled={updateFieldReadonly ? updateFieldReadonly : selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
+                                                                                                                disabled={selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
                                                                                                                 value=''
                                                                                                                 onChange={(e) => handleOptionChange(0, selectedField, e.target.value, "name")}
                                                                                                                 fullWidth
@@ -2471,10 +2470,10 @@ const Formbuilder = () => {
                                                                                                                 margin="dense" // Adjust the margin to control spacing
                                                                                                             />
                                                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                                                                                                <button disabled={updateFieldReadonly} style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveOption(0)}>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveOption(0)}>
                                                                                                                     <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
                                                                                                                 </button>
-                                                                                                                <button disabled={updateFieldReadonly} style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddOption}>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddOption}>
                                                                                                                     <AddCircleOutlineIcon />
                                                                                                                 </button>
                                                                                                             </Box>
@@ -2482,11 +2481,11 @@ const Formbuilder = () => {
                                                                                                     }
                                                                                                 </Box>
                                                                                                 <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '4px', gap: '14px', background: '#F2F4F7' }}>
-                                                                                                    <Button disabled={updateFieldReadonly} sx={{ width: '45%', color: '#FFFFFF', fontSize: '16px', fontWeight: '500', textTransform: 'none', borderRadius: '4px', background: '#1570EF', display: 'none' }} className='Roboto'>
+                                                                                                    <Button sx={{ width: '45%', color: '#FFFFFF', fontSize: '16px', fontWeight: '500', textTransform: 'none', borderRadius: '4px', background: '#1570EF', display: 'none' }} className='Roboto'>
                                                                                                         Import data from excel
                                                                                                     </Button>
                                                                                                     <Box sx={{ border: '1px solid #D0D5DD', height: '12px', alignSelf: 'auto' }}></Box>
-                                                                                                    <Button disabled={updateFieldReadonly} onClick={showMasterTable} sx={{ width: '45%', color: '#1D2939', fontSize: '16px', fontWeight: '500', textTransform: 'none', border: '1px solid #D0D5DD', borderRadius: '4px' }} className='Roboto'>
+                                                                                                    <Button onClick={showMasterTable} sx={{ width: '45%', color: '#1D2939', fontSize: '16px', fontWeight: '500', textTransform: 'none', border: '1px solid #D0D5DD', borderRadius: '4px' }} className='Roboto'>
                                                                                                         Import from data base
                                                                                                     </Button>
                                                                                                 </Box>
@@ -2504,7 +2503,7 @@ const Formbuilder = () => {
                                                                                                     maxLength : prop === 'label' ? 50 : undefined
                                                                                                 }}
                                                                                                 fullWidth
-                                                                                                disabled={updateFieldReadonly ? updateFieldReadonly : prop === "type"}
+                                                                                                disabled={(updateFieldReadonly && prop === "label") ? true : false}
                                                                                                 size="small" // Default size is "medium"
                                                                                                 margin="none" // Adjust the margin to control spacing
                                                                                             />
