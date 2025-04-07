@@ -225,6 +225,8 @@ const Layout = ({ children }) => {
             localStorage.removeItem("authAdmin");
             localStorage.removeItem("kgid");
             localStorage.removeItem("user_permissions");
+            localStorage.removeItem("designation_id");
+            localStorage.removeItem("designation_name");
             navigate("/");
           }
         }
@@ -267,6 +269,8 @@ const Layout = ({ children }) => {
       localStorage.removeItem("authAdmin");
       localStorage.removeItem("kgid");
       localStorage.removeItem("user_permissions");
+      localStorage.removeItem("designation_id");
+      localStorage.removeItem("designation_name");
       navigate("/");
     } catch (err) {
       var errMessage = "Something went wrong. Please try again.";
@@ -283,6 +287,8 @@ const Layout = ({ children }) => {
           localStorage.removeItem("authAdmin");
           localStorage.removeItem("kgid");
           localStorage.removeItem("user_permissions");
+          localStorage.removeItem("designation_id");
+          localStorage.removeItem("designation_name");
           navigate("/");
         }
       }

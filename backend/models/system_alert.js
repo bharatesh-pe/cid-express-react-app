@@ -14,8 +14,8 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-          model: "ui_case_approvals", // Table name, not model name
-          key: "id", // Adjust if the primary key is named differently
+          model: "ui_case_approval", // Table name in DB
+          key: "approval_id",
         },
       },
       reference_id: {
@@ -43,6 +43,22 @@ module.exports = (sequelize, DataTypes) => {
           key: "user_id",
         },
       },
+      created_by_designation_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: "designation",
+          key: "designation_id",
+        },
+      },
+      created_by_division_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: "division",
+          key: "division_id",
+        },
+      },
       created_at: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -67,6 +83,21 @@ module.exports = (sequelize, DataTypes) => {
     System_Alerts.belongsTo(models.UiCaseApproval, {
       foreignKey: "approval_id",
       as: "approval",
+    });
+
+    System_Alerts.belongsTo(models.Designation, {
+      foreignKey: "created_by_designation_id",
+      as: "creatorDesignation",
+    });
+
+    System_Alerts.belongsTo(models.Division, {
+      foreignKey: "created_by_division_id",
+      as: "creatorDivision",
+    });
+
+    System_Alerts.hasMany(models.AlertViewStatus, {
+      foreignKey: "system_alert_id",
+      as: "alert",
     });
   };
 
