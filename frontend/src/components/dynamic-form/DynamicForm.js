@@ -336,7 +336,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
         if (dependent_field && dependent_field[0] && dependent_field[0].api) {
           var apiPayload = {}
           if (dependent_field[0].dependent_table.length === 1) {
-            const key = selectedField.table === 'units' ? 'unit_id' : `${selectedField.table}_id`;
+            const key = selectedField.table === 'users' ? 'user_id' : `${selectedField.table}_id`;
             apiPayload = {
               [key]: formData[selectedField.name]
             }
@@ -346,7 +346,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
             })
             apiPayload = dependentFields.reduce((payload, data) => {
               if (formData && formData[data.name]) {
-                const key = data.table === 'units' ? 'unit_id' : `${data.table}_id`;
+                const key = data.table === 'users' ? 'user_id' : `${data.table}_id`;
                 payload[key] = formData[data.name];
               }
               return payload;
@@ -364,8 +364,8 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
               if (getOptionsValue && getOptionsValue.data) {
                 updatedOptions = getOptionsValue.data.map((data, i) => {
                   return {
-                    name: data[dependent_field[0].table === 'units' ? 'unit_name' : dependent_field[0].table + '_name'],
-                    code: data[dependent_field[0].table === 'units' ? 'unit_id' : dependent_field[0].table + '_id']
+                    name: data[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
+                    code: data[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
                   }
                 })
               }
@@ -427,7 +427,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
             if (dependent_field && dependent_field[0] && dependent_field[0].api) {
               var apiPayload = {}
               if (dependent_field[0].dependent_table.length === 1) {
-                const key = field.table === 'units' ? 'unit_id' : `${field.table}_id`;
+                const key = field.table === 'users' ? 'user_id' : `${field.table}_id`;
                 apiPayload = {
                   [key]: initialData[field.name]
                 }
@@ -437,7 +437,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                 })
                 apiPayload = dependentFields.reduce((payload, data) => {
                   if (initialData && initialData[data.name]) {
-                    const key = data.table === 'units' ? 'unit_id' : `${data.table}_id`;
+                    const key = data.table === 'users' ? 'user_id' : `${data.table}_id`;
                     payload[key] = initialData[data.name];
                   }
                   return payload;
@@ -454,8 +454,8 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                   if (getOptionsValue && getOptionsValue.data) {
                     updatedOptions = getOptionsValue.data.map((data, i) => {
                       return {
-                        name: data[dependent_field[0].table === 'units' ? 'unit_name' : dependent_field[0].table + '_name'],
-                        code: data[dependent_field[0].table === 'units' ? 'unit_id' : dependent_field[0].table + '_id']
+                        name: data[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
+                        code: data[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
                       }
                     })
                   }
@@ -504,7 +504,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                 if (dependent_field && dependent_field[0] && dependent_field[0].api) {
                   var apiPayload = {}
                   if (dependent_field[0].dependent_table.length === 1) {
-                    const key = field.table === 'units' ? 'unit_id' : `${field.table}_id`;
+                    const key = field.table === 'users' ? 'user_id' : `${field.table}_id`;
                     apiPayload = {
                       [key]: formData[field.name]
                     }
@@ -514,7 +514,7 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                     })
                     apiPayload = dependentFields.reduce((payload, data) => {
                       if (formData && formData[data.name]) {
-                        const key = data.table === 'units' ? 'unit_id' : `${data.table}_id`;
+                        const key = data.table === 'users' ? 'user_id' : `${data.table}_id`;
                         payload[key] = formData[data.name];
                       }
                       return payload;
@@ -531,8 +531,8 @@ const DynamicForm = ({ formConfig, initialData, onSubmit, onError, stepperData, 
                       if (getOptionsValue && getOptionsValue.data) {
                         updatedOptions = getOptionsValue.data.map((data, i) => {
                           return {
-                            name: data[dependent_field[0].table === 'units' ? 'unit_name' : dependent_field[0].table + '_name'],
-                            code: data[dependent_field[0].table === 'units' ? 'unit_id' : dependent_field[0].table + '_id']
+                            name: data[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
+                            code: data[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
                           }
                         })
                       }

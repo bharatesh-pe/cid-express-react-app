@@ -37,6 +37,14 @@ import { CircularProgress } from "@mui/material";
 import StarIcon from "@mui/icons-material/Star";
 import StarBorderIcon from "@mui/icons-material/StarBorder";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from "dayjs";
+import SelectField from "../components/form/Select";
+import MultiSelect from "../components/form/MultiSelect";
+import AutocompleteField from "../components/form/AutoComplete";
 
 const Enquiries = () => {
     const location = useLocation();
@@ -129,6 +137,14 @@ const Enquiries = () => {
     );
 
     const [otherTablePagination, setOtherTablePagination] = useState(1)
+
+    // filter states
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filterDropdownObj, setfilterDropdownObj] = useState([]);
+    const [filterValues, setFilterValues] = useState({});
+    const [fromDateValue, setFromDateValue] = useState(null);
+    const [toDateValue, setToDateValue] = useState(null);
+    const [forceTableLoad, setForceTableLoad] = useState(false);
 
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
@@ -257,7 +273,7 @@ const Enquiries = () => {
     useEffect(() => {
         loadTableData(paginationCount);
 
-    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, sysStatus])
+    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, sysStatus, forceTableLoad])
 
     const changeSysStatus = async (selectedRow, status) => {
         
@@ -337,7 +353,10 @@ const Enquiries = () => {
             "is_read": readFlag,
             "template_module": "eq_case",
             "sys_status": sysStatus,
-            "get_sys": true
+            "get_sys": true,
+            "from_date": fromDateValue,
+            "to_date": toDateValue,
+            "filter": filterValues
         }
         
         setLoading(true);
@@ -1613,11 +1632,6 @@ const Enquiries = () => {
         setPaginationCount((prev) => prev - 1)
     }
 
-    const handleClear = () => {
-        setSearchValue('');
-        loadTableData(paginationCount);
-    }
-
     const showIndivitualAttachment = async (attachmentName) => {
         if (showAttachmentKey['attachments'] && showAttachmentKey['attachments'].length > 0) {
             var payloadFile = showAttachmentKey['attachments'].filter((attachment) => attachment.attachment_name === attachmentName);
@@ -1760,11 +1774,6 @@ const Enquiries = () => {
 
 
     // Advance filter functions
-
-    const handleFilter = ()=> {
-        console.log("hello calling func")
-    }
-
 
     // useEffect(()=>{
 
@@ -2022,6 +2031,239 @@ const Enquiries = () => {
         }      
     ];
 
+
+        const handleFilter = async () => {
+    
+            const viewTableData = {
+                "table_name": table_name
+            }
+    
+            setLoading(true);
+            try {
+    
+                const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+                setLoading(false);
+    
+                if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+    
+                    var templateFields = viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []
+    
+                    var validFilterFields = ["dropdown", "autocomplete", "multidropdown"]
+    
+                    var getOnlyDropdown = templateFields
+                        .filter((element) => validFilterFields.includes(element.type))
+                        .map((field) => {
+                            const existingField = filterDropdownObj?.find((item) => item.name === field.name);
+                            return {
+                                ...field,
+                                history: false,
+                                info: false,
+                                required: false,
+                                ...(field.is_dependent === 'true' && {
+                                    options: existingField?.options ? [...existingField.options] : [],
+                                }),
+                            };
+                        });
+    
+                    // const today = dayjs().format("YYYY-MM-DD");
+    
+                    getAllOptionsforFilter(getOnlyDropdown);
+                    // if(fromDateValue == null || toDateValue === null){
+                    //     setFromDateValue(today);
+                    //     setToDateValue(today);
+                    // }
+    
+                    setShowFilterModal(true);
+    
+                } else {
+                    const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+    
+    
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+        }
+    
+        const getAllOptionsforFilter = async (dropdownFields)=> {
+            try {
+                setLoading(true);
+    
+                const apiCalls = dropdownFields
+                    .filter(field => field.api === '/templateData/getTemplateData' && field.table)
+                    .map(async (field) => {
+                        try {
+                            const response = await api.post(field.api, { table_name: field.table });
+    
+                            if (!response.data) return { id: field.id, options: [] };
+    
+                            const updatedOptions = response.data.map((templateData) => {
+                                const nameKey = Object.keys(templateData).find(
+                                    key => !['id', 'created_at', 'updated_at'].includes(key)
+                                );
+                                return {
+                                    name: nameKey ? templateData[nameKey] : '',
+                                    code: templateData.id
+                                };
+                            });
+    
+                            return { id: field.id, options: updatedOptions };
+    
+                        } catch (error) {
+                            return { id: field.id, options: [] };
+                        }
+                    });
+    
+                const results = await Promise.all(apiCalls);
+    
+                setLoading(false);
+                var updatedFieldsDropdown = dropdownFields.map((field) => {
+                    const updatedField = results.find((res) => res.id === field.id);
+                    return updatedField ? { ...field, options: updatedField.options } : field;
+                });
+    
+                setfilterDropdownObj(updatedFieldsDropdown);
+    
+            } catch (error) {
+                setLoading(false);
+                console.error('Error fetching template data:', error);
+            }
+        }
+    
+        const handleClear = () => {
+            setSearchValue('');
+            setFilterValues({});
+            setFromDateValue(null);
+            setToDateValue(null);
+            setForceTableLoad((prev) => !prev);
+        };
+    
+        const setFilterData = () => {
+            setPaginationCount(1);
+            setShowFilterModal(false);
+            setForceTableLoad((prev) => !prev);
+        }
+    
+        const handleAutocomplete = (field, selectedValue) => {
+    
+            let updatedFormData = { ...filterValues, [field.name]: selectedValue };
+    
+            setFilterValues(updatedFormData);
+    
+            if (field?.api && field?.table) {
+    
+                var dependent_field = filterDropdownObj.filter((element) => {
+                    return (
+                        element.dependent_table &&
+                        element.dependent_table.length > 0 &&
+                        element.dependent_table.includes(field.table)
+                    );
+                });
+    
+                if (dependent_field && dependent_field[0] && dependent_field[0].api) {
+                    var apiPayload = {}
+                    if (dependent_field[0].dependent_table.length === 1) {
+    
+                        const key = field.table === 'users' ? 'user_id' : `${field.table}_id`;
+                        apiPayload = {
+                            [key]: updatedFormData[field.name]
+                        }
+    
+                    } else {
+    
+                        var dependentFields = filterDropdownObj.filter((element) => {
+                            return dependent_field[0].dependent_table.includes(element.table)
+                        })
+    
+                        apiPayload = dependentFields.reduce((payload, element) => {
+                            if (updatedFormData && updatedFormData[element.name]) {
+                                const key = element.table === 'users' ? 'user_id' : `${element.table}_id`;
+                                payload[key] = updatedFormData[element.name];
+                            }
+                            return payload;
+                        }, {});
+                    }
+    
+                    const callApi = async () => {
+                        setLoading(true);
+    
+                        try {
+                            var getOptionsValue = await api.post(dependent_field[0].api, apiPayload);
+                            setLoading(false);
+    
+                            var updatedOptions = []
+    
+                            if (getOptionsValue && getOptionsValue.data) {
+                                updatedOptions = getOptionsValue.data.map((element, i) => {
+                                    return {
+                                        name: element[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
+                                        code: element[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
+                                    }
+                                })
+                            }
+    
+                            var userUpdateFields = {
+                                options: updatedOptions
+                            }
+    
+                            setfilterDropdownObj(filterDropdownObj.map((element) =>
+                                (element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                            ));
+    
+                            dependent_field.map((data) => {
+                                delete filterValues[data.name]
+                            });
+    
+                            dependent_field.forEach((data) => {
+                                delete updatedFormData[data.name];
+                            });
+    
+                            setFilterValues(updatedFormData);
+    
+                        } catch (error) {
+                            setLoading(false);
+                            if (error && error.response && error.response.data) {
+                                toast.error(error.response?.data?.message || 'Need dependent Fields', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+                        }
+                    }
+                    callApi()
+                }
+            }
+        }
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -2089,44 +2331,53 @@ const Enquiries = () => {
                             </Typography>
                         </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <TextFieldInput InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon sx={{ color: '#475467' }} />
-                            </InputAdornment>
-                        ),
-                        endAdornment: (
-                            searchValue && (
-                                <IconButton sx={{ padding: 0 }} onClick={handleClear} size="small">
-                                    <ClearIcon sx={{ color: '#475467' }} />
-                                </IconButton>
-                            )
-                        )
-                    }}
-                        onInput={(e) => setSearchValue(e.target.value)}
-                        value={searchValue}
-                        id="tableSearch"
-                        size="small"
-                        placeholder='Search anything'
-                        variant="outlined"
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                                e.preventDefault();
-                                loadTableData(paginationCount, e.target.value);
-                            }
-                        }}
-                        sx={{
-                            width: '300px', borderRadius: '6px', outline: 'none',
-                            '& .MuiInputBase-input::placeholder': {
-                                color: '#475467',
-                                opacity: '1',
-                                fontSize: '14px',
-                                fontWeight: '400',
-                                fontFamily: 'Roboto'
-                            },
-                        }}
-                    />
+                    <Box sx={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                        <TextFieldInput 
+                            InputProps={{
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon sx={{ color: '#475467' }} />
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        <IconButton sx={{ padding: '0 5px', borderRadius: '0' }} onClick={handleFilter}>
+                                            <FilterListIcon sx={{ color: '#475467' }} />
+                                        </IconButton>
+                                    </Box>
+                                )
+                            }}
+                            onInput={(e) => setSearchValue(e.target.value)}
+                            value={searchValue}
+                            id="tableSearch"
+                            size="small"
+                            placeholder='Search anything'
+                            variant="outlined"
+                            className="profileSearchClass"
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    loadTableData(paginationCount, e.target.value);
+                                }
+                            }}
+                            sx={{
+                                width: '300px', borderRadius: '6px', outline: 'none',
+                                '& .MuiInputBase-input::placeholder': {
+                                    color: '#475467',
+                                    opacity: '1',
+                                    fontSize: '14px',
+                                    fontWeight: '400',
+                                    fontFamily: 'Roboto'
+                                },
+                            }}
+                        />
+                        {(searchValue || fromDateValue || toDateValue || Object.keys(filterValues).length > 0) && (
+                            <Typography onClick={handleClear} sx={{ fontSize: '13px', fontWeight: '500', textDecoration: 'underline', cursor: 'pointer' }} mt={1}>
+                                Clear Filter
+                            </Typography>
+                        )}
+                    </Box>
 
                         {
                             JSON.parse(localStorage.getItem('user_permissions')) && JSON.parse(localStorage.getItem('user_permissions'))[0].create_enquiry &&
@@ -2382,6 +2633,113 @@ const Enquiries = () => {
                             </Box>
                         </DialogContentText>
                     </DialogContent>
+                </Dialog>
+            }
+
+            {showFilterModal &&
+                <Dialog
+                    open={showFilterModal}
+                    onClose={() => setShowFilterModal(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
+                        Filter
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setShowFilterModal(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ minWidth: '400px' }}>
+                        <DialogContentText id="alert-dialog-description">
+                            <Grid container sx={{ alignItems: 'center' }}>
+
+                                <Grid item xs={12} md={6} p={2}>
+
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DatePicker
+                                            format="DD-MM-YYYY"
+                                            sx={{
+                                                width: '100%',
+                                            }}
+                                            label="From Date"
+                                            value={fromDateValue ? dayjs(fromDateValue) : null}
+                                            onChange={(e) => setFromDateValue(e ? e.format("YYYY-MM-DD") : null)}
+                                        />
+                                    </LocalizationProvider>
+
+                                </Grid>
+
+                                <Grid item xs={12} md={6} p={2}>
+
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DatePicker
+                                            format="DD-MM-YYYY"
+                                            sx={{
+                                                width: '100%',
+                                            }}
+                                            label="To Date"
+                                            value={toDateValue ? dayjs(toDateValue) : null}
+                                            onChange={(e) => setToDateValue(e ? e.format("YYYY-MM-DD") : null)}
+                                        />
+                                    </LocalizationProvider>
+
+                                </Grid>
+
+                                {
+                                    filterDropdownObj.map((field) => {
+                                        switch (field.type) {
+                                            case 'dropdown':
+                                                return (
+                                                    <Grid item xs={12} md={6} p={2}>
+                                                        <div className='form-field-wrapper_selectedField'>
+                                                            <SelectField
+                                                                key={field.id}
+                                                                field={field}
+                                                                formData={filterValues}
+                                                                onChange={(value) => handleAutocomplete(field, value.target.value)} />
+                                                        </div>
+                                                    </Grid>
+                                                );
+
+                                            case "multidropdown":
+                                                return (
+                                                    <Grid item xs={12} md={6} p={2}>
+                                                        <MultiSelect
+                                                            key={field.id}
+                                                            field={field}
+                                                            formData={filterValues}
+                                                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                        />
+                                                    </Grid>
+                                                );
+
+                                            case "autocomplete":
+                                                return (
+                                                    <Grid item xs={12} md={6} p={2}>
+                                                        <AutocompleteField
+                                                            key={field.id}
+                                                            field={field}
+                                                            formData={filterValues}
+                                                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                        />
+                                                    </Grid>
+                                                )
+                                        }
+                                    })
+                                }
+                            </Grid>
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: '12px 24px' }}>
+                        <Button onClick={() => setShowFilterModal(false)}>Close</Button>
+                        <Button className="fillPrimaryBtn" sx={{ minWidth: '100px' }} onClick={() => setFilterData()}>Apply</Button>
+                    </DialogActions>
                 </Dialog>
             }
 
