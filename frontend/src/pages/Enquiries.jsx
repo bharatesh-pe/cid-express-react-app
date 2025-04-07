@@ -6,8 +6,7 @@ import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
 import { InputLabel, Select, MenuItem } from '@mui/material';
-
-import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid } from "@mui/material";
+import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField} from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -17,10 +16,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import ASC from '@mui/icons-material/North';
-import DESC from '@mui/icons-material/South';
 import AddIcon from '@mui/icons-material/Add';
-import filterLines from '../Images/filterLines.svg';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -34,9 +30,11 @@ import jpgIcon from '../Images/jpgIcon.svg'
 import pngIcon from '../Images/pngIcon.svg'
 import CloseIcon from '@mui/icons-material/Close';
 import { CircularProgress } from "@mui/material";
-import StarIcon from "@mui/icons-material/Star";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
-import FilterListIcon from "@mui/icons-material/FilterList";
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from "dayjs";
 
 const Enquiries = () => {
     const location = useLocation();
@@ -89,7 +87,31 @@ const Enquiries = () => {
     const searchParams = new URLSearchParams(location.search);
 
     const [hoverTableOptions, setHoverTableOptions] = useState([]);
+    // for approve states
+    const [selectedOtherFields, setSelectedOtherFields] = useState(null);
+    const [selectKey, setSelectKey] = useState(null);
+    const [approveTableFlag, setApproveTableFlag] = useState(false);
+    const [addApproveFlag, setAddApproveFlag] = useState(false);
+    const [approvalsData, setApprovalsData] = useState([]);
+    const [approvalsColumn, setApprovalsColumn] = useState([
+        { field: 'sl_no', headerName: 'S.No', },
+        { field: 'approvalItem', headerName: 'Approval Item', flex: 1 },
+        { field: 'approvedBy', headerName: 'Approved By', flex: 1 },
+        { field: 'approval_date', headerName: 'Approval Date', flex: 1 },
+        { field: 'remarks', headerName: 'Remarks', flex: 1 }
+    ]);
+    const [approvalItem, setApprovalItem] = useState([]);
+    const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
+    const [designationData, setDesignationData] = useState([]);
+    const [randomApprovalId, setRandomApprovalId] = useState(0);
+    const [approvalSaveData, setApprovalSaveData] = useState({});
 
+    const handleApprovalSaveData = (name, value)=>{
+        setApprovalSaveData({
+            ...approvalSaveData,
+            [name] : value
+        })
+    }
     const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
         { field: 'sl_no', headerName: 'S.No' },
         {
@@ -368,7 +390,7 @@ const Enquiries = () => {
                                 },
                             },
                             ...Object.keys(getTemplateResponse.data['data'][0])
-                                .filter((key) => !excludedKeys.includes(key))
+                                .filter((key) => !excludedKeys.includes(key) && key !== 'sys_status')
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
 
@@ -1758,73 +1780,6 @@ const Enquiries = () => {
         }
     },[])
 
-
-    // Advance filter functions
-
-    const handleFilter = ()=> {
-        console.log("hello calling func")
-    }
-
-
-    // useEffect(()=>{
-
-    //     const getActions = async ()=>{
-
-    //         var payloadObj = {
-    //             "module": "eq_case"
-    //         }
-
-    //         setLoading(true);
-    
-    //         try {
-    
-    //             const getActionsDetails = await api.post("/action/get_actions", payloadObj);
-
-    //             setLoading(false);
-    
-    //             if (getActionsDetails && getActionsDetails.success) {
-    
-    //                 if (getActionsDetails.data && getActionsDetails.data['data']) {
-    //                     setHoverTableOptions(getActionsDetails.data['data']);
-    //                 }
-    
-    //             } else {
-                    
-    //                 const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
-    //                 toast.error(errorMessage, {
-    //                     position: "top-right",
-    //                     autoClose: 3000,
-    //                     hideProgressBar: false,
-    //                     closeOnClick: true,
-    //                     pauseOnHover: true,
-    //                     draggable: true,
-    //                     progress: undefined,
-    //                     className: "toast-error",
-    //                 });
-                                    
-    //             }
-    
-    //         } catch (error) {
-    
-    //             setLoading(false);
-    //             if (error && error.response && error.response['data']) {
-    //                 toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
-    //                     position: "top-right",
-    //                     autoClose: 3000,
-    //                     hideProgressBar: false,
-    //                     closeOnClick: true,
-    //                     pauseOnHover: true,
-    //                     draggable: true,
-    //                     progress: undefined,
-    //                     className: "toast-error",
-    //                 });
-    //             }
-    //         }
-    //     }
-
-    //     getActions();
-
-    // },[])
     
     const handleOtherTemplateActions = async (options)=>{
 
@@ -1993,13 +1948,45 @@ const Enquiries = () => {
         userPermissions[0]?.view_enquiry
         ? {
             "name": "View",
-            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name),
+            "icon": () => (
+                <span className="tableActionViewIcon" style={{marginTop: '1px', marginRight: '12px', marginLeft: '2px'}}>
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path d="M12 4.5C7.305 4.5 3.125 7.498 1 12c2.125 4.502 6.305 7.5 11 7.5s8.875-2.998 11-7.5c-2.125-4.502-6.305-7.5-11-7.5zm0 13c-3.038 0-5.5-2.462-5.5-5.5s2.462-5.5 5.5-5.5 5.5 2.462 5.5 5.5-2.462 5.5-5.5 5.5zm0-9c-1.932 0-3.5 1.568-3.5 3.5s1.568 3.5 3.5 3.5 3.5-1.568 3.5-3.5-1.568-3.5-3.5-3.5z"/>
+                    </svg>
+                </span>
+            )
         }
         : null,
         userPermissions[0]?.edit_enquiry
         ? {
             "name": "Edit",
-            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name)
+            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, true, table_name),
+            "icon": () => (
+                <span className="tableActionIcon">
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 34 34"
+                        fill=""
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <circle cx="12" cy="12" r="12" fill=""/>
+                        <mask id="mask0_1120_40631" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
+                            <rect x="4" y="4" width="16" height="16" fill=""/>
+                        </mask>
+                        <g mask="url(#mask0_1120_40631)">
+                            <path d="M5.6001 20V17.4666H18.4001V20H5.6001ZM7.53343 15.1423V13.177L14.2399 6.4628C14.3365 6.36625 14.4368 6.29875 14.5409 6.2603C14.6452 6.22186 14.7524 6.20264 14.8628 6.20264C14.9774 6.20264 15.0856 6.22186 15.1873 6.2603C15.2889 6.29875 15.3865 6.3638 15.4801 6.45547L16.2129 7.18464C16.3053 7.28119 16.3717 7.3803 16.4123 7.48197C16.4528 7.58375 16.4731 7.69325 16.4731 7.81047C16.4731 7.91769 16.4531 8.02453 16.4131 8.13097C16.3731 8.23753 16.308 8.33586 16.2179 8.42597L9.5001 15.1423H7.53343ZM14.7438 8.67314L15.6064 7.8103L14.8654 7.0693L14.0026 7.93197L14.7438 8.67314Z" fill=""/>
+                        </g>
+                    </svg>
+                </span>
+            )
         }
         : null,
         ...(sysStatus !== 'Disposal' ? [{
@@ -2013,7 +2000,26 @@ const Enquiries = () => {
         userPermissions[0]?.delete_enquiry
         ? {
             "name": "Delete",
-            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name)
+            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name),
+            "icon": () => (
+                <span className="tableActionIcon">
+                    <svg
+                        width="50"
+                        height="50"
+                        viewBox="0 0 34 34"
+                        fill=""
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <circle cx="12" cy="12" r="12" fill="" />
+                        <mask id="mask0_1120_40636" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
+                            <rect x="4" y="4" width="16" height="16" fill="" />
+                        </mask>
+                        <g mask="url(#mask0_1120_40636)">
+                            <path d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z" fill="" />
+                        </g>
+                    </svg>
+                </span>
+            )
         }
         : null,  
         {
@@ -2021,6 +2027,224 @@ const Enquiries = () => {
             "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
         }      
     ];
+
+
+    const showApprovalPage = async (approveData)=>{
+        
+        var payloadObj = {
+            "eq_case_id": approveData.id
+        }
+        
+        setLoading(true);
+
+        try {
+            const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals", payloadObj);
+            setLoading(false);
+    
+            if (getActionsDetails && getActionsDetails.success) {
+                var updatedOptions = [];
+    
+                if(getActionsDetails.data['approvals'].length > 0){
+                    updatedOptions = getActionsDetails.data['approvals'].map((data, index)=>{
+        
+                        const formatDate = (fieldValue) => {
+                            if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
+                                var dateValue = new Date(fieldValue);
+                            if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
+                                return fieldValue;
+                            }
+        
+                            if (isNaN(dateValue.getTime())) return fieldValue;
+                                var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                                var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
+                                var yearValue = dateValue.getFullYear();
+                                return `${dayValue}/${monthValue}/${yearValue}`;
+                            };
+        
+                            const updatedField = {};
+        
+                            Object.keys(data).forEach((key) => {
+                                if (data[key] && key !== 'id' && !isNaN(new Date(data[key]).getTime())) {
+                                    updatedField[key] = formatDate(data[key]);
+                                } else {
+                                    updatedField[key] = data[key];
+                                }
+                            });
+        
+                            return{
+                                ...updatedField,
+                                sl_no : index + 1,
+                                id : data.approval_id,
+                            }
+                        });
+                    }
+    
+                    setApprovalsData(updatedOptions);
+                    setApprovalItem(getActionsDetails.data['approval_item']);
+                    setDesignationData(getActionsDetails.data['designation']);
+                    setAddApproveFlag(false);
+                    setApproveTableFlag(true);
+    
+                    const randomId = `approval_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+                    setRandomApprovalId(randomId);
+    
+                } else {
+                    
+                    const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });                      
+                }
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+        }
+    
+        const showApprovalAddPage = (table)=> {
+    
+            setAddApproveFlag(true);
+            handleApprovalSaveData('approval_item', Number(selectedOtherTemplate?.approval_items));
+    
+            if(selectedOtherTemplate?.approval_items){
+                setApprovalItemDisabled(true);
+            }else{
+                setApprovalItemDisabled(false);
+            }
+        }
+        
+        const saveApprovalData = async (table)=> {
+    
+            if(!approvalSaveData || !approvalSaveData['approval_item']){
+                toast.error('Please Select Approval Item !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                })
+                return;
+            }
+    
+            if(!approvalSaveData || !approvalSaveData['approved_by']){
+                toast.error('Please Select Designation !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            var payloadApproveData = {
+                ...approvalSaveData,
+                "eq_case_id" :selectedRow.id,
+                "transaction_id" : randomApprovalId
+            }
+    
+            setLoading(true);
+    
+            try {
+                const chnageSysStatus = await api.post("/ui_approval/create_ui_case_approval", payloadApproveData);
+    
+                setLoading(false);
+    
+                if (chnageSysStatus && chnageSysStatus.success) {
+                    toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Approval Added Successfully Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => {
+                            changeSysStatus(selectedRow, selectedStatus);
+                            showApprovalPage(selectedRow);
+                        },
+                    });
+
+    
+                    var combinedData = {
+                        id : selectedRow.id,
+                        [selectKey.name] : selectedOtherFields.code
+                    }
+                    
+                    // update func
+                    onUpdateTemplateData(combinedData);
+                    // reset states
+                    setSelectKey(null);
+                    setSelectedRow(null);
+                    setselectedOtherTemplate(null);
+    
+                    setApprovalsData([]);
+                    setApprovalItem([]);
+                    setApprovalItemDisabled(false);
+                    setDesignationData([]);
+    
+                    setAddApproveFlag(false);
+                    setApproveTableFlag(false);
+                    setApprovalSaveData({});
+                } else {
+                    const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to add approval. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+    
+                }
+    
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+    
+                }
+            }
+    
+        }
+
 
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -2072,7 +2296,9 @@ const Enquiries = () => {
                 color: "#fff",
                 textTransform: "none",
                 }}
-                onClick={() => changeSysStatus(selectedRow, selectedStatus)}
+                onClick={() => {
+                    showApprovalPage(selectedRow);
+                }}
                 disabled={!selectedStatus}
             >
                 Update
@@ -2166,6 +2392,112 @@ const Enquiries = () => {
                     <TableView hoverTable={true} hoverTableOptions={hoverExtraOptions} hoverActionFuncHandle={handleOtherTemplateActions} rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
                 </Box>
             </>
+            
+            {approveTableFlag &&
+            <Dialog
+                open={approveTableFlag}
+                onClose={() => setApproveTableFlag(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+                fullWidth
+                sx={{zIndex:'1'}}
+            >
+            <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
+                Approval
+                <Box>
+                    {
+                    !addApproveFlag ? 
+                        <Button variant="outlined" onClick={() => {showApprovalAddPage(selectedOtherTemplate.table)}}>Add</Button>
+                        :
+                        <Button variant="outlined" onClick={() => {saveApprovalData(selectedOtherTemplate.table)}}>Save</Button>
+                    }
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setApproveTableFlag(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </Box>
+            </DialogTitle>
+                                
+            <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                    <Box py={2}>
+                        {
+                        !addApproveFlag ?
+                        <TableView rows={approvalsData} columns={approvalsColumn} />
+                        :
+                        <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
+                            <Autocomplete
+                                id=""
+                                options={approvalItem}
+                                getOptionLabel={(option) => option.name || ''}
+                                name={'approval_item'}
+                                disabled={approvalItemDisabled}
+                                value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData && approvalSaveData['approval_item'])) || null}
+                                onChange={(e,value)=>handleApprovalSaveData('approval_item',value?.approval_item_id)}
+                                renderInput={(params) =>
+                                    <TextField
+                                        {...params}
+                                        className='selectHideHistory'
+                                        label={'Approval Item'}
+                                    />
+                                }
+                            />
+            
+                            <Autocomplete
+                                id=""
+                                options={designationData}
+                                getOptionLabel={(option) => option.designation_name || ''}
+                                name={'approved_by'}
+                                value={designationData.find((option) => option.designation_id === (approvalSaveData && approvalSaveData['approved_by'])) || null}
+                                onChange={(e,value)=>handleApprovalSaveData('approved_by',value?.designation_id)}
+                                renderInput={(params) =>
+                                    <TextField
+                                        {...params}
+                                        className='selectHideHistory'
+                                        label={'Designation'}
+                                    />
+                                }
+                            />
+            
+                            <LocalizationProvider dateAdapter={AdapterDayjs} sx={{width:'100%'}}>
+                            <DemoContainer components={['DatePicker']} sx={{width:'100%'}}>
+                            <DatePicker 
+                                label="Approval Date" 
+                                value={approvalSaveData['approval_date'] ? dayjs(approvalSaveData['approval_date']) : null} 
+                                name="approval_date" 
+                                format="DD/MM/YYYY"
+                                sx={{width:'100%'}}
+                                onChange={(newValue) => {
+                                    if (newValue && dayjs.isDayjs(newValue)) {
+                                        handleApprovalSaveData("approval_date", newValue.toISOString());
+                                    } else {
+                                        handleApprovalSaveData("approval_date", null);
+                                    }
+                                }}
+                            />
+                            </DemoContainer>
+                            </LocalizationProvider>
+            
+                            <TextField
+                                rows={8}
+                                label={'Comments'}
+                                sx={{width:'100%'}}
+                                name="remarks"
+                                value={approvalSaveData['remarks']}
+                                onChange={(e)=>handleApprovalSaveData('remarks', e.target.value)}
+                            />
+                        </Box>
+                        }
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
+            }
+
             {formOpen &&
                 <DynamicForm
                     table_row_id={selectedRowId}
