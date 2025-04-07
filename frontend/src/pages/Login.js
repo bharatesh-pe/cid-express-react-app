@@ -8,7 +8,6 @@ import OTPInputComponent from '../components/otp';
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import Swal from 'sweetalert2';
 import { CircularProgress } from "@mui/material";
 
 const Login = () => {
