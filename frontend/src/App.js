@@ -43,6 +43,7 @@ import Approval from './pages/approval';
 import Hierarchy from './pages/hierarchy';
 import CaseActions from './pages/CaseAction';
 import TemplateMastersView from './pages/templateMasters';
+import { ToastContainer } from 'react-toastify';
 function App() {
   return (
     <Router>
@@ -413,6 +414,7 @@ function App() {
           <Route path="*" element={<Login />} />
         </Routes>
       </AuthProvider>
+      <ToastContainer />
     </Router>
   );
 }

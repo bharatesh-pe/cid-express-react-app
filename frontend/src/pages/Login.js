@@ -8,7 +8,7 @@ import OTPInputComponent from '../components/otp';
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-
+import Swal from 'sweetalert2';
 import { CircularProgress } from "@mui/material";
 
 const Login = () => {
@@ -160,40 +160,32 @@ const Login = () => {
             });
     
             const data = await response.json();
+
             if (!response.ok) {
                 throw new Error(data.message);
             }
-            if(response && response.success){
-            toast.success(response.message || "PIN updated successfully", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-success",
-            });
+            if(data && data.success){
+                toast.success(data.message || "PIN updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                   onOpen: () => {setShowOtp(false);setForgotVerifyOtp(false);setForgotPassword(false);setForgotPin(false);setLoading(false);setConfirmPin('');setPin('');setKGID('');setOtp('');},
+                });
             }
-            setTimeout(() => {
-                setShowOtp(false);
-                setForgotVerifyOtp(false);
-                setForgotPassword(false);
-                setForgotPin(false);
-                setConfirmPin('');
-                setPin('');
-                setKGID('');
-                setOtp('');
-                setLoading(false);
-                navigate('/dashboard');
-            }, 3000);
         } catch (err) {
-            setLoading(false);
             const errMessage = err?.message || 'Something went wrong. Please try again.';
             setValidationError(errMessage);
         }
+        finally{
+            setLoading(false);
+        }
     };    
-
+    
     const verifyOtp = async (e) => {
         setValidationError('');
         e.preventDefault();
@@ -275,7 +267,7 @@ const Login = () => {
             }
 
             const serverURL = process.env.REACT_APP_SERVER_URL;
-            const response = await fetch(`${serverURL}/generateOtp`, {
+            const response = await fetch(`${serverURL}/auth/generate_OTP`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -358,7 +350,12 @@ const Login = () => {
                         fullWidth
                         margin="normal"
                         value={kgid}
-                        onChange={(e) => setKGID(e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^\d*$/.test(value)) {
+                                setKGID(value);
+                            }
+                        }}
                     />
                     {/* <OTPInputComponent length={6} value={otp} onChange={setOtp} /> */}
                     <TextField
@@ -368,7 +365,12 @@ const Login = () => {
                         fullWidth
                         margin="normal"
                         value={pin}
-                        onChange={(e) => setPin(e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^\d*$/.test(value)) {
+                                setPin(value);
+                            }
+                        }}
                     />
                     <Button type="submit" variant="contained" fullWidth sx={{ marginTop: 2 }}>
                         Generate OTP
@@ -382,7 +384,12 @@ const Login = () => {
                             fullWidth
                             margin="normal"
                             value={kgid}
-                            onChange={(e) => setKGID(e.target.value)}
+                            onChange={(e) => {
+                                const value = e.target.value;
+                                if (/^\d*$/.test(value)) {
+                                    setKGID(value);
+                                }
+                            }}
                         />
                         <Button type="submit" variant="contained" fullWidth sx={{ marginTop: 2 }}>
                             Generate OTP
@@ -419,7 +426,12 @@ const Login = () => {
                         fullWidth
                         margin="normal"
                         value={pin}
-                        onChange={(e) => setPin(e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^\d*$/.test(value)) {
+                                setPin(value);
+                            }
+                        }}
                     />
                     <TextField
                         label="Confirm PIN"
@@ -428,7 +440,12 @@ const Login = () => {
                         fullWidth
                         margin="normal"
                         value={confirmPin}
-                        onChange={(e) => setConfirmPin(e.target.value)}
+                        onChange={(e) => {
+                            const value = e.target.value;
+                            if (/^\d*$/.test(value)) {
+                                setConfirmPin(value);
+                            }
+                        }}
                     />
 
                     <Button type="submit" variant="contained" fullWidth sx={{ marginTop: 2 }}>
@@ -474,6 +491,21 @@ const Login = () => {
                 </Box> }    
 
                 {  showOtp && <Box
+                    sx={{
+                        padding: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        borderBottom: "1px solid #D0D5DD",
+                        marginTop: 2,
+                    }}
+                    >
+                        <Link href="#" underline="none" onClick={() => resendOtp()}>
+                            {'Resend OTP'}
+                        </Link>
+                    </Box>}
+
+                    {  !showOtp && forgotVerifyOtp && <Box
                     sx={{
                         padding: 1,
                         display: "flex",
