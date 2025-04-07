@@ -356,6 +356,7 @@ const Login = () => {
                                 setKGID(value);
                             }
                         }}
+                        inputProps={{ maxLength: 10 }}
                     />
                     {/* <OTPInputComponent length={6} value={otp} onChange={setOtp} /> */}
                     <TextField
@@ -390,6 +391,7 @@ const Login = () => {
                                     setKGID(value);
                                 }
                             }}
+                            inputProps={{ maxLength: 10 }}
                         />
                         <Button type="submit" variant="contained" fullWidth sx={{ marginTop: 2 }}>
                             Generate OTP
@@ -482,7 +484,13 @@ const Login = () => {
                     <Link 
                         href="#" 
                         underline="none" 
-                        onClick={() => setForgotPassword(false)}
+                        onClick={() => {
+                            setForgotPassword(false);
+                            setValidationError('');
+                            setKGID('');
+                            setPin('');
+                            setOtp('');
+                        }}
                         sx={{ color: "red" }}auth
                     >
                         {'Cancel'}
