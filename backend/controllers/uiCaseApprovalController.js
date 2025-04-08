@@ -192,7 +192,6 @@ exports.get_ui_case_approvals = async (req, res) => {
 
 exports.get_alert_notification = async (req, res) => {
   try {
-    const { user_id } = req.user;
     const { user_designation_id, user_division_id } = req.body;
 
     // Get officer_designation_ids under the supervisor's designations
@@ -223,6 +222,27 @@ exports.get_alert_notification = async (req, res) => {
     console.error("Error fetching alert notifications:", error);
     return res.status(500).json({
       message: "Failed to fetch alert notifications",
+      error: error.message,
+    });
+  }
+};
+
+exports.get_case_approval_by_id = async (req, res) => {
+  try {
+    const { approval_id } = req.body;
+
+    const approval = await UiCaseApproval.findOne({
+      where: { approval_id },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: approval,
+    });
+  } catch (error) {
+    console.error("Error fetching approval by ID:", error);
+    return res.status(500).json({
+      message: "Failed to fetch approval",
       error: error.message,
     });
   }

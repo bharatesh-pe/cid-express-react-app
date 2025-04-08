@@ -18,5 +18,10 @@ router.post(
   [validate_token],
   uiCaseApprovalController.get_alert_notification
 );
+router.post(
+  "/get_case_approval_by_id",
+  [validate_token],
+  uiCaseApprovalController.get_case_approval_by_id
+);
 
 module.exports = router;
