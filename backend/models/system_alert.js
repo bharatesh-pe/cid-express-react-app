@@ -1,63 +1,98 @@
-'use strict';
+"use strict";
 
 module.exports = (sequelize, DataTypes) => {
-  const System_Alerts = sequelize.define('System_Alerts', {
-    system_alert_id: {
-      type: DataTypes.INTEGER,
-      autoIncrement: true,
-      primaryKey: true,
-      allowNull: false,
+  const System_Alerts = sequelize.define(
+    "System_Alerts",
+    {
+      system_alert_id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false,
+      },
+      approval_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: "ui_case_approval", // Table name in DB
+          key: "approval_id",
+        },
+      },
+      reference_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      alert_message: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      alert_type: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      created_by: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "users",
+          key: "user_id",
+        },
+      },
+      created_by_designation_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: "designation",
+          key: "designation_id",
+        },
+      },
+      created_by_division_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+          model: "division",
+          key: "division_id",
+        },
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
+      },
     },
-    module_name: {
-      type: DataTypes.TEXT,
-      allowNull: false,  // Required field
-      index: true, // Index for performance optimization
-    },
-    reference_id: {
-      type: DataTypes.INTEGER,
-      allowNull: true,  // Optional field
-    },
-    alert_message: {
-      type: DataTypes.TEXT,
-      allowNull: false,  // Required field
-    },
-    alert_type: {
-      type: DataTypes.TEXT,
-      allowNull: false,  // Required field
-    },
-    alert_status: {
-      type: DataTypes.TEXT,
-      allowNull: false,  // Required field
-      defaultValue: 'pending', // Default status for new alerts
-    },
-    created_by: {
-      type: DataTypes.INTEGER,
-      allowNull: false,  // Required field
-      references: {
-        model: 'users',
-        key: 'user_id'
-      }
-    },
-    created_at: {
-      type: DataTypes.DATE,
-      allowNull: false,
-    },
-    transaction_id: {
-      type: DataTypes.STRING,
-      allowNull: true,  // Optional field
-    },
-  }, {
-    tableName: 'system_alerts', // Specifies the table name
-    timestamps: true,  // Sequelize will handle createdAt and updatedAt automatically
-    createdAt: 'created_at',  // Custom name for createdAt field
-    updatedAt: false, // If you don't want to automatically update the updatedAt field
-    underscored: true,  // Ensures snake_case column naming (e.g., created_at, updated_at)
-  });
+    {
+      tableName: "system_alerts",
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: false,
+      underscored: true,
+    }
+  );
 
   System_Alerts.associate = (models) => {
-    System_Alerts.hasMany(models.Users, {
-      foreignKey: 'user_id',
-      as: 'user'
+    System_Alerts.belongsTo(models.Users, {
+      foreignKey: "created_by",
+      as: "user",
+    });
+
+    System_Alerts.belongsTo(models.UiCaseApproval, {
+      foreignKey: "approval_id",
+      as: "approval",
+    });
+
+    System_Alerts.belongsTo(models.Designation, {
+      foreignKey: "created_by_designation_id",
+      as: "creatorDesignation",
+    });
+
+    System_Alerts.belongsTo(models.Division, {
+      foreignKey: "created_by_division_id",
+      as: "creatorDivision",
+    });
+
+    System_Alerts.hasMany(models.AlertViewStatus, {
+      foreignKey: "system_alert_id",
+      as: "alert",
     });
   };
 

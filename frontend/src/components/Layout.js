@@ -201,11 +201,11 @@ const Layout = ({ children }) => {
           },
         });
         setLoading(false);
+        const data = await response.json();
+
         if (!response.ok) {
           throw new Error(data.message);
         }
-
-        const data = await response.json();
 
         if (data && data.success && data["modules"]) {
           setSidebarMenusObj(data["modules"]);
@@ -217,14 +217,17 @@ const Layout = ({ children }) => {
           errMessage = err.message;
         }
         if (errMessage) {
+          console.log("err", err);
           console.log("errMessage", errMessage);
-          errMessage = errMessage.json();
-          if (errMessage && errMessage.Authorization_error) {
+          // errMessage = await errMessage.json();
+          if (errMessage && errMessage.includes("Authorization_error")) {
             localStorage.removeItem("auth_token");
             localStorage.removeItem("userName");
             localStorage.removeItem("authAdmin");
             localStorage.removeItem("kgid");
             localStorage.removeItem("user_permissions");
+            localStorage.removeItem("designation_id");
+            localStorage.removeItem("designation_name");
             navigate("/");
           }
         }
@@ -267,6 +270,8 @@ const Layout = ({ children }) => {
       localStorage.removeItem("authAdmin");
       localStorage.removeItem("kgid");
       localStorage.removeItem("user_permissions");
+      localStorage.removeItem("designation_id");
+      localStorage.removeItem("designation_name");
       navigate("/");
     } catch (err) {
       var errMessage = "Something went wrong. Please try again.";
@@ -275,14 +280,16 @@ const Layout = ({ children }) => {
       }
 
       if (errMessage) {
-        errMessage = errMessage.json();
+        // errMessage = await errMessage.json();
         console.log("errMessage", errMessage);
-        if (errMessage && errMessage.Authorization_error) {
+        if (errMessage && errMessage.includes("Authorization_error")) {
           localStorage.removeItem("auth_token");
           localStorage.removeItem("userName");
           localStorage.removeItem("authAdmin");
           localStorage.removeItem("kgid");
           localStorage.removeItem("user_permissions");
+          localStorage.removeItem("designation_id");
+          localStorage.removeItem("designation_name");
           navigate("/");
         }
       }

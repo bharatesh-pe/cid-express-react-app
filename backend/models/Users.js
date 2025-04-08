@@ -74,13 +74,22 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "user_id",
       as: "users_division",
     });
-    
+
     Users.hasMany(models.UserManagementLog, {
       foreignKey: "user_id",
       as: "user_management_logs",
     });
-  };
 
+    Users.hasMany(models.System_Alerts, {
+      foreignKey: "created_by",
+      as: "alerts",
+    });
+
+    Users.hasMany(models.System_Alerts, {
+      foreignKey: "viewed_by",
+      as: "viewedByUser",
+    });
+  };
 
   return Users;
 };
