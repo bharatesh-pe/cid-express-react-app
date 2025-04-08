@@ -30,11 +30,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
-      alert_status: {
-        type: DataTypes.TEXT,
-        allowNull: false,
-        defaultValue: "Pending",
-      },
       created_by: {
         type: DataTypes.INTEGER,
         allowNull: false,
