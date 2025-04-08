@@ -4,6 +4,7 @@ const {
   Designation,
   System_Alerts,
   UsersHierarchy,
+  AlertViewStatus,
 } = require("../models");
 const fs = require("fs");
 const path = require("path");
@@ -192,6 +193,7 @@ exports.get_ui_case_approvals = async (req, res) => {
 
 exports.get_alert_notification = async (req, res) => {
   try {
+    const { user_id } = req.user;
     const { user_designation_id, user_division_id } = req.body;
 
     // Get officer_designation_ids under the supervisor's designations
@@ -214,9 +216,30 @@ exports.get_alert_notification = async (req, res) => {
       order: [["created_at", "DESC"]],
     });
 
+    let complete_data = [];
+
+    if (alertNotifications.length > 0) {
+      complete_data = await Promise.all(
+        alertNotifications.map(async (notification) => {
+          const alertViewStatus = await AlertViewStatus.findOne({
+            where: {
+              system_alert_id: notification.system_alert_id,
+              viewed_by: user_id,
+              viewed_by_designation_id: user_designation_id,
+              viewed_by_division_id: user_division_id,
+            },
+          });
+          return {
+            ...notification.toJSON(),
+            read_status: alertViewStatus ? alertViewStatus.view_status : false,
+          };
+        })
+      );
+    }
+
     return res.status(200).json({
       success: true,
-      data: alertNotifications,
+      data: complete_data,
     });
   } catch (error) {
     console.error("Error fetching alert notifications:", error);
@@ -229,11 +252,36 @@ exports.get_alert_notification = async (req, res) => {
 
 exports.get_case_approval_by_id = async (req, res) => {
   try {
-    const { approval_id } = req.body;
+    const { user_id } = req.user;
+    const { approval_id, user_designation_id, user_division_id } = req.body;
 
     const approval = await UiCaseApproval.findOne({
       where: { approval_id },
     });
+
+    const alertNotifications = await System_Alerts.findOne({
+      where: { approval_id: approval_id },
+    });
+
+    //update the  AlertViewStatus create a entery if not exist
+    const alertViewStatus = await AlertViewStatus.findOne({
+      where: {
+        system_alert_id: alertNotifications.system_alert_id,
+        viewed_by: user_id,
+        viewed_by_designation_id: user_designation_id,
+        viewed_by_division_id: user_division_id,
+      },
+    });
+
+    if (!alertViewStatus) {
+      await AlertViewStatus.create({
+        system_alert_id: alertNotifications.system_alert_id,
+        viewed_by: user_id,
+        viewed_by_designation_id: user_designation_id,
+        viewed_by_division_id: user_division_id,
+        view_status: true,
+      });
+    }
 
     return res.status(200).json({
       success: true,
