@@ -1,10 +1,18 @@
-const { UiCaseApproval, ApprovalItem, Designation } = require("../models");
+const {
+  UiCaseApproval,
+  ApprovalItem,
+  Designation,
+  System_Alerts,
+  UsersHierarchy,
+} = require("../models");
 const fs = require("fs");
 const path = require("path");
 const dbConfig = require("../config/dbConfig");
+const { Op } = require("sequelize");
 const { where } = require("sequelize");
 
 exports.create_ui_case_approval = async (req, res) => {
+  const { user_id } = req.user;
   const {
     approval_item,
     approved_by,
@@ -14,6 +22,8 @@ exports.create_ui_case_approval = async (req, res) => {
     pt_case_id,
     eq_case_id,
     transaction_id,
+    created_by_designation_id,
+    created_by_division_id,
   } = req.body;
 
   // Transaction ID validation
@@ -62,11 +72,36 @@ exports.create_ui_case_approval = async (req, res) => {
       { transaction: t }
     );
 
+    let reference_id = ui_case_id || pt_case_id || eq_case_id;
+    if (!reference_id) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message:
+          "At least one of ui_case_id, pt_case_id, or eq_case_id is required.",
+      });
+    }
+
+    // Create System_Alerts entry
+    const systemAlert = await System_Alerts.create(
+      {
+        approval_id: newApproval.approval_id,
+        reference_id: reference_id,
+        alert_type: "Approval",
+        alert_message: newApproval.remarks,
+        created_by: user_id || null,
+        created_by_designation_id: created_by_designation_id || null,
+        created_by_division_id: created_by_division_id || null,
+      },
+      { transaction: t }
+    );
+
     await t.commit();
     return res.status(201).json({
       success: true,
       message: "UiCaseApproval created successfully",
       data: newApproval,
+      alert_data: systemAlert,
     });
   } catch (error) {
     if (t.finished !== "rollback") {
@@ -150,6 +185,44 @@ exports.get_ui_case_approvals = async (req, res) => {
     console.error("Error fetching Approvals:", error);
     return res.status(500).json({
       message: "Failed to fetch Approvals",
+      error: error.message,
+    });
+  }
+};
+
+exports.get_alert_notification = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const { user_designation_id, user_division_id } = req.body;
+
+    // Get officer_designation_ids under the supervisor's designations
+    const subordinates = await UsersHierarchy.findAll({
+      where: {
+        supervisor_designation_id: user_designation_id,
+      },
+      attributes: ["officer_designation_id"],
+    });
+
+    const officer_designation_ids = subordinates.map(
+      (subordinate) => subordinate.officer_designation_id
+    );
+
+    const alertNotifications = await System_Alerts.findAll({
+      where: {
+        created_by_designation_id: { [Op.in]: officer_designation_ids },
+        created_by_division_id: user_division_id,
+      },
+      order: [["created_at", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: alertNotifications,
+    });
+  } catch (error) {
+    console.error("Error fetching alert notifications:", error);
+    return res.status(500).json({
+      message: "Failed to fetch alert notifications",
       error: error.message,
     });
   }

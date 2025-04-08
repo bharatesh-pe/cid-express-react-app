@@ -85,7 +85,7 @@ module.exports = (sequelize, DataTypes) => {
       as: "alerts",
     });
 
-    Users.hasMany(models.System_Alerts, {
+    Users.hasMany(models.AlertViewStatus, {
       foreignKey: "viewed_by",
       as: "viewedByUser",
     });
