@@ -2,38 +2,31 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("system_alerts", {
-      system_alert_id: {
-        type: Sequelize.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
+    await queryInterface.createTable("alert_view_status", {
+      alert_view_status_id: {
         allowNull: false,
+        autoIncrement: true,
+        primaryKey: true,
+        type: Sequelize.INTEGER,
       },
-      approval_id: {
+      system_alert_id: {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
-          model: "ui_case_approval",
-          key: "approval_id",
+          model: "system_alerts",
+          key: "system_alert_id",
         },
         onUpdate: "CASCADE",
-        onDelete: "RESTRICT",
+        onDelete: "RESTRICT", // Don't allow delete if alert exists
       },
-      reference_id: {
+      view_status: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
+      viewed_by: {
         type: Sequelize.INTEGER,
         allowNull: true,
-      },
-      alert_message: {
-        type: Sequelize.TEXT,
-        allowNull: false,
-      },
-      alert_type: {
-        type: Sequelize.TEXT,
-        allowNull: false,
-      },
-      created_by: {
-        type: Sequelize.INTEGER,
-        allowNull: false,
         references: {
           model: "users",
           key: "user_id",
@@ -41,7 +34,7 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "RESTRICT",
       },
-      created_by_designation_id: {
+      viewed_by_designation_id: {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
@@ -51,7 +44,7 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "RESTRICT",
       },
-      created_by_division_id: {
+      viewed_by_division_id: {
         type: Sequelize.INTEGER,
         allowNull: true,
         references: {
@@ -61,7 +54,7 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "RESTRICT",
       },
-      created_at: {
+      viewed_at: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
@@ -70,6 +63,6 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable("system_alerts");
+    await queryInterface.dropTable("alert_view_status");
   },
 };

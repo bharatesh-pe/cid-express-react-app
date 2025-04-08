@@ -13,6 +13,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "approved_by",
         as: "approvedBy",
       });
+      UiCaseApproval.hasMany(models.System_Alerts, {
+        foreignKey: "approval_id",
+        as: "alerts",
+      });
     }
   }
 
