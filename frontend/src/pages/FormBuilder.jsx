@@ -144,7 +144,7 @@ const Formbuilder = () => {
             if(dependent_field && dependent_field[0] && dependent_field[0].api){
                 var apiPayload = {}
                 if(dependent_field[0].dependent_table.length === 1){
-                    const key = selectedField.table === 'units' ? 'unit_id' : `${selectedField.table}_id`;
+                    const key = selectedField.table === 'users' ? 'user_id' : `${selectedField.table}_id`;
                     apiPayload = {
                         [key] : formData[selectedField.name]
                     }
@@ -154,7 +154,7 @@ const Formbuilder = () => {
                     })
                     apiPayload = dependentFields.reduce((payload, field) => {
                         if (formData && formData[field.name]) {
-                            const key = field.table === 'units' ? 'unit_id' : `${field.table}_id`;
+                            const key = field.table === 'users' ? 'user_id' : `${field.table}_id`;
                             payload[key] = formData[field.name];
                         }
                         return payload;
@@ -173,8 +173,8 @@ const Formbuilder = () => {
                         if (getOptionsValue && getOptionsValue.data) {
                             updatedOptions = getOptionsValue.data.map((field, i) => {
                                 return {
-                                    name: field[dependent_field[0].table === 'units' ? 'unit_name' : dependent_field[0].table + '_name'],
-                                    code: field[dependent_field[0].table === 'units' ? 'unit_id' : dependent_field[0].table + '_id']
+                                    name: field[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
+                                    code: field[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
                                 }
                             })
                         }
@@ -1673,7 +1673,7 @@ const Formbuilder = () => {
 
                         const apiPayload = getTableField.reduce((payload, field) => {
                             if (formData && formData[field.name]) {
-                                const key = field.table === 'units' ? 'unit_id' : `${field.table}_id`;
+                                const key = field.table === 'users' ? 'user_id' : `${field.table}_id`;
                                 payload[key] = formData[field.name];
                             } else {
                                 emptyValue = true;
@@ -1701,14 +1701,14 @@ const Formbuilder = () => {
                             setLoading(false);
 
                             var updatedOptions = [];
-                            var forignKey = selectedMasterOptions.table === 'units' ? 'unit_id' : selectedMasterOptions.table + '_id';
-                            var attributeKey = selectedMasterOptions.table === 'units' ? ['unit_name'] : [selectedMasterOptions.table + '_name'];
+                            var forignKey = selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id';
+                            var attributeKey = selectedMasterOptions.table === 'users' ? ['name'] : [selectedMasterOptions.table + '_name'];
                             if (getOptionsValue && getOptionsValue.data) {
     
                                 updatedOptions = getOptionsValue.data.map((field, i) => {
                                     return {
-                                        name: field[selectedMasterOptions.table === 'units' ? 'unit_name' : selectedMasterOptions.table + '_name'],
-                                        code: field[selectedMasterOptions.table === 'units' ? 'unit_id' : selectedMasterOptions.table + '_id']
+                                        name: field[selectedMasterOptions.table === 'users' ? 'name' : selectedMasterOptions.table + '_name'],
+                                        code: field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
                                     }
                                 })
     

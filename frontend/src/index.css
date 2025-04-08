@@ -958,3 +958,15 @@ div::first-letter {
         background-color: #E46E0B !important;
         border-radius: 50%;
     }
+
+    .navbarHeight{
+        min-height: 55.5px !important;
+    }
+    .navbarSearchInput{
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    .navbarSearchInput .MuiInputBase-root.Mui-focused{
+        box-shadow: none !important;
+    }

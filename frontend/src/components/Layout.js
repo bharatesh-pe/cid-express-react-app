@@ -27,6 +27,7 @@ import userSidebarMenu from "./sidebar/user.json";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import userImg from "../Images/userImg.png";
+import Navbar from './navbar'
 
 const icons = {
   dashboard: (
@@ -317,7 +318,6 @@ const Layout = ({ children }) => {
             display: { xs: "none", md: "block" },
             width: "253px",
             minWidth: "253px",
-            borderRight: "1px solid #D0D5DD",
             overflow: "hidden",
           }}
         >
@@ -330,6 +330,8 @@ const Layout = ({ children }) => {
                 alignItems: "center",
                 justifyContent: "center",
                 borderBottom: "1px solid #D0D5DD",
+                height: '55.5px',
+                padding: '3px'
               }}
             >
               <img
@@ -351,7 +353,7 @@ const Layout = ({ children }) => {
 
             {/* Sidebar Content (Navigation Links) */}
 
-            <Box sx={{ position: "relative" }}>
+            <Box sx={{ position: "relative", borderRight: "1px solid #D0D5DD" }}>
               <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
                 {/* 1st menu list */}
                 <Box
@@ -557,6 +559,7 @@ const Layout = ({ children }) => {
 
         {/* Main Content */}
         <Box flex={4} sx={{ overflow: "hidden" }}>
+          <Navbar />
           <Paper sx={{ height: "100%", borderRadius: "0", boxShadow: "none" }}>
             {/* Render nested route (e.g., Dashboard, Profile) */}
             {/* <Outlet /> */}
