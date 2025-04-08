@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import html2pdf from 'html2pdf.js';
 
-const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSave }) => {
+const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSave, is_print }) => {
 
     let data = templateFields.map((el) => {
         return {
@@ -12,8 +12,45 @@ const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSav
     });
 
     useEffect(() => {
-        handleDownloadPDF();
+        if (is_print) {
+            printContentOnly();
+        } else {
+            handleDownloadPDF();
+        }
     }, []);
+
+    const printContentOnly = () => {
+        const content = document.getElementById('content-to-pdf');
+
+        if (!content) return;
+        const printWindow = window.open('', '', 'width=1000,height=800');
+        printWindow.document.write(`
+            <html>
+                <head>
+                    <style>
+                        body {
+                            font-family: Inter, sans-serif;
+                            padding: 20px;
+                        }
+                        @page {
+                            margin: 4mm;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content.innerHTML}
+                </body>
+            </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+
+        setTimeout(() => {
+            printWindow.print();
+            printWindow.close();
+            onSave && onSave();
+        }, 500);
+    };
 
     const handleDownloadPDF = () => {
         const element = document.getElementById('content-to-pdf');
@@ -35,7 +72,7 @@ const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSav
         };
 
         html2pdf().from(element).set(options).save(); // Apply the options and save the PDF
-        onSave();
+        onSave && onSave();
     };
 
     return (
