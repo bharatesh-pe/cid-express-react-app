@@ -1,10 +1,21 @@
-const { UiCaseApproval, ApprovalItem, Designation } = require("../models");
+const {
+  UiCaseApproval,
+  ApprovalItem,
+  Designation,
+  System_Alerts,
+  UsersHierarchy,
+  AlertViewStatus,
+  KGID,
+  Users,
+} = require("../models");
 const fs = require("fs");
 const path = require("path");
 const dbConfig = require("../config/dbConfig");
+const { Op } = require("sequelize");
 const { where } = require("sequelize");
 
 exports.create_ui_case_approval = async (req, res) => {
+  const { user_id } = req.user;
   const {
     approval_item,
     approved_by,
@@ -14,6 +25,8 @@ exports.create_ui_case_approval = async (req, res) => {
     pt_case_id,
     eq_case_id,
     transaction_id,
+    created_by_designation_id,
+    created_by_division_id,
   } = req.body;
 
   // Transaction ID validation
@@ -62,11 +75,36 @@ exports.create_ui_case_approval = async (req, res) => {
       { transaction: t }
     );
 
+    let reference_id = ui_case_id || pt_case_id || eq_case_id;
+    if (!reference_id) {
+      await t.rollback();
+      return res.status(400).json({
+        success: false,
+        message:
+          "At least one of ui_case_id, pt_case_id, or eq_case_id is required.",
+      });
+    }
+
+    // Create System_Alerts entry
+    const systemAlert = await System_Alerts.create(
+      {
+        approval_id: newApproval.approval_id,
+        reference_id: reference_id,
+        alert_type: "Approval",
+        alert_message: newApproval.remarks,
+        created_by: user_id || null,
+        created_by_designation_id: created_by_designation_id || null,
+        created_by_division_id: created_by_division_id || null,
+      },
+      { transaction: t }
+    );
+
     await t.commit();
     return res.status(201).json({
       success: true,
       message: "UiCaseApproval created successfully",
       data: newApproval,
+      alert_data: systemAlert,
     });
   } catch (error) {
     if (t.finished !== "rollback") {
@@ -150,6 +188,163 @@ exports.get_ui_case_approvals = async (req, res) => {
     console.error("Error fetching Approvals:", error);
     return res.status(500).json({
       message: "Failed to fetch Approvals",
+      error: error.message,
+    });
+  }
+};
+
+exports.get_alert_notification = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const { user_designation_id, user_division_id } = req.body;
+
+    // Get officer_designation_ids under the supervisor's designations
+    const subordinates = await UsersHierarchy.findAll({
+      where: {
+        supervisor_designation_id: user_designation_id,
+      },
+      attributes: ["officer_designation_id"],
+    });
+
+    const officer_designation_ids = subordinates.map(
+      (subordinate) => subordinate.officer_designation_id
+    );
+
+    const alertNotifications = await System_Alerts.findAll({
+      where: {
+        created_by_designation_id: { [Op.in]: officer_designation_ids },
+        created_by_division_id: user_division_id,
+      },
+      order: [["created_at", "DESC"]],
+    });
+
+    let complete_data = [];
+
+    if (alertNotifications.length > 0) {
+      complete_data = await Promise.all(
+        alertNotifications.map(async (notification) => {
+          const alertViewStatus = await AlertViewStatus.findOne({
+            where: {
+              system_alert_id: notification.system_alert_id,
+              viewed_by: user_id,
+              viewed_by_designation_id: user_designation_id,
+              viewed_by_division_id: user_division_id,
+            },
+          });
+          return {
+            ...notification.toJSON(),
+            read_status: alertViewStatus ? alertViewStatus.view_status : false,
+          };
+        })
+      );
+    }
+
+    //from the complete_data there is created_by get it and fing the user name in user table and in user table there is only kgid_id and the name is in the kgid table get the name
+    const userIds = complete_data.map(
+      (notification) => notification.created_by
+    );
+
+    const users = await Users.findAll({
+      where: { kgid_id: { [Op.in]: userIds } },
+      attributes: ["kgid_id"],
+    });
+
+    //here i have the kgid_id and i will find the name in the kgid table
+    const kgidIds = users.map((user) => user.kgid_id);
+
+    const kgids = await KGID.findAll({
+      where: { id: { [Op.in]: kgidIds } },
+      attributes: ["id", "name"],
+    });
+
+    //create a map of kgid_id and name
+    const kgidMap = kgids.reduce((acc, kgid) => {
+      acc[kgid.id] = kgid.name;
+      return acc;
+    }, {});
+
+    //add the name to the complete_data
+    complete_data = complete_data.map((notification) => {
+      notification.created_by_name = kgidMap[notification.created_by];
+      return notification;
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: complete_data,
+    });
+  } catch (error) {
+    console.error("Error fetching alert notifications:", error);
+    return res.status(500).json({
+      message: "Failed to fetch alert notifications",
+      error: error.message,
+    });
+  }
+};
+
+exports.get_case_approval_by_id = async (req, res) => {
+  try {
+    const { user_id } = req.user;
+    const { approval_id, user_designation_id, user_division_id } = req.body;
+
+    //also get the approval_item name from ApprovalItem is linked and approved_by name from Designation
+    const approvalDetails = await UiCaseApproval.findOne({
+      where: { approval_id },
+      include: [
+        {
+          model: ApprovalItem,
+          as: "approvalItem",
+          attributes: ["name"],
+        },
+        {
+          model: Designation,
+          as: "approvedBy",
+          attributes: ["designation_name"],
+        },
+      ],
+      raw: true,
+      nest: true,
+    });
+
+    // Flatten the response
+    const formattedDetails = {
+      ...approvalDetails,
+      approvalItem: approvalDetails?.approvalItem?.name || null,
+      approvedBy: approvalDetails?.approvedBy?.designation_name || null,
+    };
+
+    const alertNotifications = await System_Alerts.findOne({
+      where: { approval_id: approval_id },
+    });
+
+    //update the  AlertViewStatus create a entery if not exist
+    const alertViewStatus = await AlertViewStatus.findOne({
+      where: {
+        system_alert_id: alertNotifications.system_alert_id,
+        viewed_by: user_id,
+        viewed_by_designation_id: user_designation_id,
+        viewed_by_division_id: user_division_id,
+      },
+    });
+
+    if (!alertViewStatus) {
+      await AlertViewStatus.create({
+        system_alert_id: alertNotifications.system_alert_id,
+        viewed_by: user_id,
+        viewed_by_designation_id: user_designation_id,
+        viewed_by_division_id: user_division_id,
+        view_status: true,
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: formattedDetails,
+    });
+  } catch (error) {
+    console.error("Error fetching approval by ID:", error);
+    return res.status(500).json({
+      message: "Failed to fetch approval",
       error: error.message,
     });
   }
