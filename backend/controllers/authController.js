@@ -11,7 +11,7 @@ const {
   UsersHierarchy,
   System_Alerts,
   AlertViewStatus,
-} = require("../models"); // Correct import
+} = require("../models");
 const crypto = require("crypto");
 const moment = require("moment");
 const { generateUserToken } = require("../helper/validations");
@@ -20,10 +20,6 @@ const { Op } = require("sequelize");
 
 const get_module = async (req, res) => {
   try {
-    // Assuming you have a model for the module table
-    //const Module = require('../models/Module');
-    //const Role = require('../models/Role');
-
     const { user_id } = req.user;
     const { user_designation_id, user_division_id } = req.body;
 
@@ -534,7 +530,7 @@ const verify_OTP_without_pin = async (req, res) => {
 
 const update_pin = async (req, res) => {
   try {
-    const { kgid, pin } = req.body;
+    const { kgid, pin, transaction_id } = req.body;
 
     // Check if kgid and otp are provided
     if (!kgid || !pin) {
@@ -542,6 +538,16 @@ const update_pin = async (req, res) => {
         .status(400)
         .json({ success: false, message: "KGID and PIN are required" });
     }
+
+    const dirPath = path.join(
+      __dirname,
+      `../data/user_unique/${transaction_id}`
+    );
+    if (fs.existsSync(dirPath))
+      return res
+        .status(400)
+        .json({ success: false, message: "Duplicate transaction detected." });
+    fs.mkdirSync(dirPath, { recursive: true });
 
     const kgid_detail = await KGID.findOne({ where: { kgid } });
 
@@ -587,6 +593,9 @@ const update_pin = async (req, res) => {
     return res
       .status(500)
       .json({ success: false, message: "Internal Server Error" });
+  } finally {
+    if (fs.existsSync(dirPath))
+      fs.rmSync(dirPath, { recursive: true, force: true });
   }
 };
 
