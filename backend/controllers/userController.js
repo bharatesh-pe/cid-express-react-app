@@ -596,10 +596,20 @@ exports.filter_users = async (req, res) => {
     const filters = orConditions.length > 0 ? { [Op.or]: orConditions } : {}; // Apply OR condition
 
     console.log("Final Filters:", filters);
+    const excluded_role_ids = [1, 10, 21];
 
     const users = await Users.findAll({
       include: [
-        { model: Role, as: "role", attributes: ["role_id", "role_title"] },
+        {
+          model: Role,
+          as: "role",
+          attributes: ["role_id", "role_title"],
+          where: {
+            role_id: {
+              [Op.notIn]: excluded_role_ids,
+            },
+          },
+        },
         {
           model: KGID,
           as: "kgidDetails",
