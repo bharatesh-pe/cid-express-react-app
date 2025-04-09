@@ -93,7 +93,7 @@ const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSav
                                     <tr>
                                         <td>
                                             <div style={{ marginBottom: "10px" }} key={index}>
-                                                <div style={{ color: '#3E4784', fontSize: '14px' }}> {el?.label} {el?.kannada} </div>
+                                                <div style={{ color: '#3E4784', fontSize: '14px' }}> {el?.label} {el.kannada ? '/ '+el.kannada : ''} </div>
                                                 <div style={{ color: '#101828', fontSize: '16px' }}> {el?.value ? el?.value : '-'} </div>
                                                 {/* Page Break (can help with splitting the content across multiple pages) */}
                                                 {/* {index % 5 === 0 && <div className="page-break" style={{ pageBreakBefore: 'always' }}></div>} */}

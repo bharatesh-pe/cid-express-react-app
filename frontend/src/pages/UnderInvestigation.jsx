@@ -3135,7 +3135,9 @@ const UnderInvestigation = () => {
         var payloadApproveData = {
             ...approvalSaveData,
             "ui_case_id" : furtherInvestigationSelectedRow && furtherInvestigationSelectedRow.id ? furtherInvestigationSelectedRow.id : selectedRow.id,
-            "transaction_id" : randomApprovalId
+            "transaction_id" : randomApprovalId,
+            "created_by_designation_id" : localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : '',
+            "created_by_division_id" :  localStorage.getItem("division_id") ? localStorage.getItem("division_id") : '', 
         }
 
         setLoading(true);
@@ -3695,14 +3697,16 @@ const UnderInvestigation = () => {
             "onclick": (selectedRow) => changeSysStatus(selectedRow, 'Reinvestigation', 'Do you want to update this case to Reinvestigation ?')
         }
         : null,
-        {
+        userPermissions[0]?.case_details_download
+        ? {
             "name": "Download",
             "onclick": (selectedRow) => getPdfContentData(selectedRow, false, table_name)
-        },
-        {
+        } : null,
+        userPermissions[0]?.case_details_print
+        ? {
             "name": "Print",
             "onclick": (selectedRow) => getPdfContentData(selectedRow, true, table_name)
-        }
+        } : null
         
     ].filter(Boolean);
 
