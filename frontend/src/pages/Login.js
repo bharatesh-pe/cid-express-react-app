@@ -228,6 +228,18 @@ const Login = () => {
             // console.log('data.user_position',data.user_position);
             // console.log('data.user_role_permissions',data.user_role_permissions);
 
+      if (data && data.user_role_permissions) {
+          // localStorage.setItem('user_permissions', data.user_role_permissions);
+        localStorage.setItem(
+          "user_permissions",
+          JSON.stringify(data.user_role_permissions)
+        );
+      }
+      
+      if (data && data.users_designation) {
+        setUsersDesignations(data.users_designation);
+      }
+
       if (data && data.users_division) {
         setUsersDivision(data.users_division);
       }
