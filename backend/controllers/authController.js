@@ -8,17 +8,24 @@ const {
   Division,
   UsersDivision,
   KGID,
+  UsersHierarchy,
+  System_Alerts,
+  AlertViewStatus,
 } = require("../models"); // Correct import
 const crypto = require("crypto");
 const moment = require("moment");
 const { generateUserToken } = require("../helper/validations");
 const e = require("express");
+const { Op } = require("sequelize");
 
 const get_module = async (req, res) => {
   try {
     // Assuming you have a model for the module table
     //const Module = require('../models/Module');
     //const Role = require('../models/Role');
+
+    const { user_id } = req.user;
+    const { user_designation_id, user_division_id } = req.body;
 
     const modules = await Module.findAll({
       order: [["order", "ASC"]], // Change "ASC" to "DESC" for descending order
@@ -52,8 +59,58 @@ const get_module = async (req, res) => {
       }
     });
 
+    // Get officer_designation_ids under the supervisor's designations
+    const subordinates = await UsersHierarchy.findAll({
+      where: {
+        supervisor_designation_id: user_designation_id,
+      },
+      attributes: ["officer_designation_id"],
+    });
+
+    const officer_designation_ids = subordinates.map(
+      (subordinate) => subordinate.officer_designation_id
+    );
+
+    const alertNotifications = await System_Alerts.findAll({
+      where: {
+        created_by_designation_id: { [Op.in]: officer_designation_ids },
+        created_by_division_id: user_division_id,
+      },
+      order: [["created_at", "DESC"]],
+    });
+
+    let complete_data = [];
+
+    if (alertNotifications.length > 0) {
+      complete_data = await Promise.all(
+        alertNotifications.map(async (notification) => {
+          const alertViewStatus = await AlertViewStatus.findOne({
+            where: {
+              system_alert_id: notification.system_alert_id,
+              viewed_by: user_id,
+              viewed_by_designation_id: user_designation_id,
+              viewed_by_division_id: user_division_id,
+            },
+          });
+          return {
+            ...notification.toJSON(),
+            read_status: alertViewStatus ? alertViewStatus.view_status : false,
+          };
+        })
+      );
+    }
+
+    //get the read_status false count from the complete_data
+    const unreadNotificationCount = complete_data.filter(
+      (notification) => !notification.read_status
+    ).length;
+
     // Return the enabled modules
-    return res.status(200).json({ success: true, modules: enabled_modules });
+    return res.status(200).json({
+      success: true,
+      modules: enabled_modules,
+      unreadNotificationCount,
+    });
   } catch (error) {
     // Log and return error if an error occurs during module retrieval
     console.error("error retrieving modules:", error.message);
