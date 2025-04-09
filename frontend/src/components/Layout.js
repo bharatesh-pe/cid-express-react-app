@@ -193,12 +193,19 @@ const Layout = ({ children }) => {
       try {
         const token = localStorage.getItem("auth_token");
         const serverURL = process.env.REACT_APP_SERVER_URL;
+        var user_designation_id = localStorage.getItem("designation_id") || "";
+        var user_division_id = localStorage.getItem("division_id") || "0";
+
         const response = await fetch(`${serverURL}/auth/get_module`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             token: token,
           },
+          body: JSON.stringify({
+            user_designation_id: user_designation_id,
+            user_division_id: user_division_id,
+          }),
         });
         setLoading(false);
         const data = await response.json();

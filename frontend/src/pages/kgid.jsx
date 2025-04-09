@@ -40,7 +40,7 @@ const KGID = () => {
     const [addRoleData, setAddRoleData] = useState({
         'kgid':'',
         'name': '',
-        'mobile': ''
+        'mobile': '',
     });
     const [departmentRowData, setDepartmentRowData] = useState([]);
     const [currentPage, setCurrentPage] = useState(0);
@@ -98,7 +98,9 @@ const KGID = () => {
             id: role.id,
             kgid: role.kgid,
             name: role.name,
-            mobile: role.mobile
+            mobile: role.mobile,
+            start: role.start_date,
+            end: role.end_date,
         });
 
         setShowEditModal(true);
@@ -265,7 +267,9 @@ const KGID = () => {
                         id: row.id,
                         kgid: row.kgid,
                         name: row.name,
-                        mobile: row.mobile
+                        mobile: row.mobile,
+                        start_date : row.start_date,
+                        end_date : row.end_date,
                     };
                 });
                 setDepartmentRowData(updatedData);
@@ -442,6 +446,14 @@ const KGID = () => {
     };
 
 
+    const handleDateInputChange = (e) => {
+        const { name, value } = e.target;
+    
+        setSelectedRole((prevState) => ({
+            ...prevState,
+            [name === "start_date" ? "start" : name === "end_date" ? "end" : name]: value,
+        }));
+    };
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setSelectedRole(prevState => ({
@@ -521,7 +533,9 @@ const KGID = () => {
                 id: selectedRole.id,
                 kgid: selectedRole.kgid,
                 name: selectedRole.name,
-                mobile: selectedRole.mobile
+                mobile: selectedRole.mobile,
+                start_date: selectedRole.start,
+                end_date: selectedRole.end,
             }
         };
 
@@ -774,8 +788,37 @@ const KGID = () => {
                                     disabled={showViewModal}
                                 />
                             </Box>
-                            
-                        </FormControl>
+                            {showEditModal && (
+                        <>
+                            <Box sx={{ marginY: '18px' }}>
+                                <h4 className="form-field-heading">
+                                    Start Date
+                                </h4>
+                                <TextField
+                                    fullWidth
+                                    type="date"
+                                    name="start_date"
+                                    value={selectedRole?.start ? selectedRole.start.split('T')[0] : ""}
+                                    onChange={handleDateInputChange}
+                                    disabled={showViewModal}
+                                />
+                            </Box>
+                            <Box sx={{ marginY: '18px' }}>
+                                <h4 className="form-field-heading">
+                                    End Date
+                                </h4>
+                                <TextField
+                                    fullWidth
+                                    type="date"
+                                    name="end_date"
+                                    value={selectedRole?.end ? selectedRole.end.split('T')[0] : ""}
+                                    onChange={handleDateInputChange}
+                                    disabled={showViewModal}
+                                />
+                            </Box>
+                        </>
+                    )}                        
+                    </FormControl>
                     </DialogContentText>
                 </DialogContent>
 
