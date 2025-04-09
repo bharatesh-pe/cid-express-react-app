@@ -20,6 +20,7 @@ import { CircularProgress } from "@mui/material";
 const Login = () => {
   const [kgid, setKGID] = useState("");
   const [pin, setPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
   const [otp, setOtp] = useState("");
   const [validationError, setValidationError] = useState("");
   const [loading, setLoading] = useState(false); // State for loading indicator
