@@ -45,6 +45,7 @@ import dayjs from "dayjs";
 import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
+import GenerateProfilePdf from "./GenerateProfilePdf";
 
 const UnderInvestigation = () => {
     const location = useLocation();
@@ -175,6 +176,127 @@ const UnderInvestigation = () => {
     const [furtherInvestigationPtCase, setFurtherInvestigationPtCase] = useState(false);
     const [furtherInvestigationSelectedRow, setFurtherInvestigationSelectedRow] = useState([]);
     const [furtherInvestigationSelectedValue, setFurtherInvestigationSelectedValue] = useState(null);
+
+    // for pdf download
+    const [isDownloadPdf, setIsDownloadPdf] = useState(false);
+    const [downloadPdfFields, setDownloadPdfFields] = useState({});
+    const [downloadPdfData, setDownloadPdfData] = useState([]);
+    const [isPrint, setIsPrint] = useState(false);
+
+    const handleOnSavePdf = () =>{
+        setIsDownloadPdf(false);
+        setLoading(false);
+        setIsPrint(false);
+    }
+
+    const getPdfContentData = async (rowData, isPrint, table_name)=> {
+
+        if (!table_name || table_name === '') {
+            toast.warning('Please Check Table Name', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return
+        }
+
+        var viewTemplatePayload = {
+            "table_name": table_name,
+            "id": rowData.id,
+        }
+        setLoading(true);
+
+        try {
+
+            const viewTemplateData = await api.post("/templateData/viewMagazineTemplateData", viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData && viewTemplateData.success) {
+
+                const viewTableData = {
+                    "table_name": table_name
+                }
+
+                setLoading(true);
+                try {
+
+                    const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+                    setLoading(false);
+
+                    if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                        setDownloadPdfData(viewTemplateData.data ? viewTemplateData.data : {});
+                        setDownloadPdfFields(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                        setIsDownloadPdf(true);
+                        setLoading(true);
+                        setIsPrint(isPrint);
+
+                    } else {
+                        const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+
+            } else {
+                const errorMessage = viewTemplateData.message ? viewTemplateData.message : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
 
     // change sys_status
 
@@ -3013,7 +3135,9 @@ const UnderInvestigation = () => {
         var payloadApproveData = {
             ...approvalSaveData,
             "ui_case_id" : furtherInvestigationSelectedRow && furtherInvestigationSelectedRow.id ? furtherInvestigationSelectedRow.id : selectedRow.id,
-            "transaction_id" : randomApprovalId
+            "transaction_id" : randomApprovalId,
+            "created_by_designation_id" : localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : '',
+            "created_by_division_id" :  localStorage.getItem("division_id") ? localStorage.getItem("division_id") : '', 
         }
 
         setLoading(true);
@@ -3573,10 +3697,16 @@ const UnderInvestigation = () => {
             "onclick": (selectedRow) => changeSysStatus(selectedRow, 'Reinvestigation', 'Do you want to update this case to Reinvestigation ?')
         }
         : null,
-        {
-            "name": "Download and print",
-            "onclick": (selectedRow) => handleTemplateDataView(selectedRow, false, table_name)
-        }
+        userPermissions[0]?.case_details_download
+        ? {
+            "name": "Download",
+            "onclick": (selectedRow) => getPdfContentData(selectedRow, false, table_name)
+        } : null,
+        userPermissions[0]?.case_details_print
+        ? {
+            "name": "Print",
+            "onclick": (selectedRow) => getPdfContentData(selectedRow, true, table_name)
+        } : null
         
     ].filter(Boolean);
 
@@ -4696,6 +4826,8 @@ const UnderInvestigation = () => {
                     </DialogActions>
                 </Dialog>
             }
+
+            {isDownloadPdf && <GenerateProfilePdf is_print={isPrint} templateData={downloadPdfData} templateFields={downloadPdfFields} template_name={template_name} onSave={handleOnSavePdf} />}
 
         </Box>
     )
