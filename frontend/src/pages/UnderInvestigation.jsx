@@ -3617,7 +3617,7 @@ const UnderInvestigation = () => {
     
                     // const today = dayjs().format("YYYY-MM-DD");
     
-                    setfilterDropdownObj(getOnlyDropdown);
+                    getAllOptionsforFilter(getOnlyDropdown);
                     // if(fromDateValue == null || toDateValue === null){
                     //     setFromDateValue(today);
                     //     setToDateValue(today);
@@ -3657,6 +3657,51 @@ const UnderInvestigation = () => {
             }
         }
 
+        const getAllOptionsforFilter = async (dropdownFields)=> {
+            try {
+                setLoading(true);
+    
+                const apiCalls = dropdownFields
+                    .filter(field => field.api === '/templateData/getTemplateData' && field.table)
+                    .map(async (field) => {
+                        try {
+                            const response = await api.post(field.api, { table_name: field.table });
+    
+                            if (!response.data) return { id: field.id, options: [] };
+    
+                            const updatedOptions = response.data.map((templateData) => {
+                                const nameKey = Object.keys(templateData).find(
+                                    key => !['id', 'created_at', 'updated_at'].includes(key)
+                                );
+                                return {
+                                    name: nameKey ? templateData[nameKey] : '',
+                                    code: templateData.id
+                                };
+                            });
+    
+                            return { id: field.id, options: updatedOptions };
+    
+                        } catch (error) {
+                            return { id: field.id, options: [] };
+                        }
+                    });
+    
+                const results = await Promise.all(apiCalls);
+    
+                setLoading(false);
+                var updatedFieldsDropdown = dropdownFields.map((field) => {
+                    const updatedField = results.find((res) => res.id === field.id);
+                    return updatedField ? { ...field, options: updatedField.options } : field;
+                });
+    
+                setfilterDropdownObj(updatedFieldsDropdown);
+    
+            } catch (error) {
+                setLoading(false);
+                console.error('Error fetching template data:', error);
+            }
+        }
+
         const handleClear = () => {
             setSearchValue('');
             setFilterValues({});
@@ -3691,7 +3736,7 @@ const UnderInvestigation = () => {
                     var apiPayload = {}
                     if (dependent_field[0].dependent_table.length === 1) {
     
-                        const key = field.table === 'units' ? 'unit_id' : `${field.table}_id`;
+                        const key = field.table === 'users' ? 'user_id' : `${field.table}_id`;
                         apiPayload = {
                             [key]: updatedFormData[field.name]
                         }
@@ -3704,7 +3749,7 @@ const UnderInvestigation = () => {
     
                         apiPayload = dependentFields.reduce((payload, element) => {
                             if (updatedFormData && updatedFormData[element.name]) {
-                                const key = element.table === 'units' ? 'unit_id' : `${element.table}_id`;
+                                const key = element.table === 'users' ? 'user_id' : `${element.table}_id`;
                                 payload[key] = updatedFormData[element.name];
                             }
                             return payload;
@@ -3723,8 +3768,8 @@ const UnderInvestigation = () => {
                             if (getOptionsValue && getOptionsValue.data) {
                                 updatedOptions = getOptionsValue.data.map((element, i) => {
                                     return {
-                                        name: element[dependent_field[0].table === 'units' ? 'unit_name' : dependent_field[0].table + '_name'],
-                                        code: element[dependent_field[0].table === 'units' ? 'unit_id' : dependent_field[0].table + '_id']
+                                        name: element[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
+                                        code: element[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
                                     }
                                 })
                             }

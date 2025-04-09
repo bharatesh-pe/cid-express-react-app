@@ -27,6 +27,7 @@ import userSidebarMenu from "./sidebar/user.json";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import userImg from "../Images/userImg.png";
+import Navbar from './navbar'
 
 const icons = {
   dashboard: (
@@ -200,11 +201,11 @@ const Layout = ({ children }) => {
           },
         });
         setLoading(false);
+        const data = await response.json();
+
         if (!response.ok) {
           throw new Error(data.message);
         }
-
-        const data = await response.json();
 
         if (data && data.success && data["modules"]) {
           setSidebarMenusObj(data["modules"]);
@@ -216,14 +217,17 @@ const Layout = ({ children }) => {
           errMessage = err.message;
         }
         if (errMessage) {
+          console.log("err", err);
           console.log("errMessage", errMessage);
-          errMessage = errMessage.json();
-          if (errMessage && errMessage.Authorization_error) {
+          // errMessage = await errMessage.json();
+          if (errMessage && errMessage.includes("Authorization_error")) {
             localStorage.removeItem("auth_token");
             localStorage.removeItem("userName");
             localStorage.removeItem("authAdmin");
             localStorage.removeItem("kgid");
             localStorage.removeItem("user_permissions");
+            localStorage.removeItem("designation_id");
+            localStorage.removeItem("designation_name");
             navigate("/");
           }
         }
@@ -266,6 +270,8 @@ const Layout = ({ children }) => {
       localStorage.removeItem("authAdmin");
       localStorage.removeItem("kgid");
       localStorage.removeItem("user_permissions");
+      localStorage.removeItem("designation_id");
+      localStorage.removeItem("designation_name");
       navigate("/");
     } catch (err) {
       var errMessage = "Something went wrong. Please try again.";
@@ -274,14 +280,16 @@ const Layout = ({ children }) => {
       }
 
       if (errMessage) {
-        errMessage = errMessage.json();
+        // errMessage = await errMessage.json();
         console.log("errMessage", errMessage);
-        if (errMessage && errMessage.Authorization_error) {
+        if (errMessage && errMessage.includes("Authorization_error")) {
           localStorage.removeItem("auth_token");
           localStorage.removeItem("userName");
           localStorage.removeItem("authAdmin");
           localStorage.removeItem("kgid");
           localStorage.removeItem("user_permissions");
+          localStorage.removeItem("designation_id");
+          localStorage.removeItem("designation_name");
           navigate("/");
         }
       }
@@ -310,7 +318,6 @@ const Layout = ({ children }) => {
             display: { xs: "none", md: "block" },
             width: "253px",
             minWidth: "253px",
-            borderRight: "1px solid #D0D5DD",
             overflow: "hidden",
           }}
         >
@@ -323,6 +330,8 @@ const Layout = ({ children }) => {
                 alignItems: "center",
                 justifyContent: "center",
                 borderBottom: "1px solid #D0D5DD",
+                height: '55.5px',
+                padding: '3px'
               }}
             >
               <img
@@ -344,7 +353,7 @@ const Layout = ({ children }) => {
 
             {/* Sidebar Content (Navigation Links) */}
 
-            <Box sx={{ position: "relative" }}>
+            <Box sx={{ position: "relative", borderRight: "1px solid #D0D5DD" }}>
               <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
                 {/* 1st menu list */}
                 <Box
@@ -550,6 +559,7 @@ const Layout = ({ children }) => {
 
         {/* Main Content */}
         <Box flex={4} sx={{ overflow: "hidden" }}>
+          <Navbar />
           <Paper sx={{ height: "100%", borderRadius: "0", boxShadow: "none" }}>
             {/* Render nested route (e.g., Dashboard, Profile) */}
             {/* <Outlet /> */}

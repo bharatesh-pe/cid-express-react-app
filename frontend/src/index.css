@@ -958,3 +958,43 @@ div::first-letter {
         background-color: #E46E0B !important;
         border-radius: 50%;
     }
+
+    .navbarHeight{
+        min-height: 55.5px !important;
+    }
+    .navbarSearchInput{
+        border: none !important;
+        outline: none !important;
+        box-shadow: none !important;
+    }
+    .navbarSearchInput .MuiInputBase-root.Mui-focused{
+        box-shadow: none !important;
+    }
+
+    .notificationBadge .MuiBadge-badge{
+        background-color: #F04438 !important;
+        color: #FFFFFF !important;
+        font-size: 8px !important;
+        font-weight: 400 !important;
+        width: 14px !important;
+        height: 10px !important;
+        padding: 6px !important;
+    }
+
+    .AlertTitle{
+        font-family: 'Inter';
+        font-size: 13px;
+        font-weight: 400;
+        color: #212121;
+    }
+
+    .AlertNewBage{
+        background-color: #F2FFF5;
+        padding: 4px 8px;
+        border-radius: 2px;
+        color: #05A22A;
+        font-size: 11px;
+        font-weight: 400;
+        font-family: 'Inter';
+        text-transform: uppercase;
+    }
