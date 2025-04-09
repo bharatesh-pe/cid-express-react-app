@@ -27,7 +27,7 @@ import userSidebarMenu from "./sidebar/user.json";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import userImg from "../Images/userImg.png";
-import Navbar from './navbar'
+import Navbar from "./navbar";
 
 const icons = {
   dashboard: (
@@ -191,6 +191,8 @@ const Layout = ({ children }) => {
     const ApprunCall = async () => {
       setLoading(true);
       try {
+        var user_designation_id = localStorage.getItem("designation_id") || "";
+        var user_division_id = localStorage.getItem("division_id") || "0";
         const token = localStorage.getItem("auth_token");
         const serverURL = process.env.REACT_APP_SERVER_URL;
         const response = await fetch(`${serverURL}/auth/get_module`, {
@@ -199,6 +201,10 @@ const Layout = ({ children }) => {
             "Content-Type": "application/json",
             token: token,
           },
+          body: JSON.stringify({
+            user_designation_id: user_designation_id,
+            user_division_id: user_division_id,
+          }),
         });
         setLoading(false);
         const data = await response.json();
@@ -330,8 +336,8 @@ const Layout = ({ children }) => {
                 alignItems: "center",
                 justifyContent: "center",
                 borderBottom: "1px solid #D0D5DD",
-                height: '55.5px',
-                padding: '3px'
+                height: "55.5px",
+                padding: "3px",
               }}
             >
               <img
@@ -353,7 +359,9 @@ const Layout = ({ children }) => {
 
             {/* Sidebar Content (Navigation Links) */}
 
-            <Box sx={{ position: "relative", borderRight: "1px solid #D0D5DD" }}>
+            <Box
+              sx={{ position: "relative", borderRight: "1px solid #D0D5DD" }}
+            >
               <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
                 {/* 1st menu list */}
                 <Box

@@ -529,6 +529,7 @@ const verify_OTP_without_pin = async (req, res) => {
 };
 
 const update_pin = async (req, res) => {
+  let dirPath = "";
   try {
     const { kgid, pin, transaction_id } = req.body;
 
@@ -539,10 +540,7 @@ const update_pin = async (req, res) => {
         .json({ success: false, message: "KGID and PIN are required" });
     }
 
-    const dirPath = path.join(
-      __dirname,
-      `../data/user_unique/${transaction_id}`
-    );
+    dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
     if (fs.existsSync(dirPath))
       return res
         .status(400)
