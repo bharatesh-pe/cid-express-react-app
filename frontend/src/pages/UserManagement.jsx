@@ -32,6 +32,10 @@ import NumberField from "../components/form/NumberField.jsx";
 import api from "../services/api";
 import { toast } from "react-toastify";
 import CloseIcon from "@mui/icons-material/Close";
+import ClearIcon from '@mui/icons-material/Clear';
+import TextFieldInput from '@mui/material/TextField';
+import SearchIcon from '@mui/icons-material/Search';
+import { InputAdornment } from "@mui/material"
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
@@ -49,6 +53,7 @@ const UserManagement = () => {
   const [logs, setLogs] = useState([]);
   const [openLogDialog, setOpenLogDialog] = useState(false);
   const [LogDialogTitle, SetLogDialogTitle] = useState("");
+  const [searchValue, setSearchValue] = useState(null);
   const columns = [
     {
       field: "selection",
@@ -314,6 +319,7 @@ const UserManagement = () => {
     setLoading(true);
     try {
       const filters = {};
+      if (searchValue) filters.searchvalue = searchValue;
       if (newUser.name) filters.name = newUser.name;
       if (newUser.kgid) filters.kgid = newUser.kgid;
       if (newUser.role) filters.role_id = newUser.role;
@@ -324,6 +330,7 @@ const UserManagement = () => {
       if (newUser.dev_status !== undefined)
         filters.dev_status = newUser.dev_status;
 
+     
       const response = await api.post("/user/filter_users", filters);
       const users = response.users || response.data?.users;
 
@@ -374,7 +381,11 @@ const UserManagement = () => {
 
       setUsers(formattedUsers);
       setCurrentPage(0);
-      setIsFilterApplied(true);
+      if (searchValue || Object.keys(filters).length === 0) {
+        setIsFilterApplied(false);
+      } else {
+        setIsFilterApplied(true);
+      }
       setNewUser({});
       toast.success("Filters applied successfully!", {
         position: "top-right",
@@ -1058,6 +1069,54 @@ const UserManagement = () => {
           >
             {selectedUsers.length === 0 ? (
               <>
+                <TextFieldInput
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: '#475467' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      searchValue && (
+                        <IconButton
+                          sx={{ padding: 0 }}
+                          onClick={() => {
+                            setSearchValue('');
+                            setCurrentPage(0);
+                            fetchUsers();
+                          }}
+                          size="small"
+                        >
+                          <ClearIcon sx={{ color: '#475467' }} />
+                        </IconButton>
+                      )
+                    ),
+                  }}
+                  onInput={(e) => setSearchValue(e.target.value)}
+                  value={searchValue}
+                  id="tableSearch"
+                  size="small"
+                  placeholder="Search anything"
+                  variant="outlined"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleFilters();
+                    }
+                  }}
+                  sx={{
+                    width: '300px',
+                    borderRadius: '6px',
+                    outline: 'none',
+                    '& .MuiInputBase-input::placeholder': {
+                      color: '#475467',
+                      opacity: '1',
+                      fontSize: '14px',
+                      fontWeight: '400',
+                      fontFamily: 'Roboto',
+                    },
+                  }}
+                />
                 <Button
                   variant="outlined"
                   startIcon={<FilterListIcon />}
@@ -1657,7 +1716,16 @@ const UserManagement = () => {
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{log.info}</TableCell>
-                  <TableCell>{new Date(log.at).toLocaleString()}</TableCell>
+                  <TableCell>
+                    {new Date(log.at).toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    }).replace(",", "").replace(":", ".")}
+                  </TableCell>                
                 </TableRow>
               ))}
             </TableBody>
