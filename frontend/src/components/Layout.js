@@ -199,6 +199,10 @@ const Layout = ({ children }) => {
             "Content-Type": "application/json",
             token: token,
           },
+          body: JSON.stringify({
+            "user_designation_id" : localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : '',
+            "user_division_id" :  localStorage.getItem("division_id") ? localStorage.getItem("division_id") : '',
+          })
         });
         setLoading(false);
         const data = await response.json();
@@ -210,6 +214,13 @@ const Layout = ({ children }) => {
         if (data && data.success && data["modules"]) {
           setSidebarMenusObj(data["modules"]);
         }
+
+        if(data && data.success && data.unreadNotificationCount){
+            localStorage.setItem("unreadNotificationCount", data.unreadNotificationCount);
+        }else{
+            localStorage.setItem("unreadNotificationCount", 0);
+        }
+
       } catch (err) {
         setLoading(false);
         var errMessage = "Something went wrong. Please try again.";

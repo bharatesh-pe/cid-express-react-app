@@ -986,6 +986,9 @@ div::first-letter {
         font-size: 13px;
         font-weight: 400;
         color: #212121;
+        display: inline-flex;
+        gap: 2px;
+        text-transform: capitalize;
     }
 
     .AlertNewBage{
