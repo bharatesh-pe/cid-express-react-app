@@ -48,6 +48,7 @@ const PasswordInput = ({
         variant="outlined"
         className={`${className} ${error ? 'error' : ''}`}
         InputProps={{
+          autoComplete: 'new-password',
           endAdornment: (
             <InputAdornment position="end">
               <IconButton onClick={togglePasswordVisibility}>
