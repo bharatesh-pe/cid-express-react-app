@@ -269,6 +269,11 @@ exports.get_alert_notification = async (req, res) => {
       return notification;
     });
 
+    //get the read_status false count from the complete_data
+    const unreadCount = complete_data.filter(
+      (notification) => !notification.read_status
+    ).length;
+
     return res.status(200).json({
       success: true,
       data: complete_data,
