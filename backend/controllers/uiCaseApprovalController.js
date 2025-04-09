@@ -5,6 +5,8 @@ const {
   System_Alerts,
   UsersHierarchy,
   AlertViewStatus,
+  KGID,
+  Users,
 } = require("../models");
 const fs = require("fs");
 const path = require("path");
@@ -237,6 +239,36 @@ exports.get_alert_notification = async (req, res) => {
       );
     }
 
+    //from the complete_data there is created_by get it and fing the user name in user table and in user table there is only kgid_id and the name is in the kgid table get the name
+    const userIds = complete_data.map(
+      (notification) => notification.created_by
+    );
+
+    const users = await Users.findAll({
+      where: { kgid_id: { [Op.in]: userIds } },
+      attributes: ["kgid_id"],
+    });
+
+    //here i have the kgid_id and i will find the name in the kgid table
+    const kgidIds = users.map((user) => user.kgid_id);
+
+    const kgids = await KGID.findAll({
+      where: { id: { [Op.in]: kgidIds } },
+      attributes: ["id", "name"],
+    });
+
+    //create a map of kgid_id and name
+    const kgidMap = kgids.reduce((acc, kgid) => {
+      acc[kgid.id] = kgid.name;
+      return acc;
+    }, {});
+
+    //add the name to the complete_data
+    complete_data = complete_data.map((notification) => {
+      notification.created_by_name = kgidMap[notification.created_by];
+      return notification;
+    });
+
     return res.status(200).json({
       success: true,
       data: complete_data,
@@ -255,9 +287,31 @@ exports.get_case_approval_by_id = async (req, res) => {
     const { user_id } = req.user;
     const { approval_id, user_designation_id, user_division_id } = req.body;
 
-    const approval = await UiCaseApproval.findOne({
+    //also get the approval_item name from ApprovalItem is linked and approved_by name from Designation
+    const approvalDetails = await UiCaseApproval.findOne({
       where: { approval_id },
+      include: [
+        {
+          model: ApprovalItem,
+          as: "approvalItem",
+          attributes: ["name"],
+        },
+        {
+          model: Designation,
+          as: "approvedBy",
+          attributes: ["designation_name"],
+        },
+      ],
+      raw: true,
+      nest: true,
     });
+
+    // Flatten the response
+    const formattedDetails = {
+      ...approvalDetails,
+      approvalItem: approvalDetails?.approvalItem?.name || null,
+      approvedBy: approvalDetails?.approvedBy?.designation_name || null,
+    };
 
     const alertNotifications = await System_Alerts.findOne({
       where: { approval_id: approval_id },
@@ -285,7 +339,7 @@ exports.get_case_approval_by_id = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: approval,
+      data: formattedDetails,
     });
   } catch (error) {
     console.error("Error fetching approval by ID:", error);
