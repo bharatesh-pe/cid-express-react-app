@@ -370,6 +370,7 @@ const UnderInvestigation = () => {
 
                                         setFurtherInvestigationSelectedRow(data);
                                         setFurtherInvestigationSelectedValue(value);
+                                        setShowPtCaseModal(true);
         
                                     } else {
                                         const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
@@ -882,13 +883,14 @@ const UnderInvestigation = () => {
 
                     if(getTemplateResponse.data['data'][0]){
 
-                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info", "ui_case_id", "pt_case_id"];
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info", "ui_case_id", "pt_case_id", "sys_status"];
 
                         const updatedHeader = [
                             {
                                 field: 'select',
                                 headerName: '',
                                 width: 50,
+                                resizable: false,
                                 renderCell: (params) => {
                                     return (
                                         <Checkbox
@@ -919,7 +921,7 @@ const UnderInvestigation = () => {
                                     return {
                                         field: key,
                                         headerName: updatedKeyName ? updatedKeyName : '',
-                                        width: 150,
+                                        width: 250,
                                         resizable: true,
                                         renderHeader: () => (
                                             <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
@@ -1036,14 +1038,22 @@ const UnderInvestigation = () => {
     }
 
     const tableCellRender = (key, params, value) => {
+
+        if(params?.row?.attachments){
+            var attachmentField = params.row.attachments.find((data) => data.field_name === key)
+            if(attachmentField){
+                return fileUploadTableView(key, params, params.value);
+            }
+        }
+
         let highlightColor = {};
         let onClickHandler = null;
     
-        if (params?.row?.linked_profile_info?.[0]?.field === key) {
-            highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
+        // if (params?.row?.linked_profile_info?.[0]?.field === key) {
+        //     highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
             
-            onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
-        }
+        //     onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
+        // }
     
         return (
             <span 
@@ -2717,7 +2727,7 @@ const UnderInvestigation = () => {
                                     return {
                                         field: key,
                                         headerName: updatedKeyName ? updatedKeyName : '',
-                                        width: 150,
+                                        width: 250,
                                         resizable: true,
                                         renderHeader: () => (
                                             <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
@@ -3982,6 +3992,9 @@ const UnderInvestigation = () => {
             }
         }
 
+        console.log(ptCaseTableName,"ptCaseTableNameptCaseTableName")
+        console.log(showPtCaseModal,"showPtCaseModalshowPtCaseModal")
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -4166,8 +4179,8 @@ const UnderInvestigation = () => {
                                     table_row_id={otherRowId}
                                     template_id={otherTemplateId}
 
-                                    template_name={showPtCaseModal ? ptCaseTemplateName : selectedOtherTemplate?.name}
-                                    table_name={showPtCaseModal ? ptCaseTableName : selectedOtherTemplate?.table}
+                                    template_name={showPtCaseModal && ptCaseTemplateName ? ptCaseTemplateName : selectedOtherTemplate?.name}
+                                    table_name={showPtCaseModal && ptCaseTableName ? ptCaseTableName : selectedOtherTemplate?.table}
 
                                     readOnly={otherReadOnlyTemplateData}
                                     editData={otherEditTemplateData}
@@ -4826,7 +4839,7 @@ const UnderInvestigation = () => {
             {furtherInvestigationPtCase &&
                 <Dialog
                     open={furtherInvestigationPtCase}
-                    onClose={() => {setOtherFormOpen(false);}}
+                    onClose={() => {setFurtherInvestigationPtCase(false);}}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
                     maxWidth="xl"
@@ -4840,8 +4853,8 @@ const UnderInvestigation = () => {
                                     table_row_id={otherRowId}
                                     template_id={otherTemplateId}
 
-                                    template_name={showPtCaseModal ? ptCaseTemplateName : selectedOtherTemplate?.name}
-                                    table_name={showPtCaseModal ? ptCaseTableName : selectedOtherTemplate?.table}
+                                    template_name={showPtCaseModal && ptCaseTemplateName ? ptCaseTemplateName : selectedOtherTemplate?.name}
+                                    table_name={showPtCaseModal && ptCaseTableName ? ptCaseTableName : selectedOtherTemplate?.table}
 
                                     readOnly={otherReadOnlyTemplateData}
                                     editData={otherEditTemplateData}
@@ -4853,14 +4866,14 @@ const UnderInvestigation = () => {
 
                                     onSubmit={furtherInvestigationPtCaseSave}
                                     onError={onSaveTemplateError}
-                                    closeForm={setOtherFormOpen} 
+                                    closeForm={setFurtherInvestigationPtCase} 
 
                                 />
                             </FormControl>
                         </DialogContentText>
                     </DialogContent>
                     <DialogActions sx={{ padding: '12px 24px' }}>
-                        <Button onClick={() => setOtherFormOpen(false)}>Cancel</Button>
+                        <Button onClick={() => setFurtherInvestigationPtCase(false)}>Cancel</Button>
                     </DialogActions>
                 </Dialog>
             }
