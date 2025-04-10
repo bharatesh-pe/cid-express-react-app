@@ -2242,11 +2242,15 @@ const Enquiries = () => {
                 });
                 return;
             }
-    
+            var created_by_designation_id = localStorage.getItem("designation_id") || "";
+            var created_by_division_id = localStorage.getItem("division_id") || "";
+      
             var payloadApproveData = {
                 ...approvalSaveData,
                 "eq_case_id" :selectedRow.id,
-                "transaction_id" : randomApprovalId
+                "transaction_id" : randomApprovalId,
+                created_by_designation_id: created_by_designation_id,
+                created_by_division_id: created_by_division_id,          
             }
     
             setLoading(true);
