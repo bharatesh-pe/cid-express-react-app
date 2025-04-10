@@ -390,7 +390,7 @@ const Enquiries = () => {
                     
                     if(getTemplateResponse.data['data'][0]){
 
-                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info", "sys_status"];
 
                         const updatedHeader = [
                             {
@@ -407,14 +407,14 @@ const Enquiries = () => {
                                 },
                             },
                             ...Object.keys(getTemplateResponse.data['data'][0])
-                                .filter((key) => !excludedKeys.includes(key) && key !== 'sys_status')
+                                .filter((key) => !excludedKeys.includes(key))
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
 
                                     return {
                                         field: key,
                                         headerName: updatedKeyName ? updatedKeyName : '',
-                                        width: 150,
+                                        width: 250,
                                         resizable: true,
                                         renderHeader: () => (
                                             <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
@@ -552,14 +552,22 @@ const Enquiries = () => {
     }
 
     const tableCellRender = (key, params, value) => {
+
+        if(params?.row?.attachments){
+            var attachmentField = params.row.attachments.find((data) => data.field_name === key)
+            if(attachmentField){
+                return fileUploadTableView(key, params, params.value);
+            }
+        }
+
         let highlightColor = {};
         let onClickHandler = null;
     
-        if (params?.row?.linked_profile_info?.[0]?.field === key) {
-            highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
+        // if (params?.row?.linked_profile_info?.[0]?.field === key) {
+        //     highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
             
-            onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
-        }
+        //     onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
+        // }
     
         return (
             <span 
@@ -1899,7 +1907,7 @@ const Enquiries = () => {
                                     return {
                                         field: key,
                                         headerName: updatedKeyName ? updatedKeyName : '',
-                                        width: 150,
+                                        width: 250,
                                         resizable: true,
                                         renderHeader: () => (
                                             <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
@@ -1911,26 +1919,26 @@ const Enquiries = () => {
                                         },
                                     };
                                 }),
-                                {
-                                    field: '',
-                                    headerName: 'Action',
-                                    flex: 1,
-                                    renderCell: (params) => {
-                                        return (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                                <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, false, options.table); }}>
-                                                    View
-                                                </Button>
-                                                <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, true, options.table); }}>
-                                                    Edit
-                                                </Button>
-                                                <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleOthersDeleteTemplateData(params.row, options.table); }}>
-                                                    Delete
-                                                </Button>
-                                            </Box>
-                                        );
-                                    }
+                            {
+                                field: '',
+                                headerName: 'Action',
+                                flex: 1,
+                                renderCell: (params) => {
+                                    return (
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, false, options.table); }}>
+                                                View
+                                            </Button>
+                                            <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, true, options.table); }}>
+                                                Edit
+                                            </Button>
+                                            <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleOthersDeleteTemplateData(params.row, options.table); }}>
+                                                Delete
+                                            </Button>
+                                        </Box>
+                                    );
                                 }
+                            }
                         ];
 
                         setOtherTemplateColumn(updatedHeader)
