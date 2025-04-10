@@ -198,49 +198,52 @@ exports.insertTemplateData = async (req, res, next) => {
     // Insert data
     const insertedData = await Model.create(validData);
 
-        const fileUpdates = {};
+    const fileUpdates = {};
 
+    if (req.files && req.files.length > 0) {
+      const folderAttachments = folder_attachment_ids
+        ? JSON.parse(folder_attachment_ids)
+        : []; // Parse if provided, else empty array
 
-        if (req.files && req.files.length > 0) {
-            const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : []; // Parse if provided, else empty array
+      for (const file of req.files) {
+        const { originalname, size, key, fieldname } = file;
+        const fileExtension = path.extname(originalname);
 
-            for (const file of req.files) {
-                const { originalname, size, key, fieldname } = file;
-                const fileExtension = path.extname(originalname);
+        // Find matching folder_id from the payload (if any)
+        const matchingFolder = folderAttachments.find(
+          (attachment) =>
+            attachment.filename === originalname &&
+            attachment.field_name === fieldname
+        );
 
-                // Find matching folder_id from the payload (if any)
-                const matchingFolder = folderAttachments.find(
-                    attachment => attachment.filename === originalname && attachment.field_name === fieldname
-                );
+        const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
 
-                const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
+        await ProfileAttachment.create({
+          template_id: tableData.template_id,
+          table_row_id: insertedData.id,
+          attachment_name: originalname,
+          attachment_extension: fileExtension,
+          attachment_size: size,
+          s3_key: key,
+          field_name: fieldname,
+          folder_id: folderId, // Store NULL if no folder_id provided
+        });
 
-                await ProfileAttachment.create({
-                    template_id: tableData.template_id,
-                    table_row_id: insertedData.id,
-                    attachment_name: originalname,
-                    attachment_extension: fileExtension,
-                    attachment_size: size,
-                    s3_key: key,
-                    field_name: fieldname,
-                    folder_id: folderId, // Store NULL if no folder_id provided
-                });
-
-                if (!fileUpdates[fieldname]) {
-                    fileUpdates[fieldname] = originalname;
-                } else {
-                    fileUpdates[fieldname] += `,${originalname}`;
-                }
-            }
-
-            // Update the model with file arrays
-            for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-                await Model.update(
-                    { [fieldname]: filenames },
-                    { where: { id: insertedData.id } }
-                );
-            }
+        if (!fileUpdates[fieldname]) {
+          fileUpdates[fieldname] = originalname;
+        } else {
+          fileUpdates[fieldname] += `,${originalname}`;
         }
+      }
+
+      // Update the model with file arrays
+      for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+        await Model.update(
+          { [fieldname]: filenames },
+          { where: { id: insertedData.id } }
+        );
+      }
+    }
 
     return userSendResponse(res, 200, true, `Data created successfully`, null);
   } catch (error) {
@@ -575,66 +578,68 @@ exports.updateTemplateData = async (req, res, next) => {
         // });
       }
 
-        const fileUpdates = {};
+      const fileUpdates = {};
 
-        if (req.files && req.files.length > 0) {
-            const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : []; // Parse if provided, else empty array
+      if (req.files && req.files.length > 0) {
+        const folderAttachments = folder_attachment_ids
+          ? JSON.parse(folder_attachment_ids)
+          : []; // Parse if provided, else empty array
 
-            for (const file of req.files) {
-                const { originalname, size, key, fieldname } = file;
-                const fileExtension = path.extname(originalname);
+        for (const file of req.files) {
+          const { originalname, size, key, fieldname } = file;
+          const fileExtension = path.extname(originalname);
 
-                // Find matching folder_id from the payload (if any)
-                const matchingFolder = folderAttachments.find(
-                    (attachment) =>
-                    attachment.filename === originalname &&
-                    attachment.field_name === fieldname
-                );
+          // Find matching folder_id from the payload (if any)
+          const matchingFolder = folderAttachments.find(
+            (attachment) =>
+              attachment.filename === originalname &&
+              attachment.field_name === fieldname
+          );
 
-                const folderId = matchingFolder ? matchingFolder.folder_id : null; // Store NULL if no folder_id provided
+          const folderId = matchingFolder ? matchingFolder.folder_id : null; // Store NULL if no folder_id provided
 
-                await ProfileAttachment.create({
-                    template_id: tableData.template_id,
-                    table_row_id: id,
-                    attachment_name: originalname,
-                    attachment_extension: fileExtension,
-                    attachment_size: size,
-                    s3_key: key,
-                    field_name: fieldname,
-                    folder_id: folderId, // Store NULL if no folder_id provided
-                });
+          await ProfileAttachment.create({
+            template_id: tableData.template_id,
+            table_row_id: id,
+            attachment_name: originalname,
+            attachment_extension: fileExtension,
+            attachment_size: size,
+            s3_key: key,
+            field_name: fieldname,
+            folder_id: folderId, // Store NULL if no folder_id provided
+          });
 
-                // Fetch current field value if it exists
-                const existingRecord = await Model.findOne({
-                    where: { id },
-                    attributes: [fieldname],
-                });
+          // Fetch current field value if it exists
+          const existingRecord = await Model.findOne({
+            where: { id },
+            attributes: [fieldname],
+          });
 
-                let currentFilenames = existingRecord?.[fieldname] || "";
+          let currentFilenames = existingRecord?.[fieldname] || "";
 
-                // Append new filename to the existing comma-separated list
-                currentFilenames = currentFilenames
-                    ? `${currentFilenames},${originalname}`
-                    : originalname;
+          // Append new filename to the existing comma-separated list
+          currentFilenames = currentFilenames
+            ? `${currentFilenames},${originalname}`
+            : originalname;
 
-                // Add/accumulate new filenames for each field
-                if (fileUpdates[fieldname]) {
-                    fileUpdates[
-                    fieldname
-                    ] = `${fileUpdates[fieldname]},${originalname}`;
-                } else {
-                    fileUpdates[fieldname] = currentFilenames;
-                }
-            }
-
-            // Update the model with the updated filenames
-            for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-                await Model.update(
-                    { [fieldname]: filenames },
-                    { where: { id: singleId } }
-                );
-            }
+          // Add/accumulate new filenames for each field
+          if (fileUpdates[fieldname]) {
+            fileUpdates[
+              fieldname
+            ] = `${fileUpdates[fieldname]},${originalname}`;
+          } else {
+            fileUpdates[fieldname] = currentFilenames;
+          }
         }
+
+        // Update the model with the updated filenames
+        for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+          await Model.update(
+            { [fieldname]: filenames },
+            { where: { id: singleId } }
+          );
+        }
+      }
     }
 
     // await TemplateUserStatus.destroy({
@@ -1086,15 +1091,15 @@ exports.viewTemplateData = async (req, res, next) => {
     delete data.updated_at;
 
     const attachments = await ProfileAttachment.findAll({
-        where: {
-            template_id: tableData.template_id,
-            table_row_id: id,
-        },
-        order: [['created_at', 'DESC']]
+      where: {
+        template_id: tableData.template_id,
+        table_row_id: id,
+      },
+      order: [["created_at", "DESC"]],
     });
 
     if (attachments.length) {
-        data.attachments = attachments.map(att => att.toJSON());
+      data.attachments = attachments.map((att) => att.toJSON());
     }
     // if (userId) {
     //     await TemplateUserStatus.findOrCreate({
@@ -2033,15 +2038,15 @@ exports.paginateTemplateData = async (req, res) => {
 
         // Fetch attachments related to this row
         const attachments = await ProfileAttachment.findAll({
-            where: {
-                template_id: tableTemplate.template_id,
-                table_row_id: data.id,
-            },
-            order: [['created_at', 'DESC']]
+          where: {
+            template_id: tableTemplate.template_id,
+            table_row_id: data.id,
+          },
+          order: [["created_at", "DESC"]],
         });
 
         if (attachments.length) {
-            data.attachments = attachments.map(att => att.toJSON());
+          data.attachments = attachments.map((att) => att.toJSON());
         }
 
         // data.ReadStatus = data.ReadStatus ? true : false;
@@ -2660,6 +2665,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const allowedUserIds = [userId, ...subordinateUserIds];
 
     if (allowedUserIds.length) {
+      //field_name_of_the_io
       if (template_module === "ui_case") {
         whereClause[Op.or] = [
           { created_by_id: { [Op.in]: allowedUserIds } },
@@ -3152,15 +3158,15 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         // Fetch attachments related to this row
         const attachments = await ProfileAttachment.findAll({
-            where: {
-                template_id: tableTemplate.template_id,
-                table_row_id: data.id,
-            },
-            order: [['created_at', 'DESC']]
+          where: {
+            template_id: tableTemplate.template_id,
+            table_row_id: data.id,
+          },
+          order: [["created_at", "DESC"]],
         });
 
         if (attachments.length) {
-            data.attachments = attachments.map(att => att.toJSON());
+          data.attachments = attachments.map((att) => att.toJSON());
         }
 
         // data.ReadStatus = data.ReadStatus ? true : false;
@@ -3744,6 +3750,10 @@ exports.getEventsByLeader = async (req, res) => {
 exports.templateDataFieldDuplicateCheck = async (req, res) => {
   const { table_name, data } = req.body;
 
+  if (!table_name) {
+    return userSendResponse(res, 400, false, "Table name is required.", null);
+  }
+
   try {
     // Fetch the table template
     const tableData = await Template.findOne({ where: { table_name } });
@@ -3906,7 +3916,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
     fs.mkdirSync(dirPath, { recursive: true });
 
     // Extract id and sys_status
-    const { id, sys_status, default_status, ui_case_id } = data;
+    const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
     if (!id || !sys_status) {
       return userSendResponse(
         res,
@@ -4065,6 +4075,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         },
         { name: "sys_status", data_type: "TEXT", not_null: false },
         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
         { name: "created_by", data_type: "TEXT", not_null: false },
         { name: "updated_by", data_type: "TEXT", not_null: false },
         { name: "created_by_id", data_type: "INTEGER", not_null: false },
@@ -4114,6 +4125,84 @@ exports.caseSysStatusUpdation = async (req, res) => {
         console.log(
           "No matching record found in `cid_under_investigation` for id:",
           ui_case_id
+        );
+      }
+    }
+
+    if (pt_case_id && sys_status === "178_cases") {
+      const investigationTable = await Template.findOne({
+        where: { table_name: "cid_pending_trail" },
+      });
+      if (!investigationTable) {
+        return userSendResponse(
+          res,
+          400,
+          false,
+          "Investigation table not found."
+        );
+      }
+
+      const invSchema =
+        typeof investigationTable.fields === "string"
+          ? JSON.parse(investigationTable.fields)
+          : investigationTable.fields;
+
+      const completeInvSchema = [
+        {
+          name: "id",
+          data_type: "INTEGER",
+          not_null: true,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        { name: "sys_status", data_type: "TEXT", not_null: false },
+        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+        { name: "created_by", data_type: "TEXT", not_null: false },
+        { name: "updated_by", data_type: "TEXT", not_null: false },
+        { name: "created_by_id", data_type: "INTEGER", not_null: false },
+        { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+        ...invSchema,
+      ];
+
+      let InvModel = modelCache["cid_pending_trail"];
+      if (!InvModel) {
+        const invModelAttributes = {};
+        for (const field of completeInvSchema) {
+          const { name, data_type, not_null, primaryKey, autoIncrement } =
+            field;
+          const sequelizeType =
+            typeMapping?.[data_type.toUpperCase()] ||
+            Sequelize.DataTypes.STRING;
+
+          invModelAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+          };
+
+          if (primaryKey) invModelAttributes[name].primaryKey = true;
+          if (autoIncrement) invModelAttributes[name].autoIncrement = true;
+        }
+
+        InvModel = sequelize.define("cid_pending_trail", invModelAttributes, {
+          freezeTableName: true,
+          timestamps: false,
+        });
+
+        await InvModel.sync({ alter: true });
+        modelCache["cid_pending_trail"] = InvModel;
+      }
+
+      const invRecord = await InvModel.findOne({ where: { id: pt_case_id } });
+      if (invRecord) {
+        await InvModel.update(
+          { sys_status: "178_cases" },
+          { where: { id: pt_case_id } }
+        );
+      } else {
+        console.log(
+          "No matching record found in `cid_pending_trail` for id:",
+          pt_case_id
         );
       }
     }
