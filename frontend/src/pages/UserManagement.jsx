@@ -441,6 +441,7 @@ const UserManagement = () => {
       return;
     }
     if (modalTitle === "Reset Pin") {
+      setErrors({});
       if (!newUser.pin) {
         toast.error("Pin is required.", {
           position: "top-right",
