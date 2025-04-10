@@ -17,6 +17,7 @@ import { Button, CircularProgress } from "@mui/material";
 import AddCircleIcon from "@mui/icons-material/AddCircle";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import EditIcon from "@mui/icons-material/Edit";
+import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import DoNotDisturbOnIcon from "@mui/icons-material/DoNotDisturbOn";
 import { Chip } from "@mui/material";
@@ -1347,7 +1348,7 @@ const UserManagement = () => {
 
                 <Button
                   variant="outlined"
-                  startIcon={<EditIcon />}
+                  startIcon={<VpnKeyIcon />}
                   sx={{
                     height: "38px",
                     color: "black",
@@ -1706,7 +1707,7 @@ const UserManagement = () => {
                 </>
               )}
             </Grid>
-          </form>
+          </form> 
         </Modal>
       )}
 
