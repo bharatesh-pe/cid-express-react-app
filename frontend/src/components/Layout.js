@@ -219,6 +219,13 @@ const Layout = ({ children }) => {
         if (data && data.success && data["modules"]) {
           setSidebarMenusObj(data["modules"]);
         }
+
+        if(data && data.success && data.unreadNotificationCount){
+            localStorage.setItem("unreadNotificationCount", data.unreadNotificationCount);
+        }else{
+            localStorage.setItem("unreadNotificationCount", 0);
+        }
+
       } catch (err) {
         setLoading(false);
         var errMessage = "Something went wrong. Please try again.";

@@ -1,26 +1,162 @@
-import React, { useState } from "react";
-import { AppBar, Toolbar, InputBase, IconButton, Box, TextField, InputAdornment, Badge, Button } from "@mui/material";
+import React, { useEffect, useState } from "react";
+import { AppBar, Toolbar, InputBase, IconButton, Box, TextField, InputAdornment, Badge, Button, CircularProgress, Dialog, DialogTitle, DialogContent, DialogContentText } from "@mui/material";
 import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from '@mui/icons-material/Close';
 import Slide from '@mui/material/Slide';
+import api from "../services/api";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import dayjs from "dayjs";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
 export default function Navbar() {
 
     const [loading, setLoading] = useState(false);
 
-    const [notificationCount, setNotificationCount] = useState(2);
+    const [notificationCount, setNotificationCount] = useState(null);
 
     const [showAlertPage, setShowAlertPage] = useState(false);
+    const [alertOverllData, setAlertOverallData] = useState([]);
+
+    const [approvalModalShow, setApprovalModalShow] = useState(false);
+    const [indivitualApprovalData, setIndivitualApprovalData] = useState({});
 
     const showAlertUX = ()=> {
         setShowAlertPage(true);
+        getOverallAlertData();
     }
 
     const closeAlertPage = ()=> {
         setShowAlertPage(false);
     }
+
+    const getOverallAlertData = async ()=>{
+
+        var alertsPayload = {
+            "user_designation_id" : localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : '',
+            "user_division_id" :  localStorage.getItem("division_id") ? localStorage.getItem("division_id") : '',
+        }
+
+        setLoading(true);
+
+        try {
+            const overallAlertsData = await api.post("/ui_approval/get_alert_notification", alertsPayload);
+
+            setLoading(false);
+
+            if (overallAlertsData && overallAlertsData.success && overallAlertsData.data) { 
+
+                setAlertOverallData(overallAlertsData.data);
+
+            } else {
+                const errorMessage = overallAlertsData.message ? overallAlertsData.message : "Failed to add approval. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+        }
+    }
+
+    const showIndivitualAlert = async (data) =>{
+
+        if(!data.approval_id){
+            toast.error("Approval ID not found", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var indivitualAlertsPayload = {
+            "approval_id" : data.approval_id,
+            "user_designation_id" : localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : '',
+            "user_division_id" :  localStorage.getItem("division_id") ? localStorage.getItem("division_id") : '',
+        }
+
+        setLoading(true);
+
+        try {
+            const indivitualCaseApprovalData = await api.post("/ui_approval/get_case_approval_by_id", indivitualAlertsPayload);
+
+            setLoading(false);
+
+            if (indivitualCaseApprovalData && indivitualCaseApprovalData.success && indivitualCaseApprovalData.data) { 
+
+                setApprovalModalShow(true);
+                setIndivitualApprovalData(indivitualCaseApprovalData.data);
+
+            } else {
+                const errorMessage = indivitualCaseApprovalData.message ? indivitualCaseApprovalData.message : "Failed to add approval. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+        }
+    }
+
+    useEffect(() => {
+        var overallCount = localStorage.getItem("unreadNotificationCount") ? localStorage.getItem("unreadNotificationCount") : 0;
+        setNotificationCount(overallCount);
+    },[]);
 
     return (
         <>
@@ -88,7 +224,7 @@ export default function Navbar() {
                 {/* Right: Notification */}
                 <Box>
                     <IconButton size="small" aria-label="show notifications" color="inherit" sx={{position: 'relative'}} onClick={showAlertUX}>
-                        <Badge badgeContent={notificationCount === 0 ? null : notificationCount} className="notificationBadge" overlap="circular">
+                        <Badge badgeContent={notificationCount == 0 ? undefined : notificationCount} className="notificationBadge" overlap="circular">
                             <NotificationsNoneIcon sx={{color: '#212121', height: '25px', width: '25px'}} />
                         </Badge>
                     </IconButton>
@@ -102,7 +238,7 @@ export default function Navbar() {
 
         { showAlertPage &&
             <>
-                <Box sx={{ position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0, 0, 0, 0.5)', zIndex: '99', }} />
+                <Box sx={{ position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0, 0, 0, 0.5)', zIndex: '98', }} />
                 <Slide direction="left" in={showAlertPage} mountOnEnter unmountOnExit>
                     <Box
                         inert={loading ? true : false} 
@@ -113,7 +249,7 @@ export default function Navbar() {
                             height: '100%',
                             width: 'calc(100% - 920px)',
                             background: '#F5F5F5',
-                            zIndex: 99,
+                            zIndex: 98,
                             overflow: 'hidden',
                         }}
                     >
@@ -129,50 +265,130 @@ export default function Navbar() {
 
                         </Box>
 
-                        <Box>
+                        <Box sx={{height: 'calc(100% - 80px)', overflowY: 'auto'}}>
 
-                            <Box px={3} py={2} sx={{border: '1px solid #E0E0E0'}}>
-                                <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                    <p className="AlertTitle">
-                                        Admin assigned a New Case to you
-                                    </p>
+                            {
+                                alertOverllData && alertOverllData.map((data)=>(
+                                    <Box px={3} py={2} sx={{borderBottom: '1px solid #E0E0E0'}}>
+                                        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
 
-                                    <p className="AlertNewBage">
-                                        New
+                                            <p className="AlertTitle">
+                                                <span style={{fontWeight: '500'}}>
+                                                    {data?.created_by_name + ': '}
+                                                </span>
+                                                {data?.alert_message}
+                                            </p>
+        
+                                            {   !data?.read_status &&
+                                                <p className="AlertNewBage">
+                                                    New
+                                                </p>
+                                            }
+
+                                        </Box>
+                                        <Button onClick={()=>showIndivitualAlert(data)} variant="outlined" sx={{color: '#1F1DAC', borderColor: '#1F1DAC'}}>
+                                            View
+                                        </Button>
+                                    </Box>
+                                ))
+                            }
+    
+                            {
+                                alertOverllData && alertOverllData.length === 0 &&
+                                <Box p={2} sx={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', border: '1px solid #E0E0E0'}}>
+                                    <p style={{fontSize: '15px', color: '#5d5d5d', fontWeight: '500', fontFamily: 'Inter' }}>
+                                        No Records Found
                                     </p>
                                 </Box>
-                                <Button variant="outlined" sx={{color: '#1F1DAC', borderColor: '#1F1DAC'}}>
-                                    View
-                                </Button>
-                            </Box>
-
-                            <Box px={3} py={2} sx={{border: '1px solid #E0E0E0'}}>
-                                <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                    <p className="AlertTitle">
-                                        Admin assigned a New Case to you
-                                    </p>
-                                </Box>
-                                <Button variant="outlined" sx={{color: '#1F1DAC', borderColor: '#1F1DAC'}}>
-                                    View
-                                </Button>
-                            </Box>
-
-                            <Box px={3} py={2} sx={{border: '1px solid #E0E0E0'}}>
-                                <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                    <p className="AlertTitle">
-                                        Admin assigned a New Case to you
-                                    </p>
-                                </Box>
-                                <Button variant="outlined" sx={{color: '#1F1DAC', borderColor: '#1F1DAC'}}>
-                                    View
-                                </Button>
-                            </Box>
-
+                            }
                         </Box>
 
                     </Box>
                 </Slide>
             </>
+        }
+
+        {approvalModalShow &&
+            <Dialog
+                open={approvalModalShow}
+                onClose={() => setApprovalModalShow(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+                fullWidth
+                sx={{zIndex:'1000'}}
+            >
+                <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
+                    Approval
+                    <Box>
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setApprovalModalShow(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        <Box py={2}>
+                            {
+                                <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
+
+                                    <TextField
+                                        rows={8}
+                                        label={'Approved Items'}
+                                        sx={{width:'100%'}}
+                                        name="approvalItem"
+                                        value={indivitualApprovalData['approvalItem']}
+                                        disabled
+                                    />
+
+                                    <TextField
+                                        rows={8}
+                                        label={'Apprved By'}
+                                        sx={{width:'100%'}}
+                                        name="approvedBy"
+                                        value={indivitualApprovalData['approvedBy']}
+                                        disabled
+                                    />
+
+                                    <LocalizationProvider dateAdapter={AdapterDayjs} sx={{width:'100%'}}>
+                                        <DemoContainer components={['DatePicker']} sx={{width:'100%'}}>
+                                            <DatePicker 
+                                                label="Approval Date" 
+                                                value={indivitualApprovalData['approval_date'] ? dayjs(indivitualApprovalData['approval_date']) : null} 
+                                                name="approval_date" 
+                                                format="DD/MM/YYYY"
+                                                sx={{width:'100%'}}
+                                                disabled
+                                            />
+                                        </DemoContainer>
+                                    </LocalizationProvider>
+
+                                    <TextField
+                                        rows={8}
+                                        label={'Comments'}
+                                        sx={{width:'100%'}}
+                                        name="remarks"
+                                        value={indivitualApprovalData['remarks']}
+                                        disabled
+                                    />
+
+                                </Box>
+                            }
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
+        }
+
+        {
+            loading && <div className='parent_spinner' tabIndex="-1" aria-hidden="true">
+                <CircularProgress size={100} />
+            </div>
         }
 
         </>
