@@ -556,7 +556,7 @@ const Login = () => {
                     }}
                     >
                        <Link href="#" underline="none" onClick={() => setForgotPassword(true)}>
-                            {'Forgot Pin?'}
+                            {'Forgot PIN?'}
                         </Link>
                        
                     </Box> }

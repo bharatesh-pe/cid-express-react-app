@@ -926,6 +926,13 @@ const UnderInvestigation = () => {
                                         renderHeader: () => (
                                             <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
                                                 <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
+                                                {
+                                                    tableSortKey === key
+                                                    ? (tableSortOption === 'ASC'
+                                                        ? <ASC sx={{ color: '#475467', width: '18px' }} />
+                                                        : <DESC sx={{ color: '#475467', width: '18px' }} />)
+                                                    : <DESC sx={{ color: '#475467', width: '18px' }} />
+                                                }
                                             </div>
                                         ),
                                         renderCell: (params) => {
@@ -2730,7 +2737,7 @@ const UnderInvestigation = () => {
                                         width: 250,
                                         resizable: true,
                                         renderHeader: () => (
-                                            <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
+                                            <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
                                                 <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
                                             </div>
                                         ),
