@@ -2647,6 +2647,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const allowedUserIds = [userId, ...subordinateUserIds];
 
     if (allowedUserIds.length) {
+      //field_name_of_the_io
       if (template_module === "ui_case") {
         whereClause[Op.or] = [
           { created_by_id: { [Op.in]: allowedUserIds } },
@@ -3731,6 +3732,10 @@ exports.getEventsByLeader = async (req, res) => {
 exports.templateDataFieldDuplicateCheck = async (req, res) => {
   const { table_name, data } = req.body;
 
+  if (!table_name) {
+    return userSendResponse(res, 400, false, "Table name is required.", null);
+  }
+
   try {
     // Fetch the table template
     const tableData = await Template.findOne({ where: { table_name } });
@@ -3893,7 +3898,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
     fs.mkdirSync(dirPath, { recursive: true });
 
     // Extract id and sys_status
-    const { id, sys_status, default_status, ui_case_id } = data;
+    const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
     if (!id || !sys_status) {
       return userSendResponse(
         res,
@@ -4101,6 +4106,83 @@ exports.caseSysStatusUpdation = async (req, res) => {
         console.log(
           "No matching record found in `cid_under_investigation` for id:",
           ui_case_id
+        );
+      }
+    }
+
+    if (pt_case_id && sys_status === "178_cases") {
+      const investigationTable = await Template.findOne({
+        where: { table_name: "cid_pending_trail" },
+      });
+      if (!investigationTable) {
+        return userSendResponse(
+          res,
+          400,
+          false,
+          "Investigation table not found."
+        );
+      }
+
+      const invSchema =
+        typeof investigationTable.fields === "string"
+          ? JSON.parse(investigationTable.fields)
+          : investigationTable.fields;
+
+      const completeInvSchema = [
+        {
+          name: "id",
+          data_type: "INTEGER",
+          not_null: true,
+          primaryKey: true,
+          autoIncrement: true,
+        },
+        { name: "sys_status", data_type: "TEXT", not_null: false },
+        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+        { name: "created_by", data_type: "TEXT", not_null: false },
+        { name: "updated_by", data_type: "TEXT", not_null: false },
+        { name: "created_by_id", data_type: "INTEGER", not_null: false },
+        { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+        ...invSchema,
+      ];
+
+      let InvModel = modelCache["cid_pending_trail"];
+      if (!InvModel) {
+        const invModelAttributes = {};
+        for (const field of completeInvSchema) {
+          const { name, data_type, not_null, primaryKey, autoIncrement } =
+            field;
+          const sequelizeType =
+            typeMapping?.[data_type.toUpperCase()] ||
+            Sequelize.DataTypes.STRING;
+
+          invModelAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+          };
+
+          if (primaryKey) invModelAttributes[name].primaryKey = true;
+          if (autoIncrement) invModelAttributes[name].autoIncrement = true;
+        }
+
+        InvModel = sequelize.define("cid_pending_trail", invModelAttributes, {
+          freezeTableName: true,
+          timestamps: false,
+        });
+
+        await InvModel.sync({ alter: true });
+        modelCache["cid_pending_trail"] = InvModel;
+      }
+
+      const invRecord = await InvModel.findOne({ where: { id: pt_case_id } });
+      if (invRecord) {
+        await InvModel.update(
+          { sys_status: "178_cases" },
+          { where: { id: pt_case_id } }
+        );
+      } else {
+        console.log(
+          "No matching record found in `cid_pending_trail` for id:",
+          pt_case_id
         );
       }
     }
