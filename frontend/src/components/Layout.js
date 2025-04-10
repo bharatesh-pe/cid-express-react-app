@@ -195,6 +195,9 @@ const Layout = ({ children }) => {
         var user_division_id = localStorage.getItem("division_id") || "0";
         const token = localStorage.getItem("auth_token");
         const serverURL = process.env.REACT_APP_SERVER_URL;
+        var user_designation_id = localStorage.getItem("designation_id") || "";
+        var user_division_id = localStorage.getItem("division_id") || "0";
+
         const response = await fetch(`${serverURL}/auth/get_module`, {
           method: "POST",
           headers: {
@@ -216,6 +219,13 @@ const Layout = ({ children }) => {
         if (data && data.success && data["modules"]) {
           setSidebarMenusObj(data["modules"]);
         }
+
+        if(data && data.success && data.unreadNotificationCount){
+            localStorage.setItem("unreadNotificationCount", data.unreadNotificationCount);
+        }else{
+            localStorage.setItem("unreadNotificationCount", 0);
+        }
+
       } catch (err) {
         setLoading(false);
         var errMessage = "Something went wrong. Please try again.";
