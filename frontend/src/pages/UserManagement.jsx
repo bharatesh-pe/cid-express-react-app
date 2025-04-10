@@ -32,6 +32,10 @@ import NumberField from "../components/form/NumberField.jsx";
 import api from "../services/api";
 import { toast } from "react-toastify";
 import CloseIcon from "@mui/icons-material/Close";
+import ClearIcon from '@mui/icons-material/Clear';
+import TextFieldInput from '@mui/material/TextField';
+import SearchIcon from '@mui/icons-material/Search';
+import { InputAdornment } from "@mui/material"
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
@@ -49,6 +53,7 @@ const UserManagement = () => {
   const [logs, setLogs] = useState([]);
   const [openLogDialog, setOpenLogDialog] = useState(false);
   const [LogDialogTitle, SetLogDialogTitle] = useState("");
+  const [searchValue, setSearchValue] = useState(null);
   const columns = [
     {
       field: "selection",
@@ -314,6 +319,7 @@ const UserManagement = () => {
     setLoading(true);
     try {
       const filters = {};
+      if (searchValue) filters.searchvalue = searchValue;
       if (newUser.name) filters.name = newUser.name;
       if (newUser.kgid) filters.kgid = newUser.kgid;
       if (newUser.role) filters.role_id = newUser.role;
@@ -324,6 +330,7 @@ const UserManagement = () => {
       if (newUser.dev_status !== undefined)
         filters.dev_status = newUser.dev_status;
 
+     
       const response = await api.post("/user/filter_users", filters);
       const users = response.users || response.data?.users;
 
@@ -374,7 +381,11 @@ const UserManagement = () => {
 
       setUsers(formattedUsers);
       setCurrentPage(0);
-      setIsFilterApplied(true);
+      if (searchValue || Object.keys(filters).length === 0) {
+        setIsFilterApplied(false);
+      } else {
+        setIsFilterApplied(true);
+      }
       setNewUser({});
       toast.success("Filters applied successfully!", {
         position: "top-right",
@@ -410,6 +421,8 @@ const UserManagement = () => {
     }
   };
 
+  
+
   const handleSave = async () => {
     setLoading(true);
 
@@ -426,7 +439,78 @@ const UserManagement = () => {
       setLoading(false);
       return;
     }
-
+    if (modalTitle === "Reset Pin") {
+      if (!newUser.pin) {
+        toast.error("Pin is required.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        });
+        setLoading(false);
+        return;
+      }
+  
+      if (newUser.pin !== newUser.confirmPin) {
+        toast.error("Pins do not match.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        });
+        setLoading(false);
+        return;
+      }
+  
+      try {
+        const requestBody = {
+          kgid: newUser.kgid,
+          pin: newUser.pin,
+        };
+  
+        const response = await api.post("/auth/update_pin", requestBody);
+  
+        if (!response || !response.success) {
+          toast.error(response.message || "Failed to reset PIN.", {
+            position: "top-right",
+            autoClose: 3000,
+            className: "toast-error",
+          });
+          setLoading(false);
+          return;
+        }
+  
+        toast.success(response.message || "PIN updated successfully.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-success",
+        });
+        setSelectedUsers([]);
+        fetchUsers();
+        setModalTitle("Add New User");
+        setIsModalOpen(false);
+        setNewUser({
+          name: "",
+          role: "",
+          kgid: "",
+          mobile: "",
+          designation: "",
+          pin: "",
+          confirmPin: "",
+          division: "",
+          department: "",
+        });
+  
+        setLoading(false);
+        return;
+      } catch (err) {
+        toast.error(err?.message || "Something went wrong while resetting PIN.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-warning",
+        });
+        setLoading(false);
+        return;
+      }
+    }
     const supervisorDesignationMap = masterData.supervisor_designation || {};
 
     const userDesignations = Array.isArray(newUser.designation)
@@ -684,6 +768,34 @@ const UserManagement = () => {
     setModalTitle("View User");
     setIsModalOpen(true);
   };
+
+
+  const handleResetPin = (selectedUsers) => {
+    if (!selectedUsers || selectedUsers.length === 0) {
+      console.error("No valid user selected for resetting the pin.");
+      return;
+    }
+    const userToEdit = users.find((user) => user.id === selectedUsers[0]);
+  
+    if (!userToEdit) {
+      console.error("No matching user found.");
+      return;
+    }
+  
+    setNewUser((prevState) => ({
+      ...prevState,
+      id: userToEdit.id,
+      name: userToEdit.name ?? "",
+      mobile: userToEdit.mobile ?? "",
+      kgid: userToEdit.kgid ?? "",
+      pin: "",
+      confirmPin: "",
+    }));
+  
+    setModalTitle("Reset Pin");
+    setIsModalOpen(true);
+  };
+
 
   const [transactionId, setTransactionId] = useState("");
 
@@ -1058,6 +1170,54 @@ const UserManagement = () => {
           >
             {selectedUsers.length === 0 ? (
               <>
+                <TextFieldInput
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <SearchIcon sx={{ color: '#475467' }} />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      searchValue && (
+                        <IconButton
+                          sx={{ padding: 0 }}
+                          onClick={() => {
+                            setSearchValue('');
+                            setCurrentPage(0);
+                            fetchUsers();
+                          }}
+                          size="small"
+                        >
+                          <ClearIcon sx={{ color: '#475467' }} />
+                        </IconButton>
+                      )
+                    ),
+                  }}
+                  onInput={(e) => setSearchValue(e.target.value)}
+                  value={searchValue}
+                  id="tableSearch"
+                  size="small"
+                  placeholder="Search anything"
+                  variant="outlined"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleFilters();
+                    }
+                  }}
+                  sx={{
+                    width: '300px',
+                    borderRadius: '6px',
+                    outline: 'none',
+                    '& .MuiInputBase-input::placeholder': {
+                      color: '#475467',
+                      opacity: '1',
+                      fontSize: '14px',
+                      fontWeight: '400',
+                      fontFamily: 'Roboto',
+                    },
+                  }}
+                />
                 <Button
                   variant="outlined"
                   startIcon={<FilterListIcon />}
@@ -1187,6 +1347,26 @@ const UserManagement = () => {
 
                 <Button
                   variant="outlined"
+                  startIcon={<EditIcon />}
+                  sx={{
+                    height: "38px",
+                    color: "black",
+                    borderColor: "#b7bbc2",
+                    backgroundColor: "#f9fafb",
+                    borderWidth: "2px",
+                    fontWeight: "600",
+                    textTransform: "none",
+                    "&:hover": {
+                      backgroundColor: "#f1f5f9",
+                    },
+                  }}
+                  onClick={() => handleResetPin(selectedUsers)}
+                >
+                  Reset Pin
+                </Button>
+
+                <Button
+                  variant="outlined"
                   startIcon={
                     allUsersInactive ? (
                       <CheckCircleIcon />
@@ -1300,226 +1480,231 @@ const UserManagement = () => {
                     modalTitle === "Set Filters" ? handleFilters : handleSave
                   }
                 >
-                  {modalTitle === "Edit User"
+                {modalTitle === "Edit User"
                     ? "Update User"
+                    : modalTitle === "Reset Pin"
+                    ? "Reset Pin"
                     : modalTitle === "Set Filters"
                     ? "Set Filters"
                     : "Save & Close"}
-                </Button>
+                                </Button>
+                              )}
+                            </div>
+                          }
+                        >
+            <form className="py-4 px-4">
+              <Grid container spacing={2}>
+              {(modalTitle !== "Reset Pin") && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <AutocompleteField
+                    formData={newUser}
+                    errors={errors}
+                    field={{
+                      name: "kgid",
+                      label: "Select KGID",
+                      options: kgidOptions,
+                      required: modalTitle !== "Set Filters",
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "role"
+                          : null,
+                    }}
+                    value={newUser.kgid}
+                    onHistory={() => getUsermanagementFieldLog("kgid")}
+                    onChange={handleDropDownChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <ShortText
+                    field={{
+                      name: "name",
+                      label: "Enter Full Name",
+                      required: modalTitle !== "Set Filters",
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "name"
+                          : null,
+                      disabled: true,
+                    }}
+                    onHistory={() => getUsermanagementFieldLog("name")}
+                    formData={newUser}
+                    errors={errors}
+                    onChange={(e) => {
+                      const regex = /^[a-zA-Z0-9\s\b]*$/;
+                      if (regex.test(e.target.value)) {
+                        handleInputChange(e);
+                      }
+                    }}
+                    value={newUser.name}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <NumberField
+                    field={{
+                      name: "mobile",
+                      label: "Mobile Number",
+                      required: modalTitle !== "Set Filters",
+                      maxLength: 10,
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "mobile"
+                          : null,
+                      disabled: true,
+                    }}
+                    value={newUser.mobile}
+                    formData={newUser}
+                    errors={errors}
+                    onHistory={() => getUsermanagementFieldLog("mobile")}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <AutocompleteField
+                    formData={newUser}
+                    errors={errors}
+                    field={{
+                      name: "role",
+                      label: "Select Role",
+                      options: roleOptions,
+                      required: modalTitle !== "Set Filters",
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "role"
+                          : null,
+                    }}
+                    value={newUser.role}
+                    onHistory={() => getUsermanagementFieldLog("role")}
+                    onChange={handleDropDownChange}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <MultiSelect
+                    formData={newUser}
+                    errors={errors}
+                    field={{
+                      name: "designation",
+                      label: "Designation",
+                      options: designationOptions,
+                      required: modalTitle !== "Set Filters",
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "designation"
+                          : null,
+                    }}
+                    value={newUser.designation}
+                    onHistory={() => getUsermanagementFieldLog("designation")}
+                    onChange={handleDropDownChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "#6B7280",
+                      marginTop: "8px",
+                    }}
+                  >
+                    Supervisor Designation: <br />
+                    {Array.isArray(newUser.designation) && newUser.designation.length > 0
+                      ? newUser.designation
+                          .map((des) => {
+                            const supervisorKeys = Object.keys(
+                              masterData.supervisor_designation
+                            ).filter((key) =>
+                              masterData.supervisor_designation[key].includes(
+                                parseInt(des, 10)
+                              )
+                            );
+
+                            const supervisorNames = supervisorKeys
+                              .map((key) => {
+                                const designation = designationOptions.find(
+                                  (option) => String(option.code) === String(key)
+                                );
+                                return designation ? designation.name : "Unknown";
+                              })
+                              .join(", ");
+
+                            return supervisorNames || "None";
+                          })
+                          .join(" | ")
+                      : ""}
+                  </p>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <AutocompleteField
+                    formData={newUser}
+                    errors={errors}
+                    field={{
+                      name: "department",
+                      label: "Department",
+                      options: departmentOptions,
+                      required: modalTitle !== "Set Filters",
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "department"
+                          : null,
+                    }}
+                    value={newUser.department}
+                    onHistory={() => getUsermanagementFieldLog("department")}
+                    onChange={handleDropDownChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <MultiSelect
+                    formData={newUser}
+                    errors={errors}
+                    field={{
+                      name: "division",
+                      label: "Division",
+                      options: filteredDivisionOptions,
+                      required: modalTitle !== "Set Filters",
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "division"
+                          : null,
+                    }}
+                    value={newUser.division}
+                    onHistory={() => getUsermanagementFieldLog("division")}
+                    onChange={handleDropDownChange}
+                  />
+                </Grid>
+
+                </>
               )}
-            </div>
-          }
-        >
-          <form className="py-4 px-4">
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <AutocompleteField
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "kgid",
-                    label: "Select KGID",
-                    options: kgidOptions,
-                    required: modalTitle !== "Set Filters",
-                    history:
-                      modalTitle === "View User" || modalTitle === "Edit User"
-                        ? "role"
-                        : null,
-                  }}
-                  value={newUser.kgid}
-                  onHistory={() => getUsermanagementFieldLog("kgid")}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <ShortText
-                  field={{
-                    name: "name",
-                    label: "Enter Full Name",
-                    required: modalTitle !== "Set Filters",
-                    history:
-                      modalTitle === "View User" || modalTitle === "Edit User"
-                        ? "name"
-                        : null,
-                    disabled: true,
-                  }}
-                  onHistory={() => getUsermanagementFieldLog("name")}
-                  formData={newUser}
-                  errors={errors}
-                  onChange={(e) => {
-                    const regex = /^[a-zA-Z0-9\s\b]*$/;
-                    if (regex.test(e.target.value)) {
-                      handleInputChange(e);
-                    }
-                  }}
-                  value={newUser.name}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <NumberField
-                  field={{
-                    name: "mobile",
-                    label: "Mobile Number",
-                    required: modalTitle !== "Set Filters",
-                    maxLength: 10,
-                    history:
-                      modalTitle === "View User" || modalTitle === "Edit User"
-                        ? "mobile"
-                        : null,
-                    disabled: true,
-                  }}
-                  value={newUser.mobile}
-                  formData={newUser}
-                  errors={errors}
-                  onHistory={() => getUsermanagementFieldLog("mobile")}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <AutocompleteField
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "role",
-                    label: "Select Role",
-                    options: roleOptions,
-                    required: modalTitle !== "Set Filters",
-                    history:
-                      modalTitle === "View User" || modalTitle === "Edit User"
-                        ? "role"
-                        : null,
-                  }}
-                  value={newUser.role}
-                  onHistory={() => getUsermanagementFieldLog("role")}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <MultiSelect
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "designation",
-                    label: "Designation",
-                    options: designationOptions,
-                    required: modalTitle !== "Set Filters",
-                    history:
-                      modalTitle === "View User" || modalTitle === "Edit User"
-                        ? "designation"
-                        : null,
-                  }}
-                  value={newUser.designation}
-                  onHistory={() => getUsermanagementFieldLog("designation")}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    color: "#6B7280",
-                    marginTop: "8px",
-                  }}
-                >
-                  Supervisor Designation: <br />
-                  {newUser.designation && newUser.designation.length > 0
-                    ? newUser.designation
-                        .map((des) => {
-                          const supervisorKeys = Object.keys(
-                            masterData.supervisor_designation
-                          ).filter((key) =>
-                            masterData.supervisor_designation[key].includes(
-                              parseInt(des, 10)
-                            )
-                          );
-
-                          const supervisorNames = supervisorKeys
-                            .map((key) => {
-                              const designation = designationOptions.find(
-                                (option) => String(option.code) === String(key)
-                              );
-                              return designation ? designation.name : "Unknown";
-                            })
-                            .join(", ");
-
-                          return supervisorNames || "None";
-                        })
-                        .join(" | ")
-                    : ""}
-                </p>
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
-                <AutocompleteField
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "department",
-                    label: "Department",
-                    options: departmentOptions,
-                    required: modalTitle !== "Set Filters",
-                    history:
-                      modalTitle === "View User" || modalTitle === "Edit User"
-                        ? "department"
-                        : null,
-                  }}
-                  value={newUser.department}
-                  onHistory={() => getUsermanagementFieldLog("department")}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <MultiSelect
-                  formData={newUser}
-                  errors={errors}
-                  field={{
-                    name: "division",
-                    label: "Division",
-                    options: filteredDivisionOptions,
-                    required: modalTitle !== "Set Filters",
-                    history:
-                      modalTitle === "View User" || modalTitle === "Edit User"
-                        ? "division"
-                        : null,
-                  }}
-                  value={newUser.division}
-                  onHistory={() => getUsermanagementFieldLog("division")}
-                  onChange={handleDropDownChange}
-                />
-              </Grid>
-
-              {modalTitle !== "Edit User" &&
-                modalTitle !== "View User" &&
-                modalTitle !== "Set Filters" && (
-                  <>
-                    <Grid item xs={12} sm={6}>
-                      <div className="px-2">
-                        <PasswordInput
-                          id="pin"
-                          label="Enter New Pin"
-                          name="pin"
-                          type="password"
-                          value={newUser.pin || ""}
-                          onChange={handleInputChange}
-                          error={errors.pin}
-                        />
-                      </div>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <div className="px-2">
-                        <PasswordInput
-                          id="confirmPin"
-                          label="Re-enter New Pin"
-                          name="confirmPin"
-                          type="password"
-                          value={newUser.confirmPin || ""}
-                          onChange={handleInputChange}
-                          error={errors.confirmPin}
-                        />
-                      </div>
-                    </Grid>
-                  </>
-                )}
+              {(modalTitle === "Reset Pin" || modalTitle === "Add New User") && (
+                <>
+                  <Grid item xs={12} sm={6}>
+                    <div className="px-2">
+                      <PasswordInput
+                        id="pin"
+                        label="Enter New Pin"
+                        name="pin"
+                        type="password"
+                        value={newUser.pin || ""}
+                        onChange={handleInputChange}
+                        error={errors.pin}
+                      />
+                    </div>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <div className="px-2">
+                      <PasswordInput
+                        id="confirmPin"
+                        label="Re-enter New Pin"
+                        name="confirmPin"
+                        type="password"
+                        value={newUser.confirmPin || ""}
+                        onChange={handleInputChange}
+                        error={errors.confirmPin}
+                      />
+                    </div>
+                  </Grid>
+                </>
+              )}
             </Grid>
           </form>
         </Modal>
@@ -1657,7 +1842,16 @@ const UserManagement = () => {
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
                   <TableCell>{log.info}</TableCell>
-                  <TableCell>{new Date(log.at).toLocaleString()}</TableCell>
+                  <TableCell>
+                    {new Date(log.at).toLocaleString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: true,
+                    }).replace(",", "").replace(":", ".")}
+                  </TableCell>                
                 </TableRow>
               ))}
             </TableBody>
