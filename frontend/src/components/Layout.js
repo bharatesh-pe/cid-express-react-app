@@ -17,7 +17,6 @@ import {
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
 
 import { useLocation, useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
 import { useState } from "react";
 // import { Outlet } from 'react-router-dom';
 import LogoImg from "../Images/siimsLogo.png";
@@ -171,7 +170,6 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const userName = localStorage.getItem("username");
-  console.log("userName", userName);
   const [sidebarMenusObj, setSidebarMenusObj] = useState([]);
 
   // for dropdowmn sidebars
@@ -228,8 +226,6 @@ const Layout = ({ children }) => {
           errMessage = err.message;
         }
         if (errMessage) {
-          console.log("err", err);
-          console.log("errMessage", errMessage);
           // errMessage = await errMessage.json();
           if (errMessage && errMessage.includes("Authorization_error")) {
             localStorage.removeItem("auth_token");
@@ -270,7 +266,6 @@ const Layout = ({ children }) => {
         },
       });
 
-      console.log("Logout response", response);
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.message);
@@ -292,7 +287,6 @@ const Layout = ({ children }) => {
 
       if (errMessage) {
         // errMessage = await errMessage.json();
-        console.log("errMessage", errMessage);
         if (errMessage && errMessage.includes("Authorization_error")) {
           localStorage.removeItem("auth_token");
           localStorage.removeItem("userName");
@@ -321,7 +315,6 @@ const Layout = ({ children }) => {
 
   return (
     <Box>
-      <ToastContainer />
       <Stack direction="row" justifyContent="space-between">
         {/* Sidebar */}
         <Box

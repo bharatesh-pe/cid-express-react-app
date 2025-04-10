@@ -243,7 +243,6 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
 
     const openFileInNewTab = async (file) => {
 
-        return;
         if (file instanceof File || file instanceof Blob) {
             var fileUrl = URL.createObjectURL(file);
             var newTab = window.open();

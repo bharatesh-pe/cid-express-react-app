@@ -146,19 +146,23 @@ exports.insertTemplateData = async (req, res, next) => {
         // Insert data
         const insertedData = await Model.create(validData);
 
-        // Handle file uploads if any
-        if (req.files?.length > 0) {
-            const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : [];
+        const fileUpdates = {};
 
-            const fileRecords = req.files.map((file) => {
+
+        if (req.files && req.files.length > 0) {
+            const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : []; // Parse if provided, else empty array
+
+            for (const file of req.files) {
                 const { originalname, size, key, fieldname } = file;
                 const fileExtension = path.extname(originalname);
 
                 const matchingFolder = folderAttachments.find(
-                    (att) => att.filename === originalname && att.field_name === fieldname
+                    attachment => attachment.filename === originalname && attachment.field_name === fieldname
                 );
 
-                return {
+                const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
+
+                await ProfileAttachment.create({
                     template_id: tableData.template_id,
                     table_row_id: insertedData.id,
                     attachment_name: originalname,
@@ -166,11 +170,23 @@ exports.insertTemplateData = async (req, res, next) => {
                     attachment_size: size,
                     s3_key: key,
                     field_name: fieldname,
-                    folder_id: matchingFolder?.folder_id || null,
-                };
-            });
+                    folder_id: folderId, // Store NULL if no folder_id provided
+                });
 
-            await ProfileAttachment.bulkCreate(fileRecords);
+                if (!fileUpdates[fieldname]) {
+                    fileUpdates[fieldname] = originalname;
+                } else {
+                    fileUpdates[fieldname] += `,${originalname}`;
+                }
+            }
+
+            // Update the model with file arrays
+            for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+                await Model.update(
+                    { [fieldname]: filenames },
+                    { where: { id: insertedData.id } }
+                );
+            }
         }
 
         return userSendResponse(res, 200, true, `Data created successfully`, null);
@@ -513,7 +529,7 @@ exports.updateTemplateData = async (req, res, next) => {
             for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
                 await Model.update(
                     { [fieldname]: filenames },
-                    { where: { id: singleId } }
+                    { where: { id } }
                 );
             }
         }
@@ -897,17 +913,17 @@ exports.viewTemplateData = async (req, res, next) => {
         delete data.created_at;
         delete data.updated_at;
 
-        // const attachments = await ProfileAttachment.findAll({
-        //     where: {
-        //         template_id: tableData.template_id,
-        //         table_row_id: id,
-        //     },
-        //     order: [['created_at', 'DESC']]
-        // });
+        const attachments = await ProfileAttachment.findAll({
+            where: {
+                template_id: tableData.template_id,
+                table_row_id: id,
+            },
+            order: [['created_at', 'DESC']]
+        });
 
-        // if (attachments.length) {
-        //     data.attachments = attachments.map(att => att.toJSON());
-        // }
+        if (attachments.length) {
+            data.attachments = attachments.map(att => att.toJSON());
+        }
         // if (userId) {
         //     await TemplateUserStatus.findOrCreate({
         //         where: {
@@ -2727,17 +2743,17 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 }
 
                 // Fetch attachments related to this row
-                // const attachments = await ProfileAttachment.findAll({
-                //     where: {
-                //         template_id: tableTemplate.template_id,
-                //         table_row_id: data.id,
-                //     },
-                //     order: [['created_at', 'DESC']]
-                // });
+                const attachments = await ProfileAttachment.findAll({
+                    where: {
+                        template_id: tableTemplate.template_id,
+                        table_row_id: data.id,
+                    },
+                    order: [['created_at', 'DESC']]
+                });
 
-                // if (attachments.length) {
-                //     data.attachments = attachments.map(att => att.toJSON());
-                // }
+                if (attachments.length) {
+                    data.attachments = attachments.map(att => att.toJSON());
+                }
 
                 // data.ReadStatus = data.ReadStatus ? true : false;
                 // Handle alias mappings before processing associations
