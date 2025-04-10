@@ -5,7 +5,7 @@ import DynamicForm from '../components/dynamic-form/DynamicForm';
 import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
-
+import { Chip } from "@mui/material";
 import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField } from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
@@ -2720,7 +2720,7 @@ const UnderInvestigation = () => {
                                 },
                             },
                             ...Object.keys(getTemplateResponse.data[0])
-                            .filter((key) => !excludedKeys.includes(key) && key !== 'field_pt_case_id' && key !== 'field_ui_case_id' && key !== 'field_pr_status' && key !== 'field_evidence_file'  && key !== 'created_at')
+                            .filter((key) => !excludedKeys.includes(key) && key !== 'field_pt_case_id' && key !== 'field_ui_case_id' && key !== 'field_pr_status' && key !== 'field_evidence_file'  && key !== 'created_at' && key !== 'field_last_updated' &&  key !== 'field_date_created')
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
 
@@ -2739,6 +2739,44 @@ const UnderInvestigation = () => {
                                         },
                                     };
                                 }),
+                                ...(options.table === "cid_ui_case_progress_report"
+                                    ? [{
+                                        field: 'field_pr_status',
+                                        headerName: 'Status',
+                                        width: 150,
+                                        resizable: true,
+                                        sortable: true,
+                                        sortComparator: (v1, v2) => {
+                                            if (v1 === "Yes" && v2 === "No") return -1;
+                                            if (v1 === "No" && v2 === "Yes") return 1;
+                                            return 0;
+                                        },
+                                        renderCell: (params) => {
+                                            const isUpdated = params.value === "Yes";
+                                            const statusText = isUpdated ? "PDF Updated" : "Not Updated";
+                                            const statusColor = isUpdated ? "#22c55e" : "#ef4444";
+                                            const borderColor = isUpdated ? "#34D399" : "#EF4444";
+                            
+                                            return (
+                                                <Chip
+                                                    label={statusText}
+                                                    size="small"
+                                                    sx={{
+                                                        fontFamily: "Roboto",
+                                                        fontWeight: 400,
+                                                        color: "white",
+                                                        borderColor: borderColor,
+                                                        borderRadius: "4px",
+                                                        backgroundColor: statusColor,
+                                                        textTransform: "capitalize",
+                                                        borderStyle: "solid",
+                                                        borderWidth: "1px",
+                                                    }}
+                                                />
+                                            );
+                                        },
+                                    }]
+                                    : []),
                                 {
                                     field: '',
                                     headerName: 'Action',
@@ -4296,7 +4334,7 @@ const UnderInvestigation = () => {
                     onClose={() => setOtherTemplateModalOpen(false)}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
-                    maxWidth="md"
+                    maxWidth={selectedOtherTemplate?.table === "cid_ui_case_progress_report" ? "2xl" : "md"}
                     fullWidth
                     sx={{ zIndex: '1' }}
                 >
