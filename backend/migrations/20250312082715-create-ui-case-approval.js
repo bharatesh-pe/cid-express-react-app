@@ -5,7 +5,9 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     const schema = process.env.DB_SCHEMA || "public"; // Default to 'public' if DB_SCHEMA is not set
 
-    await queryInterface.sequelize.query(`CREATE SCHEMA IF NOT EXISTS ${schema};`);
+    await queryInterface.sequelize.query(
+      `CREATE SCHEMA IF NOT EXISTS ${schema};`
+    );
 
     await queryInterface.createTable(
       { schema: schema, tableName: "ui_case_approval" },
@@ -38,12 +40,41 @@ module.exports = {
           defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
         },
         remarks: {
-          type: Sequelize.STRING(255), // Adjust length as needed
+          type: Sequelize.STRING(255),
           allowNull: true,
         },
-        ui_case_id: {
+        reference_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        approval_type: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        },
+        module: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        },
+        action: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        },
+        info: {
+          type: Sequelize.STRING(255),
+          allowNull: true,
+        },
+        created_by: {
           type: Sequelize.INTEGER,
           allowNull: false,
+          references: {
+            model: { schema: schema, tableName: "users" },
+            key: "user_id",
+          },
+        },
+        created_at: {
+          type: Sequelize.DATE,
+          allowNull: false,
+          defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
         },
       }
     );
@@ -51,7 +82,9 @@ module.exports = {
 
   async down(queryInterface, Sequelize) {
     const schema = process.env.DB_SCHEMA || "public";
-
-    await queryInterface.dropTable({ schema: schema, tableName: "ui_case_approval" });
+    await queryInterface.dropTable({
+      schema: schema,
+      tableName: "ui_case_approval",
+    });
   },
-}; 
+};
