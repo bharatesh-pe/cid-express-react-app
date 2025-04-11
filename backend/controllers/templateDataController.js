@@ -935,11 +935,11 @@ exports.getTemplateData = async (req, res, next) => {
       include,
     });
 
+
     // Transform the response to include only primary fields and metadata fields
     const transformedRecords = await Promise.all(
       records.map(async (record) => {
         const data = record.toJSON();
-
         let filteredData;
 
         if (table_name === "cid_ui_case_progress_report") {
@@ -4337,9 +4337,9 @@ exports.getUploadedFiles = async (req, res) => {
 };
 
 exports.appendToLastLineOfPDF = async (req, res) => {
-  const { ui_case_id, appendText, transaction_id } = req.body;
+  const { ui_case_id, appendText, transaction_id, selected_row_id } = req.body;
 
-  if (!ui_case_id || !appendText) {
+  if (!ui_case_id || !appendText || !selected_row_id) {
     return res
       .status(400)
       .json({ success: false, message: "Missing required fields." });
@@ -4379,9 +4379,6 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     const pageWidth = 595.276;
     const pageHeight = 841.89;
 
-    let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
-    const marginTop = pageHeight - 50;
-
     const dataArray = JSON.parse(appendText);
 
     const formatDate = (isoDate) => {
@@ -4398,12 +4395,14 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       return label.replace(/\b\w/g, (char) => char.toUpperCase());
     };
 
-    let xPos = 50;
-    let yPos = marginTop;
     const lineHeight = 20;
     const spaceBetweenRows = 30;
-
+    
     for (const data of dataArray) {
+      let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
+      let xPos = 50;
+      let yPos = pageHeight - 50;
+
       if (data.field_date_created) {
         data.field_date_created = formatDate(data.field_date_created);
       }
@@ -4495,7 +4494,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
     await Model.update(
       { field_pr_status: "Yes" },
-      { where: { field_ui_case_id: ui_case_id } }
+      { where: { id: selected_row_id } }
     );
     return res.status(200).json({
       success: true,

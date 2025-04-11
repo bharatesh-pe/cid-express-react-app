@@ -182,6 +182,17 @@ const UnderInvestigation = () => {
     const [downloadPdfFields, setDownloadPdfFields] = useState({});
     const [downloadPdfData, setDownloadPdfData] = useState([]);
     const [isPrint, setIsPrint] = useState(false);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const toggleSelectRow = (id) => {
+        setSelectedIds((prevSelectedIds) => {
+            const updated = prevSelectedIds.includes(id)
+                ? prevSelectedIds.filter((selectedId) => selectedId !== id)
+                : [...prevSelectedIds, id];
+        
+                return updated;
+        });
+        
+    };
 
     const handleOnSavePdf = () =>{
         setIsDownloadPdf(false);
@@ -1481,6 +1492,7 @@ const UnderInvestigation = () => {
             const parsedAppendText = JSON.parse(data.appendText);
     
             const payload = {
+                selected_row_id : selectedIds,
                 ui_case_id: parsedAppendText[0]?.field_ui_case_id,
                 appendText: JSON.stringify(parsedAppendText),
             };
@@ -1501,6 +1513,7 @@ const UnderInvestigation = () => {
                     className: "toast-success",
                 });
                 setOtherTemplateModalOpen(false)
+                setSelectedIds([])
             } else {
                 const errorMessage = saveTemplateData.message || "Failed to append data. Please try again.";
                 toast.error(errorMessage, {
@@ -1532,6 +1545,7 @@ const UnderInvestigation = () => {
     };
        
     const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
+
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
             toast.warning('Please Check The Template', {
                 position: "top-right",
@@ -1643,6 +1657,7 @@ const UnderInvestigation = () => {
                 setAddApproveFlag(false);
                 setApproveTableFlag(false);
                 setApprovalSaveData({});
+                setSelectedIds([])
 
                 if(showPtCaseModal){
                     setPtCaseTableName(null);
@@ -1757,7 +1772,6 @@ const UnderInvestigation = () => {
 
                     // reset states
                     setSelectKey(null);
-                    setSelectedRow(null);
                     setOtherTransferField([]);
                     setShowOtherTransferModal(false);
                     setSelectedOtherFields(null);
@@ -2692,7 +2706,6 @@ const UnderInvestigation = () => {
         }
 
         setSelectedRow(selectedRow);
-
         var getTemplatePayload = {
             "table_name": options.table,
             "ui_case_id": selectedRow.id,
@@ -2713,6 +2726,20 @@ const UnderInvestigation = () => {
                         var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
 
                         const updatedHeader = [
+                            ...(options.table === "cid_ui_case_progress_report"
+                                ? [{
+                                    field: 'select',
+                                    headerName: '',
+                                    width: 50,
+                                    renderCell: (params) => (
+                                        <Checkbox
+                                            onChange={() => toggleSelectRow(params.row.id)}
+                                            
+                                        />
+                                    ),
+                                }]
+                                : []
+                            ),                
                             {
                                 field: 'sl_no',
                                 headerName: 'S.No',
@@ -4341,7 +4368,7 @@ const UnderInvestigation = () => {
                     onClose={() => setOtherTemplateModalOpen(false)}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
-                    maxWidth={selectedOtherTemplate?.table === "cid_ui_case_progress_report" ? "2xl" : "md"}
+                    maxWidth={selectedOtherTemplate?.table === "cid_ui_case_progress_report" && hasPdfEntry  ? "2xl" : "md"}
                     fullWidth
                     sx={{ zIndex: '1' }}
                 >
@@ -4375,14 +4402,52 @@ const UnderInvestigation = () => {
 
                                                 if (getTemplateResponse && getTemplateResponse.success) {
                                                     const dataToAppend = getTemplateResponse.data.filter(item => item.field_pr_status === "No");
+                                                    
+                                                    if (!selectedIds || selectedIds.length === 0) {
+                                                        toast.error("Please choose a record to append.", {
+                                                            position: "top-right",
+                                                            autoClose: 3000,
+                                                            hideProgressBar: false,
+                                                            closeOnClick: true,
+                                                            pauseOnHover: true,
+                                                            draggable: true,
+                                                            progress: undefined,
+                                                            className: "toast-warning",
+                                                        });
+                                                        return;
+                                                    }
 
-                                                    if (dataToAppend.length > 0) {
-                                                        const appendText = JSON.stringify(dataToAppend);
+                                                    const invalidSelections = getTemplateResponse.data.filter((item) => {
+                                                        const isSelected = selectedIds.includes(item.id);
+                                                        return isSelected && item.field_pr_status === "Yes";
+                                                        setSelectedIds([])
+                                                    });                                                    
+                                                                                                                                                        
+                                                    if (invalidSelections.length > 0) {
+                                                        toast.error("Some selected records already Updated. Please remove it.", {
+                                                            position: "top-right",
+                                                            autoClose: 3000,
+                                                            hideProgressBar: false,
+                                                            closeOnClick: true,
+                                                            pauseOnHover: true,
+                                                            draggable: true,
+                                                            progress: undefined,
+                                                            className: "toast-warning",
+                                                        });
+                                                        return;
+                                                    }
+
+                                                    const filteredDataToAppend = dataToAppend.filter(
+                                                        (item) => selectedIds.includes(item.id) && item.field_pr_status === "No"
+                                                    );
+
+                                                    if (filteredDataToAppend.length > 0) {
+                                                        const appendText = JSON.stringify(filteredDataToAppend);
 
                                                         await prUpdatePdf({ appendText });
                                         
                                                     } else {
-                                                        toast.error("No data to append.Already upto date", {
+                                                        toast.error("Already this records are Updated to PDF", {
                                                             position: "top-right",
                                                             autoClose: 3000,
                                                             hideProgressBar: false,
