@@ -451,7 +451,7 @@ exports.updateTemplateData = async (req, res, next) => {
         );
       }
     }
-
+    validData.sys_status = parsedData.sys_status.trim();
     validData.updated_by = userName;
     validData.updated_by_id = userId;
 
@@ -844,6 +844,10 @@ exports.getTemplateData = async (req, res, next) => {
         type: Sequelize.DataTypes.DATE,
         allowNull: false,
       },
+      created_by: {
+        type: Sequelize.DataTypes.STRING,
+        allowNull: true,  
+      } 
     };
     const associations = [];
 
@@ -935,11 +939,11 @@ exports.getTemplateData = async (req, res, next) => {
       include,
     });
 
+
     // Transform the response to include only primary fields and metadata fields
     const transformedRecords = await Promise.all(
       records.map(async (record) => {
         const data = record.toJSON();
-
         let filteredData;
 
         if (table_name === "cid_ui_case_progress_report") {
@@ -4337,19 +4341,15 @@ exports.getUploadedFiles = async (req, res) => {
 };
 
 exports.appendToLastLineOfPDF = async (req, res) => {
-  const { ui_case_id, appendText, transaction_id } = req.body;
+  const { ui_case_id, appendText, transaction_id, selected_row_id } = req.body;
 
-  if (!ui_case_id || !appendText) {
-    return res
-      .status(400)
-      .json({ success: false, message: "Missing required fields." });
+  if (!ui_case_id || !appendText || !selected_row_id) {
+    return res.status(400).json({ success: false, message: "Missing required fields." });
   }
 
   const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
   if (fs.existsSync(dirPath))
-    return res
-      .status(400)
-      .json({ success: false, message: "Duplicate transaction detected." });
+    return res.status(400).json({ success: false, message: "Duplicate transaction detected." });
   fs.mkdirSync(dirPath, { recursive: true });
 
   try {
@@ -4366,11 +4366,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     }
 
     const pdfPath = path.join(__dirname, "../public", latestFile.file_path);
-    const outputPath = path.join(
-      __dirname,
-      "../public/files",
-      `updated_${latestFile.file_name}`
-    );
+    const outputPath = path.join(__dirname, "../public/files", `updated_${latestFile.file_name}`);
     const existingPdfBytes = fs.readFileSync(pdfPath);
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
     const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
@@ -4378,9 +4374,6 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
     const pageWidth = 595.276;
     const pageHeight = 841.89;
-
-    let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
-    const marginTop = pageHeight - 50;
 
     const dataArray = JSON.parse(appendText);
 
@@ -4398,12 +4391,35 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       return label.replace(/\b\w/g, (char) => char.toUpperCase());
     };
 
-    let xPos = 50;
-    let yPos = marginTop;
-    const lineHeight = 20;
-    const spaceBetweenRows = 30;
+    const splitTextIntoLines = (text, font, fontSize, maxWidth) => {
+      const words = text.split(" ");
+      const lines = [];
+      let currentLine = "";
+
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testLineWidth = font.widthOfTextAtSize(testLine, fontSize);
+
+        if (testLineWidth > maxWidth) {
+          if (currentLine) lines.push(currentLine);
+          currentLine = word;
+        } else {
+          currentLine = testLine;
+        }
+      }
+
+      if (currentLine) lines.push(currentLine);
+      return lines;
+    };
 
     for (const data of dataArray) {
+      let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
+      let xPos = 50;
+      let yPos = pageHeight - 50;
+      const fontSize = 12;
+      const lineHeight = 18;
+      const maxTextWidth = pageWidth - 100;
+
       if (data.field_date_created) {
         data.field_date_created = formatDate(data.field_date_created);
       }
@@ -4424,38 +4440,40 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
       const entries = Object.entries(data);
 
-      for (let i = 0; i < entries.length; i++) {
-        const [label, value] = entries[i];
-        const valueString = value ? value.toString() : "N/A";
+      for (const [label, value] of entries) {
+        const fieldValue = value ? value.toString() : "N/A";
         const formattedLabel = formatLabel(label);
 
         newPage.drawText(`${formattedLabel}:`, {
           x: xPos,
           y: yPos,
-          size: 14,
+          size: fontSize,
           font: boldFont,
           color: rgb(0, 0, 0),
         });
 
         yPos -= lineHeight;
 
-        newPage.drawText(valueString, {
-          x: xPos,
-          y: yPos,
-          size: 12,
-          font: regularFont,
-          color: rgb(0, 0, 0),
-        });
+        const wrappedLines = splitTextIntoLines(fieldValue, regularFont, fontSize, maxTextWidth);
+        for (const line of wrappedLines) {
+          newPage.drawText(line, {
+            x: xPos,
+            y: yPos,
+            size: fontSize,
+            font: regularFont,
+            color: rgb(0, 0, 0),
+          });
 
-        yPos -= lineHeight * 1 + spaceBetweenRows;
+          yPos -= lineHeight;
 
-        if (yPos <= 50) {
-          yPos = pageHeight - 50;
-          newPage = pdfDoc.addPage();
+          if (yPos <= 50) {
+            newPage = pdfDoc.addPage([pageWidth, pageHeight]);
+            yPos = pageHeight - 50;
+          }
         }
-      }
 
-      yPos -= spaceBetweenRows;
+        yPos -= lineHeight;
+      }
     }
 
     const pdfBytes = await pdfDoc.save();
@@ -4495,8 +4513,9 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
     await Model.update(
       { field_pr_status: "Yes" },
-      { where: { field_ui_case_id: ui_case_id } }
+      { where: { id: selected_row_id } }
     );
+
     return res.status(200).json({
       success: true,
       message: "PDF updated successfully.",
