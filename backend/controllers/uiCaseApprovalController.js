@@ -264,6 +264,24 @@ exports.get_alert_notification = async (req, res) => {
       created_by_name: kgidMap[userMap[notification.created_by]] || null,
     }));
 
+    const designationsIds = [...new Set(complete_data.map((n) => n.created_by_designation_id))];
+
+    const designations = await Designation.findAll({
+      where: { designation_id: { [Op.in]: designationsIds } },
+      attributes: ["designation_id", "designation_name"],
+      raw: true,
+    });
+
+    const designationMap = designations.reduce((acc, k) => {
+      acc[k.designation_id] = k.designation_name;
+      return acc;
+    }, {});
+
+    complete_data = complete_data.map((notification) => ({
+      ...notification,
+      created_by_designation_id: designationMap[notification.created_by_designation_id] || null,
+    }));
+
     const unreadCount = complete_data.filter((n) => !n.read_status).length;
 
     return res.status(200).json({
