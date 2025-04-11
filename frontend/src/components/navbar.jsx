@@ -177,7 +177,7 @@ export default function Navbar() {
 
                 {/* Left: Search */}
 
-                <TextField
+                {/* <TextField
                     variant="standard"
                     placeholder="Search Case ID, Crime Number"
                     fullWidth
@@ -219,7 +219,11 @@ export default function Navbar() {
                             </Box>
                         ),
                     }}
-                />
+                /> */}
+
+                <Box>
+                    
+                </Box>
 
                 {/* Right: Notification */}
                 <Box>
