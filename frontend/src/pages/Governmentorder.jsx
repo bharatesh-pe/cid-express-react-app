@@ -288,9 +288,10 @@ const GovernmentOrder = () => {
     }
 
       const showApprovalPage = async (approveData) => {
+        setSelectedRow(approveData);
         setFormOpen(false);
         var payloadObj = {
-          pt_case_id: approveData.id,
+            case_id: approveData.id,
         };
     
         setLoading(true);
@@ -448,13 +449,20 @@ const GovernmentOrder = () => {
     
         var created_by_division_id = localStorage.getItem("division_id") || "";
     
+        console.log("selectedRow", selectedRow);
         var payloadApproveData = {
-          ...approvalSaveData,
-          pt_case_id: selectedRow.id,
-          transaction_id: randomApprovalId,
-          created_by_designation_id: created_by_designation_id,
-          created_by_division_id: created_by_division_id,
-        };
+            ...approvalSaveData,
+            case_id: selectedRow.id,
+            case_type: "gn_order",
+            module: "Government Order",
+            // action: "Pending Trial Action",
+            transaction_id: randomApprovalId,
+            created_by_designation_id: created_by_designation_id,
+            created_by_division_id: created_by_division_id,
+            info: {
+              module: "Government Order",
+            },
+          };
     
         setLoading(true);
     
@@ -480,17 +488,17 @@ const GovernmentOrder = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
+                onClose: () => {
+                  setApproveTableFlag(false);
+                  setAddApproveFlag(false);
+                }
               }
             );
     
-            if (
-              (selectedOtherTemplate.field === null ||
-                selectedOtherTemplate.field === "field_nature_of_disposal") &&
-              templateApproval
-            ) {
-              otherTemplateSaveFunc(templateApprovalData, true);
-              return;
-            }
+
+            console.log("templareaprrovaldataaa", templateApprovalData);
+            otherTemplateUpdateFunc(templateApprovalData, true);
+
     
             // if (disposalUpdate) {
             //   updateSysStatusDisposal();
@@ -509,7 +517,6 @@ const GovernmentOrder = () => {
             setSelectKey(null);
             setSelectedRow(null);
             setselectedOtherTemplate(null);
-    
             setApprovalsData([]);
             setApprovalItem([]);
             setDesignationData([]);
@@ -2364,7 +2371,7 @@ const GovernmentOrder = () => {
                     template_name={template_name}
                     readOnly={viewReadonly}
                     editData={editTemplateData}
-                    onUpdate={onUpdateTemplateData}
+                    onUpdate={showApprovalPage}
                     formConfig={formTemplateData}
                     stepperData={stepperData}
                     initialData={initialData}
