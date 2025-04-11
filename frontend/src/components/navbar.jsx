@@ -348,9 +348,9 @@ export default function Navbar() {
                 fullWidth
                 sx={{zIndex:'1000'}}
             >
-                <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between' }} >
+                {/* <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between' }} >
 
-                </DialogTitle>
+                </DialogTitle> */}
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
                         <Box>
@@ -363,8 +363,9 @@ export default function Navbar() {
                                                 <span>
                                                     {indivitualApprovalData['created_by'] || ''} 
                                                 </span>
+                                                <span> Added Approval for </span>
                                                 <span className="ProfileViewHeading">
-                                                    {indivitualApprovalData['action'] ? ` Approved ${indivitualApprovalData['action']}` : ''}
+                                                    {indivitualApprovalData['action'] ? `${indivitualApprovalData['action']}` : ''}
                                                 </span>
                                                 <span>
                                                     {indivitualApprovalData['module'] ? ` in ${indivitualApprovalData['module']}` : ''}
