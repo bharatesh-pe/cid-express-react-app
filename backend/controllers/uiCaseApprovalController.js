@@ -138,8 +138,9 @@ exports.get_ui_case_approvals = async (req, res) => {
     }
 
     let formattedApprovals = [];
+    let approvals = [];
     if (whereCondition && Object.keys(whereCondition).length > 0) {
-      const approvals = await UiCaseApproval.findAll({
+      approvals = await UiCaseApproval.findAll({
         include: [
           {
             model: ApprovalItem,
@@ -173,7 +174,7 @@ exports.get_ui_case_approvals = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        approvals: formattedApprovals,
+        approvals: approvals,
         approval_item: approval_item,
         designation: designation,
       },
@@ -192,18 +193,18 @@ exports.get_alert_notification = async (req, res) => {
     const { user_id } = req.user;
     const { user_designation_id, user_division_id } = req.body;
 
-    // Get officer_designation_ids under the supervisor's designations
+    // Step 1: Get subordinate designation IDs
     const subordinates = await UsersHierarchy.findAll({
-      where: {
-        supervisor_designation_id: user_designation_id,
-      },
+      where: { supervisor_designation_id: user_designation_id },
       attributes: ["officer_designation_id"],
+      raw: true,
     });
 
     const officer_designation_ids = subordinates.map(
-      (subordinate) => subordinate.officer_designation_id
+      (d) => d.officer_designation_id
     );
 
+    // Step 2: Get alerts created by those designations within the same division
     const alertNotifications = await System_Alerts.findAll({
       where: {
         created_by_designation_id: { [Op.in]: officer_designation_ids },
@@ -212,64 +213,62 @@ exports.get_alert_notification = async (req, res) => {
       order: [["created_at", "DESC"]],
     });
 
-    let complete_data = [];
+    // Step 3: Enrich alerts with read status
+    let complete_data = await Promise.all(
+      alertNotifications.map(async (notification) => {
+        const alertViewStatus = await AlertViewStatus.findOne({
+          where: {
+            system_alert_id: notification.system_alert_id,
+            viewed_by: user_id,
+            viewed_by_designation_id: user_designation_id,
+            viewed_by_division_id: user_division_id,
+          },
+        });
 
-    if (alertNotifications.length > 0) {
-      complete_data = await Promise.all(
-        alertNotifications.map(async (notification) => {
-          const alertViewStatus = await AlertViewStatus.findOne({
-            where: {
-              system_alert_id: notification.system_alert_id,
-              viewed_by: user_id,
-              viewed_by_designation_id: user_designation_id,
-              viewed_by_division_id: user_division_id,
-            },
-          });
-          return {
-            ...notification.toJSON(),
-            read_status: alertViewStatus ? alertViewStatus.view_status : false,
-          };
-        })
-      );
-    }
-
-    //from the complete_data there is created_by get it and fing the user name in user table and in user table there is only kgid_id and the name is in the kgid table get the name
-    const userIds = complete_data.map(
-      (notification) => notification.created_by
+        return {
+          ...notification.toJSON(),
+          read_status: alertViewStatus ? alertViewStatus.view_status : false,
+        };
+      })
     );
 
+    // Step 4: Fetch names via created_by → Users → KGID
+    const userIds = [...new Set(complete_data.map((n) => n.created_by))];
+
     const users = await Users.findAll({
-      where: { kgid_id: { [Op.in]: userIds } },
-      attributes: ["kgid_id"],
+      where: { user_id: { [Op.in]: userIds } },
+      attributes: ["user_id", "kgid_id"],
+      raw: true,
     });
 
-    //here i have the kgid_id and i will find the name in the kgid table
-    const kgidIds = users.map((user) => user.kgid_id);
+    const kgidIds = users.map((u) => u.kgid_id);
+    const userMap = users.reduce((acc, user) => {
+      acc[user.user_id] = user.kgid_id;
+      return acc;
+    }, {});
 
     const kgids = await KGID.findAll({
       where: { id: { [Op.in]: kgidIds } },
       attributes: ["id", "name"],
+      raw: true,
     });
 
-    //create a map of kgid_id and name
-    const kgidMap = kgids.reduce((acc, kgid) => {
-      acc[kgid.id] = kgid.name;
+    const kgidMap = kgids.reduce((acc, k) => {
+      acc[k.id] = k.name;
       return acc;
     }, {});
 
-    //add the name to the complete_data
-    complete_data = complete_data.map((notification) => {
-      notification.created_by_name = kgidMap[notification.created_by];
-      return notification;
-    });
+    // Step 5: Attach names to alerts
+    complete_data = complete_data.map((notification) => ({
+      ...notification,
+      created_by_name: kgidMap[userMap[notification.created_by]] || null,
+    }));
 
-    //get the read_status false count from the complete_data
-    const unreadCount = complete_data.filter(
-      (notification) => !notification.read_status
-    ).length;
+    const unreadCount = complete_data.filter((n) => !n.read_status).length;
 
     return res.status(200).json({
       success: true,
+      unreadCount,
       data: complete_data,
     });
   } catch (error) {
@@ -281,12 +280,109 @@ exports.get_alert_notification = async (req, res) => {
   }
 };
 
+// exports.get_case_approval_by_id = async (req, res) => {
+//   try {
+//     const { user_id } = req.user;
+//     const { approval_id, user_designation_id, user_division_id } = req.body;
+
+//     //also get the approval_item name from ApprovalItem is linked and approved_by name from Designation
+//     const approvalDetails = await UiCaseApproval.findOne({
+//       where: { approval_id },
+//       include: [
+//         {
+//           model: ApprovalItem,
+//           as: "approvalItem",
+//           attributes: ["name"],
+//         },
+//         {
+//           model: Designation,
+//           as: "approvedBy",
+//           attributes: ["designation_name"],
+//         },
+//       ],
+//       raw: true,
+//       nest: true,
+//     });
+
+//     // Flatten the response
+//     const formattedDetails = {
+//       ...approvalDetails,
+//       approvalItem: approvalDetails?.approvalItem?.name || null,
+//       approvedBy: approvalDetails?.approvedBy?.designation_name || null,
+//     };
+//     //from the formattedDetails there is created_by get it and fing the user name in user table and in user table there is only kgid_id and the name is in the kgid table get the name
+//     const userIds = formattedDetails.map(
+//       (notification) => notification.created_by
+//     );
+
+//     const users = await Users.findAll({
+//       where: { kgid_id: { [Op.in]: userIds } },
+//       attributes: ["kgid_id"],
+//     });
+
+//     //here i have the kgid_id and i will find the name in the kgid table
+//     const kgidIds = users.map((user) => user.kgid_id);
+
+//     const kgids = await KGID.findAll({
+//       where: { id: { [Op.in]: kgidIds } },
+//       attributes: ["id", "name"],
+//     });
+
+//     //create a map of kgid_id and name
+//     const kgidMap = kgids.reduce((acc, kgid) => {
+//       acc[kgid.id] = kgid.name;
+//       return acc;
+//     }, {});
+
+//     //add the name to the complete_data
+//     formattedDetails = formattedDetails.map((notification) => {
+//       notification.created_by = kgidMap[notification.created_by];
+//       return notification;
+//     });
+
+//     const alertNotifications = await System_Alerts.findOne({
+//       where: { approval_id: approval_id },
+//     });
+
+//     //update the  AlertViewStatus create a entery if not exist
+//     const alertViewStatus = await AlertViewStatus.findOne({
+//       where: {
+//         system_alert_id: alertNotifications.system_alert_id,
+//         viewed_by: user_id,
+//         viewed_by_designation_id: user_designation_id,
+//         viewed_by_division_id: user_division_id,
+//       },
+//     });
+
+//     if (!alertViewStatus) {
+//       await AlertViewStatus.create({
+//         system_alert_id: alertNotifications.system_alert_id,
+//         viewed_by: user_id,
+//         viewed_by_designation_id: user_designation_id,
+//         viewed_by_division_id: user_division_id,
+//         view_status: true,
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       data: formattedDetails,
+//     });
+//   } catch (error) {
+//     console.error("Error fetching approval by ID:", error);
+//     return res.status(500).json({
+//       message: "Failed to fetch approval",
+//       error: error.message,
+//     });
+//   }
+// };
+
 exports.get_case_approval_by_id = async (req, res) => {
   try {
     const { user_id } = req.user;
     const { approval_id, user_designation_id, user_division_id } = req.body;
 
-    //also get the approval_item name from ApprovalItem is linked and approved_by name from Designation
+    // Get approval details
     const approvalDetails = await UiCaseApproval.findOne({
       where: { approval_id },
       include: [
@@ -305,35 +401,68 @@ exports.get_case_approval_by_id = async (req, res) => {
       nest: true,
     });
 
-    // Flatten the response
+    if (!approvalDetails) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Approval not found" });
+    }
+
+    // Fetch the created_by user's KGID ID
+    const user = await Users.findOne({
+      where: { user_id: approvalDetails.created_by },
+      attributes: ["kgid_id"],
+      raw: true,
+    });
+
+    // Fetch the name from KGID table using kgid_id
+    let creatorName = null;
+    if (user && user.kgid_id) {
+      const kgid = await KGID.findOne({
+        where: { id: user.kgid_id },
+        attributes: ["name"],
+        raw: true,
+      });
+
+      if (kgid) {
+        creatorName = kgid.name;
+      }
+    }
+
+    // Final response formatting
     const formattedDetails = {
       ...approvalDetails,
-      approvalItem: approvalDetails?.approvalItem?.name || null,
-      approvedBy: approvalDetails?.approvedBy?.designation_name || null,
+      approvalItem: approvalDetails.approvalItem?.name || null,
+      approvedBy: approvalDetails.approvedBy?.designation_name || null,
+      created_by: creatorName,
     };
 
-    const alertNotifications = await System_Alerts.findOne({
-      where: { approval_id: approval_id },
+    // Fetch associated alert
+    const alertNotification = await System_Alerts.findOne({
+      where: { approval_id },
+      raw: true,
     });
 
-    //update the  AlertViewStatus create a entery if not exist
-    const alertViewStatus = await AlertViewStatus.findOne({
-      where: {
-        system_alert_id: alertNotifications.system_alert_id,
-        viewed_by: user_id,
-        viewed_by_designation_id: user_designation_id,
-        viewed_by_division_id: user_division_id,
-      },
-    });
-
-    if (!alertViewStatus) {
-      await AlertViewStatus.create({
-        system_alert_id: alertNotifications.system_alert_id,
-        viewed_by: user_id,
-        viewed_by_designation_id: user_designation_id,
-        viewed_by_division_id: user_division_id,
-        view_status: true,
+    if (alertNotification) {
+      // Update view status if not already viewed
+      const existingView = await AlertViewStatus.findOne({
+        where: {
+          system_alert_id: alertNotification.system_alert_id,
+          viewed_by: user_id,
+          viewed_by_designation_id: user_designation_id,
+          viewed_by_division_id: user_division_id,
+        },
+        raw: true,
       });
+
+      if (!existingView) {
+        await AlertViewStatus.create({
+          system_alert_id: alertNotification.system_alert_id,
+          viewed_by: user_id,
+          viewed_by_designation_id: user_designation_id,
+          viewed_by_division_id: user_division_id,
+          view_status: true,
+        });
+      }
     }
 
     return res.status(200).json({
