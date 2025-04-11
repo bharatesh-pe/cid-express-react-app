@@ -505,15 +505,26 @@ code {
 
 .ProfileViewHeading {
     margin-bottom: 0;
-    padding-bottom: 3px;
     font-weight: 600;
-    font-size: 18px;
+    font-size: 16px;
     color: #3E4784;
 }
 
 .ProfileViewDesc {
     margin: 0;
     font-weight: 400;
+    font-size: 16px;
+    color: #101828;
+}
+
+.alertDescDate{
+    color: #667085;
+    font-size: 13px;
+}
+
+.ProfileViewTopic{
+    margin-bottom: 0;
+    font-weight: 500;
     font-size: 16px;
     color: #101828;
 }
