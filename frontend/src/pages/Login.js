@@ -377,7 +377,7 @@ const Login = () => {
         usersDivision[i].division &&
         usersDivision[i].division_id &&
         usersDivision[i].division.division_name &&
-        usersDivision[i].division.division_name == item.division
+        usersDivision[i].division.division_name == item.divisions
       ) {
         localStorage.setItem("division_id", usersDivision[i].division_id);
         localStorage.setItem(
