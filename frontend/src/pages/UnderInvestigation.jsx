@@ -2724,16 +2724,19 @@ const UnderInvestigation = () => {
                                     field: 'select',
                                     headerName: '',
                                     width: 50,
-                                    renderCell: (params) => (
-                                        <Checkbox
-                                            onChange={() => toggleSelectRow(params.row.id)}
-                                            
-                                        />
-                                    ),
+                                    renderCell: (params) => {
+                                        const isDisabled = params.row.field_pr_status === "Yes";                                    
+                                        return isDisabled ? null : (
+                                            <Checkbox
+                                                onChange={() => toggleSelectRow(params.row.id)}
+                                            />
+                                        );
+                                    }
                                 }]
                                 : []
                             ),                
-                            {
+                        ...(options.table !== "cid_ui_case_progress_report"
+                            ? [{                                
                                 field: 'sl_no',
                                 headerName: 'S.No',
                                 resizable: false,
@@ -2744,17 +2747,19 @@ const UnderInvestigation = () => {
                                             {params.value}
                                         </Box>
                                     )
-                                },
-                            },
+                                } 
+                            }]
+                                : []
+                            ),                             
                             ...Object.keys(getTemplateResponse.data[0])
-                            .filter((key) => !excludedKeys.includes(key) && key !== 'field_pt_case_id' && key !== 'field_ui_case_id' && key !== 'field_pr_status' && key !== 'field_evidence_file'  && key !== 'created_at' && key !== 'field_last_updated' &&  key !== 'field_date_created')
+                            .filter((key) => !excludedKeys.includes(key) && key !== 'field_pt_case_id' && key !== 'field_ui_case_id' && key !== 'field_pr_status' && key !== 'field_evidence_file'  && key !== 'created_at' && key !== 'field_last_updated' &&  key !== 'field_date_created' && key !== 'field_description')
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
 
                                     return {
                                         field: key,
                                         headerName: updatedKeyName ? updatedKeyName : '',
-                                        width: 250,
+                                        width: options.table === "cid_ui_case_progress_report" ? 150 : 250,
                                         resizable: true,
                                         renderHeader: () => (
                                             <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
@@ -2804,26 +2809,32 @@ const UnderInvestigation = () => {
                                         },
                                     }]
                                     : []),
-                                {
-                                    field: '',
-                                    headerName: 'Action',
-                                    flex: 1,
-                                    renderCell: (params) => {
-                                        return (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                                <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, false, options.table); }}>
-                                                    View
-                                                </Button>
-                                                <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, true, options.table); }}>
-                                                    Edit
-                                                </Button>
-                                                <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleOthersDeleteTemplateData(params.row, options.table); }}>
-                                                    Delete
-                                                </Button>
-                                            </Box>
-                                        );
-                                    }
-                                }
+                                    {
+                                        field: '',
+                                        headerName: 'Action',
+                                        flex: 1,
+                                        renderCell: (params) => {
+                                            const isPdfUpdated = options.table === "cid_ui_case_progress_report" && params.row.field_pr_status === "Yes";
+                                    
+                                            return (
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                                                    <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, false, options.table); }}>
+                                                        View
+                                                    </Button>
+                                                    {!isPdfUpdated && (
+                                                        <>
+                                                            <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, true, options.table); }}>
+                                                                Edit
+                                                            </Button>
+                                                            <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleOthersDeleteTemplateData(params.row, options.table); }}>
+                                                                Delete
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </Box>
+                                            );
+                                        }
+                                    }                                    
                         ];
 
                         setOtherTemplateColumn(updatedHeader)
@@ -4395,7 +4406,7 @@ const UnderInvestigation = () => {
 
                                                 if (getTemplateResponse && getTemplateResponse.success) {
                                                     const dataToAppend = getTemplateResponse.data.filter(item => item.field_pr_status === "No");
-                                                    
+
                                                     if (!selectedIds || selectedIds.length === 0) {
                                                         toast.error("Please choose a record to append.", {
                                                             position: "top-right",

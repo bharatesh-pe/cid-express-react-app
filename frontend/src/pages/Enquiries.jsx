@@ -58,7 +58,7 @@ const Enquiries = () => {
     const [template_name, setTemplate_name] = useState('')
     const [table_name, setTable_name] = useState('')
 
-    const [sysStatus, setSysSattus] = useState(null);
+    const [sysStatus, setSysSattus] = useState('all');
     
     const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
@@ -86,11 +86,12 @@ const Enquiries = () => {
 
     const [StatusUpdateVisible, setStatusUpdateVisible] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState(null);
-    const [selectedRow, setSelectedRow] = useState(null);
+    const [selectedRow, setSelectedRow] = useState({});
 
     const [loading, setLoading] = useState(false); // State for loading indicator
 
     const searchParams = new URLSearchParams(location.search);
+    const [selectedRowData, setSelectedRowData] = useState(null);
 
     const [hoverTableOptions, setHoverTableOptions] = useState([]);
     // for approve states
@@ -831,6 +832,7 @@ const Enquiries = () => {
     }
 
     const getTemplate = async (table_name) => {
+
         if (!table_name || table_name === '') {
             toast.warning('Please Check The Template', {
                 position: "top-right",
@@ -917,6 +919,11 @@ const Enquiries = () => {
             "table_name": table_name
         }
         setLoading(true);
+        setOtherReadOnlyTemplateData(false)
+        setOtherEditTemplateData(false)
+        setOtherRowId(null);
+        setOtherTemplateId(null);
+        setOtherInitialTemplateData({});
 
         try {
 
@@ -1035,7 +1042,16 @@ const Enquiries = () => {
                 }
             }
         });
-        normalData.sys_status ='eq_case';
+
+        const fieldStatusValue = data?.field_status || '';
+
+        if(selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy"){
+            normalData.sys_status = fieldStatusValue;
+        }
+        else{
+            normalData.sys_status = "eq_case"
+        }
+        normalData['ui_case_id'] = selectedRowData.id || selectedRow.id;
         formData.append("data", JSON.stringify(normalData));
         setLoading(true);
 
@@ -1056,9 +1072,13 @@ const Enquiries = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                    onOpen: () => {
+                        if (selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy") {
+                            changeSysStatus(selectedRowData, fieldStatusValue);
+                        }
+                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                    },
                 });
-
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
                 toast.error(errorMessage, {
@@ -1803,70 +1823,72 @@ const Enquiries = () => {
 
     // Advance filter functions
 
-    // useEffect(()=>{
+    useEffect(()=>{
 
-    //     const getActions = async ()=>{
+        const getActions = async ()=>{
 
-    //         var payloadObj = {
-    //             "module": "eq_case"
-    //         }
+            var payloadObj = {
+                "module": "eq_case"
+            }
 
-    //         setLoading(true);
+            setLoading(true);
     
-    //         try {
+            try {
     
-    //             const getActionsDetails = await api.post("/action/get_actions", payloadObj);
+                const getActionsDetails = await api.post("/action/get_actions", payloadObj);
 
-    //             setLoading(false);
+                setLoading(false);
     
-    //             if (getActionsDetails && getActionsDetails.success) {
+                if (getActionsDetails && getActionsDetails.success) {
     
-    //                 if (getActionsDetails.data && getActionsDetails.data['data']) {
-    //                     setHoverTableOptions(getActionsDetails.data['data']);
-    //                 }
+                    if (getActionsDetails.data && getActionsDetails.data['data']) {
+                        setHoverTableOptions(getActionsDetails.data['data']);
+                    }
     
-    //             } else {
+                } else {
                     
-    //                 const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
-    //                 toast.error(errorMessage, {
-    //                     position: "top-right",
-    //                     autoClose: 3000,
-    //                     hideProgressBar: false,
-    //                     closeOnClick: true,
-    //                     pauseOnHover: true,
-    //                     draggable: true,
-    //                     progress: undefined,
-    //                     className: "toast-error",
-    //                 });
+                    const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
                                     
-    //             }
+                }
     
-    //         } catch (error) {
+            } catch (error) {
     
-    //             setLoading(false);
-    //             if (error && error.response && error.response['data']) {
-    //                 toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
-    //                     position: "top-right",
-    //                     autoClose: 3000,
-    //                     hideProgressBar: false,
-    //                     closeOnClick: true,
-    //                     pauseOnHover: true,
-    //                     draggable: true,
-    //                     progress: undefined,
-    //                     className: "toast-error",
-    //                 });
-    //             }
-    //         }
-    //     }
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+        }
 
-    //     getActions();
+        getActions();
 
-    // },[])
+    },[])
     
-    const handleOtherTemplateActions = async (options)=>{
+    const handleOtherTemplateActions = async (options, selectedRow)=>{
 
+        setSelectedRowData(selectedRow)
         var getTemplatePayload = {
             "table_name": options.table,
+            "ui_case_id": selectedRow.id,
         }
 
         setLoading(true);
@@ -1879,14 +1901,12 @@ const Enquiries = () => {
 
                 if (getTemplateResponse.data && getTemplateResponse.data) {
 
-                    console.log("data inside")
-
                     if(getTemplateResponse.data[0]){
 
                         var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
 
                         const updatedHeader = [
-                            {
+                            {                                
                                 field: 'sl_no',
                                 headerName: 'S.No',
                                 resizable: false,
@@ -1897,10 +1917,10 @@ const Enquiries = () => {
                                             {params.value}
                                         </Box>
                                     )
-                                },
-                            },
+                                } 
+                            },                             
                             ...Object.keys(getTemplateResponse.data[0])
-                                .filter((key) => !excludedKeys.includes(key))
+                            .filter((key) => !excludedKeys.includes(key) && key !== 'field_pt_case_id' && key !== 'field_ui_case_id' && key !== 'field_pr_status' && key !== 'field_evidence_file'  && key !== 'created_at' && key !== 'field_last_updated' &&  key !== 'field_date_created')
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
 
@@ -1919,29 +1939,31 @@ const Enquiries = () => {
                                         },
                                     };
                                 }),
-                            {
-                                field: '',
-                                headerName: 'Action',
-                                flex: 1,
-                                renderCell: (params) => {
-                                    return (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                            <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, false, options.table); }}>
-                                                View
-                                            </Button>
-                                            <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, true, options.table); }}>
-                                                Edit
-                                            </Button>
-                                            <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleOthersDeleteTemplateData(params.row, options.table); }}>
-                                                Delete
-                                            </Button>
-                                        </Box>
-                                    );
+                                {
+                                    field: '',
+                                    headerName: 'Action',
+                                    flex: 1,
+                                    renderCell: (params) => {
+                                        return (
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                                                <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, false, options.table); }}>
+                                                    View
+                                                </Button>
+                                                <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, true, options.table); }}>
+                                                    Edit
+                                                </Button>
+                                                <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleOthersDeleteTemplateData(params.row, options.table); }}>
+                                                    Delete
+                                                </Button>
+                                            </Box>
+                                        );
+                                    }
                                 }
-                            }
                         ];
 
                         setOtherTemplateColumn(updatedHeader)
+                                                        
+                            
                     }else{
                         setOtherTemplateColumn([])
                     }
@@ -2071,14 +2093,8 @@ const Enquiries = () => {
             )
         }
         : null,
-        ...(sysStatus !== 'Disposal' ? [{
-            "name": "Status Update",
-            "onclick": (row) => {
-                setSelectedRow(row);
-                setSelectedStatus('');
-                setStatusUpdateVisible(true);
-            },
-        }] : []),
+        ...hoverTableOptions,    
+
         userPermissions[0]?.delete_enquiry
         ? {
             "name": "Delete",
@@ -2553,62 +2569,62 @@ const Enquiries = () => {
         <Box p={2} inert={loading ? true : false}>
             <>
             <Dialog
-                open={StatusUpdateVisible}
-                onClose={() => setStatusUpdateVisible(false)}
-                maxWidth="sm"
-                fullWidth
-                sx={{
-                "& .MuiDialogPaper-root": { borderRadius: "12px", padding: "15px" },
-                }}
-            >
-            <DialogTitle style={{ fontWeight: "600", fontSize: "18px", textAlign: "left" }}>
-            Status Update
-            </DialogTitle>
+               open={StatusUpdateVisible}
+               onClose={() => setStatusUpdateVisible(false)}
+               maxWidth="sm"
+               fullWidth
+               sx={{
+               "& .MuiDialogPaper-root": { borderRadius: "12px", padding: "15px" },
+               }}
+           >
+                <DialogTitle style={{ fontWeight: "600", fontSize: "18px", textAlign: "left" }}>
+                Status Update
+                </DialogTitle>
 
-            <DialogContent style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <FormControl fullWidth>
-                <InputLabel>Choose Status</InputLabel>
-                <Select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                label="Choose Status"
-                >
-                {["Completed", "Closed", "Disposal"].map((status) => (
-                    <MenuItem key={status} value={status}>
-                    {status}
-                    </MenuItem>
-                ))}
-                </Select>
-            </FormControl>
-            </DialogContent>
+                <DialogContent style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <FormControl fullWidth>
+                    <InputLabel>Choose Status</InputLabel>
+                    <Select
+                    value={selectedStatus}
+                    onChange={(e) => setSelectedStatus(e.target.value)}
+                    label="Choose Status"
+                    >
+                    {["Completed", "Closed", "Disposal"].map((status) => (
+                        <MenuItem key={status} value={status}>
+                        {status}
+                        </MenuItem>
+                    ))}
+                    </Select>
+                </FormControl>
+                </DialogContent>
 
-            <DialogActions style={{ justifyContent: "flex-end", padding: "10px 20px" }}>
-            <Button
-                variant="outlined"
-                color="primary"
-                onClick={() => setStatusUpdateVisible(false)}
-                style={{ width: "150px" }}
-            >
-                Cancel
-            </Button>
-            <Button
-                variant="contained"
-                style={{
-                width: "150px",
-                backgroundColor: "rgb(31, 29, 172)",
-                color: "#fff",
-                textTransform: "none",
-                }}
-                onClick={() => {
-                    showApprovalPage(selectedRow);
-                }}
-                disabled={!selectedStatus}
-            >
-                Update
-            </Button>
-            </DialogActions>
-        </Dialog>
-
+                <DialogActions style={{ justifyContent: "flex-end", padding: "10px 20px" }}>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={() => setStatusUpdateVisible(false)}
+                            style={{ width: "150px" }}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            style={{
+                            width: "150px",
+                            backgroundColor: "rgb(31, 29, 172)",
+                            color: "#fff",
+                            textTransform: "none",
+                            }}
+                            onClick={() => {
+                                showApprovalPage(selectedRow);
+                            }}
+                            disabled={!selectedStatus}
+                        >
+                        Update
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+                
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
                         <Box sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
@@ -2685,7 +2701,7 @@ const Enquiries = () => {
                 <Box pt={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 
                     <Box className="parentFilterTabs">
-                        <Box onClick={() => { setSysSattus(null); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === null ? 'Active' : ''}`} >
+                        <Box onClick={() => { setSysSattus('all'); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === 'all' ? 'Active' : ''}`} >
                             All
                         </Box>
                         <Box onClick={() => { setSysSattus('Completed'); setPaginationCount(1) }} id="filterCompleted" className={`filterTabs ${sysStatus === 'Completed' ? 'Active' : ''}`} >
@@ -3011,7 +3027,8 @@ const Enquiries = () => {
                             <Button variant="outlined" onClick={() => {showOptionTemplate(selectedOtherTemplate.table)}}>Add</Button>
                             <IconButton
                                 aria-label="close"
-                                onClick={() => setOtherTemplateModalOpen(false)}
+                                onClick={() => { setOtherTemplateModalOpen(false);}}
+
                                 sx={{ color: (theme) => theme.palette.grey[500] }}
                             >
                                 <CloseIcon />
