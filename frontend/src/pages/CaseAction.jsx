@@ -781,6 +781,24 @@ const CaseActions = () => {
                 name : 'Disposal',
                 code : 'disposal'
             }
+        ],
+        "eq_case" : [
+            {
+                name : 'All',
+                code : 'all'
+            },
+            {
+                name : 'Completed',
+                code : 'Completed'
+            },
+            {
+                name : 'Closed',
+                code : 'Closed'
+            },
+            {
+                name : 'Disposal',
+                code : 'disposal'
+            }
         ]
     }
     const icons = [
