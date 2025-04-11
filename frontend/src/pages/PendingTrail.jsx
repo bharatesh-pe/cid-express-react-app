@@ -488,7 +488,7 @@ const UnderInvestigation = () => {
               "linked_profile_info",
               "ui_case_id",
               "pt_case_id",
-              "sys_status"
+              "sys_status",
             ];
 
             const updatedHeader = [
@@ -507,33 +507,55 @@ const UnderInvestigation = () => {
                   );
                 },
               },
-              ...Object.keys(getTemplateResponse.data['data'][0])
-              .filter((key) => !excludedKeys.includes(key))
-              .map((key) => {
-                  var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
+              ...Object.keys(getTemplateResponse.data["data"][0])
+                .filter((key) => !excludedKeys.includes(key))
+                .map((key) => {
+                  var updatedKeyName = key
+                    .replace(/^field_/, "")
+                    .replace(/_/g, " ")
+                    .toLowerCase()
+                    .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
 
                   return {
-                      field: key,
-                      headerName: updatedKeyName ? updatedKeyName : '',
-                      width: 250,
-                      resizable: true,
-                      renderHeader: () => (
-                          <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
-                                <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
-                                {
-                                    tableSortKey === key
-                                    ? (tableSortOption === 'ASC'
-                                        ? <ASC sx={{ color: '#475467', width: '18px' }} />
-                                        : <DESC sx={{ color: '#475467', width: '18px' }} />)
-                                    : <DESC sx={{ color: '#475467', width: '18px' }} />
-                                }
-                          </div>
-                      ),
-                      renderCell: (params) => {
-                          return tableCellRender(key, params, params.value)
-                      },
+                    field: key,
+                    headerName: updatedKeyName ? updatedKeyName : "",
+                    width: 250,
+                    resizable: true,
+                    renderHeader: () => (
+                      <div
+                        onClick={() => ApplySortTable(key)}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          width: "100%",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "#1D2939",
+                            fontSize: "15px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {updatedKeyName ? updatedKeyName : ""}
+                        </span>
+                        {tableSortKey === key ? (
+                          tableSortOption === "ASC" ? (
+                            <ASC sx={{ color: "#475467", width: "18px" }} />
+                          ) : (
+                            <DESC sx={{ color: "#475467", width: "18px" }} />
+                          )
+                        ) : (
+                          <DESC sx={{ color: "#475467", width: "18px" }} />
+                        )}
+                      </div>
+                    ),
+                    renderCell: (params) => {
+                      return tableCellRender(key, params, params.value);
+                    },
                   };
-              }),
+                }),
             ];
 
             if (Array.isArray(getTemplateResponse.data["columns"])) {
@@ -654,38 +676,41 @@ const UnderInvestigation = () => {
     }
   };
 
-    const tableCellRender = (key, params, value) => {
+  const tableCellRender = (key, params, value) => {
+    if (params?.row?.attachments) {
+      var attachmentField = params.row.attachments.find(
+        (data) => data.field_name === key
+      );
+      if (attachmentField) {
+        return fileUploadTableView(key, params, params.value);
+      }
+    }
 
-        if(params?.row?.attachments){
-            var attachmentField = params.row.attachments.find((data) => data.field_name === key)
-            if(attachmentField){
-                return fileUploadTableView(key, params, params.value);
-            }
-        }
+    let highlightColor = {};
+    let onClickHandler = null;
 
-        let highlightColor = {};
-        let onClickHandler = null;
+    // if (params?.row?.linked_profile_info?.[0]?.field === key) {
+    //     highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
-        // if (params?.row?.linked_profile_info?.[0]?.field === key) {
-        //     highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
-            
-        //     onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
-        // }
+    //     onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
+    // }
 
-        return (
-            <span 
-                style={highlightColor}
-                onClick={onClickHandler}
-                className={`tableValueTextView Roboto ${
-                    params?.row && !params.row['ReadStatus'] && localStorage.getItem('authAdmin') === "false"
-                        ? 'unreadMsgText'
-                        : 'read'
-                }`}
-            >
-                {value}
-            </span>
-        );
-    };
+    return (
+      <span
+        style={highlightColor}
+        onClick={onClickHandler}
+        className={`tableValueTextView Roboto ${
+          params?.row &&
+          !params.row["ReadStatus"] &&
+          localStorage.getItem("authAdmin") === "false"
+            ? "unreadMsgText"
+            : "read"
+        }`}
+      >
+        {value}
+      </span>
+    );
+  };
 
   const hyperLinkShow = async (params) => {
     if (!params.table || !params.id) {
@@ -2517,25 +2542,44 @@ const UnderInvestigation = () => {
                 },
               },
               ...Object.keys(getTemplateResponse.data[0])
-              .filter((key) => !excludedKeys.includes(key))
-              .map((key) => {
-                  var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
+                .filter((key) => !excludedKeys.includes(key))
+                .map((key) => {
+                  var updatedKeyName = key
+                    .replace(/^field_/, "")
+                    .replace(/_/g, " ")
+                    .toLowerCase()
+                    .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
 
                   return {
-                      field: key,
-                      headerName: updatedKeyName ? updatedKeyName : '',
-                      width: 250,
-                      resizable: true,
-                      renderHeader: () => (
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
-                              <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
-                          </div>
-                      ),
-                      renderCell: (params) => {
-                          return tableCellRender(key, params, params.value)
-                      },
+                    field: key,
+                    headerName: updatedKeyName ? updatedKeyName : "",
+                    width: 250,
+                    resizable: true,
+                    renderHeader: () => (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          width: "100%",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "#1D2939",
+                            fontSize: "15px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {updatedKeyName ? updatedKeyName : ""}
+                        </span>
+                      </div>
+                    ),
+                    renderCell: (params) => {
+                      return tableCellRender(key, params, params.value);
+                    },
                   };
-              }),
+                }),
               {
                 field: "",
                 headerName: "Action",
@@ -2872,7 +2916,7 @@ const UnderInvestigation = () => {
 
   const showApprovalPage = async (approveData) => {
     var payloadObj = {
-      pt_case_id: approveData.id,
+      case_id: approveData.id,
     };
 
     setLoading(true);
@@ -3032,10 +3076,17 @@ const UnderInvestigation = () => {
 
     var payloadApproveData = {
       ...approvalSaveData,
-      pt_case_id: selectedRow.id,
+      case_id: selectedRow.id,
+      case_type: "pt_case",
+      module: "Pending Trial",
+      action: "Pending Trial Action",
       transaction_id: randomApprovalId,
       created_by_designation_id: created_by_designation_id,
       created_by_division_id: created_by_division_id,
+      info: {
+        module: "Pending Trial",
+        action: "Pending Trial Action",
+      },
     };
 
     setLoading(true);
