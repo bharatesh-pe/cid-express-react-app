@@ -70,16 +70,16 @@ const Enquiries = () => {
   const [template_name, setTemplate_name] = useState("");
   const [table_name, setTable_name] = useState("");
 
-    const [sysStatus, setSysSattus] = useState('all');
-    
-    const [stepperData, setstepperData] = useState([]);
-    const [formOpen, setFormOpen] = useState(false);
-    const [formTemplateData, setFormTemplateData] = useState([])
-    const [initialData, setInitialData] = useState({});
-    const [viewReadonly, setviewReadonly] = useState(false);
-    const [editTemplateData, setEditTemplateData] = useState(false);
-    const [selectedRowId, setSelectedRowId] = useState(null);
-    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+  const [sysStatus, setSysSattus] = useState("all");
+
+  const [stepperData, setstepperData] = useState([]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formTemplateData, setFormTemplateData] = useState([]);
+  const [initialData, setInitialData] = useState({});
+  const [viewReadonly, setviewReadonly] = useState(false);
+  const [editTemplateData, setEditTemplateData] = useState(false);
+  const [selectedRowId, setSelectedRowId] = useState(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
   const [otherFormOpen, setOtherFormOpen] = useState(false);
   const [optionStepperData, setOptionStepperData] = useState([]);
@@ -96,14 +96,14 @@ const Enquiries = () => {
   const [starFlag, setStarFlag] = useState(null);
   const [readFlag, setReadFlag] = useState(null);
 
-    const [StatusUpdateVisible, setStatusUpdateVisible] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState(null);
-    const [selectedRow, setSelectedRow] = useState({});
+  const [StatusUpdateVisible, setStatusUpdateVisible] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [selectedRow, setSelectedRow] = useState({});
 
   const [loading, setLoading] = useState(false); // State for loading indicator
 
-    const searchParams = new URLSearchParams(location.search);
-    const [selectedRowData, setSelectedRowData] = useState(null);
+  const searchParams = new URLSearchParams(location.search);
+  const [selectedRowData, setSelectedRowData] = useState(null);
 
   const [hoverTableOptions, setHoverTableOptions] = useState([]);
   // for approve states
@@ -1023,21 +1023,20 @@ const Enquiries = () => {
     setTableSortKey(key);
   };
 
-    const getTemplate = async (table_name) => {
-
-        if (!table_name || table_name === '') {
-            toast.warning('Please Check The Template', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
+  const getTemplate = async (table_name) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
 
     const viewTableData = {
       table_name: table_name,
@@ -1122,15 +1121,15 @@ const Enquiries = () => {
       return;
     }
 
-        const viewTableData = {
-            "table_name": table_name
-        }
-        setLoading(true);
-        setOtherReadOnlyTemplateData(false)
-        setOtherEditTemplateData(false)
-        setOtherRowId(null);
-        setOtherTemplateId(null);
-        setOtherInitialTemplateData({});
+    const viewTableData = {
+      table_name: table_name,
+    };
+    setLoading(true);
+    setOtherReadOnlyTemplateData(false);
+    setOtherEditTemplateData(false);
+    setOtherRowId(null);
+    setOtherTemplateId(null);
+    setOtherInitialTemplateData({});
 
     try {
       const viewTemplateResponse = await api.post(
@@ -1255,31 +1254,37 @@ const Enquiries = () => {
                   };
                 });
 
-                                formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
-
-                            }
-                        }
-                    } else {
-                        formData.append(field.name, data[field.name]);
-                    }
-                } else {
-                    // Add non-file fields to normalData
-                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
-                }
+                formData.append(
+                  "folder_attachment_ids",
+                  JSON.stringify(filteredArray)
+                );
+              }
             }
-        });
-
-        const fieldStatusValue = data?.field_status || '';
-
-        if(selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy"){
-            normalData.sys_status = fieldStatusValue;
+          } else {
+            formData.append(field.name, data[field.name]);
+          }
+        } else {
+          // Add non-file fields to normalData
+          normalData[field.name] =
+            field.type === "checkbox" || field.type === "multidropdown"
+              ? Array.isArray(data[field.name])
+                ? data[field.name].join(",")
+                : data[field.name]
+              : data[field.name];
         }
-        else{
-            normalData.sys_status = "eq_case"
-        }
-        normalData['ui_case_id'] = selectedRowData.id || selectedRow.id;
-        formData.append("data", JSON.stringify(normalData));
-        setLoading(true);
+      }
+    });
+
+    const fieldStatusValue = data?.field_status || "";
+
+    if (selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy") {
+      normalData.sys_status = fieldStatusValue;
+    } else {
+      normalData.sys_status = "eq_case";
+    }
+    normalData["ui_case_id"] = selectedRowData.id || selectedRow.id;
+    formData.append("data", JSON.stringify(normalData));
+    setLoading(true);
 
     try {
       const saveTemplateData = await api.post(
@@ -1290,53 +1295,59 @@ const Enquiries = () => {
 
       localStorage.removeItem(selectedOtherTemplate.name + "-formData");
 
-            if (saveTemplateData && saveTemplateData.success) {
-
-                toast.success(saveTemplateData.message || "Data Created Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () => {
-                        if (selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy") {
-                            changeSysStatus(selectedRowData, fieldStatusValue);
-                        }
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
-                    },
-                });
-            } else {
-                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
+      if (saveTemplateData && saveTemplateData.success) {
+        toast.success(saveTemplateData.message || "Data Created Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () => {
+            if (
+              selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy"
+            ) {
+              changeSysStatus(selectedRowData, fieldStatusValue);
             }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response['data']) {
-                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-
+            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+          },
+        });
+      } else {
+        const errorMessage = saveTemplateData.message
+          ? saveTemplateData.message
+          : "Failed to create the profile. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
     }
   };
 
@@ -1393,35 +1404,42 @@ const Enquiries = () => {
                   }
                 });
 
-                                filteredArray = filteredArray.map((obj) => {
-                                    return {
-                                        ...obj,
-                                        filename: obj.filename['name']
-                                    }
-                                });
-                                formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
-                            }
-                        }
-                    } else {
-                        formData.append(field.name, data[field.name]);
-                    }
-                } else {
-                    // Add non-file fields to normalData
-                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
-                }
+                filteredArray = filteredArray.map((obj) => {
+                  return {
+                    ...obj,
+                    filename: obj.filename["name"],
+                  };
+                });
+                formData.append(
+                  "folder_attachment_ids",
+                  JSON.stringify(filteredArray)
+                );
+              }
             }
-        });
-        const fieldStatusValue = data?.field_status || '';
+          } else {
+            formData.append(field.name, data[field.name]);
+          }
+        } else {
+          // Add non-file fields to normalData
+          normalData[field.name] =
+            field.type === "checkbox" || field.type === "multidropdown"
+              ? Array.isArray(data[field.name])
+                ? data[field.name].join(",")
+                : data[field.name]
+              : data[field.name];
+        }
+      }
+    });
+    const fieldStatusValue = data?.field_status || "";
 
-        if(selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy"){
-            normalData.sys_status = fieldStatusValue;
-        }
-        else{
-            normalData.sys_status = "eq_case"
-        }
-        formData.append("data", JSON.stringify(normalData));
-        formData.append("id", data.id);
-        setLoading(true);
+    if (selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy") {
+      normalData.sys_status = fieldStatusValue;
+    } else {
+      normalData.sys_status = "eq_case";
+    }
+    formData.append("data", JSON.stringify(normalData));
+    formData.append("id", data.id);
+    setLoading(true);
 
     try {
       const saveTemplateData = await api.post(
@@ -1433,68 +1451,79 @@ const Enquiries = () => {
       if (saveTemplateData && saveTemplateData.success) {
         localStorage.removeItem(selectedOtherTemplate.name + "-formData");
 
-                toast.success(saveTemplateData.message || "Data Updated Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () => {
-                        if (selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy") {
-                            changeSysStatus(selectedRowData, fieldStatusValue);
-                        }
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
-                    },
-                });
-            } else {
-                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
+        toast.success(saveTemplateData.message || "Data Updated Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () => {
+            if (
+              selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy"
+            ) {
+              changeSysStatus(selectedRowData, fieldStatusValue);
             }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response['data']) {
-                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-
+            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+          },
+        });
+      } else {
+        const errorMessage = saveTemplateData.message
+          ? saveTemplateData.message
+          : "Failed to create the profile. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
     }
+  };
 
-    const handleOthersTemplateDataView = async (rowData, editData, table_name) => {
-
-        if (!table_name || table_name === '') {
-            toast.warning('Please Check Table Name', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return
-        }
+  const handleOthersTemplateDataView = async (
+    rowData,
+    editData,
+    table_name
+  ) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check Table Name", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
 
     var viewTemplatePayload = {
       table_name: table_name,
@@ -2146,120 +2175,124 @@ const Enquiries = () => {
     }
   };
 
-    useEffect(()=>{
+  useEffect(() => {
+    if (searchParams) {
+      const searchParamsid = searchParams.get("id");
+      const searchParamsTableName = searchParams.get("tableName");
 
-        if(searchParams){
-            const searchParamsid = searchParams.get("id");
-            const searchParamsTableName = searchParams.get("tableName");
-    
-            if((searchParamsid && searchParamsid !== '') || (searchParamsTableName && searchParamsTableName !== '')){
-    
-                hyperLinkShow({
-                    id : searchParamsid,
-                    table : searchParamsTableName
-                });
-            }
-        }
-    },[])
+      if (
+        (searchParamsid && searchParamsid !== "") ||
+        (searchParamsTableName && searchParamsTableName !== "")
+      ) {
+        hyperLinkShow({
+          id: searchParamsid,
+          table: searchParamsTableName,
+        });
+      }
+    }
+  }, []);
 
-    function createSvgIcon(svgString) {
-        return () => (
-            <span
-                dangerouslySetInnerHTML={{ __html: svgString }}
-                className="tableActionIcon"
-            />
-        );
-    }    
+  function createSvgIcon(svgString) {
+    return () => (
+      <span
+        dangerouslySetInnerHTML={{ __html: svgString }}
+        className="tableActionIcon"
+      />
+    );
+  }
 
   // Advance filter functions
 
-    useEffect(()=>{
-        const getActions = async ()=>{
-            var payloadObj = {
-                "module": "eq_case",
-                "tab" : sysStatus
-            }
+  useEffect(() => {
+    const getActions = async () => {
+      var payloadObj = {
+        module: "eq_case",
+        tab: sysStatus,
+      };
 
-            setLoading(true);
+      setLoading(true);
 
-            try {
+      try {
+        const getActionsDetails = await api.post(
+          "/action/get_actions",
+          payloadObj
+        );
 
-                const getActionsDetails = await api.post("/action/get_actions", payloadObj);
+        setLoading(false);
 
-                setLoading(false);
+        if (getActionsDetails && getActionsDetails.success) {
+          if (getActionsDetails.data && getActionsDetails.data["data"]) {
+            var userPermissionsArray =
+              JSON.parse(localStorage.getItem("user_permissions")) || [];
+            const userPermissions = userPermissionsArray[0] || {};
 
-                if (getActionsDetails && getActionsDetails.success) {
-
-                    if (getActionsDetails.data && getActionsDetails.data['data']) {
-
-                        var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
-                        const userPermissions = userPermissionsArray[0] || {};
-
-                        var updatedActions = getActionsDetails.data['data'].map((action) => {
-
-                            if (action?.icon) {
-                                action.icon = createSvgIcon(action.icon);
-                            }
-                        
-                            if (action.permissions) {
-                                var parsedPermissions = JSON.parse(action.permissions);
-                        
-                                const hasValidPermission = parsedPermissions.some(
-                                    (permission) => userPermissions[permission] === true
-                                );
-                        
-                                return hasValidPermission ? action : null;
-                            }
-                        
-                            return action;
-                        }).filter(Boolean);
-
-                        setHoverTableOptions(updatedActions);
-                    }
-
-                } else {
-                    
-                    const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
-                    toast.error(errorMessage, {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                                    
+            var updatedActions = getActionsDetails.data["data"]
+              .map((action) => {
+                if (action?.icon) {
+                  action.icon = createSvgIcon(action.icon);
                 }
 
-            } catch (error) {
-                setLoading(false);
-                if (error && error.response && error.response.data) {
-                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
+                if (action.permissions) {
+                  var parsedPermissions = JSON.parse(action.permissions);
+
+                  const hasValidPermission = parsedPermissions.some(
+                    (permission) => userPermissions[permission] === true
+                  );
+
+                  return hasValidPermission ? action : null;
                 }
+
+                return action;
+              })
+              .filter(Boolean);
+
+            setHoverTableOptions(updatedActions);
+          }
+        } else {
+          const errorMessage = getActionsDetails.message
+            ? getActionsDetails.message
+            : "Failed to create the template. Please try again.";
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          });
+        }
+      } catch (error) {
+        setLoading(false);
+        if (error && error.response && error.response.data) {
+          toast.error(
+            error.response.data["message"]
+              ? error.response.data["message"]
+              : "Please Try Again !",
+            {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
             }
+          );
         }
-        getActions();
+      }
+    };
+    getActions();
+  }, [sysStatus]);
 
-    },[sysStatus])
-
-    const handleOtherTemplateActions = async (options, selectedRow)=>{
-
-        setSelectedRowData(selectedRow)
-        var getTemplatePayload = {
-            "table_name": options.table,
-            "ui_case_id": selectedRow.id,
-        }
+  const handleOtherTemplateActions = async (options, selectedRow) => {
+    setSelectedRowData(selectedRow);
+    var getTemplatePayload = {
+      table_name: options.table,
+      ui_case_id: selectedRow.id,
+    };
 
     setLoading(true);
 
@@ -2270,76 +2303,149 @@ const Enquiries = () => {
       );
       setLoading(false);
 
-            if (getTemplateResponse && getTemplateResponse.success) {
+      if (getTemplateResponse && getTemplateResponse.success) {
+        if (getTemplateResponse.data && getTemplateResponse.data) {
+          if (getTemplateResponse.data[0]) {
+            var excludedKeys = [
+              "created_at",
+              "updated_at",
+              "id",
+              "deleted_at",
+              "attachments",
+              "Starred",
+              "ReadStatus",
+              "linked_profile_info",
+            ];
 
-                if (getTemplateResponse.data && getTemplateResponse.data) {
+            const updatedHeader = [
+              {
+                field: "sl_no",
+                headerName: "S.No",
+                resizable: false,
+                width: 75,
+                renderCell: (params) => {
+                  return (
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: "4px" }}
+                    >
+                      {params.value}
+                    </Box>
+                  );
+                },
+              },
+              ...Object.keys(getTemplateResponse.data[0])
+                .filter(
+                  (key) =>
+                    !excludedKeys.includes(key) &&
+                    key !== "field_pt_case_id" &&
+                    key !== "field_ui_case_id" &&
+                    key !== "field_pr_status" &&
+                    key !== "field_evidence_file" &&
+                    key !== "created_at" &&
+                    key !== "field_last_updated" &&
+                    key !== "field_date_created"
+                )
+                .map((key) => {
+                  var updatedKeyName = key
+                    .replace(/^field_/, "")
+                    .replace(/_/g, " ")
+                    .toLowerCase()
+                    .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
 
-                    if(getTemplateResponse.data[0]){
+                  return {
+                    field: key,
+                    headerName: updatedKeyName ? updatedKeyName : "",
+                    width: 250,
+                    resizable: true,
+                    renderHeader: () => (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          width: "100%",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "#1D2939",
+                            fontSize: "15px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {updatedKeyName ? updatedKeyName : ""}
+                        </span>
+                      </div>
+                    ),
+                    renderCell: (params) => {
+                      return tableCellRender(key, params, params.value);
+                    },
+                  };
+                }),
+              {
+                field: "",
+                headerName: "Action",
+                flex: 1,
+                renderCell: (params) => {
+                  return (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                        height: "100%",
+                      }}
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOthersTemplateDataView(
+                            params.row,
+                            false,
+                            options.table
+                          );
+                        }}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOthersTemplateDataView(
+                            params.row,
+                            true,
+                            options.table
+                          );
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOthersDeleteTemplateData(
+                            params.row,
+                            options.table
+                          );
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </Box>
+                  );
+                },
+              },
+            ];
 
-                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info"];
-
-                        const updatedHeader = [
-                            {                                
-                                field: 'sl_no',
-                                headerName: 'S.No',
-                                resizable: false,
-                                width: 75,
-                                renderCell: (params) => {
-                                    return (
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            {params.value}
-                                        </Box>
-                                    )
-                                } 
-                            },                             
-                            ...Object.keys(getTemplateResponse.data[0])
-                            .filter((key) => !excludedKeys.includes(key) && key !== 'field_pt_case_id' && key !== 'field_ui_case_id' && key !== 'field_pr_status' && key !== 'field_evidence_file'  && key !== 'created_at' && key !== 'field_last_updated' &&  key !== 'field_date_created')
-                                .map((key) => {
-                                    var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
-
-                                    return {
-                                        field: key,
-                                        headerName: updatedKeyName ? updatedKeyName : '',
-                                        width: 250,
-                                        resizable: true,
-                                        renderHeader: () => (
-                                            <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
-                                                <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
-                                            </div>
-                                        ),
-                                        renderCell: (params) => {
-                                            return tableCellRender(key, params, params.value)
-                                        },
-                                    };
-                                }),
-                                {
-                                    field: '',
-                                    headerName: 'Action',
-                                    flex: 1,
-                                    renderCell: (params) => {
-                                        return (
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                                <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, false, options.table); }}>
-                                                    View
-                                                </Button>
-                                                <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleOthersTemplateDataView(params.row, true, options.table); }}>
-                                                    Edit
-                                                </Button>
-                                                <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleOthersDeleteTemplateData(params.row, options.table); }}>
-                                                    Delete
-                                                </Button>
-                                            </Box>
-                                        );
-                                    }
-                                }
-                        ];
-
-                        setOtherTemplateColumn(updatedHeader)
-                                                        
-                            
-                    }else{
-                        setOtherTemplateColumn([])
-                    }
+            setOtherTemplateColumn(updatedHeader);
+          } else {
+            setOtherTemplateColumn([]);
+          }
 
           var updatedTableData = getTemplateResponse.data.map(
             (field, index) => {
@@ -2502,32 +2608,44 @@ const Enquiries = () => {
             </span>
           ),
         }
-        : null,
-        ...hoverTableOptions,
+      : null,
+    ...hoverTableOptions,
 
-        userPermissions[0]?.delete_enquiry
-        ? {
-            "name": "Delete",
-            "onclick": (selectedRow) => handleDeleteTemplateData(selectedRow, table_name),
-            "icon": () => (
-                <span className="tableActionIcon">
-                    <svg
-                        width="50"
-                        height="50"
-                        viewBox="0 0 34 34"
-                        fill=""
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <circle cx="12" cy="12" r="12" fill="" />
-                        <mask id="mask0_1120_40636" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
-                            <rect x="4" y="4" width="16" height="16" fill="" />
-                        </mask>
-                        <g mask="url(#mask0_1120_40636)">
-                            <path d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z" fill="" />
-                        </g>
-                    </svg>
-                </span>
-            )
+    userPermissions[0]?.delete_enquiry
+      ? {
+          name: "Delete",
+          onclick: (selectedRow) =>
+            handleDeleteTemplateData(selectedRow, table_name),
+          icon: () => (
+            <span className="tableActionIcon">
+              <svg
+                width="50"
+                height="50"
+                viewBox="0 0 34 34"
+                fill=""
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="12" fill="" />
+                <mask
+                  id="mask0_1120_40636"
+                  style={{ maskType: "alpha" }}
+                  maskUnits="userSpaceOnUse"
+                  x="4"
+                  y="4"
+                  width="16"
+                  height="16"
+                >
+                  <rect x="4" y="4" width="16" height="16" fill="" />
+                </mask>
+                <g mask="url(#mask0_1120_40636)">
+                  <path
+                    d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z"
+                    fill=""
+                  />
+                </g>
+              </svg>
+            </span>
+          ),
         }
       : null,
     {
@@ -3054,122 +3172,174 @@ const Enquiries = () => {
     }
   };
 
-    return (
-        <Box p={2} inert={loading ? true : false}>
-            <>
-            <Dialog
-               open={StatusUpdateVisible}
-               onClose={() => setStatusUpdateVisible(false)}
-               maxWidth="sm"
-               fullWidth
-               sx={{
-               "& .MuiDialogPaper-root": { borderRadius: "12px", padding: "15px" },
-               }}
-           >
-                <DialogTitle style={{ fontWeight: "600", fontSize: "18px", textAlign: "left" }}>
-                Status Update
-                </DialogTitle>
+  return (
+    <Box p={2} inert={loading ? true : false}>
+      <>
+        <Dialog
+          open={StatusUpdateVisible}
+          onClose={() => setStatusUpdateVisible(false)}
+          maxWidth="sm"
+          fullWidth
+          sx={{
+            "& .MuiDialogPaper-root": { borderRadius: "12px", padding: "15px" },
+          }}
+        >
+          <DialogTitle
+            style={{ fontWeight: "600", fontSize: "18px", textAlign: "left" }}
+          >
+            Status Update
+          </DialogTitle>
 
-                <DialogContent style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-                <FormControl fullWidth>
-                    <InputLabel>Choose Status</InputLabel>
-                    <Select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    label="Choose Status"
-                    >
-                    {["Completed", "Closed", "Disposal"].map((status) => (
-                        <MenuItem key={status} value={status}>
-                        {status}
-                        </MenuItem>
-                    ))}
-                    </Select>
-                </FormControl>
-                </DialogContent>
+          <DialogContent
+            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+          >
+            <FormControl fullWidth>
+              <InputLabel>Choose Status</InputLabel>
+              <Select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                label="Choose Status"
+              >
+                {["Completed", "Closed", "Disposal"].map((status) => (
+                  <MenuItem key={status} value={status}>
+                    {status}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </DialogContent>
 
-                <DialogActions style={{ justifyContent: "flex-end", padding: "10px 20px" }}>
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            onClick={() => setStatusUpdateVisible(false)}
-                            style={{ width: "150px" }}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            style={{
-                            width: "150px",
-                            backgroundColor: "rgb(31, 29, 172)",
-                            color: "#fff",
-                            textTransform: "none",
-                            }}
-                            onClick={() => {
-                                showApprovalPage(selectedRow);
-                            }}
-                            disabled={!selectedStatus}
-                        >
-                        Update
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-                
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                        <Box sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
-                            {/* <img src='./arrow-left.svg' /> */}
-                            <Typography variant="h1" align="left" className='ProfileNameText'>
-                                {template_name ? template_name.toLowerCase().replace(/^\w|\s\w/, (c) => c.toUpperCase()) : 'Enquiry'}
-                            </Typography>
-                        </Box>
+          <DialogActions
+            style={{ justifyContent: "flex-end", padding: "10px 20px" }}
+          >
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={() => setStatusUpdateVisible(false)}
+              style={{ width: "150px" }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              style={{
+                width: "150px",
+                backgroundColor: "rgb(31, 29, 172)",
+                color: "#fff",
+                textTransform: "none",
+              }}
+              onClick={() => {
+                showApprovalPage(selectedRow);
+              }}
+              disabled={!selectedStatus}
+            >
+              Update
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "12px",
+            }}
+          >
+            <Box
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                cursor: "pointer",
+              }}
+            >
+              {/* <img src='./arrow-left.svg' /> */}
+              <Typography variant="h1" align="left" className="ProfileNameText">
+                {template_name
+                  ? template_name
+                      .toLowerCase()
+                      .replace(/^\w|\s\w/, (c) => c.toUpperCase())
+                  : "Enquiry"}
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "end",
+              }}
+            >
+              <TextFieldInput
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "#475467" }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <IconButton
+                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                        onClick={handleFilter}
+                      >
+                        <FilterListIcon sx={{ color: "#475467" }} />
+                      </IconButton>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
-                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
-                        <TextFieldInput 
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start">
-                                        <SearchIcon sx={{ color: '#475467' }} />
-                                    </InputAdornment>
-                                ),
-                                endAdornment: (
-                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                        <IconButton sx={{ padding: '0 5px', borderRadius: '0' }} onClick={handleFilter}>
-                                            <FilterListIcon sx={{ color: '#475467' }} />
-                                        </IconButton>
-                                    </Box>
-                                )
-                            }}
-                            onInput={(e) => setSearchValue(e.target.value)}
-                            value={searchValue}
-                            id="tableSearch"
-                            size="small"
-                            placeholder='Search anything'
-                            variant="outlined"
-                            className="profileSearchClass"
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    loadTableData(paginationCount, e.target.value);
-                                }
-                            }}
-                            sx={{
-                                width: '300px', borderRadius: '6px', outline: 'none',
-                                '& .MuiInputBase-input::placeholder': {
-                                    color: '#475467',
-                                    opacity: '1',
-                                    fontSize: '14px',
-                                    fontWeight: '400',
-                                    fontFamily: 'Roboto'
-                                },
-                            }}
-                        />
-                        {(searchValue || fromDateValue || toDateValue || Object.keys(filterValues).length > 0) && (
-                            <Typography onClick={handleClear} sx={{ fontSize: '13px', fontWeight: '500', textDecoration: 'underline', cursor: 'pointer' }} mt={1}>
-                                Clear Filter
-                            </Typography>
-                        )}
-                    </Box>
+                  ),
+                }}
+                onInput={(e) => setSearchValue(e.target.value)}
+                value={searchValue}
+                id="tableSearch"
+                size="small"
+                placeholder="Search anything"
+                variant="outlined"
+                className="profileSearchClass"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    loadTableData(paginationCount, e.target.value);
+                  }
+                }}
+                sx={{
+                  width: "300px",
+                  borderRadius: "6px",
+                  outline: "none",
+                  "& .MuiInputBase-input::placeholder": {
+                    color: "#475467",
+                    opacity: "1",
+                    fontSize: "14px",
+                    fontWeight: "400",
+                    fontFamily: "Roboto",
+                  },
+                }}
+              />
+              {(searchValue ||
+                fromDateValue ||
+                toDateValue ||
+                Object.keys(filterValues).length > 0) && (
+                <Typography
+                  onClick={handleClear}
+                  sx={{
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                  }}
+                  mt={1}
+                >
+                  Clear Filter
+                </Typography>
+              )}
+            </Box>
 
             {JSON.parse(localStorage.getItem("user_permissions")) &&
               JSON.parse(localStorage.getItem("user_permissions"))[0]
@@ -3212,23 +3382,61 @@ const Enquiries = () => {
           </Box>
         </Box>
 
-                <Box pt={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-
-                    <Box className="parentFilterTabs">
-                        <Box onClick={() => { setSysSattus('all'); setPaginationCount(1) }} id="filterAll" className={`filterTabs ${sysStatus === 'all' ? 'Active' : ''}`} >
-                            All
-                        </Box>
-                        <Box onClick={() => { setSysSattus('Completed'); setPaginationCount(1) }} id="filterCompleted" className={`filterTabs ${sysStatus === 'Completed' ? 'Active' : ''}`} >
-                            Completed
-                        </Box>
-                        <Box onClick={() => { setSysSattus('Closed'); setPaginationCount(1) }} id="filterClosed" className={`filterTabs ${sysStatus === 'Closed' ? 'Active' : ''}`} >
-                            Closed
-                        </Box>
-                        <Box onClick={() => { setSysSattus('Disposal'); setPaginationCount(1) }} id="filterDisposal" className={`filterTabs ${sysStatus === 'Disposal' ? 'Active' : ''}`} >
-                            Disposal
-                        </Box>
-                    </Box>
-                </Box>
+        <Box
+          pt={1}
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Box className="parentFilterTabs">
+            <Box
+              onClick={() => {
+                setSysSattus("all");
+                setPaginationCount(1);
+              }}
+              id="filterAll"
+              className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
+            >
+              All
+            </Box>
+            <Box
+              onClick={() => {
+                setSysSattus("Completed");
+                setPaginationCount(1);
+              }}
+              id="filterCompleted"
+              className={`filterTabs ${
+                sysStatus === "Completed" ? "Active" : ""
+              }`}
+            >
+              Completed
+            </Box>
+            <Box
+              onClick={() => {
+                setSysSattus("Closed");
+                setPaginationCount(1);
+              }}
+              id="filterClosed"
+              className={`filterTabs ${sysStatus === "Closed" ? "Active" : ""}`}
+            >
+              Closed
+            </Box>
+            <Box
+              onClick={() => {
+                setSysSattus("Disposal");
+                setPaginationCount(1);
+              }}
+              id="filterDisposal"
+              className={`filterTabs ${
+                sysStatus === "Disposal" ? "Active" : ""
+              }`}
+            >
+              Disposal
+            </Box>
+          </Box>
+        </Box>
 
         <Box py={2}>
           <TableView
@@ -3633,40 +3841,57 @@ const Enquiries = () => {
 
       {/* other templates ui */}
 
-            {otherTemplateModalOpen &&
-                <Dialog
-                    open={otherTemplateModalOpen}
-                    onClose={() => setOtherTemplateModalOpen(false)}
-                    aria-labelledby="alert-dialog-title"
-                    aria-describedby="alert-dialog-description"
-                    maxWidth="md"
-                    fullWidth
-                    sx={{zIndex:'1'}}
-                >
-                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                        {selectedOtherTemplate && selectedOtherTemplate.name }
-                        <Box>
-                            <Button variant="outlined" onClick={() => {showOptionTemplate(selectedOtherTemplate.table)}}>Add</Button>
-                            <IconButton
-                                aria-label="close"
-                                onClick={() => { setOtherTemplateModalOpen(false);}}
-
-                                sx={{ color: (theme) => theme.palette.grey[500] }}
-                            >
-                                <CloseIcon />
-                            </IconButton>
-                        </Box>
-
-                    </DialogTitle>
-                    <DialogContent>
-                        <DialogContentText id="alert-dialog-description">
-                            <Box py={2}>
-                                <TableView rows={otherTemplateData} columns={otherTemplateColumn} />
-                            </Box>
-                        </DialogContentText>
-                    </DialogContent>
-                </Dialog>
-            }
+      {otherTemplateModalOpen && (
+        <Dialog
+          open={otherTemplateModalOpen}
+          onClose={() => setOtherTemplateModalOpen(false)}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+          maxWidth="md"
+          fullWidth
+          sx={{ zIndex: "1" }}
+        >
+          <DialogTitle
+            id="alert-dialog-title"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            {selectedOtherTemplate && selectedOtherTemplate.name}
+            <Box>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  showOptionTemplate(selectedOtherTemplate.table);
+                }}
+              >
+                Add
+              </Button>
+              <IconButton
+                aria-label="close"
+                onClick={() => {
+                  setOtherTemplateModalOpen(false);
+                }}
+                sx={{ color: (theme) => theme.palette.grey[500] }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              <Box py={2}>
+                <TableView
+                  rows={otherTemplateData}
+                  columns={otherTemplateColumn}
+                />
+              </Box>
+            </DialogContentText>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {showFilterModal && (
         <Dialog
