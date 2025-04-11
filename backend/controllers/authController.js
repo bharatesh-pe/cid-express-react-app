@@ -193,10 +193,24 @@ const verify_OTP = async (req, res) => {
               : null;
 
           // Map designations with division name
-          const formattedResponse = users_designation.map((designation) => ({
-            designation: designation.designation.designation_name,
-            division: divisionName,
-          }));
+          // const formattedResponse = users_designation.map((designation) => ({
+          //   designation: designation.designation.designation_name,
+          //   division: divisionName,
+          // }));
+          const formattedResponse = [];
+
+          users_designation.forEach((designationObj) => {
+            const designationName = designationObj.designation.designation_name;
+
+            users_division.forEach((divisionObj) => {
+              const divisionName = divisionObj.division.division_name;
+
+              formattedResponse.push({
+                designation: designationName,
+                divisions: divisionName,
+              });
+            });
+          });
 
           const user_role_permissions = await Role.findAll({
             where: {
