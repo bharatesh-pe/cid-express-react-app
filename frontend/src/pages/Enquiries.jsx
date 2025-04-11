@@ -1187,7 +1187,14 @@ const Enquiries = () => {
                 }
             }
         });
+        const fieldStatusValue = data?.field_status || '';
 
+        if(selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy"){
+            normalData.sys_status = fieldStatusValue;
+        }
+        else{
+            normalData.sys_status = "eq_case"
+        }
         formData.append("data", JSON.stringify(normalData));
         formData.append("id", data.id);
         setLoading(true);
@@ -1209,7 +1216,12 @@ const Enquiries = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => handleOtherTemplateActions(selectedOtherTemplate)
+                    onOpen: () => {
+                        if (selectedOtherTemplate.table === "cid_eq_case_enquiry_order_copy") {
+                            changeSysStatus(selectedRowData, fieldStatusValue);
+                        }
+                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                    },
                 });
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
@@ -1828,31 +1840,61 @@ const Enquiries = () => {
         }
     },[])
 
+    function createSvgIcon(svgString) {
+        return () => (
+            <span
+                dangerouslySetInnerHTML={{ __html: svgString }}
+                className="tableActionIcon"
+            />
+        );
+    }    
 
     // Advance filter functions
 
     useEffect(()=>{
-
         const getActions = async ()=>{
-
             var payloadObj = {
-                "module": "eq_case"
+                "module": "eq_case",
+                "tab" : sysStatus
             }
 
             setLoading(true);
-    
+
             try {
-    
+
                 const getActionsDetails = await api.post("/action/get_actions", payloadObj);
 
                 setLoading(false);
-    
+
                 if (getActionsDetails && getActionsDetails.success) {
-    
+
                     if (getActionsDetails.data && getActionsDetails.data['data']) {
-                        setHoverTableOptions(getActionsDetails.data['data']);
+
+                        var userPermissionsArray = JSON.parse(localStorage.getItem('user_permissions')) || [];
+                        const userPermissions = userPermissionsArray[0] || {};
+
+                        var updatedActions = getActionsDetails.data['data'].map((action) => {
+
+                            if (action?.icon) {
+                                action.icon = createSvgIcon(action.icon);
+                            }
+                        
+                            if (action.permissions) {
+                                var parsedPermissions = JSON.parse(action.permissions);
+                        
+                                const hasValidPermission = parsedPermissions.some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                        
+                                return hasValidPermission ? action : null;
+                            }
+                        
+                            return action;
+                        }).filter(Boolean);
+
+                        setHoverTableOptions(updatedActions);
                     }
-    
+
                 } else {
                     
                     const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
@@ -1868,12 +1910,11 @@ const Enquiries = () => {
                     });
                                     
                 }
-    
+
             } catch (error) {
-    
                 setLoading(false);
-                if (error && error.response && error.response['data']) {
-                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                if (error && error.response && error.response.data) {
+                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please Try Again !',{
                         position: "top-right",
                         autoClose: 3000,
                         hideProgressBar: false,
@@ -1886,11 +1927,10 @@ const Enquiries = () => {
                 }
             }
         }
-
         getActions();
 
-    },[])
-    
+    },[sysStatus])
+
     const handleOtherTemplateActions = async (options, selectedRow)=>{
 
         setSelectedRowData(selectedRow)
@@ -2101,7 +2141,7 @@ const Enquiries = () => {
             )
         }
         : null,
-        ...hoverTableOptions,    
+        ...hoverTableOptions,
 
         userPermissions[0]?.delete_enquiry
         ? {
