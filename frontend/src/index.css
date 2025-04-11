@@ -504,17 +504,17 @@ code {
 }
 
 .ProfileViewHeading {
-    margin: 0;
+    margin-bottom: 0;
     padding-bottom: 3px;
     font-weight: 600;
-    font-size: 13px;
+    font-size: 18px;
     color: #3E4784;
 }
 
 .ProfileViewDesc {
     margin: 0;
     font-weight: 400;
-    font-size: 11px;
+    font-size: 16px;
     color: #101828;
 }
 

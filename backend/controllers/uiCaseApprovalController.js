@@ -21,12 +21,14 @@ exports.create_ui_case_approval = async (req, res) => {
     approved_by,
     approval_date,
     remarks,
-    ui_case_id,
-    pt_case_id,
-    eq_case_id,
+    case_id,
+    case_type,
+    module,
+    action,
     transaction_id,
     created_by_designation_id,
     created_by_division_id,
+    info,
   } = req.body;
 
   // Transaction ID validation
@@ -68,14 +70,16 @@ exports.create_ui_case_approval = async (req, res) => {
         approved_by,
         approval_date: approval_date || new Date(), // Use current date if not provided
         remarks,
-        pt_case_id: pt_case_id || null,
-        eq_case_id: eq_case_id || null,
-        ui_case_id: ui_case_id || null,
+        reference_id: case_id,
+        approval_type: case_type,
+        module,
+        action,
+        created_by: user_id || null,
       },
       { transaction: t }
     );
 
-    let reference_id = ui_case_id || pt_case_id || eq_case_id;
+    let reference_id = case_id || null;
     if (!reference_id) {
       await t.rollback();
       return res.status(400).json({
@@ -125,52 +129,42 @@ exports.create_ui_case_approval = async (req, res) => {
 // Function to view all approvals
 exports.get_ui_case_approvals = async (req, res) => {
   try {
-    const { ui_case_id, pt_case_id, eq_case_id } = req.body;
+    const { case_id } = req.body;
     let whereCondition = {};
 
     // Dynamically add conditions
-    if (ui_case_id) {
-      whereCondition.ui_case_id = ui_case_id;
-    }
-    if (pt_case_id) {
-      whereCondition.pt_case_id = pt_case_id;
-    }
-    if (eq_case_id) {
-      whereCondition.eq_case_id = eq_case_id;
+    if (case_id) {
+      whereCondition.reference_id = case_id;
     }
 
-    const approvals = await UiCaseApproval.findAll({
-      include: [
-        {
-          model: ApprovalItem,
-          as: "approvalItem",
-          attributes: ["name"],
-        },
-        {
-          model: Designation,
-          as: "approvedBy",
-          attributes: ["designation_name"],
-        },
-      ],
-      where: whereCondition,
-      attributes: [
-        "approval_id",
-        "approval_item",
-        "approved_by",
-        "approval_date",
-        "remarks",
-      ],
-    });
+    let formattedApprovals = [];
+    if (whereCondition && Object.keys(whereCondition).length > 0) {
+      const approvals = await UiCaseApproval.findAll({
+        include: [
+          {
+            model: ApprovalItem,
+            as: "approvalItem",
+            attributes: ["name"],
+          },
+          {
+            model: Designation,
+            as: "approvedBy",
+            attributes: ["designation_name"],
+          },
+        ],
+        where: whereCondition,
+      });
 
-    const formattedApprovals = approvals.map((approval) => ({
-      approval_id: approval.approval_id,
-      approval_item: approval.approval_item,
-      approved_by: approval.approved_by,
-      approval_date: approval.approval_date,
-      remarks: approval.remarks,
-      approvalItem: approval.approvalItem?.name || null, // Extract the name directly
-      approvedBy: approval.approvedBy?.designation_name || null, // Extract the designation_name directly
-    }));
+      formattedApprovals = approvals.map((approval) => ({
+        approval_id: approval.approval_id,
+        approval_item: approval.approval_item,
+        approved_by: approval.approved_by,
+        approval_date: approval.approval_date,
+        remarks: approval.remarks,
+        approvalItem: approval.approvalItem?.name || null, // Extract the name directly
+        approvedBy: approval.approvedBy?.designation_name || null, // Extract the designation_name directly
+      }));
+    }
 
     const approval_item = await ApprovalItem.findAll();
 

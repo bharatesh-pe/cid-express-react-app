@@ -17,6 +17,10 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: "approval_id",
         as: "alerts",
       });
+      UiCaseApproval.belongsTo(models.Users, {
+        foreignKey: "created_by",
+        as: "user",
+      });
     }
   }
 
@@ -41,20 +45,41 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: DataTypes.NOW,
       },
       remarks: {
-        type: DataTypes.STRING(255), // Adjust length as needed
+        type: DataTypes.STRING(255),
         allowNull: true,
       },
-      ui_case_id: {
+      reference_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      pt_case_id: {
-        type: DataTypes.INTEGER,
+      approval_type: {
+        type: DataTypes.STRING(255),
         allowNull: true,
       },
-      eq_case_id: {
-        type: DataTypes.INTEGER,
+      module: {
+        type: DataTypes.STRING(255),
         allowNull: true,
+      },
+      action: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+      info: {
+        type: DataTypes.STRING(255),
+        allowNull: true,
+      },
+      created_by: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "users",
+          key: "user_id",
+        },
+      },
+      created_at: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
     },
     {
