@@ -428,54 +428,68 @@ const UnderInvestigation = () => {
                     getTemplateResponse.data["meta"].template_name
                   );
 
-                  setFurtherInvestigationSelectedRow(data);
-                  setFurtherInvestigationSelectedValue(value);
-                  setShowPtCaseModal(true);
-                } else {
-                  const errorMessage = viewTemplateResponse.message
-                    ? viewTemplateResponse.message
-                    : "Failed to delete the template. Please try again.";
-                  toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                  });
-                }
-              } catch (error) {
-                setLoading(false);
-                if (error && error.response && error.response["data"]) {
-                  toast.error(
-                    error.response["data"].message
-                      ? error.response["data"].message
-                      : "Please Try Again !",
-                    {
-                      position: "top-right",
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      className: "toast-error",
+                                        setFurtherInvestigationSelectedRow(data);
+                                        setFurtherInvestigationSelectedValue(value);
+                                        setShowPtCaseModal(true);
+        
+                                    } else {
+                                        const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                                        toast.error(errorMessage, {
+                                            position: "top-right",
+                                            autoClose: 3000,
+                                            hideProgressBar: false,
+                                            closeOnClick: true,
+                                            pauseOnHover: true,
+                                            draggable: true,
+                                            progress: undefined,
+                                            className: "toast-error",
+                                        });
+                                    }
+        
+                                } catch (error) {
+                                    setLoading(false);
+                                    if (error && error.response && error.response['data']) {
+                                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                            position: "top-right",
+                                            autoClose: 3000,
+                                            hideProgressBar: false,
+                                            closeOnClick: true,
+                                            pauseOnHover: true,
+                                            draggable: true,
+                                            progress: undefined,
+                                            className: "toast-error",
+                                        });
+                                    }
+                                }
+                            }
+                        }
+        
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
                     }
-                  );
                 }
-              }
+            } else {
+                console.log("sys status updation canceled.");
             }
-          }
-        } catch (error) {
-          setLoading(false);
-          if (error && error.response && error.response["data"]) {
-            toast.error(
-              error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-              {
+        });
+
+    }
+
+    const furtherInvestigationPtCaseSave = async (data, alreadySavedApproval)=>{
+
+        if (!ptCaseTableName || ptCaseTableName === '') {
+            toast.warning('Please Check The Template', {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -483,91 +497,10 @@ const UnderInvestigation = () => {
                 pauseOnHover: true,
                 draggable: true,
                 progress: undefined,
-                className: "toast-error",
-              }
-            );
-          }
+                className: "toast-warning",
+            });
+            return
         }
-
-        // var payloadSysStatus = {
-        //     "table_name" : table_name,
-        //     "data"  :   {
-        //                     "id": data.id,
-        //                     "sys_status": value,
-        //                     "default_status": "ui_case"
-        //                 }
-        // }
-
-        // setLoading(true);
-
-        // try {
-        //     const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
-
-        //     setLoading(false);
-
-        //     if (chnageSysStatus && chnageSysStatus.success) {
-        //         toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-success",
-        //             onOpen: () => loadTableData(paginationCount)
-        //         });
-        //     } else {
-        //         const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the data. Please try again.";
-        //         toast.error(errorMessage, {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-
-        //     }
-
-        // } catch (error) {
-        //     setLoading(false);
-        //     if (error && error.response && error.response['data']) {
-        //         toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-
-        //     }
-        // }
-      } else {
-        console.log("sys status updation canceled.");
-      }
-    });
-  };
-
-  const furtherInvestigationPtCaseSave = async (data, alreadySavedApproval) => {
-    if (!ptCaseTableName || ptCaseTableName === "") {
-      toast.warning("Please Check The Template", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
-    }
 
     if (Object.keys(data).length === 0) {
       toast.warning("Data Is Empty Please Check Once", {

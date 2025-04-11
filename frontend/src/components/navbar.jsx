@@ -318,12 +318,12 @@ export default function Navbar() {
                 onClose={() => setApprovalModalShow(false)}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                maxWidth="lg"
+                maxWidth="sm"
                 fullWidth
                 sx={{zIndex:'1000'}}
             >
                 <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                    Approval
+                    Pending Trail - Create Case 
                     <Box>
                         <IconButton
                             aria-label="close"
@@ -337,29 +337,29 @@ export default function Navbar() {
                 </DialogTitle>
                 <DialogContent>
                     <DialogContentText id="alert-dialog-description">
-                        <Box py={2}>
+                        <Box>
                             {
                                 <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
 
-                                    <TextField
+                                    {/* <TextField
                                         rows={8}
                                         label={'Approved Items'}
                                         sx={{width:'100%'}}
                                         name="approvalItem"
                                         value={indivitualApprovalData['approvalItem']}
                                         disabled
-                                    />
-
-                                    <TextField
+                                    /> */}
+                                    
+                                    {/* <TextField
                                         rows={8}
                                         label={'Apprved By'}
                                         sx={{width:'100%'}}
                                         name="approvedBy"
                                         value={indivitualApprovalData['approvedBy']}
                                         disabled
-                                    />
+                                    /> */}
 
-                                    <LocalizationProvider dateAdapter={AdapterDayjs} sx={{width:'100%'}}>
+                                    {/* <LocalizationProvider dateAdapter={AdapterDayjs} sx={{width:'100%'}}>
                                         <DemoContainer components={['DatePicker']} sx={{width:'100%'}}>
                                             <DatePicker 
                                                 label="Approval Date" 
@@ -370,16 +370,76 @@ export default function Navbar() {
                                                 disabled
                                             />
                                         </DemoContainer>
-                                    </LocalizationProvider>
-
-                                    <TextField
+                                    </LocalizationProvider> */}
+                                    
+                                    {/* <TextField
                                         rows={8}
                                         label={'Comments'}
                                         sx={{width:'100%'}}
                                         name="remarks"
                                         value={indivitualApprovalData['remarks']}
                                         disabled
-                                    />
+                                    /> */}
+
+                                    <Box sx={{borderTop: '1px solid #E0E0E0'}}>
+                                        <p className="ProfileViewHeading Roboto">
+                                            Approved Items
+                                        </p>
+                                        <p className="ProfileViewDesc Roboto">
+                                            {/* {indivitualApprovalData['approvalItem']} */}
+                                            Re Assign to IO
+                                        </p>
+                                    </Box>
+
+                                    <Box sx={{borderTop: '1px solid #E0E0E0'}}>
+                                        <p className="ProfileViewHeading Roboto">
+                                            Apprved By
+                                        </p>
+                                        <p className="ProfileViewDesc Roboto">
+                                            {/* {indivitualApprovalData['approvedBy']} */}
+                                            Super Admin
+                                        </p>
+                                    </Box>
+
+                                    <Box sx={{borderTop: '1px solid #E0E0E0'}}>
+                                        <p className="ProfileViewHeading Roboto">
+                                            Approval Date
+                                        </p>
+                                        <p className="ProfileViewDesc Roboto">
+                                            {/* {indivitualApprovalData['approval_date']} */}
+                                            10-04-2025
+                                        </p>
+                                    </Box>
+
+                                    <Box sx={{borderTop: '1px solid #E0E0E0'}}>
+                                        <p className="ProfileViewHeading Roboto">
+                                            Comments
+                                        </p>
+                                        <p className="ProfileViewDesc Roboto">
+                                            {/* {indivitualApprovalData['remarks']} */}
+                                            Remarks Details
+                                        </p>
+                                    </Box>
+
+                                    <Box sx={{borderTop: '1px solid #E0E0E0'}}>
+                                        <p className="ProfileViewHeading Roboto">
+                                            Created By
+                                        </p>
+                                        <p className="ProfileViewDesc Roboto">
+                                            {/* {indivitualApprovalData['remarks']} */}
+                                            Vinay P
+                                        </p>
+                                    </Box>
+
+                                    <Box sx={{borderTop: '1px solid #E0E0E0'}}>
+                                        <p className="ProfileViewHeading Roboto">
+                                            Created At
+                                        </p>
+                                        <p className="ProfileViewDesc Roboto">
+                                            {/* {indivitualApprovalData['remarks']} */}
+                                            11-04-2025 
+                                        </p>
+                                    </Box>
 
                                 </Box>
                             }
