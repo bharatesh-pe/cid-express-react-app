@@ -139,38 +139,41 @@ exports.get_ui_case_approvals = async (req, res) => {
       whereCondition.eq_case_id = eq_case_id;
     }
 
-    const approvals = await UiCaseApproval.findAll({
-      include: [
-        {
-          model: ApprovalItem,
-          as: "approvalItem",
-          attributes: ["name"],
-        },
-        {
-          model: Designation,
-          as: "approvedBy",
-          attributes: ["designation_name"],
-        },
-      ],
-      where: whereCondition,
-      attributes: [
-        "approval_id",
-        "approval_item",
-        "approved_by",
-        "approval_date",
-        "remarks",
-      ],
-    });
+    let formattedApprovals = [];
+    if (whereCondition && Object.keys(whereCondition).length > 0) {
+      const approvals = await UiCaseApproval.findAll({
+        include: [
+          {
+            model: ApprovalItem,
+            as: "approvalItem",
+            attributes: ["name"],
+          },
+          {
+            model: Designation,
+            as: "approvedBy",
+            attributes: ["designation_name"],
+          },
+        ],
+        where: whereCondition,
+        attributes: [
+          "approval_id",
+          "approval_item",
+          "approved_by",
+          "approval_date",
+          "remarks",
+        ],
+      });
 
-    const formattedApprovals = approvals.map((approval) => ({
-      approval_id: approval.approval_id,
-      approval_item: approval.approval_item,
-      approved_by: approval.approved_by,
-      approval_date: approval.approval_date,
-      remarks: approval.remarks,
-      approvalItem: approval.approvalItem?.name || null, // Extract the name directly
-      approvedBy: approval.approvedBy?.designation_name || null, // Extract the designation_name directly
-    }));
+      formattedApprovals = approvals.map((approval) => ({
+        approval_id: approval.approval_id,
+        approval_item: approval.approval_item,
+        approved_by: approval.approved_by,
+        approval_date: approval.approval_date,
+        remarks: approval.remarks,
+        approvalItem: approval.approvalItem?.name || null, // Extract the name directly
+        approvedBy: approval.approvedBy?.designation_name || null, // Extract the designation_name directly
+      }));
+    }
 
     const approval_item = await ApprovalItem.findAll();
 
