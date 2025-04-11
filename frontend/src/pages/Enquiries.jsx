@@ -41,7 +41,8 @@ import dayjs from "dayjs";
 import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
-
+import ASC from '@mui/icons-material/North';
+import DESC from '@mui/icons-material/South';
 const Enquiries = () => {
     const location = useLocation();
     const navigate = useNavigate();
@@ -420,6 +421,13 @@ const Enquiries = () => {
                                         renderHeader: () => (
                                             <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
                                                 <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
+                                                {
+                                                    tableSortKey === key
+                                                    ? (tableSortOption === 'ASC'
+                                                        ? <ASC sx={{ color: '#475467', width: '18px' }} />
+                                                        : <DESC sx={{ color: '#475467', width: '18px' }} />)
+                                                    : <DESC sx={{ color: '#475467', width: '18px' }} />
+                                                }
                                             </div>
                                         ),
                                         renderCell: (params) => {
@@ -1930,7 +1938,7 @@ const Enquiries = () => {
                                         width: 250,
                                         resizable: true,
                                         renderHeader: () => (
-                                            <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
+                                            <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
                                                 <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
                                             </div>
                                         ),
