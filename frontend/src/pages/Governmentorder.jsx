@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
 import DynamicForm from '../components/dynamic-form/DynamicForm';
 import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
@@ -10,7 +9,6 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from "dayjs";
-
 import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField} from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
@@ -18,17 +16,12 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import ASC from '@mui/icons-material/North';
-import DESC from '@mui/icons-material/South';
 import AddIcon from '@mui/icons-material/Add';
-import filterLines from '../Images/filterLines.svg';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import pdfIcon from '../Images/pdfIcon.svg'
 import docIcon from '../Images/docIcon.svg'
@@ -38,13 +31,10 @@ import jpgIcon from '../Images/jpgIcon.svg'
 import pngIcon from '../Images/pngIcon.svg'
 import CloseIcon from '@mui/icons-material/Close';
 import { CircularProgress } from "@mui/material";
-import StarIcon from "@mui/icons-material/Star";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
-
 
 const GovernmentOrder = () => {
     const location = useLocation();
@@ -61,7 +51,6 @@ const GovernmentOrder = () => {
     const [linkOrganization, setLinkOrganization] = useState(false)
     const [template_name, setTemplate_name] = useState('')
     const [table_name, setTable_name] = useState('')
-
     const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
     const [formTemplateData, setFormTemplateData] = useState([])
@@ -70,28 +59,21 @@ const GovernmentOrder = () => {
     const [editTemplateData, setEditTemplateData] = useState(false);
     const [selectedRowId, setSelectedRowId] = useState(null);
     const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-
     const [otherFormOpen, setOtherFormOpen] = useState(false);
     const [optionStepperData, setOptionStepperData] = useState([]);
     const [optionFormTemplateData, setOptionFormTemplateData] = useState([])
-
     const [showDownloadModal, setShowDownloadModal] = useState(false);
     const [showDownloadData, setShowDownloadData] = useState([]);
     const [showSelectedDownloadData, setShowSelectedDownloadData] = useState({});
-
     const [showAttachmentModal, setShowAttachmentModal] = useState(false);
     const [showAttachmentKey, setShowAttachmentKey] = useState(null);
     const [showAttachmentData, setShowAttachmentData] = useState([]);
-
     const [starFlag, setStarFlag] = useState(null);
     const [readFlag, setReadFlag] = useState(null);
-
-    const [loading, setLoading] = useState(false); // State for loading indicator
+    const [loading, setLoading] = useState(false);
     // for approve states
-
     const [approveTableFlag, setApproveTableFlag] = useState(false);
     const [addApproveFlag, setAddApproveFlag] = useState(false);
-
     const [approvalsData, setApprovalsData] = useState([]);
     const [approvalsColumn, setApprovalsColumn] = useState([
         { field: "sl_no", headerName: "S.No" },
@@ -102,11 +84,8 @@ const GovernmentOrder = () => {
     ]);
     const [approvalItem, setApprovalItem] = useState([]);
     const [designationData, setDesignationData] = useState([]);
-
     const [randomApprovalId, setRandomApprovalId] = useState(0);
-
     const [approvalSaveData, setApprovalSaveData] = useState({});
-
     const handleApprovalSaveData = (name, value) => {
         setApprovalSaveData({
         ...approvalSaveData,
@@ -115,8 +94,6 @@ const GovernmentOrder = () => {
     };
     const [selectedRow, setSelectedRow] = useState({});
     const [templateApproval, setTemplateApproval] = useState(false);
-    const [templateApprovalData, setTemplateApprovalData] = useState({});
-    const [disposalUpdate, setDisposalUpdate] = useState(false);
     const [selectedOtherFields, setSelectedOtherFields] = useState(null);
     const [selectKey, setSelectKey] = useState(null);
   
@@ -160,9 +137,12 @@ const GovernmentOrder = () => {
             { field: 'sl_no', headerName: 'S.No' }
         ]
     );
-
     const [otherTablePagination, setOtherTablePagination] = useState(1)
-
+    const [pendingUpdateData, setPendingUpdateData] = useState(null);
+    const [pendingSaveData, setPendingSaveData] = useState(null);
+    const [pendingDeleteData, setPendingDeleteData] = useState(null);
+    const [approvalPurpose, setApprovalPurpose] = useState(null);
+    
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
         if (!table_name || table_name === '') {
@@ -292,15 +272,13 @@ const GovernmentOrder = () => {
         setFormOpen(false);
         var payloadObj = {
             case_id: approveData.id,
+            approval_type: "gn_order",
         };
-    
+
         setLoading(true);
     
         try {
-          const getActionsDetails = await api.post(
-            "/ui_approval/get_ui_case_approvals",
-            payloadObj
-          );
+          const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals", payloadObj);
     
           setLoading(false);
     
@@ -387,7 +365,7 @@ const GovernmentOrder = () => {
           setLoading(false);
           if (error && error.response && error.response["data"]) {
             toast.error(
-              error.response["data"].message
+              error.response+["data"].message
                 ? error.response["data"].message
                 : "Please Try Again !",
               {
@@ -425,10 +403,9 @@ const GovernmentOrder = () => {
             progress: undefined,
             className: "toast-error",
           });
-    
           return;
         }
-    
+      
         if (!approvalSaveData || !approvalSaveData["approved_by"]) {
           toast.error("Please Select Designation !", {
             position: "top-right",
@@ -440,45 +417,38 @@ const GovernmentOrder = () => {
             progress: undefined,
             className: "toast-error",
           });
-    
           return;
         }
-    
-        var created_by_designation_id =
-          localStorage.getItem("designation_id") || "";
-    
+      
+        var created_by_designation_id = localStorage.getItem("designation_id") || "";
         var created_by_division_id = localStorage.getItem("division_id") || "";
-    
-        console.log("selectedRow", selectedRow);
+      
+        var actionType = approvalPurpose === "delete" ? "Delete" : "Edit";
+      
         var payloadApproveData = {
-            ...approvalSaveData,
-            case_id: selectedRow.id,
-            case_type: "gn_order",
+          ...approvalSaveData,
+          case_id: selectedRow.id,
+          case_type: "gn_order",
+          module: "Government Order",
+          action: actionType,
+          transaction_id: randomApprovalId,
+          created_by_designation_id,
+          created_by_division_id,
+          info: {
             module: "Government Order",
-            // action: "Pending Trial Action",
-            transaction_id: randomApprovalId,
-            created_by_designation_id: created_by_designation_id,
-            created_by_division_id: created_by_division_id,
-            info: {
-              module: "Government Order",
-            },
-          };
-    
+          },
+        };
+      
         setLoading(true);
-    
+      
         try {
-          const chnageSysStatus = await api.post(
-            "/ui_approval/create_ui_case_approval",
-            payloadApproveData
-          );
-    
+          const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval", payloadApproveData);
+      
           setLoading(false);
-    
+      
           if (chnageSysStatus && chnageSysStatus.success) {
             toast.success(
-              chnageSysStatus.message
-                ? chnageSysStatus.message
-                : "Approval Added Successfully Successfully",
+              chnageSysStatus.message || "Approval Added Successfully",
               {
                 position: "top-right",
                 autoClose: 3000,
@@ -494,40 +464,71 @@ const GovernmentOrder = () => {
                 }
               }
             );
-    
-
-            console.log("templareaprrovaldataaa", templateApprovalData);
-            otherTemplateUpdateFunc(templateApprovalData, true);
-
-    
-            // if (disposalUpdate) {
-            //   updateSysStatusDisposal();
-            //   return;
+      
+            // 🔄 Handle delete
+            if (approvalPurpose === "delete" && pendingDeleteData) {
+              const { rowData, table_name } = pendingDeleteData;
+              const deletePayload = {
+                table_name,
+                where: { id: rowData.id },
+              };
+      
+              try {
+                setLoading(true);
+                const deleteRes = await api.post("templateData/deleteTemplateData", deletePayload);
+                setLoading(false);
+      
+                if (deleteRes.success) {
+                  toast.success(deleteRes.message || "Template Deleted Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        loadTableData(paginationCount);
+                        setApprovalSaveData({});
+                    }                  
+                });
+                } else {
+                  toast.error(deleteRes.message || "Failed to delete the template.");
+                }
+              } catch (err) {
+                setLoading(false);
+                toast.error(err?.response?.data?.message || "Error deleting template.");
+              }
+      
+              setPendingDeleteData(null);
+              setApprovalPurpose(null);
+            }
+      
+            if (pendingUpdateData && approvalPurpose !== "delete") {
+                onUpdateTemplateData(pendingUpdateData);
+            }
+      
+            // if (pendingSaveData) {
+            //   onSaveTemplateData(pendingSaveData);
             // }
-    
+      
             var combinedData = {
               id: selectedRow.id,
               [selectKey.name]: selectedOtherFields.code,
             };
-    
-            // update func
-            onUpdateTemplateData(combinedData);
-    
-            // reset states
+            
             setSelectKey(null);
             setSelectedRow(null);
             setselectedOtherTemplate(null);
             setApprovalsData([]);
             setApprovalItem([]);
             setDesignationData([]);
-    
+            setApprovalSaveData({});
             setAddApproveFlag(false);
             setApproveTableFlag(false);
-            setApprovalSaveData({});
           } else {
-            const errorMessage = chnageSysStatus.message
-              ? chnageSysStatus.message
-              : "Failed to add approval. Please try again.";
+            const errorMessage = chnageSysStatus.message || "Failed to add approval. Please try again.";
             toast.error(errorMessage, {
               position: "top-right",
               autoClose: 3000,
@@ -543,9 +544,7 @@ const GovernmentOrder = () => {
           setLoading(false);
           if (error && error.response && error.response["data"]) {
             toast.error(
-              error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
+              error.response["data"].message || "Please Try Again !",
               {
                 position: "top-right",
                 autoClose: 3000,
@@ -560,7 +559,7 @@ const GovernmentOrder = () => {
           }
         }
       };
-    
+          
 
     useEffect(() => {
         loadTableData(paginationCount);
@@ -991,75 +990,24 @@ const GovernmentOrder = () => {
     }
 
     const handleDeleteTemplateData = (rowData, table_name) => {
-
         Swal.fire({
             title: 'Are you sure?',
-            text: "Do you want to delete this profile ?",
+            text: "Do you want to delete this profile?",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Yes, Delete it!',
             cancelButtonText: 'No',
-        }).then(async (result) => {
+        }).then((result) => {
             if (result.isConfirmed) {
-                const deleteTemplateData = {
-                    "table_name": table_name,
-                    "where": { id: rowData.id }
-                }
-                setLoading(true);
-
-                try {
-                    const deleteTemplateDataResponse = await api.post("templateData/deleteTemplateData", deleteTemplateData);
-                    setLoading(false);
-
-                    if (deleteTemplateDataResponse && deleteTemplateDataResponse.success) { 
-                        toast.success(deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Template Deleted Successfully", {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-success",
-                            onOpen: () => loadTableData(paginationCount)
-                        });
-                    } else {
-                        const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
-                        toast.error(errorMessage, {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-
-                    }
-
-                } catch (error) {
-                    setLoading(false);
-                    if (error && error.response && error.response['data']) {
-                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-
-                    }
-                }
+                setApprovalPurpose("delete");
+                setPendingDeleteData({ rowData, table_name });
+                showApprovalPage(rowData);
             } else {
                 console.log("Template deletion canceled.");
             }
         });
-    }
-
+    };
+    
     const ApplySortTable = (key) => {
         settableSortOption((prevOption) => (prevOption === 'DESC' ? 'ASC' : 'DESC'));
         setTableSortKey(key);
@@ -1228,18 +1176,6 @@ const GovernmentOrder = () => {
             });
             return;
         }
-
-        if (
-            selectedOtherTemplate &&
-            selectedOtherTemplate.is_approval &&
-            !alreadySavedApproval
-          ) {
-            showApprovalPage(selectedRow);
-            setTemplateApprovalData(data);
-            setTemplateApproval(true);
-            return;
-          }
-
           
         const formData = new FormData();
         formData.append("table_name", selectedOtherTemplate.table);
@@ -1773,6 +1709,111 @@ const GovernmentOrder = () => {
 
     }
 
+    // const onSaveTemplateData = async (data) => {
+    //     if (!table_name || table_name === '') {
+    //         toast.warning('Please Check The Template');
+    //         return;
+    //     }
+    
+    //     if (Object.keys(data).length === 0) {
+    //         toast.warning('Data Is Empty Please Check Once');
+    //         return;
+    //     }
+    
+    //     const formData = new FormData();
+    //     let normalData = {};
+    //     let formattedArray = [];
+    
+    //     formTemplateData.forEach((field) => {
+    //         if (data[field.name]) {
+    //             if (field.type === "file" || field.type === "profilepicture") {
+    //                 if (field.type === 'file' && Array.isArray(data[field.name])) {
+    //                     const filteredArray = data[field.name].filter(file => file.filename instanceof File);
+    //                     filteredArray.forEach((file) => {
+    //                         formData.append(field.name, file.filename);
+    //                     });
+    
+    //                     formattedArray = filteredArray.map((obj) => ({
+    //                         ...obj,
+    //                         filename: obj.filename.name
+    //                     }));
+    //                 } else {
+    //                     formData.append(field.name, data[field.name]);
+    //                 }
+    //             } else {
+    //                 normalData[field.name] =
+    //                     field.type === 'checkbox' || field.type === 'multidropdown'
+    //                         ? Array.isArray(data[field.name])
+    //                             ? data[field.name].join(',')
+    //                             : data[field.name]
+    //                         : data[field.name];
+    //             }
+    //         }
+    //     });
+    
+    //     const created_by_designation_id = localStorage.getItem("designation_id") || "";
+    //     const created_by_division_id = localStorage.getItem("division_id") || "";
+    //     const user_designation_id = localStorage.getItem("designation_id") || "";
+    //     const transaction_id = "TRANS_" + Date.now();
+    
+    //     const approval = {
+    //         approval_item: approvalSaveData?.approval_item,
+    //         approved_by: approvalSaveData?.approved_by,
+    //         approval_date: approvalSaveData?.approval_date,
+    //         remarks: approvalSaveData?.remarks,
+    //         created_by_designation_id,
+    //         created_by_division_id,
+    //     };
+    
+    //     const approval_details = {
+    //         id: '0',
+    //         module_name: "Government Order", 
+    //         action: "Create Government Order"
+    //     };
+    
+    //     const others_data = {
+    //         approval,
+    //         approval_details,
+    //     };
+    
+    //     formData.append('folder_attachment_ids', JSON.stringify(formattedArray));
+    //     formData.append('table_name', table_name);
+    //     formData.append('transaction_id', transaction_id);
+    //     formData.append('user_designation_id', user_designation_id);
+    //     formData.append('data', JSON.stringify(normalData));
+    //     formData.append('others_data', JSON.stringify(others_data));
+    
+    //     setLoading(true);
+    
+    //     try {
+    //         const saveTemplateData = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
+    //         setLoading(false);
+    //         localStorage.removeItem(template_name + '-formData');
+    
+    //         if (saveTemplateData?.success) {
+    //             toast.success(saveTemplateData.message || "Data Saved With Approval", {
+    //                 position: "top-right",
+    //                 autoClose: 3000,
+    //                 className: "toast-success",
+    //                 onOpen: () => loadTableData(paginationCount),
+    //             });
+    //         } else {
+    //             toast.error(saveTemplateData.message || "Save Failed", {
+    //                 position: "top-right",
+    //                 className: "toast-error",
+    //             });
+    //         }
+    //     } catch (error) {
+    //         setLoading(false);
+    //         toast.error(error?.response?.data?.message || "Please Try Again !", {
+    //             position: "top-right",
+    //             className: "toast-error"
+    //         });
+    //     }
+    // };
+        
+    
+
     const onUpdateTemplateData = async (data) => {
 
         if (!table_name || table_name === '') {
@@ -1862,7 +1903,10 @@ const GovernmentOrder = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount)
+                    onOpen: () => {
+                        loadTableData(paginationCount);
+                        setApprovalSaveData({});
+                    }
                 });
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
@@ -2371,11 +2415,14 @@ const GovernmentOrder = () => {
                     template_name={template_name}
                     readOnly={viewReadonly}
                     editData={editTemplateData}
-                    onUpdate={showApprovalPage}
+                    onUpdate={(data) => {
+                        setPendingUpdateData(data);
+                        showApprovalPage(data);
+                      }}
                     formConfig={formTemplateData}
                     stepperData={stepperData}
                     initialData={initialData}
-                    onSubmit={showApprovalPage}
+                    onSubmit={onSaveTemplateData}
                     onError={onSaveTemplateError}
                     closeForm={setFormOpen} />
             }
