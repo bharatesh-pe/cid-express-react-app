@@ -281,9 +281,13 @@ router.post('/caseSysStatusUpdation',
 
     templateDataController.caseSysStatusUpdation)
 
-    router.post('/appendToLastLineOfPDF',
+router.post('/appendToLastLineOfPDF',
         // userAuthMiddleware,
         templateDataController.appendToLastLineOfPDF)
+
+router.post('/saveDataWithApprovalToTemplates',
+    // userAuthMiddleware,
+    templateDataController.saveDataWithApprovalToTemplates)
     
 
 
