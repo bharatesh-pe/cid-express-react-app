@@ -4786,7 +4786,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
   }
 };
 
-exports.saveDataWithApprovalToTemplates = async (req, res) => {
+exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 	const { table_name, data, others_data, transaction_id, user_designation_id , folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
@@ -4937,6 +4937,22 @@ exports.saveDataWithApprovalToTemplates = async (req, res) => {
 
 		const insertedId = insertedData.id;
 		const insertedtype = insertedData.sys_status;
+		const insertedIO = insertedData.field_io_name || null;
+		let recordId = insertedData.id;
+		let sys_status = insertedData.sys_status;;
+		let default_status = insertedData.sys_status;;
+
+		if(insertedIO && insertedIO !== null) {
+			const userData = await Users.findOne({
+				where: { user_id: insertedIO },
+			});
+
+			if (!userData) {
+				await t.rollback();
+				return userSendResponse(res, 400, false, "IO User not found.", null);
+			}
+		}
+
 
 		// Handle others_data
 		if (others_data && typeof others_data === "object") {
@@ -4949,10 +4965,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res) => {
 				}
 
 				const otherSchema = typeof otherTableData.fields === "string" ? JSON.parse(otherTableData.fields) : otherTableData.fields;
-
-				let recordId ;
-				let sys_status ;
-				let default_status ;
 
 				if (others_data.sys_status?.id && others_data.sys_status?.sys_status && others_data.sys_status?.default_status) {
 					recordId = others_data.sys_status.id;
@@ -5043,8 +5055,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res) => {
 						},
 						{ transaction: t }
 					);
-	
-					const reference_id = recordId || null;
+					
 					if (!reference_id) {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "Reference ID is required.");
@@ -5059,6 +5070,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res) => {
 							created_by: userId,
 							created_by_designation_id: user_designation_id,
 							created_by_division_id: null,
+							send_to :insertedIO || null,
 						},
 						{ transaction: t }
 					);

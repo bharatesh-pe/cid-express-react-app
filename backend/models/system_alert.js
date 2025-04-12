@@ -14,7 +14,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {
-          model: "ui_case_approval", // Table name in DB
+          model: "ui_case_approval",
           key: "approval_id",
         },
       },
@@ -59,6 +59,14 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         defaultValue: sequelize.literal("CURRENT_TIMESTAMP"),
       },
+      send_to: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: "users",
+          key: "user_id",
+        },
+      },
     },
     {
       tableName: "system_alerts",
@@ -72,7 +80,12 @@ module.exports = (sequelize, DataTypes) => {
   System_Alerts.associate = (models) => {
     System_Alerts.belongsTo(models.Users, {
       foreignKey: "created_by",
-      as: "user",
+      as: "creator",
+    });
+
+    System_Alerts.belongsTo(models.Users, {
+      foreignKey: "send_to",
+      as: "receiver",
     });
 
     System_Alerts.belongsTo(models.UiCaseApproval, {
