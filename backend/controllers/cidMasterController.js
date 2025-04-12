@@ -66,7 +66,7 @@ const getIoUsers = async (req, res) => {
         let usersData  = [];
         let userDesignations = "";
         let userIds = [];
-        if(get_flag && get_flag === "upper"){
+        if(get_flag && get_flag === "upper" && designation_id){
             const userHierarchy = await UsersHierarchy.findAll({
                 where: {
                     officer_designation_id: designation_id,
@@ -121,7 +121,7 @@ const getIoUsers = async (req, res) => {
                 nest: true, // Keeps relations grouped
             });
         }
-        else if(get_flag && get_flag === "lower"){
+        else if(get_flag && get_flag === "lower" && designation_id){
             const userHierarchy = await UsersHierarchy.findAll({
                 where: {
                     supervisor_designation_id: designation_id,
