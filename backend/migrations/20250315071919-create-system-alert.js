@@ -66,6 +66,16 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
+      send_to: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "users",
+          key: "user_id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "RESTRICT",
+      },
     });
   },
 
