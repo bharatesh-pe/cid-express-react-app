@@ -3667,7 +3667,7 @@ const UnderInvestigation = () => {
         formData.append("data", JSON.stringify(normalData));
         formData.append("others_data", JSON.stringify(othersData));
         var transitionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        formData.append("transition_id", transitionId);
+        formData.append("transaction_id", transitionId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
 
         setLoading(true);
@@ -4421,7 +4421,7 @@ const UnderInvestigation = () => {
         formData.append("data", JSON.stringify(approvalSaveCaseData['caseData']));
         formData.append("others_data", JSON.stringify(approvalData));
         var transitionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        formData.append("transition_id", transitionId);
+        formData.append("transaction_id", transitionId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
 
         setLoading(true);
