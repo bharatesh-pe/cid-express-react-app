@@ -5,8 +5,13 @@ import DynamicForm from '../components/dynamic-form/DynamicForm';
 import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from "dayjs";
 
-import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid } from "@mui/material";
+import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField} from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -39,6 +44,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
+
 
 const GovernmentOrder = () => {
     const location = useLocation();
@@ -81,6 +87,39 @@ const GovernmentOrder = () => {
     const [readFlag, setReadFlag] = useState(null);
 
     const [loading, setLoading] = useState(false); // State for loading indicator
+    // for approve states
+
+    const [approveTableFlag, setApproveTableFlag] = useState(false);
+    const [addApproveFlag, setAddApproveFlag] = useState(false);
+
+    const [approvalsData, setApprovalsData] = useState([]);
+    const [approvalsColumn, setApprovalsColumn] = useState([
+        { field: "sl_no", headerName: "S.No" },
+        { field: "approvalItem", headerName: "Approval Item", flex: 1 },
+        { field: "approvedBy", headerName: "Approved By", flex: 1 },
+        { field: "approval_date", headerName: "Approval Date", flex: 1 },
+        { field: "remarks", headerName: "Remarks", flex: 1 },
+    ]);
+    const [approvalItem, setApprovalItem] = useState([]);
+    const [designationData, setDesignationData] = useState([]);
+
+    const [randomApprovalId, setRandomApprovalId] = useState(0);
+
+    const [approvalSaveData, setApprovalSaveData] = useState({});
+
+    const handleApprovalSaveData = (name, value) => {
+        setApprovalSaveData({
+        ...approvalSaveData,
+        [name]: value,
+        });
+    };
+    const [selectedRow, setSelectedRow] = useState({});
+    const [templateApproval, setTemplateApproval] = useState(false);
+    const [templateApprovalData, setTemplateApprovalData] = useState({});
+    const [disposalUpdate, setDisposalUpdate] = useState(false);
+    const [selectedOtherFields, setSelectedOtherFields] = useState(null);
+    const [selectKey, setSelectKey] = useState(null);
+  
 
     const searchParams = new URLSearchParams(location.search);
 
@@ -247,6 +286,281 @@ const GovernmentOrder = () => {
         }
 
     }
+
+      const showApprovalPage = async (approveData) => {
+        setSelectedRow(approveData);
+        setFormOpen(false);
+        var payloadObj = {
+            case_id: approveData.id,
+        };
+    
+        setLoading(true);
+    
+        try {
+          const getActionsDetails = await api.post(
+            "/ui_approval/get_ui_case_approvals",
+            payloadObj
+          );
+    
+          setLoading(false);
+    
+          if (getActionsDetails && getActionsDetails.success) {
+            var updatedOptions = [];
+    
+            if (getActionsDetails.data["approvals"].length > 0) {
+              updatedOptions = getActionsDetails.data["approvals"].map(
+                (data, index) => {
+                  const formatDate = (fieldValue) => {
+                    if (!fieldValue || typeof fieldValue !== "string")
+                      return fieldValue;
+    
+                    var dateValue = new Date(fieldValue);
+    
+                    if (
+                      isNaN(dateValue.getTime()) ||
+                      (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                    ) {
+                      return fieldValue;
+                    }
+    
+                    if (isNaN(dateValue.getTime())) return fieldValue;
+    
+                    var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                    var monthValue = String(dateValue.getMonth() + 1).padStart(
+                      2,
+                      "0"
+                    );
+                    var yearValue = dateValue.getFullYear();
+                    return `${dayValue}/${monthValue}/${yearValue}`;
+                  };
+    
+                  const updatedField = {};
+    
+                  Object.keys(data).forEach((key) => {
+                    if (
+                      data[key] &&
+                      key !== "id" &&
+                      !isNaN(new Date(data[key]).getTime())
+                    ) {
+                      updatedField[key] = formatDate(data[key]);
+                    } else {
+                      updatedField[key] = data[key];
+                    }
+                  });
+    
+                  return {
+                    ...updatedField,
+                    sl_no: index + 1,
+                    id: data.approval_id,
+                  };
+                }
+              );
+            }
+    
+            setApprovalsData(updatedOptions);
+            setApprovalItem(getActionsDetails.data["approval_item"]);
+            setDesignationData(getActionsDetails.data["designation"]);
+    
+            setAddApproveFlag(false);
+            setApproveTableFlag(true);
+    
+            const randomId = `approval_${Date.now()}_${Math.floor(
+              Math.random() * 1000
+            )}`;
+            setRandomApprovalId(randomId);
+          } else {
+            const errorMessage = getActionsDetails.message
+              ? getActionsDetails.message
+              : "Failed to create the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              }
+            );
+          }
+        }
+      };
+    
+      const showApprovalAddPage = (table) => {
+        setAddApproveFlag(true);
+        handleApprovalSaveData(
+          "approval_item",
+          Number(selectedOtherTemplate?.approval_items)
+        );
+      };
+    
+      const saveApprovalData = async (table) => {
+        if (!approvalSaveData || !approvalSaveData["approval_item"]) {
+          toast.error("Please Select Approval Item !", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          });
+    
+          return;
+        }
+    
+        if (!approvalSaveData || !approvalSaveData["approved_by"]) {
+          toast.error("Please Select Designation !", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          });
+    
+          return;
+        }
+    
+        var created_by_designation_id =
+          localStorage.getItem("designation_id") || "";
+    
+        var created_by_division_id = localStorage.getItem("division_id") || "";
+    
+        console.log("selectedRow", selectedRow);
+        var payloadApproveData = {
+            ...approvalSaveData,
+            case_id: selectedRow.id,
+            case_type: "gn_order",
+            module: "Government Order",
+            // action: "Pending Trial Action",
+            transaction_id: randomApprovalId,
+            created_by_designation_id: created_by_designation_id,
+            created_by_division_id: created_by_division_id,
+            info: {
+              module: "Government Order",
+            },
+          };
+    
+        setLoading(true);
+    
+        try {
+          const chnageSysStatus = await api.post(
+            "/ui_approval/create_ui_case_approval",
+            payloadApproveData
+          );
+    
+          setLoading(false);
+    
+          if (chnageSysStatus && chnageSysStatus.success) {
+            toast.success(
+              chnageSysStatus.message
+                ? chnageSysStatus.message
+                : "Approval Added Successfully Successfully",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-success",
+                onClose: () => {
+                  setApproveTableFlag(false);
+                  setAddApproveFlag(false);
+                }
+              }
+            );
+    
+
+            console.log("templareaprrovaldataaa", templateApprovalData);
+            otherTemplateUpdateFunc(templateApprovalData, true);
+
+    
+            // if (disposalUpdate) {
+            //   updateSysStatusDisposal();
+            //   return;
+            // }
+    
+            var combinedData = {
+              id: selectedRow.id,
+              [selectKey.name]: selectedOtherFields.code,
+            };
+    
+            // update func
+            onUpdateTemplateData(combinedData);
+    
+            // reset states
+            setSelectKey(null);
+            setSelectedRow(null);
+            setselectedOtherTemplate(null);
+            setApprovalsData([]);
+            setApprovalItem([]);
+            setDesignationData([]);
+    
+            setAddApproveFlag(false);
+            setApproveTableFlag(false);
+            setApprovalSaveData({});
+          } else {
+            const errorMessage = chnageSysStatus.message
+              ? chnageSysStatus.message
+              : "Failed to add approval. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              }
+            );
+          }
+        }
+      };
+    
 
     useEffect(() => {
         loadTableData(paginationCount);
@@ -885,7 +1199,7 @@ const GovernmentOrder = () => {
         }
     }
 
-    const otherTemplateSaveFunc = async (data) => {
+    const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
 
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
             toast.warning('Please Check The Template', {
@@ -915,6 +1229,18 @@ const GovernmentOrder = () => {
             return;
         }
 
+        if (
+            selectedOtherTemplate &&
+            selectedOtherTemplate.is_approval &&
+            !alreadySavedApproval
+          ) {
+            showApprovalPage(selectedRow);
+            setTemplateApprovalData(data);
+            setTemplateApproval(true);
+            return;
+          }
+
+          
         const formData = new FormData();
         formData.append("table_name", selectedOtherTemplate.table);
 
@@ -2045,11 +2371,11 @@ const GovernmentOrder = () => {
                     template_name={template_name}
                     readOnly={viewReadonly}
                     editData={editTemplateData}
-                    onUpdate={onUpdateTemplateData}
+                    onUpdate={showApprovalPage}
                     formConfig={formTemplateData}
                     stepperData={stepperData}
                     initialData={initialData}
-                    onSubmit={onSaveTemplateData}
+                    onSubmit={showApprovalPage}
                     onError={onSaveTemplateError}
                     closeForm={setFormOpen} />
             }
@@ -2253,6 +2579,174 @@ const GovernmentOrder = () => {
                     </DialogContent>
                 </Dialog>
             }
+
+                  {approveTableFlag && (
+                    <Dialog
+                      open={approveTableFlag}
+                      onClose={() => setApproveTableFlag(false)}
+                      aria-labelledby="alert-dialog-title"
+                      aria-describedby="alert-dialog-description"
+                      maxWidth="lg"
+                      fullWidth
+                      sx={{ zIndex: "1" }}
+                    >
+                      <DialogTitle
+                        id="alert-dialog-title"
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        Approval
+                        <Box>
+                          {!addApproveFlag ? (
+                            <Button
+                              variant="outlined"
+                              onClick={() => {
+                                showApprovalAddPage(selectedOtherTemplate.table);
+                              }}
+                            >
+                              Add
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outlined"
+                              onClick={() => {
+                                saveApprovalData(selectedOtherTemplate.table);
+                              }}
+                            >
+                              Save
+                            </Button>
+                          )}
+                          <IconButton
+                            aria-label="close"
+                            onClick={() => setApproveTableFlag(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                          >
+                            <CloseIcon />
+                          </IconButton>
+                        </Box>
+                      </DialogTitle>
+                      <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                          <Box py={2}>
+                            {!addApproveFlag ? (
+                              <TableView rows={approvalsData} columns={approvalsColumn} />
+                            ) : (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "18px",
+                                }}
+                              >
+                                <Autocomplete
+                                  id=""
+                                  options={approvalItem}
+                                  getOptionLabel={(option) => option.name || ""}
+                                  name={"approval_item"}
+                                  value={
+                                    approvalItem.find(
+                                      (option) =>
+                                        option.approval_item_id ===
+                                        (approvalSaveData &&
+                                          approvalSaveData["approval_item"])
+                                    ) || null
+                                  }
+                                  onChange={(e, value) =>
+                                    handleApprovalSaveData(
+                                      "approval_item",
+                                      value?.approval_item_id
+                                    )
+                                  }
+                                  renderInput={(params) => (
+                                    <TextField
+                                      {...params}
+                                      className="selectHideHistory"
+                                      label={"Approval Item"}
+                                    />
+                                  )}
+                                />
+            
+                                <Autocomplete
+                                  id=""
+                                  options={designationData}
+                                  getOptionLabel={(option) => option.designation_name || ""}
+                                  name={"approved_by"}
+                                  value={
+                                    designationData.find(
+                                      (option) =>
+                                        option.designation_id ===
+                                        (approvalSaveData &&
+                                          approvalSaveData["approved_by"])
+                                    ) || null
+                                  }
+                                  onChange={(e, value) =>
+                                    handleApprovalSaveData(
+                                      "approved_by",
+                                      value?.designation_id
+                                    )
+                                  }
+                                  renderInput={(params) => (
+                                    <TextField
+                                      {...params}
+                                      className="selectHideHistory"
+                                      label={"Designation"}
+                                    />
+                                  )}
+                                />
+            
+                                <LocalizationProvider
+                                  dateAdapter={AdapterDayjs}
+                                  sx={{ width: "100%" }}
+                                >
+                                  <DemoContainer
+                                    components={["DatePicker"]}
+                                    sx={{ width: "100%" }}
+                                  >
+                                    <DatePicker
+                                      label="Approval Date"
+                                      value={
+                                        approvalSaveData["approval_date"]
+                                          ? dayjs(approvalSaveData["approval_date"])
+                                          : null
+                                      }
+                                      name="approval_date"
+                                      format="DD/MM/YYYY"
+                                      sx={{ width: "100%" }}
+                                      onChange={(newValue) => {
+                                        if (newValue && dayjs.isDayjs(newValue)) {
+                                          handleApprovalSaveData(
+                                            "approval_date",
+                                            newValue.toISOString()
+                                          );
+                                        } else {
+                                          handleApprovalSaveData("approval_date", null);
+                                        }
+                                      }}
+                                    />
+                                  </DemoContainer>
+                                </LocalizationProvider>
+            
+                                <TextField
+                                  rows={8}
+                                  label={"Comments"}
+                                  sx={{ width: "100%" }}
+                                  name="remarks"
+                                  value={approvalSaveData["remarks"]}
+                                  onChange={(e) =>
+                                    handleApprovalSaveData("remarks", e.target.value)
+                                  }
+                                />
+                              </Box>
+                            )}
+                          </Box>
+                        </DialogContentText>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+            
 
 
         </Box>
