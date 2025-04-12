@@ -8,6 +8,7 @@ const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSav
             label: el.label,
             kannada: el.kannada,
             value: templateData[el.name] ? templateData[el.name] : "",
+            col: el.col ? el.col : '12',
         };
     });
 
@@ -79,38 +80,37 @@ const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSav
         <div style={{ display: 'none' }}>
             <div id="content-to-pdf">
                 <div style={{ padding: '10px' }}>
-                    <table id='pdfDownloadTable'>
-                        <thead>
+                    <table id='pdfDownloadTable' style={{width: '100%'}}>
+                        {/* <thead>
                             <tr>
                                 <td>
                                     -
                                 </td>
                             </tr>
-                        </thead>
-                        {data && data.map((el, index) => {
-                            return (
-                                <tbody>
-                                    <tr>
-                                        <td>
-                                            <div style={{ marginBottom: "10px" }} key={index}>
-                                                <div style={{ color: '#3E4784', fontSize: '14px' }}> {el?.label} {el.kannada ? '/ '+el.kannada : ''} </div>
-                                                <div style={{ color: '#101828', fontSize: '16px' }}> {el?.value ? el?.value : '-'} </div>
-                                                {/* Page Break (can help with splitting the content across multiple pages) */}
-                                                {/* {index % 5 === 0 && <div className="page-break" style={{ pageBreakBefore: 'always' }}></div>} */}
+                        </thead> */}
+                        <tr>
+                            {data.map((el, rowIndex) => {
+                                return (
+                                        <td key={rowIndex} style={{ width: el.col === '6' ? '48%' : '100%', display: 'inline-block' }}>
+                                            <div style={{ marginBottom: "10px" }}>
+                                                <div style={{ color: '#3E4784', fontSize: '14px' }}>
+                                                    {el.label} {el.kannada ? '/ ' + el.kannada : ''}
+                                                </div>
+                                                <div style={{ color: '#101828', fontSize: '16px' }}>
+                                                    {el.value ? el.value : '-'}
+                                                </div>
                                             </div>
                                         </td>
-                                    </tr>
-                                </tbody>
-
-                            );
-                        })}
-                        <tfoot>
+                                );
+                            })}
+                        </tr>
+                        {/* <tfoot>
                             <tr>
                                 <td>
                                     -
                                 </td>
                             </tr>
-                        </tfoot>
+                        </tfoot> */}
                     </table>
                 </div>
             </div>

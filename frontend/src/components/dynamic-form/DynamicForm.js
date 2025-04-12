@@ -54,11 +54,11 @@ const DynamicForm = ({
   template_id,
   table_row_id,
 }) => {
-  let storageFormData = localStorage.getItem(template_name + "-formData")
-    ? JSON.parse(localStorage.getItem(template_name + "-formData"))
-    : {};
+//   let storageFormData = localStorage.getItem(template_name + "-formData")
+//     ? JSON.parse(localStorage.getItem(template_name + "-formData"))
+//     : {};
   //   console.log('template_name', template_name);
-  const [formData, setFormData] = useState(storageFormData);
+  const [formData, setFormData] = useState({});
   const [newFormConfig, setNewFormConfig] = useState(
     formConfig ? formConfig : {}
   );
@@ -86,14 +86,14 @@ const DynamicForm = ({
     }
   }, [initialData]);
 
-  useEffect(() => {
-    if (formData && Object.keys(formData).length !== 0 && !formData.id) {
-      localStorage.setItem(
-        template_name + "-formData",
-        JSON.stringify(formData)
-      );
-    }
-  }, [formData]);
+//   useEffect(() => {
+//     if (formData && Object.keys(formData).length !== 0 && !formData.id) {
+//       localStorage.setItem(
+//         template_name + "-formData",
+//         JSON.stringify(formData)
+//       );
+//     }
+//   }, [formData]);
 
   const handleChangeDate = (name, newValues) => {
     setFormData({
@@ -698,10 +698,10 @@ const DynamicForm = ({
         ...prevData,
         ...defaultValueObj,
       }));
-      localStorage.setItem(
-        template_name + "-formData",
-        JSON.stringify({ ...formData, ...defaultValueObj })
-      );
+    //   localStorage.setItem(
+    //     template_name + "-formData",
+    //     JSON.stringify({ ...formData, ...defaultValueObj })
+    //   );
     };
     clearOptions();
   }, []);
