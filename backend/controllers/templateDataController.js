@@ -4787,7 +4787,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 };
 
 exports.saveDataWithApprovalToTemplates = async (req, res) => {
-	const { table_name, data, others_data, transaction_id, user_designation_id } = req.body;
+	const { table_name, data, others_data, transaction_id, user_designation_id , folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
