@@ -42,9 +42,8 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id }) => {
-  let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
-  console.log('template_name', template_name);
-  const [formData, setFormData] = useState(storageFormData);
+//   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
+  const [formData, setFormData] = useState({});
   const [newFormConfig, setNewFormConfig] = useState(formConfig ? formConfig : {})
   const [stepperConfigData, setstepperConfigData] = useState([])
   const [errors, setErrors] = useState({});
@@ -70,11 +69,11 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     }
   }, [initialData]);
 
-  useEffect(() => {
-    if (formData && Object.keys(formData).length !== 0 && !formData.id) {
-      localStorage.setItem(template_name + '-formData', JSON.stringify(formData));
-    }
-  }, [formData]);
+//   useEffect(() => {
+//     if (formData && Object.keys(formData).length !== 0 && !formData.id) {
+//       localStorage.setItem(template_name + '-formData', JSON.stringify(formData));
+//     }
+//   }, [formData]);
 
   const handleChangeDate = (name, newValues) => {
     setFormData({
@@ -589,10 +588,10 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             ...prevData,
             ...defaultValueObj,
         }));
-        localStorage.setItem(
-            template_name + '-formData',
-            JSON.stringify({ ...formData, ...defaultValueObj })
-        );
+        // localStorage.setItem(
+        //     template_name + '-formData',
+        //     JSON.stringify({ ...formData, ...defaultValueObj })
+        // );
     }
     clearOptions()
   }, [])
