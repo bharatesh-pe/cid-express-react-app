@@ -4789,7 +4789,12 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
 exports.saveDataWithApprovalToTemplates = async (req, res) => {
 	const { table_name, data , others_data , transaction_id , user_designation_id} = req.body;
+	if(user_designation_id == null || user_designation_id == undefined || user_designation_id == ""){
+		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
+	}
   	let dirPath = "";
+	const t = await dbConfig.sequelize.transaction();
+
 	try {
 		
 		const userId = req.user?.user_id || null;
@@ -4805,7 +4810,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res) => {
 			.json({ success: false, message: "Duplicate transaction detected." });
 		fs.mkdirSync(dirPath, { recursive: true });
 
-		const t = await dbConfig.sequelize.transaction();
 			
 		// Fetch user data use transaction t to ensure data consistency
 		const userData = await Users.findOne({
