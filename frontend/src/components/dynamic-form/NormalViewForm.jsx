@@ -160,8 +160,11 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             }
         });
 
-        if(duplicateCheckKey && duplicateCheckKey.length > 0){
-            
+        if(duplicateCheckKey && duplicateCheckKey?.[0] && initialData && initialData[duplicateCheckKey[0].name] && initialData[duplicateCheckKey[0].name] === formData?.[duplicateCheckKey[0].name]) {
+            duplicateCheckKey = [];
+        }
+    
+        if (duplicateCheckKey && duplicateCheckKey.length > 0) {
             var duplicateKeyValues = {};
 
             duplicateCheckKey.forEach((field) => {
