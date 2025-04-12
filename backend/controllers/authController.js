@@ -71,7 +71,7 @@ const get_module = async (req, res) => {
     const alertNotifications = await System_Alerts.findAll({
       where: {
         created_by_designation_id: { [Op.in]: officer_designation_ids },
-        created_by_division_id: user_division_id,
+        // created_by_division_id: user_division_id,
       },
       order: [["created_at", "DESC"]],
     });
@@ -86,7 +86,7 @@ const get_module = async (req, res) => {
               system_alert_id: notification.system_alert_id,
               viewed_by: user_id,
               viewed_by_designation_id: user_designation_id,
-              viewed_by_division_id: user_division_id,
+              // viewed_by_division_id: user_division_id,
             },
           });
           return {
@@ -193,24 +193,24 @@ const verify_OTP = async (req, res) => {
               : null;
 
           // Map designations with division name
-          // const formattedResponse = users_designation.map((designation) => ({
-          //   designation: designation.designation.designation_name,
-          //   division: divisionName,
-          // }));
-          const formattedResponse = [];
+          const formattedResponse = users_designation.map((designation) => ({
+            designation: designation.designation.designation_name,
+            division: divisionName,
+          }));
+          // const formattedResponse = [];
 
-          users_designation.forEach((designationObj) => {
-            const designationName = designationObj.designation.designation_name;
+          // users_designation.forEach((designationObj) => {
+          //   const designationName = designationObj.designation.designation_name;
 
-            users_division.forEach((divisionObj) => {
-              const divisionName = divisionObj.division.division_name;
+          //   users_division.forEach((divisionObj) => {
+          //     const divisionName = divisionObj.division.division_name;
 
-              formattedResponse.push({
-                designation: designationName,
-                divisions: divisionName,
-              });
-            });
-          });
+          //     formattedResponse.push({
+          //       designation: designationName,
+          //       divisions: divisionName,
+          //     });
+          //   });
+          // });
 
           const user_role_permissions = await Role.findAll({
             where: {
