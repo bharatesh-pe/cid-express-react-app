@@ -4655,12 +4655,12 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       return lines;
     };
 
-    for (const data of dataArray) {
+    for (let data of dataArray) {
       let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
       let xPos = 50;
       let yPos = pageHeight - 50;
       const fontSize = 12;
-      const lineHeight = 18;
+      const lineHeight = 15;
       const maxTextWidth = pageWidth - 100;
 
       if (data.field_date_created) {
@@ -4671,20 +4671,26 @@ exports.appendToLastLineOfPDF = async (req, res) => {
         data.field_last_updated = formatDate(data.field_last_updated);
       }
 
+      if (data.created_at) {
+        data.created_at = formatDate(data.created_at);
+      }
+
       delete data.field_ui_case_id;
       delete data.ui_case_id;
       delete data.sys_status;
-      delete data.created_at;
       delete data.updated_at;
       delete data.id;
       delete data.field_pt_case_id;
       delete data.field_evidence_file;
       delete data.field_pr_status;
 
+      const { created_by, created_at, ...rest } = data;
+      data = { ...rest, created_by, created_at };
+
       const entries = Object.entries(data);
 
       for (const [label, value] of entries) {
-        const fieldValue = value ? value.toString() : "N/A";
+        const fieldValue = value ? value.toString().replace(/\n/g, " ") : "N/A";
         const formattedLabel = formatLabel(label);
 
         newPage.drawText(`${formattedLabel}:`, {
@@ -4715,7 +4721,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
           }
         }
 
-        yPos -= lineHeight;
+        yPos -= 5;
       }
     }
 
