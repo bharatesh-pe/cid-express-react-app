@@ -4789,10 +4789,10 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 exports.saveDataWithApprovalToTemplates = async (req, res) => {
 	const { table_name, data, others_data, transaction_id, user_designation_id } = req.body;
 
-	if (!user_designation_id) {
+	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
 	}
-	if (!transaction_id) {
+	if (transaction_id === undefined || transaction_id === null) {
 		return userSendResponse(res, 400, false, "transaction_id is required.", null);
 	}
 
@@ -4888,6 +4888,51 @@ exports.saveDataWithApprovalToTemplates = async (req, res) => {
 		if (!insertedData) {
 			await t.rollback();
 			return userSendResponse(res, 400, false, "Failed to insert data.", null);
+		}
+
+		const fileUpdates = {};
+
+		if (req.files && req.files.length > 0) {
+			const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
+
+			for (const file of req.files) {
+				const { originalname, size, key, fieldname } = file;
+				const fileExtension = path.extname(originalname);
+
+				// Find matching folder_id from the payload (if any)
+				const matchingFolder = folderAttachments.find(
+				(attachment) =>
+					attachment.filename === originalname &&
+					attachment.field_name === fieldname
+				);
+
+				const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
+
+				await ProfileAttachment.create({
+					template_id: tableData.template_id,
+					table_row_id: insertedData.id,
+					attachment_name: originalname,
+					attachment_extension: fileExtension,
+					attachment_size: size,
+					s3_key: key,
+					field_name: fieldname,
+					folder_id: folderId, // Store NULL if no folder_id provided
+				});
+
+				if (!fileUpdates[fieldname]) {
+					fileUpdates[fieldname] = originalname;
+				} else {
+					fileUpdates[fieldname] += `,${originalname}`;
+				}
+			}
+
+			// Update the model with file arrays
+			for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+				await Model.update(
+				{ [fieldname]: filenames },
+				{ where: { id: insertedData.id } }
+				);
+			}
 		}
 
 		const insertedId = insertedData.id;
@@ -4999,7 +5044,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res) => {
 						{ transaction: t }
 					);
 	
-					const reference_id = insertedId || null;
+					const reference_id = recordId || null;
 					if (!reference_id) {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "Reference ID is required.");
