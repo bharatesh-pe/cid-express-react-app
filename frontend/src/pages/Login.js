@@ -787,7 +787,7 @@ const Login = () => {
                     color: "#667085",
                   }}
                 >
-                  {item.divisions}
+                  {item.designation_description}
                 </Typography>
               </Box>
             </Box>

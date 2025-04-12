@@ -173,7 +173,7 @@ const verify_OTP = async (req, res) => {
             include: {
               model: Designation,
               as: "designation",
-              attributes: ["designation_name"],
+              attributes: ["designation_name", "description"],
             },
           });
 
@@ -195,6 +195,7 @@ const verify_OTP = async (req, res) => {
           // Map designations with division name
           const formattedResponse = users_designation.map((designation) => ({
             designation: designation.designation.designation_name,
+            designation_description: designation.designation.description,
             division: divisionName,
           }));
           // const formattedResponse = [];
