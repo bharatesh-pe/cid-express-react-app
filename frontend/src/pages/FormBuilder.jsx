@@ -2302,7 +2302,7 @@ const Formbuilder = () => {
                                                 {
                                                     Object.keys(selectedField).map((prop) => {
                                                         // Skip specific field
-                                                        const DisplayNoneFields = ['defaultValue', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'disabled', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
+                                                        const DisplayNoneFields = ['defaultValue', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
                                                         if (DisplayNoneFields.includes(prop)) return null;
 
                                                         const increment = (prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
