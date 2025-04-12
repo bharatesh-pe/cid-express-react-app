@@ -1711,18 +1711,18 @@ const GovernmentOrder = () => {
 
     const onSaveTemplateData = async (data) => {
         if (!table_name || table_name === '') {
-            toast.warning('Please Check The Template', { /* ... */ });
+            toast.warning('Please Check The Template');
             return;
         }
     
         if (Object.keys(data).length === 0) {
-            toast.warning('Data Is Empty Please Check Once', { /* ... */ });
+            toast.warning('Data Is Empty Please Check Once');
             return;
         }
     
         const formData = new FormData();
-    
         let normalData = {};
+        let formattedArray = [];
     
         formTemplateData.forEach((field) => {
             if (data[field.name]) {
@@ -1733,12 +1733,10 @@ const GovernmentOrder = () => {
                             formData.append(field.name, file.filename);
                         });
     
-                        const formattedArray = filteredArray.map((obj) => ({
+                        formattedArray = filteredArray.map((obj) => ({
                             ...obj,
                             filename: obj.filename.name
                         }));
-    
-                        formData.append('folder_attachment_ids', JSON.stringify(formattedArray));
                     } else {
                         formData.append(field.name, data[field.name]);
                     }
@@ -1756,7 +1754,6 @@ const GovernmentOrder = () => {
         const created_by_designation_id = localStorage.getItem("designation_id") || "";
         const created_by_division_id = localStorage.getItem("division_id") || "";
         const user_designation_id = localStorage.getItem("designation_id") || "";
-    
         const transaction_id = "TRANS_" + Date.now();
     
         const approval = {
@@ -1774,24 +1771,22 @@ const GovernmentOrder = () => {
             action: "Create Government Order"
         };
     
-
-    
         const others_data = {
             approval,
             approval_details,
         };
-        var payload = {
-            table_name: table_name,
-            transaction_id: transaction_id,
-            user_designation_id: user_designation_id,
-            data: JSON.stringify(normalData),
-            others_data: JSON.stringify(others_data),
-        }
-        
+    
+        formData.append('folder_attachment_ids', JSON.stringify(formattedArray));
+        formData.append('table_name', table_name);
+        formData.append('transaction_id', transaction_id);
+        formData.append('user_designation_id', user_designation_id);
+        formData.append('data', JSON.stringify(normalData));
+        formData.append('others_data', JSON.stringify(others_data));
+    
         setLoading(true);
     
         try {
-            const saveTemplateData = await api.post("/templateData/saveDataWithApprovalToTemplates", payload);
+            const saveTemplateData = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
             setLoading(false);
             localStorage.removeItem(template_name + '-formData');
     
@@ -1810,15 +1805,13 @@ const GovernmentOrder = () => {
             }
         } catch (error) {
             setLoading(false);
-            toast.error(
-                error?.response?.data?.message || "Please Try Again !",
-                { position: "top-right", className: "toast-error" }
-            );
+            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                position: "top-right",
+                className: "toast-error"
+            });
         }
     };
-
-
-    
+        
     
 
     const onUpdateTemplateData = async (data) => {
