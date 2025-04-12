@@ -1,8 +1,8 @@
 const { adminSendResponse } = require("../services/adminSendResponse");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
-const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID} = require("../models");
-const { Op } = require("sequelize");
+const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID , UsersHierarchy} = require("../models");
+const { Op, where } = require("sequelize");
 
 const getAllDepartments = async (req, res) => {
     try {
@@ -60,65 +60,185 @@ const getAllDivisions = async (req, res) => {
 
 const getIoUsers = async (req, res) => {
   const excluded_role_ids = [1, 10, 21];
+    const  { designation_id, get_flag} = req.body;
   try {
-      const usersData = await Users.findAll({
-          include: [
-              {
-                  model: Role,
-                  as: "role",
-                  attributes: ["role_id", "role_title"],
-                  where: {
-                      role_id: {
-                          [Op.notIn]: excluded_role_ids,
-                      },
-                  },
-              },
-              {
-                  model: KGID,
-                  as: "kgidDetails",
-                  attributes: ["kgid", "name", "mobile"], // Fetch name here
-              },
-              // {
-              //     model: UserDesignation,
-              //     as: "users_designations",
-              //     attributes: ["designation_id"],
-              //     include: [
-              //         {
-              //             model: Designation,
-              //             as: "designation",
-              //             attributes: ["designation_name"],
-              //         },
-              //     ],
-              // },
-              // {
-              //     model: UsersDepartment,
-              //     as: "users_departments",
-              //     attributes: ["department_id"],
-              //     include: [
-              //         {
-              //             model: Department,
-              //             as: "department",
-              //             attributes: ["department_name"],
-              //         },
-              //     ],
-              // },
-              // {
-              //     model: UsersDivision,
-              //     as: "users_division",
-              //     attributes: ["division_id"],
-              //     include: [
-              //         {
-              //             model: Division,
-              //             as: "division",
-              //             attributes: ["division_name"],
-              //         },
-              //     ],
-              // },
-          ],
-          attributes: ["user_id"],
-          raw: true, // Flatten the result
-          nest: true, // Keeps relations grouped
-      });
+
+        let usersData  = [];
+        let userDesignations = "";
+        let userIds = [];
+        if(get_flag && get_flag === "upper"){
+            const userHierarchy = await UsersHierarchy.findAll({
+                where: {
+                    officer_designation_id: designation_id,
+                },
+                attributes: ["supervisor_designation_id"],
+                raw: true,
+            });
+            if (!userHierarchy || userHierarchy.length === 0) {
+                return res.status(200).json({ data: [] });
+            }
+            const superivisors = userHierarchy.map(user => user.supervisor_designation_id);
+            // Fetch users based on the userIds from the userDesignations table
+            userDesignations = await UserDesignation.findAll({
+                where: {
+                    designation_id: {
+                        [Op.in]: superivisors,
+                    },
+                },
+                attributes: ["user_id"],
+                raw: true,
+            });
+            if (!userDesignations || userDesignations.length === 0) {
+                return res.status(200).json({ data: [] });
+            }
+            userIds = userDesignations.map(user => user.user_id && user.user_id !== null ? user.user_id : null).filter(userId => userId !== null);
+            usersData = await Users.findAll({
+                where: {
+                    user_id: {
+                        [Op.in]: userIds,
+                    },
+                    dev_status: true,
+                },
+                include: [
+                    {
+                        model: Role,
+                        as: "role",
+                        attributes: ["role_id", "role_title"],
+                        where: {
+                            role_id: {
+                                [Op.notIn]: excluded_role_ids,
+                            },
+                        },
+                    },
+                    {
+                        model: KGID,
+                        as: "kgidDetails",
+                        attributes: ["kgid", "name", "mobile"], // Fetch name here
+                    },
+                ],
+                attributes: ["user_id"],
+                raw: true, // Flatten the result
+                nest: true, // Keeps relations grouped
+            });
+        }
+        else if(get_flag && get_flag === "lower"){
+            const userHierarchy = await UsersHierarchy.findAll({
+                where: {
+                    supervisor_designation_id: designation_id,
+                },
+                attributes: ["officer_designation_id"],
+                raw: true,
+            });
+            if (!userHierarchy || userHierarchy.length === 0) {
+                return res.status(200).json({ data: [] });
+            }
+            const officersIds = userHierarchy.map(user => user.officer_designation_id);
+            userDesignations = await UserDesignation.findAll({
+                where: {
+                    designation_id: {
+                        [Op.in]: officersIds,
+                    },
+                },
+                attributes: ["user_id"],
+                raw: true,
+            });
+            if (!userDesignations || userDesignations.length === 0) {
+                return res.status(200).json({ data: [] });
+            }
+            userIds = userDesignations.map(user => user.user_id && user.user_id !== null ? user.user_id : null).filter(userId => userId !== null);
+            
+            usersData = await Users.findAll({
+                where: {
+                    user_id: {
+                        [Op.in]: userIds,
+                    },
+                    dev_status: true,
+                },
+                include: [
+                    {
+                        model: Role,
+                        as: "role",
+                        attributes: ["role_id", "role_title"],
+                        where: {
+                            role_id: {
+                                [Op.notIn]: excluded_role_ids,
+                            },
+                        },
+                    },
+                    {
+                        model: KGID,
+                        as: "kgidDetails",
+                        attributes: ["kgid", "name", "mobile"], // Fetch name here
+                    },
+                ],
+                attributes: ["user_id"],
+                raw: true, // Flatten the result
+                nest: true, // Keeps relations grouped
+            });
+        }
+        else{
+            usersData = await Users.findAll({
+                include: [
+                    {
+                        model: Role,
+                        as: "role",
+                        attributes: ["role_id", "role_title"],
+                        where: {
+                            role_id: {
+                                [Op.notIn]: excluded_role_ids,
+                            },
+                        },
+                    },
+                    {
+                        model: KGID,
+                        as: "kgidDetails",
+                        attributes: ["kgid", "name", "mobile"], // Fetch name here
+                    },
+                    // {
+                    //     model: UserDesignation,
+                    //     as: "users_designations",
+                    //     attributes: ["designation_id"],
+                    //     include: [
+                    //         {
+                    //             model: Designation,
+                    //             as: "designation",
+                    //             attributes: ["designation_name"],
+                    //         },
+                    //     ],
+                    // },
+                    // {
+                    //     model: UsersDepartment,
+                    //     as: "users_departments",
+                    //     attributes: ["department_id"],
+                    //     include: [
+                    //         {
+                    //             model: Department,
+                    //             as: "department",
+                    //             attributes: ["department_name"],
+                    //         },
+                    //     ],
+                    // },
+                    // {
+                    //     model: UsersDivision,
+                    //     as: "users_division",
+                    //     attributes: ["division_id"],
+                    //     include: [
+                    //         {
+                    //             model: Division,
+                    //             as: "division",
+                    //             attributes: ["division_name"],
+                    //         },
+                    //     ],
+                    // },
+                ],
+                attributes: ["user_id"],
+                where: {
+                    dev_status: true,
+                },
+                raw: true, // Flatten the result
+                nest: true, // Keeps relations grouped
+            });
+        }
 
     // Transform output to move kgidDetails.name to the top level
     const users = usersData.map(user => ({
@@ -127,7 +247,7 @@ const getIoUsers = async (req, res) => {
         kgidDetails: undefined // Remove the nested object if not needed
     }));
 
-    return res.status(200).json({ data : users });
+    return res.status(200).json({ data : users});
   } catch (error) {
     console.error("Error fetching users:", error);
     return res
