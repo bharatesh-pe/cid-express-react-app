@@ -572,7 +572,7 @@ const Layout = ({ children }) => {
         {/* Main Content */}
         <Box flex={4} sx={{ overflow: "hidden" }}>
           <Navbar unreadNotificationCount={notificationCount} />
-          <Paper sx={{ height: "100%", borderRadius: "0", boxShadow: "none" }}>
+          <Paper sx={{ height: "90vh", borderRadius: "0", boxShadow: "none", overflow: 'auto' }}>
             {/* Render nested route (e.g., Dashboard, Profile) */}
             {/* <Outlet /> */}
             {children}
