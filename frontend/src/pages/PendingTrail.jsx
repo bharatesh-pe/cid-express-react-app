@@ -57,6 +57,8 @@ import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
 
+import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
+
 const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -189,6 +191,15 @@ const UnderInvestigation = () => {
   const [disabledApprovalItems, setDisabledApprovalItems] = useState(false);
 
   const [newApprovalPage, setNewApprovalPage] = useState(false);
+
+    // on save approval modal
+
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [approvalItemsData, setApprovalItemsData] = useState([]);
+    const [readonlyApprovalItems, setReadonlyApprovalItems] = useState(false);
+    const [approvalDesignationData, setApprovalDesignationData] = useState([]);
+    const [approvalFormData, setApprovalFormData] = useState({});
+    const [approvalSaveCaseData, setApprovalSaveCaseData] = useState({});
 
   const [singleApiData, setSingleApiData] = useState({});
 
@@ -527,9 +538,17 @@ const UnderInvestigation = () => {
         "/templateData/paginateTemplateDataForOtherThanMaster",
         getTemplatePayload
       );
-      setLoading(false);
+    //   setLoading(false);
 
       if (getTemplateResponse && getTemplateResponse.success) {
+
+        if (getTemplateResponse.data && getTemplateResponse.data["meta"]) {
+            if ( getTemplateResponse.data["meta"].table_name && getTemplateResponse.data["meta"].template_name) {
+                setTemplate_name(getTemplateResponse.data["meta"].template_name);
+                setTable_name(getTemplateResponse.data["meta"].table_name);
+            }
+        }
+
         if (getTemplateResponse.data && getTemplateResponse.data["data"]) {
           if (getTemplateResponse.data["data"][0]) {
             var excludedKeys = [
@@ -685,15 +704,6 @@ const UnderInvestigation = () => {
           setFormOpen(false);
         }
 
-        if (getTemplateResponse.data && getTemplateResponse.data["meta"]) {
-          if (
-            getTemplateResponse.data["meta"].table_name &&
-            getTemplateResponse.data["meta"].template_name
-          ) {
-            setTemplate_name(getTemplateResponse.data["meta"].template_name);
-            setTable_name(getTemplateResponse.data["meta"].table_name);
-          }
-        }
       } else {
         const errorMessage = getTemplateResponse.message
           ? getTemplateResponse.message
@@ -728,6 +738,9 @@ const UnderInvestigation = () => {
           }
         );
       }
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -1991,6 +2004,10 @@ const UnderInvestigation = () => {
       }
     });
     normalData.sys_status = "pt_case";
+
+    showCaseApprovalPage(normalData,formData);
+    return;
+
     formData.append("data", JSON.stringify(normalData));
     setLoading(true);
 
@@ -3512,7 +3529,7 @@ const UnderInvestigation = () => {
         });
     }
 
-    const saveOverallData = () => {
+    const saveOverallData = async () => {
 
         if(!ptCaseTableName || ptCaseTableName === ''){
             toast.error('Please Check Template Name', {
@@ -3528,10 +3545,65 @@ const UnderInvestigation = () => {
             return;
         }
 
+        if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
+            toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
+            toast.error("Please Select Designation !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
+            toast.error("Please Select Approval Date !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
+    
+            toast.error("Please Enter Comments !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
         const formData = new FormData();
         formData.append("table_name", ptCaseTableName);
-        formData.append("others_table_name", table_name);
-
         var normalData = {}; // Non-file upload fields
 
         optionFormTemplateData.forEach((field) => {
@@ -3585,30 +3657,73 @@ const UnderInvestigation = () => {
                 action : othersData['sys_status']?.sys_status
             }
 
-            othersData = {...othersData, approval_details : approvalItems}
+            othersData = {
+                            ...othersData, 
+                            approval_details : approvalItems,
+                            others_table_name : table_name
+                        }
         }
           
         formData.append("data", JSON.stringify(normalData));
         formData.append("others_data", JSON.stringify(othersData));
+        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
 
-        toast.success("Case Updated Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success"
-        });
+        setLoading(true);
 
-        setSingleApiData({});
-        setNewApprovalPage(false);
-        setFurtherInvestigationSelectedValue(null);
-        setFurtherInvestigationSelectedRow([]);
-        setFurtherInvestigationPtCase(false);
-        setDisabledApprovalItems(false);
-    
+        try {
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
+
+            setLoading(false);
+
+            if (overallSaveData && overallSaveData.success) {
+
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount),
+                });
+
+                setSingleApiData({});
+                setNewApprovalPage(false);
+                setFurtherInvestigationSelectedValue(null);
+                setFurtherInvestigationSelectedRow([]);
+                setFurtherInvestigationPtCase(false);
+                setDisabledApprovalItems(false);
+
+            } else {
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
     }
 
 
@@ -4145,6 +4260,224 @@ const UnderInvestigation = () => {
       }
     }
   };
+
+
+  const showCaseApprovalPage = async (caseData, formData)=>{
+
+        setLoading(true);
+
+        try {
+
+            const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
+
+            setLoading(false);
+
+            if (getActionsDetails && getActionsDetails.success) {
+
+                setApprovalItemsData(getActionsDetails.data['approval_item']);
+                setApprovalDesignationData(getActionsDetails.data['designation']);
+
+                // var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
+                //     if((data.name).toLowerCase() === 'further investigation'){
+                //         return data;
+                //     }
+                // });
+
+                // if(getFurtherInvestigationItems?.[0]){
+                //     setApprovalFormData('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                //     setReadonlyApprovalItems(true);
+                // }else{
+                    // setApprovalFormData('approval_item', null);
+                    // setReadonlyApprovalItems(false);
+                // }
+
+                setShowApprovalModal(true);
+                setApprovalSaveCaseData({
+                    caseData : caseData,
+                    formData : formData
+                });
+
+            } else {
+
+                const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+  }
+
+  
+    const caseApprovalOnChange = (name, value)=>{
+        setApprovalFormData((prev)=>{
+            return{
+                ...prev,
+                [name] : value
+            }
+        });
+    }
+
+    const handleApprovalWithSave = async ()=>{
+
+        if (!approvalFormData || !approvalFormData["approval_item"]) {
+            toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        if (!approvalFormData || !approvalFormData["approved_by"]) {
+            toast.error("Please Select Designation !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!approvalFormData || !approvalFormData["approval_date"]) {
+            toast.error("Please Select Approval Date !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        if (!approvalFormData || !approvalFormData["remarks"]) {
+    
+            toast.error("Please Enter Comments !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        var approvalItems = {
+            module_name : 'Pending Trail',
+            action : 'Create Case'
+        }
+
+        var approvalData = {
+                        ...approvalFormData, 
+                        approval_details : approvalItems,
+                        others_table_name : table_name
+                    }
+
+        for (let [key, value] of approvalSaveCaseData.formData.entries()) {
+            formData.append(key, value);
+        }
+
+        formData.append("data", JSON.stringify(approvalSaveCaseData['caseData']));
+        formData.append("others_data", JSON.stringify(approvalData));
+        var transitionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transition_id", transitionId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
+
+        setLoading(true);
+
+        try {
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
+
+            setLoading(false);
+
+            if (overallSaveData && overallSaveData.success) {
+
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Created Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount),
+                });
+
+                setShowApprovalModal(false);
+                setApprovalSaveCaseData({});
+                setApprovalItemsData([]);
+                setApprovalDesignationData([]);
+
+            } else {
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
 
   return (
     <Box p={2} inert={loading ? true : false}>
@@ -5270,6 +5603,20 @@ const UnderInvestigation = () => {
             </DialogContent>
         </Dialog>
     }
+
+        <ApprovalModal
+            open={showApprovalModal}
+            onClose={() => setShowApprovalModal(false)}
+            onSave={handleApprovalWithSave}
+            
+            approvalItem={approvalItemsData}
+            disabledApprovalItems={readonlyApprovalItems}
+
+            designationData={approvalDesignationData}
+            
+            formData={approvalFormData}
+            onChange={caseApprovalOnChange}
+        />
       
     </Box>
   );
