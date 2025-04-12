@@ -4938,6 +4938,9 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 		const insertedId = insertedData.id;
 		const insertedtype = insertedData.sys_status;
 		const insertedIO = insertedData.field_io_name || null;
+		let recordId = insertedData.id;
+		let sys_status = insertedData.sys_status;;
+		let default_status = insertedData.sys_status;;
 
 		if(insertedIO && insertedIO !== null) {
 			const userData = await Users.findOne({
@@ -4962,10 +4965,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 				}
 
 				const otherSchema = typeof otherTableData.fields === "string" ? JSON.parse(otherTableData.fields) : otherTableData.fields;
-
-				let recordId ;
-				let sys_status ;
-				let default_status ;
 
 				if (others_data.sys_status?.id && others_data.sys_status?.sys_status && others_data.sys_status?.default_status) {
 					recordId = others_data.sys_status.id;
@@ -5056,8 +5055,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						},
 						{ transaction: t }
 					);
-	
-					const reference_id = recordId || null;
+					
 					if (!reference_id) {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "Reference ID is required.");
