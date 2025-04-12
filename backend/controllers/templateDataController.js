@@ -4937,7 +4937,19 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 		const insertedId = insertedData.id;
 		const insertedtype = insertedData.sys_status;
-		const insertedIO = insertedData.field_io_name || insertedData.field_io_name || null;
+		const insertedIO = insertedData.field_io_name || null;
+
+		if(insertedIO && insertedIO !== null) {
+			const userData = await Users.findOne({
+				where: { user_id: insertedIO },
+			});
+
+			if (!userData) {
+				await t.rollback();
+				return userSendResponse(res, 400, false, "IO User not found.", null);
+			}
+		}
+
 
 		// Handle others_data
 		if (others_data && typeof others_data === "object") {
@@ -5060,6 +5072,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 							created_by: userId,
 							created_by_designation_id: user_designation_id,
 							created_by_division_id: null,
+							send_to :insertedIO || null,
 						},
 						{ transaction: t }
 					);
