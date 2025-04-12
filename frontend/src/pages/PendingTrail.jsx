@@ -4299,7 +4299,7 @@ const UnderInvestigation = () => {
                 {template_name
                   ? template_name
                       .toLowerCase()
-                      .replace(/^\w|\s\w/, (c) => c.toUpperCase())
+                      .replace(/\b\w/g, (c) => c.toUpperCase())
                   : "Pending Trail"}
               </Typography>
             </Box>

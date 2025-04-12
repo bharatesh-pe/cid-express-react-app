@@ -174,6 +174,7 @@ const Layout = ({ children }) => {
 
   // for dropdowmn sidebars
   const [openDropdowns, setOpenDropdowns] = useState({});
+  const [notificationCount, setNotificationCount] = useState(0);
 
   const [loading, setLoading] = useState(false); // State for loading indicator
 
@@ -218,11 +219,11 @@ const Layout = ({ children }) => {
           setSidebarMenusObj(data["modules"]);
         }
 
-        if(data && data.success && data.unreadNotificationCount){
-            localStorage.setItem("unreadNotificationCount", data.unreadNotificationCount);
-        }else{
-            localStorage.setItem("unreadNotificationCount", 0);
-        }
+        if (data && data.success && data.unreadNotificationCount !== null && data.unreadNotificationCount !== undefined) {
+            setNotificationCount(data.unreadNotificationCount);
+        } else {
+            setNotificationCount(0);
+        }        
 
       } catch (err) {
         setLoading(false);
@@ -570,7 +571,7 @@ const Layout = ({ children }) => {
 
         {/* Main Content */}
         <Box flex={4} sx={{ overflow: "hidden" }}>
-          <Navbar />
+          <Navbar unreadNotificationCount={notificationCount} />
           <Paper sx={{ height: "100%", borderRadius: "0", boxShadow: "none" }}>
             {/* Render nested route (e.g., Dashboard, Profile) */}
             {/* <Outlet /> */}

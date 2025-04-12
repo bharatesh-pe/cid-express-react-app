@@ -1511,6 +1511,7 @@ const UserManagement = () => {
                         modalTitle === "View User" || modalTitle === "Edit User"
                           ? "role"
                           : null,
+                      disabled: modalTitle === "View User" || modalTitle === "Edit User"
                     }}
                     value={newUser.kgid}
                     onHistory={() => getUsermanagementFieldLog("kgid")}

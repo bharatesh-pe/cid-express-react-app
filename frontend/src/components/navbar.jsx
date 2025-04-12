@@ -14,11 +14,11 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 
-export default function Navbar() {
+export default function Navbar({ unreadNotificationCount }) {
 
     const [loading, setLoading] = useState(false);
 
-    const [notificationCount, setNotificationCount] = useState(null);
+    const [notificationCount, setNotificationCount] = useState(unreadNotificationCount);
 
     const [showAlertPage, setShowAlertPage] = useState(false);
     const [alertOverllData, setAlertOverallData] = useState([]);
@@ -154,9 +154,8 @@ export default function Navbar() {
     }
 
     useEffect(() => {
-        var overallCount = localStorage.getItem("unreadNotificationCount") ? localStorage.getItem("unreadNotificationCount") : 0;
-        setNotificationCount(overallCount);
-    },[]);
+        setNotificationCount(unreadNotificationCount);
+    }, [unreadNotificationCount]);
 
     const formatDate = (fieldValue, time) => {
         if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
