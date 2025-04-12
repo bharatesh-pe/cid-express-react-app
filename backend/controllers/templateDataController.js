@@ -4890,6 +4890,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			return userSendResponse(res, 400, false, "Failed to insert data.", null);
 		}
 
+		console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Inserted data:", insertedData.toJSON());
 		const fileUpdates = {};
 
 		if (req.files && req.files.length > 0) {
@@ -4935,6 +4936,8 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
+		console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>File updates:");
+
 		const insertedId = insertedData.id;
 		const insertedtype = insertedData.sys_status;
 		const insertedIO = insertedData.field_io_name || null;
@@ -4953,11 +4956,17 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
+		let otherParsedData  = {};
+		try {
+			otherParsedData = JSON.parse(others_data);
+		} catch (err) {
+			return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+		}
 
 		// Handle others_data
-		if (others_data && typeof others_data === "object") {
-			if (others_data.others_table_name) {
-				const others_table_name = others_data.others_table_name;
+		if (otherParsedData && typeof otherParsedData === "object") {
+			if (otherParsedData.others_table_name) {
+				const others_table_name = otherParsedData.others_table_name;
 				const otherTableData = await Template.findOne({ where: { table_name: others_table_name }, transaction: t });
 				if (!otherTableData) {
 					await t.rollback();
@@ -4966,10 +4975,10 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 				const otherSchema = typeof otherTableData.fields === "string" ? JSON.parse(otherTableData.fields) : otherTableData.fields;
 
-				if (others_data.sys_status?.id && others_data.sys_status?.sys_status && others_data.sys_status?.default_status) {
-					recordId = others_data.sys_status.id;
-					sys_status = others_data.sys_status.sys_status.trim();
-					default_status = others_data.sys_status.default_status.trim();
+				if (otherParsedData.sys_status?.id && otherParsedData.sys_status?.sys_status && otherParsedData.sys_status?.default_status) {
+					recordId = otherParsedData.sys_status.id;
+					sys_status = otherParsedData.sys_status.sys_status.trim();
+					default_status = otherParsedData.sys_status.default_status.trim();
 
 					const otherCompleteSchema = [
 						{ name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
@@ -5031,16 +5040,18 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 				}
 				
 				// Handle approval logic
-				if (others_data.approval_details && others_data.approval) {
-					const approval = others_data.approval;
-					const approvalDetails = others_data.approval_details;
+				if (otherParsedData.approval_details && otherParsedData.approval) {
+					const approval = otherParsedData.approval;
+					const approvalDetails = otherParsedData.approval_details;
 	
 					const existingApprovalItem = await ApprovalItem.findByPk(approval?.approval_item);
 					if (!existingApprovalItem) {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "Invalid approval item ID.");
 					}
-	
+					
+					console.log("Approval Details:", approvalDetails);
+					console.log("Approval:", approval);
 					const newApproval = await UiCaseApproval.create(
 						{
 							approval_item: approval.approval_item,
@@ -5056,7 +5067,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						{ transaction: t }
 					);
 					
-					if (!reference_id) {
+					if (!recordId) {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "Reference ID is required.");
 					}
@@ -5064,7 +5075,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 					await System_Alerts.create(
 						{
 							approval_id: newApproval.approval_id,
-							reference_id,
+							reference_id : recordId,
 							alert_type: "Approval",
 							alert_message: newApproval.remarks,
 							created_by: userId,
