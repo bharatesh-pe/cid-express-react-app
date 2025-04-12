@@ -4786,7 +4786,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
   }
 };
 
-exports.saveDataWithApprovalToTemplates = async (req, res) => {
+exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 	const { table_name, data, others_data, transaction_id, user_designation_id , folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
@@ -4937,6 +4937,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res) => {
 
 		const insertedId = insertedData.id;
 		const insertedtype = insertedData.sys_status;
+		const insertedIO = insertedData.field_io_name || insertedData.field_io_name || null;
 
 		// Handle others_data
 		if (others_data && typeof others_data === "object") {
