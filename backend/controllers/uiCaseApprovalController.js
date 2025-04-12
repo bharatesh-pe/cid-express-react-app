@@ -106,7 +106,7 @@ exports.create_ui_case_approval = async (req, res) => {
     await t.commit();
     return res.status(201).json({
       success: true,
-      message: "UiCaseApproval created successfully",
+      message: "Record created successfully",
       data: newApproval,
       alert_data: systemAlert,
     });

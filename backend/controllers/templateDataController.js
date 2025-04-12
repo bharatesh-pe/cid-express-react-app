@@ -4890,7 +4890,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			return userSendResponse(res, 400, false, "Failed to insert data.", null);
 		}
 
-		console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>Inserted data:", insertedData.toJSON());
 		const fileUpdates = {};
 
 		if (req.files && req.files.length > 0) {
@@ -4936,7 +4935,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
-		console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>File updates:");
 
 		const insertedId = insertedData.id;
 		const insertedtype = insertedData.sys_status;
@@ -5050,8 +5048,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						return userSendResponse(res, 400, false, "Invalid approval item ID.");
 					}
 					
-					console.log("Approval Details:", approvalDetails);
-					console.log("Approval:", approval);
 					const newApproval = await UiCaseApproval.create(
 						{
 							approval_item: approval.approval_item,
