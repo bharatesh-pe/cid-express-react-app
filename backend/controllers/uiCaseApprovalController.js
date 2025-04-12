@@ -174,7 +174,7 @@ exports.get_ui_case_approvals = async (req, res) => {
     return res.status(200).json({
       success: true,
       data: {
-        approvals: approvals,
+        approvals: formattedApprovals,
         approval_item: approval_item,
         designation: designation,
       },
