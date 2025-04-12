@@ -4765,8 +4765,8 @@ const UnderInvestigation = () => {
                 {template_name
                   ? template_name
                       .toLowerCase()
-                      .replace(/^\w|\s\w/, (c) => c.toUpperCase())
-                  : "Under Investigation"}
+                      .replace(/\b\w/g, (c) => c.toUpperCase())
+                      : "Under Investigation"}
               </Typography>
             </Box>
           </Box>
