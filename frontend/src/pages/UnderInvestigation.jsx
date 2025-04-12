@@ -581,7 +581,7 @@ const UnderInvestigation = () => {
         }
       }
     });
-    normalData.sys_status = "ui_case";
+    normalData.sys_status = "pt_case";
     normalData["ui_case_id"] = furtherInvestigationSelectedRow.id;
     formData.append("data", JSON.stringify(normalData));
     setLoading(true);
@@ -1840,7 +1840,7 @@ const UnderInvestigation = () => {
     if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
       normalData["field_pr_status"] = "No";
     }
-    normalData.sys_status = "ui_case";
+    normalData.sys_status = showPtCaseModal ? "pt_case" : "ui_case";
     normalData["ui_case_id"] = selectedRowData.id;
     formData.append("data", JSON.stringify(normalData));
     setLoading(true);
@@ -4731,9 +4731,6 @@ const UnderInvestigation = () => {
       }
     }
   };
-
-  console.log(ptCaseTableName, "ptCaseTableNameptCaseTableName");
-  console.log(showPtCaseModal, "showPtCaseModalshowPtCaseModal");
 
   return (
     <Box p={2} inert={loading ? true : false}>
