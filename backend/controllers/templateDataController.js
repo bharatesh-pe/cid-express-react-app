@@ -451,7 +451,7 @@ exports.updateTemplateData = async (req, res, next) => {
         );
       }
     }
-    validData.sys_status = parsedData.sys_status.trim();
+    validData.sys_status = parsedData.sys_status;
     validData.updated_by = userName;
     validData.updated_by_id = userId;
 
