@@ -3087,7 +3087,6 @@ const UnderInvestigation = () => {
         if (getTemplateResponse.data && getTemplateResponse.data) {
           if (getTemplateResponse.data[0]) {
             var excludedKeys = [
-              "created_at",
               "updated_at",
               "id",
               "deleted_at",
@@ -3096,6 +3095,10 @@ const UnderInvestigation = () => {
               "ReadStatus",
               "linked_profile_info",
             ];
+
+            if (options.table !== "cid_ui_case_progress_report") {
+              excludedKeys.push("created_at");
+            }
 
             const updatedHeader = [
               ...(options.table === "cid_ui_case_progress_report"
@@ -3146,7 +3149,7 @@ const UnderInvestigation = () => {
                     key !== "field_ui_case_id" &&
                     key !== "field_pr_status" &&
                     key !== "field_evidence_file" &&
-                    key !== "created_at" &&
+                    key !== "created_by" &&
                     key !== "field_last_updated" &&
                     key !== "field_date_created" &&
                     key !== "field_description"
