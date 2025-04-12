@@ -163,51 +163,51 @@ const DynamicForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      var errorMsg = {};
+    var errorMsg = {};
 
-      formConfig.forEach((fields) => {
+    formConfig.forEach((fields) => {
         if (fields?.validation) {
-          try {
-            var regex = new RegExp(fields.validation);
-            var value = formData[fields.name]?.trim() || "";
+            try {
+                var regex = new RegExp(fields.validation);
+                var value = formData[fields.name]?.trim() || "";
 
-            if (!regex.test(value)) {
-              errorMsg[
-                fields.name
-              ] = `Please provide the correct format for ${fields.label}`;
+                if (!regex.test(value)) {
+                errorMsg[fields.name] = `Please provide the correct format for ${fields.label}`;
+                }
+            } catch (error) {
+                console.log("validation not found");
             }
-          } catch (error) {
-            console.log("validation not found");
-          }
         }
-      });
+    });
 
-      if (Object.keys(errorMsg).length > 0 && onError) {
+    if (Object.keys(errorMsg).length > 0 && onError) {
         setErrors(errorMsg);
         onError(true);
         return;
-      }
+    }
 
-      var duplicateCheckKey = formConfig.filter((fields) => {
-        if (fields && fields.duplicateCheck) {
-          return {
-            ...fields,
-          };
+    var duplicateCheckKey = formConfig.filter((fields)=>{
+        if(fields && fields.duplicateCheck){
+            return {
+                ...fields
+            }
         }
-      });
+    });
 
-      if (duplicateCheckKey && duplicateCheckKey.length > 0) {
+    if(duplicateCheckKey && duplicateCheckKey?.[0] && initialData && initialData[duplicateCheckKey[0].name] && initialData[duplicateCheckKey[0].name] === formData?.[duplicateCheckKey[0].name]) {
+        duplicateCheckKey = [];
+    }
+
+    if (duplicateCheckKey && duplicateCheckKey.length > 0) {
         var duplicateKeyValues = {};
 
         duplicateCheckKey.forEach((field) => {
-          duplicateKeyValues[field.name] = formData[field.name]
-            ? formData[field.name]
-            : "";
+            duplicateKeyValues[field.name] = formData[field.name] ? formData[field.name] : '';
         });
 
         var payloadForDuplicate = {
-          table_name: table_name,
-          data: duplicateKeyValues,
+            "table_name" : table_name,
+            "data" : duplicateKeyValues
         };
 
         setLoading(true);
