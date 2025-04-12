@@ -4365,7 +4365,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
       );
     }
 
-    const handleInvestigationUpdate = async (invTableName, caseId) => {
+    const handleInvestigationUpdate = async (invTableName, caseId , default_status) => {
       const investigationTable = await Template.findOne({
         where: { table_name: invTableName },
       });
@@ -4391,7 +4391,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
           primaryKey: true,
           autoIncrement: true,
         },
-        { name: "sys_status", data_type: "TEXT", not_null: false },
+        { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status},
         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
         { name: "created_by", data_type: "TEXT", not_null: false },
@@ -4446,11 +4446,11 @@ exports.caseSysStatusUpdation = async (req, res) => {
     };
 
     if (ui_case_id && sys_status === "178_cases") {
-      await handleInvestigationUpdate("cid_under_investigation", ui_case_id);
+      await handleInvestigationUpdate("cid_under_investigation", ui_case_id ,"ui_case");
     }
 
     if (pt_case_id && sys_status === "178_cases") {
-      await handleInvestigationUpdate("cid_pending_trail", pt_case_id);
+      await handleInvestigationUpdate("cid_pending_trail", pt_case_id,"pt_case");
     }
 
     return userSendResponse(
