@@ -186,6 +186,7 @@ const UnderInvestigation = () => {
   const [furtherInvestigationPtCase, setFurtherInvestigationPtCase] = useState(false);
   const [furtherInvestigationSelectedRow, setFurtherInvestigationSelectedRow] = useState([]);
   const [furtherInvestigationSelectedValue, setFurtherInvestigationSelectedValue] = useState(null);
+  const [disabledApprovalItems, setDisabledApprovalItems] = useState(false);
 
   const [newApprovalPage, setNewApprovalPage] = useState(false);
 
@@ -3394,7 +3395,7 @@ const UnderInvestigation = () => {
         }
     };
 
-    const furtherInvestigationPtCaseSave = async (data, alreadySavedApproval)=>{
+    const furtherInvestigationPtCaseSave = async (data)=>{
 
         if (!ptCaseTableName || ptCaseTableName === '') {
             toast.warning('Please Check The Template', {
@@ -3424,154 +3425,15 @@ const UnderInvestigation = () => {
             return;
         }
 
-            showNewApprovalPage(furtherInvestigationSelectedRow);
+        showNewApprovalPage(furtherInvestigationSelectedRow);
 
-            var ui_case = data;
-            setSingleApiData((prev) => ({
-                ...prev,
-                ui_case: ui_case,
-            }));
+        var ui_case = data;
+        setSingleApiData((prev) => ({
+            ...prev,
+            ui_case: ui_case,
+        }));
 
-            return;
-
-
-        // setLoading(true);
-
-        // try {
-
-        //     var saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
-        //     setLoading(false);
-
-        //     localStorage.removeItem(selectedOtherTemplate.name + '-formData');
-
-        //     if (saveTemplateData && saveTemplateData.success) {
-
-        //         toast.success(saveTemplateData.message || "Data Created Successfully", {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-success"
-        //         });
-
-        //         setTemplateApprovalData({});
-        //         setTemplateApproval(false);
-
-        //         setAddApproveFlag(false);
-        //         setApproveTableFlag(false);
-        //         setApprovalSaveData({});
-
-        //         setPtCaseTableName(null);
-        //         setShowPtCaseModal(false);
-        //         setOtherFormOpen(false);
-        //         setOptionStepperData([]);
-        //         setOptionFormTemplateData([]);
-
-
-        //         var payloadSysStatus = {
-        //             "table_name" : table_name,
-        //             "data"  :   {  
-        //                             "id": furtherInvestigationSelectedRow.id, 
-        //                             "sys_status": furtherInvestigationSelectedValue,
-        //                             "default_status": "ui_case"
-        //                         }
-        //         }
-
-        //         setLoading(true);
-
-        //         try {
-
-        //             const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
-
-        //             setLoading(false);
-
-        //             if (chnageSysStatus && chnageSysStatus.success) { 
-        //                 toast.success(chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
-        //                     position: "top-right",
-        //                     autoClose: 3000,
-        //                     hideProgressBar: false,
-        //                     closeOnClick: true,
-        //                     pauseOnHover: true,
-        //                     draggable: true,
-        //                     progress: undefined,
-        //                     className: "toast-success",
-        //                     onOpen: () => loadTableData(paginationCount)
-        //                 });
-
-        //                 // reset states
-        //                 setSelectKey(null);
-        //                 setSelectedRow(null);
-        //                 setOtherTransferField([]);
-        //                 setShowOtherTransferModal(false);
-        //                 setSelectedOtherFields(null);
-        //                 setselectedOtherTemplate(null);
-
-        //                 setFurtherInvestigationPtCase(false);
-        //                 setFurtherInvestigationSelectedRow([]);
-        //                 setFurtherInvestigationSelectedValue(null);
-
-        //             } else {
-        //                 const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
-        //                 toast.error(errorMessage, {
-        //                     position: "top-right",
-        //                     autoClose: 3000,
-        //                     hideProgressBar: false,
-        //                     closeOnClick: true,
-        //                     pauseOnHover: true,
-        //                     draggable: true,
-        //                     progress: undefined,
-        //                     className: "toast-error",
-        //                 });
-
-        //             }
-
-        //         } catch (error) {
-        //             setLoading(false);
-        //             if (error && error.response && error.response['data']) {
-        //                 toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-        //                     position: "top-right",
-        //                     autoClose: 3000,
-        //                     hideProgressBar: false,
-        //                     closeOnClick: true,
-        //                     pauseOnHover: true,
-        //                     draggable: true,
-        //                     progress: undefined,
-        //                     className: "toast-error",
-        //                 });
-
-        //             }
-        //         }
-        //     } else {
-        //         const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
-        //         toast.error(errorMessage, {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // } catch (error) {
-        //     setLoading(false);
-        //     if (error && error.response && error.response['data']) {
-        //         toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // }
+        return;
     }
 
     const showNewApprovalPage = async ()=>{
@@ -3588,6 +3450,20 @@ const UnderInvestigation = () => {
 
                 setApprovalItem(getActionsDetails.data['approval_item']);
                 setDesignationData(getActionsDetails.data['designation']);
+
+                var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
+                    if((data.name).toLowerCase() === 'further investigation'){
+                        return data;
+                    }
+                });
+
+                if(getFurtherInvestigationItems?.[0]){
+                    approvalNewDataSave('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                    setDisabledApprovalItems(true);
+                }else{
+                    approvalNewDataSave('approval_item', null);
+                    setDisabledApprovalItems(false);
+                }
 
                 setNewApprovalPage(true);
 
@@ -3731,6 +3607,7 @@ const UnderInvestigation = () => {
         setFurtherInvestigationSelectedValue(null);
         setFurtherInvestigationSelectedRow([]);
         setFurtherInvestigationPtCase(false);
+        setDisabledApprovalItems(false);
     
     }
 
@@ -5330,7 +5207,7 @@ const UnderInvestigation = () => {
                                     options={approvalItem}
                                     getOptionLabel={(option) => option.name || ''}
                                     name={'approval_item'}
-                                    disabled={false}
+                                    disabled={disabledApprovalItems}
                                     value={approvalItem.find((option) => option.approval_item_id === (singleApiData?.['approval'] && singleApiData?.['approval']?.['approval_item'])) || null}
                                     onChange={(e,value)=>approvalNewDataSave('approval_item',value?.approval_item_id)}
                                     renderInput={(params) =>

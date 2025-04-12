@@ -3738,6 +3738,36 @@ const UnderInvestigation = () => {
 
       return;
     }
+    if (!approvalSaveData || !approvalSaveData["approval_date"]) {
+        toast.error("Please Select Approval Date !", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+
+        return;
+    }
+
+    if (!approvalSaveData || !approvalSaveData["remarks"]) {
+
+        toast.error("Please Enter Comments !", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+
+        return;
+    }
 
     var payloadApproveData = {
       ...approvalSaveData,
