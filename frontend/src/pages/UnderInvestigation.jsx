@@ -4917,7 +4917,7 @@ const UnderInvestigation = () => {
           const formData = new FormData();
   
           var approvalItems = {
-              module_name : 'Pending Trail',
+              module_name : 'Under Investigation',
               action : 'Create Case'
           }
   
