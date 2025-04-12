@@ -915,7 +915,7 @@ const DynamicForm = ({
           right: "0",
           bottom: "0",
           background: "rgba(0, 0, 0, 0.5)",
-          zIndex: "99",
+          zIndex: "98",
         }}
       />
       <Box
@@ -926,7 +926,7 @@ const DynamicForm = ({
           left: "256px",
           height: "100%",
           background: "#F5F5F5",
-          zIndex: "99",
+          zIndex: "98",
           borderRadius: "12px 0 0 12px",
           overflow: "hidden",
         }}
