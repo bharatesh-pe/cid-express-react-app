@@ -4787,335 +4787,577 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 };
 
 
+// exports.saveDataWithApprovalToTemplates = async (req, res) => {
+// 	const { table_name, data , others_data , transaction_id , user_designation_id} = req.body;
+// 	if(user_designation_id == null || user_designation_id == undefined || user_designation_id == ""){
+// 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
+// 	}
+//   	let dirPath = "";
+// 	const t = await dbConfig.sequelize.transaction();
+
+// 	try {
+		
+// 		const userId = req.user?.user_id || null;
+
+// 		if (!userId) {
+// 			return userSendResponse(res, 403, false, "Unauthorized access.", null);
+// 		}
+
+// 		dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+// 		if (fs.existsSync(dirPath))
+// 			return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath});
+
+// 		fs.mkdirSync(dirPath, { recursive: true });
+
+			
+// 		// Fetch user data use transaction t to ensure data consistency
+// 		const userData = await Users.findOne({
+// 			include: [
+// 			{
+// 				model: KGID,
+// 				as: "kgidDetails",
+// 				attributes: ["kgid", "name", "mobile"],
+// 			},
+// 			],
+// 			where: { user_id: userId },
+// 		});
+
+
+// 		let userName = userData?.kgidDetails?.name || null;
+
+// 		// Fetch table metadata use transaction t to ensure data consistency
+// 		const tableData = await Template.findOne({
+// 			where: { table_name },
+// 		});
+		
+// 		if (!tableData) {
+// 			return userSendResponse(res,400,false,`Table ${table_name} does not exist.`,null);
+// 		}
+
+// 		const schema = tableData?.fields ? typeof tableData.fields === "string"? JSON.parse(tableData.fields): tableData.fields: [];
+
+// 		// Parse incoming data
+// 		let parsedData;
+// 		try {
+// 			parsedData = JSON.parse(data);
+// 		} catch (err) {
+// 			// Handle JSON parsing error
+// 			return userSendResponse(res,400,false,"Invalid JSON format in data.",null);
+// 		}
+
+// 		const validData = {};
+// 		for (const field of schema) {
+// 		const { name, not_null, default_value } = field;
+
+// 		if (parsedData.hasOwnProperty(name)) {
+// 			validData[name] = parsedData[name];
+// 		} else if (not_null && default_value === undefined) {
+// 			return userSendResponse(res,400,false,`Field ${name} cannot be null.`,null);
+// 		} else if (default_value !== undefined) {
+// 			validData[name] = default_value;
+// 		}
+// 		}
+
+// 		validData.created_by = userName;
+// 		validData.created_by_id = userId;
+
+// 		// Include additional system fields dynamically
+// 		let completeSchema = parsedData?.sys_status
+// 		? [
+// 			{
+// 				name: "sys_status",
+// 				data_type: "TEXT",
+// 				not_null: false,
+// 				default_value: parsedData.sys_status.trim(),
+// 			},
+// 			{ name: "created_by", data_type: "TEXT", not_null: false },
+// 			{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+// 			...schema,
+// 			]
+// 		: [
+// 			{ name: "created_by", data_type: "TEXT", not_null: false },
+// 			{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+// 			...schema,
+// 			];
+
+// 		//like sys_status i need to check ui_case_id and pt_case_id
+// 		if (parsedData.ui_case_id && parsedData.ui_case_id != "") {
+// 		completeSchema = [
+// 			{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
+// 			...completeSchema,
+// 		];
+// 		validData.ui_case_id = parsedData.ui_case_id;
+// 		}
+
+// 		if (parsedData.pt_case_id && parsedData.pt_case_id != "") {
+// 		completeSchema = [
+// 			{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+// 			...completeSchema,
+// 		];
+// 		validData.pt_case_id = parsedData.pt_case_id;
+// 		}
+
+// 		console.log("validData", validData);
+
+// 		// Define dynamic model
+// 		const modelAttributes = {};
+// 		for (const field of completeSchema) {
+// 		const { name, data_type, not_null, default_value } = field;
+// 		const sequelizeType =
+// 			typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+// 		modelAttributes[name] = {
+// 			type: sequelizeType,
+// 			allowNull: !not_null,
+// 			defaultValue: default_value || null,
+// 		};
+// 		}
+
+// 		const Model = sequelize.define(table_name, modelAttributes, {
+// 		freezeTableName: true,
+// 		timestamps: true,
+// 		createdAt: "created_at",
+// 		updatedAt: "updated_at",
+// 		});
+
+// 		console.log("Model Attributes:", modelAttributes);
+
+// 		// Sync model to ensure table exists
+// 		await Model.sync(); // Only use `sync()` when necessary to prevent performance overhead
+
+// 		// Insert data use transaction t to ensure data consistency
+// 		const insertedData = await Model.create(validData, { transaction: t });
+
+// 		if (!insertedData) {
+// 			await t.rollback();
+// 			return userSendResponse(res,400,false,"Failed to insert data.",null);
+// 		}
+// 		const insertedId = insertedData.id;	
+// 		const insertedtype = insertedData.sys_status;	
+// 		console.log("Inserted ID:", insertedId);
+
+// 		if (others_data && typeof others_data === "object") {
+// 			if(others_data.hasOwnProperty("others_table_name") && others_data.others_table_name != ""){ 
+				
+// 				const others_table_name = others_data.others_table_name;
+// 				const otherTableData = await Template.findOne({
+// 					where: { table_name : others_table_name  },
+// 					transaction: t
+// 				});
+// 				if (!otherTableData) {
+// 					await t.rollback();
+// 					return userSendResponse(res,400,false,`Table ${others_table_name} does not exist.`);
+// 				}
+
+// 				const otherSchema = typeof otherTableData.fields === "string" ? JSON.parse(otherTableData.fields)	: otherTableData.fields;
+
+// 				if(others_data.hasOwnProperty("sys_status") && others_data.sys_status.hasOwnProperty("sys_status") &&  others_data.sys_status.sys_status != "" &&  others_data.sys_status.hasOwnProperty("default_status") && others_data.sys_status.default_status != "" && others_data.sys_status.hasOwnProperty("id") && others_data.sys_status.id != ""){
+// 					const recordId = others_data.sys_status.id;
+// 					const sys_status = others_data.sys_status.sys_status.trim();
+// 					const default_status = others_data.sys_status.default_status.trim();
+						
+// 					const otherCompleteSchema = [
+// 					{
+// 						name: "id",
+// 						data_type: "INTEGER",
+// 						not_null: true,
+// 						primaryKey: true,
+// 						autoIncrement: true,
+// 					},
+// 					{
+// 						name: "sys_status",
+// 						data_type: "TEXT",
+// 						not_null: false,
+// 						default_value: default_status,
+// 					},
+// 					{ name: "created_by", data_type: "TEXT", not_null: false },
+// 					{ name: "updated_by", data_type: "TEXT", not_null: false },
+// 					{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+// 					{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
+// 					{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
+// 					{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+// 					...otherSchema,
+// 					];
+
+// 					let Model = modelCache[table_name];
+
+// 					if (!Model) {
+// 						const modelAttributes = {};
+// 						for (const field of otherCompleteSchema) {
+// 							const {
+// 								name,
+// 								data_type,
+// 								not_null,
+// 								default_value,
+// 								primaryKey,
+// 								autoIncrement,
+// 							} = field;
+// 							const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+// 							modelAttributes[name] = {
+// 								type: sequelizeType,
+// 								allowNull: !not_null,
+// 							};
+
+// 							if (default_value) modelAttributes[name].defaultValue = default_value;
+// 							if (primaryKey) modelAttributes[name].primaryKey = true;
+// 							if (autoIncrement) modelAttributes[name].autoIncrement = true;
+// 						}
+
+// 						Model = sequelize.define(
+// 							table_name,
+// 							modelAttributes,
+// 							{
+// 							freezeTableName: true,
+// 							timestamps: true,
+// 							createdAt: "created_at",
+// 							updatedAt: "updated_at",
+// 							underscored: true,
+// 							}
+// 						);
+
+// 						await Model.sync({ alter: true });
+// 						modelCache[table_name] = Model;
+// 					}
+
+// 					const record = await Model.findByPk(recordId);
+// 					if (!record) {
+// 						await t.rollback();
+// 						return userSendResponse(res,404,false,`Record with ID ${id} not found in table ${table_name}.`);
+// 					}
+
+// 					//user transaction t to ensure data consistency
+					
+// 					const [updatedCount] = await Model.update(
+// 						{ sys_status },
+// 						{ where: { id: recordId }, transaction: t }
+// 					);
+
+// 					if (updatedCount === 0) {
+// 						await t.rollback();
+// 						return userSendResponse(res,400,false,"No changes detected or update failed.");
+// 					}
+// 				}
+
+// 			}
+// 			if(others_data.hasOwnProperty("approval_details") && others_data.hasOwnProperty("approval"))
+// 			{
+// 				const approval = others_data.approval;
+// 				const approvalDetails = others_data.approval_details;
+// 				const approval_item = approval?.approval_items || null;
+// 				const approved_by = approval?.approved_by || null;
+// 				const approval_date	= approval?.approval_date || null;
+// 				const remarks = approval?.remarks || null;
+// 				const module = approvalDetails?.module_name || null;
+// 				const action = approvalDetails?.action || null;
+
+// 				const existingApprovalItem = await ApprovalItem.findByPk(approval_item);
+// 				if (!existingApprovalItem) {
+// 					await t.rollback();
+// 					return userSendResponse(res,400,false,`Invalid approval item ID.`);
+// 				}
+			
+// 				// Create UiCaseApproval
+// 				const newApproval = await UiCaseApproval.create(
+// 					{
+// 					approval_item,
+// 					approved_by,
+// 					approval_date: approval_date || new Date(), // Use current date if not provided
+// 					remarks,
+// 					reference_id: insertedId,
+// 					approval_type: insertedtype,
+// 					module,
+// 					action,
+// 					created_by: userId || null,
+// 					},
+// 					{ transaction: t }
+// 				);
+			
+// 				let reference_id = case_id || null;
+// 				if (!reference_id) {
+// 					await t.rollback();
+// 					return userSendResponse(res,400,false,"At least one of ui_case_id, pt_case_id, or eq_case_id is required.");
+// 				}
+			
+// 				// Create System_Alerts entry
+// 				const systemAlert = await System_Alerts.create(
+// 					{
+// 					approval_id: newApproval.approval_id,
+// 					reference_id: reference_id,
+// 					alert_type: "Approval",
+// 					alert_message: newApproval.remarks,
+// 					created_by: userId || null,
+// 					created_by_designation_id: user_designation_id || null,
+// 					created_by_division_id: null,
+// 					},
+// 					{ transaction: t }
+// 				);
+			
+// 				await t.commit();
+// 				return userSendResponse(res, 200, true, `Data created successfully`, null);
+// 			}
+// 		}	
+// 	}catch (error) {
+// 		console.error("Error saving data to templates:", error);
+// 		if (t) await t.rollback();
+// 		if (error.name === "SequelizeUniqueConstraintError") {
+// 			return userSendResponse(res, 400, false, "Duplicate entry detected.", error);
+// 		}
+// 		else
+// 		{
+// 			return userSendResponse(res, 500, false, "Internal Server Error.", error);
+// 		}
+// 	} finally {
+// 		if (t) await t.commit();
+// 		if (fs.existsSync(dirPath))
+// 		{
+// 			fs.rmSync(dirPath, { recursive: true, force: true });
+// 		}
+// 	}
+// };
+
 exports.saveDataWithApprovalToTemplates = async (req, res) => {
-	const { table_name, data , others_data , transaction_id , user_designation_id} = req.body;
-	if(user_designation_id == null || user_designation_id == undefined || user_designation_id == ""){
+	const { table_name, data, others_data, transaction_id, user_designation_id } = req.body;
+
+	if (!user_designation_id) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
 	}
-  	let dirPath = "";
+
 	const t = await dbConfig.sequelize.transaction();
+	let dirPath = "";
 
 	try {
-		
 		const userId = req.user?.user_id || null;
-
 		if (!userId) {
-		return userSendResponse(res, 403, false, "Unauthorized access.", null);
+			return userSendResponse(res, 403, false, "Unauthorized access.", null);
 		}
 
 		dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-		if (fs.existsSync(dirPath))
-		return res
-			.status(400)
-			.json({ success: false, message: "Duplicate transaction detected." });
+		if (fs.existsSync(dirPath)) {
+			return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath });
+		}
 		fs.mkdirSync(dirPath, { recursive: true });
 
-			
-		// Fetch user data use transaction t to ensure data consistency
 		const userData = await Users.findOne({
-			include: [
-			{
-				model: KGID,
-				as: "kgidDetails",
-				attributes: ["kgid", "name", "mobile"],
-			},
-			],
+			include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
 			where: { user_id: userId },
-			transaction: t
 		});
-
 
 		let userName = userData?.kgidDetails?.name || null;
 
-		// Fetch table metadata use transaction t to ensure data consistency
-		const tableData = await Template.findOne({
-			where: { table_name },
-			transaction: t
-		});
-		
+		const tableData = await Template.findOne({ where: { table_name } });
 		if (!tableData) {
-			await t.rollback();
-			return userSendResponse(res,400,false,`Table ${table_name} does not exist.`,null);
+			return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
 		}
 
-		const schema = tableData?.fields ? typeof tableData.fields === "string"? JSON.parse(tableData.fields): tableData.fields: [];
+		const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
-		// Parse incoming data
 		let parsedData;
 		try {
 			parsedData = JSON.parse(data);
 		} catch (err) {
-			await t.rollback();
-			// Handle JSON parsing error
-			return userSendResponse(res,400,false,"Invalid JSON format in data.",null);
+			return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
 		}
 
 		const validData = {};
 		for (const field of schema) {
-		const { name, not_null, default_value } = field;
-
-		if (parsedData.hasOwnProperty(name)) {
-			validData[name] = parsedData[name];
-		} else if (not_null && default_value === undefined) {
-			await t.rollback();
-			return userSendResponse(res,400,false,`Field ${name} cannot be null.`,null);
-		} else if (default_value !== undefined) {
-			validData[name] = default_value;
-		}
+			const { name, not_null, default_value } = field;
+			if (parsedData.hasOwnProperty(name)) {
+				validData[name] = parsedData[name];
+			} else if (not_null && default_value === undefined) {
+				return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
+			} else if (default_value !== undefined) {
+				validData[name] = default_value;
+			}
 		}
 
 		validData.created_by = userName;
 		validData.created_by_id = userId;
 
-		// Include additional system fields dynamically
-		let completeSchema = parsedData?.sys_status
-		? [
-			{
-				name: "sys_status",
-				data_type: "TEXT",
-				not_null: false,
-				default_value: parsedData.sys_status.trim(),
-			},
+		const completeSchema = [
 			{ name: "created_by", data_type: "TEXT", not_null: false },
 			{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-			...schema,
-			]
-		: [
-			{ name: "created_by", data_type: "TEXT", not_null: false },
-			{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-			...schema,
-			];
-
-		//like sys_status i need to check ui_case_id and pt_case_id
-		if (parsedData.ui_case_id && parsedData.ui_case_id != "") {
-		completeSchema = [
-			{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
-			...completeSchema,
+			...schema
 		];
-		validData.ui_case_id = parsedData.ui_case_id;
-		}
 
-		if (parsedData.pt_case_id && parsedData.pt_case_id != "") {
-		completeSchema = [
-			{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
-			...completeSchema,
-		];
-		validData.pt_case_id = parsedData.pt_case_id;
-		}
+		["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
+			if (parsedData[field]) {
+				completeSchema.unshift({
+					name: field,
+					data_type: typeof parsedData[field] === "number" ? "INTEGER" : "TEXT",
+					not_null: false
+				});
+				validData[field] = parsedData[field];
+			}
+		});
 
-		console.log("validData", validData);
-
-		// Define dynamic model
 		const modelAttributes = {};
 		for (const field of completeSchema) {
-		const { name, data_type, not_null, default_value } = field;
-		const sequelizeType =
-			typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-		modelAttributes[name] = {
-			type: sequelizeType,
-			allowNull: !not_null,
-			defaultValue: default_value || null,
-		};
+			const { name, data_type, not_null, default_value } = field;
+			const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+			modelAttributes[name] = {
+				type: sequelizeType,
+				allowNull: !not_null,
+				defaultValue: default_value || null,
+			};
 		}
 
 		const Model = sequelize.define(table_name, modelAttributes, {
-		freezeTableName: true,
-		timestamps: true,
-		createdAt: "created_at",
-		updatedAt: "updated_at",
+			freezeTableName: true,
+			timestamps: true,
+			createdAt: "created_at",
+			updatedAt: "updated_at",
 		});
 
-		console.log("Model Attributes:", modelAttributes);
+		await Model.sync();
 
-		// Sync model to ensure table exists
-		await Model.sync(); // Only use `sync()` when necessary to prevent performance overhead
-
-		// Insert data use transaction t to ensure data consistency
 		const insertedData = await Model.create(validData, { transaction: t });
-
 		if (!insertedData) {
 			await t.rollback();
-			return userSendResponse(res,400,false,"Failed to insert data.",null);
+			return userSendResponse(res, 400, false, "Failed to insert data.", null);
 		}
-		const insertedId = insertedData.id;	
-		const insertedtype = insertedData.sys_status;	
-		console.log("Inserted ID:", insertedId);
 
+		const insertedId = insertedData.id;
+		const insertedtype = insertedData.sys_status;
+
+		// Handle others_data
 		if (others_data && typeof others_data === "object") {
-			if(others_data.hasOwnProperty("others_table_name") && others_data.others_table_name != ""){ 
-				
+			if (others_data.others_table_name) {
 				const others_table_name = others_data.others_table_name;
-				const otherTableData = await Template.findOne({
-					where: { table_name : others_table_name  },
-					transaction: t
-				});
+				const otherTableData = await Template.findOne({ where: { table_name: others_table_name }, transaction: t });
 				if (!otherTableData) {
 					await t.rollback();
-					return userSendResponse(res,400,false,`Table ${others_table_name} does not exist.`);
+					return userSendResponse(res, 400, false, `Table ${others_table_name} does not exist.`);
 				}
 
-				const otherSchema = typeof otherTableData.fields === "string" ? JSON.parse(otherTableData.fields)	: otherTableData.fields;
+				const otherSchema = typeof otherTableData.fields === "string" ? JSON.parse(otherTableData.fields) : otherTableData.fields;
 
-				if(others_data.hasOwnProperty("sys_status") && others_data.sys_status.hasOwnProperty("sys_status") &&  others_data.sys_status.sys_status != "" &&  others_data.sys_status.hasOwnProperty("default_status") && others_data.sys_status.default_status != "" && others_data.sys_status.hasOwnProperty("id") && others_data.sys_status.id != ""){
-					const recordId = others_data.sys_status.id;
-					const sys_status = others_data.sys_status.sys_status.trim();
-					const default_status = others_data.sys_status.default_status.trim();
-						
+				let recordId ;
+				let sys_status ;
+				let default_status ;
+
+				if (others_data.sys_status?.id && others_data.sys_status?.sys_status && others_data.sys_status?.default_status) {
+					recordId = others_data.sys_status.id;
+					sys_status = others_data.sys_status.sys_status.trim();
+					default_status = others_data.sys_status.default_status.trim();
+
 					const otherCompleteSchema = [
-					{
-						name: "id",
-						data_type: "INTEGER",
-						not_null: true,
-						primaryKey: true,
-						autoIncrement: true,
-					},
-					{
-						name: "sys_status",
-						data_type: "TEXT",
-						not_null: false,
-						default_value: default_status,
-					},
-					{ name: "created_by", data_type: "TEXT", not_null: false },
-					{ name: "updated_by", data_type: "TEXT", not_null: false },
-					{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-					{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
-					{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
-					{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
-					...otherSchema,
+						{ name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+						{ name: "sys_status", data_type: "TEXT", not_null: false, default_value: default_status },
+						{ name: "created_by", data_type: "TEXT", not_null: false },
+						{ name: "updated_by", data_type: "TEXT", not_null: false },
+						{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
+						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
+						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+						...otherSchema
 					];
 
-					let Model = modelCache[table_name];
-
-					if (!Model) {
-						const modelAttributes = {};
-						for (const field of otherCompleteSchema) {
-							const {
-								name,
-								data_type,
-								not_null,
-								default_value,
-								primaryKey,
-								autoIncrement,
-							} = field;
-							const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-
-							modelAttributes[name] = {
-								type: sequelizeType,
-								allowNull: !not_null,
-							};
-
-							if (default_value) modelAttributes[name].defaultValue = default_value;
-							if (primaryKey) modelAttributes[name].primaryKey = true;
-							if (autoIncrement) modelAttributes[name].autoIncrement = true;
-						}
-
-						Model = sequelize.define(
-							table_name,
-							modelAttributes,
-							{
-							freezeTableName: true,
-							timestamps: true,
-							createdAt: "created_at",
-							updatedAt: "updated_at",
-							underscored: true,
-							}
-						);
-
-						await Model.sync({ alter: true });
-						modelCache[table_name] = Model;
+					const otherModelAttributes = {};
+					for (const field of otherCompleteSchema) {
+						const { name, data_type, not_null, default_value, primaryKey, autoIncrement } = field;
+						const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+						otherModelAttributes[name] = { type: sequelizeType, allowNull: !not_null };
+						if (default_value) otherModelAttributes[name].defaultValue = default_value;
+						if (primaryKey) otherModelAttributes[name].primaryKey = true;
+						if (autoIncrement) otherModelAttributes[name].autoIncrement = true;
 					}
 
-					const record = await Model.findByPk(recordId);
+					const OtherModel = sequelize.define(others_table_name, otherModelAttributes, {
+						freezeTableName: true,
+						timestamps: true,
+						createdAt: "created_at",
+						updatedAt: "updated_at",
+						underscored: true,
+					});
+
+					await OtherModel.sync({ alter: true });
+
+					const record = await OtherModel.findByPk(recordId);
 					if (!record) {
 						await t.rollback();
-						return userSendResponse(res,404,false,`Record with ID ${id} not found in table ${table_name}.`);
+						return userSendResponse(res, 404, false, `Record with ID ${recordId} not found in table ${others_table_name}.`);
 					}
 
-					//user transaction t to ensure data consistency
-					
-					const [updatedCount] = await Model.update(
+					const [updatedCount] = await OtherModel.update(
 						{ sys_status },
 						{ where: { id: recordId }, transaction: t }
 					);
 
 					if (updatedCount === 0) {
 						await t.rollback();
-						return userSendResponse(res,400,false,"No changes detected or update failed.");
+						return userSendResponse(res, 400, false, "No changes detected or update failed.");
 					}
 				}
 
-			}
-			if(others_data.hasOwnProperty("approval_details") && others_data.hasOwnProperty("approval"))
-			{
-				const approval = others_data.approval;
-				const approvalDetails = others_data.approval_details;
-				const approval_item = approval?.approval_items || null;
-				const approved_by = approval?.approved_by || null;
-				const approval_date	= approval?.approval_date || null;
-				const remarks = approval?.remarks || null;
-				const module = approvalDetails?.module_name || null;
-				const action = approvalDetails?.action || null;
+				if(!recordId) {
+					await t.rollback();
+					return userSendResponse(res, 400, false, "Record ID is required.");
+				}
 
-				const existingApprovalItem = await ApprovalItem.findByPk(approval_item);
-				if (!existingApprovalItem) {
+				if (!default_status) {
 					await t.rollback();
-					return userSendResponse(res,400,false,`Invalid approval item ID.`);
+					return userSendResponse(res, 400, false, "Default status is required.");
 				}
-			
-				// Create UiCaseApproval
-				const newApproval = await UiCaseApproval.create(
-					{
-					approval_item,
-					approved_by,
-					approval_date: approval_date || new Date(), // Use current date if not provided
-					remarks,
-					reference_id: insertedId,
-					approval_type: insertedtype,
-					module,
-					action,
-					created_by: userId || null,
-					},
-					{ transaction: t }
-				);
-			
-				let reference_id = case_id || null;
-				if (!reference_id) {
-					await t.rollback();
-					return userSendResponse(res,400,false,"At least one of ui_case_id, pt_case_id, or eq_case_id is required.");
+				
+				// Handle approval logic
+				if (others_data.approval_details && others_data.approval) {
+					const approval = others_data.approval;
+					const approvalDetails = others_data.approval_details;
+	
+					const existingApprovalItem = await ApprovalItem.findByPk(approval?.approval_item);
+					if (!existingApprovalItem) {
+						await t.rollback();
+						return userSendResponse(res, 400, false, "Invalid approval item ID.");
+					}
+	
+					const newApproval = await UiCaseApproval.create(
+						{
+							approval_item: approval.approval_item,
+							approved_by: approval.approved_by,
+							approval_date: approval.approval_date || new Date(),
+							remarks: approval.remarks,
+							reference_id: recordId,
+							approval_type: default_status,
+							module: approvalDetails.module_name,
+							action: approvalDetails.action,
+							created_by: userId,
+						},
+						{ transaction: t }
+					);
+	
+					const reference_id = insertedId || null;
+					if (!reference_id) {
+						await t.rollback();
+						return userSendResponse(res, 400, false, "Reference ID is required.");
+					}
+	
+					await System_Alerts.create(
+						{
+							approval_id: newApproval.approval_id,
+							reference_id,
+							alert_type: "Approval",
+							alert_message: newApproval.remarks,
+							created_by: userId,
+							created_by_designation_id: user_designation_id,
+							created_by_division_id: null,
+						},
+						{ transaction: t }
+					);
 				}
-			
-				// Create System_Alerts entry
-				const systemAlert = await System_Alerts.create(
-					{
-					approval_id: newApproval.approval_id,
-					reference_id: reference_id,
-					alert_type: "Approval",
-					alert_message: newApproval.remarks,
-					created_by: userId || null,
-					created_by_designation_id: user_designation_id || null,
-					created_by_division_id: null,
-					},
-					{ transaction: t }
-				);
-			
-				await t.commit();
-				return userSendResponse(res, 200, true, `Data created successfully`, null);
 			}
-		}	
-	}catch (error) {
+
+		}
+
+		await t.commit();
+		return userSendResponse(res, 200, true, `Data created successfully`, null);
+
+	} catch (error) {
 		console.error("Error saving data to templates:", error);
 		if (t) await t.rollback();
-		if (error.name === "SequelizeUniqueConstraintError") {
-			return userSendResponse(res, 400, false, "Duplicate entry detected.", error);
-		}
-		else
-		{
-			return userSendResponse(res, 500, false, "Internal Server Error.", error);
-		}
+		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+		return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
 	} finally {
-		if (t) await t.commit();
-		if (fs.existsSync(dirPath))
-		{
+		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
 	}
