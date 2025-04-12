@@ -4279,19 +4279,19 @@ const UnderInvestigation = () => {
                 setApprovalItemsData(getActionsDetails.data['approval_item']);
                 setApprovalDesignationData(getActionsDetails.data['designation']);
 
-                // var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                //     if((data.name).toLowerCase() === 'further investigation'){
-                //         return data;
-                //     }
-                // });
+                var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
+                    if((data.name).toLowerCase() === 'case registration'){
+                        return data;
+                    }
+                });
 
-                // if(getFurtherInvestigationItems?.[0]){
-                //     setApprovalFormData('approval_item', getFurtherInvestigationItems[0].approval_item_id);
-                //     setReadonlyApprovalItems(true);
-                // }else{
-                    // setApprovalFormData('approval_item', null);
-                    // setReadonlyApprovalItems(false);
-                // }
+                if(getFurtherInvestigationItems?.[0]){
+                    caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                    setReadonlyApprovalItems(true);
+                }else{
+                    caseApprovalOnChange('approval_item', null);
+                    setReadonlyApprovalItems(false);
+                }
 
                 setShowApprovalModal(true);
                 setApprovalSaveCaseData({
@@ -4409,7 +4409,7 @@ const UnderInvestigation = () => {
         }
 
         var approvalData = {
-                        ...approvalFormData, 
+                        approval : approvalFormData, 
                         approval_details : approvalItems,
                         others_table_name : table_name
                     }
