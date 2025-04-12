@@ -1584,130 +1584,242 @@ const GovernmentOrder = () => {
         });
     }
 
+    // const onSaveTemplateData = async (data) => {
+
+    //     if (!table_name || table_name === '') {
+    //         toast.warning('Please Check The Template', {
+    //             position: "top-right",
+    //             autoClose: 3000,
+    //             hideProgressBar: false,
+    //             closeOnClick: true,
+    //             pauseOnHover: true,
+    //             draggable: true,
+    //             progress: undefined,
+    //             className: "toast-warning",
+    //         });
+    //         return
+    //     }
+
+    //     if (Object.keys(data).length === 0) {
+    //         toast.warning('Data Is Empty Please Check Once', {
+    //             position: "top-right",
+    //             autoClose: 3000,
+    //             hideProgressBar: false,
+    //             closeOnClick: true,
+    //             pauseOnHover: true,
+    //             draggable: true,
+    //             progress: undefined,
+    //             className: "toast-warning",
+    //         });
+    //         return;
+    //     }
+
+    //     const formData = new FormData();
+    //     formData.append("table_name", table_name);
+
+    //     var normalData = {}; // Non-file upload fields
+
+    //     formTemplateData.forEach((field) => {
+
+    //         if (data[field.name]) {
+    //             if (field.type === "file" || field.type === "profilepicture") {
+    //                 // Append file fields to formData
+    //                 if (field.type === 'file') {
+    //                     if (Array.isArray(data[field.name])) {
+    //                         const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
+    //                         var filteredArray = data[field.name].filter(file => file.filename instanceof File);
+    //                         if (hasFileInstance) {
+    //                             data[field.name].forEach((file) => {
+    //                                 if (file.filename instanceof File) {
+    //                                     formData.append(field.name, file.filename);
+    //                                 }
+    //                             });
+
+    //                             filteredArray = filteredArray.map((obj) => {
+    //                                 return {
+    //                                     ...obj,
+    //                                     filename: obj.filename['name']
+    //                                 }
+    //                             });
+
+    //                             formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
+
+    //                         }
+    //                     }
+    //                 } else {
+    //                     formData.append(field.name, data[field.name]);
+    //                 }
+    //             } else {
+    //                 // Add non-file fields to normalData
+    //                 normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
+    //             }
+    //         }
+    //     });
+
+    //     formData.append("data", JSON.stringify(normalData));
+    //     setLoading(true);
+
+    //     try {
+    //         const saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+    //         setLoading(false);
+    //         localStorage.removeItem(template_name + '-formData');
+
+    //         if (saveTemplateData && saveTemplateData.success) {
+
+    //             toast.success(saveTemplateData.message || "Data Created Successfully", {
+    //                 position: "top-right",
+    //                 autoClose: 3000,
+    //                 hideProgressBar: false,
+    //                 closeOnClick: true,
+    //                 pauseOnHover: true,
+    //                 draggable: true,
+    //                 progress: undefined,
+    //                 className: "toast-success",
+    //                 onOpen: () => loadTableData(paginationCount)
+    //             });
+
+    //         } else {
+    //             const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+    //             toast.error(errorMessage, {
+    //                 position: "top-right",
+    //                 autoClose: 3000,
+    //                 hideProgressBar: false,
+    //                 closeOnClick: true,
+    //                 pauseOnHover: true,
+    //                 draggable: true,
+    //                 progress: undefined,
+    //                 className: "toast-error",
+    //             });
+    //         }
+    //     } catch (error) {
+    //         setLoading(false);
+    //         if (error && error.response && error.response['data']) {
+    //             toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+    //                 position: "top-right",
+    //                 autoClose: 3000,
+    //                 hideProgressBar: false,
+    //                 closeOnClick: true,
+    //                 pauseOnHover: true,
+    //                 draggable: true,
+    //                 progress: undefined,
+    //                 className: "toast-error",
+    //             });
+    //         }
+    //     }
+
+    // }
+
     const onSaveTemplateData = async (data) => {
-
         if (!table_name || table_name === '') {
-            toast.warning('Please Check The Template', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return
-        }
-
-        if (Object.keys(data).length === 0) {
-            toast.warning('Data Is Empty Please Check Once', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
+            toast.warning('Please Check The Template', { /* ... */ });
             return;
         }
-
+    
+        if (Object.keys(data).length === 0) {
+            toast.warning('Data Is Empty Please Check Once', { /* ... */ });
+            return;
+        }
+    
         const formData = new FormData();
-        formData.append("table_name", table_name);
-
-        var normalData = {}; // Non-file upload fields
-
+    
+        let normalData = {};
+    
         formTemplateData.forEach((field) => {
-
             if (data[field.name]) {
                 if (field.type === "file" || field.type === "profilepicture") {
-                    // Append file fields to formData
-                    if (field.type === 'file') {
-                        if (Array.isArray(data[field.name])) {
-                            const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
-                            var filteredArray = data[field.name].filter(file => file.filename instanceof File);
-                            if (hasFileInstance) {
-                                data[field.name].forEach((file) => {
-                                    if (file.filename instanceof File) {
-                                        formData.append(field.name, file.filename);
-                                    }
-                                });
-
-                                filteredArray = filteredArray.map((obj) => {
-                                    return {
-                                        ...obj,
-                                        filename: obj.filename['name']
-                                    }
-                                });
-
-                                formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
-
-                            }
-                        }
+                    if (field.type === 'file' && Array.isArray(data[field.name])) {
+                        const filteredArray = data[field.name].filter(file => file.filename instanceof File);
+                        filteredArray.forEach((file) => {
+                            formData.append(field.name, file.filename);
+                        });
+    
+                        const formattedArray = filteredArray.map((obj) => ({
+                            ...obj,
+                            filename: obj.filename.name
+                        }));
+    
+                        formData.append('folder_attachment_ids', JSON.stringify(formattedArray));
                     } else {
                         formData.append(field.name, data[field.name]);
                     }
                 } else {
-                    // Add non-file fields to normalData
-                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
+                    normalData[field.name] =
+                        field.type === 'checkbox' || field.type === 'multidropdown'
+                            ? Array.isArray(data[field.name])
+                                ? data[field.name].join(',')
+                                : data[field.name]
+                            : data[field.name];
                 }
             }
         });
+    
+        const created_by_designation_id = localStorage.getItem("designation_id") || "";
+        const created_by_division_id = localStorage.getItem("division_id") || "";
+        const user_designation_id = localStorage.getItem("designation_id") || "";
+    
+        const transaction_id = "TRANS_" + Date.now();
+    
+        const approval = {
+            approval_item: approvalSaveData?.approval_item,
+            approved_by: approvalSaveData?.approved_by,
+            approval_date: approvalSaveData?.approval_date,
+            remarks: approvalSaveData?.remarks,
+            created_by_designation_id,
+            created_by_division_id,
+        };
+    
+        const approval_details = {
+            id: '0',
+            module_name: "Government Order", 
+            action: "Create Government Order"
+        };
+    
 
-        formData.append("data", JSON.stringify(normalData));
+    
+        const others_data = {
+            approval,
+            approval_details,
+        };
+        var payload = {
+            table_name: table_name,
+            transaction_id: transaction_id,
+            user_designation_id: user_designation_id,
+            data: JSON.stringify(normalData),
+            others_data: JSON.stringify(others_data),
+        }
+        
         setLoading(true);
-
+    
         try {
-            const saveTemplateData = await api.post("/templateData/insertTemplateData", formData);
+            const saveTemplateData = await api.post("/templateData/saveDataWithApprovalToTemplates", payload);
             setLoading(false);
             localStorage.removeItem(template_name + '-formData');
-
-            if (saveTemplateData && saveTemplateData.success) {
-
-                toast.success(saveTemplateData.message || "Data Created Successfully", {
+    
+            if (saveTemplateData?.success) {
+                toast.success(saveTemplateData.message || "Data Saved With Approval", {
                     position: "top-right",
                     autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
                     className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount)
+                    onOpen: () => loadTableData(paginationCount),
                 });
-
             } else {
-                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
-                toast.error(errorMessage, {
+                toast.error(saveTemplateData.message || "Save Failed", {
                     position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
                     className: "toast-error",
                 });
             }
         } catch (error) {
             setLoading(false);
-            if (error && error.response && error.response['data']) {
-                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
+            toast.error(
+                error?.response?.data?.message || "Please Try Again !",
+                { position: "top-right", className: "toast-error" }
+            );
         }
+    };
 
-    }
+
+    
+    
 
     const onUpdateTemplateData = async (data) => {
 

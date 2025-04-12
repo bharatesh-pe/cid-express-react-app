@@ -5118,6 +5118,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 exports.saveDataWithApprovalToTemplates = async (req, res) => {
 	const { table_name, data, others_data, transaction_id, user_designation_id } = req.body;
 
+  console.log("req.body", req.body);
 	if (!user_designation_id) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
 	}
