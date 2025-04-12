@@ -208,7 +208,7 @@ exports.get_alert_notification = async (req, res) => {
     const alertNotifications = await System_Alerts.findAll({
       where: {
         created_by_designation_id: { [Op.in]: officer_designation_ids },
-        created_by_division_id: user_division_id,
+        // created_by_division_id: user_division_id,
       },
       order: [["created_at", "DESC"]],
     });
@@ -221,7 +221,7 @@ exports.get_alert_notification = async (req, res) => {
             system_alert_id: notification.system_alert_id,
             viewed_by: user_id,
             viewed_by_designation_id: user_designation_id,
-            viewed_by_division_id: user_division_id,
+            // viewed_by_division_id: user_division_id,
           },
         });
 
@@ -370,7 +370,7 @@ exports.get_case_approval_by_id = async (req, res) => {
           system_alert_id: alertNotification.system_alert_id,
           viewed_by: user_id,
           viewed_by_designation_id: user_designation_id,
-          viewed_by_division_id: user_division_id,
+          // viewed_by_division_id: user_division_id,
         },
         raw: true,
       });
@@ -380,7 +380,7 @@ exports.get_case_approval_by_id = async (req, res) => {
           system_alert_id: alertNotification.system_alert_id,
           viewed_by: user_id,
           viewed_by_designation_id: user_designation_id,
-          viewed_by_division_id: user_division_id,
+          // viewed_by_division_id: user_division_id,
           view_status: true,
         });
       }
