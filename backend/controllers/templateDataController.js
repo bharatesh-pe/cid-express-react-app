@@ -2605,7 +2605,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const {
       page = 1,
       limit = 5,
-      sort_by = "template_id",
+      sort_by,
       order = "ASC",
       search = "",
       search_field = "",
