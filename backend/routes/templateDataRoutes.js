@@ -286,7 +286,7 @@ router.post('/appendToLastLineOfPDF',
         templateDataController.appendToLastLineOfPDF)
 
 router.post('/saveDataWithApprovalToTemplates',
-    // userAuthMiddleware,
+    [validate_token],
     templateDataController.saveDataWithApprovalToTemplates)
     
 
