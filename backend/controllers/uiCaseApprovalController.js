@@ -106,7 +106,7 @@ exports.create_ui_case_approval = async (req, res) => {
     await t.commit();
     return res.status(201).json({
       success: true,
-      message: "UiCaseApproval created successfully",
+      message: "Record created successfully",
       data: newApproval,
       alert_data: systemAlert,
     });
@@ -129,12 +129,16 @@ exports.create_ui_case_approval = async (req, res) => {
 // Function to view all approvals
 exports.get_ui_case_approvals = async (req, res) => {
   try {
-    const { case_id } = req.body;
+    const { case_id, approval_type} = req.body;
     let whereCondition = {};
 
     // Dynamically add conditions
     if (case_id) {
       whereCondition.reference_id = case_id;
+    }
+
+    if (approval_type) {
+      whereCondition.approval_type = approval_type; 
     }
 
     let formattedApprovals = [];
