@@ -479,6 +479,8 @@ const Enquiries = () => {
               "ReadStatus",
               "linked_profile_info",
               "sys_status",
+              "ui_case_id",
+              "pt_case_id"
             ];
 
             const updatedHeader = [
