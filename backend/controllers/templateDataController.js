@@ -4940,15 +4940,15 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 				}
 			}
 
-			// Update the model with file arrays
-			for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-				await Model.update(
-				{ [fieldname]: filenames },
-				{ where: { id: insertedData.id } }
-				);
-			}
+			
+      for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+        await Model.update(
+          { [fieldname]: filenames },
+          { where: { id: insertedData.id }, transaction: t }
+        );
+      }
+      
 		}
-
 
 		const insertedId = insertedData.id;
 		const insertedtype = insertedData.sys_status;

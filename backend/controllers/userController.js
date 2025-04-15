@@ -285,7 +285,7 @@ exports.update_user = async (req, res) => {
 
   // Validation checks
   if (!username?.trim()) return res.status(400).json({ success: false, message: "Name is required" });
-  if (!role_id || "null") return res.status(400).json({ success: false, message: "Role is required" });
+  if (!role_id || role_id === "null") return res.status(400).json({ success: false, message: "Role is required" });
   if (!kgid?.trim()) return res.status(400).json({ success: false, message: "KGID is required" });
   if (!designation_id) return res.status(400).json({ success: false, message: "Designation is required" });
   if (!department_id) return res.status(400).json({ success: false, message: "Department is required" });

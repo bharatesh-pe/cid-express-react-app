@@ -35,10 +35,19 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
+import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 
 const GovernmentOrder = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    // on save approval modal
+
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [approvalItemsData, setApprovalItemsData] = useState([]);
+    const [readonlyApprovalItems, setReadonlyApprovalItems] = useState(false);
+    const [approvalDesignationData, setApprovalDesignationData] = useState([]);
+    const [approvalFormData, setApprovalFormData] = useState({});
+    const [approvalSaveCaseData, setApprovalSaveCaseData] = useState({});
 
     const [showOptionModal, setShowOptionModal] = useState(false)
     const [paginationCount, setPaginationCount] = useState(1);
@@ -559,7 +568,189 @@ const GovernmentOrder = () => {
           }
         }
       };
+         
+      
+        const showCaseApprovalPage = async (caseData, formData)=>{
+        
+                setLoading(true);
+        
+                try {
+        
+                    const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
+        
+                    setLoading(false);
+        
+                    if (getActionsDetails && getActionsDetails.success) {
+        
+                        setApprovalItemsData(getActionsDetails.data['approval_item']);
+                        setApprovalDesignationData(getActionsDetails.data['designation']);
+        
+                        var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
+                            if((data.name).toLowerCase() === 'government order'){
+                                return data;
+                            }
+                        });
+      
+                        if(getFurtherInvestigationItems?.[0]){
+                            caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                            setReadonlyApprovalItems(true);
+                        }else{
+                            caseApprovalOnChange('approval_item', null);
+                            setReadonlyApprovalItems(false);
+                        } 
+        
+                        setShowApprovalModal(true);
+                        setApprovalSaveCaseData({
+                            caseData : caseData,
+                            formData : formData
+                        });
+        
+                    } else {
+        
+                        const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+        
+                    }
+        
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+          }
+        
           
+            const caseApprovalOnChange = (name, value)=>{
+                setApprovalFormData((prev)=>{
+                    return{
+                        ...prev,
+                        [name] : value
+                    }
+                });
+            }
+        
+            const handleApprovalWithSave = async () => {
+                if (!approvalFormData?.approval_item) {
+                    toast.error("Please Select Approval Item !");
+                    return;
+                }
+            
+                if (!approvalFormData?.approved_by) {
+                    toast.error("Please Select Designation !");
+                    return;
+                }
+            
+                if (!approvalFormData?.approval_date) {
+                    toast.error("Please Select Approval Date !");
+                    return;
+                }
+            
+                if (!approvalFormData?.remarks) {
+                    toast.error("Please Enter Comments !");
+                    return;
+                }
+            
+                const formData = new FormData();
+            
+                const approvalDetails = {
+                    module_name: "Government Order",
+                    action: "Create Government Order",
+                };
+            
+                const sysStatus = {
+                    id: approvalSaveCaseData?.caseData?.id || null,
+                    sys_status: approvalSaveCaseData?.caseData?.sys_status || "Create Government Order",
+                    default_status: "gov_order",
+                };
+            
+                const approvalPayload = {
+                    approval: approvalFormData,
+                    approval_details: approvalDetails,
+                    others_table_name: table_name,
+                    sys_status: sysStatus,
+                };
+            
+                for (let [key, value] of approvalSaveCaseData.formData.entries()) {
+                    formData.append(key, value);
+                }
+            
+                formData.append("data", JSON.stringify(approvalSaveCaseData.caseData));
+                formData.append("others_data", JSON.stringify(approvalPayload));
+            
+                const transactionId = `gn_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+                formData.append("transaction_id", transactionId);
+                formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
+            
+                setLoading(true);
+            
+                try {
+                    const response = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
+                    setLoading(false);
+            
+                    console.log("response", response);
+                    if (response?.success) {
+                        toast.success(response.message || "Data Created Successfully", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-success",
+                        });
+                        setShowApprovalModal(false);
+                        setApprovalSaveCaseData({});
+                        setApprovalItemsData([]);
+                        setApprovalFormData({});
+                        setApprovalDesignationData([]);
+                        loadTableData(paginationCount);
+                    } else {
+                        toast.error(response?.message || 'Failed to change the status. Please try again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    toast.error(error?.response?.message || 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            };
+                              
 
     useEffect(() => {
         loadTableData(paginationCount);
@@ -1656,7 +1847,9 @@ const GovernmentOrder = () => {
             }
         });
 
-        formData.append("data", JSON.stringify(normalData));
+        normalData.sys_status = "Gov_order";
+        showCaseApprovalPage(normalData,formData);
+        return;
         setLoading(true);
 
         try {
@@ -2794,7 +2987,19 @@ const GovernmentOrder = () => {
                     </Dialog>
                   )}
             
+    <ApprovalModal
+        open={showApprovalModal}
+        onClose={() => setShowApprovalModal(false)}
+        onSave={handleApprovalWithSave}
+        
+        approvalItem={approvalItemsData}
+        disabledApprovalItems={readonlyApprovalItems}
 
+        designationData={approvalDesignationData}
+        
+        formData={approvalFormData}
+        onChange={caseApprovalOnChange}
+    />
 
         </Box>
     )
