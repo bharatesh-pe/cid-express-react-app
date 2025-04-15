@@ -3827,7 +3827,7 @@ const UnderInvestigation = () => {
             }
         });
 
-        normalData.sys_status = 'ui_case';
+        normalData.sys_status = '178_cases';
         normalData['pt_case_id'] = furtherInvestigationSelectedRow.id;
 
         var othersData = Object.fromEntries(
