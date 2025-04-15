@@ -1018,7 +1018,7 @@ exports.getTemplateData = async (req, res, next) => {
 };
 
 exports.viewTemplateData = async (req, res, next) => {
-  const { table_name, id } = req.body;
+  const { table_name, id , template_module  } = req.body;
   // const userId = res.locals.user_id || null;
   // const adminUserId = res.locals.admin_user_id || null;
   // const actorId = userId || adminUserId;
@@ -1131,8 +1131,21 @@ exports.viewTemplateData = async (req, res, next) => {
     //     activity: `Viewed `,
     // });
 
+    const template_module_data = {};
+    if(template_module && template_module != "") {
+      // Fetch the template using template_module to get the table_name
+      const template = await Template.findOne({ where: { template_module } });
+      if (!template) {
+        return userSendResponse(res, 400, false, "Template not found", null);
+      }
+
+      template_module_data['table_name'] = template.table_name;
+      template_module_data["template_name"] = template.template_name;
+    }
+    data.template_module_data = template_module_data;
+
     const responseMessage = `Fetched record successfully from table ${table_name}.`;
-    return userSendResponse(res, 200, true, responseMessage, data);
+    return userSendResponse(res, 200, true, responseMessage, data , );
   } catch (error) {
     console.error("Error fetching data by ID:", error);
     return userSendResponse(res, 500, false, "Server error.", error);
