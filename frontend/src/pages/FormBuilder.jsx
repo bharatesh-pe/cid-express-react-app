@@ -1108,7 +1108,7 @@ const Formbuilder = () => {
         var emptyLabel = false;
         var emptyOptions = [];
         const updatedFields = fields.filter((field) => field.formType).map((field) => {
-            const labelValue = field.label || ""; // Get the label value
+            const labelValue = field.label.trim() || ""; // Get the label value
             if (!labelValue || labelValue === '') {
                 emptyLabel = true
             }
@@ -1117,14 +1117,14 @@ const Formbuilder = () => {
                 if(field.options.length > 0){
                     field.options.map((option)=>{
                         if((!option.name || option.name === '') || (!option.code || option.code === '')){
-                            if (!emptyOptions.includes(field.label)) {
-                                emptyOptions.push(field.label);
+                            if (!emptyOptions.includes(labelValue)) {
+                                emptyOptions.push(labelValue);
                             }                            
                         }
                     })
                 }else{
-                    if (!emptyOptions.includes(field.label)) {
-                        emptyOptions.push(field.label);
+                    if (!emptyOptions.includes(labelValue)) {
+                        emptyOptions.push(labelValue);
                     }
                 }
             }
@@ -1280,14 +1280,14 @@ const Formbuilder = () => {
                     if(field.options.length > 0){
                         field.options.map((option)=>{
                             if((!option.name || option.name === '') || (!option.code || option.code === '')){
-                                if (!emptyOptions.includes(field.label)) {
-                                    emptyOptions.push(field.label);
+                                if (!emptyOptions.includes(labelValue)) {
+                                    emptyOptions.push(labelValue);
                                 }                            
                             }
                         })
                     }else{
-                        if (!emptyOptions.includes(field.label)) {
-                            emptyOptions.push(field.label);
+                        if (!emptyOptions.includes(labelValue)) {
+                            emptyOptions.push(labelValue);
                         }
                     }
                 }
