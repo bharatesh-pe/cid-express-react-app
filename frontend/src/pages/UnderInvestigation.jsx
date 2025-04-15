@@ -443,15 +443,15 @@ const UnderInvestigation = () => {
                 if (result.isConfirmed) {
 
                     var getTemplatePayload = {
-                        "page": 1,
-                        "limit": 0,
-                        "template_module": "pt_case",
+                        "table_name": table_name,
+                        "id": data.id,
+                        "template_module": "pt_case"
                     }
                     
                     setLoading(true);
             
                     try {
-                        const getTemplateResponse = await api.post("/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
+                        const getTemplateResponse = await api.post("/templateData/viewTemplateData", getTemplatePayload);
                         setLoading(false);
             
                         if (getTemplateResponse && getTemplateResponse.success) {
@@ -509,7 +509,19 @@ const UnderInvestigation = () => {
 
                                             setSingleApiData({sys_status : sys_status});
 
-                                            setOtherInitialTemplateData({});
+                                            var PreDefinedData = {}
+
+                                            if(getTemplateResponse.data['data']){
+                                                viewTemplateResponse.data['fields'].map((element)=>{
+                                                    if(element.name && getTemplateResponse.data['data'][element.name] !== null && getTemplateResponse.data['data'][element.name] !== undefined){
+                                                        PreDefinedData[element.name] = getTemplateResponse.data['data'][element.name];
+                                                    }
+                                                })
+                                            }
+
+                                            console.log(PreDefinedData,"PreDefinedData")
+
+                                            setOtherInitialTemplateData(PreDefinedData);
             
                                         } else {
                                             const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
