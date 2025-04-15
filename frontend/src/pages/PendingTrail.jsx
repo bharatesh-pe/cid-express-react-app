@@ -335,6 +335,7 @@ const UnderInvestigation = () => {
                         data: {
                             "id": data.id,
                             "sys_status": value,
+                            "ui_case_id": data.ui_case_id,
                             "default_status": "pt_case"
                         },
                     };
@@ -3471,6 +3472,73 @@ const UnderInvestigation = () => {
       });
 
       return;
+    }
+
+    if(selectedOtherTemplate.field === "field_status_update" && selectedOtherFields.code === "Closed"){
+        var payloadSysStatus = {
+            table_name: table_name,
+            data: {
+                "id": selectedRow.id,
+                "sys_status": 'disposal',
+                "default_status": "pt_case"
+            },
+        };
+
+        setLoading(true);
+
+        try {
+            const chnageSysStatus = await api.post( "/templateData/caseSysStatusUpdation", payloadSysStatus);
+            setLoading(false);
+            if (chnageSysStatus && chnageSysStatus.success) {
+                toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount),
+                });
+
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+
+            } else {
+                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+        return;
     }
 
     if (
