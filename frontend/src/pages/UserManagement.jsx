@@ -643,6 +643,7 @@ const UserManagement = () => {
       setSelectedUsers([]);
       fetchUsers();
       setIsModalOpen(false);
+      setModalTitle("Add New User");
     } catch (err) {
       let errorMessage =
         err.message || "Something went wrong. Please try again.";
