@@ -690,9 +690,6 @@ const UserManagement = () => {
       (option) => String(option.name) === String(userToEdit.kgid)
     );
 
-    console.log("KGID Options:", kgidOptions);
-    console.log("User KGID:", userToEdit.kgid);
-
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
