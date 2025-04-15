@@ -457,7 +457,7 @@ const GovernmentOrder = () => {
       
           if (chnageSysStatus && chnageSysStatus.success) {
             toast.success(
-              chnageSysStatus.message || "Approval Added Successfully",
+            "Approval Added Successfully",
               {
                 position: "top-right",
                 autoClose: 3000,

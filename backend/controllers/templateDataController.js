@@ -249,7 +249,7 @@ exports.insertTemplateData = async (req, res, next) => {
       }
     }
 
-    return userSendResponse(res, 200, true, `Data created successfully`, null);
+    return userSendResponse(res, 200, true, `Record Created Successfully`, null);
   } catch (error) {
     console.error("Error inserting data:", error.stack);
     return userSendResponse(res, 500, false, "Server error.", error);
@@ -652,7 +652,7 @@ exports.updateTemplateData = async (req, res, next) => {
     //         table_row_id: id
     //     }
     // });
-    return userSendResponse(res, 200, true, `Data updated successfully.`, null);
+    return userSendResponse(res, 200, true, `Record updated successfully.`, null);
   } catch (error) {
     if (error.name === "SequelizeUniqueConstraintError") {
       const uniqueErrorField = error.errors[0]?.path || "a unique field";
@@ -779,7 +779,7 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
       { where: { id: table_row_id } }
     );
 
-    return userSendResponse(res, 200, true, `Data deleted successfully.`, null);
+    return userSendResponse(res, 200, true, `Record deleted successfully.`, null);
   } catch (error) {
     console.error("Error deleting file from template:", error);
     return userSendResponse(res, 500, false, "Server error.", error);
@@ -5101,7 +5101,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 		}
 
 		await t.commit();
-		return userSendResponse(res, 200, true, `Data created successfully`, null);
+		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
 
 	} catch (error) {
 		console.error("Error saving data to templates:", error);
