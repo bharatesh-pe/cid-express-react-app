@@ -4787,8 +4787,10 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 };
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
+  console.log("coming insideeeeeeeeeeeeeeeee: saveDataWithApprovalToTemplates");
 	const { table_name, data, others_data, transaction_id, user_designation_id , folder_attachment_ids } = req.body;
 
+  console.log("Request body:", req.body);
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
 	}
@@ -4874,6 +4876,8 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 				defaultValue: default_value || null,
 			};
 		}
+    console.log("Final schema:", completeSchema);
+    console.log("Final model attributes:", modelAttributes);
 
 		const Model = sequelize.define(table_name, modelAttributes, {
 			freezeTableName: true,
@@ -4895,10 +4899,12 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 		if (req.files && req.files.length > 0) {
 			const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
 
+      console.log("Folder attachments:", folderAttachments);
 			for (const file of req.files) {
 				const { originalname, size, key, fieldname } = file;
 				const fileExtension = path.extname(originalname);
 
+        console.log("File details:", { originalname, size, key, fieldname });
 				// Find matching folder_id from the payload (if any)
 				const matchingFolder = folderAttachments.find(
 				(attachment) =>
@@ -4921,8 +4927,11 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 				if (!fileUpdates[fieldname]) {
 					fileUpdates[fieldname] = originalname;
+          console.log("File updates:", fileUpdates);
 				} else {
 					fileUpdates[fieldname] += `,${originalname}`;
+          console.log("File updatessss:", fileUpdates);
+
 				}
 			}
 
