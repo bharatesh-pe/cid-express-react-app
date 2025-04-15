@@ -721,6 +721,7 @@ const GovernmentOrder = () => {
                         setShowApprovalModal(false);
                         setApprovalSaveCaseData({});
                         setApprovalItemsData([]);
+                        setApprovalFormData({});
                         setApprovalDesignationData([]);
                         loadTableData(paginationCount);
                     } else {
