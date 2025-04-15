@@ -320,94 +320,92 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     });
   };
 
+    useEffect(() => {
+        if (selectedField && selectedField.table && selectedField.api) {
 
-  useEffect(() => {
+            var dependent_field = newFormConfig.filter((element) => {
+                return ( element.dependent_table && element.dependent_table.length > 0 && element.dependent_table.includes(selectedField.table));
+            });
 
-    if (selectedField && selectedField.table) {
-      var dependent_field = newFormConfig.filter((element) => {
-        return (
-          element.dependent_table &&
-          element.dependent_table.length > 0 &&
-          element.dependent_table.includes(selectedField.table)
-        );
-      });
+            var apiPayload = {};
+            var apiUrl = selectedField.api
 
-      if (dependent_field.length > 0) {
-        if (dependent_field && dependent_field[0] && dependent_field[0].api) {
-          var apiPayload = {}
-          if (dependent_field[0].dependent_table.length === 1) {
-            const key = selectedField.table === 'users' ? 'user_id' : `${selectedField.table}_id`;
-            apiPayload = {
-              [key]: formData[selectedField.name]
+            if (dependent_field.length > 0) {
+                if (dependent_field && dependent_field[0] && dependent_field[0].api) {
+                    if (dependent_field[0].dependent_table.length === 1) {
+                        const key = selectedField.table === "users" ? "user_id" : `${selectedField.table}_id`;
+                        apiPayload = { [key]: formData[selectedField.name] };
+                    } else {
+                        var dependentFields = newFormConfig.filter((data) => {
+                            return dependent_field[0].dependent_table.includes(data.table);
+                        });
+                        apiPayload = dependentFields.reduce((payload, data) => {
+                        if (formData && formData[data.name]) {
+                            const key = data.table === "users" ? "user_id" : `${data.table}_id`;
+                            payload[key] = formData[data.name];
+                        }
+                        return payload;
+                        }, {});
+                    }
+                }
+                apiUrl = dependent_field[0].api;
             }
-          } else {
-            var dependentFields = newFormConfig.filter((data) => {
-              return dependent_field[0].dependent_table.includes(data.table)
-            })
-            apiPayload = dependentFields.reduce((payload, data) => {
-              if (formData && formData[data.name]) {
-                const key = data.table === 'users' ? 'user_id' : `${data.table}_id`;
-                payload[key] = formData[data.name];
-              }
-              return payload;
-            }, {});
-          }
 
-
-          const callApi = async () => {
-
-            try {
-              var getOptionsValue = await api.post(dependent_field[0].api, apiPayload);
-
-              var updatedOptions = []
-
-              if (getOptionsValue && getOptionsValue.data) {
-                updatedOptions = getOptionsValue.data.map((data, i) => {
-                  return {
-                    name: data[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
-                    code: data[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
-                  }
-                })
-              }
-
-              setNewFormConfig((prevFormConfig) => {
-                const updatedFormConfig = prevFormConfig.map((data) => {
-                  if (data.id === dependent_field[0].id) {
-                    return { ...data, options: updatedOptions };
-                  }
-                  return data;
-                });
-                return updatedFormConfig;
-              });
-
-              dependent_field.map((data) => {
-                delete formData[data.name]
-              });
-
-            } catch (error) {
-              if (error && error.response && error.response.data) {
-                toast.error(error.response?.data?.message || 'Need dependent Fields', {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-                return;
-              }
+            if(selectedField?.table === "users"){
+                apiPayload = {
+                    designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                    get_flag : selectedField?.user_hierarchy || null
+                }
             }
-          }
-          callApi()
+
+            const callApi = async () => {
+                try {
+                    var getOptionsValue = await api.post( apiUrl ,apiPayload);
+
+                    var updatedOptions = [];
+
+                    if (getOptionsValue && getOptionsValue.data) {
+                        updatedOptions = getOptionsValue.data.map((data, i) => {
+                            return {
+                                name: data[ dependent_field[0].table === "users" ? "name" : dependent_field[0].table + "_name" ],
+                                code: data[ dependent_field[0].table === "users" ? "user_id" : dependent_field[0].table + "_id"],
+                            };
+                        });
+                    }
+
+                    setNewFormConfig((prevFormConfig) => {
+                        const updatedFormConfig = prevFormConfig.map((data) => {
+                            if (data?.id === dependent_field[0]?.id) {
+                                return { ...data, options: updatedOptions };
+                            }
+                            return data;
+                        });
+                        return updatedFormConfig;
+                    });
+
+                    dependent_field.map((data) => {
+                        delete formData[data.name];
+                    });
+
+                } catch (error) {
+                    if (error && error.response && error.response.data) {
+                        toast.error( error.response?.data?.message || "Need dependent Fields", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                        return;
+                    }
+                }
+            };
+            callApi();
         }
-
-      } else {
-        console.log("no data found");
-      }
-    }
-  }, [selectedField])
+    }, [selectedField]);
 
     useEffect(() => {
         var defaultValueObj = {};
@@ -454,6 +452,13 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         apiUrl = dependent_field[0].api
                     }
 
+                    if(dependent_field[0]?.table === "users"){
+                        apiPayload = {
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : dependent_field[0]?.user_hierarchy || null
+                        }
+                    }
+
                     const callApi = async () => {
                         try {
                             var getOptionsValue = await api.post( apiUrl, apiPayload);
@@ -468,12 +473,12 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                                     var headerName = nameKey;
                                     var headerId = 'id';
             
-                                    if(dependent_field[0].table.table === "users"){
+                                    if(dependent_field[0]?.table === "users"){
                                         headerName = "name"
                                         headerId =  "user_id"
-                                    }else if(dependent_field[0].table.api !== "/templateData/getTemplateData"){
-                                        headerName = dependent_field[0].table.table + "_name"
-                                        headerId =  dependent_field[0].table.table + "_id"
+                                    }else if(dependent_field[0]?.api !== "/templateData/getTemplateData"){
+                                        headerName = dependent_field[0]?.table + "_name"
+                                        headerId =  dependent_field[0]?.table + "_id"
                                     }
 
                                     return {
@@ -485,7 +490,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
                             setNewFormConfig((prevFormConfig) => {
                                 const updatedFormConfig = prevFormConfig.map((data) => {
-                                    if (data.id === dependent_field[0].id) {
+                                    if (data?.id === dependent_field[0]?.id) {
                                         return { ...data, options: updatedOptions };
                                     }
                                     return data;
@@ -549,6 +554,13 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         apiUrl = dependent_field[0].api
                     }
 
+                    if(dependent_field[0]?.table === "users"){
+                        apiPayload = {
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : dependent_field[0]?.user_hierarchy || null
+                        }
+                    }
+
                     const callApi = async () => {
                         try {
                             var getOptionsValue = await api.post( apiUrl, apiPayload);
@@ -563,12 +575,12 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                                     var headerName = nameKey;
                                     var headerId = 'id';
             
-                                    if(dependent_field[0].table.table === "users"){
+                                    if(dependent_field[0]?.table === "users"){
                                         headerName = "name"
                                         headerId =  "user_id"
-                                    }else if(dependent_field[0].table.api !== "/templateData/getTemplateData"){
-                                        headerName = dependent_field[0].table.table + "_name"
-                                        headerId =  dependent_field[0].table.table + "_id"
+                                    }else if(dependent_field[0].api !== "/templateData/getTemplateData"){
+                                        headerName = dependent_field[0]?.table + "_name"
+                                        headerId =  dependent_field[0]?.table + "_id"
                                     }
 
                                     return {
@@ -580,7 +592,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
                             setNewFormConfig((prevFormConfig) => {
                                 const updatedFormConfig = prevFormConfig.map((data) => {
-                                    if (data.id === dependent_field[0].id) {
+                                    if (data?.id === dependent_field[0]?.id) {
                                         return { ...data, options: updatedOptions };
                                     }
                                     return data;
@@ -793,6 +805,11 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         if(field.api === "/templateData/getTemplateData"){
                             apiPayload = {
                                 table_name: field.table
+                            }
+                        }else if(field.table === "users"){
+                            apiPayload = {
+                                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                                get_flag : field?.user_hierarchy || null
                             }
                         }
 
