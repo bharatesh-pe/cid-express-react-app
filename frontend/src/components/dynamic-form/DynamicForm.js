@@ -401,7 +401,7 @@ const DynamicForm = ({
                 apiUrl = dependent_field[0].api;
             }
 
-            if(selectedField.table === "users"){
+            if(selectedField?.table === "users"){
                 apiPayload = {
                     designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
                     get_flag : selectedField?.user_hierarchy || null
@@ -425,7 +425,7 @@ const DynamicForm = ({
 
                     setNewFormConfig((prevFormConfig) => {
                         const updatedFormConfig = prevFormConfig.map((data) => {
-                            if (data.id === dependent_field[0].id) {
+                            if (data?.id === dependent_field[0]?.id) {
                                 return { ...data, options: updatedOptions };
                             }
                             return data;
@@ -502,7 +502,7 @@ const DynamicForm = ({
                         apiUrl = dependent_field[0].api
                     }
 
-                    if(dependent_field[0].table === "users"){
+                    if(dependent_field[0]?.table === "users"){
                         apiPayload = {
                             designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
                             get_flag : dependent_field[0]?.user_hierarchy || null
@@ -523,12 +523,12 @@ const DynamicForm = ({
                                     var headerName = nameKey;
                                     var headerId = 'id';
             
-                                    if(dependent_field[0].table.table === "users"){
+                                    if(dependent_field[0]?.table === "users"){
                                         headerName = "name"
                                         headerId =  "user_id"
-                                    }else if(dependent_field[0].table.api !== "/templateData/getTemplateData"){
-                                        headerName = dependent_field[0].table.table + "_name"
-                                        headerId =  dependent_field[0].table.table + "_id"
+                                    }else if(dependent_field[0]?.api !== "/templateData/getTemplateData"){
+                                        headerName = dependent_field[0]?.table + "_name"
+                                        headerId =  dependent_field[0]?.table + "_id"
                                     }
 
                                     return {
@@ -540,7 +540,7 @@ const DynamicForm = ({
 
                             setNewFormConfig((prevFormConfig) => {
                                 const updatedFormConfig = prevFormConfig.map((data) => {
-                                    if (data.id === dependent_field[0].id) {
+                                    if (data?.id === dependent_field[0]?.id) {
                                         return { ...data, options: updatedOptions };
                                     }
                                     return data;
@@ -604,7 +604,7 @@ const DynamicForm = ({
                         apiUrl = dependent_field[0].api
                     }
 
-                    if(dependent_field[0].table === "users"){
+                    if(dependent_field[0]?.table === "users"){
                         apiPayload = {
                             designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
                             get_flag : dependent_field[0]?.user_hierarchy || null
@@ -625,12 +625,12 @@ const DynamicForm = ({
                                     var headerName = nameKey;
                                     var headerId = 'id';
             
-                                    if(dependent_field[0].table.table === "users"){
+                                    if(dependent_field[0]?.table === "users"){
                                         headerName = "name"
                                         headerId =  "user_id"
-                                    }else if(dependent_field[0].table.api !== "/templateData/getTemplateData"){
-                                        headerName = dependent_field[0].table.table + "_name"
-                                        headerId =  dependent_field[0].table.table + "_id"
+                                    }else if(dependent_field[0].api !== "/templateData/getTemplateData"){
+                                        headerName = dependent_field[0]?.table + "_name"
+                                        headerId =  dependent_field[0]?.table + "_id"
                                     }
 
                                     return {
@@ -642,7 +642,7 @@ const DynamicForm = ({
 
                             setNewFormConfig((prevFormConfig) => {
                                 const updatedFormConfig = prevFormConfig.map((data) => {
-                                    if (data.id === dependent_field[0].id) {
+                                    if (data?.id === dependent_field[0]?.id) {
                                         return { ...data, options: updatedOptions };
                                     }
                                     return data;

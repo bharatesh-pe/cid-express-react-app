@@ -432,6 +432,8 @@ const UnderInvestigation = () => {
             });
         }else{
 
+            console.log("hello here");
+
             Swal.fire({
                 title: 'Are you sure?',
                 text: text,
@@ -494,8 +496,8 @@ const UnderInvestigation = () => {
                                                 setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
                                             }
             
-                                            setPtCaseTableName(getTemplateResponse.data['meta'].table_name);
-                                            setPtCaseTemplateName(getTemplateResponse.data['meta'].template_name);
+                                            setPtCaseTableName(getTemplateResponse.data['template_module_data'].table_name);
+                                            setPtCaseTemplateName(getTemplateResponse.data['template_module_data'].template_name);
 
                                             setFurtherInvestigationSelectedRow(data);
                                             setFurtherInvestigationSelectedValue(value);
@@ -511,14 +513,13 @@ const UnderInvestigation = () => {
 
                                             var PreDefinedData = {}
 
-                                            if(getTemplateResponse.data['data']){
+                                            if(getTemplateResponse.data){
                                                 viewTemplateResponse.data['fields'].map((element)=>{
-                                                    if(element.name && getTemplateResponse.data['data'][element.name] !== null && getTemplateResponse.data['data'][element.name] !== undefined){
-                                                        PreDefinedData[element.name] = getTemplateResponse.data['data'][element.name];
+                                                    if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
+                                                        PreDefinedData[element.name] = getTemplateResponse.data[element.name];
                                                     }
                                                 })
                                             }
-
                                             setOtherInitialTemplateData(PreDefinedData);
             
                                         } else {
@@ -4075,26 +4076,27 @@ const UnderInvestigation = () => {
   };
 
   const showPtCaseTemplate = async () => {
+
     var getTemplatePayload = {
-      page: 1,
-      limit: 0,
-      template_module: "pt_case",
-    };
+        "table_name": table_name,
+        "id": selectedRow.id,
+        "template_module": "pt_case"
+    }
 
     setLoading(true);
 
     try {
       const getTemplateResponse = await api.post(
-        "/templateData/paginateTemplateDataForOtherThanMaster",
+        "/templateData/viewTemplateData",
         getTemplatePayload
       );
       setLoading(false);
 
       if (getTemplateResponse && getTemplateResponse.success) {
-        if (getTemplateResponse.data && getTemplateResponse.data["meta"]) {
+        if (getTemplateResponse.data && getTemplateResponse.data["template_module_data"]) {
           if (
-            !getTemplateResponse.data["meta"].table_name ||
-            getTemplateResponse.data["meta"].table_name === ""
+            !getTemplateResponse.data["template_module_data"].table_name ||
+            getTemplateResponse.data["template_module_data"].table_name === ""
           ) {
             toast.warning("Please Check The Template", {
               position: "top-right",
@@ -4110,7 +4112,7 @@ const UnderInvestigation = () => {
           }
 
           const viewTableData = {
-            table_name: getTemplateResponse.data["meta"].table_name,
+            table_name: getTemplateResponse.data["template_module_data"].table_name,
           };
           setLoading(true);
 
@@ -4123,7 +4125,6 @@ const UnderInvestigation = () => {
             setLoading(false);
             if (viewTemplateResponse && viewTemplateResponse.success) {
               setOtherFormOpen(true);
-              setOtherInitialTemplateData({});
 
               setOtherReadOnlyTemplateData(false);
               setOtherEditTemplateData(false);
@@ -4144,11 +4145,23 @@ const UnderInvestigation = () => {
                 );
               }
 
-              setPtCaseTableName(getTemplateResponse.data["meta"].table_name);
+              setPtCaseTableName(getTemplateResponse.data["template_module_data"].table_name);
               setPtCaseTemplateName(
-                getTemplateResponse.data["meta"].template_name
+                getTemplateResponse.data["template_module_data"].template_name
               );
               setShowPtCaseModal(true);
+
+              var PreDefinedData = {}
+
+              if(getTemplateResponse.data){
+                  viewTemplateResponse.data['fields'].map((element)=>{
+                      if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
+                          PreDefinedData[element.name] = getTemplateResponse.data[element.name];
+                      }
+                  })
+              }
+              setOtherInitialTemplateData(PreDefinedData);
+
             } else {
               const errorMessage = viewTemplateResponse.message
                 ? viewTemplateResponse.message

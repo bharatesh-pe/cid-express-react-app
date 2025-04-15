@@ -468,10 +468,10 @@ const UnderInvestigation = () => {
 
                                             var PreDefinedData = {}
 
-                                            if(getTemplateResponse.data['data']){
+                                            if(getTemplateResponse.data){
                                                 viewTemplateResponse.data['fields'].map((element)=>{
-                                                    if(element.name && getTemplateResponse.data['data'][element.name] !== null && getTemplateResponse.data['data'][element.name] !== undefined){
-                                                        PreDefinedData[element.name] = getTemplateResponse.data['data'][element.name];
+                                                    if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
+                                                        PreDefinedData[element.name] = getTemplateResponse.data[element.name];
                                                     }
                                                 })
                                             }
