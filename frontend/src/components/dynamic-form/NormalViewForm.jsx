@@ -409,192 +409,233 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     }
   }, [selectedField])
 
-  useEffect(() => {
-    var defaultValueObj = {}
-    const clearOptions = () => {
-      var updatedFormConfig = newFormConfig.map((field) => {
-        // while edit dependent api for get options function goes here
-        if (initialData && initialData[field.name]) {
-          var dependent_field = newFormConfig.filter((element) => {
-            return (
-              element.dependent_table &&
-              element.dependent_table.length > 0 &&
-              element.dependent_table.includes(field.table)
-            );
-          });
+    useEffect(() => {
+        var defaultValueObj = {};
 
-          if (dependent_field.length > 0) {
-            if (dependent_field && dependent_field[0] && dependent_field[0].api) {
-              var apiPayload = {}
-              if (dependent_field[0].dependent_table.length === 1) {
-                const key = field.table === 'users' ? 'user_id' : `${field.table}_id`;
-                apiPayload = {
-                  [key]: initialData[field.name]
-                }
-              } else {
-                var dependentFields = newFormConfig.filter((data) => {
-                  return dependent_field[0].dependent_table.includes(data.table)
-                })
-                apiPayload = dependentFields.reduce((payload, data) => {
-                  if (initialData && initialData[data.name]) {
-                    const key = data.table === 'users' ? 'user_id' : `${data.table}_id`;
-                    payload[key] = initialData[data.name];
-                  }
-                  return payload;
-                }, {});
-              }
+        const clearOptions = () => {
 
-              const callApi = async () => {
+            var updatedFormConfig = newFormConfig.map((field) => {
+                // while edit dependent api for get options function goes here
+                if (initialData && initialData[field.name] && field?.table && field?.api) {
 
-                try {
-                  var getOptionsValue = await api.post(dependent_field[0].api, apiPayload);
-
-                  var updatedOptions = []
-
-                  if (getOptionsValue && getOptionsValue.data) {
-                    updatedOptions = getOptionsValue.data.map((data, i) => {
-                      return {
-                        name: data[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
-                        code: data[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
-                      }
-                    })
-                  }
-
-                  setNewFormConfig((prevFormConfig) => {
-                    const updatedFormConfig = prevFormConfig.map((data) => {
-                      if (data.id === dependent_field[0].id) {
-                        return { ...data, options: updatedOptions };
-                      }
-                      return data;
+                    var dependent_field = newFormConfig.filter((element) => {
+                        return ( element.dependent_table && element.dependent_table.length > 0 && element.dependent_table.includes(field.table) );
                     });
-                    return updatedFormConfig;
-                  });
+
+                    var apiPayload = {};
+                    var apiUrl = field.api;
+
+                    if (dependent_field.length > 0) {
+                        if ( dependent_field && dependent_field[0] && dependent_field[0].api ) {
+
+                            if (dependent_field[0].dependent_table.length === 1) {
+
+                                const key = field.table === "users" ? "user_id" : `${field.table}_id`;
+                                apiPayload = { [key]: initialData[field.name]};
+
+                            } else {
+                                                                
+                                var dependentFields = newFormConfig.filter((data) => {
+                                    return dependent_field[0].dependent_table.includes(
+                                        data.table
+                                    );
+                                });
+
+                                apiPayload = dependentFields.reduce((payload, data) => {
+                                    if (initialData && initialData[data.name]) {
+                                        const key = data.table === "users" ? "user_id" : `${data.table}_id`;
+                                        payload[key] = initialData[data.name];
+                                    }
+                                    return payload;
+                                }, {});
+
+                            }
+                        }
+                        apiUrl = dependent_field[0].api
+                    }
+
+                    const callApi = async () => {
+                        try {
+                            var getOptionsValue = await api.post( apiUrl, apiPayload);
+
+                            var updatedOptions = [];
+
+                            if (getOptionsValue && getOptionsValue.data) {                                
+                                updatedOptions = getOptionsValue.data.map((templateData) => {
+
+                                    const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+
+                                    var headerName = nameKey;
+                                    var headerId = 'id';
+            
+                                    if(dependent_field[0].table.table === "users"){
+                                        headerName = "name"
+                                        headerId =  "user_id"
+                                    }else if(dependent_field[0].table.api !== "/templateData/getTemplateData"){
+                                        headerName = dependent_field[0].table.table + "_name"
+                                        headerId =  dependent_field[0].table.table + "_id"
+                                    }
+
+                                    return {
+                                        name: templateData[headerName],
+                                        code: templateData[headerId],
+                                    };
+                                });
+                            }
+
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data.id === dependent_field[0].id) {
+                                        return { ...data, options: updatedOptions };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
+                            });
+                        } catch (error) {
+                            if (error && error.response && error.response.data) {
+                                toast.error(error.response?.data?.message || "Need dependent Fields",{
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+                        }
+                    };
+                    callApi();
+
+                } else if (formData?.[field?.name] && field?.table && field?.api) {
 
 
-                } catch (error) {
-                  if (error && error.response && error.response.data) {
-                    toast.error(error.response?.data?.message || 'Need dependent Fields', {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
+
+                    var dependent_field = newFormConfig.filter((element) => {
+                        return (element.dependent_table && element.dependent_table.length > 0 && element.dependent_table.includes(field.table));
                     });
-                    return;
-                  }
-                }
-              }
-              callApi()
-            }
-          }
+                    
+                    var apiPayload = {};
+                    var apiUrl = field.api;
 
-        }else if(formData?.[field?.name]){
-            var dependent_field = newFormConfig.filter((element) => {
-                return (
-                  element.dependent_table &&
-                  element.dependent_table.length > 0 &&
-                  element.dependent_table.includes(field.table)
-                );
-              });
-    
-              if (dependent_field.length > 0) {
-                if (dependent_field && dependent_field[0] && dependent_field[0].api) {
-                  var apiPayload = {}
-                  if (dependent_field[0].dependent_table.length === 1) {
-                    const key = field.table === 'users' ? 'user_id' : `${field.table}_id`;
-                    apiPayload = {
-                      [key]: formData[field.name]
+                    if (dependent_field.length > 0) {
+                        if ( dependent_field && dependent_field[0] && dependent_field[0].api ) {
+
+                            if (dependent_field[0].dependent_table.length === 1) {
+
+                                const key = field.table === "users" ? "user_id" : `${field.table}_id`;
+                                apiPayload = { [key]: formData[field.name]};
+
+                            } else {
+                                
+                                var dependentFields = newFormConfig.filter((data) => {
+                                    return dependent_field[0].dependent_table.includes(
+                                        data.table
+                                    );
+                                });
+
+                                apiPayload = dependentFields.reduce((payload, data) => {
+                                    if (formData && formData[data.name]) {
+                                        const key = data.table === "users" ? "user_id" : `${data.table}_id`;
+                                        payload[key] = formData[data.name];
+                                    }
+                                    return payload;
+                                }, {});
+                            }
+                        }
+                        apiUrl = dependent_field[0].api
                     }
-                  } else {
-                    var dependentFields = newFormConfig.filter((data) => {
-                      return dependent_field[0].dependent_table.includes(data.table)
-                    })
-                    apiPayload = dependentFields.reduce((payload, data) => {
-                      if (formData && formData[data.name]) {
-                        const key = data.table === 'users' ? 'user_id' : `${data.table}_id`;
-                        payload[key] = formData[data.name];
-                      }
-                      return payload;
-                    }, {});
-                  }
-    
-                  const callApi = async () => {
-    
-                    try {
-                      var getOptionsValue = await api.post(dependent_field[0].api, apiPayload);
-    
-                      var updatedOptions = []
-    
-                      if (getOptionsValue && getOptionsValue.data) {
-                        updatedOptions = getOptionsValue.data.map((data, i) => {
-                          return {
-                            name: data[dependent_field[0].table === 'users' ? 'name' : dependent_field[0].table + '_name'],
-                            code: data[dependent_field[0].table === 'users' ? 'user_id' : dependent_field[0].table + '_id']
-                          }
-                        })
-                      }
-    
-                      setNewFormConfig((prevFormConfig) => {
-                        const updatedFormConfig = prevFormConfig.map((data) => {
-                          if (data.id === dependent_field[0].id) {
-                            return { ...data, options: updatedOptions };
-                          }
-                          return data;
-                        });
-                        return updatedFormConfig;
-                      });
-    
-    
-                    } catch (error) {
-                      if (error && error.response && error.response.data) {
-                        toast.error(error.response?.data?.message || 'Need dependent Fields', {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-                        return;
-                      }
+
+                    const callApi = async () => {
+                        try {
+                            var getOptionsValue = await api.post( apiUrl, apiPayload);
+
+                            var updatedOptions = [];
+
+                            if (getOptionsValue && getOptionsValue.data) {                                
+                                updatedOptions = getOptionsValue.data.map((templateData) => {
+
+                                    const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+
+                                    var headerName = nameKey;
+                                    var headerId = 'id';
+            
+                                    if(dependent_field[0].table.table === "users"){
+                                        headerName = "name"
+                                        headerId =  "user_id"
+                                    }else if(dependent_field[0].table.api !== "/templateData/getTemplateData"){
+                                        headerName = dependent_field[0].table.table + "_name"
+                                        headerId =  dependent_field[0].table.table + "_id"
+                                    }
+
+                                    return {
+                                        name: templateData[headerName],
+                                        code: templateData[headerId],
+                                    };
+                                });
+                            }
+
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data.id === dependent_field[0].id) {
+                                        return { ...data, options: updatedOptions };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
+                            });
+                        } catch (error) {
+                            if (error && error.response && error.response.data) {
+                                toast.error(error.response?.data?.message || "Need dependent Fields",{
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+                        }
+                    };
+
+                    callApi();
+
+                    if (field && field.defaultValue && field.defaultValue !== "" && field.defaultValue !== false && field.defaultValue !== "false") {
+                        defaultValueObj[field.name] = field.defaultValue;
                     }
-                  }
-                  callApi()
+
+                } else {
+                    if (field && field.is_dependent === "true") {
+                        return { ...field, options: [] };
+                    }
+                    if ( field && field.defaultValue && field.defaultValue !== "" && field.defaultValue !== false && field.defaultValue !== "false") {
+                        defaultValueObj[field.name] = field.defaultValue;
+                    }
                 }
-              }
 
-            if (field && field.defaultValue && field.defaultValue !== '') {
-                defaultValueObj[field.name] = field.defaultValue;
-            }
+                return field;
+            });
 
-        } else {
-          if (field && field.is_dependent === 'true') {
-            return { ...field, options: [] };
-          }
-            if (field && field.defaultValue && field.defaultValue !== '') {
-                defaultValueObj[field.name] = field.defaultValue;
-            }
-        }
-        return field;
-      });
-    //   console.log('updatedFormConfig', updatedFormConfig);
-      setNewFormConfig(updatedFormConfig)
-        setFormData(prevData => ({
-            ...prevData,
-            ...defaultValueObj,
-        }));
-        // localStorage.setItem(
-        //     template_name + '-formData',
+            setNewFormConfig(updatedFormConfig);
+            setFormData((prevData) => ({
+                ...prevData,
+                ...defaultValueObj,
+            }));
+
+        //   localStorage.setItem(
+        //     template_name + "-formData",
         //     JSON.stringify({ ...formData, ...defaultValueObj })
-        // );
-    }
-    clearOptions()
-  }, [])
+        //   );
+        };
+
+        clearOptions();
+    }, []);
 
   useEffect(() => {
 
@@ -739,24 +780,44 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
   }
 
 
-  useEffect(() => {
-    const fetchTemplateData = async () => {
-        try {
-            const apiCalls = newFormConfig
-                .filter(field => field.api === '/templateData/getTemplateData' && field.table)
+    useEffect(() => {
+        const fetchTemplateData = async () => {
+            try { 
+                const apiCalls = newFormConfig
+                .filter((field) => field?.api && field?.table)
                 .map(async (field) => {
                     try {
-                        const response = await api.post(field.api, { table_name: field.table });
+
+                        var apiPayload = {};
+
+                        if(field.api === "/templateData/getTemplateData"){
+                            apiPayload = {
+                                table_name: field.table
+                            }
+                        }
+
+                        const response = await api.post(field.api, apiPayload);
 
                         if (!response.data) return { id: field.id, options: [] };
 
                         const updatedOptions = response.data.map((templateData) => {
-                            const nameKey = Object.keys(templateData).find(
-                                key => !['id', 'created_at', 'updated_at'].includes(key)
-                            );
+
+                            const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+
+                            var headerName = nameKey;
+                            var headerId = 'id';
+
+                            if(field.table === "users"){
+                                headerName = "name"
+                                headerId =  "user_id"
+                            }else if(field.api !== "/templateData/getTemplateData"){
+                                headerName = field.table + "_name"
+                                headerId =  field.table + "_id"
+                            }
+
                             return {
-                                name: nameKey ? templateData[nameKey] : '',
-                                code: templateData.id
+                                name: templateData[headerName],
+                                code: templateData[headerId],
                             };
                         });
 
@@ -767,24 +828,23 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     }
                 });
 
-            const results = await Promise.all(apiCalls);
+                const results = await Promise.all(apiCalls);
 
-            setNewFormConfig((prevFormConfig) =>
-                prevFormConfig.map((field) => {
-                    const updatedField = results.find((res) => res.id === field.id);
-                    return updatedField ? { ...field, options: updatedField.options } : field;
-                })
-            );
-        } catch (error) {
-            console.error('Error fetching template data:', error);
+                setNewFormConfig((prevFormConfig) =>
+                    prevFormConfig.map((field) => {
+                        const updatedField = results.find((res) => res.id === field.id);
+                        return updatedField ? { ...field, options: updatedField.options } : field;
+                    })
+                );
+            } catch (error) {
+                console.error("Error fetching template data:", error);
+            }
+        };
+
+        if (newFormConfig.length > 0) {
+            fetchTemplateData();
         }
-    };
-
-    if (newFormConfig.length > 0) {
-        fetchTemplateData();
-    }
-
-}, []);
+    }, []);
 
 //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
 //   console.log(stepperData, "stepperData stepperData")
