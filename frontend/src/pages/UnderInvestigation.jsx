@@ -3597,23 +3597,22 @@ const UnderInvestigation = () => {
           );
   
           if (getDivisionField.length > 0) {
-            const fieldMeta = getDivisionField[0];
   
-            if (fieldMeta.api) {
+            if (getDivisionField[0].api) {
               setLoading(true);
   
               const payloadApi = {
-                table_name: fieldMeta.table,
+                table_name: getDivisionField[0].table,
               };
   
               try {
-                const getOptionsValue = await api.post(fieldMeta.api, payloadApi);
+                const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
                 setLoading(false);
   
                 let updatedOptions = [];
   
                 if (getOptionsValue && getOptionsValue.data) {
-                  if (fieldMeta.api === "/templateData/getTemplateData") {
+                  if (getDivisionField[0].api === "/templateData/getTemplateData") {
                     updatedOptions = getOptionsValue.data.map((templateData) => {
                       const nameKey = Object.keys(templateData).find(
                         (key) => !["id", "created_at", "updated_at"].includes(key)
@@ -3626,13 +3625,13 @@ const UnderInvestigation = () => {
                   } else {
                     updatedOptions = getOptionsValue.data.map((field) => ({
                       name:
-                        fieldMeta.table === "users"
+                      getDivisionField[0].table === "users"
                           ? field.name
-                          : field[fieldMeta.table + "_name"],
+                          : field[getDivisionField[0].table + "_name"],
                       code:
-                        fieldMeta.table === "users"
+                      getDivisionField[0].table === "users"
                           ? field.user_id
-                          : field[fieldMeta.table + "_id"],
+                          : field[getDivisionField[0].table + "_id"],
                     }));
                   }
   
@@ -3662,7 +3661,7 @@ const UnderInvestigation = () => {
                 }
               }
             } else {
-              const staticOptions = fieldMeta.options || [];
+              const staticOptions = getDivisionField[0].options || [];
   
               const matchedOption = staticOptions.find(
                 (option) => option.code === selectedFieldData
