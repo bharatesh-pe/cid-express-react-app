@@ -308,7 +308,11 @@ exports.update_user = async (req, res) => {
     let updatedFields = {};
     let tempUpdatedFields = {};
     if (existingUser.name != username) updatedFields.name = username;
-    if (existingUser.role_id != role_id) updatedFields.role_id = role_id;
+
+    if (existingUser.role_id != role_id) {
+      updatedFields.role_id = role_id;
+      tempUpdatedFields.role = role_id;
+    }    
     if (existingUser.kgid_id != kgid)
       {
         updatedFields.kgid_id = kgid;
@@ -319,26 +323,15 @@ exports.update_user = async (req, res) => {
 
     if (Object.keys(updatedFields).length > 0) {
       await Users.update(updatedFields, { where: { user_id }, transaction: t });
-      if(tempUpdatedFields.name || tempUpdatedFields.mobile)
-      {
-          logs = Object.entries(tempUpdatedFields).map(([field, newValue]) => ({
-            user_id,
-            field,
-            info: `${newValue}`,
-            at: new Date(),
-            by: created_by,
-          }));
-      }
-      else
-      {
-        logs = Object.entries(updatedFields).map(([field, newValue]) => ({
-          user_id,
-          field,
-          info: `${newValue}`,
-          at: new Date(),
-          by: created_by,
-        }));
-      }
+
+      logs = Object.entries(tempUpdatedFields).map(([field, newValue]) => ({
+        user_id,
+        field,
+        info: `${newValue}`,
+        at: new Date(),
+        by: created_by,
+      }));
+
       if (logs.length > 0) await UserManagementLog.bulkCreate(logs, { transaction: t });
 
       if(updatedFields.kgid_id)
@@ -373,7 +366,7 @@ exports.update_user = async (req, res) => {
     }
 
     const userDepartment = await UsersDepartment.findOne({ where: { user_id } });
-    if (userDepartment && userDepartment.department_id !== department_id) {
+    if (userDepartment && userDepartment.department_id != department_id) {
       await UsersDepartment.update({ department_id }, { where: { user_id }, transaction: t });
       await UserManagementLog.create(
         { user_id, field: "department", info: `${department_id}`, at: new Date(), by: created_by },
