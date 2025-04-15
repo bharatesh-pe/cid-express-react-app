@@ -432,8 +432,6 @@ const UnderInvestigation = () => {
             });
         }else{
 
-            console.log("hello here");
-
             Swal.fire({
                 title: 'Are you sure?',
                 text: text,

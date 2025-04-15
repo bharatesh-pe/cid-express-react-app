@@ -507,6 +507,10 @@ const DynamicForm = ({
                             designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
                             get_flag : dependent_field[0]?.user_hierarchy || null
                         }
+                    }else if(field.api === "/templateData/getTemplateData"){
+                        apiPayload = {
+                            table_name: field.table
+                        }
                     }
 
                     const callApi = async () => {
@@ -608,6 +612,10 @@ const DynamicForm = ({
                         apiPayload = {
                             designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
                             get_flag : dependent_field[0]?.user_hierarchy || null
+                        }
+                    }else if(field.api === "/templateData/getTemplateData"){
+                        apiPayload = {
+                            table_name: field.table
                         }
                     }
 

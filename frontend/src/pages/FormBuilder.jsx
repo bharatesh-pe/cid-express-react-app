@@ -1270,7 +1270,7 @@ const Formbuilder = () => {
         const updatedFields = fields
             .filter((field) => field.formType)
             .map((field) => {
-                const labelValue = field.label || ""; // Get the label value
+                const labelValue = field.label.trim() || ""; // Get the label value
 
                 if (!labelValue) {
                     emptyLabel = true;
