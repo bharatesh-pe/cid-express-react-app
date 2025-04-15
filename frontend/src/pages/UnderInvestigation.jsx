@@ -519,8 +519,6 @@ const UnderInvestigation = () => {
                                                 })
                                             }
 
-                                            console.log(PreDefinedData,"PreDefinedData")
-
                                             setOtherInitialTemplateData(PreDefinedData);
             
                                         } else {
