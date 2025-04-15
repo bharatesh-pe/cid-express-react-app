@@ -401,6 +401,13 @@ const DynamicForm = ({
                 apiUrl = dependent_field[0].api;
             }
 
+            if(selectedField.table === "users"){
+                apiPayload = {
+                    designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                    get_flag : selectedField?.user_hierarchy || null
+                }
+            }
+
             const callApi = async () => {
                 try {
                     var getOptionsValue = await api.post( apiUrl ,apiPayload);
@@ -493,6 +500,13 @@ const DynamicForm = ({
                             }
                         }
                         apiUrl = dependent_field[0].api
+                    }
+
+                    if(dependent_field[0].table === "users"){
+                        apiPayload = {
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : dependent_field[0]?.user_hierarchy || null
+                        }
                     }
 
                     const callApi = async () => {
@@ -588,6 +602,13 @@ const DynamicForm = ({
                             }
                         }
                         apiUrl = dependent_field[0].api
+                    }
+
+                    if(dependent_field[0].table === "users"){
+                        apiPayload = {
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : dependent_field[0]?.user_hierarchy || null
+                        }
                     }
 
                     const callApi = async () => {
@@ -836,6 +857,11 @@ const DynamicForm = ({
                         if(field.api === "/templateData/getTemplateData"){
                             apiPayload = {
                                 table_name: field.table
+                            }
+                        }else if(field.table === "users"){
+                            apiPayload = {
+                                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                                get_flag : field?.user_hierarchy || null
                             }
                         }
 

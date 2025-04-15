@@ -413,9 +413,9 @@ const UnderInvestigation = () => {
             
                         if (getTemplateResponse && getTemplateResponse.success) {
                             
-                            if(getTemplateResponse.data && getTemplateResponse.data['meta']){
+                            if(getTemplateResponse.data && getTemplateResponse.data['template_module_data']){
             
-                                if (!getTemplateResponse.data['meta'].table_name || getTemplateResponse.data['meta'].table_name === '') {
+                                if (!getTemplateResponse.data['template_module_data'].table_name || getTemplateResponse.data['template_module_data'].table_name === '') {
                                     toast.warning('Please Check The Template', {
                                         position: "top-right",
                                         autoClose: 3000,
@@ -430,7 +430,7 @@ const UnderInvestigation = () => {
                                 }
             
                                 const viewTableData = {
-                                    "table_name": getTemplateResponse.data['meta'].table_name
+                                    "table_name": getTemplateResponse.data['template_module_data'].table_name
                                 }
                                 setLoading(true);
             
@@ -451,8 +451,8 @@ const UnderInvestigation = () => {
                                                 setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
                                             }
             
-                                            setPtCaseTableName(getTemplateResponse.data['meta'].table_name);
-                                            setPtCaseTemplateName(getTemplateResponse.data['meta'].template_name);
+                                            setPtCaseTableName(getTemplateResponse.data['template_module_data'].table_name);
+                                            setPtCaseTemplateName(getTemplateResponse.data['template_module_data'].template_name);
 
                                             setFurtherInvestigationSelectedRow(data);
                                             setFurtherInvestigationSelectedValue(value);
