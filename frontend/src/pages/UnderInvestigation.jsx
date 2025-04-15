@@ -3221,7 +3221,8 @@ const UnderInvestigation = () => {
     setSelectedRowData(selectedRow);
 
     if (options.table && options.field) {
-      showTransferToOtherDivision(options, selectedRow);
+      const selectedFieldValue = options.field;
+        showTransferToOtherDivision(options, selectedRow, selectedFieldValue);
       return;
     }
 
@@ -3568,11 +3569,13 @@ const UnderInvestigation = () => {
     }
   };
 
-  const showTransferToOtherDivision = async (options, selectedRow) => {
+  const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue) => {
+    const selectedFieldData = selectedRow[selectedFieldValue];
+  
     const viewTableData = {
       table_name: options.table,
     };
-
+  
     setLoading(true);
     try {
       const viewTemplateResponse = await api.post(
@@ -3580,7 +3583,7 @@ const UnderInvestigation = () => {
         viewTableData
       );
       setLoading(false);
-
+  
       if (
         viewTemplateResponse &&
         viewTemplateResponse.success &&
@@ -3588,67 +3591,56 @@ const UnderInvestigation = () => {
       ) {
         if (viewTemplateResponse["data"].fields) {
           setFormTemplateData(viewTemplateResponse["data"].fields);
-
-          var getDivisionField = viewTemplateResponse["data"].fields.filter(
-            (data) => {
-              if (data.name === options.field) {
-                return data;
-              }
-            }
+  
+          const getDivisionField = viewTemplateResponse["data"].fields.filter(
+            (data) => data.name === options.field
           );
-
+  
           if (getDivisionField.length > 0) {
+  
             if (getDivisionField[0].api) {
               setLoading(true);
-
-              var payloadApi = {
+  
+              const payloadApi = {
                 table_name: getDivisionField[0].table,
               };
-
+  
               try {
-                var getOptionsValue = await api.post(
-                  getDivisionField[0].api,
-                  payloadApi
-                );
-
+                const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
                 setLoading(false);
-
-                var updatedOptions = [];
-
+  
+                let updatedOptions = [];
+  
                 if (getOptionsValue && getOptionsValue.data) {
-                  if (
-                    getDivisionField[0].api === "/templateData/getTemplateData"
-                  ) {
-                    updatedOptions = getOptionsValue.data.map(
-                      (templateData) => {
-                        var nameKey = Object.keys(templateData).find(
-                          (key) =>
-                            !["id", "created_at", "updated_at"].includes(key)
-                        );
-
-                        return {
-                          name: nameKey ? templateData[nameKey] : "",
-                          code: templateData.id,
-                        };
-                      }
-                    );
-                  } else {
-                    updatedOptions = getOptionsValue.data.map((field, i) => {
+                  if (getDivisionField[0].api === "/templateData/getTemplateData") {
+                    updatedOptions = getOptionsValue.data.map((templateData) => {
+                      const nameKey = Object.keys(templateData).find(
+                        (key) => !["id", "created_at", "updated_at"].includes(key)
+                      );
                       return {
-                        name: field[
-                          getDivisionField[0].table === "users"
-                            ? "name"
-                            : getDivisionField[0].table + "_name"
-                        ],
-                        code: field[
-                          getDivisionField[0].table === "users"
-                            ? "user_id"
-                            : getDivisionField[0].table + "_id"
-                        ],
+                        name: nameKey ? templateData[nameKey] : "",
+                        code: templateData.id,
                       };
                     });
+                  } else {
+                    updatedOptions = getOptionsValue.data.map((field) => ({
+                      name:
+                      getDivisionField[0].table === "users"
+                          ? field.name
+                          : field[getDivisionField[0].table + "_name"],
+                      code:
+                      getDivisionField[0].table === "users"
+                          ? field.user_id
+                          : field[getDivisionField[0].table + "_id"],
+                    }));
                   }
-
+  
+                  const matchedOption = updatedOptions.find(
+                    (option) => option.code === selectedFieldData
+                  );
+                  console.log("Pre-selected value:", matchedOption);
+                  setSelectedOtherFields(matchedOption || null);
+  
                   setSelectKey({ name: options.field, title: options.name });
                   setSelectedRow(selectedRow);
                   setselectedOtherTemplate(options);
@@ -3657,83 +3649,65 @@ const UnderInvestigation = () => {
                 }
               } catch (error) {
                 setLoading(false);
-
-                if (error && error.response && error.response.data) {
+                if (error?.response?.data) {
                   toast.error(
-                    error.response.data["message"]
-                      ? error.response.data["message"]
-                      : "Division not found",
+                    error.response.data.message || "Division not found",
                     {
                       position: "top-right",
                       autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
                       className: "toast-error",
                     }
                   );
-                  return;
                 }
               }
             } else {
+              const staticOptions = getDivisionField[0].options || [];
+  
+              const matchedOption = staticOptions.find(
+                (option) => option.code === selectedFieldData
+              );
+              setSelectedOtherFields(matchedOption || null);
+  
               setSelectKey({ name: options.field, title: options.name });
               setSelectedRow(selectedRow);
               setselectedOtherTemplate(options);
-              setOtherTransferField(getDivisionField[0].options);
+              setOtherTransferField(staticOptions);
               setShowOtherTransferModal(true);
             }
           } else {
-            const errorMessage = "Can't able to find Division field";
-            toast.error(errorMessage, {
+            toast.error("Can't able to find Division field", {
               position: "top-right",
               autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
               className: "toast-error",
             });
           }
         }
       } else {
-        const errorMessage = viewTemplateResponse.message
-          ? viewTemplateResponse.message
-          : "Failed to get Template. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
         toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
+          viewTemplateResponse.message || "Failed to get Template. Please try again.",
           {
             position: "top-right",
             autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error?.response?.data) {
+        toast.error(
+          error.response.data.message || "Please Try Again!",
+          {
+            position: "top-right",
+            autoClose: 3000,
             className: "toast-error",
           }
         );
       }
     }
   };
+  
+
 
   const showApprovalPage = async (approveData) => {
     var payloadObj = {
@@ -4931,17 +4905,17 @@ const UnderInvestigation = () => {
                   setApprovalDesignationData(getActionsDetails.data['designation']);
   
                   var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                      if((data.name).toLowerCase() === 'case registration'){
-                          return data;
-                      }
+                    if((data.name).toLowerCase() === 'case registration'){
+                        return data;
+                    }
                   });
 
                   if(getFurtherInvestigationItems?.[0]){
-                      caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
-                      setReadonlyApprovalItems(true);
+                    caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                    setReadonlyApprovalItems(true);
                   }else{
-                      caseApprovalOnChange('approval_item', null);
-                      setReadonlyApprovalItems(false);
+                    caseApprovalOnChange('approval_item', null);
+                    setReadonlyApprovalItems(false);
                   } 
   
                   setShowApprovalModal(true);
@@ -5060,10 +5034,10 @@ const UnderInvestigation = () => {
           }
   
           var approvalData = {
-                                approval : approvalFormData, 
-                                approval_details : approvalItems,
-                                others_table_name : table_name
-                            }
+                          approval : approvalFormData,
+                          approval_details : approvalItems,
+                          others_table_name : table_name
+                      }
   
           for (let [key, value] of approvalSaveCaseData.formData.entries()) {
               formData.append(key, value);
@@ -6106,13 +6080,7 @@ const UnderInvestigation = () => {
                 id=""
                 options={otherTransferField}
                 getOptionLabel={(option) => option.name || ""}
-                value={
-                  otherTransferField.find(
-                    (option) =>
-                      option.code ===
-                      (selectedOtherFields && selectedOtherFields.code)
-                  ) || null
-                }
+                value={selectedOtherFields || null}
                 onChange={(event, newValue) => setSelectedOtherFields(newValue)}
                 renderInput={(params) => (
                   <TextField
