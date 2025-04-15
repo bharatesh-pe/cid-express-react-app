@@ -1142,11 +1142,10 @@ exports.viewTemplateData = async (req, res, next) => {
       template_module_data['table_name'] = template.table_name;
       template_module_data["template_name"] = template.template_name;
     }
-    return_data.data = data;
-    return_data.meta = template_module_data;
+    data.template_module_data = template_module_data;
 
     const responseMessage = `Fetched record successfully from table ${table_name}.`;
-    return userSendResponse(res, 200, true, responseMessage, return_data);
+    return userSendResponse(res, 200, true, responseMessage, data);
   } catch (error) {
     console.error("Error fetching data by ID:", error);
     return userSendResponse(res, 500, false, "Server error.", error);
