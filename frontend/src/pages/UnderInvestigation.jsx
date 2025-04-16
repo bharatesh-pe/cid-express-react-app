@@ -2197,6 +2197,7 @@ const UnderInvestigation = () => {
   };
 
   const otherTemplateUpdateFunc = async (data) => {
+
     if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -2727,6 +2728,7 @@ const UnderInvestigation = () => {
   };
 
   const onUpdateTemplateData = async (data) => {
+
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -3634,7 +3636,8 @@ const UnderInvestigation = () => {
                   }
   
                   const matchedOption = updatedOptions.find(
-                    (option) => option.code === selectedFieldData
+                    (option) =>
+                      (option.code === selectedFieldData || option.name === selectedFieldData)
                   );
                   console.log("Pre-selected value:", matchedOption);
                   setSelectedOtherFields(matchedOption || null);

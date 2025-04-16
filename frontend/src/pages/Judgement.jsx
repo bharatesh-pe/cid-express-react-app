@@ -1,29 +1,27 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
 import DynamicForm from '../components/dynamic-form/DynamicForm';
 import NormalViewForm from '../components/dynamic-form/NormalViewForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
-
-import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid } from "@mui/material";
+import { DemoContainer } from '@mui/x-date-pickers/internals/demo';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from "dayjs";
+import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField} from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import ASC from '@mui/icons-material/North';
-import DESC from '@mui/icons-material/South';
 import AddIcon from '@mui/icons-material/Add';
-import filterLines from '../Images/filterLines.svg';
 import Swal from 'sweetalert2';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import pdfIcon from '../Images/pdfIcon.svg'
 import docIcon from '../Images/docIcon.svg'
@@ -33,16 +31,23 @@ import jpgIcon from '../Images/jpgIcon.svg'
 import pngIcon from '../Images/pngIcon.svg'
 import CloseIcon from '@mui/icons-material/Close';
 import { CircularProgress } from "@mui/material";
-import StarIcon from "@mui/icons-material/Star";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
+import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 
 const Judgement = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    // on save approval modal
+
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [approvalItemsData, setApprovalItemsData] = useState([]);
+    const [readonlyApprovalItems, setReadonlyApprovalItems] = useState(false);
+    const [approvalDesignationData, setApprovalDesignationData] = useState([]);
+    const [approvalFormData, setApprovalFormData] = useState({});
+    const [approvalSaveCaseData, setApprovalSaveCaseData] = useState({});
 
     const [showOptionModal, setShowOptionModal] = useState(false)
     const [paginationCount, setPaginationCount] = useState(1);
@@ -55,7 +60,6 @@ const Judgement = () => {
     const [linkOrganization, setLinkOrganization] = useState(false)
     const [template_name, setTemplate_name] = useState('')
     const [table_name, setTable_name] = useState('')
-
     const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
     const [formTemplateData, setFormTemplateData] = useState([])
@@ -64,23 +68,45 @@ const Judgement = () => {
     const [editTemplateData, setEditTemplateData] = useState(false);
     const [selectedRowId, setSelectedRowId] = useState(null);
     const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-
     const [otherFormOpen, setOtherFormOpen] = useState(false);
     const [optionStepperData, setOptionStepperData] = useState([]);
     const [optionFormTemplateData, setOptionFormTemplateData] = useState([])
-
     const [showDownloadModal, setShowDownloadModal] = useState(false);
     const [showDownloadData, setShowDownloadData] = useState([]);
     const [showSelectedDownloadData, setShowSelectedDownloadData] = useState({});
-
     const [showAttachmentModal, setShowAttachmentModal] = useState(false);
     const [showAttachmentKey, setShowAttachmentKey] = useState(null);
     const [showAttachmentData, setShowAttachmentData] = useState([]);
-
     const [starFlag, setStarFlag] = useState(null);
     const [readFlag, setReadFlag] = useState(null);
+    const [loading, setLoading] = useState(false);
+    // for approve states
+    const [approveTableFlag, setApproveTableFlag] = useState(false);
+    const [addApproveFlag, setAddApproveFlag] = useState(false);
+    const [approvalsData, setApprovalsData] = useState([]);
+    const [approvalsColumn, setApprovalsColumn] = useState([
+        { field: "sl_no", headerName: "S.No" },
+        { field: "approvalItem", headerName: "Approval Item", flex: 1 },
+        { field: "approvedBy", headerName: "Approved By", flex: 1 },
+        { field: "approval_date", headerName: "Approval Date", flex: 1 },
+        { field: "remarks", headerName: "Remarks", flex: 1 },
+    ]);
+    const [approvalItem, setApprovalItem] = useState([]);
+    const [designationData, setDesignationData] = useState([]);
+    const [randomApprovalId, setRandomApprovalId] = useState(0);
+    const [approvalSaveData, setApprovalSaveData] = useState({});
+    const handleApprovalSaveData = (name, value) => {
+        setApprovalSaveData({
+        ...approvalSaveData,
+        [name]: value,
+        });
+    };
+    const [selectedRow, setSelectedRow] = useState({});
+    const [templateApproval, setTemplateApproval] = useState(false);
+    const [selectedOtherFields, setSelectedOtherFields] = useState(null);
+    const [selectKey, setSelectKey] = useState(null);
+    const [isApprovalItemDisabled, setIsApprovalItemDisabled] = useState(false);
 
-    const [loading, setLoading] = useState(false); // State for loading indicator
 
     const searchParams = new URLSearchParams(location.search);
 
@@ -121,9 +147,12 @@ const Judgement = () => {
             { field: 'sl_no', headerName: 'S.No' }
         ]
     );
-
     const [otherTablePagination, setOtherTablePagination] = useState(1)
-
+    const [pendingUpdateData, setPendingUpdateData] = useState(null);
+    const [pendingSaveData, setPendingSaveData] = useState(null);
+    const [pendingDeleteData, setPendingDeleteData] = useState(null);
+    const [approvalPurpose, setApprovalPurpose] = useState(null);
+    
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
         if (!table_name || table_name === '') {
@@ -247,6 +276,485 @@ const Judgement = () => {
         }
 
     }
+
+      const showApprovalPage = async (approveData) => {
+        setSelectedRow(approveData);
+        setFormOpen(false);
+        var payloadObj = {
+            case_id: approveData.id,
+            approval_type: "judgement",
+        };
+
+        setLoading(true);
+    
+        try {
+          const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals", payloadObj);
+    
+          setLoading(false);
+    
+          if (getActionsDetails && getActionsDetails.success) {
+            var updatedOptions = [];
+    
+            if (getActionsDetails.data["approvals"].length > 0) {
+              updatedOptions = getActionsDetails.data["approvals"].map(
+                (data, index) => {
+                  const formatDate = (fieldValue) => {
+                    if (!fieldValue || typeof fieldValue !== "string")
+                      return fieldValue;
+    
+                    var dateValue = new Date(fieldValue);
+    
+                    if (
+                      isNaN(dateValue.getTime()) ||
+                      (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                    ) {
+                      return fieldValue;
+                    }
+    
+                    if (isNaN(dateValue.getTime())) return fieldValue;
+    
+                    var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                    var monthValue = String(dateValue.getMonth() + 1).padStart(
+                      2,
+                      "0"
+                    );
+                    var yearValue = dateValue.getFullYear();
+                    return `${dayValue}/${monthValue}/${yearValue}`;
+                  };
+    
+                  const updatedField = {};
+    
+                  Object.keys(data).forEach((key) => {
+                    if (
+                      data[key] &&
+                      key !== "id" &&
+                      !isNaN(new Date(data[key]).getTime())
+                    ) {
+                      updatedField[key] = formatDate(data[key]);
+                    } else {
+                      updatedField[key] = data[key];
+                    }
+                  });
+    
+                  return {
+                    ...updatedField,
+                    sl_no: index + 1,
+                    id: data.approval_id,
+                  };
+                }
+              );
+            }
+    
+            setApprovalsData(updatedOptions);
+            setApprovalItem(getActionsDetails.data["approval_item"]);
+            setDesignationData(getActionsDetails.data["designation"]);
+    
+            setAddApproveFlag(false);
+            setApproveTableFlag(true);
+    
+            const randomId = `approval_${Date.now()}_${Math.floor(
+              Math.random() * 1000
+            )}`;
+            setRandomApprovalId(randomId);
+          } else {
+            const errorMessage = getActionsDetails.message
+              ? getActionsDetails.message
+              : "Failed to create the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response+["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              }
+            );
+          }
+        }
+      };
+    
+      const showApprovalAddPage = (table) => {
+        setAddApproveFlag(true);
+        handleApprovalSaveData(
+          "approval_item",
+          Number(selectedOtherTemplate?.approval_items)
+        );
+      };
+    
+      const saveApprovalData = async (table) => {
+        if (!approvalSaveData || !approvalSaveData["approval_item"]) {
+            const defaultItem = approvalItem.find(
+              (item) => (item.name || "").toLowerCase() === "judgements"
+            );
+          
+            if (defaultItem) {
+              approvalSaveData["approval_item"] = defaultItem.approval_item_id;
+            } else {
+              toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              });
+              return;
+            }
+          }
+          
+        if (!approvalSaveData || !approvalSaveData["approved_by"]) {
+          toast.error("Please Select Designation !", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          });
+          return;
+        }
+      
+        var created_by_designation_id = localStorage.getItem("designation_id") || "";
+        var created_by_division_id = localStorage.getItem("division_id") || "";
+      
+        var actionType = approvalPurpose === "delete" ? "Delete Judgement" : "Edit Judgement";
+      
+        var payloadApproveData = {
+          ...approvalSaveData,
+          case_id: selectedRow.id,
+          case_type: "judgement",
+          module: "Judgement",
+          action: actionType,
+          transaction_id: randomApprovalId,
+          created_by_designation_id,
+          created_by_division_id,
+          info: {
+            module: "Judgement",
+          },
+        };
+      
+        setLoading(true);
+      
+        try {
+          const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval", payloadApproveData);
+            
+          if (chnageSysStatus && chnageSysStatus.success) {
+            toast.success(
+            "Approval Added Successfully",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-success",
+                onClose: () => {
+                  setApproveTableFlag(false);
+                  setAddApproveFlag(false);
+                }
+              }
+            );
+      
+            if (approvalPurpose === "delete" && pendingDeleteData) {
+              const { rowData, table_name } = pendingDeleteData;
+              const deletePayload = {
+                table_name,
+                where: { id: rowData.id },
+              };
+      
+              try {
+                const deleteRes = await api.post("templateData/deleteTemplateData", deletePayload);
+      
+                if (deleteRes.success) {
+                  toast.success(deleteRes.message || "Template Deleted Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        loadTableData(paginationCount);
+                        setApprovalSaveData({});
+                    }                  
+                });
+                } else {
+                  toast.error(deleteRes.message || "Failed to delete the template.");
+                }
+              } catch (err) {
+                setLoading(false);
+                toast.error(err?.response?.data?.message || "Error deleting template.");
+              }
+      
+              setPendingDeleteData(null);
+              setApprovalPurpose(null);
+            }
+      
+            if (pendingUpdateData && approvalPurpose !== "delete") {
+                onUpdateTemplateData(pendingUpdateData);
+            }
+      
+            // if (pendingSaveData) {
+            //   onSaveTemplateData(pendingSaveData);
+            // }
+      
+            var combinedData = {
+              id: selectedRow.id,
+              [selectKey.name]: selectedOtherFields.code,
+            };
+            
+            setSelectKey(null);
+            setSelectedRow(null);
+            setselectedOtherTemplate(null);
+            setApprovalsData([]);
+            setApprovalItem([]);
+            setDesignationData([]);
+            setApprovalSaveData({});
+            setAddApproveFlag(false);
+            setApproveTableFlag(false);
+          } else {
+            const errorMessage = chnageSysStatus.message || "Failed to add approval. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message || "Please Try Again !",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              }
+            );
+          }
+        }
+      };
+         
+      
+        const showCaseApprovalPage = async (caseData, formData)=>{
+        
+                setLoading(true);
+        
+                try {
+        
+                    const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
+        
+                    setLoading(false);
+        
+                    if (getActionsDetails && getActionsDetails.success) {
+        
+                        setApprovalItemsData(getActionsDetails.data['approval_item']);
+                        setApprovalDesignationData(getActionsDetails.data['designation']);
+        
+                        var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
+                            if((data.name).toLowerCase() === 'judgements'){
+                                return data;
+                            }
+                        });
+      
+                        if(getFurtherInvestigationItems?.[0]){
+                            caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                            setReadonlyApprovalItems(true);
+                        }else{
+                            caseApprovalOnChange('approval_item', null);
+                            setReadonlyApprovalItems(false);
+                        } 
+        
+                        setShowApprovalModal(true);
+                        setApprovalSaveCaseData({
+                            caseData : caseData,
+                            formData : formData
+                        });
+        
+                    } else {
+        
+                        const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+        
+                    }
+        
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response['data']) {
+                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+          }
+        
+          
+            const caseApprovalOnChange = (name, value)=>{
+                setApprovalFormData((prev)=>{
+                    return{
+                        ...prev,
+                        [name] : value
+                    }
+                });
+            }
+        
+            const handleApprovalWithSave = async () => {
+                if (!approvalFormData?.approval_item) {
+                    toast.error("Please Select Approval Item !");
+                    return;
+                }
+            
+                if (!approvalFormData?.approved_by) {
+                    toast.error("Please Select Designation !");
+                    return;
+                }
+            
+                if (!approvalFormData?.approval_date) {
+                    toast.error("Please Select Approval Date !");
+                    return;
+                }
+            
+                if (!approvalFormData?.remarks) {
+                    toast.error("Please Enter Comments !");
+                    return;
+                }
+            
+                const formData = new FormData();
+            
+                const approvalDetails = {
+                    module_name: "Judgement",
+                    action: "Create Judgement",
+                };
+            
+                const sysStatus = {
+                    id: approvalSaveCaseData?.caseData?.id || null,
+                    sys_status: approvalSaveCaseData?.caseData?.sys_status || "Create Judgement",
+                    default_status: "judgement",
+                };
+            
+                const approvalPayload = {
+                    approval: approvalFormData,
+                    approval_details: approvalDetails,
+                    others_table_name: table_name,
+                    sys_status: sysStatus,
+                };
+            
+                for (let [key, value] of approvalSaveCaseData.formData.entries()) {
+                    formData.append(key, value);
+                }
+            
+                formData.append("data", JSON.stringify(approvalSaveCaseData.caseData));
+                formData.append("others_data", JSON.stringify(approvalPayload));
+            
+                const transactionId = `gn_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+                formData.append("transaction_id", transactionId);
+                formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
+            
+                setLoading(true);
+            
+                try {
+                    const response = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
+                    setLoading(false);
+            
+                    console.log("response", response);
+                    if (response?.success) {
+                        toast.success(response.message || "Data Created Successfully", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-success",
+                        });
+                        setShowApprovalModal(false);
+                        setApprovalSaveCaseData({});
+                        setApprovalItemsData([]);
+                        setApprovalFormData({});
+                        setApprovalDesignationData([]);
+                        loadTableData(paginationCount);
+                    } else {
+                        toast.error(response?.message || 'Failed to change the status. Please try again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    toast.error(error?.response?.message || 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            };
+                              
 
     useEffect(() => {
         loadTableData(paginationCount);
@@ -375,7 +883,8 @@ const Judgement = () => {
                                     </Box>
                                     );
                                 }
-                            }                        ];
+                            }
+                        ];
 
                         if (Array.isArray(getTemplateResponse.data['columns'])) {
 
@@ -676,75 +1185,24 @@ const Judgement = () => {
     }
 
     const handleDeleteTemplateData = (rowData, table_name) => {
-
         Swal.fire({
             title: 'Are you sure?',
-            text: "Do you want to delete this profile ?",
+            text: "Do you want to delete this profile?",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Yes, Delete it!',
             cancelButtonText: 'No',
-        }).then(async (result) => {
+        }).then((result) => {
             if (result.isConfirmed) {
-                const deleteTemplateData = {
-                    "table_name": table_name,
-                    "where": { id: rowData.id }
-                }
-                setLoading(true);
-
-                try {
-                    const deleteTemplateDataResponse = await api.post("templateData/deleteTemplateData", deleteTemplateData);
-                    setLoading(false);
-
-                    if (deleteTemplateDataResponse && deleteTemplateDataResponse.success) { 
-                        toast.success(deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Template Deleted Successfully", {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-success",
-                            onOpen: () => loadTableData(paginationCount)
-                        });
-                    } else {
-                        const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
-                        toast.error(errorMessage, {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-
-                    }
-
-                } catch (error) {
-                    setLoading(false);
-                    if (error && error.response && error.response['data']) {
-                        toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-
-                    }
-                }
+                setApprovalPurpose("delete");
+                setPendingDeleteData({ rowData, table_name });
+                showApprovalPage(rowData);
             } else {
                 console.log("Template deletion canceled.");
             }
         });
-    }
-
+    };
+    
     const ApplySortTable = (key) => {
         settableSortOption((prevOption) => (prevOption === 'DESC' ? 'ASC' : 'DESC'));
         setTableSortKey(key);
@@ -884,7 +1342,7 @@ const Judgement = () => {
         }
     }
 
-    const otherTemplateSaveFunc = async (data) => {
+    const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
 
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === '') {
             toast.warning('Please Check The Template', {
@@ -913,7 +1371,7 @@ const Judgement = () => {
             });
             return;
         }
-
+          
         const formData = new FormData();
         formData.append("table_name", selectedOtherTemplate.table);
 
@@ -1393,7 +1851,9 @@ const Judgement = () => {
             }
         });
 
-        formData.append("data", JSON.stringify(normalData));
+        normalData.sys_status = "judgement";
+        showCaseApprovalPage(normalData,formData);
+        return;
         setLoading(true);
 
         try {
@@ -1535,7 +1995,10 @@ const Judgement = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount)
+                    onOpen: () => {
+                        loadTableData(paginationCount);
+                        setApprovalSaveData({});
+                    }
                 });
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
@@ -1893,6 +2356,12 @@ const Judgement = () => {
         }
     }
 
+    // Find the default item (Government Order)
+const defaultGovernmentOrderItem = approvalItem.find(
+    (item) => (item.name || "").toLowerCase() === "judgements"
+  );
+
+  
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -2044,7 +2513,10 @@ const Judgement = () => {
                     template_name={template_name}
                     readOnly={viewReadonly}
                     editData={editTemplateData}
-                    onUpdate={onUpdateTemplateData}
+                    onUpdate={(data) => {
+                        setPendingUpdateData(data);
+                        showApprovalPage(data);
+                      }}
                     formConfig={formTemplateData}
                     stepperData={stepperData}
                     initialData={initialData}
@@ -2253,6 +2725,183 @@ const Judgement = () => {
                 </Dialog>
             }
 
+                  {approveTableFlag && (
+                    <Dialog
+                      open={approveTableFlag}
+                      onClose={() => setApproveTableFlag(false)}
+                      aria-labelledby="alert-dialog-title"
+                      aria-describedby="alert-dialog-description"
+                      maxWidth="lg"
+                      fullWidth
+                      sx={{ zIndex: "1" }}
+                    >
+                      <DialogTitle
+                        id="alert-dialog-title"
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        Approval
+                        <Box>
+                          {!addApproveFlag ? (
+                            <Button
+                              variant="outlined"
+                              onClick={() => {
+                                showApprovalAddPage(selectedOtherTemplate.table);
+                              }}
+                            >
+                              Add
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="outlined"
+                              onClick={() => {
+                                saveApprovalData(selectedOtherTemplate.table);
+                              }}
+                            >
+                              Save
+                            </Button>
+                          )}
+                          <IconButton
+                            aria-label="close"
+                            onClick={() => setApproveTableFlag(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                          >
+                            <CloseIcon />
+                          </IconButton>
+                        </Box>
+                      </DialogTitle>
+                      <DialogContent>
+                        <DialogContentText id="alert-dialog-description">
+                          <Box py={2}>
+                            {!addApproveFlag ? (
+                              <TableView rows={approvalsData} columns={approvalsColumn} />
+                            ) : (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "18px",
+                                }}
+                              >
+                                <Autocomplete
+                                id=""
+                                options={approvalItem}
+                                getOptionLabel={(option) => option.name || ""}
+                                name={"approval_item"}
+                                value={
+                                    approvalItem.find(
+                                    (option) =>
+                                        option.approval_item_id ===
+                                        (approvalSaveData && approvalSaveData["approval_item"])
+                                    ) || defaultGovernmentOrderItem || null
+                                }
+                                onChange={(e, value) =>
+                                    handleApprovalSaveData("approval_item", value?.approval_item_id)
+                                }
+                                disabled = {true}
+                                renderInput={(params) => (
+                                    <TextField
+                                    {...params}
+                                    className="selectHideHistory"
+                                    label={"Approval Item"}
+                                    />
+                                )}
+                                />
+
+                                <Autocomplete
+                                  id=""
+                                  options={designationData}
+                                  getOptionLabel={(option) => option.designation_name || ""}
+                                  name={"approved_by"}
+                                  value={
+                                    designationData.find(
+                                      (option) =>
+                                        option.designation_id ===
+                                        (approvalSaveData &&
+                                          approvalSaveData["approved_by"])
+                                    ) || null
+                                  }
+                                  onChange={(e, value) =>
+                                    handleApprovalSaveData(
+                                      "approved_by",
+                                      value?.designation_id
+                                    )
+                                  }
+                                  renderInput={(params) => (
+                                    <TextField
+                                      {...params}
+                                      className="selectHideHistory"
+                                      label={"Designation"}
+                                    />
+                                  )}
+                                />
+            
+                                <LocalizationProvider
+                                  dateAdapter={AdapterDayjs}
+                                  sx={{ width: "100%" }}
+                                >
+                                  <DemoContainer
+                                    components={["DatePicker"]}
+                                    sx={{ width: "100%" }}
+                                  >
+                                    <DatePicker
+                                      label="Approval Date"
+                                      value={
+                                        approvalSaveData["approval_date"]
+                                          ? dayjs(approvalSaveData["approval_date"])
+                                          : null
+                                      }
+                                      name="approval_date"
+                                      format="DD/MM/YYYY"
+                                      sx={{ width: "100%" }}
+                                      onChange={(newValue) => {
+                                        if (newValue && dayjs.isDayjs(newValue)) {
+                                          handleApprovalSaveData(
+                                            "approval_date",
+                                            newValue.toISOString()
+                                          );
+                                        } else {
+                                          handleApprovalSaveData("approval_date", null);
+                                        }
+                                      }}
+                                    />
+                                  </DemoContainer>
+                                </LocalizationProvider>
+            
+                                <TextField
+                                  rows={8}
+                                  label={"Comments"}
+                                  sx={{ width: "100%" }}
+                                  name="remarks"
+                                  value={approvalSaveData["remarks"]}
+                                  onChange={(e) =>
+                                    handleApprovalSaveData("remarks", e.target.value)
+                                  }
+                                />
+                              </Box>
+                            )}
+                          </Box>
+                        </DialogContentText>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+            
+    <ApprovalModal
+        open={showApprovalModal}
+        onClose={() => setShowApprovalModal(false)}
+        onSave={handleApprovalWithSave}
+        
+        approvalItem={approvalItemsData}
+        disabledApprovalItems={readonlyApprovalItems}
+
+        designationData={approvalDesignationData}
+        
+        formData={approvalFormData}
+        onChange={caseApprovalOnChange}
+    />
 
         </Box>
     )
