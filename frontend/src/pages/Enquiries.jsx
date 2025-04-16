@@ -577,7 +577,7 @@ const Enquiries = () => {
     }
   };
 
-  const loadTableData = async (page, searchValue) => {
+  const loadTableData = async (page) => {
     var getTemplatePayload = {
       page: page,
       limit: 10,
@@ -3454,7 +3454,7 @@ const Enquiries = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    loadTableData(paginationCount, e.target.value);
+                    setFilterData()
                   }
                 }}
                 sx={{
@@ -3548,6 +3548,16 @@ const Enquiries = () => {
               className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
             >
               All
+            </Box>
+            <Box
+              onClick={() => {
+                setSysSattus("eq_case");
+                setPaginationCount(1);
+              }}
+              id="filterAll"
+              className={`filterTabs ${sysStatus === "eq_case" ? "Active" : ""}`}
+            >
+              Enquiries
             </Box>
             <Box
               onClick={() => {

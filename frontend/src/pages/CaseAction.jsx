@@ -41,6 +41,7 @@ const CaseActions = () => {
     const [searchValue, setSearchValue] = useState('');
     const [paginationCount, setPaginationCount] = useState(1);
     const [tableSortField, settableSortField] = useState(null);    
+    const [forceTableLoad, setForceTableLoad] = useState(false);
 
     const [tableData, setTableData] = useState([]);
 
@@ -196,14 +197,14 @@ const CaseActions = () => {
 
         loadTableData(paginationCount);
 
-    },[paginationCount]);
+    },[paginationCount, forceTableLoad]);
 
-    const loadTableData = async (page, searchData) => {
+    const loadTableData = async (page) => {
 
         var getTemplatePayload = {
             "page": page,
             "limit": 10,
-            "search": searchData,
+            "search": searchValue ? searchValue : '',
             "sort_by": tableSortField,
             "sort_order": "DESC"
         }
@@ -788,6 +789,10 @@ const CaseActions = () => {
                 code : 'all'
             },
             {
+                name : 'Enquiries',
+                code : 'eq_case'
+            },
+            {
                 name : 'Completed',
                 code : 'Completed'
             },
@@ -901,6 +906,15 @@ const CaseActions = () => {
             )
         },
     ];
+    const handleClear = ()=>{
+        setSearchValue('');
+        loadTableData(paginationCount);
+        setForceTableLoad((prev) => !prev);
+    }
+    const searchTableData = ()=>{
+        setPaginationCount(1);
+        setForceTableLoad((prev) => !prev);
+    }
     
     return (
         <Box p={2} inert={loading ? true : false}>
@@ -922,7 +936,7 @@ const CaseActions = () => {
                             ),
                             endAdornment: (
                                 searchValue && (
-                                    <IconButton sx={{ padding: 0 }} onClick={() => setSearchValue('')} size="small">
+                                    <IconButton sx={{ padding: 0 }} onClick={() => handleClear()} size="small">
                                         <ClearIcon sx={{ color: '#475467' }} />
                                     </IconButton>
                                 )
@@ -937,7 +951,7 @@ const CaseActions = () => {
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     e.preventDefault();
-                                    loadTableData(paginationCount,searchValue);
+                                    searchTableData();
                                 }
                             }}
                             sx={{

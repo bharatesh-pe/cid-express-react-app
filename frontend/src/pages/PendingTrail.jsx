@@ -710,7 +710,7 @@ const UnderInvestigation = () => {
     setIsCheckboxSelected(anySelected);
   }, [tableData]);
 
-  const loadTableData = async (page, searchValue) => {
+  const loadTableData = async (page) => {
     var getTemplatePayload = {
       page: page,
       limit: 10,
@@ -4824,7 +4824,7 @@ const UnderInvestigation = () => {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     e.preventDefault();
-                    loadTableData(paginationCount, e.target.value);
+                    setFilterData()
                   }
                 }}
                 sx={{
@@ -5792,7 +5792,7 @@ const UnderInvestigation = () => {
             <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
                 Approval
                 <Box>
-                    <Button variant="outlined" onClick={() => {saveOverallData(selectedOtherTemplate.table)}}>Save</Button>
+                    <Button variant="outlined" onClick={() => {saveOverallData()}}>Save</Button>
                     <IconButton
                         aria-label="close"
                         onClick={() => setNewApprovalPage(false)}
