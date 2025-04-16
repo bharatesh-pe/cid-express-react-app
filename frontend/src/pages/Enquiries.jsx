@@ -3551,6 +3551,16 @@ const Enquiries = () => {
             </Box>
             <Box
               onClick={() => {
+                setSysSattus("eq_case");
+                setPaginationCount(1);
+              }}
+              id="filterAll"
+              className={`filterTabs ${sysStatus === "eq_case" ? "Active" : ""}`}
+            >
+              Enquiries
+            </Box>
+            <Box
+              onClick={() => {
                 setSysSattus("Completed");
                 setPaginationCount(1);
               }}

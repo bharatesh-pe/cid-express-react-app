@@ -788,6 +788,10 @@ const CaseActions = () => {
                 code : 'all'
             },
             {
+                name : 'Enquiries',
+                code : 'eq_case'
+            },
+            {
                 name : 'Completed',
                 code : 'Completed'
             },
