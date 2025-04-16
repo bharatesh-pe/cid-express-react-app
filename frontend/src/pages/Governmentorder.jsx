@@ -105,7 +105,8 @@ const GovernmentOrder = () => {
     const [templateApproval, setTemplateApproval] = useState(false);
     const [selectedOtherFields, setSelectedOtherFields] = useState(null);
     const [selectKey, setSelectKey] = useState(null);
-  
+    const [isApprovalItemDisabled, setIsApprovalItemDisabled] = useState(false);
+
 
     const searchParams = new URLSearchParams(location.search);
 
@@ -402,19 +403,27 @@ const GovernmentOrder = () => {
     
       const saveApprovalData = async (table) => {
         if (!approvalSaveData || !approvalSaveData["approval_item"]) {
-          toast.error("Please Select Approval Item !", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          });
-          return;
-        }
-      
+            const defaultItem = approvalItem.find(
+              (item) => (item.name || "").toLowerCase() === "government order"
+            );
+          
+            if (defaultItem) {
+              approvalSaveData["approval_item"] = defaultItem.approval_item_id;
+            } else {
+              toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              });
+              return;
+            }
+          }
+          
         if (!approvalSaveData || !approvalSaveData["approved_by"]) {
           toast.error("Please Select Designation !", {
             position: "top-right",
@@ -432,7 +441,7 @@ const GovernmentOrder = () => {
         var created_by_designation_id = localStorage.getItem("designation_id") || "";
         var created_by_division_id = localStorage.getItem("division_id") || "";
       
-        var actionType = approvalPurpose === "delete" ? "Delete" : "Edit";
+        var actionType = approvalPurpose === "delete" ? "Delete Government Order" : "Edit Government Order";
       
         var payloadApproveData = {
           ...approvalSaveData,
@@ -452,12 +461,10 @@ const GovernmentOrder = () => {
       
         try {
           const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval", payloadApproveData);
-      
-          setLoading(false);
-      
+            
           if (chnageSysStatus && chnageSysStatus.success) {
             toast.success(
-              chnageSysStatus.message || "Approval Added Successfully",
+            "Approval Added Successfully",
               {
                 position: "top-right",
                 autoClose: 3000,
@@ -474,7 +481,6 @@ const GovernmentOrder = () => {
               }
             );
       
-            // 🔄 Handle delete
             if (approvalPurpose === "delete" && pendingDeleteData) {
               const { rowData, table_name } = pendingDeleteData;
               const deletePayload = {
@@ -483,9 +489,7 @@ const GovernmentOrder = () => {
               };
       
               try {
-                setLoading(true);
                 const deleteRes = await api.post("templateData/deleteTemplateData", deletePayload);
-                setLoading(false);
       
                 if (deleteRes.success) {
                   toast.success(deleteRes.message || "Template Deleted Successfully", {
@@ -679,7 +683,7 @@ const GovernmentOrder = () => {
                 const sysStatus = {
                     id: approvalSaveCaseData?.caseData?.id || null,
                     sys_status: approvalSaveCaseData?.caseData?.sys_status || "Create Government Order",
-                    default_status: "gov_order",
+                    default_status: "gn_order",
                 };
             
                 const approvalPayload = {
@@ -1847,7 +1851,7 @@ const GovernmentOrder = () => {
             }
         });
 
-        normalData.sys_status = "Gov_order";
+        normalData.sys_status = "gn_order";
         showCaseApprovalPage(normalData,formData);
         return;
         setLoading(true);
@@ -1901,111 +1905,6 @@ const GovernmentOrder = () => {
         }
 
     }
-
-    // const onSaveTemplateData = async (data) => {
-    //     if (!table_name || table_name === '') {
-    //         toast.warning('Please Check The Template');
-    //         return;
-    //     }
-    
-    //     if (Object.keys(data).length === 0) {
-    //         toast.warning('Data Is Empty Please Check Once');
-    //         return;
-    //     }
-    
-    //     const formData = new FormData();
-    //     let normalData = {};
-    //     let formattedArray = [];
-    
-    //     formTemplateData.forEach((field) => {
-    //         if (data[field.name]) {
-    //             if (field.type === "file" || field.type === "profilepicture") {
-    //                 if (field.type === 'file' && Array.isArray(data[field.name])) {
-    //                     const filteredArray = data[field.name].filter(file => file.filename instanceof File);
-    //                     filteredArray.forEach((file) => {
-    //                         formData.append(field.name, file.filename);
-    //                     });
-    
-    //                     formattedArray = filteredArray.map((obj) => ({
-    //                         ...obj,
-    //                         filename: obj.filename.name
-    //                     }));
-    //                 } else {
-    //                     formData.append(field.name, data[field.name]);
-    //                 }
-    //             } else {
-    //                 normalData[field.name] =
-    //                     field.type === 'checkbox' || field.type === 'multidropdown'
-    //                         ? Array.isArray(data[field.name])
-    //                             ? data[field.name].join(',')
-    //                             : data[field.name]
-    //                         : data[field.name];
-    //             }
-    //         }
-    //     });
-    
-    //     const created_by_designation_id = localStorage.getItem("designation_id") || "";
-    //     const created_by_division_id = localStorage.getItem("division_id") || "";
-    //     const user_designation_id = localStorage.getItem("designation_id") || "";
-    //     const transaction_id = "TRANS_" + Date.now();
-    
-    //     const approval = {
-    //         approval_item: approvalSaveData?.approval_item,
-    //         approved_by: approvalSaveData?.approved_by,
-    //         approval_date: approvalSaveData?.approval_date,
-    //         remarks: approvalSaveData?.remarks,
-    //         created_by_designation_id,
-    //         created_by_division_id,
-    //     };
-    
-    //     const approval_details = {
-    //         id: '0',
-    //         module_name: "Government Order", 
-    //         action: "Create Government Order"
-    //     };
-    
-    //     const others_data = {
-    //         approval,
-    //         approval_details,
-    //     };
-    
-    //     formData.append('folder_attachment_ids', JSON.stringify(formattedArray));
-    //     formData.append('table_name', table_name);
-    //     formData.append('transaction_id', transaction_id);
-    //     formData.append('user_designation_id', user_designation_id);
-    //     formData.append('data', JSON.stringify(normalData));
-    //     formData.append('others_data', JSON.stringify(others_data));
-    
-    //     setLoading(true);
-    
-    //     try {
-    //         const saveTemplateData = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
-    //         setLoading(false);
-    //         localStorage.removeItem(template_name + '-formData');
-    
-    //         if (saveTemplateData?.success) {
-    //             toast.success(saveTemplateData.message || "Data Saved With Approval", {
-    //                 position: "top-right",
-    //                 autoClose: 3000,
-    //                 className: "toast-success",
-    //                 onOpen: () => loadTableData(paginationCount),
-    //             });
-    //         } else {
-    //             toast.error(saveTemplateData.message || "Save Failed", {
-    //                 position: "top-right",
-    //                 className: "toast-error",
-    //             });
-    //         }
-    //     } catch (error) {
-    //         setLoading(false);
-    //         toast.error(error?.response?.data?.message || "Please Try Again !", {
-    //             position: "top-right",
-    //             className: "toast-error"
-    //         });
-    //     }
-    // };
-        
-    
 
     const onUpdateTemplateData = async (data) => {
 
@@ -2457,6 +2356,12 @@ const GovernmentOrder = () => {
         }
     }
 
+    // Find the default item (Government Order)
+const defaultGovernmentOrderItem = approvalItem.find(
+    (item) => (item.name || "").toLowerCase() === "government order"
+  );
+
+  
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -2882,33 +2787,30 @@ const GovernmentOrder = () => {
                                 }}
                               >
                                 <Autocomplete
-                                  id=""
-                                  options={approvalItem}
-                                  getOptionLabel={(option) => option.name || ""}
-                                  name={"approval_item"}
-                                  value={
+                                id=""
+                                options={approvalItem}
+                                getOptionLabel={(option) => option.name || ""}
+                                name={"approval_item"}
+                                value={
                                     approvalItem.find(
-                                      (option) =>
+                                    (option) =>
                                         option.approval_item_id ===
-                                        (approvalSaveData &&
-                                          approvalSaveData["approval_item"])
-                                    ) || null
-                                  }
-                                  onChange={(e, value) =>
-                                    handleApprovalSaveData(
-                                      "approval_item",
-                                      value?.approval_item_id
-                                    )
-                                  }
-                                  renderInput={(params) => (
+                                        (approvalSaveData && approvalSaveData["approval_item"])
+                                    ) || defaultGovernmentOrderItem || null
+                                }
+                                onChange={(e, value) =>
+                                    handleApprovalSaveData("approval_item", value?.approval_item_id)
+                                }
+                                disabled = {true}
+                                renderInput={(params) => (
                                     <TextField
-                                      {...params}
-                                      className="selectHideHistory"
-                                      label={"Approval Item"}
+                                    {...params}
+                                    className="selectHideHistory"
+                                    label={"Approval Item"}
                                     />
-                                  )}
+                                )}
                                 />
-            
+
                                 <Autocomplete
                                   id=""
                                   options={designationData}
