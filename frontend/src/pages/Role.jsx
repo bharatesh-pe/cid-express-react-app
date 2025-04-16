@@ -797,7 +797,7 @@ const RolePage = () => {
                 </DialogActions>
             </Dialog>
 
-            <Box p={2}>
+            <Box>
                 <Dialog
                     open={showEditModal}
                     onClose={() => setShowEditModal(false)}
