@@ -5404,7 +5404,7 @@ const UnderInvestigation = () => {
                 sysStatus === "Reinvestigation" ? "Active" : ""
               }`}
             >
-              Reinvestigation
+              ReInvestigation
             </Box>
           </Box>
         </Box>
