@@ -680,7 +680,7 @@ const Department = () => {
                     </Button>
                     {showEditModal && (
                         <Button variant="outlined" onClick={handleEditData}>
-                            Edit Department
+                            Update Department
                         </Button>
                     )}
                     {showRoleAddModal && (
