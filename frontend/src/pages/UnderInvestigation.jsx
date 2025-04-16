@@ -6487,7 +6487,7 @@ const UnderInvestigation = () => {
                 <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
                     Approval
                     <Box>
-                        <Button variant="outlined" onClick={() => {saveOverallData(selectedOtherTemplate.table)}}>Save</Button>
+                        <Button variant="outlined" onClick={() => {saveOverallData()}}>Save</Button>
                         <IconButton
                             aria-label="close"
                             onClick={() => setNewApprovalPage(false)}
