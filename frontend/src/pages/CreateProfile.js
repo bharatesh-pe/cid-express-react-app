@@ -53,12 +53,13 @@ const CreateProfile = () => {
     const [loading, setLoading] = useState(false); // State for loading indicator
     const [error, setError] = useState(null); // State for error messages
     const [data, setData] = useState(null); // State for storing the response data
+    const [forceTableLoad, setForceTableLoad] = useState(false);
 
 
     useEffect(() => {
         // getProfileTemplates();
         loadTableData(paginationCount);
-    }, [paginationCount,tableSortOption]);
+    }, [paginationCount, tableSortOption, forceTableLoad]);
 
     const changeHeaderNameModule = (module)=>{
         switch(module){
@@ -374,14 +375,14 @@ const CreateProfile = () => {
         });
     }
 
-    const loadTableData = async (page, searchData) => {
+    const loadTableData = async (page) => {
 
         var getTemplatePayload = {
             "page": page,
             "limit": 10,
             "sort_by": tableSortField,
             "order": tableSortOption,
-            "search": searchData ? searchData : ''
+            "search": searchValue ? searchValue : ''
         }
 
         setLoading(true);
@@ -621,6 +622,12 @@ const CreateProfile = () => {
     const handleClear = ()=>{
         setSearchValue('');
         loadTableData(paginationCount);
+        setForceTableLoad((prev) => !prev);
+    }
+
+    const searchTableData = ()=>{
+        setPaginationCount(1);
+        setForceTableLoad((prev) => !prev);
     }
 
     return (
@@ -655,7 +662,7 @@ const CreateProfile = () => {
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         e.preventDefault();
-                                        loadTableData(paginationCount, e.target.value);
+                                        searchTableData();
                                     }
                                 }}
                                 sx={{width:'300px',borderRadius:'6px',outline:'none',
