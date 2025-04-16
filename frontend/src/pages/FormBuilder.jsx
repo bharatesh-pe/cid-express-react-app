@@ -1108,7 +1108,7 @@ const Formbuilder = () => {
         var emptyLabel = false;
         var emptyOptions = [];
         const updatedFields = fields.filter((field) => field.formType).map((field) => {
-            const labelValue = field.label || ""; // Get the label value
+            const labelValue = field.label.trim() || ""; // Get the label value
             if (!labelValue || labelValue === '') {
                 emptyLabel = true
             }
@@ -1117,14 +1117,14 @@ const Formbuilder = () => {
                 if(field.options.length > 0){
                     field.options.map((option)=>{
                         if((!option.name || option.name === '') || (!option.code || option.code === '')){
-                            if (!emptyOptions.includes(field.label)) {
-                                emptyOptions.push(field.label);
+                            if (!emptyOptions.includes(labelValue)) {
+                                emptyOptions.push(labelValue);
                             }                            
                         }
                     })
                 }else{
-                    if (!emptyOptions.includes(field.label)) {
-                        emptyOptions.push(field.label);
+                    if (!emptyOptions.includes(labelValue)) {
+                        emptyOptions.push(labelValue);
                     }
                 }
             }
@@ -1270,7 +1270,7 @@ const Formbuilder = () => {
         const updatedFields = fields
             .filter((field) => field.formType)
             .map((field) => {
-                const labelValue = field.label || ""; // Get the label value
+                const labelValue = field.label.trim() || ""; // Get the label value
 
                 if (!labelValue) {
                     emptyLabel = true;
@@ -1280,14 +1280,14 @@ const Formbuilder = () => {
                     if(field.options.length > 0){
                         field.options.map((option)=>{
                             if((!option.name || option.name === '') || (!option.code || option.code === '')){
-                                if (!emptyOptions.includes(field.label)) {
-                                    emptyOptions.push(field.label);
+                                if (!emptyOptions.includes(labelValue)) {
+                                    emptyOptions.push(labelValue);
                                 }                            
                             }
                         })
                     }else{
-                        if (!emptyOptions.includes(field.label)) {
-                            emptyOptions.push(field.label);
+                        if (!emptyOptions.includes(labelValue)) {
+                            emptyOptions.push(labelValue);
                         }
                     }
                 }
@@ -2302,8 +2302,12 @@ const Formbuilder = () => {
                                                 {
                                                     Object.keys(selectedField).map((prop) => {
                                                         // Skip specific field
-                                                        const DisplayNoneFields = ['defaultValue', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
+
+
+                                                        const DisplayNoneFields = ['col', 'defaultValue', 'user_hierarchy', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
                                                         if (DisplayNoneFields.includes(prop)) return null;
+
+                                                        console.log(prop,"prop")
 
                                                         const increment = (prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
                                                         rowCountValue += increment;
@@ -2481,11 +2485,11 @@ const Formbuilder = () => {
                                                                                                     }
                                                                                                 </Box>
                                                                                                 <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '4px', gap: '14px', background: '#F2F4F7' }}>
-                                                                                                    <Button sx={{ width: '45%', color: '#FFFFFF', fontSize: '16px', fontWeight: '500', textTransform: 'none', borderRadius: '4px', background: '#1570EF', display: 'none' }} className='Roboto'>
+                                                                                                    {/* <Button sx={{ width: '45%', color: '#FFFFFF', fontSize: '16px', fontWeight: '500', textTransform: 'none', borderRadius: '4px', background: '#1570EF', display: 'none' }} className='Roboto'>
                                                                                                         Import data from excel
                                                                                                     </Button>
-                                                                                                    <Box sx={{ border: '1px solid #D0D5DD', height: '12px', alignSelf: 'auto' }}></Box>
-                                                                                                    <Button onClick={showMasterTable} sx={{ width: '45%', color: '#1D2939', fontSize: '16px', fontWeight: '500', textTransform: 'none', border: '1px solid #D0D5DD', borderRadius: '4px' }} className='Roboto'>
+                                                                                                    <Box sx={{ border: '1px solid #D0D5DD', height: '12px', alignSelf: 'auto' }}></Box> */}
+                                                                                                    <Button onClick={showMasterTable} sx={{ width: '100%', color: '#1D2939', fontSize: '16px', fontWeight: '500', textTransform: 'none', border: '1px solid #D0D5DD', borderRadius: '4px' }} className='Roboto'>
                                                                                                         Import from data base
                                                                                                     </Button>
                                                                                                 </Box>
@@ -2536,6 +2540,49 @@ const Formbuilder = () => {
                                                             </>
                                                         )
                                                     })}
+                                                    {selectedField && selectedField?.table === 'users' && (
+                                                        <Grid item xs={6} pt={2} pl={3}>
+                                                            <h4 className='form-field-heading'>Select User Hierarchy</h4>
+                                                            <Box sx={{display: 'flex', alignItems: 'Start', gap: '8px'}}>
+                                                                <Box key={`userHierarchyDetailsAll`} sx={{display: 'flex', alignItems: 'center'}}>
+                                                                    <Radio
+                                                                        name={'user_hierarchy'}
+                                                                        id={`userHierarchyDetailsAll`}
+                                                                        value={'All'}
+                                                                        checked={selectedField?.['user_hierarchy'] === 'All'}
+                                                                        onChange={() => handleDefaultValue('user_hierarchy', selectedField, 'All')}
+                                                                    />
+                                                                    <label style={{color: '#475467', fontSize: '14px', fontWeight: '400', cursor: 'pointer'}} htmlFor={`userHierarchyDetailsAll`}>
+                                                                        All
+                                                                    </label>
+                                                                </Box>
+                                                                <Box key={`userHierarchyDetailsHigher`} sx={{display: 'flex', alignItems: 'center'}}>
+                                                                    <Radio
+                                                                        name={'user_hierarchy'}
+                                                                        id={`userHierarchyDetailsHigher`}
+                                                                        value={'Higher'}
+                                                                        checked={selectedField?.['user_hierarchy'] === 'upper'}
+                                                                        onChange={() => handleDefaultValue('user_hierarchy', selectedField, 'upper')}
+                                                                    />
+                                                                    <label style={{color: '#475467', fontSize: '14px', fontWeight: '400', cursor: 'pointer'}} htmlFor={`userHierarchyDetailsHigher`}>
+                                                                        Upper
+                                                                    </label>
+                                                                </Box>
+                                                                <Box key={`userHierarchyDetailsLower`} sx={{display: 'flex', alignItems: 'center'}}>
+                                                                    <Radio
+                                                                        name={'user_hierarchy'}
+                                                                        id={`userHierarchyDetailsLower`}
+                                                                        value={'Lower'}
+                                                                        checked={selectedField?.['user_hierarchy'] === 'lower'}
+                                                                        onChange={() => handleDefaultValue('user_hierarchy', selectedField, 'lower')}
+                                                                    />
+                                                                    <label style={{color: '#475467', fontSize: '14px', fontWeight: '400', cursor: 'pointer'}} htmlFor={`userHierarchyDetailsLower`}>
+                                                                        Lower
+                                                                    </label>
+                                                                </Box>
+                                                            </Box>
+                                                        </Grid>
+                                                    )}
                                             </Grid>
                                         )}
                                     </div>
