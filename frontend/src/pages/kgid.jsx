@@ -837,7 +837,7 @@ const KGID = () => {
                     </Button>
                     {showEditModal && (
                         <Button variant="outlined" onClick={handleEditData}>
-                            Edit KGID
+                            Update KGID
                         </Button>
                     )}
                     {showRoleAddModal && (

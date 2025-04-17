@@ -676,7 +676,7 @@ const Designation = () => {
                     </Button>
                     {showEditModal && (
                         <Button variant="outlined" onClick={handleEditData}>
-                            Edit Designation
+                            Update Designation
                         </Button>
                     )}
                     {showRoleAddModal && (

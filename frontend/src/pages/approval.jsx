@@ -682,7 +682,7 @@ const Approval = () => {
                     </Button>
                     {showEditModal && (
                         <Button variant="outlined" onClick={handleEditData}>
-                            Edit Approval Items
+                            Update Approval Items
                         </Button>
                     )}
                     {showRoleAddModal && (

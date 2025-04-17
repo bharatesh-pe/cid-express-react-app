@@ -772,7 +772,7 @@ const Division = () => {
                     </Button>
                     {showEditModal && (
                         <Button variant="outlined" onClick={handleEditData}>
-                            Edit Division
+                            Update Division
                         </Button>
                     )}
                     {showRoleAddModal && (

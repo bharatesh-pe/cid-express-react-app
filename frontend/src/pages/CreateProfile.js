@@ -53,12 +53,19 @@ const CreateProfile = () => {
     const [loading, setLoading] = useState(false); // State for loading indicator
     const [error, setError] = useState(null); // State for error messages
     const [data, setData] = useState(null); // State for storing the response data
+    const [forceTableLoad, setForceTableLoad] = useState(false);
 
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
 
     useEffect(() => {
         // getProfileTemplates();
         loadTableData(paginationCount);
-    }, [paginationCount,tableSortOption]);
+    }, [paginationCount, tableSortOption, forceTableLoad]);
 
     const changeHeaderNameModule = (module)=>{
         switch(module){
@@ -374,14 +381,14 @@ const CreateProfile = () => {
         });
     }
 
-    const loadTableData = async (page, searchData) => {
+    const loadTableData = async (page) => {
 
         var getTemplatePayload = {
             "page": page,
             "limit": 10,
             "sort_by": tableSortField,
             "order": tableSortOption,
-            "search": searchData ? searchData : ''
+            "search": searchValue ? searchValue : ''
         }
 
         setLoading(true);
@@ -402,6 +409,13 @@ const CreateProfile = () => {
                     });
 
                     setTableData(updatedTableData)
+                }
+
+                const { meta } = getTemplateResponse.data;
+    
+                if (meta?.totalPages) {
+                    setTotalPage(meta.totalPages);
+                    if (meta.totalItems) setTotalRecord(meta.totalItems);
                 }
 
             } else {
@@ -621,6 +635,12 @@ const CreateProfile = () => {
     const handleClear = ()=>{
         setSearchValue('');
         loadTableData(paginationCount);
+        setForceTableLoad((prev) => !prev);
+    }
+
+    const searchTableData = ()=>{
+        setPaginationCount(1);
+        setForceTableLoad((prev) => !prev);
     }
 
     return (
@@ -655,7 +675,7 @@ const CreateProfile = () => {
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         e.preventDefault();
-                                        loadTableData(paginationCount, e.target.value);
+                                        searchTableData();
                                     }
                                 }}
                                 sx={{width:'300px',borderRadius:'6px',outline:'none',
@@ -939,7 +959,14 @@ const CreateProfile = () => {
                 </DialogContent>
             </Dialog>
 
-            <TableView rows={tableData} columns={columns} checkboxSelection={false} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
+            <TableView 
+                rows={tableData} 
+                columns={columns} 
+                totalPage={totalPage} 
+                totalRecord={totalRecord} 
+                paginationCount={paginationCount} 
+                handlePagination={handlePagination} 
+            />
 
             {showOptionModal && 
                 <Dialog

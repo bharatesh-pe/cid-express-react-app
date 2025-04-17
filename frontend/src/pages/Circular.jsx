@@ -504,6 +504,7 @@ const Circular = () => {
                     onOpen: () => {
                         loadTableData(paginationCount);
                         setApprovalSaveData({});
+                        setApproveTableFlag(false);
                     }                  
                 });
                 } else {
@@ -519,6 +520,7 @@ const Circular = () => {
             }
       
             if (pendingUpdateData && approvalPurpose !== "delete") {
+                setApproveTableFlag(false);
                 onUpdateTemplateData(pendingUpdateData);
             }
       

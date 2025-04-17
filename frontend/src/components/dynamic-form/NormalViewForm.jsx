@@ -457,6 +457,10 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
                             get_flag : dependent_field[0]?.user_hierarchy || null
                         }
+                    }else if(field.api === "/templateData/getTemplateData"){
+                        apiPayload = {
+                            table_name: field.table
+                        }
                     }
 
                     const callApi = async () => {
@@ -558,6 +562,10 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         apiPayload = {
                             designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
                             get_flag : dependent_field[0]?.user_hierarchy || null
+                        }
+                    }else if(field.api === "/templateData/getTemplateData"){
+                        apiPayload = {
+                            table_name: field.table
                         }
                     }
 

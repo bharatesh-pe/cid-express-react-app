@@ -25,10 +25,11 @@ const TemplateMastersView = () => {
     const [totalPage,setTotalPage] = useState(0);
     const [totalRecord,setTotalRecord] = useState(0);
     const [loading, setLoading] = useState(false); // State for loading indicator
+    const [forceTableLoad, setForceTableLoad] = useState(false);
 
     useEffect(() => {
         loadTableData(paginationCount);
-    }, [paginationCount, tableSortOption]);
+    }, [paginationCount, tableSortOption, forceTableLoad]);
 
     const columns: GridColDef[] = [
         { field: 'sl_no', headerName: 'S.No',resizable: false},
@@ -157,6 +158,12 @@ const TemplateMastersView = () => {
     const handleClear = ()=>{
         setSearchValue('');
         loadTableData(paginationCount);
+        setForceTableLoad((prev) => !prev);
+    }
+
+    const searchTableData = ()=>{
+        setPaginationCount(1);
+        setForceTableLoad((prev) => !prev);
     }
 
   return (
@@ -190,7 +197,7 @@ const TemplateMastersView = () => {
                 onKeyDown={(e) => {
                     if (e.key === "Enter") {
                         e.preventDefault();
-                        loadTableData(paginationCount, e.target.value);
+                        searchTableData();
                     }
                 }}
                 sx={{width:'400px',borderRadius:'6px',outline:'none',
