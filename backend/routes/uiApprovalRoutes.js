@@ -23,5 +23,15 @@ router.post(
   [validate_token],
   uiCaseApprovalController.get_case_approval_by_id
 );
+router.post(
+  "/update_ui_case_approval",
+  [validate_token],
+  uiCaseApprovalController.update_ui_case_approval
+);
+router.post(
+  "/delete_ui_case_approval",
+  [validate_token],
+  uiCaseApprovalController.delete_ui_case_approval
+);
 
 module.exports = router;
