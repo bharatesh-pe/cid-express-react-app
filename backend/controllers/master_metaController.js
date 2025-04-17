@@ -281,14 +281,15 @@ exports.update_master_data = async (req, res) => {
         result = await ApprovalItem.update(data, { where: whereCondition });
         break;
       case "Kgid":
-        if (!data.kgid) {
+        if (!data.id) {
           return res
             .status(400)
-            .json({ message: "KGID is required for update." });
+            .json({ message: "KGID ID is required for update." });
         }
-        whereCondition = { kgid: data.kgid };
+        whereCondition = { id: data.id };
         result = await KGID.update(
           {
+            kgid: data.kgid,
             name: data.name,
             mobile: data.mobile,
             start_date: data.start_date,

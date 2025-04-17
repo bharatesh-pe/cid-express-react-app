@@ -797,7 +797,7 @@ const RolePage = () => {
                 </DialogActions>
             </Dialog>
 
-            <Box p={2}>
+            <Box>
                 <Dialog
                     open={showEditModal}
                     onClose={() => setShowEditModal(false)}
@@ -952,7 +952,7 @@ const RolePage = () => {
                             setShowEditModal(false);
                             setErrorRoleData({ role_title: '', role_description: '' });
                         }}>Close</Button>
-                        <Button variant="outlined" onClick={handleEditData}>Edit Role</Button>
+                        <Button variant="outlined" onClick={handleEditData}>Update Role</Button>
                     </DialogActions>
                 </Dialog>
 
