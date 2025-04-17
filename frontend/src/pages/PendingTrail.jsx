@@ -77,7 +77,7 @@ const UnderInvestigation = () => {
   const [template_name, setTemplate_name] = useState("");
   const [table_name, setTable_name] = useState("");
 
-  const [sysStatus, setSysSattus] = useState("all");
+  const [sysStatus, setSysSattus] = useState("pt_case");
 
   const [stepperData, setstepperData] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -716,243 +716,159 @@ const UnderInvestigation = () => {
     setIsCheckboxSelected(anySelected);
   }, [tableData]);
 
-  const loadTableData = async (page) => {
-    var getTemplatePayload = {
-      page: page,
-      limit: 10,
-      sort_by: tableSortKey,
-      order: tableSortOption,
-      search: searchValue ? searchValue : "",
-      table_name: table_name,
-      is_starred: starFlag,
-      is_read: readFlag,
-      template_module: "pt_case",
-      sys_status: sysStatus,
-      from_date: fromDateValue,
-      to_date: toDateValue,
-      filter: filterValues,
-    };
+    const loadTableData = async (page) => {
+        const getTemplatePayload = {
+            page,
+            limit: 10,
+            sort_by: tableSortKey,
+            order: tableSortOption,
+            search: searchValue || "",
+            table_name,
+            is_starred: starFlag,
+            is_read: readFlag,
+            template_module: "pt_case",
+            sys_status: sysStatus,
+            from_date: fromDateValue,
+            to_date: toDateValue,
+            filter: filterValues,
+        };
+    
+        setLoading(true);
+    
+        try {
+            const getTemplateResponse = await api.post( "/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
+    
+            setLoading(false);
 
-    setLoading(true);
-
-    try {
-      const getTemplateResponse = await api.post(
-        "/templateData/paginateTemplateDataForOtherThanMaster",
-        getTemplatePayload
-      );
-    //   setLoading(false);
-
-      if (getTemplateResponse && getTemplateResponse.success) {
-
-        if (getTemplateResponse.data && getTemplateResponse.data["meta"]) {
-            if ( getTemplateResponse.data["meta"].table_name && getTemplateResponse.data["meta"].template_name) {
-                setTemplate_name(getTemplateResponse.data["meta"].template_name);
-                setTable_name(getTemplateResponse.data["meta"].table_name);
-            }
-        }
-
-        
-        if (getTemplateResponse.data && getTemplateResponse.data['meta'] && getTemplateResponse.data['meta'].totalPages) {
-            setTotalPage(getTemplateResponse.data['meta'].totalPages)
-            if (getTemplateResponse.data['meta'].totalItems) {
-                setTotalRecord(getTemplateResponse.data['meta'].totalItems)
-            }
-        }
-
-        if (getTemplateResponse.data && getTemplateResponse.data["data"]) {
-          if (getTemplateResponse.data["data"][0]) {
-            var excludedKeys = [
-              "created_at",
-              "updated_at",
-              "id",
-              "deleted_at",
-              "attachments",
-              "Starred",
-              "ReadStatus",
-              "linked_profile_info",
-              "ui_case_id",
-              "pt_case_id",
-              "sys_status",
-            ];
-
-            const updatedHeader = [
-              {
-                field: "select",
-                headerName: "",
-                width: 50,
-                renderCell: (params) => {
-                  return (
-                    <Checkbox
-                      checked={params.row.isSelected || false}
-                      onChange={(event) =>
-                        handleCheckboxChangeField(event, params.row)
-                      }
-                    />
-                  );
-                },
-              },
-              ...Object.keys(getTemplateResponse.data["data"][0])
-                .filter((key) => !excludedKeys.includes(key))
-                .map((key) => {
-                  var updatedKeyName = key
-                    .replace(/^field_/, "")
-                    .replace(/_/g, " ")
-                    .toLowerCase()
-                    .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-                  return {
-                    field: key,
-                    headerName: updatedKeyName ? updatedKeyName : "",
-                    width: 250,
-                    resizable: true,
-                    renderHeader: () => (
-                      <div
-                        onClick={() => ApplySortTable(key)}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          width: "100%",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "#1D2939",
-                            fontSize: "15px",
-                            fontWeight: "500",
-                          }}
-                        >
-                          {updatedKeyName ? updatedKeyName : ""}
-                        </span>
-                        {/* {tableSortKey === key ? (
-                          tableSortOption === "ASC" ? (
-                            <ASC sx={{ color: "#475467", width: "18px" }} />
-                          ) : (
-                            <DESC sx={{ color: "#475467", width: "18px" }} />
-                          )
-                        ) : (
-                          <DESC sx={{ color: "#475467", width: "18px" }} />
-                        )} */}
-                      </div>
-                    ),
-                    renderCell: (params) => {
-                      return tableCellRender(key, params, params.value);
-                    },
-                  };
-                }),
-            ];
-
-            if (Array.isArray(getTemplateResponse.data["columns"])) {
-              var updatedHeaderData = getTemplateResponse.data["columns"]
-                .filter((key) => key.name && key.name.trim() !== "")
-                .map((key) => key.name);
-
-              setShowDownloadData(updatedHeaderData);
-              setShowSelectedDownloadData({
-                downloadHeaders: updatedHeaderData.map((data) => data),
-              });
+            if (getTemplateResponse?.success) {
+                const { data, meta } = getTemplateResponse.data;
+    
+                if (meta?.totalPages) {
+                    setTotalPage(meta.totalPages);
+                    if (meta.totalItems) setTotalRecord(meta.totalItems);
+                }
+  
+                if (data?.length > 0) {
+                    const excludedKeys = [
+                        "created_at", "updated_at", "id", "deleted_at", "attachments",
+                        "Starred", "ReadStatus", "linked_profile_info",
+                        "ui_case_id", "pt_case_id", "sys_status"
+                    ];
+    
+                    const generateReadableHeader = (key) =>
+                        key
+                            .replace(/^field_/, "")
+                            .replace(/_/g, " ")
+                            .toLowerCase()
+                            .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+    
+                    const renderCellFunc = (key) => (params) => tableCellRender(key, params, params.value);
+    
+                    const updatedHeader = [
+                        {
+                            field: "select",
+                            headerName: "",
+                            width: 50,
+                            resizable: false,
+                            renderCell: (params) => (
+                                <Checkbox
+                                    checked={params.row.isSelected || false}
+                                    onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                />
+                            ),
+                        },
+                        ...Object.keys(data[0])
+                            .filter((key) => !excludedKeys.includes(key))
+                            .map((key) => ({
+                                field: key,
+                                headerName: generateReadableHeader(key),
+                                width: 150,
+                                resizable: true,
+                                renderHeader: () => (
+                                    <div
+                                        onClick={() => ApplySortTable(key)}
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            width: "100%",
+                                        }}
+                                    >
+                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
+                                            {generateReadableHeader(key)}
+                                        </span>
+                                    </div>
+                                ),
+                                renderCell: renderCellFunc(key),
+                        })),
+                    ];
+  
+                    setviewTemplateTableData(updatedHeader);
+    
+                    const formatDate = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleDateString("en-GB");
+                    };
+  
+                    const updatedTableData = data.map((field, index) => {
+                        const updatedField = {};
+    
+                        for (const [key, val] of Object.entries(field)) {
+                            if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
+                                updatedField[key] = formatDate(val);
+                            } else {
+                                updatedField[key] = val;
+                            }
+                        }
+    
+                        return {
+                            ...updatedField,
+                            sl_no: (page - 1) * 10 + (index + 1),
+                            ...(field.id ? {} : { id: "unique_id_" + index }),
+                        };
+                    });
+  
+                    setTableData(updatedTableData);
+                    setviewReadonly(false);
+                    setEditTemplateData(false);
+                    setInitialData({});
+                    setFormOpen(false);
+                }
+  
+                if (meta?.table_name && meta?.template_name) {
+                    setTemplate_name(meta.template_name);
+                    setTable_name(meta.table_name);
+                }
+    
+                await getActions();
             } else {
-              setShowDownloadData([]);
-              setShowSelectedDownloadData({});
+                setLoading(false);
+                toast.error(getTemplateResponse.message || "Failed to load template data.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
             }
-
-            setviewTemplateTableData(updatedHeader);
-          }
-
-          var updatedTableData = getTemplateResponse.data["data"].map(
-            (field, index) => {
-              const formatDate = (fieldValue) => {
-                if (!fieldValue || typeof fieldValue !== "string")
-                  return fieldValue;
-
-                var dateValue = new Date(fieldValue);
-
-                if (
-                  isNaN(dateValue.getTime()) ||
-                  (!fieldValue.includes("-") && !fieldValue.includes("/"))
-                ) {
-                  return fieldValue;
-                }
-
-                if (isNaN(dateValue.getTime())) return fieldValue;
-
-                var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                var monthValue = String(dateValue.getMonth() + 1).padStart(
-                  2,
-                  "0"
-                );
-                var yearValue = dateValue.getFullYear();
-                return `${dayValue}/${monthValue}/${yearValue}`;
-              };
-
-              const updatedField = {};
-
-              Object.keys(field).forEach((key) => {
-                if (
-                  field[key] &&
-                  key !== "id" &&
-                  !isNaN(new Date(field[key]).getTime())
-                ) {
-                  updatedField[key] = formatDate(field[key]);
-                } else {
-                  updatedField[key] = field[key];
-                }
-              });
-
-              return {
-                ...updatedField,
-                sl_no: (page - 1) * 10 + (index + 1),
-                ...(field.id ? {} : { id: "unique_id_" + index }),
-              };
-            }
-          );
-
-          setTableData(updatedTableData);
-          setviewReadonly(false);
-          setEditTemplateData(false);
-          setInitialData({});
-          setFormOpen(false);
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
         }
-
-      } else {
-        const errorMessage = getTemplateResponse.message
-          ? getTemplateResponse.message
-          : "Failed to create the template. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
-        toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          }
-        );
-      }
-    }
-    finally {
-      setLoading(false);
-    }
-  };
+    };
 
   const tableCellRender = (key, params, value) => {
     if (params?.row?.attachments) {
@@ -2595,84 +2511,67 @@ const UnderInvestigation = () => {
     }
   }, []);
 
-  useEffect(() => {
     const getActions = async () => {
-      var payloadObj = {
-        module: "pt_case",
-        tab: sysStatus,
-      };
+        var payloadObj = {
+            module: "pt_case",
+            tab: sysStatus,
+        };
 
-      setLoading(true);
+        setLoading(true);
 
-      try {
-        const getActionsDetails = await api.post(
-          "/action/get_actions",
-          payloadObj
-        );
+        try {
+            const getActionsDetails = await api.post( "/action/get_actions", payloadObj);
 
-        setLoading(false);
+            setLoading(false);
 
-        if (getActionsDetails && getActionsDetails.success) {
-          if (getActionsDetails.data && getActionsDetails.data["data"]) {
-            var userPermissionsArray =
-              JSON.parse(localStorage.getItem("user_permissions")) || [];
-            const userPermissions = userPermissionsArray[0] || {};
-            var updatedActions = getActionsDetails.data["data"].filter(
-              (action) => {
-                if (action.permissions) {
-                  var parsedPermissions = JSON.parse(action.permissions);
+            if (getActionsDetails && getActionsDetails.success) {
+                if (getActionsDetails.data && getActionsDetails.data["data"]) {
+                    var userPermissionsArray = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
-                  const hasValidPermission = parsedPermissions.some(
-                    (permission) => userPermissions[permission] === true
-                  );
+                    const userPermissions = userPermissionsArray[0] || {};
 
-                  return hasValidPermission;
+                    var updatedActions = getActionsDetails.data["data"].filter((action) => {
+                        if (action.permissions) {
+                            var parsedPermissions = JSON.parse(action.permissions);
+
+                            const hasValidPermission = parsedPermissions.some((permission) => userPermissions[permission] === true);
+
+                            return hasValidPermission;
+                        }
+                        return true;
+                    });
+
+                    setHoverTableOptions(updatedActions);
                 }
-
-                return true;
-              }
-            );
-
-            setHoverTableOptions(updatedActions);
-          }
-        } else {
-          const errorMessage = getActionsDetails.message
-            ? getActionsDetails.message
-            : "Failed to create the template. Please try again.";
-          toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          });
-        }
-      } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response.data) {
-          toast.error(
-            error.response.data["message"]
-              ? error.response.data["message"]
-              : "Please Try Again !",
-            {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
+            } else {
+                const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
             }
-          );
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response.data) {
+                toast.error(error.response.data["message"] ? error.response.data["message"] : "Please Try Again !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
         }
-      }
     };
-    getActions();
-  }, [sysStatus]);
 
   const handleFileUpload = async (event) => {
     console.log("File upload initiated.");
@@ -4924,7 +4823,7 @@ const UnderInvestigation = () => {
           }}
         >
           <Box className="parentFilterTabs">
-            <Box
+            {/* <Box
               onClick={() => {
                 setSysSattus("all");
                 setPaginationCount(1);
@@ -4933,7 +4832,7 @@ const UnderInvestigation = () => {
               className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
             >
               All
-            </Box>
+            </Box> */}
             <Box
               onClick={() => {
                 setSysSattus("pt_case");
