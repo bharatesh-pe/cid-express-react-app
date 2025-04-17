@@ -210,6 +210,13 @@ const Enquiries = () => {
     const [downloadPdfFields, setDownloadPdfFields] = useState({});
     const [downloadPdfData, setDownloadPdfData] = useState([]);
     const [isPrint, setIsPrint] = useState(false);
+
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
     
     const handleOnSavePdf = () => {
         setIsDownloadPdf(false);
@@ -605,6 +612,14 @@ const Enquiries = () => {
       setLoading(false);
 
       if (getTemplateResponse && getTemplateResponse.success) {
+        
+        if (getTemplateResponse.data && getTemplateResponse.data['meta'] && getTemplateResponse.data['meta'].totalPages) {
+            setTotalPage(getTemplateResponse.data['meta'].totalPages)
+            if (getTemplateResponse.data['meta'].totalItems) {
+                setTotalRecord(getTemplateResponse.data['meta'].totalItems)
+            }
+        }
+
         if (getTemplateResponse.data && getTemplateResponse.data["data"]) {
           if (getTemplateResponse.data["data"][0]) {
             var excludedKeys = [
@@ -670,7 +685,7 @@ const Enquiries = () => {
                         >
                           {updatedKeyName ? updatedKeyName : ""}
                         </span>
-                        {tableSortKey === key ? (
+                        {/* {tableSortKey === key ? (
                           tableSortOption === "ASC" ? (
                             <ASC sx={{ color: "#475467", width: "18px" }} />
                           ) : (
@@ -678,7 +693,7 @@ const Enquiries = () => {
                           )
                         ) : (
                           <DESC sx={{ color: "#475467", width: "18px" }} />
-                        )}
+                        )} */}
                       </div>
                     ),
                     renderCell: (params) => {
@@ -3419,75 +3434,6 @@ const Enquiries = () => {
             </Box>
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "end",
-              }}
-            >
-              <TextFieldInput
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon sx={{ color: "#475467" }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <IconButton
-                        sx={{ padding: "0 5px", borderRadius: "0" }}
-                        onClick={handleFilter}
-                      >
-                        <FilterListIcon sx={{ color: "#475467" }} />
-                      </IconButton>
-                    </Box>
-                  ),
-                }}
-                onInput={(e) => setSearchValue(e.target.value)}
-                value={searchValue}
-                id="tableSearch"
-                size="small"
-                placeholder="Search anything"
-                variant="outlined"
-                className="profileSearchClass"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    setFilterData()
-                  }
-                }}
-                sx={{
-                  width: "300px",
-                  borderRadius: "6px",
-                  outline: "none",
-                  "& .MuiInputBase-input::placeholder": {
-                    color: "#475467",
-                    opacity: "1",
-                    fontSize: "14px",
-                    fontWeight: "400",
-                    fontFamily: "Roboto",
-                  },
-                }}
-              />
-              {(searchValue ||
-                fromDateValue ||
-                toDateValue ||
-                Object.keys(filterValues).length > 0) && (
-                <Typography
-                  onClick={handleClear}
-                  sx={{
-                    fontSize: "13px",
-                    fontWeight: "500",
-                    textDecoration: "underline",
-                    cursor: "pointer",
-                  }}
-                  mt={1}
-                >
-                  Clear Filter
-                </Typography>
-              )}
-            </Box>
 
             {JSON.parse(localStorage.getItem("user_permissions")) &&
               JSON.parse(localStorage.getItem("user_permissions"))[0]
@@ -3535,7 +3481,7 @@ const Enquiries = () => {
           sx={{
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
+            alignItems: "start",
           }}
         >
           <Box className="parentFilterTabs">
@@ -3594,10 +3540,79 @@ const Enquiries = () => {
               Disposal
             </Box>
           </Box>
+          <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "end",
+              }}
+            >
+              <TextFieldInput
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "#475467" }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <IconButton
+                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                        onClick={handleFilter}
+                      >
+                        <FilterListIcon sx={{ color: "#475467" }} />
+                      </IconButton>
+                    </Box>
+                  ),
+                }}
+                onInput={(e) => setSearchValue(e.target.value)}
+                value={searchValue}
+                id="tableSearch"
+                size="small"
+                placeholder="Search anything"
+                variant="outlined"
+                className="profileSearchClass"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    setFilterData()
+                  }
+                }}
+                sx={{
+                  width: "350px",
+                  borderRadius: "6px",
+                  outline: "none",
+                  "& .MuiInputBase-input::placeholder": {
+                    color: "#475467",
+                    opacity: "1",
+                    fontSize: "14px",
+                    fontWeight: "400",
+                    fontFamily: "Roboto",
+                  },
+                }}
+              />
+              {(searchValue ||
+                fromDateValue ||
+                toDateValue ||
+                Object.keys(filterValues).length > 0) && (
+                <Typography
+                  onClick={handleClear}
+                  sx={{
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                  }}
+                  mt={1}
+                >
+                  Clear Filter
+                </Typography>
+              )}
+            </Box>
         </Box>
 
         <Box py={2}>
-          <TableView
+          {/* <TableView
             hoverTable={true}
             hoverTableOptions={hoverExtraOptions}
             hoverActionFuncHandle={handleOtherTemplateActions}
@@ -3607,7 +3622,21 @@ const Enquiries = () => {
             nextBtn={tableData.length === 10}
             handleBack={handlePrevPage}
             handleNext={handleNextPage}
-          />
+          /> */}
+
+            <TableView 
+                hoverTable={true}
+                hoverTableOptions={hoverExtraOptions}
+                hoverActionFuncHandle={handleOtherTemplateActions}
+                height={true} 
+                rows={tableData} 
+                columns={viewTemplateTableColumns}
+                totalPage={totalPage} 
+                totalRecord={totalRecord} 
+                paginationCount={paginationCount} 
+                handlePagination={handlePagination} 
+            />
+
         </Box>
       </>
 

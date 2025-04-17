@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
-import { Box, Button, IconButton, Menu, MenuItem } from '@mui/material';
+import { Box, Button, IconButton, Menu, MenuItem, Pagination, PaginationItem, Stack } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 
 import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 
-export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle}) {
+export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord }) {
 
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [selectedRow, setSelectedRow] = React.useState(null);
@@ -33,12 +33,11 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
     };
   
     const updatedColumns = [
-        ...columns,
         ...(hoverTable && hoverTableOptions && hoverTableOptions.length > 0
           ? [
               {
-                field: "extraActions",
-                headerName: "Actions",
+                field: "",
+                headerName: "",
                 flex: 2,
                 renderCell: (params) => (
                   <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
@@ -52,7 +51,20 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
               },
             ]
           : []),
+        ...columns,
       ];
+
+    const handlePageChange = (page) => {
+        if (page !== "..." && page !== paginationCount) {
+        handlePagination(page)
+        }
+    };
+
+    const pageSize = 10;
+
+    const startRecord = rows.length === 0 ? 0 : (paginationCount - 1) * pageSize + 1;
+    const endRecord = rows.length === 0 ? rows.length : Math.min(paginationCount * pageSize, totalRecord);
+  
 
   return (
     <Box sx={{margin : "6px"}}>
@@ -62,6 +74,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         rows={rows}
         columns={updatedColumns}
         getRowId={getRowId} 
+        rowHeight={45}
         className={` ${rows.length === 10 ? 'heightScroll' : ''} FigmaTableView`}
         disableColumnMenu
         disableColumnSorting
@@ -110,20 +123,52 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         </Menu>
     }
 
-    <Box sx={{display:'flex',justifyContent:'space-between'}} pt={2}>
-        {handleBack && handleNext && 
+    { handlePagination && paginationCount ?
+        <Box sx={{display:'flex',justifyContent:'space-between'}} pt={2}>
             <>
-                <Button disabled={!backBtn} onClick={handleBack} sx={{ textTransform: 'none',color:'#1D2939',border:'1px solid #D0D5DD',borderRadius:'6px',fontSize:'14px',fontWeight:'500' }} className='Roboto'>
-                    <ArrowBackIcon />
-                    Back
-                </Button>
-                <Button disabled={!nextBtn} onClick={handleNext} sx={{ textTransform: 'none',color:'#1D2939',border:'1px solid #D0D5DD',borderRadius:'6px',fontSize:'14px',fontWeight:'500' }} className='Roboto'>
-                    Next
-                    <ArrowForwardIcon />
-                </Button>
-            </>        
-        }
-    </Box>
+                <p style={{fontSize:'14px'}}>
+                    {startRecord} - {endRecord} of {totalRecord}
+                </p>
+                <Stack spacing={2} direction="row" justifyContent="center">
+                    <Pagination
+                        count={totalPage}
+                        page={paginationCount}
+                        onChange={(event, page) => handlePageChange(page)}
+                        renderItem={(item) => (
+                        <PaginationItem
+                            {...item}
+                            onClick={() => handlePageChange(item.page)}
+                            disabled={item.page === "..." || (item.type === "previous" && paginationCount === 1) || (item.type === "next" && (rows.length === 0 || paginationCount === totalPage))}
+                            sx={{
+                                mx: 0.5,
+                                cursor: item.page === "..." ? "default" : "pointer",
+                                backgroundColor: paginationCount === item.page ? "#1976d2" : "transparent",
+                                color: paginationCount === item.page ? "#fff" : "inherit",
+                            }}
+                        />
+                        )}
+                    />
+                </Stack>
+            </>
+        </Box>
+        : 
+        <Box sx={{display:'flex',justifyContent:'space-between'}} pt={2}>
+            {handleBack && handleNext && 
+                <>
+                    <Button disabled={!backBtn} onClick={handleBack} sx={{ textTransform: 'none',color:'#1D2939',border:'1px solid #D0D5DD',borderRadius:'6px',fontSize:'14px',fontWeight:'500' }} className='Roboto'>
+                        <ArrowBackIcon />
+                        Back
+                    </Button>
+                    <Button disabled={!nextBtn} onClick={handleNext} sx={{ textTransform: 'none',color:'#1D2939',border:'1px solid #D0D5DD',borderRadius:'6px',fontSize:'14px',fontWeight:'500' }} className='Roboto'>
+                        Next
+                        <ArrowForwardIcon />
+                    </Button>
+                </>        
+            }
+        </Box>
+    }
+
+
 
     </Box>
   )

@@ -185,7 +185,7 @@ export default function Navbar({ unreadNotificationCount }) {
 
     return (
         <>
-        <AppBar
+        {/* <AppBar
             position="sticky"
             sx={{
                 background: "#fff",
@@ -198,7 +198,7 @@ export default function Navbar({ unreadNotificationCount }) {
             <Toolbar
                 sx={{ justifyContent: "space-between", padding: '3px' }}
                 className="navbarHeight"
-            >
+            > */}
 
                 {/* Left: Search */}
 
@@ -245,25 +245,25 @@ export default function Navbar({ unreadNotificationCount }) {
                         ),
                     }}
                 /> */}
-
+{/* 
                 <Box>
                     
-                </Box>
+                </Box> */}
 
                 {/* Right: Notification */}
-                <Box>
+                {/* <Box> */}
                     <IconButton size="small" aria-label="show notifications" color="inherit" sx={{position: 'relative'}} onClick={showAlertUX}>
                         <Badge badgeContent={notificationCount == 0 ? undefined : notificationCount} className="notificationBadge" overlap="circular">
                             <NotificationsNoneIcon sx={{color: '#212121', height: '25px', width: '25px'}} />
                         </Badge>
                     </IconButton>
-                    <IconButton size="small" aria-label="show help" color="inherit">
+                    {/* <IconButton size="small" aria-label="show help" color="inherit">
                         <HelpOutlineIcon sx={{color: '#212121', height: '25px', width: '25px'}} />
                     </IconButton>
                 </Box>
 
             </Toolbar>
-        </AppBar>
+        </AppBar> */}
 
         { showAlertPage &&
             <>

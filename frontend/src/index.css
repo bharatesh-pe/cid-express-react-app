@@ -1013,3 +1013,11 @@ div::first-letter {
         font-family: 'Inter';
         text-transform: uppercase;
     }
+
+    .MuiPaginationItem-root.Mui-selected{
+        color: #101828 !important;
+    }
+
+    .MuiPaginationItem-root{
+        color: #475467 !important;
+    }
