@@ -504,6 +504,7 @@ const GovernmentOrder = () => {
                     onOpen: () => {
                         loadTableData(paginationCount);
                         setApprovalSaveData({});
+                        setApproveTableFlag(false);
                     }                  
                 });
                 } else {
@@ -519,6 +520,7 @@ const GovernmentOrder = () => {
             }
       
             if (pendingUpdateData && approvalPurpose !== "delete") {
+                setApproveTableFlag(false);
                 onUpdateTemplateData(pendingUpdateData);
             }
       

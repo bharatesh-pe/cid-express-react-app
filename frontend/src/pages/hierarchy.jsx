@@ -702,7 +702,7 @@ const Hierarchy = () => {
                     </Button>
                     {showEditModal && (
                         <Button variant="outlined" onClick={handleEditData}>
-                            Edit Hierarchy
+                            Update Hierarchy
                         </Button>
                     )}
                     {showRoleAddModal && (
