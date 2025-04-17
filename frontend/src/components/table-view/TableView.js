@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
 import { Box, Button, IconButton, Menu, MenuItem, Pagination, PaginationItem, Stack } from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
@@ -38,7 +38,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
               {
                 field: "",
                 headerName: "",
-                flex: 2,
+                width: 50,
                 renderCell: (params) => (
                   <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
                     {selectedRow?.id === params.row.id ? (
@@ -75,7 +75,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         columns={updatedColumns}
         getRowId={getRowId} 
         rowHeight={45}
-        className={` ${rows.length === 10 ? 'heightScroll' : ''} FigmaTableView`}
+        className={`FigmaTableView`}
         disableColumnMenu
         disableColumnSorting
         hideFooter
@@ -84,6 +84,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         // pageSizeOptions={[5, 10]}
         checkboxSelection={checkboxSelection}
         sx={{ border: 0 }}
+        stickyHeader
         onRowClick={(params) => handleRowClick && handleRowClick(params.row)}
         />
     </Paper>

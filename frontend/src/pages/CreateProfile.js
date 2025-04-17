@@ -55,6 +55,12 @@ const CreateProfile = () => {
     const [data, setData] = useState(null); // State for storing the response data
     const [forceTableLoad, setForceTableLoad] = useState(false);
 
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
 
     useEffect(() => {
         // getProfileTemplates();
@@ -403,6 +409,13 @@ const CreateProfile = () => {
                     });
 
                     setTableData(updatedTableData)
+                }
+
+                const { meta } = getTemplateResponse.data;
+    
+                if (meta?.totalPages) {
+                    setTotalPage(meta.totalPages);
+                    if (meta.totalItems) setTotalRecord(meta.totalItems);
                 }
 
             } else {
@@ -946,7 +959,14 @@ const CreateProfile = () => {
                 </DialogContent>
             </Dialog>
 
-            <TableView rows={tableData} columns={columns} checkboxSelection={false} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
+            <TableView 
+                rows={tableData} 
+                columns={columns} 
+                totalPage={totalPage} 
+                totalRecord={totalRecord} 
+                paginationCount={paginationCount} 
+                handlePagination={handlePagination} 
+            />
 
             {showOptionModal && 
                 <Dialog
