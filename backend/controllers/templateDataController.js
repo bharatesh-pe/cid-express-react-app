@@ -5177,3 +5177,154 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 		}
 	}
 };
+
+
+exports.getAccusedWitness = async (req, res) => {
+	try {
+		const {  table_name , ui_case_id , pt_case_id } = req.body;
+
+		if (!table_name) {
+			return userSendResponse(res, 400, false, "Missing required table name.");
+		}
+
+
+		// Fetch the template metadata
+		const tableData = await Template.findOne({ where: { table_name } });
+
+		if (!tableData) {
+		const message = `Table ${table_name} does not exist.`;
+		return userSendResponse(res, 400, false, message, null);
+		}
+
+		// Parse the schema fields from Template
+		const schema = typeof tableData.fields === "string"	? JSON.parse(tableData.fields) : tableData.fields;
+
+		const fields = {};
+
+		// Filter fields that have is_primary_field as true
+		const relevantSchema =
+		table_name === "cid_ui_case_progress_report"
+			? schema
+			: schema.filter((field) => field.is_primary_field === true);
+
+		// Define model attributes based on filtered schema
+		const modelAttributes = {
+		id: {
+			type: Sequelize.DataTypes.INTEGER,
+			primaryKey: true,
+			autoIncrement: true,
+		},
+		created_at: {
+			type: Sequelize.DataTypes.DATE,
+			allowNull: false,
+		},
+		updated_at: {
+			type: Sequelize.DataTypes.DATE,
+			allowNull: false,
+		},
+		created_by: {
+			type: Sequelize.DataTypes.STRING,
+			allowNull: true,  
+		} 
+		};
+		const associations = [];
+
+		for (const field of relevantSchema) {
+		const {
+			name: columnName,
+			data_type,
+			not_null,
+			default_value,
+			table,
+			forign_key,
+			attributes,
+		} = field;
+
+		if (!columnName || !data_type) {
+			console.warn(
+			`Missing required attributes for field ${columnName}. Using default type STRING.`
+			);
+			modelAttributes[columnName] = {
+			type: Sequelize.DataTypes.STRING,
+			allowNull: not_null ? false : true,
+			defaultValue: default_value || null,
+			};
+			continue;
+		}
+
+		// Handle data_type mapping to Sequelize types
+		const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+		
+		modelAttributes[columnName] = {
+			type: sequelizeType,
+			allowNull: not_null ? false : true,
+			defaultValue: default_value || null,
+		};
+
+		fields[columnName] = {
+			type: sequelizeType,
+			allowNull: !not_null,
+			defaultValue: default_value || null,
+		};
+
+		// Handle foreign key associations dynamically
+		if (table && forign_key && attributes) {
+			associations.push({
+			relatedTable: table,
+			foreignKey: columnName,
+			targetAttribute: attributes,
+			});
+		}
+		}
+
+		// Define and sync the dynamic model
+		const Model = sequelize.define(table_name, modelAttributes, {
+		freezeTableName: true,
+		timestamps: true,
+		createdAt: "created_at",
+		updatedAt: "updated_at",
+		});
+
+		await Model.sync();
+
+		let whereClause = {};
+		if (ui_case_id && ui_case_id != "" && pt_case_id && pt_case_id != "") {
+		whereClause = {
+			[Op.or]: [{ ui_case_id }, { pt_case_id }],
+		};
+		} else if (ui_case_id && ui_case_id != "") {
+			whereClause = { ui_case_id };
+		} else if (pt_case_id && pt_case_id != "") {
+			whereClause = { pt_case_id };
+		}
+
+		let attributes = [];
+		if(table_name === "cid_ui_case_accused"){
+			attributes = ["id", "field_name"];
+		}
+		else if(table_name === "cid_ui_case_witness"){
+			attributes = ["id", "field_witness_name"];
+		}
+
+		const Usersdata = await Model.findAll({
+			where: whereClause,
+			attributes: attributes,
+		});
+
+		const data = Usersdata.map((item) => {
+			if (table_name === "cid_ui_case_accused") {
+				return { id: item.id, name: item.field_name };
+			} else if (table_name === "cid_ui_case_witness") {
+				return { id: item.id, name: item.field_witness_name };
+			}
+			return item;
+		});
+		if (!data.length) {
+			return res.status(404).json({ success: false, message: "No records found." });
+		}
+		return res.status(200).json({ success: true, data });
+	} catch (error) {
+		console.error("Error fetching records:", error);
+		return res.status(500).json({ success: false, message: "Internal server error." });
+	}
+};

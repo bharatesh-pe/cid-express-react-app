@@ -405,3 +405,189 @@ exports.get_case_approval_by_id = async (req, res) => {
     });
   }
 };
+
+exports.update_ui_case_approval = async (req, res) => {
+  const { user_id } = req.user;
+  const {
+    approval_id,
+    approval_item,
+    approved_by,
+    approval_date,
+    remarks,
+    module,
+    action,
+    transaction_id,
+    created_by_designation_id,
+    created_by_division_id,
+  } = req.body;
+
+  if (!transaction_id || transaction_id === "") {
+    return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+  }
+
+  const dirPath = path.join(__dirname, `../data/ui_case_approval_unique/${transaction_id}`);
+
+  if (fs.existsSync(dirPath)) {
+    return res.status(400).json({ success: false, message: "Duplicate transaction detected." });
+  }
+
+  fs.mkdirSync(dirPath, { recursive: true });
+
+  const t = await dbConfig.sequelize.transaction();
+
+  try {
+    // Check record exists
+    const approval = await UiCaseApproval.findByPk(approval_id);
+    if (!approval) {
+      await t.rollback();
+      return res.status(404).json({ message: "Approval record not found" });
+    }
+
+    // Optional: validate approval_item
+    if (approval_item) {
+      const exists = await ApprovalItem.findByPk(approval_item);
+      if (!exists) {
+        await t.rollback();
+        return res.status(400).json({ message: "Invalid approval item ID" });
+      }
+    }
+
+    // Update using WHERE clause
+    await UiCaseApproval.update(
+      {
+        approval_item,
+        approved_by,
+        approval_date: approval_date || new Date(),
+        remarks,
+        module,
+        action,
+      },
+      {
+        where: { approval_id },
+        transaction: t,
+      }
+    );
+
+    // Create system alert
+    const systemAlert = await System_Alerts.create(
+      {
+        approval_id,
+        reference_id: approval.reference_id,
+        alert_type: "Approval Update",
+        alert_message: `Updated: ${remarks}`,
+        created_by: user_id,
+        created_by_designation_id,
+        created_by_division_id,
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+    return res.status(200).json({
+      success: true,
+      message: "Approval record updated successfully",
+      alert_data: systemAlert,
+    });
+  } catch (error) {
+    if (t.finished !== "rollback") await t.rollback();
+    console.error("Error updating Approval:", error);
+    return res.status(500).json({
+      message: "Failed to update Approval",
+      error: error.message,
+    });
+  } finally {
+    if (fs.existsSync(dirPath)) {
+      fs.rmdirSync(dirPath, { recursive: true });
+    }
+  }
+};
+
+exports.delete_ui_case_approval = async (req, res) => {
+  const { user_id } = req.user;
+  const { approval_id, transaction_id, created_by_designation_id, created_by_division_id } = req.body;
+
+  if (!transaction_id || transaction_id === "") {
+    return res.status(400).json({ success: false, message: "Transaction Id is required!" });
+  }
+
+  const dirPath = path.join(__dirname, `../data/ui_case_approval_unique/${transaction_id}`);
+
+  if (fs.existsSync(dirPath)) {
+    return res.status(400).json({ success: false, message: "Duplicate transaction detected." });
+  }
+
+  fs.mkdirSync(dirPath, { recursive: true });
+
+  const t = await dbConfig.sequelize.transaction();
+
+  try {
+    const approval = await UiCaseApproval.findByPk(approval_id, { transaction: t });
+    if (!approval) {
+      await t.rollback();
+      return res.status(404).json({ message: "Approval record not found" });
+    }
+
+    // Step 1: Find all related system alerts
+    const systemAlerts = await System_Alerts.findAll({
+      where: { approval_id },
+      transaction: t,
+    });
+
+    // Step 2: Collect system_alert_ids to delete AlertViewStatus entries
+    const systemAlertIds = systemAlerts.map(alert => alert.system_alert_id);
+
+    // Step 3: Delete related alert view statuses
+    if (systemAlertIds.length > 0) {
+      await AlertViewStatus.destroy({
+        where: {
+          system_alert_id: systemAlertIds,
+        },
+        transaction: t,
+      });
+    }
+
+    // Step 4: Delete related system alerts
+    await System_Alerts.destroy({
+      where: { approval_id },
+      transaction: t,
+    });
+
+    // Step 5: Delete the approval record
+    await UiCaseApproval.destroy({
+      where: { approval_id },
+      transaction: t,
+    });
+
+    // Step 6: Log the delete action in system alerts
+    const deleteAlert = await System_Alerts.create(
+      {
+        approval_id: null, // Approval no longer exists
+        reference_id: approval.reference_id,
+        alert_type: "Approval Delete",
+        alert_message: "Approval record deleted",
+        created_by: user_id,
+        created_by_designation_id,
+        created_by_division_id,
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+    return res.status(200).json({
+      success: true,
+      message: "Approval record deleted successfully",
+      alert_data: deleteAlert,
+    });
+  } catch (error) {
+    if (t.finished !== "rollback") await t.rollback();
+    console.error("Error deleting Approval:", error);
+    return res.status(500).json({
+      message: "Failed to delete Approval",
+      error: error.message,
+    });
+  } finally {
+    if (fs.existsSync(dirPath)) {
+      fs.rmdirSync(dirPath, { recursive: true });
+    }
+  }
+};
