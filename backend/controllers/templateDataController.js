@@ -2681,25 +2681,26 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
     // Extract user IDs of subordinates
     const subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+        if (allowedUserIds.length) {
+           if (template_module === "ui_case") {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: allowedUserIds } },
+                    { field_name_of_the_io: { [Op.in]: allowedUserIds } } 
+                ];
+            }
+            else if(template_module === "pt_case" )
+            {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+            else if(template_module === "eq_case" )
+            {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+            else{
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+        }
 
-    // Include the current user's ID in the filter
-    const allowedUserIds = [userId, ...subordinateUserIds];
-
-    if (allowedUserIds.length) {
-      //field_name_of_the_io
-      if (template_module === "ui_case") {
-        whereClause[Op.or] = [
-          { created_by_id: { [Op.in]: allowedUserIds } },
-          { field_io_name: { [Op.in]: allowedUserIds } },
-        ];
-      } else if (template_module === "pt_case") {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      } else if (template_module === "eq_case") {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      } else {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      }
-    }
 
     // const userDivision = await UsersDivision.findAll({ where: { users_id : userId ,  } , attributes: ['division_id'] })
     // const userData = await Users.findOne({
@@ -4798,6 +4799,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       fs.rmSync(dirPath, { recursive: true, force: true });
   }
 };
+
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 	const { table_name, data, others_data, transaction_id, user_designation_id , folder_attachment_ids } = req.body;
