@@ -791,6 +791,8 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
 
 exports.getTemplateData = async (req, res, next) => {
   const { table_name, ui_case_id, pt_case_id } = req.body;
+  const { filter = {}, from_date = null, to_date = null } = req.body;
+   const fields = {};
   const Op = Sequelize.Op;
 
   // const userId = res.locals.user_id || null;
@@ -879,11 +881,17 @@ exports.getTemplateData = async (req, res, next) => {
       }
 
       // Handle data_type mapping to Sequelize types
-      const sequelizeType =
-        typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-      modelAttributes[columnName] = {
+      const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+      
+	  modelAttributes[columnName] = {
         type: sequelizeType,
         allowNull: not_null ? false : true,
+        defaultValue: default_value || null,
+      };
+
+	  fields[columnName] = {
+        type: sequelizeType,
+        allowNull: !not_null,
         defaultValue: default_value || null,
       };
 
@@ -935,6 +943,30 @@ exports.getTemplateData = async (req, res, next) => {
       whereClause = { ui_case_id };
     } else if (pt_case_id && pt_case_id != "") {
       whereClause = { pt_case_id };
+    }
+
+	// Apply field filters if provided
+    if (filter && typeof filter === "object") {
+      Object.entries(filter).forEach(([key, value]) => {
+        if (fields[key]) {
+          whereClause[key] = value; // Direct match for foreign key fields
+        }
+      });
+    }
+
+    if (from_date || to_date) {
+      whereClause["created_at"] = {};
+
+      if (from_date) {
+        whereClause["created_at"][Op.gte] = new Date(
+          `${from_date}T00:00:00.000Z`
+        );
+      }
+      if (to_date) {
+        whereClause["created_at"][Op.lte] = new Date(
+          `${to_date}T23:59:59.999Z`
+        );
+      }
     }
 
     // Fetch data with dynamic includes
@@ -2681,26 +2713,25 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
     // Extract user IDs of subordinates
     const subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
-        if (allowedUserIds.length) {
-           if (template_module === "ui_case") {
-                whereClause[Op.or] = [
-                    { created_by_id: { [Op.in]: allowedUserIds } },
-                    { field_name_of_the_io: { [Op.in]: allowedUserIds } } 
-                ];
-            }
-            else if(template_module === "pt_case" )
-            {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            }
-            else if(template_module === "eq_case" )
-            {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            }
-            else{
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            }
-        }
 
+    // Include the current user's ID in the filter
+    const allowedUserIds = [userId, ...subordinateUserIds];
+
+    if (allowedUserIds.length) {
+      //field_name_of_the_io
+      if (template_module === "ui_case") {
+        whereClause[Op.or] = [
+          { created_by_id: { [Op.in]: allowedUserIds } },
+          { field_io_name: { [Op.in]: allowedUserIds } },
+        ];
+      } else if (template_module === "pt_case") {
+        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+      } else if (template_module === "eq_case") {
+        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+      } else {
+        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+      }
+    }
 
     // const userDivision = await UsersDivision.findAll({ where: { users_id : userId ,  } , attributes: ['division_id'] })
     // const userData = await Users.findOne({
@@ -2914,22 +2945,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     if (filter && typeof filter === "object") {
       Object.entries(filter).forEach(([key, value]) => {
         if (fields[key]) {
-          // Assuming 'fields' contains the field definitions
           whereClause[key] = value; // Direct match for foreign key fields
         }
       });
     }
 
-    // Apply date range filter if provided
-    // if (from_date || to_date) {
-    //     whereClause["created_at"] = {};
-    //     if (from_date) {
-    //         whereClause["created_at"][Op.gte] = new Date(from_date);
-    //     }
-    //     if (to_date) {
-    //         whereClause["created_at"][Op.lte] = new Date(to_date);
-    //     }
-    // }
     if (from_date || to_date) {
       whereClause["created_at"] = {};
 
@@ -3193,58 +3213,58 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         // data.ReadStatus = data.ReadStatus ? true : false;
         // Handle alias mappings before processing associations
-        // for (const association of associations) {
-        //     const alias = `${association.relatedTable}Details`;
-        //     if (data[alias]) {
-        //         Object.entries(data[alias]).forEach(([key, value]) => {
-        //             data[association.foreignKey] = value;
-        //         });
-        //         delete data[alias]; // Remove unnecessary alias object from response
-        //     }
-        // }
+        for (const association of associations) {
+            const alias = `${association.relatedTable}Details`;
+            if (data[alias]) {
+                Object.entries(data[alias]).forEach(([key, value]) => {
+                    data[association.foreignKey] = value;
+                });
+                delete data[alias]; // Remove unnecessary alias object from response
+            }
+        }
 
         // Fetch linked profile info manually
         const linkedProfileInfo = [];
 
-        // for (const association of associations) {
-        //     const foreignKeyValue = data[association.foreignKey];
+        for (const association of associations) {
+            const foreignKeyValue = data[association.foreignKey];
 
-        //     if (foreignKeyValue) {
-        //         try {
-        //             // Fetch associated table metadata from the Template model
-        //             const associatedTemplate = await Template.findOne({
-        //                 where: {
-        //                     table_name: association.relatedTable,  // Ensure the correct table name
-        //                 },
-        //                 attributes: ['template_type'],
-        //             });
+            if (foreignKeyValue) {
+                try {
+                    // Fetch associated table metadata from the Template model
+                    const associatedTemplate = await Template.findOne({
+                        where: {
+                            table_name: association.relatedTable,  // Ensure the correct table name
+                        },
+                        attributes: ['template_type'],
+                    });
 
-        //             // Check if the table name starts with "da" and template_type is not "master"
-        //             if (associatedTemplate && association.relatedTable.startsWith("da") && associatedTemplate.template_type !== "master") {
-        //                 const [linkedRow] = await sequelize.query(
-        //                     `SELECT id FROM ${association.relatedTable} WHERE ${association.targetAttribute} = :foreignKeyValue LIMIT 1`,
-        //                     {
-        //                         replacements: { foreignKeyValue },
-        //                         type: Sequelize.QueryTypes.SELECT
-        //                     }
-        //                 );
+                    // Check if the table name starts with "da" and template_type is not "master"
+                    if (associatedTemplate && association.relatedTable.startsWith("da") && associatedTemplate.template_type !== "master") {
+                        const [linkedRow] = await sequelize.query(
+                            `SELECT id FROM ${association.relatedTable} WHERE ${association.targetAttribute} = :foreignKeyValue LIMIT 1`,
+                            {
+                                replacements: { foreignKeyValue },
+                                type: Sequelize.QueryTypes.SELECT
+                            }
+                        );
 
-        //                 if (linkedRow && linkedRow.id) {
-        //                     linkedProfileInfo.push({
-        //                         table: association.relatedTable,
-        //                         id: linkedRow.id,
-        //                         field: association.foreignKey
-        //                     });
-        //                 }
-        //             }
-        //         } catch (error) {
-        //             console.error(`Error fetching linked profile info for ${association.relatedTable}:`, error);
-        //         }
-        //     }
-        // }
+                        if (linkedRow && linkedRow.id) {
+                            linkedProfileInfo.push({
+                                table: association.relatedTable,
+                                id: linkedRow.id,
+                                field: association.foreignKey
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error fetching linked profile info for ${association.relatedTable}:`, error);
+                }
+            }
+        }
 
         // Add linked profile info to the response
-        // data.linked_profile_info = linkedProfileInfo.length ? linkedProfileInfo : null;
+        data.linked_profile_info = linkedProfileInfo.length ? linkedProfileInfo : null;
 
         return data;
       })
@@ -4799,7 +4819,6 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       fs.rmSync(dirPath, { recursive: true, force: true });
   }
 };
-
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 	const { table_name, data, others_data, transaction_id, user_designation_id , folder_attachment_ids } = req.body;
