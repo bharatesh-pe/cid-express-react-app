@@ -235,7 +235,7 @@ const Layout = ({ children }) => {
           // errMessage = await errMessage.json();
           if (errMessage && errMessage.includes("Authorization_error")) {
             localStorage.removeItem("auth_token");
-            localStorage.removeItem("userName");
+            localStorage.removeItem("username");
             localStorage.removeItem("authAdmin");
             localStorage.removeItem("kgid");
             localStorage.removeItem("user_permissions");
@@ -278,12 +278,16 @@ const Layout = ({ children }) => {
       }
 
       localStorage.removeItem("auth_token");
-      localStorage.removeItem("userName");
+      localStorage.removeItem("username");
       localStorage.removeItem("authAdmin");
       localStorage.removeItem("kgid");
       localStorage.removeItem("user_permissions");
       localStorage.removeItem("designation_id");
       localStorage.removeItem("designation_name");
+      localStorage.removeItem("user_id");
+      localStorage.removeItem("division_id");
+      localStorage.removeItem("division_name");
+
       navigate("/");
     } catch (err) {
       var errMessage = "Something went wrong. Please try again.";
@@ -295,7 +299,7 @@ const Layout = ({ children }) => {
         // errMessage = await errMessage.json();
         if (errMessage && errMessage.includes("Authorization_error")) {
           localStorage.removeItem("auth_token");
-          localStorage.removeItem("userName");
+          localStorage.removeItem("username");
           localStorage.removeItem("authAdmin");
           localStorage.removeItem("kgid");
           localStorage.removeItem("user_permissions");
