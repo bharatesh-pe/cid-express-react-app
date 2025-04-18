@@ -5794,11 +5794,56 @@ const UnderInvestigation = () => {
             }}
           >
             {selectedOtherTemplate?.name}
-            <Box>
+            <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
               "cid_ui_case_progress_report" ? (
                 hasPdfEntry &&(
                   <>
+                    <TextFieldInput 
+    
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: '#475467' }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    {otherSearchValue && (
+                                        <IconButton sx={{ padding: 0 }} onClick={handleOtherClear} size="small">
+                                            <ClearIcon sx={{ color: '#475467' }} />
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            )
+                        }}
+
+                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                        value={otherSearchValue}
+                        id="tableSearch"
+                        size="small"
+                        placeholder='Search anything'
+                        variant="outlined"
+                        className="profileSearchClass"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                            }
+                        }}
+                        
+                        sx={{
+                            width: '400px', borderRadius: '6px', outline: 'none',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: '1',
+                                fontSize: '14px',
+                                fontWeight: '400',
+                                fontFamily: 'Roboto'
+                            },
+                            marginRight: "12px"
+                        }}
+                    />
                     {isIoAuthorized && (
                       <Button
                         variant="outlined"
@@ -5913,16 +5958,64 @@ const UnderInvestigation = () => {
                   </>
                 )
               ) : ( 
-                isIoAuthorized && (
-                  <Button
-                    variant="outlined"
-                    onClick={() =>
-                      showOptionTemplate(selectedOtherTemplate?.table)
-                    }
-                  >
-                    Add
-                  </Button>
-                )
+                <Box sx={{display: 'flex', justifyContent: 'space-between', gap: '12px'}}>
+                    <Box>
+                    </Box>
+                    <TextFieldInput 
+                    
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: '#475467' }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    {otherSearchValue && (
+                                        <IconButton sx={{ padding: 0 }} onClick={handleOtherClear} size="small">
+                                            <ClearIcon sx={{ color: '#475467' }} />
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            )
+                        }}
+
+                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                        value={otherSearchValue}
+                        id="tableSearch"
+                        size="small"
+                        placeholder='Search anything'
+                        variant="outlined"
+                        className="profileSearchClass"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                            }
+                        }}
+                        
+                        sx={{
+                            width: '400px', borderRadius: '6px', outline: 'none',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: '1',
+                                fontSize: '14px',
+                                fontWeight: '400',
+                                fontFamily: 'Roboto'
+                            },
+                        }}
+                    />
+                    {isIoAuthorized && (
+                        <Button
+                            variant="outlined"
+                            onClick={() =>
+                            showOptionTemplate(selectedOtherTemplate?.table)
+                            }
+                        >
+                            Add
+                        </Button>
+                    )}
+                </Box>
               )}
               <IconButton
                 aria-label="close"
@@ -5941,10 +6034,16 @@ const UnderInvestigation = () => {
                   hasPdfEntry ? (
                     uploadedFiles.length > 0 ? (
                       <>
-                        <TableView
-                          rows={otherTemplateData}
-                          columns={otherTemplateColumn}
-                        />
+                        <Box>
+                            <TableView
+                                rows={otherTemplateData}
+                                columns={otherTemplateColumn}
+                                totalPage={otherTemplatesTotalPage} 
+                                totalRecord={otherTemplatesTotalRecord} 
+                                paginationCount={otherTemplatesPaginationCount} 
+                                handlePagination={handleOtherPagination} 
+                            />
+                        </Box>
                         <Box
                           display="flex"
                           flexDirection="column"
@@ -5989,66 +6088,15 @@ const UnderInvestigation = () => {
                     </Box>
                   )
                 ) : (
-                    <Box>
-                    
-                    <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
-                        <Box>
-                        </Box>
-                            <TextFieldInput 
-                            
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon sx={{ color: '#475467' }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            {otherSearchValue && (
-                                                <IconButton sx={{ padding: 0 }} onClick={handleOtherClear} size="small">
-                                                    <ClearIcon sx={{ color: '#475467' }} />
-                                                </IconButton>
-                                            )}
-                                        </Box>
-                                    )
-                                }}
-
-                                onInput={(e) => setOtherSearchValue(e.target.value)}
-                                value={otherSearchValue}
-                                id="tableSearch"
-                                size="small"
-                                placeholder='Search anything'
-                                variant="outlined"
-                                className="profileSearchClass"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
-                                    }
-                                }}
-                                
-                                sx={{
-                                    width: '400px', borderRadius: '6px', outline: 'none',
-                                    '& .MuiInputBase-input::placeholder': {
-                                        color: '#475467',
-                                        opacity: '1',
-                                        fontSize: '14px',
-                                        fontWeight: '400',
-                                        fontFamily: 'Roboto'
-                                    },
-                                }}
-                            />
-                    </Box>
-
-                    <TableView
-                        rows={otherTemplateData}
-                        columns={otherTemplateColumn}
-                        totalPage={otherTemplatesTotalPage} 
-                        totalRecord={otherTemplatesTotalRecord} 
-                        paginationCount={otherTemplatesPaginationCount} 
-                        handlePagination={handleOtherPagination} 
-                    />
-
+                    <Box>                    
+                        <TableView
+                            rows={otherTemplateData}
+                            columns={otherTemplateColumn}
+                            totalPage={otherTemplatesTotalPage} 
+                            totalRecord={otherTemplatesTotalRecord} 
+                            paginationCount={otherTemplatesPaginationCount} 
+                            handlePagination={handleOtherPagination} 
+                        />
                     </Box>
                 )}
               </Box>
