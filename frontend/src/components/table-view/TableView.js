@@ -116,7 +116,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
                             </svg>
                         </span>
                     )}
-                    <span style={{marginTop:'4px'}}>
+                    <span style={{marginTop:'3px'}}>
                         {option?.name}
                     </span> 
                 </MenuItem>

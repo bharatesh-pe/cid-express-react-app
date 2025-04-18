@@ -4082,11 +4082,6 @@ const UnderInvestigation = () => {
             icon: () => (
                 <span
                     className="tableActionViewIcon"
-                    style={{
-                        marginTop: "1px",
-                        marginRight: "12px",
-                        marginLeft: "2px",
-                    }}
                 >
                     <svg
                         width="50"
