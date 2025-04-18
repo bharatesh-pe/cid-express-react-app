@@ -6,7 +6,8 @@ const userSendResponse = async (
     success,
     message,
     data = null,
-    errors = null
+    errors = null,
+    meta = null
 ) => {
     const response = {
         success,
@@ -15,6 +16,7 @@ const userSendResponse = async (
 
     if (data !== null) response.data = data;
     if (errors !== null) response.errors = errors;
+    if (meta !== null) response.meta = meta;
 
     // Prepare the API log details
     const userApiLog = {
