@@ -1184,11 +1184,14 @@ const UnderInvestigation = () => {
                     });
   
                     setTableData(updatedTableData);
-                    setviewReadonly(false);
-                    setEditTemplateData(false);
-                    setInitialData({});
-                    setFormOpen(false);
+                }else{
+                    setTableData([]);
                 }
+
+                setviewReadonly(false);
+                setEditTemplateData(false);
+                setInitialData({});
+                setFormOpen(false);
   
                 if (meta?.table_name && meta?.template_name) {
                     setTemplate_name(meta.template_name);
