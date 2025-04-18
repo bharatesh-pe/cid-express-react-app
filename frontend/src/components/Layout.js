@@ -335,12 +335,12 @@ const Layout = ({ children }) => {
             overflow: "hidden",
           }}
         >
-          <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none" }}>
+          <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none", borderRight: "1px solid #D0D5DD" }}>
             {/* Sidebar Header */}
             <Box
               sx={{
                 display: "flex",
-                gap: "10px",
+                gap: "8px",
                 alignItems: "center",
                 justifyContent: "center",
                 borderBottom: "1px solid #D0D5DD",
@@ -362,13 +362,15 @@ const Layout = ({ children }) => {
                 System
               </p>
 
+                <Navbar unreadNotificationCount={notificationCount} />
+
               <Divider sx={{ marginTop: 1 }} />
             </Box>
 
             {/* Sidebar Content (Navigation Links) */}
 
             <Box
-              sx={{ position: "relative", borderRight: "1px solid #D0D5DD" }}
+              sx={{ position: "relative" }}
             >
               <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
                 {/* 1st menu list */}
@@ -575,8 +577,7 @@ const Layout = ({ children }) => {
 
         {/* Main Content */}
         <Box flex={4} sx={{ overflow: "hidden" }}>
-          <Navbar unreadNotificationCount={notificationCount} />
-          <Paper sx={{ height: "90vh", borderRadius: "0", boxShadow: "none", overflow: 'auto' }}>
+          <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none", overflow: 'auto' }}>
             {/* Render nested route (e.g., Dashboard, Profile) */}
             {/* <Outlet /> */}
             {children}

@@ -304,7 +304,9 @@ router.post('/saveDataWithApprovalToTemplates',
     [insertDataValidation],[validate_token],
     templateDataController.saveDataWithApprovalToTemplates)
     
-
+router.post('/getAccusedWitness',
+        // userAuthMiddleware,
+        templateDataController.getAccusedWitness)
 
 
 module.exports = router;
