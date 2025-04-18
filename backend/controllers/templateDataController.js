@@ -843,6 +843,8 @@ exports.getTemplateData = async (req, res, next) => {
       } 
     };
     const associations = [];
+    // Store field configurations by name for easy lookup
+    const fieldConfigs = {};
 
     for (const field of relevantSchema) {
       const {
