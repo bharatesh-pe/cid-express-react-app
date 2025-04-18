@@ -105,6 +105,7 @@ const Enquiries = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const [selectedRowData, setSelectedRowData] = useState(null);
+  const [isIoAuthorized, setIsIoAuthorized] = useState(true);
 
   const [hoverTableOptions, setHoverTableOptions] = useState([]);
   // for approve states
@@ -2344,7 +2345,54 @@ const Enquiries = () => {
         }
     };
 
+    
+      const handleAssignToIo = async (selectedRow, table_name) => {
+        if (!table_name || table_name === "") {
+          toast.warning("Please Check Table Name");
+          return false;
+        }
+    
+        const viewTemplatePayload = {
+          table_name: table_name,
+          id: selectedRow.id,
+        };
+    
+        setLoading(true);
+        try {
+          const viewTemplateData = await api.post(
+            "/templateData/viewTemplateData",
+            viewTemplatePayload
+          );
+          setLoading(false);
+    
+          if (viewTemplateData && viewTemplateData.success) {
+            const user_id = localStorage.getItem("user_id");
+            const field_io_name = viewTemplateData?.data?.field_io_name;
+    
+            if (String(user_id) === String(field_io_name)) {
+              setIsIoAuthorized(true);
+              return true; 
+            } else {
+              setIsIoAuthorized(false);
+              return false;
+            }
+          } else {
+            toast.error("Failed to fetch template data");
+            return false;
+          }
+        } catch (error) {
+          setLoading(false);
+          toast.error(error?.response?.data?.message || "An error occurred.");
+          return false;
+        }
+      };
+    
+
   const handleOtherTemplateActions = async (options, selectedRow) => {
+
+    const isAuthorized = await handleAssignToIo(selectedRow, "cid_enquiries");
+    setIsIoAuthorized(isAuthorized); 
+
     setSelectedRowData(selectedRow);
     var getTemplatePayload = {
       table_name: options.table,
@@ -2444,6 +2492,9 @@ const Enquiries = () => {
                 headerName: "Action",
                 flex: 1,
                 renderCell: (params) => {
+                  const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                  const canEdit = userPermissions[0]?.action_edit;
+                  const canDelete = userPermissions[0]?.action_delete;  
                   return (
                     <Box
                       sx={{
@@ -2466,33 +2517,43 @@ const Enquiries = () => {
                       >
                         View
                       </Button>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleOthersTemplateDataView(
-                            params.row,
-                            true,
-                            options.table
-                          );
-                        }}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="error"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleOthersDeleteTemplateData(
-                            params.row,
-                            options.table
-                          );
-                        }}
-                      >
-                        Delete
-                      </Button>
+                        {canEdit&& (
+                          <>
+                          {isAuthorized && (
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleOthersTemplateDataView(params.row,true,options.table);
+                              }}
+                              >
+                                Edit
+                              </Button>
+                            )}
+                           </>
+                         )}
+                      
+                        {canDelete&& (
+                          <>
+                          {isAuthorized && (
+                            <Button
+                              variant="contained"
+                              color="error"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleOthersDeleteTemplateData(
+                                  params.row,
+                                  options.table
+                                );
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          )}
+                         </>
+                        )}
+                     
                     </Box>
                   );
                 },
@@ -3950,14 +4011,17 @@ const Enquiries = () => {
           >
             {selectedOtherTemplate && selectedOtherTemplate.name}
             <Box>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  showOptionTemplate(selectedOtherTemplate.table);
-                }}
-              >
-                Add
-              </Button>
+
+            {isIoAuthorized && (
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    showOptionTemplate(selectedOtherTemplate.table);
+                  }}
+                >
+                  Add
+                </Button>
+            )}
               <IconButton
                 aria-label="close"
                 onClick={() => {
