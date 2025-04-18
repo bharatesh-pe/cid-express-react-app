@@ -5,7 +5,7 @@ import DynamicForm from "../components/dynamic-form/DynamicForm";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import api from "../services/api";
-import { Badge, Chip } from "@mui/material";
+import { Badge, Chip, Tooltip } from "@mui/material";
 import {
   Box,
   Button,
@@ -1138,6 +1138,9 @@ const UnderInvestigation = () => {
                             headerName: "Task",
                             width: 50,
                             resizable: true,
+                            renderHeader: (params) => (
+                                tableHeaderRender(params)
+                            ),
                             renderCell: (params) => (
                                 <Badge
                                     badgeContent={1}
@@ -1154,6 +1157,9 @@ const UnderInvestigation = () => {
                             width: 50,
                             resizable: true,
                             cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params)
+                            ),                            
                             renderCell: (params) => (
                                 <Button
                                     variant="contained"
@@ -1180,20 +1186,8 @@ const UnderInvestigation = () => {
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
                                 resizable: true,
-                                renderHeader: () => (
-                                    <div
-                                        onClick={() => ApplySortTable(key)}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            width: "100%",
-                                        }}
-                                    >
-                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
-                                            {generateReadableHeader(key)}
-                                        </span>
-                                    </div>
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, key)
                                 ),
                                 renderCell: renderCellFunc(key),
                         })),
@@ -1351,21 +1345,45 @@ const UnderInvestigation = () => {
     // }
 
     return (
-      <span
-        style={highlightColor}
-        onClick={onClickHandler}
-        className={`tableValueTextView Roboto ${
-          params?.row &&
-          !params.row["ReadStatus"] &&
-          localStorage.getItem("authAdmin") === "false"
-            ? "unreadMsgText"
-            : "read"
-        }`}
-      >
-        {value}
-      </span>
+        <Tooltip title={value} placement="top">
+            <span
+                style={highlightColor}
+                onClick={onClickHandler}
+                className={`tableValueTextView Roboto ${
+                params?.row &&
+                !params.row["ReadStatus"] &&
+                localStorage.getItem("authAdmin") === "false"
+                    ? "unreadMsgText"
+                    : "read"
+                }`}
+            >
+                {value}
+            </span>
+        </Tooltip>
     );
   };
+
+    const tableHeaderRender = (params, key)=>{
+        return (
+            <Tooltip title={params.colDef.headerName} arrow placement="top">
+                <Typography
+                    className="MuiDataGrid-columnHeaderTitle"
+                    noWrap
+                    sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        width: '100%',
+                        color: "#1D2939", 
+                        fontSize: "15px", 
+                        fontWeight: "500"
+                    }}
+                >
+                    {params.colDef.headerName}
+                </Typography>
+            </Tooltip>
+        )
+    }
 
   const hyperLinkShow = async (params) => {
     if (!params.table || !params.id) {

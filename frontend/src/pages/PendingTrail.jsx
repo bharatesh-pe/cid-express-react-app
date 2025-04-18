@@ -17,6 +17,7 @@ import {
   Grid,
   Autocomplete,
   TextField,
+  Tooltip,
 } from "@mui/material";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
@@ -784,20 +785,8 @@ const UnderInvestigation = () => {
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
                                 resizable: true,
-                                renderHeader: () => (
-                                    <div
-                                        onClick={() => ApplySortTable(key)}
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            width: "100%",
-                                        }}
-                                    >
-                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
-                                            {generateReadableHeader(key)}
-                                        </span>
-                                    </div>
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params)
                                 ),
                                 renderCell: renderCellFunc(key),
                         })),
@@ -894,21 +883,45 @@ const UnderInvestigation = () => {
     // }
 
     return (
-      <span
-        style={highlightColor}
-        onClick={onClickHandler}
-        className={`tableValueTextView Roboto ${
-          params?.row &&
-          !params.row["ReadStatus"] &&
-          localStorage.getItem("authAdmin") === "false"
-            ? "unreadMsgText"
-            : "read"
-        }`}
-      >
-        {value}
-      </span>
+        <Tooltip title={value} placement="top">
+            <span
+                style={highlightColor}
+                onClick={onClickHandler}
+                className={`tableValueTextView Roboto ${
+                params?.row &&
+                !params.row["ReadStatus"] &&
+                localStorage.getItem("authAdmin") === "false"
+                    ? "unreadMsgText"
+                    : "read"
+                }`}
+            >
+                {value}
+            </span>
+        </Tooltip>
     );
   };
+
+    const tableHeaderRender = (params, key)=>{
+        return (
+            <Tooltip title={params.colDef.headerName} arrow placement="top">
+                <Typography
+                    className="MuiDataGrid-columnHeaderTitle"
+                    noWrap
+                    sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        width: '100%',
+                        color: "#1D2939", 
+                        fontSize: "15px", 
+                        fontWeight: "500"
+                    }}
+                >
+                    {params.colDef.headerName}
+                </Typography>
+            </Tooltip>
+        )
+    }
 
   const hyperLinkShow = async (params) => {
     if (!params.table || !params.id) {
