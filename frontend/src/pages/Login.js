@@ -220,6 +220,7 @@ const Login = () => {
       });
 
       const data = await response.json();
+
       if (!response.ok) {
         throw new Error(data.message);
       }
@@ -233,6 +234,13 @@ const Login = () => {
         localStorage.setItem(
           "user_permissions",
           JSON.stringify(data.user_role_permissions)
+        );
+      }
+
+      if (data && data.userRole) {
+        localStorage.setItem(
+          "user_id",
+          JSON.stringify(data.userRole.user_id)
         );
       }
 

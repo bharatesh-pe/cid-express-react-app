@@ -988,6 +988,8 @@ exports.getTemplateData = async (req, res, next) => {
           if (data.field_assigned_to || data.field_assigned_by) {
             try {
               if (data.field_assigned_to) {
+                filteredData.field_assigned_to_id = data.field_assigned_to;
+
                 const assignedToUser = await Users.findOne({
                   where: { user_id: data.field_assigned_to },
                   attributes: ["kgid_id"],
@@ -1006,6 +1008,8 @@ exports.getTemplateData = async (req, res, next) => {
               }
           
               if (data.field_assigned_by) {
+                filteredData.field_assigned_by_id = data.field_assigned_by;
+
                 const assignedByUser = await Users.findOne({
                   where: { user_id: data.field_assigned_by },
                   attributes: ["kgid_id"],
