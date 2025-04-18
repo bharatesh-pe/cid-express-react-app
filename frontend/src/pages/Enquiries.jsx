@@ -653,7 +653,7 @@ const Enquiries = () => {
                             .map((key) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
-                                width: 150,
+                                width: generateReadableHeader(key).length < 15 ? 100 : 180,
                                 resizable: true,
                                 renderHeader: () => (
                                     <div

@@ -1039,3 +1039,7 @@ div::first-letter {
     .MuiDataGrid-columnSeparator.MuiDataGrid-columnSeparator--resizing{
         color: rgba(224, 224, 224, 1) !important; 
     }
+
+    .justify-content-start button{
+        justify-content: start !important;
+    }
