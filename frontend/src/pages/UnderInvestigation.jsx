@@ -2407,14 +2407,27 @@ const UnderInvestigation = () => {
           setLoading(false);
 
           if (viewTemplateResponse && viewTemplateResponse.success) {
+            const templateData = viewTemplateResponse.data;
+            const rawFields = templateData.fields || [];
+    
+            const processedFields = rawFields.map((field) => {
+              if (
+                field.name === "field_assigned_by" &&
+                editData === true &&
+                templateData.table_name === "cid_ui_case_progress_report"
+              ) {
+                return {
+                  ...field,
+                  disabled: true,
+                };
+              }
+              return field;
+            });
+            setOptionFormTemplateData(processedFields);
+
             setOtherFormOpen(true);
             setOtherRowId(rowData.id);
             setOtherTemplateId(viewTemplateResponse["data"].template_id);
-            setOptionFormTemplateData(
-              viewTemplateResponse.data["fields"]
-                ? viewTemplateResponse.data["fields"]
-                : []
-            );
             if (
               viewTemplateResponse.data.no_of_sections &&
               viewTemplateResponse.data.no_of_sections > 0
