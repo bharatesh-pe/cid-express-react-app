@@ -3405,11 +3405,15 @@ const UnderInvestigation = () => {
                     const isAssignedUser =
                       String(localStorage.getItem("user_id")) ===
                       String(params.row.field_assigned_to_id);
-
-                      const showEditAndDeleteButtons =
-                        options.table === "cid_ui_case_progress_report"
-                          ? !isPdfUpdated && (isAuthorized || isAssignedUser)
-                          : !isPdfUpdated && isAuthorized;
+                
+                    const showEditAndDeleteButtons =
+                      options.table === "cid_ui_case_progress_report"
+                        ? !isPdfUpdated && (isAuthorized || isAssignedUser)
+                        : !isPdfUpdated && isAuthorized;
+                
+                    const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                    const canEdit = userPermissions[0]?.action_edit;
+                    const canDelete = userPermissions[0]?.action_delete;
 
                     return (
                       <Box
@@ -3430,35 +3434,43 @@ const UnderInvestigation = () => {
                           View
                         </Button>
                 
-                        {showEditAndDeleteButtons && (
+                        {canEdit&& (
                           <>
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleOthersTemplateDataView(params.row, true, options.table);
-                              }}
-                            >
-                              Edit
-                            </Button>
-                            <Button
-                              variant="contained"
-                              color="error"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleOthersDeleteTemplateData(params.row, options.table);
-                              }}
-                            >
-                              Delete
-                            </Button>
+                            {showEditAndDeleteButtons && (
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleOthersTemplateDataView(params.row, true, options.table);
+                                }}
+                              >
+                                Edit
+                              </Button>
+                            )}
+                           </>
+                        )}
+                        {canDelete&& (
+                          <>
+                            {showEditAndDeleteButtons && (
+                              <Button
+                                variant="contained"
+                                color="error"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleOthersDeleteTemplateData(params.row, options.table);
+                                }}
+                              >
+                                Delete
+                              </Button>
+                            )}
                           </>
                         )}
                       </Box>
                     );
                   },
-                },
-                
+                }
+                                
             ];
 
             setOtherTemplateColumn(updatedHeader);

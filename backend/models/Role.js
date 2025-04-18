@@ -208,6 +208,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       defaultValue: false
     },
+    action_edit: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
+    action_delete: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false
+    },
     cases_print: {
       type: DataTypes.BOOLEAN,
       defaultValue: false
