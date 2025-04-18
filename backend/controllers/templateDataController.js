@@ -3132,13 +3132,13 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     //     constraints: false,
     // });
 
-    // // Add TemplateUserStatus association
-    // DynamicTable.hasOne(db.TemplateUserStatus, {
-    //     foreignKey: 'table_row_id',
-    //     sourceKey: 'id',
-    //     as: 'ReadStatus',
-    //     constraints: false,
-    // });
+    // Add TemplateUserStatus association
+    DynamicTable.hasOne(db.TemplateUserStatus, {
+        foreignKey: 'table_row_id',
+        sourceKey: 'id',
+        as: 'ReadStatus',
+        constraints: false,
+    });
 
     // include.push({
     //     model: db.TemplateStar,
@@ -3151,16 +3151,16 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     //     attributes: ['template_star_id']
     // });
 
-    // include.push({
-    //     model: db.TemplateUserStatus,
-    //     as: 'ReadStatus',
-    //     required: is_read,
-    //     where: {
-    //         user_id: userId,
-    //         template_id: tableTemplate.template_id
-    //     },
-    //     attributes: ['template_user_status_id']
-    // });
+    include.push({
+        model: db.TemplateUserStatus,
+        as: 'ReadStatus',
+        required: is_read,
+        where: {
+            user_id: userId,
+            template_id: tableTemplate.template_id
+        },
+        attributes: ['template_user_status_id']
+    });
 
     // Apply field filters if provided
     if (filter && typeof filter === "object") {
@@ -3432,7 +3432,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
           data.attachments = attachments.map((att) => att.toJSON());
         }
 
-        // data.ReadStatus = data.ReadStatus ? true : false;
+        data.ReadStatus = data.ReadStatus ? true : false;
         // Handle alias mappings before processing associations
         for (const association of associations) {
             const alias = `${association.relatedTable}Details`;
