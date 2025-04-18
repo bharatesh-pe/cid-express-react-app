@@ -63,6 +63,7 @@ import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isIoAuthorized, setIsIoAuthorized] = useState(true);
 
     //   new further investigation func states
     const [newApprovalPage, setNewApprovalPage] = useState(false);
@@ -1757,8 +1758,29 @@ const UnderInvestigation = () => {
       setLoading(false);
       if (viewTemplateResponse && viewTemplateResponse.success) {
         var caseFields = [];
+        const userId = localStorage.getItem("user_id");
+
         var getCaseIdFields = viewTemplateResponse.data["fields"].map(
           (field) => {
+
+            if (
+              field.name === "field_assigned_by" &&
+              field.formType === "Dropdown" &&
+              field.options &&
+              Array.isArray(field.options)
+            ) {
+              const matchedOption = field.options.find(
+                (opt) => String(opt.code) === String(userId)
+              );
+    
+              if (matchedOption) {
+                field.defaultValue = matchedOption.code;
+                field.disabled = true;
+              } else {
+                console.warn("No matching user found in dropdown options for user_id:", userId);
+              }
+            }
+  
             if (field && field.table && field.table === table_name) {
               caseFields = field;
               field.disabled = true;
@@ -1826,6 +1848,7 @@ const UnderInvestigation = () => {
       }
     }
   };
+
   const prUpdatePdf = async (data) => {
     try {
       setLoading(true);
@@ -2494,6 +2517,49 @@ const UnderInvestigation = () => {
     }
   };
 
+
+  const handleAssignToIo = async (selectedRow, table_name) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check Table Name");
+      return false;
+    }
+  
+    const viewTemplatePayload = {
+      table_name: table_name,
+      id: selectedRow.id,
+    };
+  
+    setLoading(true);
+    try {
+      const viewTemplateData = await api.post(
+        "/templateData/viewTemplateData",
+        viewTemplatePayload
+      );
+      setLoading(false);
+  
+      if (viewTemplateData && viewTemplateData.success) {
+        const user_id = localStorage.getItem("user_id");
+        const field_io_name = viewTemplateData?.data?.field_io_name;
+    
+        if (String(user_id) === String(field_io_name)) {
+          setIsIoAuthorized(true);
+          return true; 
+        } else {
+          setIsIoAuthorized(false);
+          return false;
+        }
+      } else {
+        toast.error("Failed to fetch template data");
+        return false;
+      }
+    } catch (error) {
+      setLoading(false);
+      toast.error(error?.response?.data?.message || "An error occurred.");
+      return false;
+    }
+  };
+
+  
   const handleOthersDeleteTemplateData = (rowData, table_name) => {
     Swal.fire({
       title: "Are you sure?",
@@ -3218,7 +3284,13 @@ const UnderInvestigation = () => {
   };
 
   const handleOtherTemplateActions = async (options, selectedRow) => {
+
+    const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
+    setIsIoAuthorized(isAuthorized);    
+
     setSelectedRowData(selectedRow);
+
+
 
     if (options.table && options.field) {
       const selectedFieldValue = options.field;
@@ -3261,19 +3333,30 @@ const UnderInvestigation = () => {
             const updatedHeader = [
               ...(options.table === "cid_ui_case_progress_report"
                 ? [
-                    {
-                      field: "select",
-                      headerName: "",
-                      width: 50,
-                      renderCell: (params) => {
-                        const isDisabled = params.row.field_pr_status === "Yes";
-                        return isDisabled ? null : (
-                          <Checkbox
-                            onChange={() => toggleSelectRow(params.row.id)}
-                          />
-                        );
-                      },
-                    },
+                  {
+                    field: "select",
+                    headerName: "",
+                    width: 50,
+                    renderCell: (params) => {
+                      const isPdfUpdated = params.row.field_pr_status === "Yes";
+                      const isAssignedUser = String(params.row.field_assigned_to_id);
+                      const isAssignedUserId = String(localStorage.getItem("user_id"));
+                    
+                      const isAssignedBy = String(params.row.field_assigned_by_id);
+                      const isAuthorized = isAssignedUserId === isAssignedUser;
+                      const isAuthorizedBy = isAssignedBy === isAssignedUserId;
+                                        
+                      if (isPdfUpdated) return null;
+                    
+                      const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
+                    
+                      return bothUnauthorized ? null : (
+                        <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                      );
+                    }
+                    
+                  }
+                  
                   ]
                 : []),
               ...(options.table !== "cid_ui_case_progress_report"
@@ -3310,7 +3393,9 @@ const UnderInvestigation = () => {
                     key !== "created_by" &&
                     key !== "field_last_updated" &&
                     key !== "field_date_created" &&
-                    key !== "field_description"
+                    key !== "field_description" &&
+                    key !== "field_assigned_to_id"&&
+                    key !== "field_assigned_by_id"
                 )
                 .map((key) => {
                   var updatedKeyName = key
@@ -3394,72 +3479,72 @@ const UnderInvestigation = () => {
                     },
                   ]
                 : []),
-              {
-                field: "",
-                headerName: "Action",
-                flex: 1,
-                renderCell: (params) => {
-                  const isPdfUpdated =
-                    options.table === "cid_ui_case_progress_report" &&
-                    params.row.field_pr_status === "Yes";
+                {
+                  field: "",
+                  headerName: "Action",
+                  flex: 1,
+                  renderCell: (params) => {
+                    const isPdfUpdated =
+                      options.table === "cid_ui_case_progress_report" &&
+                      params.row.field_pr_status === "Yes";
+                
+                    const isAssignedUser =
+                      String(localStorage.getItem("user_id")) ===
+                      String(params.row.field_assigned_to_id);
 
-                  return (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
-                        height: "100%",
-                      }}
-                    >
-                      <Button
-                        variant="outlined"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleOthersTemplateDataView(
-                            params.row,
-                            false,
-                            options.table
-                          );
+                      const showEditAndDeleteButtons =
+                        options.table === "cid_ui_case_progress_report"
+                          ? !isPdfUpdated && (isAuthorized || isAssignedUser)
+                          : !isPdfUpdated && isAuthorized;
+
+                    return (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          height: "100%",
                         }}
                       >
-                        View
-                      </Button>
-                      {!isPdfUpdated && (
-                        <>
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleOthersTemplateDataView(
-                                params.row,
-                                true,
-                                options.table
-                              );
-                            }}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="contained"
-                            color="error"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleOthersDeleteTemplateData(
-                                params.row,
-                                options.table
-                              );
-                            }}
-                          >
-                            Delete
-                          </Button>
-                        </>
-                      )}
-                    </Box>
-                  );
+                        <Button
+                          variant="outlined"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleOthersTemplateDataView(params.row, false, options.table);
+                          }}
+                        >
+                          View
+                        </Button>
+                
+                        {showEditAndDeleteButtons && (
+                          <>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleOthersTemplateDataView(params.row, true, options.table);
+                              }}
+                            >
+                              Edit
+                            </Button>
+                            <Button
+                              variant="contained"
+                              color="error"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleOthersDeleteTemplateData(params.row, options.table);
+                              }}
+                            >
+                              Delete
+                            </Button>
+                          </>
+                        )}
+                      </Box>
+                    );
+                  },
                 },
-              },
+                
             ];
 
             setOtherTemplateColumn(updatedHeader);
@@ -5683,16 +5768,18 @@ const UnderInvestigation = () => {
             <Box>
               {selectedOtherTemplate?.table ===
               "cid_ui_case_progress_report" ? (
-                hasPdfEntry && (
+                hasPdfEntry &&(
                   <>
-                    <Button
-                      variant="outlined"
-                      onClick={() => {
-                        showOptionTemplate(selectedOtherTemplate?.table);
-                      }}
-                    >
-                      Add
-                    </Button>
+                    {isIoAuthorized && (
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          showOptionTemplate(selectedOtherTemplate?.table);
+                        }}
+                      >
+                        Add
+                      </Button>
+                    )}
                     <Button
                       variant="outlined"
                       onClick={async () => {
@@ -5729,34 +5816,6 @@ const UnderInvestigation = () => {
                                 progress: undefined,
                                 className: "toast-warning",
                               });
-                              return;
-                            }
-
-                            const invalidSelections =
-                              getTemplateResponse.data.filter((item) => {
-                                const isSelected = selectedIds.includes(
-                                  item.id
-                                );
-                                return (
-                                  isSelected && item.field_pr_status === "Yes"
-                                );
-                                setSelectedIds([]);
-                              });
-
-                            if (invalidSelections.length > 0) {
-                              toast.error(
-                                "Some selected records already Updated. Please remove it.",
-                                {
-                                  position: "top-right",
-                                  autoClose: 3000,
-                                  hideProgressBar: false,
-                                  closeOnClick: true,
-                                  pauseOnHover: true,
-                                  draggable: true,
-                                  progress: undefined,
-                                  className: "toast-warning",
-                                }
-                              );
                               return;
                             }
 
@@ -5824,15 +5883,17 @@ const UnderInvestigation = () => {
                     </Button>
                   </>
                 )
-              ) : (
-                <Button
-                  variant="outlined"
-                  onClick={() =>
-                    showOptionTemplate(selectedOtherTemplate?.table)
-                  }
-                >
-                  Add
-                </Button>
+              ) : ( 
+                isIoAuthorized && (
+                  <Button
+                    variant="outlined"
+                    onClick={() =>
+                      showOptionTemplate(selectedOtherTemplate?.table)
+                    }
+                  >
+                    Add
+                  </Button>
+                )
               )}
               <IconButton
                 aria-label="close"
