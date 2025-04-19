@@ -872,12 +872,17 @@ const UnderInvestigation = () => {
                 if (totalItems !== null && totalItems !== undefined) {
                     setTotalRecord(totalItems);
                 }
+
+                if (meta?.table_name && meta?.template_name) {
+                    setTemplate_name(meta.template_name);
+                    setTable_name(meta.table_name);
+                }
   
                 if (data?.length > 0) {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -887,7 +892,7 @@ const UnderInvestigation = () => {
                             .toLowerCase()
                             .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
     
-                    const renderCellFunc = (key) => (params) => tableCellRender(key, params, params.value);
+                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
     
                     const updatedHeader = [
                         {
@@ -904,7 +909,7 @@ const UnderInvestigation = () => {
                         },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
-                            .map((key) => ({
+                            .map((key, count) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
@@ -912,7 +917,7 @@ const UnderInvestigation = () => {
                                 renderHeader: (params) => (
                                     tableHeaderRender(params)
                                 ),
-                                renderCell: renderCellFunc(key),
+                                renderCell: renderCellFunc(key, count),
                         })),
                     ];
   
@@ -952,11 +957,6 @@ const UnderInvestigation = () => {
                 setEditTemplateData(false);
                 setInitialData({});
                 setFormOpen(false);
-  
-                if (meta?.table_name && meta?.template_name) {
-                    setTemplate_name(meta.template_name);
-                    setTable_name(meta.table_name);
-                }
     
                 await getActions();
             } else {
@@ -987,7 +987,7 @@ const UnderInvestigation = () => {
         }
     };
 
-  const tableCellRender = (key, params, value) => {
+  const tableCellRender = (key, params, value, index, tableName) => {
     if (params?.row?.attachments) {
       var attachmentField = params.row.attachments.find(
         (data) => data.field_name === key
@@ -1000,11 +1000,11 @@ const UnderInvestigation = () => {
     let highlightColor = {};
     let onClickHandler = null;
 
-    // if (params?.row?.linked_profile_info?.[0]?.field === key) {
-    //     highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
+    if (tableName && index !== null && index === 0) {
+        highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
-    //     onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
-    // }
+        onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
+    }
 
     return (
         <Tooltip title={value} placement="top">
@@ -1015,7 +1015,7 @@ const UnderInvestigation = () => {
                 params?.row &&
                 !params.row["ReadStatus"] &&
                 localStorage.getItem("authAdmin") === "false"
-                    ? "unreadMsgText"
+                    ? ""
                     : "read"
                 }`}
             >
@@ -4496,7 +4496,7 @@ const UnderInvestigation = () => {
     }
   };
 
-  const getAllOptionsforFilter = async (dropdownFields) => {
+  const getAllOptionsforFilter = async (dropdownFields, others) => {
     try {
       setLoading(true);
 
@@ -4539,7 +4539,12 @@ const UnderInvestigation = () => {
           : field;
       });
 
-      setfilterDropdownObj(updatedFieldsDropdown);
+        if(others){
+            setOthersFiltersDropdown(updatedFieldsDropdown)
+        }else{
+            setfilterDropdownObj(updatedFieldsDropdown);
+        }
+
     } catch (error) {
       setLoading(false);
       console.error("Error fetching template data:", error);
@@ -4560,13 +4565,29 @@ const UnderInvestigation = () => {
     setForceTableLoad((prev) => !prev);
   };
 
-  const handleAutocomplete = (field, selectedValue) => {
-    let updatedFormData = { ...filterValues, [field.name]: selectedValue };
+  const handleAutocomplete = (field, selectedValue, othersFilter) => {
 
-    setFilterValues(updatedFormData);
+    var updatedFormData = {}
+    var selectedFilterDropdown = []
+
+    if(othersFilter){
+
+        selectedFilterDropdown = othersFiltersDropdown
+        updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
+        
+        setOthersFilterData(updatedFormData);
+        
+    }else{
+
+        selectedFilterDropdown = filterDropdownObj
+        updatedFormData = { ...filterValues, [field.name]: selectedValue };
+    
+        setFilterValues(updatedFormData);
+
+    }
 
     if (field?.api && field?.table) {
-      var dependent_field = filterDropdownObj.filter((element) => {
+      var dependent_field = selectedFilterDropdown.filter((element) => {
         return (
           element.dependent_table &&
           element.dependent_table.length > 0 &&
@@ -4582,7 +4603,7 @@ const UnderInvestigation = () => {
             [key]: updatedFormData[field.name],
           };
         } else {
-          var dependentFields = filterDropdownObj.filter((element) => {
+          var dependentFields = selectedFilterDropdown.filter((element) => {
             return dependent_field[0].dependent_table.includes(element.table);
           });
 
@@ -4629,23 +4650,31 @@ const UnderInvestigation = () => {
               options: updatedOptions,
             };
 
-            setfilterDropdownObj(
-              filterDropdownObj.map((element) =>
-                element.id === dependent_field[0].id
-                  ? { ...element, ...userUpdateFields }
-                  : element
-              )
-            );
-
-            dependent_field.map((data) => {
-              delete filterValues[data.name];
-            });
 
             dependent_field.forEach((data) => {
-              delete updatedFormData[data.name];
+                delete updatedFormData[data.name];
             });
 
-            setFilterValues(updatedFormData);
+            if(othersFilter){
+                setOthersFiltersDropdown(
+                    selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                );
+                dependent_field.map((data) => {
+                    delete othersFilterData[data.name];
+                });
+
+                setOthersFilterData(updatedFormData);
+            }else{
+                setfilterDropdownObj(
+                    selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element )
+                );
+                dependent_field.map((data) => {
+                    delete filterValues[data.name];
+                });
+
+                setFilterValues(updatedFormData);
+            }
+
           } catch (error) {
             setLoading(false);
             if (error && error.response && error.response.data) {
@@ -5002,15 +5031,16 @@ const UnderInvestigation = () => {
                 <Button
                   onClick={() => getTemplate(table_name)}
                   sx={{
-                    background: "#32D583",
-                    color: "#101828",
+                    background: "#4D4AF3",
+                    color: "#FFFFFF",
                     textTransform: "none",
                     height: "38px",
                   }}
                   startIcon={
                     <AddIcon
                       sx={{
-                        border: "1.3px solid #101828",
+                        border: "1.3px solid #FFFFFF",
+                        color: "#FFFFFF",
                         borderRadius: "50%",
                       }}
                     />
@@ -5442,6 +5472,7 @@ const UnderInvestigation = () => {
             <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
                 <WestIcon  />
                 {selectedOtherTemplate?.name}
+                {selectedRowData?.["field_cid_crime_no./enquiry_no"] || ""}
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
@@ -5741,7 +5772,10 @@ const UnderInvestigation = () => {
                             </LocalizationProvider>
                         </Grid>
 
-                        {filterDropdownObj.map((field) => {
+                        {othersFiltersDropdown.map((field) => {
+                            if (field?.hide_from_ux) {
+                                return null;
+                            }
                             switch (field.type) {
                                 case "dropdown":
                                 return (
@@ -5752,7 +5786,7 @@ const UnderInvestigation = () => {
                                         field={field}
                                         formData={filterValues}
                                         onChange={(value) =>
-                                            handleAutocomplete(field, value.target.value)
+                                            handleAutocomplete(field, value.target.value, true)
                                         }
                                         />
                                     </div>
@@ -5767,7 +5801,7 @@ const UnderInvestigation = () => {
                                         field={field}
                                         formData={filterValues}
                                         onChange={(name, selectedCode) =>
-                                            handleAutocomplete(field, selectedCode)
+                                            handleAutocomplete(field, selectedCode, true)
                                         }
                                     />
                                     </Grid>
@@ -5781,7 +5815,7 @@ const UnderInvestigation = () => {
                                         field={field}
                                         formData={filterValues}
                                         onChange={(name, selectedCode) =>
-                                            handleAutocomplete(field, selectedCode)
+                                            handleAutocomplete(field, selectedCode, true)
                                         }
                                     />
                                     </Grid>
