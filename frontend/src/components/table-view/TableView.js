@@ -1,12 +1,14 @@
 import * as React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import Paper from '@mui/material/Paper';
-import { Box, Button, IconButton, Menu, MenuItem, Pagination, PaginationItem, Stack } from '@mui/material';
+import { Box, Button, IconButton, Menu, MenuItem, Pagination, PaginationItem, Stack ,Tooltip} from '@mui/material';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
-
+import AutofpsSelectIcon from '@mui/icons-material/AutofpsSelect';
 import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
+import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
+
 
 export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord }) {
 
@@ -36,17 +38,24 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         ...(hoverTable && hoverTableOptions && hoverTableOptions.length > 0
           ? [
               {
-                field: "",
-                headerName: "",
+                field: 'actions',
+                headerName: 'Actions',
                 width: 50,
+                renderHeader: () => (
+                  <Tooltip title="Actions">
+                    <AutofpsSelectIcon sx={{ color: "", fill: "#1f1dac" }} />
+                  </Tooltip>
+                ),
                 renderCell: (params) => (
-                  <IconButton onClick={(event) => handleMenuOpen(event, params.row)}>
-                    {selectedRow?.id === params.row.id ? (
-                      <KeyboardArrowUp sx={{ color: "blue" }} />
-                    ) : (
-                      <KeyboardArrowDown sx={{ color: "blue" }} />
-                    )}
-                  </IconButton>
+                  <Tooltip title="Actions">
+                    <IconButton onClick={(event) => handleMenuOpen(event, params.row)} sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                      {selectedRow?.id === params.row.id ? (
+                        <KeyboardArrowUp sx={{ color: "blue" }} />
+                      ) : (
+                        <SettingsSuggestIcon sx={{ color: "blue",fill:"rgb(0 0 255 / 58%)" }} />
+                      )}
+                    </IconButton>
+                  </Tooltip>
                 ),
               },
             ]
