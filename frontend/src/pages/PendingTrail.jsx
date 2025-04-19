@@ -5508,7 +5508,7 @@ const UnderInvestigation = () => {
                         </Typography>
                     )}
                     </Box>
-                    {isIoAuthorized && (
+                    {/* {isIoAuthorized && ( */}
                       <Button
                         variant="outlined"
                         onClick={() => {
@@ -5517,7 +5517,7 @@ const UnderInvestigation = () => {
                       >
                         Add
                       </Button>
-                    )}
+                    {/* )} */}
                   </>
                 )
               ) : ( 
