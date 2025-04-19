@@ -4,6 +4,12 @@ import { useLocation, useNavigate } from "react-router-dom";
 import DynamicForm from "../components/dynamic-form/DynamicForm";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import SelectAllIcon from '@mui/icons-material/SelectAll';
+
+import VerifiedIcon from '@mui/icons-material/Verified';
+
+
 import api from "../services/api";
 import { Badge, Chip, Tooltip } from "@mui/material";
 import {
@@ -50,6 +56,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import TaskIcon from '@mui/icons-material/Task';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 
+import AddTaskIcon from '@mui/icons-material/AddTask';
 import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -1248,21 +1255,24 @@ const UnderInvestigation = () => {
                     const renderCellFunc = (key) => (params) => tableCellRender(key, params, params.value);
     
                     const updatedHeader = [
+                        
                         {
                             field: "select",
-                            headerName: "",
+                            headerName: <Tooltip title="Select All"><SelectAllIcon /></Tooltip>,
                             width: 50,
                             resizable: false,
                             renderCell: (params) => (
-                                <Checkbox
-                                    checked={params.row.isSelected || false}
-                                    onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                                />
+                                <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                                    <Checkbox
+                                        checked={params.row.isSelected || false}
+                                        onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                    />
+                                </Box>
                             ),
                         },
                         {
                             field: "task",
-                            headerName: "Task",
+                            headerName: <Tooltip title="Add Task"><AssignmentIcon /></Tooltip>,
                             width: 50,
                             resizable: true,
                             renderHeader: (params) => (
@@ -1272,9 +1282,9 @@ const UnderInvestigation = () => {
                                 <Badge
                                     badgeContent={1}
                                     color="primary"
-                                    sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px' } }}
+                                    sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
                                 >
-                                    <AssignmentIcon sx={{marginLeft: '25%', cursor: 'pointer'}} />
+                                    <Tooltip title="Add Task"><AddTaskIcon sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5);; !important'}} /></Tooltip>
                                 </Badge>
                             ),
                         },
@@ -1285,7 +1295,7 @@ const UnderInvestigation = () => {
                             resizable: true,
                             cellClassName: 'justify-content-start',
                             renderHeader: (params) => (
-                                tableHeaderRender(params)
+                                <Tooltip title="Approval"><VerifiedIcon /></Tooltip>
                             ),                            
                             renderCell: (params) => (
                                 <Button
@@ -1302,7 +1312,7 @@ const UnderInvestigation = () => {
                                         }
                                     }}
                                 >
-                                    <TaskIcon color="success" sx={{fontSize:'26px'}} />
+                                    <VerifiedUserIcon color="success" sx={{fontSize:'26px'}} />
                                 </Button>
                             )
                         },
@@ -5459,8 +5469,8 @@ const UnderInvestigation = () => {
                 <Button
                   onClick={() => getTemplate(table_name)}
                   sx={{
-                    background: "#32D583",
-                    color: "#101828",
+                    background: "#1b17f0c7",
+                    color: "white",
                     textTransform: "none",
                     height: "38px",
                   }}
@@ -5469,6 +5479,7 @@ const UnderInvestigation = () => {
                       sx={{
                         border: "1.3px solid #101828",
                         borderRadius: "50%",
+                        background:"#1b17f0c7 !important"
                       }}
                     />
                   }
@@ -6190,7 +6201,7 @@ const UnderInvestigation = () => {
                   hasPdfEntry ? (
                     uploadedFiles.length > 0 ? (
                       <>
-                        <Box>
+                        <Box >
                             <TableView
                                 rows={otherTemplateData}
                                 columns={otherTemplateColumn}
@@ -6205,7 +6216,7 @@ const UnderInvestigation = () => {
                           flexDirection="column"
                           alignItems="center"
                           justifyContent="center"
-                          marginTop={"10px"}
+                          marginTop={"50px"} 
                         >
                           <Typography variant="h6">
                             Preview Uploaded PDF
@@ -6320,6 +6331,7 @@ const UnderInvestigation = () => {
                       display: "flex",
                       flexDirection: "column",
                       gap: "18px",
+                      
                     }}
                   >
                     <Autocomplete
@@ -6735,7 +6747,7 @@ const UnderInvestigation = () => {
             }}
           >
             Approval
-            <Box>
+            <Box >
               {!addApproveFlag ? (
                 <Button
                   variant="outlined"
@@ -6766,7 +6778,7 @@ const UnderInvestigation = () => {
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              <Box py={2}>
+              <Box py={2} sx={{ width: '90%'}}>
                 {!addApproveFlag ? (
                   <TableView rows={approvalsData} columns={approvalsColumn} />
                 ) : (
