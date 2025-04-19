@@ -1908,9 +1908,6 @@ const UnderInvestigation = () => {
     selectedOtherTemplate,
     selectedRowData,
     selectedIds,
-    setLoading,
-    toast,
-    api,
     prUpdatePdf,
   }) => {
     const getTemplatePayload = {
@@ -5950,9 +5947,6 @@ const UnderInvestigation = () => {
                           selectedOtherTemplate,
                           selectedRowData,
                           selectedIds,
-                          setLoading,
-                          toast,
-                          api,
                           prUpdatePdf,
                         })
                       }
