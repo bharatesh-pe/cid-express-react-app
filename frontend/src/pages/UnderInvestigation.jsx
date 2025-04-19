@@ -8,6 +8,8 @@ import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 
 import VerifiedIcon from '@mui/icons-material/Verified';
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
 
 
 import api from "../services/api";
@@ -3487,12 +3489,13 @@ const UnderInvestigation = () => {
     const updateFields = {};
   
     if (data.hasOwnProperty("field_served_or_unserved")) {
-      updateFields.field_served_or_unserved = "Yes";
+      updateFields.field_served_or_unserved = data.field_served_or_unserved;
     }
-  
+    
     if (data.hasOwnProperty("field_reappear")) {
-      updateFields.field_reappear = "Yes";
+      updateFields.field_reappear = data.field_reappear;
     }
+    
     
     const formData = new FormData();
     formData.append("table_name", data.options.table);
@@ -3561,8 +3564,8 @@ const UnderInvestigation = () => {
       text: "Do you want to mark this case as Served?",
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Yes",
-      cancelButtonText: "No",
+      confirmButtonText: "Served",
+      cancelButtonText: "Served Not",
       reverseButtons: true,
     }).then((result) => {
       if (result.isConfirmed) {
@@ -3572,9 +3575,16 @@ const UnderInvestigation = () => {
           field_served_or_unserved: "Yes",
         };
         otherTemplateTrailUpdate(updatedRow);
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        const updatedRow = {
+          id: row.id,
+          options: options,
+          field_served_or_unserved: "No",
+        };
+        otherTemplateTrailUpdate(updatedRow);
       }
     });
-  };
+  };  
   
   const handleReappear = (row, options) => {
     Swal.fire({
@@ -3582,7 +3592,7 @@ const UnderInvestigation = () => {
       text: "Do you want to mark this case as Reappear?",
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "Yes",
+      confirmButtonText: "Yes, Reappear it!",
       cancelButtonText: "No",
       reverseButtons: true,
     }).then((result) => {
@@ -3591,6 +3601,13 @@ const UnderInvestigation = () => {
           id: row.id,
           options: options,
           field_reappear: "Yes",
+        };
+        otherTemplateTrailUpdate(updatedRow);
+      }else if (result.dismiss === Swal.DismissReason.cancel) {
+        const updatedRow = {
+          id: row.id,
+          options: options,
+          field_reappear: "No",
         };
         otherTemplateTrailUpdate(updatedRow);
       }
@@ -3669,14 +3686,11 @@ const UnderInvestigation = () => {
             }
             if (options.table === "cid_ui_case_checking_tabs") {
               excludedKeys.push("field_witness");
-              excludedKeys.push("field_served_or_unserved");
-              excludedKeys.push("field_reappear");
               excludedKeys.push("field_accused");
               excludedKeys.push("field_accused/witness");
-
             }
 
-            const updatedHeader = [
+            const updatedHeader = ([
               ...(options.table === "cid_ui_case_progress_report"
                 ? [
                   {
@@ -3741,7 +3755,9 @@ const UnderInvestigation = () => {
                     key !== "field_date_created" &&
                     key !== "field_description" &&
                     key !== "field_assigned_to_id"&&
-                    key !== "field_assigned_by_id"
+                    key !== "field_assigned_by_id"&&
+                    key !== "field_served_or_unserved"&&
+                    key !== "field_reappear"       
                 )
                 .map((key) => {
                   var updatedKeyName = key
@@ -3825,6 +3841,119 @@ const UnderInvestigation = () => {
                     },
                   ]
                 : []),
+                ,
+              ...(options.table === "cid_ui_case_checking_tabs"
+                ? [
+                  {
+                    field: "field_served_or_unserved",
+                    headerName: "Served Status",
+                    width: 150,
+                    resizable: true,
+                    sortable: true,
+                    sortComparator: (v1, v2) => {
+                      if (v1 === "Yes" && v2 === "No") return -1;
+                      if (v1 === "No" && v2 === "Yes") return 1;
+                      return 0;
+                    },
+                    renderCell: (params) => {
+                      const value = params.value;
+                      const isYes = value === "Yes";
+                      const isNo = value === "No";
+                  
+                      if (!isYes && !isNo) {
+                        return (
+                          <div
+                            style={{
+                              fontFamily: "Roboto",
+                              width: "100%",
+                              marginLeft: "10px",
+                            }}
+                          >
+                            -
+                          </div>
+                        );
+                      }
+                  
+                      const statusText = isYes ? "Served" : "Not Served";
+                      const statusColor = isYes ? "#22c55e" : "#ef4444";
+                      const borderColor = isYes ? "#34D399" : "#EF4444";
+                
+                      return (
+                        <Chip
+                        label={statusText}
+                        size="small"
+                        sx={{
+                          fontFamily: "Roboto",
+                          fontWeight: 400,
+                          color: "white",
+                          borderColor: borderColor,
+                          borderRadius: "4px",
+                          backgroundColor: statusColor,
+                          textTransform: "capitalize",
+                          borderStyle: "solid",
+                          borderWidth: "1px",
+                        }}
+                      />
+                      );
+                    },
+                  },                  
+                  ]
+                : []),,
+                ...(options.table === "cid_ui_case_checking_tabs"
+                  ? [
+                    {
+                      field: "field_reappear",
+                      headerName: "Reappear Status",
+                      width: 150,
+                      resizable: true,
+                      sortable: true,
+                      sortComparator: (v1, v2) => {
+                        if (v1 === "Yes" && v2 === "No") return -1;
+                        if (v1 === "No" && v2 === "Yes") return 1;
+                        return 0;
+                      },
+                      renderCell: (params) => {
+                        const value = params.value;
+                        const isYes = value === "Yes";
+                        const isNo = value === "No";
+                    
+                        if (!isYes && !isNo) {
+                          return (
+                            <Box
+                              sx={{
+                                fontFamily: "Roboto",
+                                width: "100%",
+                                marginLeft: "15px",
+                              }}
+                            >
+                              -
+                            </Box>
+                          );
+                        }
+                                        
+                        return (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "flex-start",
+                              height: "100%",
+                              pl: 1,
+                            }}
+                          >
+                            {isYes ? (
+                              <CheckCircleIcon sx={{ color: "#22c55e" }} />
+                            ) : (
+                              <CancelIcon sx={{ color: "#ef4444" }} />
+                            )}
+                          </Box>
+                        );
+                        
+                    
+                      },
+                    },      
+                    ]
+                  : []),
                 {
                   field: "",
                   headerName: "Action",
@@ -3854,8 +3983,6 @@ const UnderInvestigation = () => {
                     const checkreappear =
                       options.table === "cid_ui_case_checking_tabs" &&
                       params.row.field_reappear === "Yes";
-                    console.log(checkserved, "checkserved")
-                    console.log(params.row.field_served_or_unserved, "checkserved status")
 
                     return (
                       <Box
@@ -3918,6 +4045,7 @@ const UnderInvestigation = () => {
                                 //   color: "white",
                                 // }}
                                 color = "success"
+                                disabled={checkserved}
                                 onClick={(event) => {
                                   event.stopPropagation();
                                   handleServedUnserved(params.row, options);
@@ -3926,7 +4054,7 @@ const UnderInvestigation = () => {
                                 Served/Unserved
                               </Button>
                             )}
-                            {checkserved && (
+                            {checkserved && !checkreappear && (
                               <Button
                                 variant="contained"
                                 // style={{
@@ -3952,7 +4080,7 @@ const UnderInvestigation = () => {
                   },
                 }
                                 
-            ];
+            ]).filter(Boolean);
 
             setOtherTemplateColumn(updatedHeader);
           } else {
