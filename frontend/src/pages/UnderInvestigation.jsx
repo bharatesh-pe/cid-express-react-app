@@ -3357,6 +3357,130 @@ const UnderInvestigation = () => {
     }
   };
 
+  const otherTemplateTrailUpdate = async (data) => {
+  
+    if (!data.id || !data.options?.table) {
+      toast.warning("Please Check the Template", {
+        position: "top-right",
+        autoClose: 3000,
+        className: "toast-warning",
+      });
+      return;
+    }
+  
+    const updateFields = {};
+  
+    if (data.hasOwnProperty("field_served_or_unserved")) {
+      updateFields.field_served_or_unserved = "Yes";
+    }
+  
+    if (data.hasOwnProperty("field_reappear")) {
+      updateFields.field_reappear = "Yes";
+    }
+    
+    const formData = new FormData();
+    formData.append("table_name", data.options.table);
+    formData.append("id", data.id);
+    formData.append("data", JSON.stringify(updateFields));
+  
+    setLoading(true);
+  
+    try {
+      const saveTemplateData = await api.post(
+        "/templateData/updateTemplateData",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+    
+      setLoading(false);
+  
+      if (saveTemplateData && saveTemplateData.success) {
+        localStorage.removeItem(data.name + "-formData");
+  
+        toast.success(saveTemplateData.message || "Data Updated Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-success",
+        });
+  
+        handleOtherTemplateActions(data.options, selectedRow);
+  
+        setOtherEditTemplateData(false);
+        setOtherReadOnlyTemplateData(false);
+        setTemplateApprovalData({});
+        setTemplateApproval(false);
+        setAddApproveFlag(false);
+        setApproveTableFlag(false);
+        setApprovalSaveData({});
+      } else {
+        const errorMessage = saveTemplateData?.message || "Failed to update the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error("API Error:", error);
+  
+      toast.error(
+        error?.response?.data?.message || error?.message || "Please Try Again!",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        }
+      );
+    }
+  };
+  
+  const handleServedUnserved = (row, options) => {
+    Swal.fire({
+      title: "Mark as Served?",
+      text: "Do you want to mark this case as Served?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "No",
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updatedRow = {
+          id: row.id,
+          options: options,
+          field_served_or_unserved: "Yes",
+        };
+        otherTemplateTrailUpdate(updatedRow);
+      }
+    });
+  };
+  
+  const handleReappear = (row, options) => {
+    Swal.fire({
+      title: "Mark for Reappear?",
+      text: "Do you want to mark this case as Reappear?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes",
+      cancelButtonText: "No",
+      reverseButtons: true,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updatedRow = {
+          id: row.id,
+          options: options,
+          field_reappear: "Yes",
+        };
+        otherTemplateTrailUpdate(updatedRow);
+      }
+    });
+  };
+  
   const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
     if(!selectedRow || Object.keys(selectedRow).length === 0){
@@ -3423,6 +3547,14 @@ const UnderInvestigation = () => {
 
             if (options.table !== "cid_ui_case_progress_report") {
               excludedKeys.push("created_at");
+            }
+            if (options.table === "cid_ui_case_checking_tabs") {
+              excludedKeys.push("field_witness");
+              excludedKeys.push("field_served_or_unserved");
+              excludedKeys.push("field_reappear");
+              excludedKeys.push("field_accused");
+              excludedKeys.push("field_accused/witness");
+
             }
 
             const updatedHeader = [
@@ -3595,6 +3727,16 @@ const UnderInvestigation = () => {
                     const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
                     const canEdit = userPermissions[0]?.action_edit;
                     const canDelete = userPermissions[0]?.action_delete;
+                    console.log("options", options)
+                    const checkserved =
+                      options.table === "cid_ui_case_checking_tabs" &&
+                      params.row.field_served_or_unserved === "Yes";
+
+                    const checkreappear =
+                      options.table === "cid_ui_case_checking_tabs" &&
+                      params.row.field_reappear === "Yes";
+                    console.log(checkserved, "checkserved")
+                    console.log(params.row.field_served_or_unserved, "checkserved status")
 
                     return (
                       <Box
@@ -3647,6 +3789,45 @@ const UnderInvestigation = () => {
                             )}
                           </>
                         )}
+                        {options.table === "cid_ui_case_checking_tabs" && (
+                          <>
+                            {!checkserved && (
+                              <Button
+                                variant="contained"
+                                // style={{
+                                //   backgroundColor: "#28a745",
+                                //   color: "white",
+                                // }}
+                                color = "success"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleServedUnserved(params.row, options);
+                                }}
+                              >
+                                Served/Unserved
+                              </Button>
+                            )}
+                            {checkserved && (
+                              <Button
+                                variant="contained"
+                                // style={{
+                                //   backgroundColor: checkreappear ? "#d6d6d6" : "#ffc107",
+                                //   color: checkreappear ? "#a6a6a6" : "black",
+                                //   cursor: checkreappear ? "not-allowed" : "pointer",
+                                // }}
+                                color = "warning"
+                                disabled={checkreappear}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleReappear(params.row, options);
+                                }}
+                              >
+                                Reappear
+                              </Button>
+                            )}
+                          </>
+                        )}
+
                       </Box>
                     );
                   },
