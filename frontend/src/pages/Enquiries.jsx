@@ -105,7 +105,7 @@ const Enquiries = () => {
 
   const searchParams = new URLSearchParams(location.search);
   const [selectedRowData, setSelectedRowData] = useState(null);
-  const [isIoAuthorized, setIsIoAuthorized] = useState(true);
+  // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
 
   const [hoverTableOptions, setHoverTableOptions] = useState([]);
   // for approve states
@@ -2346,52 +2346,52 @@ const Enquiries = () => {
     };
 
     
-      const handleAssignToIo = async (selectedRow, table_name) => {
-        if (!table_name || table_name === "") {
-          toast.warning("Please Check Table Name");
-          return false;
-        }
+      // const handleAssignToIo = async (selectedRow, table_name) => {
+      //   if (!table_name || table_name === "") {
+      //     toast.warning("Please Check Table Name");
+      //     return false;
+      //   }
     
-        const viewTemplatePayload = {
-          table_name: table_name,
-          id: selectedRow.id,
-        };
+      //   const viewTemplatePayload = {
+      //     table_name: table_name,
+      //     id: selectedRow.id,
+      //   };
     
-        setLoading(true);
-        try {
-          const viewTemplateData = await api.post(
-            "/templateData/viewTemplateData",
-            viewTemplatePayload
-          );
-          setLoading(false);
+      //   setLoading(true);
+      //   try {
+      //     const viewTemplateData = await api.post(
+      //       "/templateData/viewTemplateData",
+      //       viewTemplatePayload
+      //     );
+      //     setLoading(false);
     
-          if (viewTemplateData && viewTemplateData.success) {
-            const user_id = localStorage.getItem("user_id");
-            const field_io_name = viewTemplateData?.data?.field_io_name;
+      //     if (viewTemplateData && viewTemplateData.success) {
+      //       const user_id = localStorage.getItem("user_id");
+      //       const field_io_name = viewTemplateData?.data?.field_io_name;
     
-            if (String(user_id) === String(field_io_name)) {
-              setIsIoAuthorized(true);
-              return true; 
-            } else {
-              setIsIoAuthorized(false);
-              return false;
-            }
-          } else {
-            toast.error("Failed to fetch template data");
-            return false;
-          }
-        } catch (error) {
-          setLoading(false);
-          toast.error(error?.response?.data?.message || "An error occurred.");
-          return false;
-        }
-      };
+      //       if (String(user_id) === String(field_io_name)) {
+      //         setIsIoAuthorized(true);
+      //         return true; 
+      //       } else {
+      //         setIsIoAuthorized(false);
+      //         return false;
+      //       }
+      //     } else {
+      //       toast.error("Failed to fetch template data");
+      //       return false;
+      //     }
+      //   } catch (error) {
+      //     setLoading(false);
+      //     toast.error(error?.response?.data?.message || "An error occurred.");
+      //     return false;
+      //   }
+      // };
     
 
   const handleOtherTemplateActions = async (options, selectedRow) => {
 
-    const isAuthorized = await handleAssignToIo(selectedRow, "cid_enquiries");
-    setIsIoAuthorized(isAuthorized); 
+    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_enquiries");
+    // setIsIoAuthorized(isAuthorized); 
 
     setSelectedRowData(selectedRow);
     var getTemplatePayload = {
@@ -2519,7 +2519,7 @@ const Enquiries = () => {
                       </Button>
                         {canEdit&& (
                           <>
-                          {isAuthorized && (
+                          {/* {isAuthorized && ( */}
                             <Button
                               variant="contained"
                               color="primary"
@@ -2530,13 +2530,13 @@ const Enquiries = () => {
                               >
                                 Edit
                               </Button>
-                            )}
+                            {/* )} */}
                            </>
                          )}
                       
                         {canDelete&& (
                           <>
-                          {isAuthorized && (
+                          {/* {isAuthorized && ( */}
                             <Button
                               variant="contained"
                               color="error"
@@ -2550,7 +2550,7 @@ const Enquiries = () => {
                             >
                               Delete
                             </Button>
-                          )}
+                          {/* )} */}
                          </>
                         )}
                      
@@ -4007,7 +4007,7 @@ const Enquiries = () => {
             {selectedOtherTemplate && selectedOtherTemplate.name}
             <Box>
 
-            {isIoAuthorized && (
+            {/* {isIoAuthorized && ( */}
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -4016,7 +4016,7 @@ const Enquiries = () => {
                 >
                   Add
                 </Button>
-            )}
+            {/* )} */}
               <IconButton
                 aria-label="close"
                 onClick={() => {
