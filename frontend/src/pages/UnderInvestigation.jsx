@@ -73,7 +73,7 @@ import WestIcon from '@mui/icons-material/West';
 const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isIoAuthorized, setIsIoAuthorized] = useState(true);
+  // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
 
     //   new further investigation func states
     const [newApprovalPage, setNewApprovalPage] = useState(false);
@@ -2019,6 +2019,92 @@ const UnderInvestigation = () => {
     }
   };
 
+
+  const handleUpdatePdfClick = async ({
+    selectedOtherTemplate,
+    selectedRowData,
+    selectedIds,
+    prUpdatePdf,
+  }) => {
+    const getTemplatePayload = {
+      table_name: selectedOtherTemplate?.table,
+      ui_case_id: selectedRowData?.id,
+    };
+  
+    setLoading(true);
+    try {
+      const getTemplateResponse = await api.post(
+        "/templateData/getTemplateData",
+        getTemplatePayload
+      );
+      setLoading(false);
+  
+      if (getTemplateResponse && getTemplateResponse.success) {
+        const dataToAppend = getTemplateResponse.data.filter(
+          (item) => item.field_pr_status === "No"
+        );
+  
+        if (!selectedIds || selectedIds.length === 0) {
+          toast.error("Please choose a record to append.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-warning",
+          });
+          return;
+        }
+  
+        const filteredDataToAppend = dataToAppend.filter(
+          (item) =>
+            selectedIds.includes(item.id) && item.field_pr_status === "No"
+        );
+  
+        if (filteredDataToAppend.length > 0) {
+          const appendText = JSON.stringify(filteredDataToAppend);
+          await prUpdatePdf({ appendText });
+        } else {
+          toast.error("Already this records are Updated to PDF", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-warning",
+          });
+        }
+      } else {
+        toast.error("Failed to fetch template data. Please try again.", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      toast.error("Error fetching template data. Please try again.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+    }
+  };
+  
   const prUpdatePdf = async (data) => {
     try {
       setLoading(true);
@@ -2701,46 +2787,46 @@ const UnderInvestigation = () => {
   };
 
 
-  const handleAssignToIo = async (selectedRow, table_name) => {
-    if (!table_name || table_name === "") {
-      toast.warning("Please Check Table Name");
-      return false;
-    }
+  // const handleAssignToIo = async (selectedRow, table_name) => {
+  //   if (!table_name || table_name === "") {
+  //     toast.warning("Please Check Table Name");
+  //     return false;
+  //   }
   
-    const viewTemplatePayload = {
-      table_name: table_name,
-      id: selectedRow.id,
-    };
+  //   const viewTemplatePayload = {
+  //     table_name: table_name,
+  //     id: selectedRow.id,
+  //   };
   
-    setLoading(true);
-    try {
-      const viewTemplateData = await api.post(
-        "/templateData/viewTemplateData",
-        viewTemplatePayload
-      );
-      setLoading(false);
+  //   setLoading(true);
+  //   try {
+  //     const viewTemplateData = await api.post(
+  //       "/templateData/viewTemplateData",
+  //       viewTemplatePayload
+  //     );
+  //     setLoading(false);
   
-      if (viewTemplateData && viewTemplateData.success) {
-        const user_id = localStorage.getItem("user_id");
-        const field_io_name = viewTemplateData?.data?.field_io_name;
+  //     if (viewTemplateData && viewTemplateData.success) {
+  //       const user_id = localStorage.getItem("user_id");
+  //       const field_io_name = viewTemplateData?.data?.field_io_name;
     
-        if (String(user_id) === String(field_io_name)) {
-          setIsIoAuthorized(true);
-          return true; 
-        } else {
-          setIsIoAuthorized(false);
-          return false;
-        }
-      } else {
-        toast.error("Failed to fetch template data");
-        return false;
-      }
-    } catch (error) {
-      setLoading(false);
-      toast.error(error?.response?.data?.message || "An error occurred.");
-      return false;
-    }
-  };
+  //       if (String(user_id) === String(field_io_name)) {
+  //         setIsIoAuthorized(true);
+  //         return true; 
+  //       } else {
+  //         setIsIoAuthorized(false);
+  //         return false;
+  //       }
+  //     } else {
+  //       toast.error("Failed to fetch template data");
+  //       return false;
+  //     }
+  //   } catch (error) {
+  //     setLoading(false);
+  //     toast.error(error?.response?.data?.message || "An error occurred.");
+  //     return false;
+  //   }
+  // };
 
   
   const handleOthersDeleteTemplateData = (rowData, table_name) => {
@@ -3393,8 +3479,8 @@ const UnderInvestigation = () => {
         return false
     }
 
-    const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
-    setIsIoAuthorized(isAuthorized);    
+    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
+    // setIsIoAuthorized(isAuthorized);    
 
     setSelectedRowData(selectedRow);
 
@@ -3467,18 +3553,18 @@ const UnderInvestigation = () => {
                     width: 50,
                     renderCell: (params) => {
                       const isPdfUpdated = params.row.field_pr_status === "Yes";
-                      const isAssignedUser = String(params.row.field_assigned_to_id);
-                      const isAssignedUserId = String(localStorage.getItem("user_id"));
+                      // const isAssignedUser = String(params.row.field_assigned_to_id);
+                      // const isAssignedUserId = String(localStorage.getItem("user_id"));
                     
-                      const isAssignedBy = String(params.row.field_assigned_by_id);
-                      const isAuthorized = isAssignedUserId === isAssignedUser;
-                      const isAuthorizedBy = isAssignedBy === isAssignedUserId;
+                      // const isAssignedBy = String(params.row.field_assigned_by_id);
+                      // const isAuthorized = isAssignedUserId === isAssignedUser;
+                      // const isAuthorizedBy = isAssignedBy === isAssignedUserId;
                                         
-                      if (isPdfUpdated) return null;
+                      // if (isPdfUpdated) return null;
                     
-                      const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
+                      // const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
                     
-                      return bothUnauthorized ? null : (
+                      return isPdfUpdated ? null : (
                         <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
                       );
                     }
@@ -3616,14 +3702,14 @@ const UnderInvestigation = () => {
                       options.table === "cid_ui_case_progress_report" &&
                       params.row.field_pr_status === "Yes";
                 
-                    const isAssignedUser =
-                      String(localStorage.getItem("user_id")) ===
-                      String(params.row.field_assigned_to_id);
+                    // const isAssignedUser =
+                    //   String(localStorage.getItem("user_id")) ===
+                    //   String(params.row.field_assigned_to_id);
                 
-                    const showEditAndDeleteButtons =
-                      options.table === "cid_ui_case_progress_report"
-                        ? !isPdfUpdated && (isAuthorized || isAssignedUser)
-                        : !isPdfUpdated && isAuthorized;
+                    // const showEditAndDeleteButtons =
+                    //   options.table === "cid_ui_case_progress_report"
+                    //     ? !isPdfUpdated && (isAuthorized || isAssignedUser)
+                    //     : !isPdfUpdated && isAuthorized;
                 
                     const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
                     const canEdit = userPermissions[0]?.action_edit;
@@ -3650,7 +3736,7 @@ const UnderInvestigation = () => {
                 
                         {canEdit&& (
                           <>
-                            {showEditAndDeleteButtons && (
+                            {!isPdfUpdated && (
                               <Button
                                 variant="contained"
                                 color="primary"
@@ -3666,7 +3752,7 @@ const UnderInvestigation = () => {
                         )}
                         {canDelete&& (
                           <>
-                            {showEditAndDeleteButtons && (
+                            {!isPdfUpdated && (
                               <Button
                                 variant="contained"
                                 color="error"
@@ -5993,7 +6079,7 @@ const UnderInvestigation = () => {
                         </Typography>
                     )}
                     </Box>
-                    {isIoAuthorized && (
+                    {/* {isIoAuthorized && ( */}
                       <Button
                         variant="outlined"
                         sx={{marginLeft: "10px", height: '40px'}}
@@ -6003,104 +6089,17 @@ const UnderInvestigation = () => {
                       >
                         Add
                       </Button>
-                    )}
+                    {/* )} */}
                     <Button
                       variant="outlined"
-                      onClick={async () => {
-                        const getTemplatePayload = {
-                          table_name: selectedOtherTemplate?.table,
-                          ui_case_id: selectedRowData?.id,
-                        };
-
-                        setLoading(true);
-                        try {
-                          const getTemplateResponse = await api.post(
-                            "/templateData/getTemplateData",
-                            getTemplatePayload
-                          );
-                          setLoading(false);
-
-                          if (
-                            getTemplateResponse &&
-                            getTemplateResponse.success
-                          ) {
-                            const dataToAppend =
-                              getTemplateResponse.data.filter(
-                                (item) => item.field_pr_status === "No"
-                              );
-
-                            if (!selectedIds || selectedIds.length === 0) {
-                              toast.error("Please choose a record to append.", {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-warning",
-                              });
-                              return;
-                            }
-
-                            const filteredDataToAppend = dataToAppend.filter(
-                              (item) =>
-                                selectedIds.includes(item.id) &&
-                                item.field_pr_status === "No"
-                            );
-
-                            if (filteredDataToAppend.length > 0) {
-                              const appendText =
-                                JSON.stringify(filteredDataToAppend);
-
-                              await prUpdatePdf({ appendText });
-                            } else {
-                              toast.error(
-                                "Already this records are Updated to PDF",
-                                {
-                                  position: "top-right",
-                                  autoClose: 3000,
-                                  hideProgressBar: false,
-                                  closeOnClick: true,
-                                  pauseOnHover: true,
-                                  draggable: true,
-                                  progress: undefined,
-                                  className: "toast-warning",
-                                }
-                              );
-                            }
-                          } else {
-                            toast.error(
-                              "Failed to fetch template data. Please try again.",
-                              {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                              }
-                            );
-                          }
-                        } catch (error) {
-                          setLoading(false);
-                          toast.error(
-                            "Error fetching template data. Please try again.",
-                            {
-                              position: "top-right",
-                              autoClose: 3000,
-                              hideProgressBar: false,
-                              closeOnClick: true,
-                              pauseOnHover: true,
-                              draggable: true,
-                              progress: undefined,
-                              className: "toast-error",
-                            }
-                          );
-                        }
-                      }}
+                      onClick={() =>
+                        handleUpdatePdfClick({
+                          selectedOtherTemplate,
+                          selectedRowData,
+                          selectedIds,
+                          prUpdatePdf,
+                        })
+                      }
                       style={{ marginLeft: "10px", height: '40px' }}
                     >
                       Update PDF
@@ -6171,7 +6170,7 @@ const UnderInvestigation = () => {
                         </Typography>
                     )}
                     </Box>
-                    {isIoAuthorized && (
+                    {/* {isIoAuthorized && ( */}
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -6181,7 +6180,7 @@ const UnderInvestigation = () => {
                         >
                             Add
                         </Button>
-                    )}
+                    {/* )} */}
                 </Box>
               )}
               {/* <IconButton

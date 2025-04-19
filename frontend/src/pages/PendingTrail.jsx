@@ -130,7 +130,7 @@ const UnderInvestigation = () => {
   const [hoverTableOptions, setHoverTableOptions] = useState([]);
 
   const [otherTablePagination, setOtherTablePagination] = useState(1);
-  const [isIoAuthorized, setIsIoAuthorized] = useState(true);
+  // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
   // for actions
 
   const [selectedRow, setSelectedRow] = useState({});
@@ -2808,50 +2808,46 @@ const UnderInvestigation = () => {
     }
   };
 
-  const handleAssignToIo = async (selectedRow, table_name) => {
-    if (!table_name || table_name === "") {
-      toast.warning("Please Check Table Name");
-      return false;
-    }
+  // const handleAssignToIo = async (selectedRow, table_name) => {
+  //   if (!table_name || table_name === "") {
+  //     toast.warning("Please Check Table Name");
+  //     return false;
+  //   }
 
-    if(!selectedRow?.id){
-        return
-    }
+  //   const viewTemplatePayload = {
+  //     table_name: table_name,
+  //     id: selectedRow.id,
+  //   };
 
-    const viewTemplatePayload = {
-      table_name: table_name,
-      id: selectedRow?.id,
-    };
+  //   setLoading(true);
+  //   try {
+  //     const viewTemplateData = await api.post(
+  //       "/templateData/viewTemplateData",
+  //       viewTemplatePayload
+  //     );
+  //     setLoading(false);
 
-    setLoading(true);
-    try {
-      const viewTemplateData = await api.post(
-        "/templateData/viewTemplateData",
-        viewTemplatePayload
-      );
-      setLoading(false);
+  //     if (viewTemplateData && viewTemplateData.success) {
+  //       const user_id = localStorage.getItem("user_id");
+  //       const field_io_name = viewTemplateData?.data?.field_io_name;
 
-      if (viewTemplateData && viewTemplateData.success) {
-        const user_id = localStorage.getItem("user_id");
-        const field_io_name = viewTemplateData?.data?.field_io_name;
-
-        if (String(user_id) === String(field_io_name)) {
-          setIsIoAuthorized(true);
-          return true; 
-        } else {
-          setIsIoAuthorized(false);
-          return false;
-        }
-      } else {
-        toast.error("Failed to fetch template data");
-        return false;
-      }
-    } catch (error) {
-      setLoading(false);
-      toast.error(error?.response?.data?.message || "An error occurred.");
-      return false;
-    }
-  };
+  //       if (String(user_id) === String(field_io_name)) {
+  //         setIsIoAuthorized(true);
+  //         return true; 
+  //       } else {
+  //         setIsIoAuthorized(false);
+  //         return false;
+  //       }
+  //     } else {
+  //       toast.error("Failed to fetch template data");
+  //       return false;
+  //     }
+  //   } catch (error) {
+  //     setLoading(false);
+  //     toast.error(error?.response?.data?.message || "An error occurred.");
+  //     return false;
+  //   }
+  // };
 
   const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
@@ -2859,8 +2855,8 @@ const UnderInvestigation = () => {
         return false
     }
 
-    const isAuthorized = await handleAssignToIo(selectedRow, "cid_pending_trail");
-    setIsIoAuthorized(isAuthorized); 
+    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_pending_trail");
+    // setIsIoAuthorized(isAuthorized); 
 
     setSelectedRowData(selectedRow);
 
@@ -3008,7 +3004,7 @@ const UnderInvestigation = () => {
                       </Button>
                       {canEdit&& (
                         <>
-                          {isAuthorized && (
+                          {/* {isAuthorized && ( */}
 
                           <Button
                             variant="contained"
@@ -3024,13 +3020,13 @@ const UnderInvestigation = () => {
                           >
                             Edit
                           </Button>
-                          )}
+                          {/* )} */}
                         </>
                       )}
 
                       {canDelete&& (
                         <>
-                          {isAuthorized && (
+                          {/* {isAuthorized && ( */}
                             <Button
                               variant="contained"
                               color="error"
@@ -3044,7 +3040,7 @@ const UnderInvestigation = () => {
                             >
                               Delete
                             </Button>
-                            )}
+                            {/* )} */}
                           </>
                       )}
                     </Box>
@@ -5588,7 +5584,7 @@ const UnderInvestigation = () => {
                         </Typography>
                     )}
                     </Box>
-                    {isIoAuthorized && (
+                    {/* {isIoAuthorized && ( */}
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -5598,7 +5594,7 @@ const UnderInvestigation = () => {
                         >
                             Add
                         </Button>
-                    )}
+                    {/* )} */}
                 </Box>
               )}
             </Box>
