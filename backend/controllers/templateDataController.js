@@ -4730,6 +4730,8 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       delete data.field_pt_case_id;
       delete data.field_evidence_file;
       delete data.field_pr_status;
+      delete data.field_assigned_to_id;
+      delete data.field_assigned_by_id;
 
       const { created_by, created_at, ...rest } = data;
       data = { ...rest, created_by, created_at };
