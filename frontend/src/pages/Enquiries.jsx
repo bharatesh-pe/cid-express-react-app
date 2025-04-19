@@ -612,9 +612,15 @@ const Enquiries = () => {
             if (getTemplateResponse?.success) {
                 const { data, meta } = getTemplateResponse.data;
     
-                if (meta?.totalPages) {
-                    setTotalPage(meta.totalPages);
-                    if (meta.totalItems) setTotalRecord(meta.totalItems);
+                const totalPages = meta?.totalPages;
+                const totalItems = meta?.totalItems;
+                
+                if (totalPages !== null && totalPages !== undefined) {
+                    setTotalPage(totalPages);
+                }
+                
+                if (totalItems !== null && totalItems !== undefined) {
+                    setTotalRecord(totalItems);
                 }
 
                 if (data?.length > 0) {
