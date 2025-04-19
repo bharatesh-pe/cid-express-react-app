@@ -3364,11 +3364,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       sys_status !== undefined &&
       sys_status !== "all"
     ) {
-      // if (sys_status === "ui_case") {
-      //     whereClause['sys_status'] = { [Op.in]: ['ui_case', 'pt_case', 'ui_to_pt'] };
-      // } else {
       whereClause["sys_status"] = sys_status;
-      // }
     }
 
     // Create base attributes array
@@ -3397,6 +3393,109 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
     const totalItems = result.count;
     const totalPages = Math.ceil(totalItems / limit);
+
+    const progressReportTableData =  await Template.findOne({ where:{ table_name: "cid_ui_case_progress_report" } });
+
+    if (!progressReportTableData) {
+      const message = `Table "Progress Report" does not exist.`;
+      return userSendResponse(res, 400, false, message, null);
+    }
+
+    // Parse the schema fields from Template
+    const progressReportschema = typeof progressReportTableData.fields === "string" ? JSON.parse(progressReportTableData.fields) : progressReportTableData.fields;
+
+    // Filter fields that have is_primary_field as true
+    const progressReportRelevantSchema =  progressReportschema ;
+
+    // Define model attributes based on filtered schema
+    const progressReportModelAttributes = {
+      id: {
+        type: Sequelize.DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true,
+      },
+      created_at: {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: false,
+      },
+      updated_at: {
+        type: Sequelize.DataTypes.DATE,
+        allowNull: false,
+      },
+      created_by: {
+        type: Sequelize.DataTypes.STRING,
+        allowNull: true,  
+      } 
+    };
+
+    const progressReportAssociations = [];
+    const progressReportFields = {};
+
+    for (const field of progressReportRelevantSchema) {
+    const {
+        name: columnName,
+        data_type,
+        not_null,
+        default_value,
+        table,
+        forign_key,
+        attributes,
+    } = field;
+
+    if (!columnName || !data_type) {
+        console.warn(
+        `Missing required attributes for field ${columnName}. Using default type STRING.`
+        );
+        progressReportModelAttributes[columnName] = {
+        type: Sequelize.DataTypes.STRING,
+        allowNull: not_null ? false : true,
+        defaultValue: default_value || null,
+        };
+        continue;
+    }
+
+    const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+    progressReportModelAttributes[columnName] = {
+        type: sequelizeType,
+        allowNull: not_null ? false : true,
+        defaultValue: default_value || null,
+    };
+
+    progressReportFields[columnName] = {
+        type: sequelizeType,
+        allowNull: !not_null,
+        defaultValue: default_value || null,
+    };
+
+    if (table && forign_key && attributes) {
+        progressReportAssociations.push({
+        relatedTable: table,
+        foreignKey: columnName,
+        targetAttribute: attributes,
+        });
+    }
+    }
+
+    // Define the model
+    const progressReportModel = sequelize.define("cid_ui_case_progress_report", progressReportModelAttributes, {
+    freezeTableName: true,
+    timestamps: true,
+    createdAt: "created_at",
+    updatedAt: "updated_at",
+    });
+
+    // Define association (read status)
+    progressReportModel.hasOne(db.TemplateUserStatus, {
+    foreignKey: 'table_row_id',
+    sourceKey: 'id',
+    as: 'ReadStatus',
+    constraints: false,
+    });
+
+    // Sync the model
+    await progressReportModel.sync();
+
 
     const transformedRows = await Promise.all(
       result.rows.map(async (record) => {
@@ -3442,6 +3541,52 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
 
         data.ReadStatus = data.ReadStatus ? true : false;
+
+        const case_id =  data.id || null;
+
+        const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
+            where: {
+                ui_case_id: case_id,
+            },
+        });
+
+        const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
+            where: {
+                ui_case_id: case_id,  
+            },
+            include: {
+                model: db.TemplateUserStatus,
+                as: 'ReadStatus',
+                required: is_read,
+                where: {
+                    user_id: userId,
+                    template_id: progressReportTableData.template_id
+                },
+                attributes: ['template_user_status_id']
+            },
+        });
+
+        let task_read_count = 0;
+        let task_unread_count = 0;
+
+        if (task_readed_records && task_readed_records.length > 0) {
+            task_readed_records.forEach((record) => {
+                const readStatus = record.ReadStatus;
+                if (readStatus) {
+                    task_read_count += 1;
+                }
+            });
+        }
+
+        if(task_read_count != 0) 
+            task_unread_count = task_count - task_read_count;
+
+        // data.task_all_records = task_all_records;
+        // data.task_readed_records = task_readed_records;
+        // data.task_count = task_count || 0;
+        // data.task_read_count = task_read_count || 0;
+        data.task_unread_count = task_unread_count || 0;
+
         // Handle alias mappings before processing associations
         for (const association of associations) {
             const alias = `${association.relatedTable}Details`;
