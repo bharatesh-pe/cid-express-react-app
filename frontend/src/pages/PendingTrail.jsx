@@ -60,6 +60,7 @@ import AutocompleteField from "../components/form/AutoComplete";
 
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import GenerateProfilePdf from "./GenerateProfilePdf";
+import WestIcon from '@mui/icons-material/West';
 
 const UnderInvestigation = () => {
   const location = useLocation();
@@ -209,6 +210,123 @@ const UnderInvestigation = () => {
     const [downloadPdfFields, setDownloadPdfFields] = useState({});
     const [downloadPdfData, setDownloadPdfData] = useState([]);
     const [isPrint, setIsPrint] = useState(false);
+
+    const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
+    const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
+    const [otherTemplatesPaginationCount, setOtherTemplatesPaginationCount] = useState(1);
+    const [otherSearchValue, setOtherSearchValue] = useState('');
+
+    const [othersFilterModal, setOthersFilterModal] = useState(false);
+    const [othersFromDate, setOthersFromDate] = useState(null);
+    const [othersToDate, setOthersToDate] = useState(null);
+    const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
+    const [othersFilterData, setOthersFilterData] = useState({});
+
+    const handleOtherPagination = (page) => {
+        setOtherTemplatesPaginationCount(page)
+    }
+
+    useEffect(()=>{
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+    },[otherTemplatesPaginationCount, ]);
+
+    const handleOtherClear = ()=>{
+        setOtherSearchValue('');
+        setOtherTemplatesPaginationCount(1);
+        setOthersFromDate(null);
+        setOthersToDate(null);
+        setOthersFiltersDropdown([]);
+        setOthersFilterData({});
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData, true)
+    }
+
+    const setOtherFilterData = () => {
+        setOtherTemplatesPaginationCount(1);
+        setOthersFilterModal(false);
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+    };
+
+    const handleOthersFilter = async (selectedOptions)=>{
+
+        if(!selectedOptions?.table){
+            toast.error('Please Check The Template', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return false;
+        }
+
+        const viewTableData = { table_name: selectedOptions.table };
+        
+        setLoading(true);
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            setLoading(false);
+        
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+                var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
+                var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        
+                var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
+                    const existingField = filterDropdownObj?.find(
+                        (item) => item.name === field.name
+                    );
+                    return {
+                        ...field,
+                        history: false,
+                        info: false,
+                        required: false,
+                        ...(field.is_dependent === "true" && {options: existingField?.options ? [...existingField.options] : [] }),
+                    };
+                });
+        
+                // const today = dayjs().format("YYYY-MM-DD");
+        
+                getAllOptionsforFilter(getOnlyDropdown, true);
+                // if(fromDateValue == null || toDateValue === null){
+                //     setFromDateValue(today);
+                //     setToDateValue(today);
+                // }
+        
+                // setShowFilterModal(true);
+                setOthersFilterModal(true);
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
 
     const [totalPage, setTotalPage] = useState(0);
     const [totalRecord, setTotalRecord] = useState(0);
@@ -744,9 +862,15 @@ const UnderInvestigation = () => {
             if (getTemplateResponse?.success) {
                 const { data, meta } = getTemplateResponse.data;
     
-                if (meta?.totalPages) {
-                    setTotalPage(meta.totalPages);
-                    if (meta.totalItems) setTotalRecord(meta.totalItems);
+                const totalPages = meta?.totalPages;
+                const totalItems = meta?.totalItems;
+                
+                if (totalPages !== null && totalPages !== undefined) {
+                    setTotalPage(totalPages);
+                }
+                
+                if (totalItems !== null && totalItems !== undefined) {
+                    setTotalRecord(totalItems);
                 }
   
                 if (data?.length > 0) {
@@ -2690,9 +2814,13 @@ const UnderInvestigation = () => {
       return false;
     }
 
+    if(!selectedRow?.id){
+        return
+    }
+
     const viewTemplatePayload = {
       table_name: table_name,
-      id: selectedRow.id,
+      id: selectedRow?.id,
     };
 
     setLoading(true);
@@ -2725,7 +2853,11 @@ const UnderInvestigation = () => {
     }
   };
 
-  const handleOtherTemplateActions = async (options, selectedRow) => {
+  const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
+
+    if(!selectedRow || Object.keys(selectedRow).length === 0){
+        return false
+    }
 
     const isAuthorized = await handleAssignToIo(selectedRow, "cid_pending_trail");
     setIsIoAuthorized(isAuthorized); 
@@ -2740,9 +2872,15 @@ const UnderInvestigation = () => {
     setSelectedRow(selectedRow);
 
     var getTemplatePayload = {
-      table_name: options.table,
-      pt_case_id: selectedRow.id,
-      ui_case_id: selectedRow?.ui_case_id,
+        table_name: options.table,
+        pt_case_id: selectedRow.id,
+        ui_case_id: selectedRow?.ui_case_id,
+        limit : 10,
+        page : !searchFlag ? otherTemplatesPaginationCount : 1,
+        search: !searchFlag ? otherSearchValue : "",        
+        from_date: !searchFlag ? othersFromDate : null,
+        to_date: !searchFlag ? othersToDate : null,
+        filter: !searchFlag ? othersFilterData : {},
     };
 
     setLoading(true);
@@ -2755,6 +2893,21 @@ const UnderInvestigation = () => {
       setLoading(false);
 
       if (getTemplateResponse && getTemplateResponse.success) {
+
+        const { meta } = getTemplateResponse;
+    
+        const totalPages = meta?.meta?.totalPages;
+        const totalItems = meta?.meta?.totalItems;
+        
+        if (totalPages !== null && totalPages !== undefined) {
+            setOtherTemplatesTotalPage(totalPages);
+        }
+        
+        if (totalItems !== null && totalItems !== undefined) {
+            setOtherTemplatesTotalRecord(totalItems);
+        }
+        
+
         if (getTemplateResponse.data && getTemplateResponse.data) {
           if (getTemplateResponse.data[0]) {
             var excludedKeys = [
@@ -5270,16 +5423,17 @@ const UnderInvestigation = () => {
         </div>
       )}
 
-      {/* other templates ui */}
-      {otherTemplateModalOpen && (
+    {/* other templates ui */}
+    {otherTemplateModalOpen && (
         <Dialog
           open={otherTemplateModalOpen}
           onClose={() => setOtherTemplateModalOpen(false)}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
-          maxWidth="md"
+        //   maxWidth="2xl"
+          fullScreen
           fullWidth
-          sx={{ zIndex: "1" }}
+          sx={{ zIndex: "1", marginLeft: '260px' }}
         >
           <DialogTitle
             id="alert-dialog-title"
@@ -5289,65 +5443,184 @@ const UnderInvestigation = () => {
               justifyContent: "space-between",
             }}
           >
-            {selectedOtherTemplate && selectedOtherTemplate.name}
-            <Box>
-              {selectedOtherTemplate.table === "cid_ui_case_progress_report" ? (
-                hasPdfEntry && (
+            <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
+                <WestIcon  />
+                {selectedOtherTemplate?.name}
+            </Box>
+            <Box sx={{display: 'flex', alignItems: 'center'}}>
+              {selectedOtherTemplate?.table ===
+              "cid_ui_case_progress_report" ? (
+                hasPdfEntry &&(
                   <>
-                    <Button
-                      variant="outlined"
-                      onClick={() => {
-                        setIsUpdatePdf(false);
-                        showOptionTemplate(selectedOtherTemplate.table);
-                      }}
-                    >
-                      Add
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={() => {
-                        setIsUpdatePdf(true);
-                        showOptionTemplate(selectedOtherTemplate.table);
-                      }}
-                      style={{ marginLeft: "10px" }}
-                    >
-                      Update PDF
-                    </Button>
+                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                    <TextFieldInput 
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: "#475467" }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    <IconButton
+                                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                                        onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                    >
+                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                    </IconButton>
+                                </Box>
+                            ),
+                        }}
+
+                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                        value={otherSearchValue}
+                        id="tableSearch"
+                        size="small"
+                        placeholder='Search anything'
+                        variant="outlined"
+                        className="profileSearchClass"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                            }
+                        }}
+                        
+                        sx={{
+                            width: '350px', borderRadius: '6px', outline: 'none',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: '1',
+                                fontSize: '14px',
+                                fontWeight: '400',
+                                fontFamily: 'Roboto'
+                            },
+                        }}
+                    />
+                    {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                        <Typography
+                            onClick={handleOtherClear}
+                            sx={{
+                                fontSize: "13px",
+                                fontWeight: "500",
+                                textDecoration: "underline",
+                                cursor: "pointer",
+                            }}
+                            mt={1}
+                        >
+                            Clear Filter
+                        </Typography>
+                    )}
+                    </Box>
+                    {isIoAuthorized && (
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          showOptionTemplate(selectedOtherTemplate?.table);
+                        }}
+                      >
+                        Add
+                      </Button>
+                    )}
                   </>
                 )
-              ) : (
-                isIoAuthorized && (
-                  <Button
-                    variant="outlined"
-                    onClick={() =>
-                      showOptionTemplate(selectedOtherTemplate?.table)
-                    }
-                  >
-                    Add
-                  </Button>
-                )
+              ) : ( 
+                <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
+                    <Box>
+                    </Box>
+                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                    <TextFieldInput 
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: "#475467" }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    <IconButton
+                                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                                        onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                    >
+                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                    </IconButton>
+                                </Box>
+                            ),
+                        }}
+
+                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                        value={otherSearchValue}
+                        id="tableSearch"
+                        size="small"
+                        placeholder='Search anything'
+                        variant="outlined"
+                        className="profileSearchClass"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                            }
+                        }}
+                        
+                        sx={{
+                            width: '350px', borderRadius: '6px', outline: 'none',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: '1',
+                                fontSize: '14px',
+                                fontWeight: '400',
+                                fontFamily: 'Roboto'
+                            },
+                        }}
+                    />
+                    {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                        <Typography
+                            onClick={handleOtherClear}
+                            sx={{
+                                fontSize: "13px",
+                                fontWeight: "500",
+                                textDecoration: "underline",
+                                cursor: "pointer",
+                            }}
+                            mt={1}
+                        >
+                            Clear Filter
+                        </Typography>
+                    )}
+                    </Box>
+                    {isIoAuthorized && (
+                        <Button
+                            variant="outlined"
+                            sx={{height: '40px'}}
+                            onClick={() =>
+                                showOptionTemplate(selectedOtherTemplate?.table)
+                            }
+                        >
+                            Add
+                        </Button>
+                    )}
+                </Box>
               )}
-              <IconButton
-                aria-label="close"
-                onClick={() => setOtherTemplateModalOpen(false)}
-                sx={{ color: (theme) => theme.palette.grey[500] }}
-              >
-                <CloseIcon />
-              </IconButton>
             </Box>
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              <Box py={2}>
-                {selectedOtherTemplate.table ===
+              <Box>
+                {selectedOtherTemplate?.table ===
                 "cid_ui_case_progress_report" ? (
                   hasPdfEntry ? (
                     uploadedFiles.length > 0 ? (
                       <>
-                        <TableView
-                          rows={otherTemplateData}
-                          columns={otherTemplateColumn}
-                        />
+                        <Box>
+                            <TableView
+                                rows={otherTemplateData}
+                                columns={otherTemplateColumn}
+                                totalPage={otherTemplatesTotalPage} 
+                                totalRecord={otherTemplatesTotalRecord} 
+                                paginationCount={otherTemplatesPaginationCount} 
+                                handlePagination={handleOtherPagination} 
+                            />
+                        </Box>
                         <Box
                           display="flex"
                           flexDirection="column"
@@ -5392,16 +5665,148 @@ const UnderInvestigation = () => {
                     </Box>
                   )
                 ) : (
-                  <TableView
-                    rows={otherTemplateData}
-                    columns={otherTemplateColumn}
-                  />
+                    <Box>                    
+                        <TableView
+                            rows={otherTemplateData}
+                            columns={otherTemplateColumn}
+                            totalPage={otherTemplatesTotalPage} 
+                            totalRecord={otherTemplatesTotalRecord} 
+                            paginationCount={otherTemplatesPaginationCount} 
+                            handlePagination={handleOtherPagination} 
+                        />
+                    </Box>
                 )}
               </Box>
             </DialogContentText>
           </DialogContent>
         </Dialog>
       )}
+
+        {othersFilterModal && (
+            <Dialog
+                open={othersFilterModal}
+                onClose={() => setOthersFilterModal(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="md"
+                fullWidth
+            >
+
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    }}
+                >
+                    Filter
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOthersFilterModal(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
+            <DialogContent sx={{ minWidth: "400px" }}>
+                <DialogContentText id="alert-dialog-description">
+                    <Grid container sx={{ alignItems: "center" }}>
+                        <Grid item xs={12} md={6} p={2}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    format="DD-MM-YYYY"
+                                    sx={{
+                                        width: "100%",
+                                    }}
+                                    label="From Date"
+                                    value={othersFromDate ? dayjs(othersFromDate) : null}
+                                    onChange={(e) =>
+                                        setOthersFromDate(e ? e.format("YYYY-MM-DD") : null)
+                                    }
+                                />
+                            </LocalizationProvider>
+                        </Grid>
+
+                        <Grid item xs={12} md={6} p={2}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    format="DD-MM-YYYY"
+                                    sx={{
+                                        width: "100%",
+                                    }}
+                                    label="To Date"
+                                    value={othersToDate ? dayjs(othersToDate) : null}
+                                    onChange={(e) =>
+                                        setOthersToDate(e ? e.format("YYYY-MM-DD") : null)
+                                    }
+                                />
+                            </LocalizationProvider>
+                        </Grid>
+
+                        {filterDropdownObj.map((field) => {
+                            switch (field.type) {
+                                case "dropdown":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <div className="form-field-wrapper_selectedField">
+                                        <SelectField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                        onChange={(value) =>
+                                            handleAutocomplete(field, value.target.value)
+                                        }
+                                        />
+                                    </div>
+                                    </Grid>
+                                );
+
+                                case "multidropdown":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <MultiSelect
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                        onChange={(name, selectedCode) =>
+                                            handleAutocomplete(field, selectedCode)
+                                        }
+                                    />
+                                    </Grid>
+                                );
+
+                                case "autocomplete":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <AutocompleteField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                        onChange={(name, selectedCode) =>
+                                            handleAutocomplete(field, selectedCode)
+                                        }
+                                    />
+                                    </Grid>
+                                );
+                        }
+                        })}
+                    </Grid>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ padding: "12px 24px" }}>
+                <Button onClick={() => setOthersFilterModal(false)}>Close</Button>
+                <Button
+                    className="fillPrimaryBtn"
+                    sx={{ minWidth: "100px" }}
+                    onClick={() => setOtherFilterData()}
+                >
+                    Apply
+                </Button>
+            </DialogActions>
+            </Dialog>
+        )}
 
       {approveTableFlag && (
         <Dialog

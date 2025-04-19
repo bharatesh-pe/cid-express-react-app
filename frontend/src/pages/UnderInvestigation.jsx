@@ -61,6 +61,7 @@ import AutocompleteField from "../components/form/AutoComplete";
 import GenerateProfilePdf from "./GenerateProfilePdf";
 
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
+import WestIcon from '@mui/icons-material/West';
 
 const UnderInvestigation = () => {
   const location = useLocation();
@@ -225,7 +226,13 @@ const UnderInvestigation = () => {
     const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
     const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
     const [otherTemplatesPaginationCount, setOtherTemplatesPaginationCount] = useState(1);
-    const [otherSearchValue, setOtherSearchValue] = useState('')
+    const [otherSearchValue, setOtherSearchValue] = useState('');
+
+    const [othersFilterModal, setOthersFilterModal] = useState(false);
+    const [othersFromDate, setOthersFromDate] = useState(null);
+    const [othersToDate, setOthersToDate] = useState(null);
+    const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
+    const [othersFilterData, setOthersFilterData] = useState({});
 
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
@@ -237,8 +244,101 @@ const UnderInvestigation = () => {
 
     const handleOtherClear = ()=>{
         setOtherSearchValue('');
+        setOtherTemplatesPaginationCount(1);
+        setOthersFromDate(null);
+        setOthersToDate(null);
+        setOthersFiltersDropdown([]);
+        setOthersFilterData({});
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData, true)
     }
+
+    const setOtherFilterData = () => {
+        setOtherTemplatesPaginationCount(1);
+        setOthersFilterModal(false);
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+    };
+
+    const handleOthersFilter = async (selectedOptions)=>{
+
+        if(!selectedOptions?.table){
+            toast.error('Please Check The Template', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return false;
+        }
+
+        const viewTableData = { table_name: selectedOptions.table };
+      
+        setLoading(true);
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            setLoading(false);
+      
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+                var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
+                var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+      
+                var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
+                    const existingField = filterDropdownObj?.find(
+                        (item) => item.name === field.name
+                    );
+                    return {
+                        ...field,
+                        history: false,
+                        info: false,
+                        required: false,
+                        ...(field.is_dependent === "true" && {options: existingField?.options ? [...existingField.options] : [] }),
+                    };
+                });
+      
+                // const today = dayjs().format("YYYY-MM-DD");
+        
+                getAllOptionsforFilter(getOnlyDropdown, true);
+                // if(fromDateValue == null || toDateValue === null){
+                //     setFromDateValue(today);
+                //     setToDateValue(today);
+                // }
+      
+                // setShowFilterModal(true);
+                setOthersFilterModal(true);
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
 
   const toggleSelectRow = (id) => {
     setSelectedIds((prevSelectedIds) => {
@@ -1119,10 +1219,16 @@ const UnderInvestigation = () => {
 
             if (getTemplateResponse?.success) {
                 const { data, meta } = getTemplateResponse.data;
-    
-                if (meta?.totalPages) {
-                    setTotalPage(meta.totalPages);
-                    if (meta.totalItems) setTotalRecord(meta.totalItems);
+
+                const totalPages = meta?.totalPages;
+                const totalItems = meta?.totalItems;
+
+                if (totalPages !== null && totalPages !== undefined) {
+                    setTotalPage(totalPages);
+                }
+
+                if (totalItems !== null && totalItems !== undefined) {
+                    setTotalRecord(totalItems);
                 }
   
                 if (data?.length > 0) {
@@ -3295,8 +3401,11 @@ const UnderInvestigation = () => {
         table_name: options.table,
         ui_case_id: selectedRow.id,
         limit : 10,
-        page : otherTemplatesPaginationCount,
-        search: !searchFlag ? otherSearchValue : ""
+        page : !searchFlag ? otherTemplatesPaginationCount : 1,
+        search: !searchFlag ? otherSearchValue : "",        
+        from_date: !searchFlag ? othersFromDate : null,
+        to_date: !searchFlag ? othersToDate : null,
+        filter: !searchFlag ? othersFilterData : {},
     };
 
     setLoading(true);
@@ -3573,65 +3682,51 @@ const UnderInvestigation = () => {
             setOtherTemplateColumn([]);
           }
 
-          var updatedTableData = getTemplateResponse.data.map(
-            (field, index) => {
-              const formatDate = (fieldValue) => {
+        var updatedTableData = getTemplateResponse.data.map((field, index) => {
+            const formatDate = (fieldValue) => {
+
                 if (!fieldValue || typeof fieldValue !== "string")
-                  return fieldValue;
+                    return fieldValue;
 
                 var dateValue = new Date(fieldValue);
 
-                if (
-                  isNaN(dateValue.getTime()) ||
-                  (!fieldValue.includes("-") && !fieldValue.includes("/"))
-                ) {
-                  return fieldValue;
+                if (isNaN(dateValue.getTime()) || (!fieldValue.includes("-") && !fieldValue.includes("/"))) {
+                    return fieldValue;
                 }
 
                 if (isNaN(dateValue.getTime())) return fieldValue;
 
                 var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                var monthValue = String(dateValue.getMonth() + 1).padStart(
-                  2,
-                  "0"
-                );
+                var monthValue = String(dateValue.getMonth() + 1).padStart(2,"0");
                 var yearValue = dateValue.getFullYear();
                 return `${dayValue}/${monthValue}/${yearValue}`;
-              };
+            };
 
-              const updatedField = {};
+            const updatedField = {};
 
-              Object.keys(field).forEach((key) => {
-                if (
-                  field[key] &&
-                  key !== "id" &&
-                  !isNaN(new Date(field[key]).getTime())
-                ) {
-                  updatedField[key] = formatDate(field[key]);
+            Object.keys(field).forEach((key) => {
+                if (field[key] && key !== "id" && !isNaN(new Date(field[key]).getTime())) {
+                    updatedField[key] = formatDate(field[key]);
                 } else {
-                  updatedField[key] = field[key];
+                    updatedField[key] = field[key];
                 }
-              });
+            });
 
-              return {
+            return {
                 ...updatedField,
                 sl_no: (otherTablePagination - 1) * 10 + (index + 1),
                 ...(field.id ? {} : { id: "unique_id_" + index }),
-              };
-            }
-          );
+            };
+        });
 
-          setOtherTemplateData(updatedTableData);
-          if (
-            options.table === "cid_ui_case_progress_report" &&
-            options.is_pdf
-          ) {
+        setOtherTemplateData(updatedTableData);
+        if (options.table === "cid_ui_case_progress_report" && options.is_pdf) {
             await checkPdfEntryStatus(selectedRow.id);
             await getUploadedFiles(selectedRow);
-          }
-
-          setOtherTemplateModalOpen(true);
         }
+
+        setOtherTemplateModalOpen(true);
+    }
 
         setselectedOtherTemplate(options);
 
@@ -4828,7 +4923,7 @@ const UnderInvestigation = () => {
     }
   };
 
-  const getAllOptionsforFilter = async (dropdownFields) => {
+  const getAllOptionsforFilter = async (dropdownFields, others) => {
     try {
       setLoading(true);
 
@@ -4871,7 +4966,12 @@ const UnderInvestigation = () => {
           : field;
       });
 
-      setfilterDropdownObj(updatedFieldsDropdown);
+        if(others){
+            setOthersFiltersDropdown(updatedFieldsDropdown)
+        }else{
+            setfilterDropdownObj(updatedFieldsDropdown);
+        }
+
     } catch (error) {
       setLoading(false);
       console.error("Error fetching template data:", error);
@@ -4892,13 +4992,29 @@ const UnderInvestigation = () => {
     setForceTableLoad((prev) => !prev);
   };
 
-  const handleAutocomplete = (field, selectedValue) => {
-    let updatedFormData = { ...filterValues, [field.name]: selectedValue };
+  const handleAutocomplete = (field, selectedValue, othersFilter) => {
 
-    setFilterValues(updatedFormData);
+    var updatedFormData = {}
+    var selectedFilterDropdown = []
+
+    if(othersFilter){
+
+        selectedFilterDropdown = othersFiltersDropdown
+        updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
+        
+        setOthersFilterData(updatedFormData);
+        
+    }else{
+
+        selectedFilterDropdown = filterDropdownObj
+        updatedFormData = { ...filterValues, [field.name]: selectedValue };
+    
+        setFilterValues(updatedFormData);
+
+    }
 
     if (field?.api && field?.table) {
-      var dependent_field = filterDropdownObj.filter((element) => {
+      var dependent_field = selectedFilterDropdown.filter((element) => {
         return (
           element.dependent_table &&
           element.dependent_table.length > 0 &&
@@ -4914,7 +5030,7 @@ const UnderInvestigation = () => {
             [key]: updatedFormData[field.name],
           };
         } else {
-          var dependentFields = filterDropdownObj.filter((element) => {
+          var dependentFields = selectedFilterDropdown.filter((element) => {
             return dependent_field[0].dependent_table.includes(element.table);
           });
 
@@ -4961,23 +5077,31 @@ const UnderInvestigation = () => {
               options: updatedOptions,
             };
 
-            setfilterDropdownObj(
-              filterDropdownObj.map((element) =>
-                element.id === dependent_field[0].id
-                  ? { ...element, ...userUpdateFields }
-                  : element
-              )
-            );
-
-            dependent_field.map((data) => {
-              delete filterValues[data.name];
-            });
 
             dependent_field.forEach((data) => {
-              delete updatedFormData[data.name];
+                delete updatedFormData[data.name];
             });
 
-            setFilterValues(updatedFormData);
+            if(othersFilter){
+                setOthersFiltersDropdown(
+                    selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                );
+                dependent_field.map((data) => {
+                    delete othersFilterData[data.name];
+                });
+
+                setOthersFilterData(updatedFormData);
+            }else{
+                setfilterDropdownObj(
+                    selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element )
+                );
+                dependent_field.map((data) => {
+                    delete filterValues[data.name];
+                });
+
+                setFilterValues(updatedFormData);
+            }
+
           } catch (error) {
             setLoading(false);
             if (error && error.response && error.response.data) {
@@ -5776,46 +5900,46 @@ const UnderInvestigation = () => {
           onClose={() => setOtherTemplateModalOpen(false)}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
-          maxWidth={
-            selectedOtherTemplate?.table === "cid_ui_case_progress_report" &&
-            hasPdfEntry
-              ? "2xl"
-              : "md"
-          }
+        //   maxWidth="2xl"
+          fullScreen
           fullWidth
-          sx={{ zIndex: "1" }}
+          sx={{ zIndex: "1", marginLeft: '260px' }}
         >
           <DialogTitle
             id="alert-dialog-title"
             sx={{
               display: "flex",
-              alignItems: "center",
+              alignItems: "start",
               justifyContent: "space-between",
             }}
           >
-            {selectedOtherTemplate?.name}
+            <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
+                <WestIcon  />
+                {selectedOtherTemplate?.name}
+            </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
               "cid_ui_case_progress_report" ? (
                 hasPdfEntry &&(
-                  <>
+                  <Box sx={{display: 'flex', alignItems: 'start'}}>
+                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
                     <TextFieldInput 
-    
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: '#475467' }} />
+                                    <SearchIcon sx={{ color: "#475467" }} />
                                 </InputAdornment>
                             ),
                             endAdornment: (
                                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                    {otherSearchValue && (
-                                        <IconButton sx={{ padding: 0 }} onClick={handleOtherClear} size="small">
-                                            <ClearIcon sx={{ color: '#475467' }} />
-                                        </IconButton>
-                                    )}
+                                    <IconButton
+                                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                                        onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                    >
+                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                    </IconButton>
                                 </Box>
-                            )
+                            ),
                         }}
 
                         onInput={(e) => setOtherSearchValue(e.target.value)}
@@ -5833,7 +5957,7 @@ const UnderInvestigation = () => {
                         }}
                         
                         sx={{
-                            width: '400px', borderRadius: '6px', outline: 'none',
+                            width: '350px', borderRadius: '6px', outline: 'none',
                             '& .MuiInputBase-input::placeholder': {
                                 color: '#475467',
                                 opacity: '1',
@@ -5841,12 +5965,27 @@ const UnderInvestigation = () => {
                                 fontWeight: '400',
                                 fontFamily: 'Roboto'
                             },
-                            marginRight: "12px"
                         }}
                     />
+                    {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                        <Typography
+                            onClick={handleOtherClear}
+                            sx={{
+                                fontSize: "13px",
+                                fontWeight: "500",
+                                textDecoration: "underline",
+                                cursor: "pointer",
+                            }}
+                            mt={1}
+                        >
+                            Clear Filter
+                        </Typography>
+                    )}
+                    </Box>
                     {isIoAuthorized && (
                       <Button
                         variant="outlined"
+                        sx={{marginLeft: "10px", height: '40px'}}
                         onClick={() => {
                           showOptionTemplate(selectedOtherTemplate?.table);
                         }}
@@ -5951,33 +6090,34 @@ const UnderInvestigation = () => {
                           );
                         }
                       }}
-                      style={{ marginLeft: "10px" }}
+                      style={{ marginLeft: "10px", height: '40px' }}
                     >
                       Update PDF
                     </Button>
-                  </>
+                  </Box>
                 )
               ) : ( 
-                <Box sx={{display: 'flex', justifyContent: 'space-between', gap: '12px'}}>
+                <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
                     <Box>
                     </Box>
+                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
                     <TextFieldInput 
-                    
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: '#475467' }} />
+                                    <SearchIcon sx={{ color: "#475467" }} />
                                 </InputAdornment>
                             ),
                             endAdornment: (
                                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                    {otherSearchValue && (
-                                        <IconButton sx={{ padding: 0 }} onClick={handleOtherClear} size="small">
-                                            <ClearIcon sx={{ color: '#475467' }} />
-                                        </IconButton>
-                                    )}
+                                    <IconButton
+                                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                                        onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                    >
+                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                    </IconButton>
                                 </Box>
-                            )
+                            ),
                         }}
 
                         onInput={(e) => setOtherSearchValue(e.target.value)}
@@ -5995,7 +6135,7 @@ const UnderInvestigation = () => {
                         }}
                         
                         sx={{
-                            width: '400px', borderRadius: '6px', outline: 'none',
+                            width: '350px', borderRadius: '6px', outline: 'none',
                             '& .MuiInputBase-input::placeholder': {
                                 color: '#475467',
                                 opacity: '1',
@@ -6005,11 +6145,27 @@ const UnderInvestigation = () => {
                             },
                         }}
                     />
+                    {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                        <Typography
+                            onClick={handleOtherClear}
+                            sx={{
+                                fontSize: "13px",
+                                fontWeight: "500",
+                                textDecoration: "underline",
+                                cursor: "pointer",
+                            }}
+                            mt={1}
+                        >
+                            Clear Filter
+                        </Typography>
+                    )}
+                    </Box>
                     {isIoAuthorized && (
                         <Button
                             variant="outlined"
+                            sx={{height: '40px'}}
                             onClick={() =>
-                            showOptionTemplate(selectedOtherTemplate?.table)
+                                showOptionTemplate(selectedOtherTemplate?.table)
                             }
                         >
                             Add
@@ -6017,18 +6173,18 @@ const UnderInvestigation = () => {
                     )}
                 </Box>
               )}
-              <IconButton
+              {/* <IconButton
                 aria-label="close"
                 onClick={() => setOtherTemplateModalOpen(false)}
                 sx={{ color: (theme) => theme.palette.grey[500] }}
               >
                 <CloseIcon />
-              </IconButton>
+              </IconButton> */}
             </Box>
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              <Box py={2}>
+              <Box>
                 {selectedOtherTemplate?.table ===
                 "cid_ui_case_progress_report" ? (
                   hasPdfEntry ? (
@@ -6434,6 +6590,131 @@ const UnderInvestigation = () => {
           </DialogActions>
         </Dialog>
       )}
+        {othersFilterModal && (
+            <Dialog
+                open={othersFilterModal}
+                onClose={() => setOthersFilterModal(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="md"
+                fullWidth
+            >
+
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    }}
+                >
+                    Filter
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setOthersFilterModal(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
+            <DialogContent sx={{ minWidth: "400px" }}>
+                <DialogContentText id="alert-dialog-description">
+                    <Grid container sx={{ alignItems: "center" }}>
+                        <Grid item xs={12} md={6} p={2}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    format="DD-MM-YYYY"
+                                    sx={{
+                                        width: "100%",
+                                    }}
+                                    label="From Date"
+                                    value={othersFromDate ? dayjs(othersFromDate) : null}
+                                    onChange={(e) =>
+                                        setOthersFromDate(e ? e.format("YYYY-MM-DD") : null)
+                                    }
+                                />
+                            </LocalizationProvider>
+                        </Grid>
+
+                        <Grid item xs={12} md={6} p={2}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                <DatePicker
+                                    format="DD-MM-YYYY"
+                                    sx={{
+                                        width: "100%",
+                                    }}
+                                    label="To Date"
+                                    value={othersToDate ? dayjs(othersToDate) : null}
+                                    onChange={(e) =>
+                                        setOthersToDate(e ? e.format("YYYY-MM-DD") : null)
+                                    }
+                                />
+                            </LocalizationProvider>
+                        </Grid>
+
+                        {filterDropdownObj.map((field) => {
+                            switch (field.type) {
+                                case "dropdown":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <div className="form-field-wrapper_selectedField">
+                                        <SelectField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                        onChange={(value) =>
+                                            handleAutocomplete(field, value.target.value)
+                                        }
+                                        />
+                                    </div>
+                                    </Grid>
+                                );
+
+                                case "multidropdown":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <MultiSelect
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                        onChange={(name, selectedCode) =>
+                                            handleAutocomplete(field, selectedCode)
+                                        }
+                                    />
+                                    </Grid>
+                                );
+
+                                case "autocomplete":
+                                return (
+                                    <Grid item xs={12} md={6} p={2}>
+                                    <AutocompleteField
+                                        key={field.id}
+                                        field={field}
+                                        formData={filterValues}
+                                        onChange={(name, selectedCode) =>
+                                            handleAutocomplete(field, selectedCode)
+                                        }
+                                    />
+                                    </Grid>
+                                );
+                        }
+                        })}
+                    </Grid>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ padding: "12px 24px" }}>
+                <Button onClick={() => setOthersFilterModal(false)}>Close</Button>
+                <Button
+                    className="fillPrimaryBtn"
+                    sx={{ minWidth: "100px" }}
+                    onClick={() => setOtherFilterData()}
+                >
+                    Apply
+                </Button>
+            </DialogActions>
+            </Dialog>
+        )}
 
       {approveTableFlag && (
         <Dialog
