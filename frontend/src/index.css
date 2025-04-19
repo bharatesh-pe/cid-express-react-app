@@ -48,7 +48,7 @@ code {
 
 .MuiInputBase-root {
     font-weight: 500 !important;
-    font-size: 16px !important;
+    font-size: 17px !important;
     font-family: 'Roboto' !important;
     color: #1D2939 !important;
 }
@@ -627,12 +627,12 @@ div::first-letter {
 
 /* table view */
 .FigmaTableView .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-columnHeader {
-    background-color: #EAECF0 !important;
+    background-color: #d89a1d4d !important;
     height: 40px !important;
 }
 
 .MuiDataGrid-row--borderBottom .MuiDataGrid-filler, .MuiDataGrid-row--borderBottom .MuiDataGrid-scrollbarFiller--header{
-    background-color: #EAECF0 !important;
+    background-color: #d89a1d4d !important;
 }
 
 .w-0 {
@@ -825,7 +825,7 @@ div::first-letter {
 
 
     .parentFilterTabs{
-        background-color: #F2F4F7 !important;
+        background-color: #4285f438 !important;
         border-radius: 6px;
         border: 1px solid #EAECF0 !important;
         min-height: 38px !important;
@@ -851,7 +851,8 @@ div::first-letter {
 
     .filterTabs.Active{
         background-color: #FFFFFF !important;
-        border: 1px solid #D0D5DD !important;
+        /* border: 1px solid #1f1dac !important; */
+        box-shadow: 0 4px 12px rgb(0 123 255 / 46%);
         font-weight: 500 !important;
         color: #1D2939 !important;
     }
@@ -1080,7 +1081,8 @@ div::first-letter {
     }
 
     .FigmaTableView .MuiDataGrid-main .MuiDataGrid-virtualScroller .MuiDataGrid-virtualScrollerContent .MuiDataGrid-virtualScrollerRenderZone .MuiDataGrid-row:nth-of-type(even){
-        background-color: #f5f5f5;
+        /* background-color: #f5f5f5; */
+        background-color: #f3e0c032;
     }
 
     .MuiDataGrid-columnSeparator.MuiDataGrid-columnSeparator--resizing{
