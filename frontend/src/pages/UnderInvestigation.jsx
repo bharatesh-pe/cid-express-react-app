@@ -220,6 +220,26 @@ const UnderInvestigation = () => {
   const [downloadPdfData, setDownloadPdfData] = useState([]);
   const [isPrint, setIsPrint] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+
+
+    const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
+    const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
+    const [otherTemplatesPaginationCount, setOtherTemplatesPaginationCount] = useState(1);
+    const [otherSearchValue, setOtherSearchValue] = useState('')
+
+    const handleOtherPagination = (page) => {
+        setOtherTemplatesPaginationCount(page)
+    }
+
+    useEffect(()=>{
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+    },[otherTemplatesPaginationCount, ]);
+
+    const handleOtherClear = ()=>{
+        setOtherSearchValue('');
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData, true)
+    }
+
   const toggleSelectRow = (id) => {
     setSelectedIds((prevSelectedIds) => {
       const updated = prevSelectedIds.includes(id)
@@ -1350,13 +1370,7 @@ const UnderInvestigation = () => {
             <span
                 style={highlightColor}
                 onClick={onClickHandler}
-                className={`tableValueTextView Roboto ${
-                params?.row &&
-                !params.row["ReadStatus"] &&
-                localStorage.getItem("authAdmin") === "false"
-                    ? "unreadMsgText"
-                    : "read"
-                }`}
+                className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "unreadMsgText" : "read"}`}
             >
                 {value}
             </span>
@@ -3350,10 +3364,14 @@ const UnderInvestigation = () => {
     }
   };
 
-  const handleOtherTemplateActions = async (options, selectedRow) => {
+  const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
-    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
-    // setIsIoAuthorized(isAuthorized);    
+    if(!selectedRow || Object.keys(selectedRow).length === 0){
+        return false
+    }
+
+    const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
+    setIsIoAuthorized(isAuthorized);    
 
     setSelectedRowData(selectedRow);
 
@@ -3367,8 +3385,11 @@ const UnderInvestigation = () => {
 
     setSelectedRow(selectedRow);
     var getTemplatePayload = {
-      table_name: options.table,
-      ui_case_id: selectedRow.id,
+        table_name: options.table,
+        ui_case_id: selectedRow.id,
+        limit : 10,
+        page : otherTemplatesPaginationCount,
+        search: !searchFlag ? otherSearchValue : ""
     };
 
     setLoading(true);
@@ -3381,6 +3402,20 @@ const UnderInvestigation = () => {
       setLoading(false);
 
       if (getTemplateResponse && getTemplateResponse.success) {
+
+        const { meta } = getTemplateResponse;
+    
+        const totalPages = meta?.meta?.totalPages;
+        const totalItems = meta?.meta?.totalItems;
+        
+        if (totalPages !== null && totalPages !== undefined) {
+          setOtherTemplatesTotalPage(totalPages);
+        }
+        
+        if (totalItems !== null && totalItems !== undefined) {
+          setOtherTemplatesTotalRecord(totalItems);
+        }
+        
         if (getTemplateResponse.data && getTemplateResponse.data) {
           if (getTemplateResponse.data[0]) {
             var excludedKeys = [
@@ -4667,11 +4702,6 @@ const UnderInvestigation = () => {
           icon: () => (
             <span
               className="tableActionViewIcon"
-              style={{
-                marginTop: "1px",
-                marginRight: "12px",
-                marginLeft: "2px",
-              }}
             >
               <svg
                 width="50"
@@ -5857,12 +5887,57 @@ const UnderInvestigation = () => {
             }}
           >
             {selectedOtherTemplate?.name}
-            <Box>
+            <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
               "cid_ui_case_progress_report" ? (
                 hasPdfEntry &&(
                   <>
-                    {/* {isIoAuthorized && ( */}
+                    <TextFieldInput 
+    
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: '#475467' }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    {otherSearchValue && (
+                                        <IconButton sx={{ padding: 0 }} onClick={handleOtherClear} size="small">
+                                            <ClearIcon sx={{ color: '#475467' }} />
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            )
+                        }}
+
+                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                        value={otherSearchValue}
+                        id="tableSearch"
+                        size="small"
+                        placeholder='Search anything'
+                        variant="outlined"
+                        className="profileSearchClass"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                            }
+                        }}
+                        
+                        sx={{
+                            width: '400px', borderRadius: '6px', outline: 'none',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: '1',
+                                fontSize: '14px',
+                                fontWeight: '400',
+                                fontFamily: 'Roboto'
+                            },
+                            marginRight: "12px"
+                        }}
+                    />
+                    {isIoAuthorized && (
                       <Button
                         variant="outlined"
                         onClick={() => {
@@ -5892,16 +5967,64 @@ const UnderInvestigation = () => {
                   </>
                 )
               ) : ( 
-                // isIoAuthorized && (
-                  <Button
-                    variant="outlined"
-                    onClick={() =>
-                      showOptionTemplate(selectedOtherTemplate?.table)
-                    }
-                  >
-                    Add
-                  </Button>
-                // )
+                <Box sx={{display: 'flex', justifyContent: 'space-between', gap: '12px'}}>
+                    <Box>
+                    </Box>
+                    <TextFieldInput 
+                    
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: '#475467' }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    {otherSearchValue && (
+                                        <IconButton sx={{ padding: 0 }} onClick={handleOtherClear} size="small">
+                                            <ClearIcon sx={{ color: '#475467' }} />
+                                        </IconButton>
+                                    )}
+                                </Box>
+                            )
+                        }}
+
+                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                        value={otherSearchValue}
+                        id="tableSearch"
+                        size="small"
+                        placeholder='Search anything'
+                        variant="outlined"
+                        className="profileSearchClass"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                            }
+                        }}
+                        
+                        sx={{
+                            width: '400px', borderRadius: '6px', outline: 'none',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: '1',
+                                fontSize: '14px',
+                                fontWeight: '400',
+                                fontFamily: 'Roboto'
+                            },
+                        }}
+                    />
+                    {isIoAuthorized && (
+                        <Button
+                            variant="outlined"
+                            onClick={() =>
+                            showOptionTemplate(selectedOtherTemplate?.table)
+                            }
+                        >
+                            Add
+                        </Button>
+                    )}
+                </Box>
               )}
               <IconButton
                 aria-label="close"
@@ -5920,10 +6043,16 @@ const UnderInvestigation = () => {
                   hasPdfEntry ? (
                     uploadedFiles.length > 0 ? (
                       <>
-                        <TableView
-                          rows={otherTemplateData}
-                          columns={otherTemplateColumn}
-                        />
+                        <Box>
+                            <TableView
+                                rows={otherTemplateData}
+                                columns={otherTemplateColumn}
+                                totalPage={otherTemplatesTotalPage} 
+                                totalRecord={otherTemplatesTotalRecord} 
+                                paginationCount={otherTemplatesPaginationCount} 
+                                handlePagination={handleOtherPagination} 
+                            />
+                        </Box>
                         <Box
                           display="flex"
                           flexDirection="column"
@@ -5968,10 +6097,16 @@ const UnderInvestigation = () => {
                     </Box>
                   )
                 ) : (
-                  <TableView
-                    rows={otherTemplateData}
-                    columns={otherTemplateColumn}
-                  />
+                    <Box>                    
+                        <TableView
+                            rows={otherTemplateData}
+                            columns={otherTemplateColumn}
+                            totalPage={otherTemplatesTotalPage} 
+                            totalRecord={otherTemplatesTotalRecord} 
+                            paginationCount={otherTemplatesPaginationCount} 
+                            handlePagination={handleOtherPagination} 
+                        />
+                    </Box>
                 )}
               </Box>
             </DialogContentText>
