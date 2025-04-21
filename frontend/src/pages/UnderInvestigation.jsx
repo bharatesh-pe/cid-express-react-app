@@ -174,14 +174,55 @@ const UnderInvestigation = () => {
   const [approveTableFlag, setApproveTableFlag] = useState(false);
   const [addApproveFlag, setAddApproveFlag] = useState(false);
 
-  const [approvalsData, setApprovalsData] = useState([]);
-  const [approvalsColumn, setApprovalsColumn] = useState([
-    { field: "sl_no", headerName: "S.No" },
-    { field: "approvalItem", headerName: "Approval Item", flex: 1 },
-    { field: "approvedBy", headerName: "Approved By", flex: 1 },
-    { field: "approval_date", headerName: "Approval Date", flex: 1 },
-    { field: "remarks", headerName: "Remarks", flex: 1 },
-  ]);
+    const [approvalsData, setApprovalsData] = useState([]);
+    const [approvalsColumn, setApprovalsColumn] = useState([
+        { field: "sl_no", headerName: "S.No", width: 80 },
+        { field: "approvalItem", headerName: "Approval Item", width: 150 },
+        { field: "approvedBy", headerName: "Approved By", width: 140 },
+        { field: "approval_date", headerName: "Approval Date", width: 150 },
+        { field: "remarks", headerName: "Remarks", width: 120 },
+    ]);
+
+    const [listApprovalsData, setListApprovalsData] = useState([]);
+    const [listapproveTableFlag, setListApproveTableFlag] = useState(false);
+    const [listaddApproveFlag, setListAddApproveFlag] = useState(false);
+    const [listApprovalsColumn, setListApprovalsColumn] = useState([
+        { field: "sl_no", headerName: "S.No", width: 80 },
+        { field: "approvalItem", headerName: "Approval Item", width: 150 },
+        { field: "approvedBy", headerName: "Approved By", width: 140 },
+        { field: "approval_date", headerName: "Approval Date", width: 150 },
+        { field: "remarks", headerName: "Remarks", width: 120 },
+    ]);
+
+    const listApprovalActionColumn = {
+        field: "actions",
+        headerName: "Actions",
+        width: 180,
+        sortable: false,
+        renderCell: (params) => {
+        const row = params.row;
+        return (
+            <Box sx={{ display: "flex", gap: 1 }}>
+            {/* {userPermissions[0]?.view_case && ( */}
+                <Button variant="outlined" >
+                    View
+                </Button>
+            {/* )} */}
+            {/* {userPermissions[0]?.edit_case && ( */}
+                <Button variant="contained" color="primary">
+                    Edit
+                </Button>
+            {/* )} */}
+            {/* {userPermissions[0]?.delete_case && ( */}
+                <Button variant="contained" color="error">
+                    Delete
+                </Button>
+            {/* )} */}
+            </Box>
+        );
+        },
+    };
+
   const [approvalItem, setApprovalItem] = useState([]);
   const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
   const [designationData, setDesignationData] = useState([]);
@@ -1319,7 +1360,7 @@ const UnderInvestigation = () => {
                                         }
                                     }}
                                 >
-                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" sx={{fontSize:'26px'}} /></Tooltip>
+                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
                                 </Button>
                             )
                         },
@@ -1565,28 +1606,15 @@ const UnderInvestigation = () => {
             navigate("/profile-view", {
               state: {
                 formData: hyperLinkResponse.data ? hyperLinkResponse.data : {},
-                fields: viewTemplateResponse.data["fields"]
-                  ? viewTemplateResponse.data["fields"]
-                  : [],
+                fields: viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [],
                 profileDatapagination: paginationCount,
                 table_name: params.table,
-                hyperLinkTableName: searchParams.get("tableName")
-                  ? searchParams.get("tableName")
-                  : table_name,
+                hyperLinkTableName: searchParams.get("tableName") ? searchParams.get("tableName") : table_name,
                 template_name: template_name,
-                table_row_id: searchParams.get("id")
-                  ? searchParams.get("id")
-                  : params.id,
-                template_id: viewTemplateResponse.data["template_id"]
-                  ? viewTemplateResponse.data["template_id"]
-                  : "",
-                linkToLeader: viewTemplateResponse["data"].is_link_to_leader
-                  ? viewTemplateResponse["data"].is_link_to_leader
-                  : false,
-                linkToOrganization: viewTemplateResponse["data"]
-                  .is_link_to_organization
-                  ? viewTemplateResponse["data"].is_link_to_organization
-                  : false,
+                table_row_id: searchParams.get("id") ? searchParams.get("id") : params.id,
+                template_id: viewTemplateResponse.data["template_id"] ? viewTemplateResponse.data["template_id"] : "",
+                linkToLeader: viewTemplateResponse["data"].is_link_to_leader ? viewTemplateResponse["data"].is_link_to_leader : false,
+                linkToOrganization: viewTemplateResponse["data"].is_link_to_organization ? viewTemplateResponse["data"].is_link_to_organization : false,
               },
             });
           } else {
@@ -4433,6 +4461,122 @@ const UnderInvestigation = () => {
     }
   };
 
+  const showApprovalListPage = async (approveData) => {
+    var payloadObj = {
+     	case_id: approveData.id,
+    };
+
+    setLoading(true);
+
+    try {
+      const getActionsDetails = await api.post(
+        "/ui_approval/get_ui_case_approvals",
+        payloadObj
+      );
+
+      setLoading(false);
+
+      if (getActionsDetails && getActionsDetails.success) {
+        var updatedOptions = [];
+
+        if (getActionsDetails.data["approvals"].length > 0) {
+          updatedOptions = getActionsDetails.data["approvals"].map(
+            (data, index) => {
+              const formatDate = (fieldValue) => {
+                if (!fieldValue || typeof fieldValue !== "string")
+                  return fieldValue;
+
+                var dateValue = new Date(fieldValue);
+
+                if (
+                  isNaN(dateValue.getTime()) ||
+                  (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                ) {
+                  return fieldValue;
+                }
+
+                if (isNaN(dateValue.getTime())) return fieldValue;
+
+                var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                var monthValue = String(dateValue.getMonth() + 1).padStart(
+                  2,
+                  "0"
+                );
+                var yearValue = dateValue.getFullYear();
+                return `${dayValue}/${monthValue}/${yearValue}`;
+              };
+
+              const updatedField = {};
+
+              Object.keys(data).forEach((key) => {
+                if (
+                  data[key] &&
+                  key !== "id" &&
+                  !isNaN(new Date(data[key]).getTime())
+                ) {
+                  updatedField[key] = formatDate(data[key]);
+                } else {
+                  updatedField[key] = data[key];
+                }
+              });
+
+              return {
+                ...updatedField,
+                sl_no: index + 1,
+                id: data.approval_id,
+              };
+            }
+          );
+        }
+
+        setApprovalsData(updatedOptions);
+        setApprovalItem(getActionsDetails.data["approval_item"]);
+        setDesignationData(getActionsDetails.data["designation"]);
+
+        setAddApproveFlag(false);
+        setApproveTableFlag(true);
+
+        const randomId = `approval_${Date.now()}_${Math.floor(
+          Math.random() * 1000
+        )}`;
+        setRandomApprovalId(randomId);
+      } else {
+        const errorMessage = getActionsDetails.message
+          ? getActionsDetails.message
+          : "Failed to create the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
+    }
+  };
+
   const showApprovalAddPage = (table) => {
     setAddApproveFlag(true);
     handleApprovalSaveData(
@@ -5238,6 +5382,7 @@ const UnderInvestigation = () => {
       : null,
   ].filter(Boolean);
 
+
   // Advance filter functions
 
   const handleFilter = async () => {
@@ -5774,6 +5919,33 @@ const UnderInvestigation = () => {
         }
 
         handleOtherTemplateActions(options, rowData);
+    }
+
+    const handleActionShow = (rowData)=>{
+
+        if(!rowData){
+            toast.error("Please Check Case Data !",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        console.log(rowData)
+
+        setListApprovalsColumn((prev) => {
+            const withoutActions = prev.filter((col) => col.field !== "actions");
+            return [...withoutActions, listApprovalActionColumn];
+        });
+
+        showApprovalListPage(rowData)
+
     }
 
   return (
@@ -6616,7 +6788,7 @@ const UnderInvestigation = () => {
           aria-describedby="alert-dialog-description"
           maxWidth="lg"
           fullWidth
-          sx={{ zIndex: "1" }}
+          sx={{ zIndex: "1" ,  maxHeight: '70vh', overflowY: 'auto',}}
         >
           <DialogTitle
             id="alert-dialog-title"
@@ -7075,7 +7247,7 @@ const UnderInvestigation = () => {
           aria-describedby="alert-dialog-description"
           maxWidth="lg"
           fullWidth
-          sx={{ zIndex: "1" }}
+           sx={{ zIndex: "1"}}
         >
           <DialogTitle
             id="alert-dialog-title"
@@ -7117,7 +7289,7 @@ const UnderInvestigation = () => {
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              <Box py={2} sx={{ width: '90%'}}>
+              <Box py={2} sx={{ width: '100%'}}>
                 {!addApproveFlag ? (
                   <TableView rows={approvalsData} columns={approvalsColumn} />
                 ) : (
