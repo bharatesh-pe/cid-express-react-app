@@ -45,5 +45,6 @@ router.post('/getAllDepartment', cidMasterController.getAllDepartments)
 router.post('/getAllDesignations', cidMasterController.getAllDesignations)
 router.post('/getAllDivisions', cidMasterController.getAllDivisions)
 router.post('/getIoUsers' , cidMasterController.getIoUsers)
+router.post('/getIoUsersBasedOnDivision' , cidMasterController.getIoUsersBasedOnDivision)
 
 module.exports = router;
