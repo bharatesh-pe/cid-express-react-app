@@ -3724,6 +3724,7 @@ const UnderInvestigation = () => {
 
             if (options.table !== "cid_ui_case_progress_report") {
               excludedKeys.push("created_at");
+              excludedKeys.push("hasFieldPrStatus");
             }
             if (options.table === "cid_ui_case_checking_tabs") {
               excludedKeys.push("field_witness");
@@ -3800,7 +3801,7 @@ const UnderInvestigation = () => {
                     key !== "field_assigned_by_id"&&
                     key !== "field_served_or_unserved"&&
                     key !== "field_reappear"&&
-                    key !== "hasfieldprstatus"       
+                    key !== "hasFieldPrStatus"       
                 )
                 .map((key) => {
                   var updatedKeyName = key
