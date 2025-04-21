@@ -165,6 +165,8 @@ const UnderInvestigation = () => {
   // transfer to other division states
 
   const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
+  const [showMassiveTransferModal, setShowMassiveTransferModal] = useState(false);
+
   const [otherTransferField, setOtherTransferField] = useState([]);
   const [selectedOtherFields, setSelectedOtherFields] = useState(null);
   const [selectKey, setSelectKey] = useState(null);
@@ -293,7 +295,10 @@ const UnderInvestigation = () => {
     const [othersToDate, setOthersToDate] = useState(null);
     const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     const [othersFilterData, setOthersFilterData] = useState({});
-
+    const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
+    const [showMergeModal, setShowMergeModal] = useState(false);
+    const [selectedParentId, setSelectedParentId] = useState("");
+  
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
@@ -1222,10 +1227,6 @@ const UnderInvestigation = () => {
       }
     }
   };
-
-  const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
-  const [showMergeModal, setShowMergeModal] = useState(false);
-  const [selectedParentId, setSelectedParentId] = useState("");
   
   const handleCheckboxChangeField = (event, row) => {
     const isSelected = event.target.checked;
@@ -4892,6 +4893,58 @@ const UnderInvestigation = () => {
     setselectedOtherTemplate(null);
   };
 
+
+  const handleMassiveDivisionChange = async () => {
+    if (!selectedOtherFields || !selectedOtherFields.code) {
+      toast.error("Please Select Data !", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+
+      return;
+    }
+
+    if (
+      selectedOtherTemplate &&
+      selectedOtherTemplate["field"] &&
+      (selectedOtherTemplate["field"] === "field_nature_of_disposal" ||
+        selectedOtherTemplate["field"] === "field_prosecution_sanction" ||
+        selectedOtherTemplate["field"] === "field_17a_pc_act") &&
+      selectedOtherFields &&
+      selectedOtherFields["name"]
+    ) {
+      checkDisposalValues();
+      return;
+    }
+
+    if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
+      showApprovalPage(selectedRow);
+      return;
+    }
+
+    var combinedData = {
+      id: selectedRow.id,
+      [selectKey.name]: selectedOtherFields.code,
+    };
+
+    // update func
+    onUpdateTemplateData(combinedData);
+
+    // reset states
+    setSelectKey(null);
+    setSelectedRow(null);
+    setOtherTransferField([]);
+    setShowOtherTransferModal(false);
+    setSelectedOtherFields(null);
+    setselectedOtherTemplate(null);
+  };
+
   const showPtCaseTemplate = async () => {
 
     var getTemplatePayload = {
@@ -7279,6 +7332,45 @@ const UnderInvestigation = () => {
         </DialogContent>
         <DialogActions sx={{ padding: "12px 24px" }}>
           <Button onClick={() => setShowOtherTransferModal(false)}>
+            Cancel
+          </Button>
+          <Button className="fillPrimaryBtn" onClick={handleMassiveDivisionChange}>
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+
+      <Dialog
+        open={showMassiveTransferModal}
+        onClose={() => setShowMassiveTransferModal(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title"></DialogTitle>
+        <DialogContent sx={{ width: "400px" }}>
+          <DialogContentText id="alert-dialog-description">
+            <h4 className="form-field-heading">{selectKey?.title}</h4>
+            <FormControl fullWidth>
+              <Autocomplete
+                id=""
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={(event, newValue) => setSelectedOtherFields(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label={selectKey?.title}
+                  />
+                )}
+              />
+            </FormControl>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button onClick={() => setShowMassiveTransferModal(false)}>
             Cancel
           </Button>
           <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
