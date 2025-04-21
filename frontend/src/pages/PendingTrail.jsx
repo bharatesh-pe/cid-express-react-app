@@ -18,6 +18,7 @@ import {
   Autocomplete,
   TextField,
   Tooltip,
+  Chip,
 } from "@mui/material";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
@@ -882,7 +883,7 @@ const UnderInvestigation = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -907,9 +908,20 @@ const UnderInvestigation = () => {
                                 />
                             ),
                         },
+                        {
+                            field: "field_cc_no./sc_no",
+                            headerName: "Cc No./Sc No",
+                            width: 130,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_cc_no./sc_no")
+                            ),
+                            renderCell: renderCellFunc("field_cc_no./sc_no", 0),
+                        },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
-                            .map((key, count) => ({
+                            .map((key) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
@@ -917,7 +929,7 @@ const UnderInvestigation = () => {
                                 renderHeader: (params) => (
                                     tableHeaderRender(params)
                                 ),
-                                renderCell: renderCellFunc(key, count),
+                                renderCell: renderCellFunc(key),
                         })),
                     ];
   
@@ -1455,11 +1467,6 @@ const UnderInvestigation = () => {
         "/templates/viewTemplate",
         viewTableData
       );
-      console.log(
-        "viewTemplateResponseviewTemplateResponse",
-        viewTemplateResponse
-      );
-
       setLoading(false);
       if (viewTemplateResponse && viewTemplateResponse.success) {
         var caseFields = [];
@@ -2945,7 +2952,7 @@ const UnderInvestigation = () => {
                   return {
                     field: key,
                     headerName: updatedKeyName ? updatedKeyName : "",
-                    width: 250,
+                    width: updatedKeyName.length < 15 ? 100 : 180,
                     resizable: true,
                     renderHeader: () => (
                       <div
@@ -4941,6 +4948,7 @@ const UnderInvestigation = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 cursor: "pointer",
+                gap: '6px'
               }}
             >
               {/* <img src='./arrow-left.svg' /> */}
@@ -4951,6 +4959,9 @@ const UnderInvestigation = () => {
                       .replace(/\b\w/g, (c) => c.toUpperCase())
                   : "Pending Trail"}
               </Typography>
+                <Box className="totalRecordCaseStyle">
+                    {totalRecord} Cases
+                </Box>
             </Box>
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
@@ -5030,12 +5041,7 @@ const UnderInvestigation = () => {
                 .create_pt && (
                 <Button
                   onClick={() => getTemplate(table_name)}
-                  sx={{
-                    background: "#4D4AF3",
-                    color: "#FFFFFF",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
+                  className="blueButton"
                   startIcon={
                     <AddIcon
                       sx={{
@@ -5252,7 +5258,7 @@ const UnderInvestigation = () => {
           maxWidth="xl"
           fullWidth
         >
-          <DialogContent sx={{ minWidth: "400px" }}>
+          <DialogContent sx={{ minWidth: "400px", padding: '0' }}>
             <DialogContentText id="alert-dialog-description">
               <FormControl fullWidth>
                 <NormalViewForm
@@ -5469,10 +5475,23 @@ const UnderInvestigation = () => {
               justifyContent: "space-between",
             }}
           >
-            <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
-                <WestIcon  />
-                {selectedOtherTemplate?.name}
-                {selectedRowData?.["field_cid_crime_no./enquiry_no"] || ""}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setOtherTemplateModalOpen(false)}>
+                <WestIcon />
+    
+                <Typography variant="body1" fontWeight={500}>
+                    {selectedOtherTemplate?.name}
+                </Typography>
+    
+                {selectedRowData["field_cc_no./sc_no"] && (
+                    <Chip
+                        label={selectedRowData["field_cc_no./sc_no"]}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontWeight: 500, marginTop: '1px' }}
+                    />
+                )}
+    
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
@@ -6182,7 +6201,7 @@ const UnderInvestigation = () => {
             maxWidth="xl"
             fullWidth
         >
-            <DialogContent sx={{ minWidth: '400px' }}>
+            <DialogContent sx={{ minWidth: '400px', padding: '0'  }}>
                 <DialogContentText id="alert-dialog-description">
                     <FormControl fullWidth>
                         <NormalViewForm

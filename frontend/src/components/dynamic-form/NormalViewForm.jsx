@@ -875,7 +875,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 //   console.log(stepperData, "stepperData stepperData")
   return (
     <>
-      <Box inert={loading ? true : false}>
+      <Box inert={loading ? true : false} p={2}>
         {stepperData && stepperData.length > 0 && (
           <Box px={2} py={1} sx={{ background: '#FFFFFF' }}>
             <Stepper className={'stepperWidth_' + stepperData.length} sx={{ minWidth: '300px', maxWidth: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} activeStep={activeStep} >
@@ -891,7 +891,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#FFFFFF' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '99' }}>
           <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '1px' }}>
             <ArrowBackIcon sx={{ fontSize: '22px', fontWeight: '500', color: '#171A1C' }} />
             <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>

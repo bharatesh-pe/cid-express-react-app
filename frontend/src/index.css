@@ -1092,3 +1092,24 @@ div::first-letter {
     .justify-content-start button{
         justify-content: start !important;
     }
+
+    .totalRecordCaseStyle{
+        margin: 0;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #1E40AF;
+        padding: 0.25rem 0.75rem;
+        background-color: #E3F2FD;
+        border-radius: 0.75rem;
+        height: auto;
+    }
+
+    .blueButton{
+        background-color: #1F1DAC !important;
+        color: #FFFFFF !important;
+        height: 38px !important;
+    }
+    .blueButton svg{
+        background-color: #1F1DAC !important;
+        color: #FFFFFF;
+    }
