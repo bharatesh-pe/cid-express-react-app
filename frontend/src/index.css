@@ -96,13 +96,13 @@ code {
 }
 
 .sidebarMenus .MuiListItemIcon-root svg, .subMenuSidebarMenus .MuiListItemIcon-root svg {
-    stroke: #667085;
+    stroke: #000000;
 }
 
 .sidebarMenus .MuiListItemText-root span, .subMenuSidebarMenus .MuiListItemText-root span {
     font-size: 14px !important;
     font-weight: 400 !important;
-    color: #667085 !important;
+    color: #000000 !important;
     font-family: "Roboto" !important;
 }
 
@@ -758,7 +758,7 @@ div::first-letter {
     }
 
     .tableValueTextView{
-        color: #667085;
+        color: #000000;
         font-size: 14px;
         font-weight: 400;
     }
@@ -1112,4 +1112,11 @@ div::first-letter {
     .blueButton svg{
         background-color: #1F1DAC !important;
         color: #FFFFFF;
+    }
+
+    .unreadBackground{
+        background-color: #e3f2fd !important;
+    }
+    .unreadBackground span{
+        font-weight: 600 !important;
     }

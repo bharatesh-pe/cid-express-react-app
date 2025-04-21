@@ -3626,6 +3626,17 @@ const UnderInvestigation = () => {
       }
     });
   };
+
+    const getCellClassName = (key, params, table) => {
+        // Example condition: unread rows for a specific table
+        if (table === "cid_ui_case_progress_report" && !params?.row?.ReadStatus) {
+            return "unreadBackground";
+        }
+    
+        // Add more logic if needed based on `key` or `params`
+        return "";
+    };
+  
   
   const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
@@ -3727,6 +3738,7 @@ const UnderInvestigation = () => {
                     field: "select",
                     headerName: "",
                     width: 50,
+                    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
                     renderCell: (params) => {
                       const isPdfUpdated = params.row.field_pr_status === "Yes";
                       // const isAssignedUser = String(params.row.field_assigned_to_id);
@@ -3802,6 +3814,7 @@ const UnderInvestigation = () => {
                     headerName: updatedKeyName ? updatedKeyName : "",
                     width: updatedKeyName.length < 15 ? 100 : 180,
                     resizable: true,
+                    cellClassName: (params) => getCellClassName(key, params, options.table),
                     renderHeader: () => (
                       <div
                         style={{
@@ -3835,6 +3848,7 @@ const UnderInvestigation = () => {
                       width: 150,
                       resizable: true,
                       sortable: true,
+                      cellClassName: (params) => getCellClassName("sl_no", params, options.table),
                       sortComparator: (v1, v2) => {
                         if (v1 === "Yes" && v2 === "No") return -1;
                         if (v1 === "No" && v2 === "Yes") return 1;
@@ -4059,6 +4073,7 @@ const UnderInvestigation = () => {
                   field: "",
                   headerName: "Action",
                   flex: 1,
+                  cellClassName: (params) => getCellClassName("sl_no", params, options.table),
                   renderCell: (params) => {
                     const isPdfUpdated =
                       options.table === "cid_ui_case_progress_report" &&
@@ -5878,6 +5893,14 @@ const UnderInvestigation = () => {
         handleOtherTemplateActions(options, rowData);
     }
 
+    const closeOtherForm = ()=>{
+        setOtherFormOpen(false)
+        setShowPtCaseModal(false);
+        if(selectedOtherTemplate?.table === "cid_ui_case_progress_report"){
+            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+        }
+    }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -6219,10 +6242,7 @@ const UnderInvestigation = () => {
       {otherFormOpen && (
         <Dialog
           open={otherFormOpen}
-          onClose={() => {
-            setOtherFormOpen(false);
-            setShowPtCaseModal(false);
-          }}
+          onClose={() => closeOtherForm}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
           maxWidth="xl"
@@ -6252,13 +6272,16 @@ const UnderInvestigation = () => {
                   onSubmit={otherTemplateSaveFunc}
                   onUpdate={otherTemplateUpdateFunc}
                   onError={onSaveTemplateError}
-                  closeForm={setOtherFormOpen}
+                  closeForm={closeOtherForm}
+                  headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
                 />
               </FormControl>
             </DialogContentText>
           </DialogContent>
           <DialogActions sx={{ padding: "12px 24px" }}>
-            <Button onClick={() => setOtherFormOpen(false)}>Cancel</Button>
+            <Button onClick={() => closeOtherForm}>
+                Cancel
+            </Button>
           </DialogActions>
         </Dialog>
       )}
@@ -6445,7 +6468,17 @@ const UnderInvestigation = () => {
               justifyContent: "space-between",
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setOtherTemplateModalOpen(false)}>
+            <Box 
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                onClick={() => {
+                    setOtherTemplateModalOpen(false);
+                    
+                    if (selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
+                        loadTableData(paginationCount);
+                    }
+                }}
+            >
+
                 <WestIcon />
 
                 <Typography variant="body1" fontWeight={500}>
@@ -6458,7 +6491,7 @@ const UnderInvestigation = () => {
                         color="primary"
                         variant="outlined"
                         size="small"
-                        sx={{ fontWeight: 500, marginTop: '1px' }}
+                        sx={{ fontWeight: 500, marginTop: '2px' }}
                     />
                 )}
 
@@ -7441,6 +7474,7 @@ const UnderInvestigation = () => {
                             onError={onSaveTemplateError}
                             closeForm={setFurtherInvestigationPtCase} 
 
+                            headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
                         />
                     </FormControl>
                 </DialogContentText>
