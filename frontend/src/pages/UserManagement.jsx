@@ -37,6 +37,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import TextFieldInput from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import { InputAdornment } from "@mui/material"
+import AddIcon from '@mui/icons-material/Add';
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
@@ -1276,21 +1277,7 @@ const UserManagement = () => {
                 </Button>
 
                 <Button
-                  variant="outlined"
-                  startIcon={<AddCircleIcon />}
-                  sx={{
-                    height: "38px",
-                    border: "1px solid #2A55E5",
-                    borderRadius: "6px",
-                    gap: "8px",
-                    color: "#2A55E5",
-                    fontWeight: "600",
-                    textTransform: "none",
-                    "&:hover": {
-                      backgroundColor: "transparent",
-                    },
-                  }}
-                  onClick={() => {
+                   onClick={() => {
                     const transactionId = `user_${Date.now()}_${Math.floor(
                       Math.random() * 10000
                     )}`;
@@ -1300,9 +1287,24 @@ const UserManagement = () => {
                     }));
                     setIsModalOpen(true);
                   }}
-                >
-                  Create New Profile
+                  sx={{
+                    height: "38px",
+                  }}
+                  className="blueButton"
+                  startIcon={
+                  <AddIcon
+                    sx={{
+                      border: "1.3px solid #FFFFFF",
+                      borderRadius: "50%",
+                      background:"#4D4AF3 !important",
+                    }}
+                    />
+                  }
+                  variant="contained"
+                  >
+                    Create New Profile
                 </Button>
+                
               </>
             ) : (
               <>
