@@ -585,6 +585,7 @@ const Hierarchy = () => {
                                 },
                             }}
                         />
+
                         <Button
                             onClick={() => {
                                 setAddRoleData(prevData => ({
@@ -592,10 +593,23 @@ const Hierarchy = () => {
                                 }));
                                 setShowRoleAddModal(true);
                             }}
-
-                            sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
-                            Add Hierarchy
-                        </Button>
+                            sx={{
+                                height: "38px",
+                                }}
+                            className="blueButton"
+                            startIcon={
+                                <AddIcon
+                                    sx={{
+                                        border: "1.3px solid #FFFFFF",
+                                        borderRadius: "50%",
+                                        background:"#4D4AF3 !important",
+                                    }}
+                                />
+                            }
+                            variant="contained"
+                            >
+                                Add Hierarchy
+                        </Button>                         
                     </Box>
                 </Box>
                 <Box py={2}>

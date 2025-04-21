@@ -787,7 +787,7 @@ const Judgement = () => {
                 if (getTemplateResponse.data && getTemplateResponse.data['data']) {
 
                     if(getTemplateResponse.data['data'][0]){
-                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info", "ui_case_id", "pt_case_id"];
+                        var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info", "ui_case_id", "pt_case_id","task_unread_count"];
 
                         const updatedHeader = [
                             {
@@ -2430,9 +2430,23 @@ const defaultGovernmentOrderItem = approvalItem.find(
                             />
 
                         }
-                        <Button onClick={() => getTemplate(table_name)} sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }} startIcon={<AddIcon sx={{ border: '1.3px solid #101828', borderRadius: '50%' }} />} variant="contained">
+                        <Button
+                            onClick={() => getTemplate(table_name)}
+                            className="blueButton"
+                            startIcon={
+                            <AddIcon
+                                sx={{
+                                    border: "1.3px solid #FFFFFF",
+                                    borderRadius: "50%",
+                                    background:"#4D4AF3 !important",
+                                    }}
+                            />
+                            }
+                            variant="contained"
+                            >
                             Add New
                         </Button>
+
                         {
                             localStorage.getItem('authAdmin') === "false" &&
                             <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
