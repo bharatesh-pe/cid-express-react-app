@@ -1269,7 +1269,6 @@ const UnderInvestigation = () => {
         text: "Merged successfully!",
         icon: 'success',
         confirmButtonText: 'OK',
-        onOpen
       });
   
       setLoading(false);
