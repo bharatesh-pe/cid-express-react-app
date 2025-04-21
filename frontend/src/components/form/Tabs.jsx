@@ -66,8 +66,8 @@ const TabsComponents = ({ field = {}, formData = {}, errors = {}, onChange, onFo
                 {Array.isArray(field.options) && field.options.map((option, index) => (
                     <Box key={index} sx={{display: 'flex', alignItems: 'center'}}>
                         <Checkbox
-                            name={field.id || ""}
-                            id={option.code || ""}
+                            name={`${field.name}-${index}`}
+                            id={`${field.name}-${option.code}-${index}`}
                             value={option.code || ""}
                             disabled={field.disabled === true}
                             checked={formData[field.name] === option.code || false}
@@ -77,7 +77,7 @@ const TabsComponents = ({ field = {}, formData = {}, errors = {}, onChange, onFo
                             onFocus={onFocus}
                             focused={isFocused || false}
                         />
-                        <label htmlFor={option.code || ""}>
+                        <label htmlFor={`${field.name}-${option.code}-${index}`}>
                             {option.name || ""}
                         </label>
                     </Box>

@@ -4926,11 +4926,7 @@ const UnderInvestigation = () => {
         );
 
 
-        if (
-          (selectedOtherTemplate.field === null ||
-            selectedOtherTemplate.field === "field_nature_of_disposal") &&
-          templateApproval
-        ) {
+        if ((selectedOtherTemplate.field === null || selectedOtherTemplate.field === "field_nature_of_disposal" || selectedOtherTemplate.field === "field_prosecution_sanction") && templateApproval) {
           otherTemplateSaveFunc(templateApprovalData, true);
           return;
         }
@@ -5629,7 +5625,7 @@ const UnderInvestigation = () => {
     ...hoverTableOptions,
     sysStatus === "ui_case" || sysStatus === "all"
       ? {
-          name: "Further Investigation 173(8) Case",
+          name: "Preliminary Charge Sheet - 173 (8)",
           onclick: (selectedRow) =>
             changeSysStatus(
               selectedRow,
@@ -6533,7 +6529,7 @@ const UnderInvestigation = () => {
                 sysStatus === "178_cases" ? "Active" : ""
               }`}
             >
-              Further Investigation 173(8) Case
+              Preliminary Charge Sheet - 173 (8)
             </Box>
             <Box
               onClick={() => {
@@ -7001,6 +6997,10 @@ const UnderInvestigation = () => {
                         sx={{ fontWeight: 500, marginTop: '2px' }}
                     />
                 )}
+
+                <Box className="totalRecordCaseStyle">
+                    {otherTemplatesTotalRecord} Records
+                </Box>
 
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>

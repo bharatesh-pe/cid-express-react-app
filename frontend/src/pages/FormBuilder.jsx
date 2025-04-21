@@ -328,11 +328,14 @@ const Formbuilder = () => {
             section: steps && steps[activeStep] ? steps[activeStep] : null,
         };
 
-        if(tabs_components.length > 0){
-            var selectedTabOption = tabs_components[0].name;
+        if (tabs_components.length > 0) {
+            for (const tab of tabs_components) {
+                const selected = formData[tab.name];
 
-            if(selectedTabOption && selectedTabOption !== ''){
-                newField['tabOption'] = formData[selectedTabOption];
+                if (selected && (Array.isArray(selected) ? selected.length > 0 : true)) {
+                    newField['tabOption'] = selected;
+                    break;
+                }
             }
         }
 
@@ -2234,16 +2237,20 @@ const Formbuilder = () => {
                                                 {...provided.droppableProps}
                                             >
                                             {steps && steps.length > 0 ? fields?.filter(el => el.section === steps[activeStep])?.map((field, index) => {
-                                                if(field && field.tabOption) {
-
-                                                    const tabsField = fields.find(f => f.type === 'tabs');
-                                            
-                                                    const selectedTabOptions = formData[tabsField?.name] || [];
-
-                                                    const shouldHide = tabsField && field.tabOption && selectedTabOptions !== field.tabOption && tabsField.options.some(option => option.code === field.tabOption);
-
-                                                    if (shouldHide) return null;
-
+                                                if (field && field.tabOption) {
+                                                    const tabsFields = fields.filter((f) => f.type === 'tabs');
+                                                
+                                                    const matchingTabsField = tabsFields.find((tabField) => Array.isArray(tabField.options) && tabField.options.some((opt) => opt.code === field.tabOption));
+                                                
+                                                    if (matchingTabsField) {
+                                                        const selectedTabValues = formData[matchingTabsField.name] || [];
+                                                
+                                                        const isSelected = Array.isArray(selectedTabValues)
+                                                            ? selectedTabValues.includes(field.tabOption)
+                                                            : selectedTabValues === field.tabOption;
+                                                
+                                                        if (!isSelected) return null;
+                                                    }
                                                 }
                                                 return (
                                                     <Draggable key={field.id} draggableId={field.id} index={index}>
@@ -2265,16 +2272,20 @@ const Formbuilder = () => {
                                             })
                                             : fields.map((field, index) => {
 
-                                                if(field && field.tabOption) {
-
-                                                    const tabsField = fields.find(f => f.type === 'tabs');
-                                            
-                                                    const selectedTabOptions = formData[tabsField?.name] || [];
-
-                                                    const shouldHide = tabsField && field.tabOption && selectedTabOptions !== field.tabOption && tabsField.options.some(option => option.code === field.tabOption);
+                                                if (field && field.tabOption) {
+                                                    const tabsFields = fields.filter((f) => f.type === 'tabs');
                                                 
-                                                    if (shouldHide) return null;
-
+                                                    const matchingTabsField = tabsFields.find((tabField) => Array.isArray(tabField.options) && tabField.options.some((opt) => opt.code === field.tabOption));
+                                                
+                                                    if (matchingTabsField) {
+                                                        const selectedTabValues = formData[matchingTabsField.name] || [];
+                                                
+                                                        const isSelected = Array.isArray(selectedTabValues)
+                                                            ? selectedTabValues.includes(field.tabOption)
+                                                            : selectedTabValues === field.tabOption;
+                                                
+                                                        if (!isSelected) return null;
+                                                    }
                                                 }
                                             
                                                 return (
@@ -2327,7 +2338,6 @@ const Formbuilder = () => {
                                                         const DisplayNoneFields = ['col', 'defaultValue', 'user_hierarchy', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
                                                         if (DisplayNoneFields.includes(prop)) return null;
 
-                                                        console.log(prop,"prop")
 
                                                         const increment = (prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
                                                         rowCountValue += increment;
