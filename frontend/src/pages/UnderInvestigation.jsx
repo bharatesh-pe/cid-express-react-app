@@ -3847,8 +3847,8 @@ const UnderInvestigation = () => {
                 ? [
                   {
                     field: "field_served_or_unserved",
-                    headerName: "Served",
-                    width: 110,
+                    headerName: "Served/UnServed",
+                    width: 150,
                     resizable: true,
                     sortable: true,
                     // headerAlign: "center",
@@ -3865,18 +3865,16 @@ const UnderInvestigation = () => {
                   
                       if (!isYes && !isNo) {
                         return (
-                          <div
-                            style={{
+                          <Box
+                            sx={{
                               fontFamily: "Roboto",
                               width: "100%",
                               display: "flex",
                               justifyContent: "center",
-                              alignItems: "center",
-                              paddingTop: "8px",
-                            }}
+                              }}
                           >
                             -
-                          </div>
+                          </Box>
                         );
                       }
                   
@@ -3890,7 +3888,6 @@ const UnderInvestigation = () => {
                             width: "100%",
                             display: "flex",
                             justifyContent: "center",
-                            alignItems: "center",
                             paddingTop: "8px",
                           }}
                         >
@@ -3907,10 +3904,15 @@ const UnderInvestigation = () => {
                               textTransform: "capitalize",
                               borderStyle: "solid",
                               borderWidth: "1px",
+                              minWidth: "80px",
+                              textAlign: "center",
+                              justifyContent: "center",
+                              display: "flex",
                             }}
                           />
                         </div>
                       );
+                      
                     },
                   }
                 ]
@@ -3928,6 +3930,45 @@ const UnderInvestigation = () => {
                         if (v1 === "No" && v2 === "Yes") return 1;
                         return 0;
                       },
+                      // renderCell: (params) => {
+                      //   const value = params.value;
+                      //   const isYes = value === "Yes";
+                      //   const isNo = value === "No";
+                    
+                      //   if (!isYes && !isNo) {
+                      //     return (
+                      //       <Box
+                      //         sx={{
+                      //           fontFamily: "Roboto",
+                      //           width: "100%",
+                      //           marginLeft: "15px",
+                      //         }}
+                      //       >
+                      //         -
+                      //       </Box>
+                      //     );
+                      //   }
+                                        
+                      //   return (
+                      //     <Box
+                      //       sx={{
+                      //         display: "flex",
+                      //         alignItems: "center",
+                      //         justifyContent: "flex-start",
+                      //         height: "100%",
+                      //         pl: 1,
+                      //       }}
+                      //     >
+                      //       {isYes ? (
+                      //         <CheckCircleIcon sx={{ color: "#22c55e" }} />
+                      //       ) : (
+                      //         <CancelIcon sx={{ color: "#ef4444" }} />
+                      //       )}
+                      //     </Box>
+                      //   );
+                        
+                    
+                      // },
                       renderCell: (params) => {
                         const value = params.value;
                         const isYes = value === "Yes";
@@ -3939,33 +3980,50 @@ const UnderInvestigation = () => {
                               sx={{
                                 fontFamily: "Roboto",
                                 width: "100%",
-                                marginLeft: "15px",
-                              }}
+                                display: "flex",
+                                justifyContent: "center",
+                                }}
                             >
                               -
                             </Box>
                           );
                         }
-                                        
+                    
+                        const statusText = isYes ? "Yes" : "No";
+                        const statusColor = isYes ? "#22c55e" : "#ef4444";
+                        const borderColor = isYes ? "#34D399" : "#EF4444";
+                    
                         return (
-                          <Box
-                            sx={{
+                          <div
+                            style={{
+                              width: "100%",
                               display: "flex",
-                              alignItems: "center",
-                              justifyContent: "flex-start",
-                              height: "100%",
-                              pl: 1,
+                              justifyContent: "center",
+                              paddingTop: "8px",
                             }}
                           >
-                            {isYes ? (
-                              <CheckCircleIcon sx={{ color: "#22c55e" }} />
-                            ) : (
-                              <CancelIcon sx={{ color: "#ef4444" }} />
-                            )}
-                          </Box>
+                            <Chip
+                              label={statusText}
+                              size="small"
+                              sx={{
+                                fontFamily: "Roboto",
+                                fontWeight: 400,
+                                color: "white",
+                                borderColor: borderColor,
+                                borderRadius: "4px",
+                                backgroundColor: statusColor,
+                                textTransform: "capitalize",
+                                borderStyle: "solid",
+                                borderWidth: "1px",
+                                minWidth: "40px",
+                                textAlign: "center",
+                                justifyContent: "center",
+                                display: "flex",
+                              }}
+                            />
+                          </div>
                         );
                         
-                    
                       },
                     },      
                     ]
@@ -3991,14 +4049,21 @@ const UnderInvestigation = () => {
                     const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
                     const canEdit = userPermissions[0]?.action_edit;
                     const canDelete = userPermissions[0]?.action_delete;
-                    console.log("options", options)
+
                     const checkserved =
                       options.table === "cid_ui_case_checking_tabs" &&
                       params.row.field_served_or_unserved === "Yes";
 
+                    const checkUnServed = 
+                      options.table === "cid_ui_case_checking_tabs" &&
+                      params.row.field_served_or_unserved === "No";
+
+
                     const checkreappear =
                       options.table === "cid_ui_case_checking_tabs" &&
-                      params.row.field_reappear === "Yes";
+                      params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
+
+
 
                     return (
                       <Box
@@ -4053,13 +4118,9 @@ const UnderInvestigation = () => {
                         )}
                         {options.table === "cid_ui_case_checking_tabs" && (
                           <>
-                            {!checkserved && (
+                            {!checkserved && !checkUnServed &&(
                               <Button
                                 variant="contained"
-                                // style={{
-                                //   backgroundColor: "#28a745",
-                                //   color: "white",
-                                // }}
                                 color = "success"
                                 disabled={checkserved}
                                 onClick={(event) => {
