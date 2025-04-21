@@ -68,6 +68,20 @@ export default function ApprovalModal({
                             gap: "18px",
                         }}
                     >
+                         <label
+                          htmlFor="approval-item"
+                          style={{
+                            margin: "0",
+                            padding: 0, 
+                            fontSize: "16px",
+                            fontWeight: 500,
+                            color: "#475467",
+                            textTransform: "capitalize",
+                        }}
+                        >
+                        Approval Item
+                        </label>
+
                         <Autocomplete
                             options={approvalItem}
                             getOptionLabel={(option) => option.name || ""}
@@ -87,6 +101,19 @@ export default function ApprovalModal({
                                 />
                             )}
                         />
+                        <label
+                          htmlFor="designation"
+                          style={{
+                            margin: "0",
+                            padding: 0, 
+                            fontSize: "16px",
+                            fontWeight: 500,
+                            color: "#475467",
+                            textTransform: "capitalize",
+                        }}
+                        >
+                        Designation
+                        </label>
 
                         <Autocomplete
                             options={designationData}
@@ -108,6 +135,19 @@ export default function ApprovalModal({
                                 />
                             )}
                         />
+                        <label
+                          htmlFor="approval-date"
+                          style={{
+                            margin: "0",
+                            padding: 0, 
+                            fontSize: "16px",
+                            fontWeight: 500,
+                            color: "#475467",
+                            textTransform: "capitalize",
+                        }}
+                        >
+                        Approval Date
+                        </label>
 
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                             <DemoContainer components={["DatePicker"]}>
@@ -124,6 +164,20 @@ export default function ApprovalModal({
                                 />
                             </DemoContainer>
                         </LocalizationProvider>
+
+                        <label
+                          htmlFor="comments"
+                          style={{
+                            margin: "0",
+                            padding: 0, 
+                            fontSize: "16px",
+                            fontWeight: 500,
+                            color: "#475467",
+                            textTransform: "capitalize",
+                        }}
+                        >
+                        Comments
+                        </label>
 
                         <TextField
                             rows={8}

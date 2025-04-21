@@ -223,6 +223,7 @@ const UnderInvestigation = () => {
     furtherInvestigationSelectedValue,
     setFurtherInvestigationSelectedValue,
   ] = useState(null);
+  const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
 
   // for pdf download
   const [isDownloadPdf, setIsDownloadPdf] = useState(false);
@@ -3682,6 +3683,23 @@ const UnderInvestigation = () => {
         }
         
         if (getTemplateResponse.data && getTemplateResponse.data) {
+          const records = getTemplateResponse.data;
+
+          let showReplacePdf = false;
+
+          if (selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
+            const anyHasPRStatus = records.some(record => record.hasFieldPrStatus === true);
+          
+            // Show button only if no one has PR status true
+            if (!anyHasPRStatus) {
+              showReplacePdf = true;
+            }
+          }
+          
+          setShowReplacePdfButton(showReplacePdf);
+          
+        
+          
           if (getTemplateResponse.data[0]) {
             var excludedKeys = [
               "updated_at",
@@ -3769,7 +3787,8 @@ const UnderInvestigation = () => {
                     key !== "field_assigned_to_id"&&
                     key !== "field_assigned_by_id"&&
                     key !== "field_served_or_unserved"&&
-                    key !== "field_reappear"       
+                    key !== "field_reappear"&&
+                    key !== "hasfieldprstatus"       
                 )
                 .map((key) => {
                   var updatedKeyName = key
@@ -6444,7 +6463,6 @@ const UnderInvestigation = () => {
                 )}
 
             </Box>
-
             <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
               "cid_ui_case_progress_report" ? (
@@ -6535,6 +6553,20 @@ const UnderInvestigation = () => {
                     >
                       Update PDF
                     </Button>
+                    {console.log("it replacingggggg",showReplacePdfButton)}
+                    {showReplacePdfButton && (
+                      <Button variant="contained" component="label" style={{ marginLeft: "10px", height: '40px' }}>
+                      Replace PDF
+                      <input
+                        type="file"
+                        hidden
+                        accept="application/pdf"
+                        onChange={(event) => handleFileUpload(event)}
+                      />
+                    </Button>
+ 
+                  )}
+
                   </Box>
                 )
               ) : ( 
@@ -7473,6 +7505,19 @@ const UnderInvestigation = () => {
                             {
                                 <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
     
+                                    <label
+                                      htmlFor="approval-item"
+                                      style={{
+                                        margin: "0",
+                                        padding: 0, 
+                                        fontSize: "16px",
+                                        fontWeight: 500,
+                                        color: "#475467",
+                                        textTransform: "capitalize",
+                                      }}
+                                    >
+                                      Approval Item
+                                    </label>
                                     <Autocomplete
                                         id=""
                                         options={approvalItem}
@@ -7489,6 +7534,19 @@ const UnderInvestigation = () => {
                                             />
                                         }
                                     />
+                                    <label
+                                      htmlFor="designation"
+                                      style={{
+                                        margin: "0",
+                                        padding: 0, 
+                                        fontSize: "16px",
+                                        fontWeight: 500,
+                                        color: "#475467",
+                                        textTransform: "capitalize",
+                                      }}
+                                    >
+                                      Designation
+                                    </label>
     
                                     <Autocomplete
                                         id=""
@@ -7506,6 +7564,20 @@ const UnderInvestigation = () => {
                                         }
                                     />
     
+                                    <label
+                                      htmlFor="approval-date"
+                                      style={{
+                                        margin: "0",
+                                        padding: 0, 
+                                        fontSize: "16px",
+                                        fontWeight: 500,
+                                        color: "#475467",
+                                        textTransform: "capitalize",
+                                      }}
+                                    >
+                                      Approval Date
+                                    </label>
+
                                     <LocalizationProvider dateAdapter={AdapterDayjs} sx={{width:'100%'}}>
                                         <DemoContainer components={['DatePicker']} sx={{width:'100%'}}>
                                             <DatePicker 
@@ -7523,8 +7595,7 @@ const UnderInvestigation = () => {
                                                 }}
                                             />
                                         </DemoContainer>
-                                    </LocalizationProvider>
-    
+                                    </LocalizationProvider>    
                                     <TextField
                                         rows={8}
                                         label={'Comments'}
