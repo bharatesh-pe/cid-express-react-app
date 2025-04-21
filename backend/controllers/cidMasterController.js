@@ -60,7 +60,7 @@ const getAllDivisions = async (req, res) => {
 
 const getIoUsers = async (req, res) => {
   const excluded_role_ids = [1, 10, 21];
-    const  { designation_id, get_flag} = req.body;
+  const  { designation_id, get_flag} = req.body;
   try {
 
         let usersData  = [];
@@ -256,11 +256,80 @@ const getIoUsers = async (req, res) => {
   }
 };
 
-
+const getIoUsersBasedOnDivision = async (req, res) => {
+    const excluded_role_ids = [1, 10, 21];
+    const { division_ids, role_id } = req.body; // division_ids should be an array
+    try {
+        if (!Array.isArray(division_ids) || division_ids.length === 0) {
+            return res.status(400).json({ message: "Division IDs array is required." });
+        }
+        // Get user IDs from UsersDivision table based on provided divisions.
+        const usersDivisionData = await UsersDivision.findAll({
+            where: {
+                division_id: { [Op.in]: division_ids },
+            },
+            attributes: ["user_id"],
+            raw: true,
+        });
+        if (!usersDivisionData || usersDivisionData.length === 0) {
+            return res.status(200).json({ data: [] });
+        }
+        const userIds = usersDivisionData.map(ud => ud.user_id).filter(uid => uid != null);
+        
+        // Build the query filter for Users.
+        const whereClause = {
+            user_id: { [Op.in]: userIds },
+            dev_status: true,
+        };
+        // Update: role_id is in the Users table, so filter directly.
+        if (role_id) {
+            whereClause["role_id"] = role_id;
+        }
+        
+        const usersData = await Users.findAll({
+            where: whereClause,
+            include: [
+                {
+                    model: Role,
+                    as: "role",
+                    attributes: ["role_id", "role_title"],
+                    where: {
+                        role_id: {
+                            [Op.notIn]: excluded_role_ids,
+                        },
+                    },
+                },
+                {
+                    model: KGID,
+                    as: "kgidDetails",
+                    attributes: ["kgid", "name", "mobile"],
+                },
+            ],
+            attributes: ["user_id"],
+            raw: true,
+            nest: true,
+        });
+        
+        // Transform output: move kgidDetails.name to top level.
+        const users = usersData.map(user => ({
+            ...user,
+            name: user.kgidDetails?.name || "Unknown",
+            kgid: user.kgidDetails?.kgid || "Unknown",
+            mobile: user.kgidDetails?.mobile || "Unknown",
+            kgidDetails: undefined, // remove nested object if not needed
+        }));
+        
+        return res.status(200).json({ data: users });
+    } catch (error) {
+        console.error("Error fetching users based on division:", error);
+        return res.status(500).json({ message: "Failed to fetch users", error: error.message });
+    }
+};
 
 module.exports = {
     getAllDepartments,
     getAllDesignations,
     getAllDivisions,
-    getIoUsers
+    getIoUsers,
+    getIoUsersBasedOnDivision,
 };
