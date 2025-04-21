@@ -14,13 +14,25 @@ import CancelIcon from "@mui/icons-material/Cancel";
 
 import api from "../services/api";
 import { Badge, Chip, Tooltip } from "@mui/material";
-import { Box,  Button,  FormControl,  InputAdornment,  Typography,  IconButton,  Checkbox,  Grid,  Autocomplete,  TextField,} from "@mui/material";
+import {
+  Box,
+  Button,
+  FormControl,
+  InputAdornment,
+  Typography,
+  IconButton,
+  Checkbox,
+  Grid,
+  Autocomplete,
+  TextField,
+} from "@mui/material";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
+
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
 import ASC from "@mui/icons-material/North";
@@ -30,6 +42,7 @@ import filterLines from "../Images/filterLines.svg";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
@@ -44,6 +57,7 @@ import StarBorderIcon from "@mui/icons-material/StarBorder";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import TaskIcon from '@mui/icons-material/Task';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+
 import AddTaskIcon from '@mui/icons-material/AddTask';
 import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -54,13 +68,14 @@ import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
 import GenerateProfilePdf from "./GenerateProfilePdf";
+
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import WestIcon from '@mui/icons-material/West';
 
 const UnderInvestigation = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
-    // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
+  const location = useLocation();
+  const navigate = useNavigate();
+  // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
 
     //   new further investigation func states
     const [newApprovalPage, setNewApprovalPage] = useState(false);
@@ -76,92 +91,104 @@ const UnderInvestigation = () => {
     const [approvalFormData, setApprovalFormData] = useState({});
     const [approvalSaveCaseData, setApprovalSaveCaseData] = useState({});
 
-    const [showOptionModal, setShowOptionModal] = useState(false);
-    const [paginationCount, setPaginationCount] = useState(1);
-    const [tableSortOption, settableSortOption] = useState("DESC");
-    const [tableSortKey, setTableSortKey] = useState("");
-    const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
-    const [tableData, setTableData] = useState([]);
-    const [isValid, setIsValid] = useState(false);
-    const [searchValue, setSearchValue] = useState(null);
-    const [linkLeader, setLinkLeader] = useState(false);
-    const [linkOrganization, setLinkOrganization] = useState(false);
-    const [template_name, setTemplate_name] = useState("");
-    const [table_name, setTable_name] = useState("");
+  const [showOptionModal, setShowOptionModal] = useState(false);
+  const [paginationCount, setPaginationCount] = useState(1);
+  const [tableSortOption, settableSortOption] = useState("DESC");
+  const [tableSortKey, setTableSortKey] = useState("");
+  const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
+  const [tableData, setTableData] = useState([]);
+  const [isValid, setIsValid] = useState(false);
+  const [searchValue, setSearchValue] = useState(null);
+  const [linkLeader, setLinkLeader] = useState(false);
+  const [linkOrganization, setLinkOrganization] = useState(false);
+  const [template_name, setTemplate_name] = useState("");
+  const [table_name, setTable_name] = useState("");
 
-    const [sysStatus, setSysSattus] = useState("ui_case");
+  const [sysStatus, setSysSattus] = useState("ui_case");
 
-    const [stepperData, setstepperData] = useState([]);
-    const [formOpen, setFormOpen] = useState(false);
-    const [formTemplateData, setFormTemplateData] = useState([]);
-    const [initialData, setInitialData] = useState({});
-    const [viewReadonly, setviewReadonly] = useState(false);
-    const [editTemplateData, setEditTemplateData] = useState(false);
-    const [selectedRowId, setSelectedRowId] = useState(null);
-    const [selectedRowIds, setSelectedRowIds] = useState([]);
-    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+  const [stepperData, setstepperData] = useState([]);
+  const [formOpen, setFormOpen] = useState(false);
+  const [formTemplateData, setFormTemplateData] = useState([]);
+  const [initialData, setInitialData] = useState({});
+  const [viewReadonly, setviewReadonly] = useState(false);
+  const [editTemplateData, setEditTemplateData] = useState(false);
+  const [selectedRowId, setSelectedRowId] = useState(null);
+  const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState(null);
 
-    const [otherFormOpen, setOtherFormOpen] = useState(false);
-    const [optionStepperData, setOptionStepperData] = useState([]);
-    const [optionFormTemplateData, setOptionFormTemplateData] = useState([]);
+  const [otherFormOpen, setOtherFormOpen] = useState(false);
+  const [optionStepperData, setOptionStepperData] = useState([]);
+  const [optionFormTemplateData, setOptionFormTemplateData] = useState([]);
 
-    const [showDownloadModal, setShowDownloadModal] = useState(false);
-    const [showDownloadData, setShowDownloadData] = useState([]);
-    const [showSelectedDownloadData, setShowSelectedDownloadData] = useState({});
+  const [showDownloadModal, setShowDownloadModal] = useState(false);
+  const [showDownloadData, setShowDownloadData] = useState([]);
+  const [showSelectedDownloadData, setShowSelectedDownloadData] = useState({});
 
-    const [showAttachmentModal, setShowAttachmentModal] = useState(false);
-    const [showAttachmentKey, setShowAttachmentKey] = useState(null);
-    const [showAttachmentData, setShowAttachmentData] = useState([]);
+  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
+  const [showAttachmentKey, setShowAttachmentKey] = useState(null);
+  const [showAttachmentData, setShowAttachmentData] = useState([]);
 
-    const [starFlag, setStarFlag] = useState(null);
-    const [readFlag, setReadFlag] = useState(null);
+  const [starFlag, setStarFlag] = useState(null);
+  const [readFlag, setReadFlag] = useState(null);
 
-    const [loading, setLoading] = useState(false); // State for loading indicator
+  const [loading, setLoading] = useState(false); // State for loading indicator
 
-    const searchParams = new URLSearchParams(location.search);
+  const searchParams = new URLSearchParams(location.search);
 
-    const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
-        { field: "sl_no", headerName: "S.No" },
-    ]);
+  const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
+    { field: "sl_no", headerName: "S.No" },
+  ]);
 
-    const [otherTemplateModalOpen, setOtherTemplateModalOpen] = useState(false);
-    const [selectedOtherTemplate, setselectedOtherTemplate] = useState({});
-    const [otherTemplateData, setOtherTemplateData] = useState([]);
-    const [otherInitialTemplateData, setOtherInitialTemplateData] = useState([]);
-    const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] = useState(false);
-    const [otherEditTemplateData, setOtherEditTemplateData] = useState(false);
-    const [otherRowId, setOtherRowId] = useState(null);
-    const [otherTemplateId, setOtherTemplateId] = useState(null);
-    const [otherTemplateColumn, setOtherTemplateColumn] = useState([
-        { field: "sl_no", headerName: "S.No" },
-    ]);
-    const [hasPdfEntry, setHasPdfEntry] = useState(false);
-    const [hoverTableOptions, setHoverTableOptions] = useState([]);
-    const [otherTablePagination, setOtherTablePagination] = useState(1);
+  const [otherTemplateModalOpen, setOtherTemplateModalOpen] = useState(false);
+  const [selectedOtherTemplate, setselectedOtherTemplate] = useState({});
+  const [otherTemplateData, setOtherTemplateData] = useState([]);
+  const [otherInitialTemplateData, setOtherInitialTemplateData] = useState([]);
+  const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] =
+    useState(false);
+  const [otherEditTemplateData, setOtherEditTemplateData] = useState(false);
+  const [otherRowId, setOtherRowId] = useState(null);
+  const [otherTemplateId, setOtherTemplateId] = useState(null);
+  const [otherTemplateColumn, setOtherTemplateColumn] = useState([
+    { field: "sl_no", headerName: "S.No" },
+  ]);
+  const [hasPdfEntry, setHasPdfEntry] = useState(false);
+  const [hoverTableOptions, setHoverTableOptions] = useState([]);
+  const [otherTablePagination, setOtherTablePagination] = useState(1);
 
-    // for actions
-    const [selectedRow, setSelectedRow] = useState({});
-    const [templateApproval, setTemplateApproval] = useState(false);
-    const [templateApprovalData, setTemplateApprovalData] = useState({});
-    const [disposalUpdate, setDisposalUpdate] = useState(false);
+  // for actions
 
-    // transfer to other division states
-    const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
-    const [otherTransferField, setOtherTransferField] = useState([]);
-    const [selectedOtherFields, setSelectedOtherFields] = useState(null);
-    const [selectKey, setSelectKey] = useState(null);
+  const [selectedRow, setSelectedRow] = useState({});
+  const [templateApproval, setTemplateApproval] = useState(false);
+  const [templateApprovalData, setTemplateApprovalData] = useState({});
+  const [disposalUpdate, setDisposalUpdate] = useState(false);
 
-    // for approve states
-    const [approveTableFlag, setApproveTableFlag] = useState(false);
-    const [addApproveFlag, setAddApproveFlag] = useState(false);
-    const [approvalsData, setApprovalsData] = useState([]);
-    const [approvalsColumn, setApprovalsColumn] = useState([
-        { field: "sl_no", headerName: "S.No", width: 80 },
-        { field: "approvalItem", headerName: "Approval Item", width: 150 },
-        { field: "approvedBy", headerName: "Approved By", width: 140 },
-        { field: "approval_date", headerName: "Approval Date", width: 150 },
-        { field: "remarks", headerName: "Remarks", width: 120 },
-    ]);
+  // transfer to other division states
+
+  const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
+  const [otherTransferField, setOtherTransferField] = useState([]);
+  const [selectedOtherFields, setSelectedOtherFields] = useState(null);
+  const [selectKey, setSelectKey] = useState(null);
+
+  // for approve states
+
+  const [approveTableFlag, setApproveTableFlag] = useState(false);
+  const [addApproveFlag, setAddApproveFlag] = useState(false);
+
+  const [approvalsData, setApprovalsData] = useState([]);
+  const [approvalsColumn, setApprovalsColumn] = useState([
+    { field: "sl_no", headerName: "S.No" },
+    { field: "approvalItem", headerName: "Approval Item", flex: 1 },
+    { field: "approvedBy", headerName: "Approved By", flex: 1 },
+    { field: "approval_date", headerName: "Approval Date", flex: 1 },
+    { field: "remarks", headerName: "Remarks", flex: 1 },
+  ]);
+  const [approvalItem, setApprovalItem] = useState([]);
+  const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
+  const [designationData, setDesignationData] = useState([]);
+
+  const [randomApprovalId, setRandomApprovalId] = useState(0);
+
+  const [approvalSaveData, setApprovalSaveData] = useState({});
 
     const [listApprovalsData, setListApprovalsData] = useState([]);
     const [listApproveTableFlag, setListApproveTableFlag] = useState(false);
@@ -174,7 +201,7 @@ const UnderInvestigation = () => {
         { field: "approval_date", headerName: "Approval Date", width: 150 },
         { field: "remarks", headerName: "Remarks", width: 120 },
     ]);
-
+  
     const listApprovalActionColumn = {
         field: "actions",
         headerName: "Actions",
@@ -203,7 +230,7 @@ const UnderInvestigation = () => {
         );
         },
     };
-
+  
     const [listApprovalItem, setListApprovalItem] = useState([]);
     const [listApprovalItemDisabled, setListApprovalItemDisabled] = useState(false);
     const [listDesignationData, setListDesignationData] = useState([]);
@@ -211,54 +238,48 @@ const UnderInvestigation = () => {
     const [listRandomApprovalId, setListRandomApprovalId] = useState(0);
 
     const [listApprovalSaveData, setListApprovalSaveData] = useState({});
+  
 
+  const handleApprovalSaveData = (name, value) => {
+    setApprovalSaveData({
+      ...approvalSaveData,
+      [name]: value,
+    });
+  };
 
-    const [approvalItem, setApprovalItem] = useState([]);
-    const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
-    const [designationData, setDesignationData] = useState([]);
+  const [showPtCaseModal, setShowPtCaseModal] = useState(false);
+  const [ptCaseTableName, setPtCaseTableName] = useState(null);
+  const [ptCaseTemplateName, setPtCaseTemplateName] = useState(null);
 
-    const [randomApprovalId, setRandomApprovalId] = useState(0);
+  const [selectedRowData, setSelectedRowData] = useState(null);
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
-    const [approvalSaveData, setApprovalSaveData] = useState({});
+  const [totalPage, setTotalPage] = useState(0);
+  const [totalRecord, setTotalRecord] = useState(0);
 
-    const handleApprovalSaveData = (name, value) => {
-        setApprovalSaveData({
-        ...approvalSaveData,
-        [name]: value,
-        });
-    };
+  // filter states
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const [filterDropdownObj, setfilterDropdownObj] = useState([]);
+  const [filterValues, setFilterValues] = useState({});
+  const [fromDateValue, setFromDateValue] = useState(null);
+  const [toDateValue, setToDateValue] = useState(null);
+  const [forceTableLoad, setForceTableLoad] = useState(false);
 
-    const [showPtCaseModal, setShowPtCaseModal] = useState(false);
-    const [ptCaseTableName, setPtCaseTableName] = useState(null);
-    const [ptCaseTemplateName, setPtCaseTemplateName] = useState(null);
+  const [furtherInvestigationPtCase, setFurtherInvestigationPtCase] =
+    useState(false);
+  const [furtherInvestigationSelectedRow, setFurtherInvestigationSelectedRow] =
+    useState([]);
+  const [
+    furtherInvestigationSelectedValue,
+    setFurtherInvestigationSelectedValue,
+  ] = useState(null);
 
-    const [selectedRowData, setSelectedRowData] = useState(null);
-    const [uploadedFiles, setUploadedFiles] = useState([]);
-
-    const [totalPage, setTotalPage] = useState(0);
-    const [totalRecord, setTotalRecord] = useState(0);
-
-    // filter states
-    const [showFilterModal, setShowFilterModal] = useState(false);
-    const [filterDropdownObj, setfilterDropdownObj] = useState([]);
-    const [filterValues, setFilterValues] = useState({});
-    const [fromDateValue, setFromDateValue] = useState(null);
-    const [toDateValue, setToDateValue] = useState(null);
-    const [forceTableLoad, setForceTableLoad] = useState(false);
-
-    const [furtherInvestigationPtCase, setFurtherInvestigationPtCase] = useState(false);
-    const [furtherInvestigationSelectedRow, setFurtherInvestigationSelectedRow] = useState([]);
-    const [
-        furtherInvestigationSelectedValue,
-        setFurtherInvestigationSelectedValue,
-    ] = useState(null);
-
-    // for pdf download
-    const [isDownloadPdf, setIsDownloadPdf] = useState(false);
-    const [downloadPdfFields, setDownloadPdfFields] = useState({});
-    const [downloadPdfData, setDownloadPdfData] = useState([]);
-    const [isPrint, setIsPrint] = useState(false);
-    const [selectedIds, setSelectedIds] = useState([]);
+  // for pdf download
+  const [isDownloadPdf, setIsDownloadPdf] = useState(false);
+  const [downloadPdfFields, setDownloadPdfFields] = useState({});
+  const [downloadPdfData, setDownloadPdfData] = useState([]);
+  const [isPrint, setIsPrint] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
 
 
     const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
@@ -378,80 +399,98 @@ const UnderInvestigation = () => {
         }
     };
 
-    const toggleSelectRow = (id) => {
-        setSelectedIds((prevSelectedIds) => {
-        const updated = prevSelectedIds.includes(id)
-            ? prevSelectedIds.filter((selectedId) => selectedId !== id)
-            : [...prevSelectedIds, id];
+  const toggleSelectRow = (id) => {
+    setSelectedIds((prevSelectedIds) => {
+      const updated = prevSelectedIds.includes(id)
+        ? prevSelectedIds.filter((selectedId) => selectedId !== id)
+        : [...prevSelectedIds, id];
 
-        return updated;
-        });
+      return updated;
+    });
+  };
+
+  const handleOnSavePdf = () => {
+    setIsDownloadPdf(false);
+    setLoading(false);
+    setIsPrint(false);
+  };
+
+  const getPdfContentData = async (rowData, isPrint, table_name) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check Table Name", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    var viewTemplatePayload = {
+      table_name: table_name,
+      id: rowData.id,
     };
+    setLoading(true);
 
-    const handleOnSavePdf = () => {
-        setIsDownloadPdf(false);
-        setLoading(false);
-        setIsPrint(false);
-    };
+    try {
+      const viewTemplateData = await api.post(
+        "/templateData/viewMagazineTemplateData",
+        viewTemplatePayload
+      );
+      setLoading(false);
 
-    const getPdfContentData = async (rowData, isPrint, table_name) => {
-        if (!table_name || table_name === "") {
-        toast.warning("Please Check Table Name", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-
-        var viewTemplatePayload = {
-        table_name: table_name,
-        id: rowData.id,
+      if (viewTemplateData && viewTemplateData.success) {
+        const viewTableData = {
+          table_name: table_name,
         };
+
         setLoading(true);
-
         try {
-        const viewTemplateData = await api.post(
-            "/templateData/viewMagazineTemplateData",
-            viewTemplatePayload
-        );
-        setLoading(false);
+          const viewTemplateResponse = await api.post(
+            "/templates/viewTemplate",
+            viewTableData
+          );
+          setLoading(false);
 
-        if (viewTemplateData && viewTemplateData.success) {
-            const viewTableData = {
-            table_name: table_name,
-            };
-
-            setLoading(true);
-            try {
-            const viewTemplateResponse = await api.post(
-                "/templates/viewTemplate",
-                viewTableData
+          if (viewTemplateResponse && viewTemplateResponse.success) {
+            setDownloadPdfData(
+              viewTemplateData.data ? viewTemplateData.data : {}
             );
-            setLoading(false);
-
-            if (viewTemplateResponse && viewTemplateResponse.success) {
-                setDownloadPdfData(
-                viewTemplateData.data ? viewTemplateData.data : {}
-                );
-                setDownloadPdfFields(
-                viewTemplateResponse.data["fields"]
-                    ? viewTemplateResponse.data["fields"]
-                    : []
-                );
-                setIsDownloadPdf(true);
-                setLoading(true);
-                setIsPrint(isPrint);
-            } else {
-                const errorMessage = viewTemplateResponse.message
-                ? viewTemplateResponse.message
-                : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
+            setDownloadPdfFields(
+              viewTemplateResponse.data["fields"]
+                ? viewTemplateResponse.data["fields"]
+                : []
+            );
+            setIsDownloadPdf(true);
+            setLoading(true);
+            setIsPrint(isPrint);
+          } else {
+            const errorMessage = viewTemplateResponse.message
+              ? viewTemplateResponse.message
+              : "Failed to delete the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -460,33 +499,34 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-error",
-                });
-            }
-            } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                }
-                );
-            }
-            }
-        } else {
-            const errorMessage = viewTemplateData.message
-            ? viewTemplateData.message
-            : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
+              }
+            );
+          }
+        }
+      } else {
+        const errorMessage = viewTemplateData.message
+          ? viewTemplateData.message
+          : "Failed to create the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -495,32 +535,14 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
+          }
+        );
+      }
+    }
+  };
 
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
+  // change sys_status
 
-    // change sys_status
     const changeSysStatus = async (data, value, text)=>{
 
         if((data.pt_case_id !== null && data.pt_case_id !== undefined) || value === 'Reinvestigation'){
@@ -1053,87 +1075,104 @@ const UnderInvestigation = () => {
             }
         }
     }
+  const handleTemplateDataView = async (rowData, editData, table_name) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check Table Name", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
 
-    const handleTemplateDataView = async (rowData, editData, table_name) => {
-        if (!table_name || table_name === "") {
-        toast.warning("Please Check Table Name", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
+    var viewTemplatePayload = {
+      table_name: table_name,
+      id: rowData.id,
+    };
+    setLoading(true);
+    try {
+      const viewTemplateData = await api.post(
+        "/templateData/viewTemplateData",
+        viewTemplatePayload
+      );
+      setLoading(false);
 
-        var viewTemplatePayload = {
-        table_name: table_name,
-        id: rowData.id,
+      if (viewTemplateData && viewTemplateData.success) {
+        setInitialData(viewTemplateData.data ? viewTemplateData.data : {});
+        setviewReadonly(!editData);
+        setEditTemplateData(editData);
+        setLinkLeader(false);
+        setLinkOrganization(false);
+        setSelectedRowId(null);
+        setSelectedTemplateId(null);
+
+        const viewTableData = {
+          table_name: table_name,
         };
+
         setLoading(true);
         try {
-        const viewTemplateData = await api.post(
-            "/templateData/viewTemplateData",
-            viewTemplatePayload
-        );
-        setLoading(false);
+          const viewTemplateResponse = await api.post(
+            "/templates/viewTemplate",
+            viewTableData
+          );
+          setLoading(false);
 
-        if (viewTemplateData && viewTemplateData.success) {
-            setInitialData(viewTemplateData.data ? viewTemplateData.data : {});
-            setviewReadonly(!editData);
-            setEditTemplateData(editData);
-            setLinkLeader(false);
-            setLinkOrganization(false);
-            setSelectedRowId(null);
-            setSelectedTemplateId(null);
+          if (viewTemplateResponse && viewTemplateResponse.success) {
+            if (viewTemplateResponse["data"].is_link_to_leader === true) {
+              setLinkLeader(true);
+            } else if (
+              viewTemplateResponse["data"].is_link_to_organization === true
+            ) {
+              setLinkOrganization(true);
+            }
 
-            const viewTableData = {
-            table_name: table_name,
-            };
-
-            setLoading(true);
-            try {
-            const viewTemplateResponse = await api.post(
-                "/templates/viewTemplate",
-                viewTableData
+            setFormOpen(true);
+            setSelectedRowId(rowData.id);
+            setSelectedTemplateId(viewTemplateResponse["data"].template_id);
+            setFormTemplateData(
+              viewTemplateResponse.data["fields"]
+                ? viewTemplateResponse.data["fields"]
+                : []
             );
-            setLoading(false);
-
-            if (viewTemplateResponse && viewTemplateResponse.success) {
-                if (viewTemplateResponse["data"].is_link_to_leader === true) {
-                setLinkLeader(true);
-                } else if (
-                viewTemplateResponse["data"].is_link_to_organization === true
-                ) {
-                setLinkOrganization(true);
-                }
-
-                setFormOpen(true);
-                setSelectedRowId(rowData.id);
-                setSelectedTemplateId(viewTemplateResponse["data"].template_id);
-                setFormTemplateData(
-                viewTemplateResponse.data["fields"]
-                    ? viewTemplateResponse.data["fields"]
-                    : []
-                );
-                if (
-                viewTemplateResponse.data.no_of_sections &&
-                viewTemplateResponse.data.no_of_sections > 0
-                ) {
-                setstepperData(
-                    viewTemplateResponse.data.sections
-                    ? viewTemplateResponse.data.sections
-                    : []
-                );
-                }
-            } else {
-                const errorMessage = viewTemplateResponse.message
-                ? viewTemplateResponse.message
-                : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
+            if (
+              viewTemplateResponse.data.no_of_sections &&
+              viewTemplateResponse.data.no_of_sections > 0
+            ) {
+              setstepperData(
+                viewTemplateResponse.data.sections
+                  ? viewTemplateResponse.data.sections
+                  : []
+              );
+            }
+          } else {
+            const errorMessage = viewTemplateResponse.message
+              ? viewTemplateResponse.message
+              : "Failed to delete the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -1142,33 +1181,33 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-error",
-                });
-            }
-            } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                }
-                );
-            }
-            }
-        } else {
-            const errorMessage = viewTemplateData.message
-            ? viewTemplateData.message
-            : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
+              }
+            );
+          }
+        }
+      } else {
+        const errorMessage = viewTemplateData.message
+          ? viewTemplateData.message
+          : "Failed to create the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -1177,29 +1216,11 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
+          }
+        );
+      }
+    }
+  };
 
     const handleCheckboxChangeField = (event, row) => {
         const isSelected = event.target.checked;
@@ -1214,7 +1235,6 @@ const UnderInvestigation = () => {
             setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id));
         }
     };
-
     useEffect(() => {
         const anySelected = tableData.some((data) => data.isSelected);
         setIsCheckboxSelected(anySelected);
@@ -1505,38 +1525,38 @@ const UnderInvestigation = () => {
         }
     };
 
-    const tableCellRender = (key, params, value, index, tableName) => {
-        if (params?.row?.attachments) {
-        var attachmentField = params.row.attachments.find(
-            (data) => data.field_name === key
-        );
-        if (attachmentField) {
-            return fileUploadTableView(key, params, params.value);
-        }
-        }
+  const tableCellRender = (key, params, value, index, tableName) => {
+    if (params?.row?.attachments) {
+      var attachmentField = params.row.attachments.find(
+        (data) => data.field_name === key
+      );
+      if (attachmentField) {
+        return fileUploadTableView(key, params, params.value);
+      }
+    }
 
-        let highlightColor = {};
-        let onClickHandler = null;
+    let highlightColor = {};
+    let onClickHandler = null;
 
-        if (tableName && index !== null && index === 0) {
-            highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
+    if (tableName && index !== null && index === 0) {
+        highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
-            onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
-        }
+        onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
+    }
 
 
-        return (
-            <Tooltip title={value} placement="top">
-                <span
-                    style={highlightColor}
-                    onClick={onClickHandler}
-                    className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
-                >
-                    {value}
-                </span>
-            </Tooltip>
-        );
-    };
+    return (
+        <Tooltip title={value} placement="top">
+            <span
+                style={highlightColor}
+                onClick={onClickHandler}
+                className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+            >
+                {value}
+            </span>
+        </Tooltip>
+    );
+  };
 
     const tableHeaderRender = (params, key)=>{
         return (
@@ -1560,362 +1580,99 @@ const UnderInvestigation = () => {
         )
     }
 
-    const hyperLinkShow = async (params) => {
-        if (!params.table || !params.id) {
-        toast.error("Invalid Data Please Try Again !", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        return;
-        }
+  const hyperLinkShow = async (params) => {
+    if (!params.table || !params.id) {
+      toast.error("Invalid Data Please Try Again !", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-        const hyperLinkPayload = {
-        table_name: params.table,
-        id: params.id,
-        };
-
-        setLoading(true);
-
-        try {
-        const hyperLinkResponse = await api.post(
-            "templateData/viewMagazineTemplateData",
-            hyperLinkPayload
-        );
-        setLoading(false);
-
-        if (hyperLinkResponse && hyperLinkResponse.success) {
-            const viewTableData = {
-            table_name: params.table,
-            };
-
-            setLoading(true);
-            try {
-            const viewTemplateResponse = await api.post(
-                "/templates/viewTemplate",
-                viewTableData
-            );
-            setLoading(false);
-
-            if (viewTemplateResponse && viewTemplateResponse.success) {
-                navigate("/profile-view", {
-                state: {
-                    formData: hyperLinkResponse.data ? hyperLinkResponse.data : {},
-                    fields: viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [],
-                    profileDatapagination: paginationCount,
-                    table_name: params.table,
-                    hyperLinkTableName: searchParams.get("tableName") ? searchParams.get("tableName") : table_name,
-                    template_name: template_name,
-                    table_row_id: searchParams.get("id") ? searchParams.get("id") : params.id,
-                    template_id: viewTemplateResponse.data["template_id"] ? viewTemplateResponse.data["template_id"] : "",
-                    linkToLeader: viewTemplateResponse["data"].is_link_to_leader ? viewTemplateResponse["data"].is_link_to_leader : false,
-                    linkToOrganization: viewTemplateResponse["data"].is_link_to_organization ? viewTemplateResponse["data"].is_link_to_organization : false,
-                },
-                });
-            } else {
-                const errorMessage = viewTemplateResponse.message
-                ? viewTemplateResponse.message
-                : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-                });
-            }
-            } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                }
-                );
-            }
-            }
-        } else {
-            const errorMessage = hyperLinkResponse.message
-            ? hyperLinkResponse.message
-            : "Failed to get data. Please try again.";
-            toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
+    const hyperLinkPayload = {
+      table_name: params.table,
+      id: params.id,
     };
 
-    const getFileIcon = (fileName) => {
-        fileName = fileName.split(".").pop().toLowerCase();
-        switch (fileName) {
-        case "pdf":
-            return <img src={pdfIcon} />;
-        case "jpg":
-        case "jpeg":
-            return <img src={jpgIcon} />;
-        case "png":
-        case "svg":
-        case "gif":
-            return <img src={pngIcon} />;
-        case "xls":
-        case "xlsx":
-            return <img src={xlsIcon} />;
-        case "csv":
-        case "docx":
-        case "doc":
-            return <img src={docIcon} />;
-        case "ppt":
-            return <img src={pptIcon} />;
-        default:
-            return <InsertDriveFileIcon />;
-        }
-    };
+    setLoading(true);
 
-    const fileUploadTableView = (type, rowData, attachment) => {
-        if (attachment && attachment !== "") {
-        var separateAttachment = attachment.split(",");
-        return (
-            <Box
-            mt={1}
-            sx={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
-            onClick={(e) => {
-                e.stopPropagation();
-                showAttachmentFileModal(type, rowData.row);
-            }}
-            >
-            <Box className="Roboto attachmentTableBox">
-                <span style={{ display: "flex" }}>
-                {getFileIcon(separateAttachment[0])}
-                </span>
-                <span className="Roboto attachmentTableName">
-                {separateAttachment[0]}
-                </span>
-            </Box>
-            {separateAttachment.length > 1 && (
-                <button className="Roboto attachmentTableBtn">
-                {separateAttachment.length - 1}+
-                </button>
-            )}
-            </Box>
-        );
-        }
-    };
+    try {
+      const hyperLinkResponse = await api.post(
+        "templateData/viewMagazineTemplateData",
+        hyperLinkPayload
+      );
+      setLoading(false);
 
-    const showAttachmentFileModal = (type, row) => {
-        if (row[type]) {
-        var attachments = row[type].split(",");
-        setShowAttachmentModal(true);
-        setShowAttachmentKey(row);
-        setShowAttachmentData(attachments);
-        } else {
-        console.log("no attachments found");
-        }
-    };
-
-    const handleDeleteTemplateData = (rowData, table_name) => {
-        Swal.fire({
-        title: "Are you sure?",
-        text: "Do you want to delete this profile ?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Delete it!",
-        cancelButtonText: "No",
-        }).then(async (result) => {
-        if (result.isConfirmed) {
-            const deleteTemplateData = {
-            table_name: table_name,
-            where: { id: rowData.id },
-            };
-            setLoading(true);
-
-            try {
-            const deleteTemplateDataResponse = await api.post(
-                "templateData/deleteTemplateData",
-                deleteTemplateData
-            );
-            setLoading(false);
-
-            if (
-                deleteTemplateDataResponse &&
-                deleteTemplateDataResponse.success
-            ) {
-                toast.success(
-                deleteTemplateDataResponse.message
-                    ? deleteTemplateDataResponse.message
-                    : "Template Deleted Successfully",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount),
-                }
-                );
-            } else {
-                const errorMessage = deleteTemplateDataResponse.message
-                ? deleteTemplateDataResponse.message
-                : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-                });
-            }
-            } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                }
-                );
-            }
-            }
-        } else {
-            console.log("Template deletion canceled.");
-        }
-        });
-    };
-
-    const ApplySortTable = (key) => {
-        settableSortOption((prevOption) =>
-        prevOption === "DESC" ? "ASC" : "DESC"
-        );
-        setTableSortKey(key);
-    };
-
-    const getTemplate = async (table_name) => {
-        if (!table_name || table_name === "") {
-        toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-
+      if (hyperLinkResponse && hyperLinkResponse.success) {
         const viewTableData = {
-        table_name: table_name,
+          table_name: params.table,
         };
-        setLoading(true);
 
+        setLoading(true);
         try {
-        const viewTemplateResponse = await api.post(
+          const viewTemplateResponse = await api.post(
             "/templates/viewTemplate",
             viewTableData
-        );
-        setLoading(false);
-        if (viewTemplateResponse && viewTemplateResponse.success) {
-            setFormOpen(true);
-            setInitialData({});
-            setviewReadonly(false);
-            setEditTemplateData(false);
-            setFormTemplateData(
-            viewTemplateResponse.data["fields"]
-                ? viewTemplateResponse.data["fields"]
-                : []
-            );
-            if (
-            viewTemplateResponse.data.no_of_sections &&
-            viewTemplateResponse.data.no_of_sections > 0
-            ) {
-            setstepperData(
-                viewTemplateResponse.data.sections
-                ? viewTemplateResponse.data.sections
-                : []
-            );
-            }
-        } else {
-            const errorMessage = viewTemplateResponse.message
-            ? viewTemplateResponse.message
-            : "Failed to delete the template. Please try again.";
-            toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
+          );
+          setLoading(false);
+
+          if (viewTemplateResponse && viewTemplateResponse.success) {
+            navigate("/profile-view", {
+              state: {
+                formData: hyperLinkResponse.data ? hyperLinkResponse.data : {},
+                fields: viewTemplateResponse.data["fields"]
+                  ? viewTemplateResponse.data["fields"]
+                  : [],
+                profileDatapagination: paginationCount,
+                table_name: params.table,
+                hyperLinkTableName: searchParams.get("tableName")
+                  ? searchParams.get("tableName")
+                  : table_name,
+                template_name: template_name,
+                table_row_id: searchParams.get("id")
+                  ? searchParams.get("id")
+                  : params.id,
+                template_id: viewTemplateResponse.data["template_id"]
+                  ? viewTemplateResponse.data["template_id"]
+                  : "",
+                linkToLeader: viewTemplateResponse["data"].is_link_to_leader
+                  ? viewTemplateResponse["data"].is_link_to_leader
+                  : false,
+                linkToOrganization: viewTemplateResponse["data"]
+                  .is_link_to_organization
+                  ? viewTemplateResponse["data"].is_link_to_organization
+                  : false,
+              },
             });
-        }
+          } else {
+            const errorMessage = viewTemplateResponse.message
+              ? viewTemplateResponse.message
+              : "Failed to delete the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
         } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
             toast.error(
-            error.response["data"].message
+              error.response["data"].message
                 ? error.response["data"].message
                 : "Please Try Again !",
-            {
+              {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -1924,100 +1681,33 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-error",
-            }
+              }
             );
+          }
         }
-        }
-    };
-
-    const showOptionTemplate = async (tableName) => {
-        if (!tableName || tableName === "") {
-        toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
+      } else {
+        const errorMessage = hyperLinkResponse.message
+          ? hyperLinkResponse.message
+          : "Failed to get data. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
         });
-        return;
-        }
-
-        const viewTableData = {
-        table_name: tableName,
-        };
-        setLoading(true);
-        setOtherReadOnlyTemplateData(false);
-        try {
-        const viewTemplateResponse = await api.post(
-            "/templates/viewTemplate",
-            viewTableData
-        );
-
-        setLoading(false);
-        if (viewTemplateResponse && viewTemplateResponse.success) {
-            var caseFields = [];
-            const userId = localStorage.getItem("user_id");
-
-            var getCaseIdFields = viewTemplateResponse.data["fields"].map(
-            (field) => {
-
-                if (
-                field.name === "field_assigned_by" &&
-                field.formType === "Dropdown" &&
-                field.options &&
-                Array.isArray(field.options)
-                ) {
-                const matchedOption = field.options.find(
-                    (opt) => String(opt.code) === String(userId)
-                );
-        
-                if (matchedOption) {
-                    field.defaultValue = matchedOption.code;
-                    field.disabled = true;
-                } else {
-                    console.warn("No matching user found in dropdown options for user_id:", userId);
-                }
-                }
-    
-                if (field && field.table && field.table === table_name) {
-                caseFields = field;
-                field.disabled = true;
-                }
-
-                return field;
-            }
-            );
-
-            var initialData = {};
-            if (caseFields && caseFields["name"]) {
-            initialData = {
-                [caseFields["name"]]: selectedRowData.id,
-            };
-            }
-
-            setOtherFormOpen(true);
-            setOtherInitialTemplateData(initialData);
-            setviewReadonly(false);
-            setEditTemplateData(false);
-            setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
-            if (
-            viewTemplateResponse.data.no_of_sections &&
-            viewTemplateResponse.data.no_of_sections > 0
-            ) {
-            setOptionStepperData(
-                viewTemplateResponse.data.sections
-                ? viewTemplateResponse.data.sections
-                : []
-            );
-            }
-        } else {
-            const errorMessage = viewTemplateResponse.message
-            ? viewTemplateResponse.message
-            : "Failed to delete the template. Please try again.";
-            toast.error(errorMessage, {
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -2026,138 +1716,111 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
-
-    const handleUpdatePdfClick = async ({
-        selectedOtherTemplate,
-        selectedRowData,
-        selectedIds,
-        prUpdatePdf,
-    }) => {
-        const getTemplatePayload = {
-        table_name: selectedOtherTemplate?.table,
-        ui_case_id: selectedRowData?.id,
-        };
-    
-        setLoading(true);
-        try {
-        const getTemplateResponse = await api.post(
-            "/templateData/getTemplateData",
-            getTemplatePayload
+          }
         );
-        setLoading(false);
-    
-        if (getTemplateResponse && getTemplateResponse.success) {
-            const dataToAppend = getTemplateResponse.data.filter(
-            (item) => item.field_pr_status === "No"
-            );
-    
-            if (!selectedIds || selectedIds.length === 0) {
-            toast.error("Please choose a record to append.", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-            }
-    
-            const filteredDataToAppend = dataToAppend.filter(
-            (item) =>
-                selectedIds.includes(item.id) && item.field_pr_status === "No"
-            );
-    
-            if (filteredDataToAppend.length > 0) {
-            const appendText = JSON.stringify(filteredDataToAppend);
-            await prUpdatePdf({ appendText });
-            } else {
-            toast.error("Already this records are Updated to PDF", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            }
-        } else {
-            toast.error("Failed to fetch template data. Please try again.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        toast.error("Error fetching template data. Please try again.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        }
-    };
-    
-    const prUpdatePdf = async (data) => {
-        try {
+      }
+    }
+  };
+
+  const getFileIcon = (fileName) => {
+    fileName = fileName.split(".").pop().toLowerCase();
+    switch (fileName) {
+      case "pdf":
+        return <img src={pdfIcon} />;
+      case "jpg":
+      case "jpeg":
+        return <img src={jpgIcon} />;
+      case "png":
+      case "svg":
+      case "gif":
+        return <img src={pngIcon} />;
+      case "xls":
+      case "xlsx":
+        return <img src={xlsIcon} />;
+      case "csv":
+      case "docx":
+      case "doc":
+        return <img src={docIcon} />;
+      case "ppt":
+        return <img src={pptIcon} />;
+      default:
+        return <InsertDriveFileIcon />;
+    }
+  };
+
+  const fileUploadTableView = (type, rowData, attachment) => {
+    if (attachment && attachment !== "") {
+      var separateAttachment = attachment.split(",");
+      return (
+        <Box
+          mt={1}
+          sx={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            showAttachmentFileModal(type, rowData.row);
+          }}
+        >
+          <Box className="Roboto attachmentTableBox">
+            <span style={{ display: "flex" }}>
+              {getFileIcon(separateAttachment[0])}
+            </span>
+            <span className="Roboto attachmentTableName">
+              {separateAttachment[0]}
+            </span>
+          </Box>
+          {separateAttachment.length > 1 && (
+            <button className="Roboto attachmentTableBtn">
+              {separateAttachment.length - 1}+
+            </button>
+          )}
+        </Box>
+      );
+    }
+  };
+
+  const showAttachmentFileModal = (type, row) => {
+    if (row[type]) {
+      var attachments = row[type].split(",");
+      setShowAttachmentModal(true);
+      setShowAttachmentKey(row);
+      setShowAttachmentData(attachments);
+    } else {
+      console.log("no attachments found");
+    }
+  };
+
+  const handleDeleteTemplateData = (rowData, table_name) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this profile ?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Delete it!",
+      cancelButtonText: "No",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const deleteTemplateData = {
+          table_name: table_name,
+          where: { id: rowData.id },
+        };
         setLoading(true);
 
-        const parsedAppendText = JSON.parse(data.appendText);
+        try {
+          const deleteTemplateDataResponse = await api.post(
+            "templateData/deleteTemplateData",
+            deleteTemplateData
+          );
+          setLoading(false);
 
-        const payload = {
-            selected_row_id: selectedIds,
-            ui_case_id: parsedAppendText[0]?.field_ui_case_id,
-            appendText: JSON.stringify(parsedAppendText),
-        };
-
-        const saveTemplateData = await api.post(
-            "/templateData/appendToLastLineOfPDF",
-            payload
-        );
-
-        setLoading(false);
-
-        if (saveTemplateData && saveTemplateData.success) {
+          if (
+            deleteTemplateDataResponse &&
+            deleteTemplateDataResponse.success
+          ) {
             toast.success(
-            saveTemplateData.message || "Data appended successfully.",
-            {
+              deleteTemplateDataResponse.message
+                ? deleteTemplateDataResponse.message
+                : "Template Deleted Successfully",
+              {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -2166,29 +1829,126 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
-            }
+                onOpen: () => loadTableData(paginationCount),
+              }
             );
-            setOtherTemplateModalOpen(false);
-            setSelectedIds([]);
-        } else {
-            const errorMessage =
-            saveTemplateData.message ||
-            "Failed to append data. Please try again.";
+          } else {
+            const errorMessage = deleteTemplateDataResponse.message
+              ? deleteTemplateDataResponse.message
+              : "Failed to delete the template. Please try again.";
             toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
             });
-        }
+          }
         } catch (error) {
-        setLoading(false);
-        if (error?.response?.data) {
-            toast.error(error.response.data.message || "Please try again!", {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              }
+            );
+          }
+        }
+      } else {
+        console.log("Template deletion canceled.");
+      }
+    });
+  };
+
+  const ApplySortTable = (key) => {
+    settableSortOption((prevOption) =>
+      prevOption === "DESC" ? "ASC" : "DESC"
+    );
+    setTableSortKey(key);
+  };
+
+  const getTemplate = async (table_name) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    const viewTableData = {
+      table_name: table_name,
+    };
+    setLoading(true);
+
+    try {
+      const viewTemplateResponse = await api.post(
+        "/templates/viewTemplate",
+        viewTableData
+      );
+      setLoading(false);
+      if (viewTemplateResponse && viewTemplateResponse.success) {
+        setFormOpen(true);
+        setInitialData({});
+        setviewReadonly(false);
+        setEditTemplateData(false);
+        setFormTemplateData(
+          viewTemplateResponse.data["fields"]
+            ? viewTemplateResponse.data["fields"]
+            : []
+        );
+        if (
+          viewTemplateResponse.data.no_of_sections &&
+          viewTemplateResponse.data.no_of_sections > 0
+        ) {
+          setstepperData(
+            viewTemplateResponse.data.sections
+              ? viewTemplateResponse.data.sections
+              : []
+          );
+        }
+      } else {
+        const errorMessage = viewTemplateResponse.message
+          ? viewTemplateResponse.message
+          : "Failed to delete the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -2197,126 +1957,241 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-            });
-        }
-        }
+          }
+        );
+      }
+    }
+  };
+
+  const showOptionTemplate = async (tableName) => {
+    if (!tableName || tableName === "") {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    const viewTableData = {
+      table_name: tableName,
     };
+    setLoading(true);
+    setOtherReadOnlyTemplateData(false);
+    try {
+      const viewTemplateResponse = await api.post(
+        "/templates/viewTemplate",
+        viewTableData
+      );
 
-    const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
-        if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
-        toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
+      setLoading(false);
+      if (viewTemplateResponse && viewTemplateResponse.success) {
+        var caseFields = [];
+        const userId = localStorage.getItem("user_id");
+
+        var getCaseIdFields = viewTemplateResponse.data["fields"].map(
+          (field) => {
+
+            if (
+              field.name === "field_assigned_by" &&
+              field.formType === "Dropdown" &&
+              field.options &&
+              Array.isArray(field.options)
+            ) {
+              const matchedOption = field.options.find(
+                (opt) => String(opt.code) === String(userId)
+              );
+    
+              if (matchedOption) {
+                field.defaultValue = matchedOption.code;
+                field.disabled = true;
+              } else {
+                console.warn("No matching user found in dropdown options for user_id:", userId);
+              }
+            }
+  
+            if (field && field.table && field.table === table_name) {
+              caseFields = field;
+              field.disabled = true;
+            }
+
+            return field;
+          }
+        );
+
+        var initialData = {};
+        if (caseFields && caseFields["name"]) {
+          initialData = {
+            [caseFields["name"]]: selectedRowData.id,
+          };
         }
 
-        if (Object.keys(data).length === 0) {
-        toast.warning("Data Is Empty Please Check Once", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-
+        setOtherFormOpen(true);
+        setOtherInitialTemplateData(initialData);
+        setviewReadonly(false);
+        setEditTemplateData(false);
+        setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
         if (
-        selectedOtherTemplate &&
-        selectedOtherTemplate.is_approval &&
-        !alreadySavedApproval
+          viewTemplateResponse.data.no_of_sections &&
+          viewTemplateResponse.data.no_of_sections > 0
         ) {
-        showApprovalPage(selectedRow);
-        setTemplateApprovalData(data);
-        setTemplateApproval(true);
-        return;
+          setOptionStepperData(
+            viewTemplateResponse.data.sections
+              ? viewTemplateResponse.data.sections
+              : []
+          );
         }
-
-        const formData = new FormData();
-        formData.append(
-        "table_name",
-        showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table
-        );
-
-        var normalData = {}; // Non-file upload fields
-
-        optionFormTemplateData.forEach((field) => {
-        if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-            // Append file fields to formData
-            if (field.type === "file") {
-                if (Array.isArray(data[field.name])) {
-                const hasFileInstance = data[field.name].some(
-                    (file) => file.filename instanceof File
-                );
-                var filteredArray = data[field.name].filter(
-                    (file) => file.filename instanceof File
-                );
-                if (hasFileInstance) {
-                    data[field.name].forEach((file) => {
-                    if (file.filename instanceof File) {
-                        formData.append(field.name, file.filename);
-                    }
-                    });
-
-                    filteredArray = filteredArray.map((obj) => {
-                    return {
-                        ...obj,
-                        filename: obj.filename["name"],
-                    };
-                    });
-
-                    formData.append(
-                    "folder_attachment_ids",
-                    JSON.stringify(filteredArray)
-                    );
-                }
-                }
-            } else {
-                formData.append(field.name, data[field.name]);
-            }
-            } else {
-            // Add non-file fields to normalData
-            normalData[field.name] =
-                field.type === "checkbox" || field.type === "multidropdown"
-                ? Array.isArray(data[field.name])
-                    ? data[field.name].join(",")
-                    : data[field.name]
-                : data[field.name];
-            }
-        }
+      } else {
+        const errorMessage = viewTemplateResponse.message
+          ? viewTemplateResponse.message
+          : "Failed to delete the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
         });
-
-        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
-        normalData["field_pr_status"] = "No";
-        }
-        normalData.sys_status = showPtCaseModal ? "pt_case" : "ui_case";
-        normalData["ui_case_id"] = selectedRowData.id;
-        formData.append("data", JSON.stringify(normalData));
-        setLoading(true);
-
-        try {
-        let saveTemplateData;
-        saveTemplateData = await api.post(
-            "/templateData/insertTemplateData",
-            formData
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          }
         );
-        setLoading(false);
+      }
+    }
+  };
 
-        localStorage.removeItem(selectedOtherTemplate.name + "-formData");
 
-        if (saveTemplateData && saveTemplateData.success) {
-            toast.success(saveTemplateData.message || "Data Created Successfully", {
+  const handleUpdatePdfClick = async ({
+    selectedOtherTemplate,
+    selectedRowData,
+    selectedIds,
+    prUpdatePdf,
+  }) => {
+    const getTemplatePayload = {
+      table_name: selectedOtherTemplate?.table,
+      ui_case_id: selectedRowData?.id,
+    };
+  
+    setLoading(true);
+    try {
+      const getTemplateResponse = await api.post(
+        "/templateData/getTemplateData",
+        getTemplatePayload
+      );
+      setLoading(false);
+  
+      if (getTemplateResponse && getTemplateResponse.success) {
+        const dataToAppend = getTemplateResponse.data.filter(
+          (item) => item.field_pr_status === "No"
+        );
+  
+        if (!selectedIds || selectedIds.length === 0) {
+          toast.error("Please choose a record to append.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-warning",
+          });
+          return;
+        }
+  
+        const filteredDataToAppend = dataToAppend.filter(
+          (item) =>
+            selectedIds.includes(item.id) && item.field_pr_status === "No"
+        );
+  
+        if (filteredDataToAppend.length > 0) {
+          const appendText = JSON.stringify(filteredDataToAppend);
+          await prUpdatePdf({ appendText });
+        } else {
+          toast.error("Already this records are Updated to PDF", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-warning",
+          });
+        }
+      } else {
+        toast.error("Failed to fetch template data. Please try again.", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      toast.error("Error fetching template data. Please try again.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+    }
+  };
+  
+  const prUpdatePdf = async (data) => {
+    try {
+      setLoading(true);
+
+      const parsedAppendText = JSON.parse(data.appendText);
+
+      const payload = {
+        selected_row_id: selectedIds,
+        ui_case_id: parsedAppendText[0]?.field_ui_case_id,
+        appendText: JSON.stringify(parsedAppendText),
+      };
+
+      const saveTemplateData = await api.post(
+        "/templateData/appendToLastLineOfPDF",
+        payload
+      );
+
+      setLoading(false);
+
+      if (saveTemplateData && saveTemplateData.success) {
+        toast.success(
+          saveTemplateData.message || "Data appended successfully.",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -2325,172 +2200,264 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-success",
-            ...(!showPtCaseModal && {
-                onOpen: () =>
-                handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
-            }),
-            });
+          }
+        );
+        setOtherTemplateModalOpen(false);
+        setSelectedIds([]);
+      } else {
+        const errorMessage =
+          saveTemplateData.message ||
+          "Failed to append data. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error?.response?.data) {
+        toast.error(error.response.data.message || "Please try again!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    }
+  };
 
-            setTemplateApprovalData({});
-            setTemplateApproval(false);
-            setAddApproveFlag(false);
-            setApproveTableFlag(false);
-            setApprovalSaveData({});
-            setSelectedIds([]);
+  const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
+    if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
 
-            if (showPtCaseModal) {
-            setPtCaseTableName(null);
-            setShowPtCaseModal(false);
-            setOtherFormOpen(false);
-            setOptionStepperData([]);
-            setOptionFormTemplateData([]);
+    if (Object.keys(data).length === 0) {
+      toast.warning("Data Is Empty Please Check Once", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
 
-            if (
-                selectedOtherTemplate &&
-                selectedOtherTemplate["field"] &&
-                selectedOtherTemplate["field"] !== "field_nature_of_disposal"
-            ) {
-                // update func
-                var combinedData = {
-                id: selectedRow.id,
-                [selectKey.name]: selectedOtherFields.code,
-                };
+    if (
+      selectedOtherTemplate &&
+      selectedOtherTemplate.is_approval &&
+      !alreadySavedApproval
+    ) {
+      showApprovalPage(selectedRow);
+      setTemplateApprovalData(data);
+      setTemplateApproval(true);
+      return;
+    }
 
-                onUpdateTemplateData(combinedData);
+    const formData = new FormData();
+    formData.append(
+      "table_name",
+      showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table
+    );
 
-                // reset states
-                setSelectKey(null);
-                setSelectedRow(null);
-                setOtherTransferField([]);
-                setShowOtherTransferModal(false);
-                setSelectedOtherFields(null);
-                setselectedOtherTemplate(null);
+    var normalData = {}; // Non-file upload fields
 
-                return;
+    optionFormTemplateData.forEach((field) => {
+      if (data[field.name]) {
+        if (field.type === "file" || field.type === "profilepicture") {
+          // Append file fields to formData
+          if (field.type === "file") {
+            if (Array.isArray(data[field.name])) {
+              const hasFileInstance = data[field.name].some(
+                (file) => file.filename instanceof File
+              );
+              var filteredArray = data[field.name].filter(
+                (file) => file.filename instanceof File
+              );
+              if (hasFileInstance) {
+                data[field.name].forEach((file) => {
+                  if (file.filename instanceof File) {
+                    formData.append(field.name, file.filename);
+                  }
+                });
+
+                filteredArray = filteredArray.map((obj) => {
+                  return {
+                    ...obj,
+                    filename: obj.filename["name"],
+                  };
+                });
+
+                formData.append(
+                  "folder_attachment_ids",
+                  JSON.stringify(filteredArray)
+                );
+              }
             }
+          } else {
+            formData.append(field.name, data[field.name]);
+          }
+        } else {
+          // Add non-file fields to normalData
+          normalData[field.name] =
+            field.type === "checkbox" || field.type === "multidropdown"
+              ? Array.isArray(data[field.name])
+                ? data[field.name].join(",")
+                : data[field.name]
+              : data[field.name];
+        }
+      }
+    });
 
-            var payloadSysStatus = {
-                table_name: table_name,
-                data: {
-                id: selectedRow.id,
-                sys_status: "disposal",
-                },
+    if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+      normalData["field_pr_status"] = "No";
+    }
+    normalData.sys_status = showPtCaseModal ? "pt_case" : "ui_case";
+    normalData["ui_case_id"] = selectedRowData.id;
+    formData.append("data", JSON.stringify(normalData));
+    setLoading(true);
+
+    try {
+      let saveTemplateData;
+      saveTemplateData = await api.post(
+        "/templateData/insertTemplateData",
+        formData
+      );
+      setLoading(false);
+
+      localStorage.removeItem(selectedOtherTemplate.name + "-formData");
+
+      if (saveTemplateData && saveTemplateData.success) {
+        toast.success(saveTemplateData.message || "Data Created Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          ...(!showPtCaseModal && {
+            onOpen: () =>
+              handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
+          }),
+        });
+
+        setTemplateApprovalData({});
+        setTemplateApproval(false);
+        setAddApproveFlag(false);
+        setApproveTableFlag(false);
+        setApprovalSaveData({});
+        setSelectedIds([]);
+
+        if (showPtCaseModal) {
+          setPtCaseTableName(null);
+          setShowPtCaseModal(false);
+          setOtherFormOpen(false);
+          setOptionStepperData([]);
+          setOptionFormTemplateData([]);
+
+          if (
+            selectedOtherTemplate &&
+            selectedOtherTemplate["field"] &&
+            selectedOtherTemplate["field"] !== "field_nature_of_disposal"
+          ) {
+            // update func
+            var combinedData = {
+              id: selectedRow.id,
+              [selectKey.name]: selectedOtherFields.code,
             };
 
-            setLoading(true);
-
-            try {
-                const chnageSysStatus = await api.post(
-                "/templateData/caseSysStatusUpdation",
-                payloadSysStatus
-                );
-
-                setLoading(false);
-
-                if (chnageSysStatus && chnageSysStatus.success) {
-                toast.success(
-                    chnageSysStatus.message
-                    ? chnageSysStatus.message
-                    : "Status Changed Successfully",
-                    {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    }
-                );
-
-                // update func
-                var combinedData = {
-                    id: selectedRow.id,
-                    [selectKey.name]: selectedOtherFields.code,
-                };
-
-                onUpdateTemplateData(combinedData);
-
-                // reset states
-                setSelectKey(null);
-                setSelectedRow(null);
-                setOtherTransferField([]);
-                setShowOtherTransferModal(false);
-                setSelectedOtherFields(null);
-                setselectedOtherTemplate(null);
-                } else {
-                const errorMessage = chnageSysStatus.message
-                    ? chnageSysStatus.message
-                    : "Failed to change the status. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-                }
-            } catch (error) {
-                setLoading(false);
-                if (error && error.response && error.response["data"]) {
-                toast.error(
-                    error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                    {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                    }
-                );
-                }
-            }
-            } else {
-            setPtCaseTableName(null);
-            setShowPtCaseModal(false);
-            setOtherFormOpen(false);
-            setOptionStepperData([]);
-            setOptionFormTemplateData([]);
+            onUpdateTemplateData(combinedData);
 
             // reset states
             setSelectKey(null);
+            setSelectedRow(null);
             setOtherTransferField([]);
             setShowOtherTransferModal(false);
             setSelectedOtherFields(null);
             setselectedOtherTemplate(null);
-            }
-        } else {
-            const errorMessage = saveTemplateData.message
-            ? saveTemplateData.message
-            : "Failed to create the profile. Please try again.";
-            toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
+
+            return;
+          }
+
+          var payloadSysStatus = {
+            table_name: table_name,
+            data: {
+              id: selectedRow.id,
+              sys_status: "disposal",
+            },
+          };
+
+          setLoading(true);
+
+          try {
+            const chnageSysStatus = await api.post(
+              "/templateData/caseSysStatusUpdation",
+              payloadSysStatus
+            );
+
+            setLoading(false);
+
+            if (chnageSysStatus && chnageSysStatus.success) {
+              toast.success(
+                chnageSysStatus.message
+                  ? chnageSysStatus.message
+                  : "Status Changed Successfully",
+                {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-success",
+                }
+              );
+
+              // update func
+              var combinedData = {
+                id: selectedRow.id,
+                [selectKey.name]: selectedOtherFields.code,
+              };
+
+              onUpdateTemplateData(combinedData);
+
+              // reset states
+              setSelectKey(null);
+              setSelectedRow(null);
+              setOtherTransferField([]);
+              setShowOtherTransferModal(false);
+              setSelectedOtherFields(null);
+              setselectedOtherTemplate(null);
+            } else {
+              const errorMessage = chnageSysStatus.message
+                ? chnageSysStatus.message
+                : "Failed to change the status. Please try again.";
+              toast.error(errorMessage, {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -2499,16 +2466,65 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-error",
+              });
             }
-            );
-        }
-        }
-    };
+          } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+              toast.error(
+                error.response["data"].message
+                  ? error.response["data"].message
+                  : "Please Try Again !",
+                {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+                }
+              );
+            }
+          }
+        } else {
+          setPtCaseTableName(null);
+          setShowPtCaseModal(false);
+          setOtherFormOpen(false);
+          setOptionStepperData([]);
+          setOptionFormTemplateData([]);
 
-    const otherTemplateUpdateFunc = async (data) => {
-
-        if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
-        toast.warning("Please Check The Template", {
+          // reset states
+          setSelectKey(null);
+          setOtherTransferField([]);
+          setShowOtherTransferModal(false);
+          setSelectedOtherFields(null);
+          setselectedOtherTemplate(null);
+        }
+      } else {
+        const errorMessage = saveTemplateData.message
+          ? saveTemplateData.message
+          : "Failed to create the profile. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -2516,117 +2532,153 @@ const UnderInvestigation = () => {
             pauseOnHover: true,
             draggable: true,
             progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-
-        if (Object.keys(data).length === 0) {
-        toast.warning("Data Is Empty Please Check Once", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-
-        const formData = new FormData();
-
-        formData.append("table_name", selectedOtherTemplate.table);
-        var normalData = {}; // Non-file upload fields
-
-        optionFormTemplateData.forEach((field) => {
-        if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-            // Append file fields to formData
-            if (field.type === "file") {
-                if (Array.isArray(data[field.name])) {
-                const hasFileInstance = data[field.name].some(
-                    (file) => file.filename instanceof File
-                );
-                var filteredArray = data[field.name].filter(
-                    (file) => file.filename instanceof File
-                );
-                if (hasFileInstance) {
-                    data[field.name].forEach((file) => {
-                    if (file.filename instanceof File) {
-                        formData.append(field.name, file.filename);
-                    }
-                    });
-
-                    filteredArray = filteredArray.map((obj) => {
-                    return {
-                        ...obj,
-                        filename: obj.filename["name"],
-                    };
-                    });
-                    formData.append(
-                    "folder_attachment_ids",
-                    JSON.stringify(filteredArray)
-                    );
-                }
-                }
-            } else {
-                formData.append(field.name, data[field.name]);
-            }
-            } else {
-            // Add non-file fields to normalData
-            normalData[field.name] =
-                field.type === "checkbox" || field.type === "multidropdown"
-                ? Array.isArray(data[field.name])
-                    ? data[field.name].join(",")
-                    : data[field.name]
-                : data[field.name];
-            }
-        }
-        });
-
-        formData.append("data", JSON.stringify(normalData));
-        formData.append("id", data.id);
-        setLoading(true);
-
-        try {
-        const saveTemplateData = await api.post(
-            "/templateData/updateTemplateData",
-            formData
+            className: "toast-error",
+          }
         );
-        setLoading(false);
+      }
+    }
+  };
 
-        if (saveTemplateData && saveTemplateData.success) {
-            localStorage.removeItem(selectedOtherTemplate.name + "-formData");
+  const otherTemplateUpdateFunc = async (data) => {
 
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-            onOpen: () =>
-                handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
-            });
+    if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
 
-            setOtherEditTemplateData(false);
-            setOtherReadOnlyTemplateData(false);
+    if (Object.keys(data).length === 0) {
+      toast.warning("Data Is Empty Please Check Once", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
 
-            setTemplateApprovalData({});
-            setTemplateApproval(false);
+    const formData = new FormData();
 
-            setAddApproveFlag(false);
-            setApproveTableFlag(false);
-            setApprovalSaveData({});
+    formData.append("table_name", selectedOtherTemplate.table);
+    var normalData = {}; // Non-file upload fields
+
+    optionFormTemplateData.forEach((field) => {
+      if (data[field.name]) {
+        if (field.type === "file" || field.type === "profilepicture") {
+          // Append file fields to formData
+          if (field.type === "file") {
+            if (Array.isArray(data[field.name])) {
+              const hasFileInstance = data[field.name].some(
+                (file) => file.filename instanceof File
+              );
+              var filteredArray = data[field.name].filter(
+                (file) => file.filename instanceof File
+              );
+              if (hasFileInstance) {
+                data[field.name].forEach((file) => {
+                  if (file.filename instanceof File) {
+                    formData.append(field.name, file.filename);
+                  }
+                });
+
+                filteredArray = filteredArray.map((obj) => {
+                  return {
+                    ...obj,
+                    filename: obj.filename["name"],
+                  };
+                });
+                formData.append(
+                  "folder_attachment_ids",
+                  JSON.stringify(filteredArray)
+                );
+              }
+            }
+          } else {
+            formData.append(field.name, data[field.name]);
+          }
         } else {
-            const errorMessage = saveTemplateData.message
-            ? saveTemplateData.message
-            : "Failed to create the profile. Please try again.";
-            toast.error(errorMessage, {
+          // Add non-file fields to normalData
+          normalData[field.name] =
+            field.type === "checkbox" || field.type === "multidropdown"
+              ? Array.isArray(data[field.name])
+                ? data[field.name].join(",")
+                : data[field.name]
+              : data[field.name];
+        }
+      }
+    });
+
+    formData.append("data", JSON.stringify(normalData));
+    formData.append("id", data.id);
+    setLoading(true);
+
+    try {
+      const saveTemplateData = await api.post(
+        "/templateData/updateTemplateData",
+        formData
+      );
+      setLoading(false);
+
+      if (saveTemplateData && saveTemplateData.success) {
+        localStorage.removeItem(selectedOtherTemplate.name + "-formData");
+
+        toast.success(saveTemplateData.message || "Data Updated Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () =>
+            handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
+        });
+
+        setOtherEditTemplateData(false);
+        setOtherReadOnlyTemplateData(false);
+
+        setTemplateApprovalData({});
+        setTemplateApproval(false);
+
+        setAddApproveFlag(false);
+        setApproveTableFlag(false);
+        setApprovalSaveData({});
+      } else {
+        const errorMessage = saveTemplateData.message
+          ? saveTemplateData.message
+          : "Failed to create the profile. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -2635,120 +2687,120 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
+          }
+        );
+      }
+    }
+  };
+
+  const handleOthersTemplateDataView = async (
+    rowData,
+    editData,
+    table_name
+  ) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check Table Name", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    var viewTemplatePayload = {
+      table_name: table_name,
+      id: rowData.id,
     };
 
-    const handleOthersTemplateDataView = async (
-        rowData,
-        editData,
-        table_name
-    ) => {
-        if (!table_name || table_name === "") {
-        toast.warning("Please Check Table Name", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
+    setLoading(true);
+    try {
+      const viewTemplateData = await api.post(
+        "/templateData/viewTemplateData",
+        viewTemplatePayload
+      );
+      setLoading(false);
 
-        var viewTemplatePayload = {
-        table_name: table_name,
-        id: rowData.id,
+      if (viewTemplateData && viewTemplateData.success) {
+        setOtherInitialTemplateData(
+          viewTemplateData.data ? viewTemplateData.data : {}
+        );
+        setOtherReadOnlyTemplateData(!editData);
+        setOtherEditTemplateData(editData);
+        setOtherRowId(null);
+        setOtherTemplateId(null);
+
+        const viewTableData = {
+          table_name: table_name,
         };
 
         setLoading(true);
         try {
-        const viewTemplateData = await api.post(
-            "/templateData/viewTemplateData",
-            viewTemplatePayload
-        );
-        setLoading(false);
+          const viewTemplateResponse = await api.post(
+            "/templates/viewTemplate",
+            viewTableData
+          );
+          setLoading(false);
 
-        if (viewTemplateData && viewTemplateData.success) {
-            setOtherInitialTemplateData(
-            viewTemplateData.data ? viewTemplateData.data : {}
-            );
-            setOtherReadOnlyTemplateData(!editData);
-            setOtherEditTemplateData(editData);
-            setOtherRowId(null);
-            setOtherTemplateId(null);
+          if (viewTemplateResponse && viewTemplateResponse.success) {
+            const templateData = viewTemplateResponse.data;
+            const rawFields = templateData.fields || [];
+    
+            const processedFields = rawFields.map((field) => {
+              if (
+                field.name === "field_assigned_by" &&
+                editData === true &&
+                templateData.table_name === "cid_ui_case_progress_report"
+              ) {
+                return {
+                  ...field,
+                  disabled: true,
+                };
+              }
+              return field;
+            });
+            setOptionFormTemplateData(processedFields);
 
-            const viewTableData = {
-            table_name: table_name,
-            };
-
-            setLoading(true);
-            try {
-            const viewTemplateResponse = await api.post(
-                "/templates/viewTemplate",
-                viewTableData
-            );
-            setLoading(false);
-
-            if (viewTemplateResponse && viewTemplateResponse.success) {
-                const templateData = viewTemplateResponse.data;
-                const rawFields = templateData.fields || [];
-        
-                const processedFields = rawFields.map((field) => {
-                if (
-                    field.name === "field_assigned_by" &&
-                    editData === true &&
-                    templateData.table_name === "cid_ui_case_progress_report"
-                ) {
-                    return {
-                    ...field,
-                    disabled: true,
-                    };
-                }
-                return field;
-                });
-                setOptionFormTemplateData(processedFields);
-
-                setOtherFormOpen(true);
-                setOtherRowId(rowData.id);
-                setOtherTemplateId(viewTemplateResponse["data"].template_id);
-                if (
-                viewTemplateResponse.data.no_of_sections &&
-                viewTemplateResponse.data.no_of_sections > 0
-                ) {
-                setOptionStepperData(
-                    viewTemplateResponse.data.sections
-                    ? viewTemplateResponse.data.sections
-                    : []
-                );
-                }
-            } else {
-                const errorMessage = viewTemplateResponse.message
-                ? viewTemplateResponse.message
-                : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
+            setOtherFormOpen(true);
+            setOtherRowId(rowData.id);
+            setOtherTemplateId(viewTemplateResponse["data"].template_id);
+            if (
+              viewTemplateResponse.data.no_of_sections &&
+              viewTemplateResponse.data.no_of_sections > 0
+            ) {
+              setOptionStepperData(
+                viewTemplateResponse.data.sections
+                  ? viewTemplateResponse.data.sections
+                  : []
+              );
+            }
+          } else {
+            const errorMessage = viewTemplateResponse.message
+              ? viewTemplateResponse.message
+              : "Failed to delete the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -2757,33 +2809,33 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-error",
-                });
-            }
-            } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                }
-                );
-            }
-            }
-        } else {
-            const errorMessage = viewTemplateData.message
-            ? viewTemplateData.message
-            : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
+              }
+            );
+          }
+        }
+      } else {
+        const errorMessage = viewTemplateData.message
+          ? viewTemplateData.message
+          : "Failed to create the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -2792,32 +2844,14 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
+          }
+        );
+      }
+    }
+  };
 
 
-    // const handleAssignToIo = async (selectedRow, table_name) => {
+  // const handleAssignToIo = async (selectedRow, table_name) => {
   //   if (!table_name || table_name === "") {
   //     toast.warning("Please Check Table Name");
   //     return false;
@@ -2859,58 +2893,76 @@ const UnderInvestigation = () => {
   // };
 
   
-    const handleOthersDeleteTemplateData = (rowData, table_name) => {
-        Swal.fire({
-        title: "Are you sure?",
-        text: "Do you want to delete this profile ?",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Delete it!",
-        cancelButtonText: "No",
-        }).then(async (result) => {
-        if (result.isConfirmed) {
-            const deleteTemplateData = {
-            table_name: table_name,
-            where: { id: rowData.id },
-            };
-            setLoading(true);
+  const handleOthersDeleteTemplateData = (rowData, table_name) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this profile ?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Delete it!",
+      cancelButtonText: "No",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        const deleteTemplateData = {
+          table_name: table_name,
+          where: { id: rowData.id },
+        };
+        setLoading(true);
 
-            try {
-            const deleteTemplateDataResponse = await api.post(
-                "templateData/deleteTemplateData",
-                deleteTemplateData
-            );
-            setLoading(false);
+        try {
+          const deleteTemplateDataResponse = await api.post(
+            "templateData/deleteTemplateData",
+            deleteTemplateData
+          );
+          setLoading(false);
 
-            if (
-                deleteTemplateDataResponse &&
-                deleteTemplateDataResponse.success
-            ) {
-                toast.success(
-                deleteTemplateDataResponse.message
-                    ? deleteTemplateDataResponse.message
-                    : "Template Deleted Successfully",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () =>
-                    handleOtherTemplateActions(
-                        selectedOtherTemplate,
-                        selectedRow
-                    ),
-                }
-                );
-            } else {
-                const errorMessage = deleteTemplateDataResponse.message
+          if (
+            deleteTemplateDataResponse &&
+            deleteTemplateDataResponse.success
+          ) {
+            toast.success(
+              deleteTemplateDataResponse.message
                 ? deleteTemplateDataResponse.message
-                : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
+                : "Template Deleted Successfully",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-success",
+                onOpen: () =>
+                  handleOtherTemplateActions(
+                    selectedOtherTemplate,
+                    selectedRow
+                  ),
+              }
+            );
+          } else {
+            const errorMessage = deleteTemplateDataResponse.message
+              ? deleteTemplateDataResponse.message
+              : "Failed to delete the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -2919,147 +2971,147 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-error",
+              }
+            );
+          }
+        }
+      } else {
+        console.log("Template deletion canceled.");
+      }
+    });
+  };
+
+  const onSaveTemplateData = async (data) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    if (Object.keys(data).length === 0) {
+      toast.warning("Data Is Empty Please Check Once", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("table_name", table_name);
+
+    var normalData = {}; // Non-file upload fields
+
+    formTemplateData.forEach((field) => {
+      if (data[field.name]) {
+        if (field.type === "file" || field.type === "profilepicture") {
+          // Append file fields to formData
+          if (field.type === "file") {
+            if (Array.isArray(data[field.name])) {
+              const hasFileInstance = data[field.name].some(
+                (file) => file.filename instanceof File
+              );
+              var filteredArray = data[field.name].filter(
+                (file) => file.filename instanceof File
+              );
+              if (hasFileInstance) {
+                data[field.name].forEach((file) => {
+                  if (file.filename instanceof File) {
+                    formData.append(field.name, file.filename);
+                  }
                 });
-            }
-            } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                }
+
+                filteredArray = filteredArray.map((obj) => {
+                  return {
+                    ...obj,
+                    filename: obj.filename["name"],
+                  };
+                });
+
+                formData.append(
+                  "folder_attachment_ids",
+                  JSON.stringify(filteredArray)
                 );
+              }
             }
-            }
+          } else {
+            formData.append(field.name, data[field.name]);
+          }
         } else {
-            console.log("Template deletion canceled.");
+          // Add non-file fields to normalData
+          normalData[field.name] =
+            field.type === "checkbox" || field.type === "multidropdown"
+              ? Array.isArray(data[field.name])
+                ? data[field.name].join(",")
+                : data[field.name]
+              : data[field.name];
         }
+      }
+    });
+    normalData.sys_status = "ui_case";
+    
+    showCaseApprovalPage(normalData,formData);
+    return;
+
+    formData.append("data", JSON.stringify(normalData));
+    setLoading(true);
+
+    try {
+      const saveTemplateData = await api.post(
+        "/templateData/insertTemplateData",
+        formData
+      );
+      setLoading(false);
+      localStorage.removeItem(template_name + "-formData");
+
+      if (saveTemplateData && saveTemplateData.success) {
+        toast.success(saveTemplateData.message || "Data Created Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () => loadTableData(paginationCount),
         });
-    };
-
-    const onSaveTemplateData = async (data) => {
-        if (!table_name || table_name === "") {
-        toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
+      } else {
+        const errorMessage = saveTemplateData.message
+          ? saveTemplateData.message
+          : "Failed to create the profile. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
         });
-        return;
-        }
-
-        if (Object.keys(data).length === 0) {
-        toast.warning("Data Is Empty Please Check Once", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-
-        const formData = new FormData();
-        formData.append("table_name", table_name);
-
-        var normalData = {}; // Non-file upload fields
-
-        formTemplateData.forEach((field) => {
-        if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-            // Append file fields to formData
-            if (field.type === "file") {
-                if (Array.isArray(data[field.name])) {
-                const hasFileInstance = data[field.name].some(
-                    (file) => file.filename instanceof File
-                );
-                var filteredArray = data[field.name].filter(
-                    (file) => file.filename instanceof File
-                );
-                if (hasFileInstance) {
-                    data[field.name].forEach((file) => {
-                    if (file.filename instanceof File) {
-                        formData.append(field.name, file.filename);
-                    }
-                    });
-
-                    filteredArray = filteredArray.map((obj) => {
-                    return {
-                        ...obj,
-                        filename: obj.filename["name"],
-                    };
-                    });
-
-                    formData.append(
-                    "folder_attachment_ids",
-                    JSON.stringify(filteredArray)
-                    );
-                }
-                }
-            } else {
-                formData.append(field.name, data[field.name]);
-            }
-            } else {
-            // Add non-file fields to normalData
-            normalData[field.name] =
-                field.type === "checkbox" || field.type === "multidropdown"
-                ? Array.isArray(data[field.name])
-                    ? data[field.name].join(",")
-                    : data[field.name]
-                : data[field.name];
-            }
-        }
-        });
-        normalData.sys_status = "ui_case";
-        
-        showCaseApprovalPage(normalData,formData);
-        return;
-
-        formData.append("data", JSON.stringify(normalData));
-        setLoading(true);
-
-        try {
-        const saveTemplateData = await api.post(
-            "/templateData/insertTemplateData",
-            formData
-        );
-        setLoading(false);
-        localStorage.removeItem(template_name + "-formData");
-
-        if (saveTemplateData && saveTemplateData.success) {
-            toast.success(saveTemplateData.message || "Data Created Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-            onOpen: () => loadTableData(paginationCount),
-            });
-        } else {
-            const errorMessage = saveTemplateData.message
-            ? saveTemplateData.message
-            : "Failed to create the profile. Please try again.";
-            toast.error(errorMessage, {
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -3068,139 +3120,139 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
-
-    const onUpdateTemplateData = async (data) => {
-
-        if (!table_name || table_name === "") {
-        toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-
-        if (Object.keys(data).length === 0) {
-        toast.warning("Data Is Empty Please Check Once", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-
-        const formData = new FormData();
-
-        formData.append("table_name", table_name);
-        var normalData = {}; // Non-file upload fields
-
-        formTemplateData.forEach((field) => {
-        if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-            // Append file fields to formData
-            if (field.type === "file") {
-                if (Array.isArray(data[field.name])) {
-                const hasFileInstance = data[field.name].some(
-                    (file) => file.filename instanceof File
-                );
-                var filteredArray = data[field.name].filter(
-                    (file) => file.filename instanceof File
-                );
-                if (hasFileInstance) {
-                    data[field.name].forEach((file) => {
-                    if (file.filename instanceof File) {
-                        formData.append(field.name, file.filename);
-                    }
-                    });
-
-                    filteredArray = filteredArray.map((obj) => {
-                    return {
-                        ...obj,
-                        filename: obj.filename["name"],
-                    };
-                    });
-                    formData.append(
-                    "folder_attachment_ids",
-                    JSON.stringify(filteredArray)
-                    );
-                }
-                }
-            } else {
-                formData.append(field.name, data[field.name]);
-            }
-            } else {
-            // Add non-file fields to normalData
-            normalData[field.name] =
-                field.type === "checkbox" || field.type === "multidropdown"
-                ? Array.isArray(data[field.name])
-                    ? data[field.name].join(",")
-                    : data[field.name]
-                : data[field.name];
-            }
-        }
-        });
-
-        formData.append("data", JSON.stringify(normalData));
-        formData.append("id", data.id);
-        setLoading(true);
-
-        try {
-        const saveTemplateData = await api.post(
-            "/templateData/updateTemplateData",
-            formData
+          }
         );
-        setLoading(false);
+      }
+    }
+  };
 
-        if (saveTemplateData && saveTemplateData.success) {
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-            onOpen: () => loadTableData(paginationCount),
-            });
+  const onUpdateTemplateData = async (data) => {
+
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    if (Object.keys(data).length === 0) {
+      toast.warning("Data Is Empty Please Check Once", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append("table_name", table_name);
+    var normalData = {}; // Non-file upload fields
+
+    formTemplateData.forEach((field) => {
+      if (data[field.name]) {
+        if (field.type === "file" || field.type === "profilepicture") {
+          // Append file fields to formData
+          if (field.type === "file") {
+            if (Array.isArray(data[field.name])) {
+              const hasFileInstance = data[field.name].some(
+                (file) => file.filename instanceof File
+              );
+              var filteredArray = data[field.name].filter(
+                (file) => file.filename instanceof File
+              );
+              if (hasFileInstance) {
+                data[field.name].forEach((file) => {
+                  if (file.filename instanceof File) {
+                    formData.append(field.name, file.filename);
+                  }
+                });
+
+                filteredArray = filteredArray.map((obj) => {
+                  return {
+                    ...obj,
+                    filename: obj.filename["name"],
+                  };
+                });
+                formData.append(
+                  "folder_attachment_ids",
+                  JSON.stringify(filteredArray)
+                );
+              }
+            }
+          } else {
+            formData.append(field.name, data[field.name]);
+          }
         } else {
-            const errorMessage = saveTemplateData.message
-            ? saveTemplateData.message
-            : "Failed to create the profile. Please try again.";
-            toast.error(errorMessage, {
+          // Add non-file fields to normalData
+          normalData[field.name] =
+            field.type === "checkbox" || field.type === "multidropdown"
+              ? Array.isArray(data[field.name])
+                ? data[field.name].join(",")
+                : data[field.name]
+              : data[field.name];
+        }
+      }
+    });
+
+    formData.append("data", JSON.stringify(normalData));
+    formData.append("id", data.id);
+    setLoading(true);
+
+    try {
+      const saveTemplateData = await api.post(
+        "/templateData/updateTemplateData",
+        formData
+      );
+      setLoading(false);
+
+      if (saveTemplateData && saveTemplateData.success) {
+        toast.success(saveTemplateData.message || "Data Updated Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () => loadTableData(paginationCount),
+        });
+      } else {
+        const errorMessage = saveTemplateData.message
+          ? saveTemplateData.message
+          : "Failed to create the profile. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -3209,716 +3261,823 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
+          }
+        );
+      }
+    }
+  };
 
-    const onSaveTemplateError = (error) => {
-        setIsValid(false);
-    };
+  const onSaveTemplateError = (error) => {
+    setIsValid(false);
+  };
 
-    const handleNextPage = () => {
-        setPaginationCount((prev) => prev + 1);
-    };
+  const handleNextPage = () => {
+    setPaginationCount((prev) => prev + 1);
+  };
 
-    const handlePrevPage = () => {
-        setPaginationCount((prev) => prev - 1);
-    };
+  const handlePrevPage = () => {
+    setPaginationCount((prev) => prev - 1);
+  };
 
     const handlePagination = (page) => {
         setPaginationCount(page)
     }
 
-    const showIndivitualAttachment = async (attachmentName) => {
-        if (
-        showAttachmentKey["attachments"] &&
-        showAttachmentKey["attachments"].length > 0
-        ) {
-        var payloadFile = showAttachmentKey["attachments"].filter(
-            (attachment) => attachment.attachment_name === attachmentName
-        );
+  const showIndivitualAttachment = async (attachmentName) => {
+    if (
+      showAttachmentKey["attachments"] &&
+      showAttachmentKey["attachments"].length > 0
+    ) {
+      var payloadFile = showAttachmentKey["attachments"].filter(
+        (attachment) => attachment.attachment_name === attachmentName
+      );
 
-        if (
-            payloadFile &&
-            payloadFile[0] &&
-            payloadFile[0].profile_attachment_id
-        ) {
-            setLoading(true);
-            try {
-            var response = await api.post(
-                "/templateData/downloadDocumentAttachments/" +
-                payloadFile[0].profile_attachment_id
-            );
-            setLoading(false);
-            if (response && response instanceof Blob) {
-                let fileUrl = URL.createObjectURL(response);
-                let newTab = window.open();
-                newTab.document.body.innerHTML = `<embed src="${fileUrl}" width="100%" height="100%" />`;
-            } else {
-                console.log("Unexpected response format:", response);
-            }
-            } catch (error) {
-            setLoading(false);
-            console.log(error, "error");
-            }
-        } else {
-            console.log("cant get the file");
-        }
-        }
-    };
-
-    const downloadReportModal = () => {
-        setShowDownloadModal(true);
-    };
-
-    const handleCheckBoxChange = (fieldName, fieldCode, selectedValue) => {
-        setShowSelectedDownloadData((prevData) => {
-        const updatedField = prevData[fieldName] || [];
-
-        if (selectedValue) {
-            if (!updatedField.includes(fieldCode)) {
-            return {
-                ...prevData,
-                [fieldName]: [...updatedField, fieldCode],
-            };
-            }
-        } else {
-            return {
-            ...prevData,
-            [fieldName]: updatedField.filter((code) => code !== fieldCode),
-            };
-        }
-
-        return prevData;
-        });
-    };
-
-    const callDownloadReportApi = async () => {
-        if (
-        !showSelectedDownloadData ||
-        !showSelectedDownloadData["downloadHeaders"] ||
-        showSelectedDownloadData["downloadHeaders"].length === 0
-        ) {
-        toast.error("Please Select Atleast One Field Before Download  !", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        return;
-        }
-
-        const downloadReport = {
-        table_name: table_name,
-        fields: showSelectedDownloadData["downloadHeaders"],
-        };
+      if (
+        payloadFile &&
+        payloadFile[0] &&
+        payloadFile[0].profile_attachment_id
+      ) {
         setLoading(true);
-
         try {
-        const downloadReportResponse = await api.post(
-            "templateData/downloadExcelData",
-            downloadReport
-        );
-        setLoading(false);
-
-        if (downloadReportResponse) {
-            const blob = new Blob([downloadReportResponse], {
-            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            });
-
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${table_name}_Report.xlsx`;
-
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            window.URL.revokeObjectURL(url);
-        } else {
-            const errorMessage = downloadReportResponse.message
-            ? downloadReportResponse.message
-            : "Failed to download report. Please try again.";
-            toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-            });
-        }
+          var response = await api.post(
+            "/templateData/downloadDocumentAttachments/" +
+              payloadFile[0].profile_attachment_id
+          );
+          setLoading(false);
+          if (response && response instanceof Blob) {
+            let fileUrl = URL.createObjectURL(response);
+            let newTab = window.open();
+            newTab.document.body.innerHTML = `<embed src="${fileUrl}" width="100%" height="100%" />`;
+          } else {
+            console.log("Unexpected response format:", response);
+          }
         } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
+          setLoading(false);
+          console.log(error, "error");
         }
-        }
-    };
+      } else {
+        console.log("cant get the file");
+      }
+    }
+  };
 
-    useEffect(() => {
-        if (searchParams) {
-        const searchParamsid = searchParams.get("id");
-        const searchParamsTableName = searchParams.get("tableName");
+  const downloadReportModal = () => {
+    setShowDownloadModal(true);
+  };
 
-        if (
-            (searchParamsid && searchParamsid !== "") ||
-            (searchParamsTableName && searchParamsTableName !== "")
-        ) {
-            hyperLinkShow({
-            id: searchParamsid,
-            table: searchParamsTableName,
-            });
-        }
-        }
-    }, []);
+  const handleCheckBoxChange = (fieldName, fieldCode, selectedValue) => {
+    setShowSelectedDownloadData((prevData) => {
+      const updatedField = prevData[fieldName] || [];
 
-    function createSvgIcon(svgString) {
-        return () => (
-        <span
-            dangerouslySetInnerHTML={{ __html: svgString }}
-            className="tableActionIcon"
-        />
-        );
+      if (selectedValue) {
+        if (!updatedField.includes(fieldCode)) {
+          return {
+            ...prevData,
+            [fieldName]: [...updatedField, fieldCode],
+          };
+        }
+      } else {
+        return {
+          ...prevData,
+          [fieldName]: updatedField.filter((code) => code !== fieldCode),
+        };
+      }
+
+      return prevData;
+    });
+  };
+
+  const callDownloadReportApi = async () => {
+    if (
+      !showSelectedDownloadData ||
+      !showSelectedDownloadData["downloadHeaders"] ||
+      showSelectedDownloadData["downloadHeaders"].length === 0
+    ) {
+      toast.error("Please Select Atleast One Field Before Download  !", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
     }
 
-
-    const handleFileUpload = async (event) => {
-        setLoading(true);
-        const file = event.target.files[0];
-
-        if (!file) {
-        Swal.fire("Error", "Please select a file.", "error");
-        return;
-        }
-
-        if (!selectedRowData || !selectedRowData.id) {
-        Swal.fire("Error", "Invalid case ID.", "error");
-        return;
-        }
-
-        const caseId = selectedRowData.id;
-
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("ui_case_id", caseId);
-        formData.append("created_by", "0");
-
-        try {
-        const response = await api.post("/templateData/uploadFile", formData);
-
-        if (response.success) {
-            Swal.fire("Success", "File uploaded successfully.", "success");
-            checkPdfEntryStatus(caseId);
-            getUploadedFiles(selectedRowData);
-        } else {
-            Swal.fire("Error", response.message || "Upload failed.", "error");
-        }
-        } catch (error) {
-        console.error("Upload error:", error);
-        Swal.fire("Error", "Failed to upload file.", "error");
-        } finally {
-        setLoading(false);
-        }
+    const downloadReport = {
+      table_name: table_name,
+      fields: showSelectedDownloadData["downloadHeaders"],
     };
+    setLoading(true);
 
-    const getUploadedFiles = async (selectedRow) => {
-        if (!selectedRow || !selectedRow.id) {
-        console.error("Invalid selectedRow for file retrieval:", selectedRow);
-        return;
-        }
-        try {
-        const response = await api.post("/templateData/getUploadedFiles", {
-            ui_case_id: selectedRow.id,
+    try {
+      const downloadReportResponse = await api.post(
+        "templateData/downloadExcelData",
+        downloadReport
+      );
+      setLoading(false);
+
+      if (downloadReportResponse) {
+        const blob = new Blob([downloadReportResponse], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         });
 
-        if (response && response.success) {
-            setUploadedFiles(response.data);
-        }
-        } catch (error) {
-        console.error("Error fetching uploaded files:", error);
-        }
-    };
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${table_name}_Report.xlsx`;
 
-    const checkPdfEntryStatus = async (caseId) => {
-        if (!caseId) {
-        setHasPdfEntry(false);
-        return;
-        }
-        try {
-        const response = await api.post("/templateData/checkPdfEntry", {
-            ui_case_id: caseId,
-            is_pdf: true,
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        window.URL.revokeObjectURL(url);
+      } else {
+        const errorMessage = downloadReportResponse.message
+          ? downloadReportResponse.message
+          : "Failed to download report. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
         });
-
-        if (response.success && response.data) {
-            setHasPdfEntry(true);
-        } else {
-            setHasPdfEntry(false);
-        }
-        } catch (error) {
-        console.error("Error checking PDF entry:", error);
-        setHasPdfEntry(false);
-        }
-    };
-
-    const otherTemplateTrailUpdate = async (data) => {
-    
-        if (!data.id || !data.options?.table) {
-        toast.warning("Please Check the Template", {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-warning",
-        });
-        return;
-        }
-    
-        const updateFields = {};
-    
-        if (data.hasOwnProperty("field_served_or_unserved")) {
-        updateFields.field_served_or_unserved = data.field_served_or_unserved;
-        }
-        
-        if (data.hasOwnProperty("field_reappear")) {
-        updateFields.field_reappear = data.field_reappear;
-        }
-        
-        
-        const formData = new FormData();
-        formData.append("table_name", data.options.table);
-        formData.append("id", data.id);
-        formData.append("data", JSON.stringify(updateFields));
-    
-        setLoading(true);
-    
-        try {
-        const saveTemplateData = await api.post(
-            "/templateData/updateTemplateData",
-            formData,
-            {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-            }
-        );
-        
-        setLoading(false);
-    
-        if (saveTemplateData && saveTemplateData.success) {
-            localStorage.removeItem(data.name + "-formData");
-    
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-success",
-            });
-    
-            handleOtherTemplateActions(data.options, selectedRow);
-    
-            setOtherEditTemplateData(false);
-            setOtherReadOnlyTemplateData(false);
-            setTemplateApprovalData({});
-            setTemplateApproval(false);
-            setAddApproveFlag(false);
-            setApproveTableFlag(false);
-            setApprovalSaveData({});
-        } else {
-            const errorMessage = saveTemplateData?.message || "Failed to update the template. Please try again.";
-            toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        console.error("API Error:", error);
-    
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
         toast.error(
-            error?.response?.data?.message || error?.message || "Please Try Again!",
-            {
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
             position: "top-right",
             autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
             className: "toast-error",
-            }
+          }
         );
-        }
-    };
-    
-    const handleServedUnserved = (row, options) => {
-        Swal.fire({
-        title: "Mark as Served?",
-        text: "Do you want to mark this case as Served?",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Served",
-        cancelButtonText: "UnServed",
-        reverseButtons: false,
-        }).then((result) => {
-        if (result.isConfirmed) {
-            const updatedRow = {
-            id: row.id,
-            options: options,
-            field_served_or_unserved: "Yes",
-            };
-            otherTemplateTrailUpdate(updatedRow);
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-            const updatedRow = {
-            id: row.id,
-            options: options,
-            field_served_or_unserved: "No",
-            };
-            otherTemplateTrailUpdate(updatedRow);
-        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (searchParams) {
+      const searchParamsid = searchParams.get("id");
+      const searchParamsTableName = searchParams.get("tableName");
+
+      if (
+        (searchParamsid && searchParamsid !== "") ||
+        (searchParamsTableName && searchParamsTableName !== "")
+      ) {
+        hyperLinkShow({
+          id: searchParamsid,
+          table: searchParamsTableName,
         });
-    };  
+      }
+    }
+  }, []);
+
+  function createSvgIcon(svgString) {
+    return () => (
+      <span
+        dangerouslySetInnerHTML={{ __html: svgString }}
+        className="tableActionIcon"
+      />
+    );
+  }
+
+
+  const handleFileUpload = async (event) => {
+    setLoading(true);
+    const file = event.target.files[0];
+
+    if (!file) {
+      Swal.fire("Error", "Please select a file.", "error");
+      return;
+    }
+
+    if (!selectedRowData || !selectedRowData.id) {
+      Swal.fire("Error", "Invalid case ID.", "error");
+      return;
+    }
+
+    const caseId = selectedRowData.id;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("ui_case_id", caseId);
+    formData.append("created_by", "0");
+
+    try {
+      const response = await api.post("/templateData/uploadFile", formData);
+
+      if (response.success) {
+        Swal.fire("Success", "File uploaded successfully.", "success");
+        checkPdfEntryStatus(caseId);
+        getUploadedFiles(selectedRowData);
+      } else {
+        Swal.fire("Error", response.message || "Upload failed.", "error");
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      Swal.fire("Error", "Failed to upload file.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getUploadedFiles = async (selectedRow) => {
+    if (!selectedRow || !selectedRow.id) {
+      console.error("Invalid selectedRow for file retrieval:", selectedRow);
+      return;
+    }
+    try {
+      const response = await api.post("/templateData/getUploadedFiles", {
+        ui_case_id: selectedRow.id,
+      });
+
+      if (response && response.success) {
+        setUploadedFiles(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching uploaded files:", error);
+    }
+  };
+
+  const checkPdfEntryStatus = async (caseId) => {
+    if (!caseId) {
+      setHasPdfEntry(false);
+      return;
+    }
+    try {
+      const response = await api.post("/templateData/checkPdfEntry", {
+        ui_case_id: caseId,
+        is_pdf: true,
+      });
+
+      if (response.success && response.data) {
+        setHasPdfEntry(true);
+      } else {
+        setHasPdfEntry(false);
+      }
+    } catch (error) {
+      console.error("Error checking PDF entry:", error);
+      setHasPdfEntry(false);
+    }
+  };
+
+  const otherTemplateTrailUpdate = async (data) => {
+  
+    if (!data.id || !data.options?.table) {
+      toast.warning("Please Check the Template", {
+        position: "top-right",
+        autoClose: 3000,
+        className: "toast-warning",
+      });
+      return;
+    }
+  
+    const updateFields = {};
+  
+    if (data.hasOwnProperty("field_served_or_unserved")) {
+      updateFields.field_served_or_unserved = data.field_served_or_unserved;
+    }
     
-    const handleReappear = (row, options) => {
-        Swal.fire({
-        title: "Mark for Reappear?",
-        text: "Do you want to mark this case as Reappear?",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Reappear it!",
-        cancelButtonText: "No",
-        reverseButtons: false,
-        }).then((result) => {
-        if (result.isConfirmed) {
-            const updatedRow = {
-            id: row.id,
-            options: options,
-            field_reappear: "Yes",
-            };
-            otherTemplateTrailUpdate(updatedRow);
-        }else if (result.dismiss === Swal.DismissReason.cancel) {
-            const updatedRow = {
-            id: row.id,
-            options: options,
-            field_reappear: "No",
-            };
-            otherTemplateTrailUpdate(updatedRow);
+    if (data.hasOwnProperty("field_reappear")) {
+      updateFields.field_reappear = data.field_reappear;
+    }
+    
+    
+    const formData = new FormData();
+    formData.append("table_name", data.options.table);
+    formData.append("id", data.id);
+    formData.append("data", JSON.stringify(updateFields));
+  
+    setLoading(true);
+  
+    try {
+      const saveTemplateData = await api.post(
+        "/templateData/updateTemplateData",
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
         }
+      );
+    
+      setLoading(false);
+  
+      if (saveTemplateData && saveTemplateData.success) {
+        localStorage.removeItem(data.name + "-formData");
+  
+        toast.success(saveTemplateData.message || "Data Updated Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-success",
         });
-    };
-    
-    const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
-
-        if(!selectedRow || Object.keys(selectedRow).length === 0){
-            return false
+  
+        handleOtherTemplateActions(data.options, selectedRow);
+  
+        setOtherEditTemplateData(false);
+        setOtherReadOnlyTemplateData(false);
+        setTemplateApprovalData({});
+        setTemplateApproval(false);
+        setAddApproveFlag(false);
+        setApproveTableFlag(false);
+        setApprovalSaveData({});
+      } else {
+        const errorMessage = saveTemplateData?.message || "Failed to update the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      console.error("API Error:", error);
+  
+      toast.error(
+        error?.response?.data?.message || error?.message || "Please Try Again!",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
         }
-
-        // const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
-        // setIsIoAuthorized(isAuthorized);    
-
-        setSelectedRowData(selectedRow);
-
-
-
-        if (options.table && options.field) {
-        const selectedFieldValue = options.field;
-            showTransferToOtherDivision(options, selectedRow, selectedFieldValue);
-        return;
-        }
-
-        setSelectedRow(selectedRow);
-        var getTemplatePayload = {
-            table_name: options.table,
-            ui_case_id: selectedRow.id,
-            limit : 10,
-            page : !searchFlag ? otherTemplatesPaginationCount : 1,
-            search: !searchFlag ? otherSearchValue : "",        
-            from_date: !searchFlag ? othersFromDate : null,
-            to_date: !searchFlag ? othersToDate : null,
-            filter: !searchFlag ? othersFilterData : {},
+      );
+    }
+  };
+  
+  const handleServedUnserved = (row, options) => {
+    Swal.fire({
+      title: "Mark as Served?",
+      text: "Do you want to mark this case as Served?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Served",
+      cancelButtonText: "UnServed",
+      reverseButtons: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updatedRow = {
+          id: row.id,
+          options: options,
+          field_served_or_unserved: "Yes",
         };
+        otherTemplateTrailUpdate(updatedRow);
+      } else if (result.dismiss === Swal.DismissReason.cancel) {
+        const updatedRow = {
+          id: row.id,
+          options: options,
+          field_served_or_unserved: "No",
+        };
+        otherTemplateTrailUpdate(updatedRow);
+      }
+    });
+  };  
+  
+  const handleReappear = (row, options) => {
+    Swal.fire({
+      title: "Mark for Reappear?",
+      text: "Do you want to mark this case as Reappear?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Yes, Reappear it!",
+      cancelButtonText: "No",
+      reverseButtons: false,
+    }).then((result) => {
+      if (result.isConfirmed) {
+        const updatedRow = {
+          id: row.id,
+          options: options,
+          field_reappear: "Yes",
+        };
+        otherTemplateTrailUpdate(updatedRow);
+      }else if (result.dismiss === Swal.DismissReason.cancel) {
+        const updatedRow = {
+          id: row.id,
+          options: options,
+          field_reappear: "No",
+        };
+        otherTemplateTrailUpdate(updatedRow);
+      }
+    });
+  };
 
-        setLoading(true);
+    const getCellClassName = (key, params, table) => {
+        // Example condition: unread rows for a specific table
+        if (table === "cid_ui_case_progress_report" && !params?.row?.ReadStatus) {
+            return "unreadBackground";
+        }
+    
+        // Add more logic if needed based on `key` or `params`
+        return "";
+    };
+  
+  
+  const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
-        try {
-        const getTemplateResponse = await api.post(
-            "/templateData/getTemplateData",
-            getTemplatePayload
-        );
-        setLoading(false);
+    if(!selectedRow || Object.keys(selectedRow).length === 0){
+        return false
+    }
 
-        if (getTemplateResponse && getTemplateResponse.success) {
+    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
+    // setIsIoAuthorized(isAuthorized);    
 
-            const { meta } = getTemplateResponse;
+    setSelectedRowData(selectedRow);
+
+
+
+    if (options.table && options.field) {
+      const selectedFieldValue = options.field;
+        showTransferToOtherDivision(options, selectedRow, selectedFieldValue);
+      return;
+    }
+
+    setSelectedRow(selectedRow);
+    var getTemplatePayload = {
+        table_name: options.table,
+        ui_case_id: selectedRow.id,
+        limit : 10,
+        page : !searchFlag ? otherTemplatesPaginationCount : 1,
+        search: !searchFlag ? otherSearchValue : "",        
+        from_date: !searchFlag ? othersFromDate : null,
+        to_date: !searchFlag ? othersToDate : null,
+        filter: !searchFlag ? othersFilterData : {},
+    };
+
+    setLoading(true);
+
+    try {
+      const getTemplateResponse = await api.post(
+        "/templateData/getTemplateData",
+        getTemplatePayload
+      );
+      setLoading(false);
+
+      if (getTemplateResponse && getTemplateResponse.success) {
+
+        const { meta } = getTemplateResponse;
+    
+        const totalPages = meta?.meta?.totalPages;
+        const totalItems = meta?.meta?.totalItems;
         
-            const totalPages = meta?.meta?.totalPages;
-            const totalItems = meta?.meta?.totalItems;
-            
-            if (totalPages !== null && totalPages !== undefined) {
-            setOtherTemplatesTotalPage(totalPages);
-            }
-            
-            if (totalItems !== null && totalItems !== undefined) {
-            setOtherTemplatesTotalRecord(totalItems);
-            }
-            
-            if (getTemplateResponse.data && getTemplateResponse.data) {
-            if (getTemplateResponse.data[0]) {
-                var excludedKeys = [
-                "updated_at",
-                "id",
-                "deleted_at",
-                "attachments",
-                "Starred",
-                "ReadStatus",
-                "linked_profile_info",
-                ];
+        if (totalPages !== null && totalPages !== undefined) {
+          setOtherTemplatesTotalPage(totalPages);
+        }
+        
+        if (totalItems !== null && totalItems !== undefined) {
+          setOtherTemplatesTotalRecord(totalItems);
+        }
+        
+        if (getTemplateResponse.data && getTemplateResponse.data) {
+          if (getTemplateResponse.data[0]) {
+            var excludedKeys = [
+              "updated_at",
+              "id",
+              "deleted_at",
+              "attachments",
+              "Starred",
+              "ReadStatus",
+              "linked_profile_info",
+            ];
 
-                if (options.table !== "cid_ui_case_progress_report") {
-                excludedKeys.push("created_at");
-                }
-                if (options.table === "cid_ui_case_checking_tabs") {
-                excludedKeys.push("field_witness");
-                excludedKeys.push("field_accused");
-                excludedKeys.push("field_accused/witness");
-                }
+            if (options.table !== "cid_ui_case_progress_report") {
+              excludedKeys.push("created_at");
+            }
+            if (options.table === "cid_ui_case_checking_tabs") {
+              excludedKeys.push("field_witness");
+              excludedKeys.push("field_accused");
+              excludedKeys.push("field_accused/witness");
+            }
 
-                const updatedHeader = ([
-                ...(options.table === "cid_ui_case_progress_report"
-                    ? [
-                    {
-                        field: "select",
-                        headerName: "",
-                        width: 50,
-                        renderCell: (params) => {
-                        const isPdfUpdated = params.row.field_pr_status === "Yes";
-                        // const isAssignedUser = String(params.row.field_assigned_to_id);
-                        // const isAssignedUserId = String(localStorage.getItem("user_id"));
-                        
-                        // const isAssignedBy = String(params.row.field_assigned_by_id);
-                        // const isAuthorized = isAssignedUserId === isAssignedUser;
-                        // const isAuthorizedBy = isAssignedBy === isAssignedUserId;
-                                            
-                        // if (isPdfUpdated) return null;
-                        
-                        // const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
-                        
-                        return isPdfUpdated ? null : (
-                            <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
-                        );
-                        }
-                        
+            const updatedHeader = ([
+              ...(options.table === "cid_ui_case_progress_report"
+                ? [
+                  {
+                    field: "select",
+                    headerName: "",
+                    width: 50,
+                    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                    renderCell: (params) => {
+                      const isPdfUpdated = params.row.field_pr_status === "Yes";
+                      // const isAssignedUser = String(params.row.field_assigned_to_id);
+                      // const isAssignedUserId = String(localStorage.getItem("user_id"));
+                    
+                      // const isAssignedBy = String(params.row.field_assigned_by_id);
+                      // const isAuthorized = isAssignedUserId === isAssignedUser;
+                      // const isAuthorizedBy = isAssignedBy === isAssignedUserId;
+                                        
+                      // if (isPdfUpdated) return null;
+                    
+                      // const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
+                    
+                      return isPdfUpdated ? null : (
+                        <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                      );
                     }
                     
-                    ]
-                    : []),
-                ...(options.table !== "cid_ui_case_progress_report"
-                    ? [
-                        {
-                        field: "sl_no",
-                        headerName: "S.No",
-                        resizable: false,
-                        width: 75,
-                        renderCell: (params) => {
-                            return (
-                            <Box
-                                sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                                }}
-                            >
-                                {params.value}
-                            </Box>
-                            );
-                        },
-                        },
-                    ]
-                    : []),
-                ...Object.keys(getTemplateResponse.data[0])
-                    .filter(
-                    (key) =>
-                        !excludedKeys.includes(key) &&
-                        key !== "field_pt_case_id" &&
-                        key !== "field_ui_case_id" &&
-                        key !== "field_pr_status" &&
-                        key !== "field_evidence_file" &&
-                        key !== "created_by" &&
-                        key !== "field_last_updated" &&
-                        key !== "field_date_created" &&
-                        key !== "field_description" &&
-                        key !== "field_assigned_to_id"&&
-                        key !== "field_assigned_by_id"&&
-                        key !== "field_served_or_unserved"&&
-                        key !== "field_reappear"       
-                    )
-                    .map((key) => {
-                    var updatedKeyName = key
-                        .replace(/^field_/, "")
-                        .replace(/_/g, " ")
-                        .toLowerCase()
-                        .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-                    return {
-                        field: key,
-                        headerName: updatedKeyName ? updatedKeyName : "",
-                        width: updatedKeyName.length < 15 ? 100 : 180,
-                        resizable: true,
-                        renderHeader: () => (
-                        <div
-                            style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            }}
-                        >
-                            <span
-                            style={{
-                                color: "#1D2939",
-                                fontSize: "15px",
-                                fontWeight: "500",
-                            }}
-                            >
-                            {updatedKeyName ? updatedKeyName : ""}
-                            </span>
-                        </div>
-                        ),
-                        renderCell: (params) => {
-                        return tableCellRender(key, params, params.value);
-                        },
-                    };
-                    }),
-                ...(options.table === "cid_ui_case_progress_report"
-                    ? [
-                        {
-                        field: "field_pr_status",
-                        headerName: "Status",
-                        width: 150,
-                        resizable: true,
-                        sortable: true,
-                        sortComparator: (v1, v2) => {
-                            if (v1 === "Yes" && v2 === "No") return -1;
-                            if (v1 === "No" && v2 === "Yes") return 1;
-                            return 0;
-                        },
-                        renderCell: (params) => {
-                            const isUpdated = params.value === "Yes";
-                            const statusText = isUpdated
-                            ? "PDF Updated"
-                            : "Not Updated";
-                            const statusColor = isUpdated ? "#22c55e" : "#ef4444";
-                            const borderColor = isUpdated ? "#34D399" : "#EF4444";
-
-                            return (
-                            <Chip
-                                label={statusText}
-                                size="small"
-                                sx={{
-                                fontFamily: "Roboto",
-                                fontWeight: 400,
-                                color: "white",
-                                borderColor: borderColor,
-                                borderRadius: "4px",
-                                backgroundColor: statusColor,
-                                textTransform: "capitalize",
-                                borderStyle: "solid",
-                                borderWidth: "1px",
-                                }}
-                            />
-                            );
-                        },
-                        },
-                    ]
-                    : []),
-                    ,
-                ...(options.table === "cid_ui_case_checking_tabs"
-                    ? [
+                  }
+                  
+                  ]
+                : []),
+              ...(options.table !== "cid_ui_case_progress_report"
+                ? [
                     {
-                        field: "field_served_or_unserved",
-                        headerName: "Served/UnServed",
-                        width: 150,
-                        resizable: true,
-                        sortable: true,
-                        // headerAlign: "center",
-                        // align: "center",    
-                        sortComparator: (v1, v2) => {
+                      field: "sl_no",
+                      headerName: "S.No",
+                      resizable: false,
+                      width: 75,
+                      renderCell: (params) => {
+                        return (
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            {params.value}
+                          </Box>
+                        );
+                      },
+                    },
+                  ]
+                : []),
+              ...Object.keys(getTemplateResponse.data[0])
+                .filter(
+                  (key) =>
+                    !excludedKeys.includes(key) &&
+                    key !== "field_pt_case_id" &&
+                    key !== "field_ui_case_id" &&
+                    key !== "field_pr_status" &&
+                    key !== "field_evidence_file" &&
+                    key !== "created_by" &&
+                    key !== "field_last_updated" &&
+                    key !== "field_date_created" &&
+                    key !== "field_description" &&
+                    key !== "field_assigned_to_id"&&
+                    key !== "field_assigned_by_id"&&
+                    key !== "field_served_or_unserved"&&
+                    key !== "field_reappear"       
+                )
+                .map((key) => {
+                  var updatedKeyName = key
+                    .replace(/^field_/, "")
+                    .replace(/_/g, " ")
+                    .toLowerCase()
+                    .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+                  return {
+                    field: key,
+                    headerName: updatedKeyName ? updatedKeyName : "",
+                    width: updatedKeyName.length < 15 ? 100 : 180,
+                    resizable: true,
+                    cellClassName: (params) => getCellClassName(key, params, options.table),
+                    renderHeader: () => (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          width: "100%",
+                        }}
+                      >
+                        <span
+                          style={{
+                            color: "#1D2939",
+                            fontSize: "15px",
+                            fontWeight: "500",
+                          }}
+                        >
+                          {updatedKeyName ? updatedKeyName : ""}
+                        </span>
+                      </div>
+                    ),
+                    renderCell: (params) => {
+                      return tableCellRender(key, params, params.value);
+                    },
+                  };
+                }),
+              ...(options.table === "cid_ui_case_progress_report"
+                ? [
+                    {
+                      field: "field_pr_status",
+                      headerName: "Status",
+                      width: 150,
+                      resizable: true,
+                      sortable: true,
+                      cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                      sortComparator: (v1, v2) => {
                         if (v1 === "Yes" && v2 === "No") return -1;
                         if (v1 === "No" && v2 === "Yes") return 1;
                         return 0;
-                        },
-                        renderCell: (params) => {
+                      },
+                      renderCell: (params) => {
+                        const isUpdated = params.value === "Yes";
+                        const statusText = isUpdated
+                          ? "PDF Updated"
+                          : "Not Updated";
+                        const statusColor = isUpdated ? "#22c55e" : "#ef4444";
+                        const borderColor = isUpdated ? "#34D399" : "#EF4444";
+
+                        return (
+                          <Chip
+                            label={statusText}
+                            size="small"
+                            sx={{
+                              fontFamily: "Roboto",
+                              fontWeight: 400,
+                              color: "white",
+                              borderColor: borderColor,
+                              borderRadius: "4px",
+                              backgroundColor: statusColor,
+                              textTransform: "capitalize",
+                              borderStyle: "solid",
+                              borderWidth: "1px",
+                            }}
+                          />
+                        );
+                      },
+                    },
+                  ]
+                : []),
+                ,
+              ...(options.table === "cid_ui_case_checking_tabs"
+                ? [
+                  {
+                    field: "field_served_or_unserved",
+                    headerName: "Served/UnServed",
+                    width: 150,
+                    resizable: true,
+                    sortable: true,
+                    // headerAlign: "center",
+                    // align: "center",    
+                    sortComparator: (v1, v2) => {
+                      if (v1 === "Yes" && v2 === "No") return -1;
+                      if (v1 === "No" && v2 === "Yes") return 1;
+                      return 0;
+                    },
+                    renderCell: (params) => {
+                      const value = params.value;
+                      const isYes = value === "Yes";
+                      const isNo = value === "No";
+                  
+                      if (!isYes && !isNo) {
+                        return (
+                          <Box
+                            sx={{
+                              fontFamily: "Roboto",
+                              width: "100%",
+                              display: "flex",
+                              justifyContent: "center",
+                              }}
+                          >
+                            -
+                          </Box>
+                        );
+                      }
+                  
+                      const statusText = isYes ? "Served" : "UnServed";
+                      const statusColor = isYes ? "#22c55e" : "#ef4444";
+                      const borderColor = isYes ? "#34D399" : "#EF4444";
+                  
+                      return (
+                        <div
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            justifyContent: "center",
+                            paddingTop: "8px",
+                          }}
+                        >
+                          <Chip
+                            label={statusText}
+                            size="small"
+                            sx={{
+                              fontFamily: "Roboto",
+                              fontWeight: 400,
+                              color: "white",
+                              borderColor: borderColor,
+                              borderRadius: "4px",
+                              backgroundColor: statusColor,
+                              textTransform: "capitalize",
+                              borderStyle: "solid",
+                              borderWidth: "1px",
+                              minWidth: "80px",
+                              textAlign: "center",
+                              justifyContent: "center",
+                              display: "flex",
+                            }}
+                          />
+                        </div>
+                      );
+                      
+                    },
+                  }
+                ]
+                : []),,
+                ...(options.table === "cid_ui_case_checking_tabs"
+                  ? [
+                    {
+                      field: "field_reappear",
+                      headerName: "Reappear",
+                      width: 100,
+                      resizable: true,
+                      sortable: true,
+                      sortComparator: (v1, v2) => {
+                        if (v1 === "Yes" && v2 === "No") return -1;
+                        if (v1 === "No" && v2 === "Yes") return 1;
+                        return 0;
+                      },
+                      // renderCell: (params) => {
+                      //   const value = params.value;
+                      //   const isYes = value === "Yes";
+                      //   const isNo = value === "No";
+                    
+                      //   if (!isYes && !isNo) {
+                      //     return (
+                      //       <Box
+                      //         sx={{
+                      //           fontFamily: "Roboto",
+                      //           width: "100%",
+                      //           marginLeft: "15px",
+                      //         }}
+                      //       >
+                      //         -
+                      //       </Box>
+                      //     );
+                      //   }
+                                        
+                      //   return (
+                      //     <Box
+                      //       sx={{
+                      //         display: "flex",
+                      //         alignItems: "center",
+                      //         justifyContent: "flex-start",
+                      //         height: "100%",
+                      //         pl: 1,
+                      //       }}
+                      //     >
+                      //       {isYes ? (
+                      //         <CheckCircleIcon sx={{ color: "#22c55e" }} />
+                      //       ) : (
+                      //         <CancelIcon sx={{ color: "#ef4444" }} />
+                      //       )}
+                      //     </Box>
+                      //   );
+                        
+                    
+                      // },
+                      renderCell: (params) => {
                         const value = params.value;
                         const isYes = value === "Yes";
                         const isNo = value === "No";
                     
                         if (!isYes && !isNo) {
-                            return (
+                          return (
                             <Box
-                                sx={{
+                              sx={{
                                 fontFamily: "Roboto",
                                 width: "100%",
                                 display: "flex",
                                 justifyContent: "center",
                                 }}
                             >
-                                -
+                              -
                             </Box>
-                            );
+                          );
                         }
                     
-                        const statusText = isYes ? "Served" : "UnServed";
+                        const statusText = isYes ? "Yes" : "No";
                         const statusColor = isYes ? "#22c55e" : "#ef4444";
                         const borderColor = isYes ? "#34D399" : "#EF4444";
                     
                         return (
-                            <div
+                          <div
                             style={{
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                                paddingTop: "8px",
+                              width: "100%",
+                              display: "flex",
+                              justifyContent: "center",
+                              paddingTop: "8px",
                             }}
-                            >
+                          >
                             <Chip
-                                label={statusText}
-                                size="small"
-                                sx={{
+                              label={statusText}
+                              size="small"
+                              sx={{
                                 fontFamily: "Roboto",
                                 fontWeight: 400,
                                 color: "white",
@@ -3928,738 +4087,513 @@ const UnderInvestigation = () => {
                                 textTransform: "capitalize",
                                 borderStyle: "solid",
                                 borderWidth: "1px",
-                                minWidth: "80px",
+                                minWidth: "40px",
                                 textAlign: "center",
                                 justifyContent: "center",
                                 display: "flex",
-                                }}
+                              }}
                             />
-                            </div>
+                          </div>
                         );
                         
-                        },
-                    }
+                      },
+                    },      
                     ]
-                    : []),,
-                    ...(options.table === "cid_ui_case_checking_tabs"
-                    ? [
-                        {
-                        field: "field_reappear",
-                        headerName: "Reappear",
-                        width: 100,
-                        resizable: true,
-                        sortable: true,
-                        sortComparator: (v1, v2) => {
-                            if (v1 === "Yes" && v2 === "No") return -1;
-                            if (v1 === "No" && v2 === "Yes") return 1;
-                            return 0;
-                        },
-                        // renderCell: (params) => {
-                        //   const value = params.value;
-                        //   const isYes = value === "Yes";
-                        //   const isNo = value === "No";
-                        
-                        //   if (!isYes && !isNo) {
-                        //     return (
-                        //       <Box
-                        //         sx={{
-                        //           fontFamily: "Roboto",
-                        //           width: "100%",
-                        //           marginLeft: "15px",
-                        //         }}
-                        //       >
-                        //         -
-                        //       </Box>
-                        //     );
-                        //   }
-                                            
-                        //   return (
-                        //     <Box
-                        //       sx={{
-                        //         display: "flex",
-                        //         alignItems: "center",
-                        //         justifyContent: "flex-start",
-                        //         height: "100%",
-                        //         pl: 1,
-                        //       }}
-                        //     >
-                        //       {isYes ? (
-                        //         <CheckCircleIcon sx={{ color: "#22c55e" }} />
-                        //       ) : (
-                        //         <CancelIcon sx={{ color: "#ef4444" }} />
-                        //       )}
-                        //     </Box>
-                        //   );
-                            
-                        
-                        // },
-                        renderCell: (params) => {
-                            const value = params.value;
-                            const isYes = value === "Yes";
-                            const isNo = value === "No";
-                        
-                            if (!isYes && !isNo) {
-                            return (
-                                <Box
-                                sx={{
-                                    fontFamily: "Roboto",
-                                    width: "100%",
-                                    display: "flex",
-                                    justifyContent: "center",
-                                    }}
-                                >
-                                -
-                                </Box>
-                            );
-                            }
-                        
-                            const statusText = isYes ? "Yes" : "No";
-                            const statusColor = isYes ? "#22c55e" : "#ef4444";
-                            const borderColor = isYes ? "#34D399" : "#EF4444";
-                        
-                            return (
-                            <div
-                                style={{
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                                paddingTop: "8px",
-                                }}
-                            >
-                                <Chip
-                                label={statusText}
-                                size="small"
-                                sx={{
-                                    fontFamily: "Roboto",
-                                    fontWeight: 400,
-                                    color: "white",
-                                    borderColor: borderColor,
-                                    borderRadius: "4px",
-                                    backgroundColor: statusColor,
-                                    textTransform: "capitalize",
-                                    borderStyle: "solid",
-                                    borderWidth: "1px",
-                                    minWidth: "40px",
-                                    textAlign: "center",
-                                    justifyContent: "center",
-                                    display: "flex",
-                                }}
-                                />
-                            </div>
-                            );
-                            
-                        },
-                        },      
-                        ]
-                    : []),
-                    {
-                    field: "",
-                    headerName: "Action",
-                    flex: 1,
-                    renderCell: (params) => {
-                        const isPdfUpdated =
-                        options.table === "cid_ui_case_progress_report" &&
-                        params.row.field_pr_status === "Yes";
-                    
-                        // const isAssignedUser =
-                        //   String(localStorage.getItem("user_id")) ===
-                        //   String(params.row.field_assigned_to_id);
-                    
-                        // const showEditAndDeleteButtons =
-                        //   options.table === "cid_ui_case_progress_report"
-                        //     ? !isPdfUpdated && (isAuthorized || isAssignedUser)
-                        //     : !isPdfUpdated && isAuthorized;
-                    
-                        const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-                        const canEdit = userPermissions[0]?.action_edit;
-                        const canDelete = userPermissions[0]?.action_delete;
-                        const checkserved =
-                        options.table === "cid_ui_case_checking_tabs" &&
-                        params.row.field_served_or_unserved === "Yes";
+                  : []),
+                {
+                  field: "",
+                  headerName: "Action",
+                  flex: 1,
+                  cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                  renderCell: (params) => {
+                    const isPdfUpdated =
+                      options.table === "cid_ui_case_progress_report" &&
+                      params.row.field_pr_status === "Yes";
+                
+                    // const isAssignedUser =
+                    //   String(localStorage.getItem("user_id")) ===
+                    //   String(params.row.field_assigned_to_id);
+                
+                    // const showEditAndDeleteButtons =
+                    //   options.table === "cid_ui_case_progress_report"
+                    //     ? !isPdfUpdated && (isAuthorized || isAssignedUser)
+                    //     : !isPdfUpdated && isAuthorized;
+                
+                    const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                    const canEdit = userPermissions[0]?.action_edit;
+                    const canDelete = userPermissions[0]?.action_delete;
+                    const checkserved =
+                      options.table === "cid_ui_case_checking_tabs" &&
+                      params.row.field_served_or_unserved === "Yes";
 
-                        const checkUnServed = 
-                        options.table === "cid_ui_case_checking_tabs" &&
-                        params.row.field_served_or_unserved === "No";
+                    const checkUnServed = 
+                      options.table === "cid_ui_case_checking_tabs" &&
+                      params.row.field_served_or_unserved === "No";
 
 
-                        const checkreappear =
-                        options.table === "cid_ui_case_checking_tabs" &&
-                        params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
+                    const checkreappear =
+                      options.table === "cid_ui_case_checking_tabs" &&
+                      params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
 
 
 
-                        return (
-                        <Box
-                            sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "10px",
-                            height: "100%",
-                            }}
+                    return (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          height: "100%",
+                        }}
+                      >
+                        <Button
+                          variant="outlined"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleOthersTemplateDataView(params.row, false, options.table);
+                          }}
                         >
-                            <Button
-                            variant="outlined"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                handleOthersTemplateDataView(params.row, false, options.table);
-                            }}
-                            >
-                            View
-                            </Button>
-                    
-                            {canEdit&& (
-                            <>
-                                {!isPdfUpdated && (
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleOthersTemplateDataView(params.row, true, options.table);
-                                    }}
-                                >
-                                    Edit
-                                </Button>
-                                )}
-                            </>
+                          View
+                        </Button>
+                
+                        {canEdit&& (
+                          <>
+                            {!isPdfUpdated && (
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleOthersTemplateDataView(params.row, true, options.table);
+                                }}
+                              >
+                                Edit
+                              </Button>
                             )}
-                            {canDelete&& (
-                            <>
-                                {!isPdfUpdated && (
-                                <Button
-                                    variant="contained"
-                                    color="error"
-                                    onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleOthersDeleteTemplateData(params.row, options.table);
-                                    }}
-                                >
-                                    Delete
-                                </Button>
-                                )}
-                            </>
+                           </>
+                        )}
+                        {canDelete&& (
+                          <>
+                            {!isPdfUpdated && (
+                              <Button
+                                variant="contained"
+                                color="error"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleOthersDeleteTemplateData(params.row, options.table);
+                                }}
+                              >
+                                Delete
+                              </Button>
                             )}
-                            {options.table === "cid_ui_case_checking_tabs" && (
-                            <>
-                                {!checkserved && !checkUnServed &&(
-                                <Button
-                                    variant="contained"
-                                    color = "success"
-                                    disabled={checkserved}
-                                    onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleServedUnserved(params.row, options);
-                                    }}
-                                >
-                                    Served/Unserved
-                                </Button>
-                                )}
-                                {checkserved && !checkreappear && (
-                                <Button
-                                    variant="contained"
-                                    // style={{
-                                    //   backgroundColor: checkreappear ? "#d6d6d6" : "#ffc107",
-                                    //   color: checkreappear ? "#a6a6a6" : "black",
-                                    //   cursor: checkreappear ? "not-allowed" : "pointer",
-                                    // }}
-                                    color = "warning"
-                                    disabled={checkreappear}
-                                    onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleReappear(params.row, options);
-                                    }}
-                                >
-                                    Reappear
-                                </Button>
-                                )}
-                            </>
+                          </>
+                        )}
+                        {options.table === "cid_ui_case_checking_tabs" && (
+                          <>
+                            {!checkserved && !checkUnServed &&(
+                              <Button
+                                variant="contained"
+                                color = "success"
+                                disabled={checkserved}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleServedUnserved(params.row, options);
+                                }}
+                              >
+                                Served/Unserved
+                              </Button>
                             )}
+                            {checkserved && !checkreappear && (
+                              <Button
+                                variant="contained"
+                                // style={{
+                                //   backgroundColor: checkreappear ? "#d6d6d6" : "#ffc107",
+                                //   color: checkreappear ? "#a6a6a6" : "black",
+                                //   cursor: checkreappear ? "not-allowed" : "pointer",
+                                // }}
+                                color = "warning"
+                                disabled={checkreappear}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  handleReappear(params.row, options);
+                                }}
+                              >
+                                Reappear
+                              </Button>
+                            )}
+                          </>
+                        )}
 
-                        </Box>
-                        );
-                    },
-                    }
-                                    
-                ]).filter(Boolean);
-
-                setOtherTemplateColumn(updatedHeader);
-            } else {
-                setOtherTemplateColumn([]);
-            }
-
-            var updatedTableData = getTemplateResponse.data.map((field, index) => {
-                const formatDate = (fieldValue) => {
-
-                    if (!fieldValue || typeof fieldValue !== "string")
-                        return fieldValue;
-
-                    var dateValue = new Date(fieldValue);
-
-                    if (isNaN(dateValue.getTime()) || (!fieldValue.includes("-") && !fieldValue.includes("/"))) {
-                        return fieldValue;
-                    }
-
-                    if (isNaN(dateValue.getTime())) return fieldValue;
-
-                    var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                    var monthValue = String(dateValue.getMonth() + 1).padStart(2,"0");
-                    var yearValue = dateValue.getFullYear();
-                    return `${dayValue}/${monthValue}/${yearValue}`;
-                };
-
-                const updatedField = {};
-
-                Object.keys(field).forEach((key) => {
-                    if (field[key] && key !== "id" && !isNaN(new Date(field[key]).getTime())) {
-                        updatedField[key] = formatDate(field[key]);
-                    } else {
-                        updatedField[key] = field[key];
-                    }
-                });
-
-                return {
-                    ...updatedField,
-                    sl_no: (otherTablePagination - 1) * 10 + (index + 1),
-                    ...(field.id ? {} : { id: "unique_id_" + index }),
-                };
-            });
-
-            setOtherTemplateData(updatedTableData);
-            if (options.table === "cid_ui_case_progress_report" && options.is_pdf) {
-                await checkPdfEntryStatus(selectedRow.id);
-                await getUploadedFiles(selectedRow);
-            }
-
-            setOtherTemplateModalOpen(true);
-        }
-
-            setselectedOtherTemplate(options);
-
-            setOtherFormOpen(false);
-            setOptionStepperData([]);
-            setOptionFormTemplateData([]);
-        } else {
-            const errorMessage = getTemplateResponse.message
-            ? getTemplateResponse.message
-            : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
-
-    const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue) => {
-        const selectedFieldData = selectedRow[selectedFieldValue];
-    
-        const viewTableData = {
-        table_name: options.table,
-        };
-    
-        setLoading(true);
-        try {
-        const viewTemplateResponse = await api.post(
-            "/templates/viewTemplate",
-            viewTableData
-        );
-        setLoading(false);
-    
-        if (
-            viewTemplateResponse &&
-            viewTemplateResponse.success &&
-            viewTemplateResponse["data"]
-        ) {
-            if (viewTemplateResponse["data"].fields) {
-            setFormTemplateData(viewTemplateResponse["data"].fields);
-    
-            const getDivisionField = viewTemplateResponse["data"].fields.filter(
-                (data) => data.name === options.field
-            );
-    
-            if (getDivisionField.length > 0) {
-    
-                if (getDivisionField[0].api) {
-                setLoading(true);
-    
-                const payloadApi = {
-                    table_name: getDivisionField[0].table,
-                };
-    
-                try {
-                    const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
-                    setLoading(false);
-    
-                    let updatedOptions = [];
-    
-                    if (getOptionsValue && getOptionsValue.data) {
-                    if (getDivisionField[0].api === "/templateData/getTemplateData") {
-                        updatedOptions = getOptionsValue.data.map((templateData) => {
-                        const nameKey = Object.keys(templateData).find(
-                            (key) => !["id", "created_at", "updated_at"].includes(key)
-                        );
-                        return {
-                            name: nameKey ? templateData[nameKey] : "",
-                            code: templateData.id,
-                        };
-                        });
-                    } else {
-                        updatedOptions = getOptionsValue.data.map((field) => ({
-                        name:
-                        getDivisionField[0].table === "users"
-                            ? field.name
-                            : field[getDivisionField[0].table + "_name"],
-                        code:
-                        getDivisionField[0].table === "users"
-                            ? field.user_id
-                            : field[getDivisionField[0].table + "_id"],
-                        }));
-                    }
-    
-                    const matchedOption = updatedOptions.find(
-                        (option) =>
-                        (option.code === selectedFieldData || option.name === selectedFieldData)
+                      </Box>
                     );
-                    console.log("Pre-selected value:", matchedOption);
-                    setSelectedOtherFields(matchedOption || null);
-    
-                    setSelectKey({ name: options.field, title: options.name });
-                    setSelectedRow(selectedRow);
-                    setselectedOtherTemplate(options);
-                    setOtherTransferField(updatedOptions);
-                    setShowOtherTransferModal(true);
-                    }
-                } catch (error) {
-                    setLoading(false);
-                    if (error?.response?.data) {
-                    toast.error(
-                        error.response.data.message || "Division not found",
-                        {
-                        position: "top-right",
-                        autoClose: 3000,
-                        className: "toast-error",
-                        }
-                    );
-                    }
+                  },
                 }
+                                
+            ]).filter(Boolean);
+
+            setOtherTemplateColumn(updatedHeader);
+          } else {
+            setOtherTemplateColumn([]);
+          }
+
+        var updatedTableData = getTemplateResponse.data.map((field, index) => {
+            const formatDate = (fieldValue) => {
+
+                if (!fieldValue || typeof fieldValue !== "string")
+                    return fieldValue;
+
+                var dateValue = new Date(fieldValue);
+
+                if (isNaN(dateValue.getTime()) || (!fieldValue.includes("-") && !fieldValue.includes("/"))) {
+                    return fieldValue;
+                }
+
+                if (isNaN(dateValue.getTime())) return fieldValue;
+
+                var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                var monthValue = String(dateValue.getMonth() + 1).padStart(2,"0");
+                var yearValue = dateValue.getFullYear();
+                return `${dayValue}/${monthValue}/${yearValue}`;
+            };
+
+            const updatedField = {};
+
+            Object.keys(field).forEach((key) => {
+                if (field[key] && key !== "id" && !isNaN(new Date(field[key]).getTime())) {
+                    updatedField[key] = formatDate(field[key]);
                 } else {
-                const staticOptions = getDivisionField[0].options || [];
-    
-                const matchedOption = staticOptions.find(
-                    (option) => option.code === selectedFieldData
-                );
-                setSelectedOtherFields(matchedOption || null);
-    
-                setSelectKey({ name: options.field, title: options.name });
-                setSelectedRow(selectedRow);
-                setselectedOtherTemplate(options);
-                setOtherTransferField(staticOptions);
-                setShowOtherTransferModal(true);
+                    updatedField[key] = field[key];
                 }
+            });
+
+            return {
+                ...updatedField,
+                sl_no: (otherTablePagination - 1) * 10 + (index + 1),
+                ...(field.id ? {} : { id: "unique_id_" + index }),
+            };
+        });
+
+        setOtherTemplateData(updatedTableData);
+        if (options.table === "cid_ui_case_progress_report" && options.is_pdf) {
+            await checkPdfEntryStatus(selectedRow.id);
+            await getUploadedFiles(selectedRow);
+        }
+
+        setOtherTemplateModalOpen(true);
+    }
+
+        setselectedOtherTemplate(options);
+
+        setOtherFormOpen(false);
+        setOptionStepperData([]);
+        setOptionFormTemplateData([]);
+      } else {
+        const errorMessage = getTemplateResponse.message
+          ? getTemplateResponse.message
+          : "Failed to create the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
+    }
+  };
+
+  const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue) => {
+    const selectedFieldData = selectedRow[selectedFieldValue];
+  
+    const viewTableData = {
+      table_name: options.table,
+    };
+  
+    setLoading(true);
+    try {
+      const viewTemplateResponse = await api.post(
+        "/templates/viewTemplate",
+        viewTableData
+      );
+      setLoading(false);
+  
+      if (
+        viewTemplateResponse &&
+        viewTemplateResponse.success &&
+        viewTemplateResponse["data"]
+      ) {
+        if (viewTemplateResponse["data"].fields) {
+          setFormTemplateData(viewTemplateResponse["data"].fields);
+  
+          const getDivisionField = viewTemplateResponse["data"].fields.filter(
+            (data) => data.name === options.field
+          );
+  
+          if (getDivisionField.length > 0) {
+  
+            if (getDivisionField[0].api) {
+              setLoading(true);
+  
+              const payloadApi = {
+                table_name: getDivisionField[0].table,
+              };
+  
+              try {
+                const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
+                setLoading(false);
+  
+                let updatedOptions = [];
+  
+                if (getOptionsValue && getOptionsValue.data) {
+                  if (getDivisionField[0].api === "/templateData/getTemplateData") {
+                    updatedOptions = getOptionsValue.data.map((templateData) => {
+                      const nameKey = Object.keys(templateData).find(
+                        (key) => !["id", "created_at", "updated_at"].includes(key)
+                      );
+                      return {
+                        name: nameKey ? templateData[nameKey] : "",
+                        code: templateData.id,
+                      };
+                    });
+                  } else {
+                    updatedOptions = getOptionsValue.data.map((field) => ({
+                      name:
+                      getDivisionField[0].table === "users"
+                          ? field.name
+                          : field[getDivisionField[0].table + "_name"],
+                      code:
+                      getDivisionField[0].table === "users"
+                          ? field.user_id
+                          : field[getDivisionField[0].table + "_id"],
+                    }));
+                  }
+  
+                  const matchedOption = updatedOptions.find(
+                    (option) =>
+                      (option.code === selectedFieldData || option.name === selectedFieldData)
+                  );
+                  console.log("Pre-selected value:", matchedOption);
+                  setSelectedOtherFields(matchedOption || null);
+  
+                  setSelectKey({ name: options.field, title: options.name });
+                  setSelectedRow(selectedRow);
+                  setselectedOtherTemplate(options);
+                  setOtherTransferField(updatedOptions);
+                  setShowOtherTransferModal(true);
+                }
+              } catch (error) {
+                setLoading(false);
+                if (error?.response?.data) {
+                  toast.error(
+                    error.response.data.message || "Division not found",
+                    {
+                      position: "top-right",
+                      autoClose: 3000,
+                      className: "toast-error",
+                    }
+                  );
+                }
+              }
             } else {
-                toast.error("Can't able to find Division field", {
-                position: "top-right",
-                autoClose: 3000,
-                className: "toast-error",
-                });
+              const staticOptions = getDivisionField[0].options || [];
+  
+              const matchedOption = staticOptions.find(
+                (option) => option.code === selectedFieldData
+              );
+              setSelectedOtherFields(matchedOption || null);
+  
+              setSelectKey({ name: options.field, title: options.name });
+              setSelectedRow(selectedRow);
+              setselectedOtherTemplate(options);
+              setOtherTransferField(staticOptions);
+              setShowOtherTransferModal(true);
             }
-            }
-        } else {
-            toast.error(
-            viewTemplateResponse.message || "Failed to get Template. Please try again.",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                className: "toast-error",
-            }
-            );
+          } else {
+            toast.error("Can't able to find Division field", {
+              position: "top-right",
+              autoClose: 3000,
+              className: "toast-error",
+            });
+          }
         }
-        } catch (error) {
-        setLoading(false);
-        if (error?.response?.data) {
-            toast.error(
-            error.response.data.message || "Please Try Again!",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
-    
-    const showApprovalPage = async (approveData) => {
-        var payloadObj = {
-            case_id: approveData.id,
-        };
-
-        setLoading(true);
-
-        try {
-        const getActionsDetails = await api.post(
-            "/ui_approval/get_ui_case_approvals",
-            payloadObj
-        );
-
-        setLoading(false);
-
-        if (getActionsDetails && getActionsDetails.success) {
-            var updatedOptions = [];
-
-            if (getActionsDetails.data["approvals"].length > 0) {
-            updatedOptions = getActionsDetails.data["approvals"].map(
-                (data, index) => {
-                const formatDate = (fieldValue) => {
-                    if (!fieldValue || typeof fieldValue !== "string")
-                    return fieldValue;
-
-                    var dateValue = new Date(fieldValue);
-
-                    if (
-                    isNaN(dateValue.getTime()) ||
-                    (!fieldValue.includes("-") && !fieldValue.includes("/"))
-                    ) {
-                    return fieldValue;
-                    }
-
-                    if (isNaN(dateValue.getTime())) return fieldValue;
-
-                    var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                    var monthValue = String(dateValue.getMonth() + 1).padStart(
-                    2,
-                    "0"
-                    );
-                    var yearValue = dateValue.getFullYear();
-                    return `${dayValue}/${monthValue}/${yearValue}`;
-                };
-
-                const updatedField = {};
-
-                Object.keys(data).forEach((key) => {
-                    if (
-                    data[key] &&
-                    key !== "id" &&
-                    !isNaN(new Date(data[key]).getTime())
-                    ) {
-                    updatedField[key] = formatDate(data[key]);
-                    } else {
-                    updatedField[key] = data[key];
-                    }
-                });
-
-                return {
-                    ...updatedField,
-                    sl_no: index + 1,
-                    id: data.approval_id,
-                };
-                }
-            );
-            }
-
-            setApprovalsData(updatedOptions);
-            setApprovalItem(getActionsDetails.data["approval_item"]);
-            setDesignationData(getActionsDetails.data["designation"]);
-
-            setAddApproveFlag(true);
-            setApproveTableFlag(true);
-
-            const randomId = `approval_${Date.now()}_${Math.floor(
-            Math.random() * 1000
-            )}`;
-            setRandomApprovalId(randomId);
-        } else {
-            const errorMessage = getActionsDetails.message
-            ? getActionsDetails.message
-            : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
+      } else {
+        toast.error(
+          viewTemplateResponse.message || "Failed to get Template. Please try again.",
+          {
             position: "top-right",
             autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
-    };
-
-    const showApprovalListPage = async (approveData) => {
-        var payloadObj = {
-            case_id: approveData.id,
-        };
-
-        setLoading(true);
-
-        try {
-        const getActionsDetails = await api.post(
-            "/ui_approval/get_ui_case_approvals",
-            payloadObj
+          }
         );
-
-        setLoading(false);
-
-        if (getActionsDetails && getActionsDetails.success) {
-            var updatedOptions = [];
-
-            if (getActionsDetails.data["approvals"].length > 0) {
-            updatedOptions = getActionsDetails.data["approvals"].map(
-                (data, index) => {
-                const formatDate = (fieldValue) => {
-                    if (!fieldValue || typeof fieldValue !== "string")
-                    return fieldValue;
-
-                    var dateValue = new Date(fieldValue);
-
-                    if (
-                    isNaN(dateValue.getTime()) ||
-                    (!fieldValue.includes("-") && !fieldValue.includes("/"))
-                    ) {
-                    return fieldValue;
-                    }
-
-                    if (isNaN(dateValue.getTime())) return fieldValue;
-
-                    var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                    var monthValue = String(dateValue.getMonth() + 1).padStart(
-                    2,
-                    "0"
-                    );
-                    var yearValue = dateValue.getFullYear();
-                    return `${dayValue}/${monthValue}/${yearValue}`;
-                };
-
-                const updatedField = {};
-
-                Object.keys(data).forEach((key) => {
-                    if (
-                    data[key] &&
-                    key !== "id" &&
-                    !isNaN(new Date(data[key]).getTime())
-                    ) {
-                    updatedField[key] = formatDate(data[key]);
-                    } else {
-                    updatedField[key] = data[key];
-                    }
-                });
-
-                return {
-                    ...updatedField,
-                    sl_no: index + 1,
-                    id: data.approval_id,
-                };
-                }
-            );
-            }
-
-            setListApprovalsData(updatedOptions);
-            setListApprovalItem(getActionsDetails.data["approval_item"]);
-            setListDesignationData(getActionsDetails.data["designation"]);
-
-            setListAddApproveFlag(false);
-            setListApproveTableFlag(true);
-            setListApprovalCaseNo(approveData["field_cid_crime_no./enquiry_no"] || "")
-
-            const randomId = `approval_${Date.now()}_${Math.floor(
-            Math.random() * 1000
-            )}`;
-            setListRandomApprovalId(randomId);
-        } else {
-            const errorMessage = getActionsDetails.message
-            ? getActionsDetails.message
-            : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error?.response?.data) {
+        toast.error(
+          error.response.data.message || "Please Try Again!",
+          {
             position: "top-right",
             autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
             className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
-        }
+          }
+        );
+      }
+    }
+  };
+  
+
+
+  const showApprovalPage = async (approveData) => {
+    var payloadObj = {
+     	case_id: approveData.id,
     };
 
-    const showApprovalAddPage = (table) => {
+    setLoading(true);
+
+    try {
+      const getActionsDetails = await api.post(
+        "/ui_approval/get_ui_case_approvals",
+        payloadObj
+      );
+
+      setLoading(false);
+
+      if (getActionsDetails && getActionsDetails.success) {
+        var updatedOptions = [];
+
+        if (getActionsDetails.data["approvals"].length > 0) {
+          updatedOptions = getActionsDetails.data["approvals"].map(
+            (data, index) => {
+              const formatDate = (fieldValue) => {
+                if (!fieldValue || typeof fieldValue !== "string")
+                  return fieldValue;
+
+                var dateValue = new Date(fieldValue);
+
+                if (
+                  isNaN(dateValue.getTime()) ||
+                  (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                ) {
+                  return fieldValue;
+                }
+
+                if (isNaN(dateValue.getTime())) return fieldValue;
+
+                var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                var monthValue = String(dateValue.getMonth() + 1).padStart(
+                  2,
+                  "0"
+                );
+                var yearValue = dateValue.getFullYear();
+                return `${dayValue}/${monthValue}/${yearValue}`;
+              };
+
+              const updatedField = {};
+
+              Object.keys(data).forEach((key) => {
+                if (
+                  data[key] &&
+                  key !== "id" &&
+                  !isNaN(new Date(data[key]).getTime())
+                ) {
+                  updatedField[key] = formatDate(data[key]);
+                } else {
+                  updatedField[key] = data[key];
+                }
+              });
+
+              return {
+                ...updatedField,
+                sl_no: index + 1,
+                id: data.approval_id,
+              };
+            }
+          );
+        }
+
+        setApprovalsData(updatedOptions);
+        setApprovalItem(getActionsDetails.data["approval_item"]);
+        setDesignationData(getActionsDetails.data["designation"]);
+
         setAddApproveFlag(true);
-        handleApprovalSaveData(
-        "approval_item",
-        Number(selectedOtherTemplate?.approval_items)
-        );
+        setApproveTableFlag(true);
 
-        if (selectedOtherTemplate?.approval_items) {
-        setApprovalItemDisabled(true);
-        } else {
-        setApprovalItemDisabled(false);
-        }
-    };
+        const randomId = `approval_${Date.now()}_${Math.floor(
+          Math.random() * 1000
+        )}`;
+        setRandomApprovalId(randomId);
+      } else {
+        const errorMessage = getActionsDetails.message
+          ? getActionsDetails.message
+          : "Failed to create the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
+    }
+  };
+
+  const showApprovalAddPage = (table) => {
+    setAddApproveFlag(true);
+    handleApprovalSaveData(
+      "approval_item",
+      Number(selectedOtherTemplate?.approval_items)
+    );
+
+    if (selectedOtherTemplate?.approval_items) {
+      setApprovalItemDisabled(true);
+    } else {
+      setApprovalItemDisabled(false);
+    }
+  };
 
   const saveApprovalData = async (table) => {
     if (!approvalSaveData || !approvalSaveData["approval_item"]) {
@@ -5452,7 +5386,6 @@ const UnderInvestigation = () => {
       : null,
   ].filter(Boolean);
 
-
   // Advance filter functions
 
   const handleFilter = async () => {
@@ -5992,7 +5925,7 @@ const UnderInvestigation = () => {
     }
 
     const handleActionShow = (rowData)=>{
-
+    
         if(!rowData){
             toast.error("Please Check Case Data !",{
                 position: "top-right",
@@ -6016,6 +5949,131 @@ const UnderInvestigation = () => {
 
         showApprovalListPage(rowData)
 
+    }
+
+    const showApprovalListPage = async (approveData) => {
+        var payloadObj = {
+            case_id: approveData.id,
+        };
+
+        setLoading(true);
+
+        try {
+            const getActionsDetails = await api.post(
+                "/ui_approval/get_ui_case_approvals",
+                payloadObj
+            );
+    
+            setLoading(false);
+    
+            if (getActionsDetails && getActionsDetails.success) {
+                var updatedOptions = [];
+    
+                if (getActionsDetails.data["approvals"].length > 0) {
+                updatedOptions = getActionsDetails.data["approvals"].map(
+                    (data, index) => {
+                    const formatDate = (fieldValue) => {
+                        if (!fieldValue || typeof fieldValue !== "string")
+                        return fieldValue;
+    
+                        var dateValue = new Date(fieldValue);
+    
+                        if (
+                        isNaN(dateValue.getTime()) ||
+                        (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                        ) {
+                        return fieldValue;
+                        }
+    
+                        if (isNaN(dateValue.getTime())) return fieldValue;
+    
+                        var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                        var monthValue = String(dateValue.getMonth() + 1).padStart(
+                        2,
+                        "0"
+                        );
+                        var yearValue = dateValue.getFullYear();
+                        return `${dayValue}/${monthValue}/${yearValue}`;
+                    };
+    
+                    const updatedField = {};
+    
+                    Object.keys(data).forEach((key) => {
+                        if (
+                        data[key] &&
+                        key !== "id" &&
+                        !isNaN(new Date(data[key]).getTime())
+                        ) {
+                        updatedField[key] = formatDate(data[key]);
+                        } else {
+                        updatedField[key] = data[key];
+                        }
+                    });
+    
+                    return {
+                        ...updatedField,
+                        sl_no: index + 1,
+                        id: data.approval_id,
+                    };
+                    }
+                );
+                }
+    
+                setListApprovalsData(updatedOptions);
+                setListApprovalItem(getActionsDetails.data["approval_item"]);
+                setListDesignationData(getActionsDetails.data["designation"]);
+    
+                setListAddApproveFlag(false);
+                setListApproveTableFlag(true);
+                setListApprovalCaseNo(approveData["field_cid_crime_no./enquiry_no"] || "")
+    
+                const randomId = `approval_${Date.now()}_${Math.floor(
+                Math.random() * 1000
+                )}`;
+                setListRandomApprovalId(randomId);
+            } else {
+                const errorMessage = getActionsDetails.message
+                ? getActionsDetails.message
+                : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(
+                error.response["data"].message
+                    ? error.response["data"].message
+                    : "Please Try Again !",
+                {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                }
+                );
+            }
+        }
+    };
+
+    const closeOtherForm = ()=>{
+        setOtherFormOpen(false)
+        setShowPtCaseModal(false);
+        if(selectedOtherTemplate?.table === "cid_ui_case_progress_report"){
+            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+        }
     }
 
   return (
@@ -6359,10 +6417,7 @@ const UnderInvestigation = () => {
       {otherFormOpen && (
         <Dialog
           open={otherFormOpen}
-          onClose={() => {
-            setOtherFormOpen(false);
-            setShowPtCaseModal(false);
-          }}
+          onClose={() => closeOtherForm}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
           maxWidth="xl"
@@ -6392,13 +6447,16 @@ const UnderInvestigation = () => {
                   onSubmit={otherTemplateSaveFunc}
                   onUpdate={otherTemplateUpdateFunc}
                   onError={onSaveTemplateError}
-                  closeForm={setOtherFormOpen}
+                  closeForm={closeOtherForm}
+                  headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
                 />
               </FormControl>
             </DialogContentText>
           </DialogContent>
           <DialogActions sx={{ padding: "12px 24px" }}>
-            <Button onClick={() => setOtherFormOpen(false)}>Cancel</Button>
+            <Button onClick={() => closeOtherForm}>
+                Cancel
+            </Button>
           </DialogActions>
         </Dialog>
       )}
@@ -6585,7 +6643,17 @@ const UnderInvestigation = () => {
               justifyContent: "space-between",
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setOtherTemplateModalOpen(false)}>
+            <Box 
+                sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                onClick={() => {
+                    setOtherTemplateModalOpen(false);
+                    
+                    if (selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
+                        loadTableData(paginationCount);
+                    }
+                }}
+            >
+
                 <WestIcon />
 
                 <Typography variant="body1" fontWeight={500}>
@@ -6598,7 +6666,7 @@ const UnderInvestigation = () => {
                         color="primary"
                         variant="outlined"
                         size="small"
-                        sx={{ fontWeight: 500, marginTop: '1px' }}
+                        sx={{ fontWeight: 500, marginTop: '2px' }}
                     />
                 )}
 
@@ -6869,7 +6937,7 @@ const UnderInvestigation = () => {
           aria-describedby="alert-dialog-description"
           maxWidth="lg"
           fullWidth
-          sx={{ zIndex: "1" ,  maxHeight: '70vh', overflowY: 'auto',}}
+          sx={{ zIndex: "1" }}
         >
           <DialogTitle
             id="alert-dialog-title"
@@ -7379,7 +7447,7 @@ const UnderInvestigation = () => {
           aria-describedby="alert-dialog-description"
           maxWidth="lg"
           fullWidth
-           sx={{ zIndex: "1"}}
+          sx={{ zIndex: "1" }}
         >
           <DialogTitle
             id="alert-dialog-title"
@@ -7421,7 +7489,7 @@ const UnderInvestigation = () => {
           </DialogTitle>
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              <Box py={2} sx={{ width: '100%'}}>
+              <Box py={2} sx={{ width: '90%'}}>
                 {!addApproveFlag ? (
                   <TableView rows={approvalsData} columns={approvalsColumn} />
                 ) : (
@@ -7536,185 +7604,185 @@ const UnderInvestigation = () => {
         </Dialog>
       )} */}
 
-      {listApproveTableFlag && (
-        <Dialog
-          open={listApproveTableFlag}
-          onClose={() => setListApproveTableFlag(false)}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-          maxWidth="lg"
-          fullWidth
-           sx={{ zIndex: "1"}}
-        >
-          <DialogTitle
-            id="alert-dialog-title"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
-                <Typography variant="body1" fontWeight={500} fontSize="16px">
-                   Approval
-                </Typography>
-
-                {listApprovalCaseNo && (
-                    <Chip
-                        label={listApprovalCaseNo}
-                        color="primary"
-                        variant="outlined"
-                        size="small"
-                        sx={{ fontWeight: 500, marginTop: '1px' }}
-                    />
-                )}
-            </Box>
-            
-            <Box >
-              {!addApproveFlag ? (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    showApprovalAddPage(selectedOtherTemplate.table);
-                  }}
-                >
-                  Add
-                </Button>
-              ) : (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    saveApprovalData(selectedOtherTemplate.table);
-                  }}
-                >
-                  Save
-                </Button>
-              )}
-              <IconButton
-                aria-label="close"
-                onClick={() => setListApproveTableFlag(false)}
-                sx={{ color: (theme) => theme.palette.grey[500] }}
+        {listApproveTableFlag && (
+              <Dialog
+                open={listApproveTableFlag}
+                onClose={() => setListApproveTableFlag(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+                fullWidth
+                 sx={{ zIndex: "1"}}
               >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              <Box py={2} sx={{ width: '100%'}}>
-                {!listAddApproveFlag ? (
-                  <TableView rows={listApprovalsData} columns={listApprovalsColumn} />
-                ) : (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "18px",
-                    }}
-                  >                    
-                    <Autocomplete
-                      id=""
-                      options={listApprovalItem}
-                      getOptionLabel={(option) => option.name || ""}
-                      name={"approval_item"}
-                      disabled={listApprovalItemDisabled}
-                      value={
-                        listApprovalItem.find(
-                          (option) =>
-                            option.approval_item_id ===
-                            (listApprovalSaveData &&
-                              listApprovalSaveData["approval_item"])
-                        ) || null
-                      }
-                      onChange={(e, value) =>
-                        handleApprovalSaveData(
-                          "approval_item",
-                          value?.approval_item_id
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          className="selectHideHistory"
-                          label={"Approval Item"}
-                        />
+                <DialogTitle
+                  id="alert-dialog-title"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                      <Typography variant="body1" fontWeight={500} fontSize="16px">
+                         Approval
+                      </Typography>
+      
+                      {listApprovalCaseNo && (
+                          <Chip
+                              label={listApprovalCaseNo}
+                              color="primary"
+                              variant="outlined"
+                              size="small"
+                              sx={{ fontWeight: 500, marginTop: '1px' }}
+                          />
                       )}
-                    />
-                    <Autocomplete
-                      id=""
-                      options={listDesignationData}
-                      getOptionLabel={(option) => option.designation_name || ""}
-                      name={"approved_by"}
-                      value={
-                        listDesignationData.find(
-                          (option) =>
-                            option.designation_id ===
-                            (listApprovalSaveData &&
-                              listApprovalSaveData["approved_by"])
-                        ) || null
-                      }
-                      onChange={(e, value) =>
-                        handleApprovalSaveData(
-                          "approved_by",
-                          value?.designation_id
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          className="selectHideHistory"
-                          label={"Designation"}
-                        />
-                      )}
-                    />
-                    <LocalizationProvider
-                      dateAdapter={AdapterDayjs}
-                      sx={{ width: "100%" }}
-                    >
-                      <DemoContainer
-                        components={["DatePicker"]}
-                        sx={{ width: "100%" }}
-                      >
-                        <DatePicker
-                          label="Approval Date"
-                          value={
-                            listApprovalSaveData["approval_date"]
-                              ? dayjs(listApprovalSaveData["approval_date"])
-                              : null
-                          }
-                          name="approval_date"
-                          format="DD/MM/YYYY"
-                          sx={{ width: "100%" }}
-                          onChange={(newValue) => {
-                            if (newValue && dayjs.isDayjs(newValue)) {
-                              handleApprovalSaveData(
-                                "approval_date",
-                                newValue.toISOString()
-                              );
-                            } else {
-                              handleApprovalSaveData("approval_date", null);
-                            }
-                          }}
-                        />
-                      </DemoContainer>
-                    </LocalizationProvider>
-                    <TextField
-                      rows={8}
-                      label={"Comments"}
-                      sx={{ width: "100%" }}
-                      name="remarks"
-                      value={listApprovalSaveData["remarks"]}
-                      onChange={(e) =>
-                        handleApprovalSaveData("remarks", e.target.value)
-                      }
-                    />
                   </Box>
-                )}
-              </Box>
-            </DialogContentText>
-          </DialogContent>
-        </Dialog>
-      )}
+                  
+                  <Box >
+                    {!addApproveFlag ? (
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          showApprovalAddPage(selectedOtherTemplate.table);
+                        }}
+                      >
+                        Add
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          saveApprovalData(selectedOtherTemplate.table);
+                        }}
+                      >
+                        Save
+                      </Button>
+                    )}
+                    <IconButton
+                      aria-label="close"
+                      onClick={() => setListApproveTableFlag(false)}
+                      sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                      <CloseIcon />
+                    </IconButton>
+                  </Box>
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText id="alert-dialog-description">
+                    <Box py={2} sx={{ width: '100%'}}>
+                      {!listAddApproveFlag ? (
+                        <TableView rows={listApprovalsData} columns={listApprovalsColumn} />
+                      ) : (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "18px",
+                          }}
+                        >                    
+                          <Autocomplete
+                            id=""
+                            options={listApprovalItem}
+                            getOptionLabel={(option) => option.name || ""}
+                            name={"approval_item"}
+                            disabled={listApprovalItemDisabled}
+                            value={
+                              listApprovalItem.find(
+                                (option) =>
+                                  option.approval_item_id ===
+                                  (listApprovalSaveData &&
+                                    listApprovalSaveData["approval_item"])
+                              ) || null
+                            }
+                            onChange={(e, value) =>
+                              handleApprovalSaveData(
+                                "approval_item",
+                                value?.approval_item_id
+                              )
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                className="selectHideHistory"
+                                label={"Approval Item"}
+                              />
+                            )}
+                          />
+                          <Autocomplete
+                            id=""
+                            options={listDesignationData}
+                            getOptionLabel={(option) => option.designation_name || ""}
+                            name={"approved_by"}
+                            value={
+                              listDesignationData.find(
+                                (option) =>
+                                  option.designation_id ===
+                                  (listApprovalSaveData &&
+                                    listApprovalSaveData["approved_by"])
+                              ) || null
+                            }
+                            onChange={(e, value) =>
+                              handleApprovalSaveData(
+                                "approved_by",
+                                value?.designation_id
+                              )
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                className="selectHideHistory"
+                                label={"Designation"}
+                              />
+                            )}
+                          />
+                          <LocalizationProvider
+                            dateAdapter={AdapterDayjs}
+                            sx={{ width: "100%" }}
+                          >
+                            <DemoContainer
+                              components={["DatePicker"]}
+                              sx={{ width: "100%" }}
+                            >
+                              <DatePicker
+                                label="Approval Date"
+                                value={
+                                  listApprovalSaveData["approval_date"]
+                                    ? dayjs(listApprovalSaveData["approval_date"])
+                                    : null
+                                }
+                                name="approval_date"
+                                format="DD/MM/YYYY"
+                                sx={{ width: "100%" }}
+                                onChange={(newValue) => {
+                                  if (newValue && dayjs.isDayjs(newValue)) {
+                                    handleApprovalSaveData(
+                                      "approval_date",
+                                      newValue.toISOString()
+                                    );
+                                  } else {
+                                    handleApprovalSaveData("approval_date", null);
+                                  }
+                                }}
+                              />
+                            </DemoContainer>
+                          </LocalizationProvider>
+                          <TextField
+                            rows={8}
+                            label={"Comments"}
+                            sx={{ width: "100%" }}
+                            name="remarks"
+                            value={listApprovalSaveData["remarks"]}
+                            onChange={(e) =>
+                              handleApprovalSaveData("remarks", e.target.value)
+                            }
+                          />
+                        </Box>
+                      )}
+                    </Box>
+                  </DialogContentText>
+                </DialogContent>
+              </Dialog>
+        )}
 
     {furtherInvestigationPtCase &&
         <Dialog
@@ -7748,6 +7816,7 @@ const UnderInvestigation = () => {
                             onError={onSaveTemplateError}
                             closeForm={setFurtherInvestigationPtCase} 
 
+                            headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
                         />
                     </FormControl>
                 </DialogContentText>

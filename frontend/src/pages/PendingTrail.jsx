@@ -27,6 +27,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
+import SelectAllIcon from '@mui/icons-material/SelectAll';
 import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
 import ASC from "@mui/icons-material/North";
@@ -898,14 +899,16 @@ const UnderInvestigation = () => {
                     const updatedHeader = [
                         {
                             field: "select",
-                            headerName: "",
+                            headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
                             width: 50,
                             resizable: false,
                             renderCell: (params) => (
-                                <Checkbox
-                                    checked={params.row.isSelected || false}
-                                    onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                                />
+                                <Box display="flex" justifyContent="center" alignItems="center" width="100%">                                
+                                    <Checkbox
+                                        checked={params.row.isSelected || false}
+                                        onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                    />
+                                </Box>
                             ),
                         },
                         {
@@ -5283,6 +5286,7 @@ const UnderInvestigation = () => {
                   onUpdate={otherTemplateUpdateFunc}
                   onError={onSaveTemplateError}
                   closeForm={setOtherFormOpen}
+                  headerDetails={selectedRowData?.["field_cc_no./sc_no"]}
                 />
               </FormControl>
             </DialogContentText>
@@ -5488,7 +5492,7 @@ const UnderInvestigation = () => {
                         color="primary"
                         variant="outlined"
                         size="small"
-                        sx={{ fontWeight: 500, marginTop: '1px' }}
+                        sx={{ fontWeight: 500, marginTop: '2px' }}
                     />
                 )}
     
@@ -6223,6 +6227,8 @@ const UnderInvestigation = () => {
                             onSubmit={furtherInvestigationPtCaseSave}
                             onError={onSaveTemplateError}
                             closeForm={setFurtherInvestigationPtCase} 
+
+                            headerDetails={selectedRowData?.["field_cc_no./sc_no"]}
 
                         />
                     </FormControl>
