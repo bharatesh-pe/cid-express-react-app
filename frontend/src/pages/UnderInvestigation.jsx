@@ -3577,8 +3577,8 @@ const UnderInvestigation = () => {
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Served",
-      cancelButtonText: "Served Not",
-      reverseButtons: true,
+      cancelButtonText: "UnServed",
+      reverseButtons: false,
     }).then((result) => {
       if (result.isConfirmed) {
         const updatedRow = {
@@ -3606,7 +3606,7 @@ const UnderInvestigation = () => {
       showCancelButton: true,
       confirmButtonText: "Yes, Reappear it!",
       cancelButtonText: "No",
-      reverseButtons: true,
+      reverseButtons: false,
     }).then((result) => {
       if (result.isConfirmed) {
         const updatedRow = {
@@ -3855,10 +3855,12 @@ const UnderInvestigation = () => {
                 ? [
                   {
                     field: "field_served_or_unserved",
-                    headerName: "Served Status",
+                    headerName: "Served/UnServed",
                     width: 150,
                     resizable: true,
                     sortable: true,
+                    // headerAlign: "center",
+                    // align: "center",    
                     sortComparator: (v1, v2) => {
                       if (v1 === "Yes" && v2 === "No") return -1;
                       if (v1 === "No" && v2 === "Yes") return 1;
@@ -3871,49 +3873,64 @@ const UnderInvestigation = () => {
                   
                       if (!isYes && !isNo) {
                         return (
-                          <div
-                            style={{
+                          <Box
+                            sx={{
                               fontFamily: "Roboto",
                               width: "100%",
-                              marginLeft: "10px",
-                            }}
+                              display: "flex",
+                              justifyContent: "center",
+                              }}
                           >
                             -
-                          </div>
+                          </Box>
                         );
                       }
                   
-                      const statusText = isYes ? "Served" : "Not Served";
+                      const statusText = isYes ? "Served" : "UnServed";
                       const statusColor = isYes ? "#22c55e" : "#ef4444";
                       const borderColor = isYes ? "#34D399" : "#EF4444";
-                
+                  
                       return (
-                        <Chip
-                        label={statusText}
-                        size="small"
-                        sx={{
-                          fontFamily: "Roboto",
-                          fontWeight: 400,
-                          color: "white",
-                          borderColor: borderColor,
-                          borderRadius: "4px",
-                          backgroundColor: statusColor,
-                          textTransform: "capitalize",
-                          borderStyle: "solid",
-                          borderWidth: "1px",
-                        }}
-                      />
+                        <div
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            justifyContent: "center",
+                            paddingTop: "8px",
+                          }}
+                        >
+                          <Chip
+                            label={statusText}
+                            size="small"
+                            sx={{
+                              fontFamily: "Roboto",
+                              fontWeight: 400,
+                              color: "white",
+                              borderColor: borderColor,
+                              borderRadius: "4px",
+                              backgroundColor: statusColor,
+                              textTransform: "capitalize",
+                              borderStyle: "solid",
+                              borderWidth: "1px",
+                              minWidth: "80px",
+                              textAlign: "center",
+                              justifyContent: "center",
+                              display: "flex",
+                            }}
+                          />
+                        </div>
                       );
+                      
                     },
-                  },                  
-                  ]
+                  }
+                ]
                 : []),,
                 ...(options.table === "cid_ui_case_checking_tabs"
                   ? [
                     {
                       field: "field_reappear",
-                      headerName: "Reappear Status",
-                      width: 150,
+                      headerName: "Reappear",
+                      width: 100,
                       resizable: true,
                       sortable: true,
                       sortComparator: (v1, v2) => {
@@ -3921,6 +3938,45 @@ const UnderInvestigation = () => {
                         if (v1 === "No" && v2 === "Yes") return 1;
                         return 0;
                       },
+                      // renderCell: (params) => {
+                      //   const value = params.value;
+                      //   const isYes = value === "Yes";
+                      //   const isNo = value === "No";
+                    
+                      //   if (!isYes && !isNo) {
+                      //     return (
+                      //       <Box
+                      //         sx={{
+                      //           fontFamily: "Roboto",
+                      //           width: "100%",
+                      //           marginLeft: "15px",
+                      //         }}
+                      //       >
+                      //         -
+                      //       </Box>
+                      //     );
+                      //   }
+                                        
+                      //   return (
+                      //     <Box
+                      //       sx={{
+                      //         display: "flex",
+                      //         alignItems: "center",
+                      //         justifyContent: "flex-start",
+                      //         height: "100%",
+                      //         pl: 1,
+                      //       }}
+                      //     >
+                      //       {isYes ? (
+                      //         <CheckCircleIcon sx={{ color: "#22c55e" }} />
+                      //       ) : (
+                      //         <CancelIcon sx={{ color: "#ef4444" }} />
+                      //       )}
+                      //     </Box>
+                      //   );
+                        
+                    
+                      // },
                       renderCell: (params) => {
                         const value = params.value;
                         const isYes = value === "Yes";
@@ -3932,33 +3988,50 @@ const UnderInvestigation = () => {
                               sx={{
                                 fontFamily: "Roboto",
                                 width: "100%",
-                                marginLeft: "15px",
-                              }}
+                                display: "flex",
+                                justifyContent: "center",
+                                }}
                             >
                               -
                             </Box>
                           );
                         }
-                                        
+                    
+                        const statusText = isYes ? "Yes" : "No";
+                        const statusColor = isYes ? "#22c55e" : "#ef4444";
+                        const borderColor = isYes ? "#34D399" : "#EF4444";
+                    
                         return (
-                          <Box
-                            sx={{
+                          <div
+                            style={{
+                              width: "100%",
                               display: "flex",
-                              alignItems: "center",
-                              justifyContent: "flex-start",
-                              height: "100%",
-                              pl: 1,
+                              justifyContent: "center",
+                              paddingTop: "8px",
                             }}
                           >
-                            {isYes ? (
-                              <CheckCircleIcon sx={{ color: "#22c55e" }} />
-                            ) : (
-                              <CancelIcon sx={{ color: "#ef4444" }} />
-                            )}
-                          </Box>
+                            <Chip
+                              label={statusText}
+                              size="small"
+                              sx={{
+                                fontFamily: "Roboto",
+                                fontWeight: 400,
+                                color: "white",
+                                borderColor: borderColor,
+                                borderRadius: "4px",
+                                backgroundColor: statusColor,
+                                textTransform: "capitalize",
+                                borderStyle: "solid",
+                                borderWidth: "1px",
+                                minWidth: "40px",
+                                textAlign: "center",
+                                justifyContent: "center",
+                                display: "flex",
+                              }}
+                            />
+                          </div>
                         );
                         
-                    
                       },
                     },      
                     ]
@@ -3988,9 +4061,16 @@ const UnderInvestigation = () => {
                       options.table === "cid_ui_case_checking_tabs" &&
                       params.row.field_served_or_unserved === "Yes";
 
+                    const checkUnServed = 
+                      options.table === "cid_ui_case_checking_tabs" &&
+                      params.row.field_served_or_unserved === "No";
+
+
                     const checkreappear =
                       options.table === "cid_ui_case_checking_tabs" &&
-                      params.row.field_reappear === "Yes";
+                      params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
+
+
 
                     return (
                       <Box
@@ -4045,13 +4125,9 @@ const UnderInvestigation = () => {
                         )}
                         {options.table === "cid_ui_case_checking_tabs" && (
                           <>
-                            {!checkserved && (
+                            {!checkserved && !checkUnServed &&(
                               <Button
                                 variant="contained"
-                                // style={{
-                                //   backgroundColor: "#28a745",
-                                //   color: "white",
-                                // }}
                                 color = "success"
                                 disabled={checkserved}
                                 onClick={(event) => {
@@ -7145,7 +7221,7 @@ const UnderInvestigation = () => {
                       flexDirection: "column",
                       gap: "18px",
                     }}
-                  >
+                  >                    
                     <Autocomplete
                       id=""
                       options={approvalItem}
@@ -7174,7 +7250,6 @@ const UnderInvestigation = () => {
                         />
                       )}
                     />
-
                     <Autocomplete
                       id=""
                       options={designationData}
@@ -7202,7 +7277,6 @@ const UnderInvestigation = () => {
                         />
                       )}
                     />
-
                     <LocalizationProvider
                       dateAdapter={AdapterDayjs}
                       sx={{ width: "100%" }}
@@ -7234,7 +7308,6 @@ const UnderInvestigation = () => {
                         />
                       </DemoContainer>
                     </LocalizationProvider>
-
                     <TextField
                       rows={8}
                       label={"Comments"}
