@@ -688,9 +688,26 @@ const CreateProfile = () => {
                                     },
                                 }} 
                             />
-                <Button sx={{ background: '#32D583',color:'#101828',textTransform:'none' }} startIcon={<AddIcon sx={{border:'1.3px solid #101828',borderRadius:'50%'}} />} variant="contained" onClick={() => setOpenModal(true)}>
-                    Create New Template
-                </Button>
+                 <Button
+                    onClick={() => setOpenModal(true)}
+                    sx={{
+                        height: "38px",
+                      }}
+                    className="blueButton"
+                    startIcon={
+                        <AddIcon
+                        sx={{
+                            border: "1.3px solid #FFFFFF",
+                            borderRadius: "50%",
+                            background:"#4D4AF3 !important",
+                        }}
+                        />
+                    }
+                    variant="contained"
+                    >
+                        Create New Profile
+                  </Button>
+                                
             </Box>
             </Box>
             <Box sx={{display:'flex',justifyContent:'end',gap:'12px'}} pb={2}>
