@@ -3110,6 +3110,8 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         if(task_read_count != 0) 
             task_unread_count = task_count - task_read_count;
+        else
+            task_unread_count = task_count;
 
         data.task_unread_count = task_unread_count || 0;
 
