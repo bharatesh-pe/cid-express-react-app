@@ -4767,11 +4767,7 @@ const UnderInvestigation = () => {
         );
 
 
-        if (
-          (selectedOtherTemplate.field === null ||
-            selectedOtherTemplate.field === "field_nature_of_disposal") &&
-          templateApproval
-        ) {
+        if ((selectedOtherTemplate.field === null || selectedOtherTemplate.field === "field_nature_of_disposal" || selectedOtherTemplate.field === "field_prosecution_sanction") && templateApproval) {
           otherTemplateSaveFunc(templateApprovalData, true);
           return;
         }
@@ -6809,6 +6805,10 @@ const UnderInvestigation = () => {
                         sx={{ fontWeight: 500, marginTop: '2px' }}
                     />
                 )}
+
+                <Box className="totalRecordCaseStyle">
+                    {otherTemplatesTotalRecord} Records
+                </Box>
 
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>
