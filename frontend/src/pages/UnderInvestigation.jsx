@@ -6588,7 +6588,7 @@ const UnderInvestigation = () => {
                     </Button>
                     {console.log("it replacingggggg",showReplacePdfButton)}
                     {showReplacePdfButton && (
-                      <Button variant="contained" component="label" style={{ marginLeft: "10px", height: '40px' }}>
+                      <Button variant="outlined" component="label" style={{ marginLeft: "10px", height: '40px' }}>
                       Replace PDF
                       <input
                         type="file"
