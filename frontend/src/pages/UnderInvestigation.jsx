@@ -1173,19 +1173,60 @@ const UnderInvestigation = () => {
     }
   };
 
-    const handleCheckboxChangeField = (event, row) => {
-        const isSelected = event.target.checked;
-        setTableData((prevData) =>
-            prevData.map((data) =>
-                data.id === row.id ? { ...data, isSelected } : data
-            )
-        );
-        if (isSelected) {
-            setSelectedRowIds((prevIds) => [...prevIds, row.id]);
-        } else {
-            setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id));
-        }
-    };
+  const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [selectedParentId, setSelectedParentId] = useState("");
+  
+  const handleCheckboxChangeField = (event, row) => {
+    const isSelected = event.target.checked;
+  
+    setTableData((prevData) =>
+      prevData.map((data) =>
+        data.id === row.id ? { ...data, isSelected } : data
+      )
+    );
+  
+    if (isSelected) {
+      setSelectedRowIds((prevIds) => [...prevIds, row.id]);
+      setSelectedMergeRowData((prev) => [...prev, row]);
+    } else {
+      setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id));
+      setSelectedMergeRowData((prev) => prev.filter((r) => r.id !== row.id));
+    }
+  };
+
+  const handleConfirmMerge = () => {
+    if (!selectedParentId) {
+      Swal.fire({
+        title: 'Error',
+        text: "Select a parent case before merging!",
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+  
+    setLoading(true);
+  
+    setTimeout(() => {
+      setShowMergeModal(false);
+      setSelectedRowIds([]);
+      setSelectedMergeRowData([]);
+      loadTableData();
+  
+      Swal.fire({
+        title: 'Success',
+        text: "Merged successfully!",
+        icon: 'success',
+        confirmButtonText: 'OK',
+        onOpen
+      });
+  
+      setLoading(false);
+    }, 1000); 
+  };
+  
+  
     useEffect(() => {
         const anySelected = tableData.some((data) => data.isSelected);
         setIsCheckboxSelected(anySelected);
@@ -5948,6 +5989,7 @@ const UnderInvestigation = () => {
               <>
                 <Button
                   variant="contained"
+                  className="blueButton"
                   startIcon={
                     <svg
                       width="18"
@@ -5958,24 +6000,20 @@ const UnderInvestigation = () => {
                     >
                       <path
                         d="M1 18V12H3V16H7V18H1ZM13 18V16H17V12H19V18H13ZM5.175 12.825L3.75 11.425L5.175 10H0V8H5.175L3.75 6.575L5.175 5.175L9 9L5.175 12.825ZM14.825 12.825L11 9L14.825 5.175L16.25 6.575L14.825 8H20V10H14.825L16.25 11.425L14.825 12.825ZM1 6V0H7V2H3V6H1ZM17 6V2H13V0H19V6H17Z"
-                        fill="black"
+                        fill="#ffffff"
                       />
                     </svg>
                   }
-                  sx={{
-                    background: "#32D583",
-                    color: "#101828",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
+                  onClick={() => setShowMergeModal(true)}
                 >
                   Merge
                 </Button>
                 <Button
                   variant="contained"
+                  className="blueButton"
                   startIcon={
                     <svg
-                      fill="#000000"
+                      fill="#ffffff"
                       width="22"
                       height="22"
                       viewBox="0 0 20 18"
@@ -5993,12 +6031,7 @@ const UnderInvestigation = () => {
                       </g>
                     </svg>
                   }
-                  sx={{
-                    background: "#32D583",
-                    color: "#101828",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
+                  
                   onClick={() =>
                     showTransferToOtherDivision(
                       {
@@ -6239,6 +6272,41 @@ const UnderInvestigation = () => {
           closeForm={setFormOpen}
         />
       )}
+
+      <Dialog
+        open={showMergeModal}
+        onClose={() => setShowMergeModal(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Select Parent Case</DialogTitle>
+        <DialogContent sx={{ width: "500px" }}>
+          <FormControl fullWidth>
+            <Autocomplete
+              id="parent-case-autocomplete"
+              options={selectedMergeRowData}
+              getOptionLabel={(option) => option["field_cid_crime_no./enquiry_no"] || `Case ${option.id}`}
+              value={selectedParentId || null}
+              onChange={(event, newValue) => setSelectedParentId(newValue)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Parent Case"
+                  // placeholder="Select a case to be a Parent Case"
+                  className="selectHideHistory"
+                />
+              )}
+            />
+          </FormControl>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button onClick={() => setShowMergeModal(false)}>Cancel</Button>
+          <Button className="fillPrimaryBtn" onClick={handleConfirmMerge}>
+            Merge
+          </Button>
+        </DialogActions>
+      </Dialog>
+
 
       {otherFormOpen && (
         <Dialog
