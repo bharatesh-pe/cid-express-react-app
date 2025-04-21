@@ -1239,12 +1239,17 @@ const UnderInvestigation = () => {
                 if (totalItems !== null && totalItems !== undefined) {
                     setTotalRecord(totalItems);
                 }
+
+                if (meta?.table_name && meta?.template_name) {
+                    setTemplate_name(meta.template_name);
+                    setTable_name(meta.table_name);
+                }
   
                 if (data?.length > 0) {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -1254,13 +1259,13 @@ const UnderInvestigation = () => {
                             .toLowerCase()
                             .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
     
-                    const renderCellFunc = (key) => (params) => tableCellRender(key, params, params.value);
+                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
     
                     const updatedHeader = [
                         
                         {
                             field: "select",
-                            headerName: <Tooltip title="Select All"><SelectAllIcon /></Tooltip>,
+                            headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
                             width: 50,
                             resizable: false,
                             renderCell: (params) => (
@@ -1274,19 +1279,19 @@ const UnderInvestigation = () => {
                         },
                         {
                             field: "task",
-                            headerName: <Tooltip title="Add Task"><AssignmentIcon /></Tooltip>,
+                            headerName: "",
                             width: 50,
                             resizable: true,
                             renderHeader: (params) => (
-                                tableHeaderRender(params)
+                                <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
                             ),
                             renderCell: (params) => (
                                 <Badge
-                                    badgeContent={1}
+                                    badgeContent={params?.row?.['task_unread_count']}
                                     color="primary"
                                     sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
                                 >
-                                    <Tooltip title="Add Task"><AddTaskIcon sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5);; !important'}} /></Tooltip>
+                                    <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
                                 </Badge>
                             ),
                         },
@@ -1297,7 +1302,7 @@ const UnderInvestigation = () => {
                             resizable: true,
                             cellClassName: 'justify-content-start',
                             renderHeader: (params) => (
-                                <Tooltip title="Approval"><VerifiedIcon /></Tooltip>
+                                <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
                             ),                            
                             renderCell: (params) => (
                                 <Button
@@ -1314,13 +1319,13 @@ const UnderInvestigation = () => {
                                         }
                                     }}
                                 >
-                                    <VerifiedUserIcon color="success" sx={{fontSize:'26px'}} />
+                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" sx={{fontSize:'26px'}} /></Tooltip>
                                 </Button>
                             )
                         },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
-                            .map((key) => ({
+                            .map((key, count) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
@@ -1328,7 +1333,7 @@ const UnderInvestigation = () => {
                                 renderHeader: (params) => (
                                     tableHeaderRender(params, key)
                                 ),
-                                renderCell: renderCellFunc(key),
+                                renderCell: renderCellFunc(key, count),
                         })),
                     ];
   
@@ -1367,11 +1372,6 @@ const UnderInvestigation = () => {
                 setEditTemplateData(false);
                 setInitialData({});
                 setFormOpen(false);
-  
-                if (meta?.table_name && meta?.template_name) {
-                    setTemplate_name(meta.template_name);
-                    setTable_name(meta.table_name);
-                }
     
                 await getActions();
             } else {
@@ -1464,7 +1464,7 @@ const UnderInvestigation = () => {
         }
     };
 
-  const tableCellRender = (key, params, value) => {
+  const tableCellRender = (key, params, value, index, tableName) => {
     if (params?.row?.attachments) {
       var attachmentField = params.row.attachments.find(
         (data) => data.field_name === key
@@ -1477,18 +1477,19 @@ const UnderInvestigation = () => {
     let highlightColor = {};
     let onClickHandler = null;
 
-    // if (params?.row?.linked_profile_info?.[0]?.field === key) {
-    //     highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
+    if (tableName && index !== null && index === 0) {
+        highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
-    //     onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
-    // }
+        onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
+    }
+
 
     return (
         <Tooltip title={value} placement="top">
             <span
                 style={highlightColor}
                 onClick={onClickHandler}
-                className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "unreadMsgText" : "read"}`}
+                className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
             >
                 {value}
             </span>
@@ -5764,6 +5765,32 @@ const UnderInvestigation = () => {
   
       }
 
+    const handleTaskShow = (rowData)=>{
+
+        if(!rowData){
+            toast.error("Please Check Case Data !",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var options = {
+            name : "Progress Report",
+            module : "ui_case",
+            table : "cid_ui_case_progress_report",
+            is_pdf: true
+        }
+
+        handleOtherTemplateActions(options, rowData);
+    }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -5879,17 +5906,17 @@ const UnderInvestigation = () => {
                 <Button
                   onClick={() => getTemplate(table_name)}
                   sx={{
-                    background: "#1b17f0c7",
-                    color: "white",
+                    background: "#4D4AF3",
+                    color: "#FFFFFF",
                     textTransform: "none",
                     height: "38px",
                   }}
                   startIcon={
                     <AddIcon
                       sx={{
-                        border: "1.3px solid #101828",
+                        border: "1.3px solid #FFFFFF",
                         borderRadius: "50%",
-                        background:"#1b17f0c7 !important"
+                        background:"#4D4AF3 !important"
                       }}
                     />
                   }
@@ -6337,6 +6364,7 @@ const UnderInvestigation = () => {
             <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
                 <WestIcon  />
                 {selectedOtherTemplate?.name}
+                {selectedRowData?.["field_cc_no./sc_no"] || ""}
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
@@ -6988,7 +7016,10 @@ const UnderInvestigation = () => {
                             </LocalizationProvider>
                         </Grid>
 
-                        {filterDropdownObj.map((field) => {
+                        {othersFiltersDropdown.map((field) => {
+                            if (field?.hide_from_ux) {
+                                return null;
+                            }
                             switch (field.type) {
                                 case "dropdown":
                                 return (
@@ -6999,7 +7030,7 @@ const UnderInvestigation = () => {
                                         field={field}
                                         formData={filterValues}
                                         onChange={(value) =>
-                                            handleAutocomplete(field, value.target.value)
+                                            handleAutocomplete(field, value.target.value, true)
                                         }
                                         />
                                     </div>
@@ -7014,7 +7045,7 @@ const UnderInvestigation = () => {
                                         field={field}
                                         formData={filterValues}
                                         onChange={(name, selectedCode) =>
-                                            handleAutocomplete(field, selectedCode)
+                                            handleAutocomplete(field, selectedCode, true)
                                         }
                                     />
                                     </Grid>
@@ -7028,7 +7059,7 @@ const UnderInvestigation = () => {
                                         field={field}
                                         formData={filterValues}
                                         onChange={(name, selectedCode) =>
-                                            handleAutocomplete(field, selectedCode)
+                                            handleAutocomplete(field, selectedCode, true)
                                         }
                                     />
                                     </Grid>

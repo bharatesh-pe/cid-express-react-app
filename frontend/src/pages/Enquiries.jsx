@@ -55,6 +55,8 @@ import AutocompleteField from "../components/form/AutoComplete";
 import ASC from "@mui/icons-material/North";
 import DESC from "@mui/icons-material/South";
 import GenerateProfilePdf from "./GenerateProfilePdf";
+import WestIcon from '@mui/icons-material/West';
+
 const Enquiries = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -126,6 +128,123 @@ const Enquiries = () => {
   const [designationData, setDesignationData] = useState([]);
   const [randomApprovalId, setRandomApprovalId] = useState(0);
   const [approvalSaveData, setApprovalSaveData] = useState({});
+
+    const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
+    const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
+    const [otherTemplatesPaginationCount, setOtherTemplatesPaginationCount] = useState(1);
+    const [otherSearchValue, setOtherSearchValue] = useState('');
+
+    const [othersFilterModal, setOthersFilterModal] = useState(false);
+    const [othersFromDate, setOthersFromDate] = useState(null);
+    const [othersToDate, setOthersToDate] = useState(null);
+    const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
+    const [othersFilterData, setOthersFilterData] = useState({});
+
+    const handleOtherPagination = (page) => {
+        setOtherTemplatesPaginationCount(page)
+    }
+
+    useEffect(()=>{
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+    },[otherTemplatesPaginationCount, ]);
+
+    const handleOtherClear = ()=>{
+        setOtherSearchValue('');
+        setOtherTemplatesPaginationCount(1);
+        setOthersFromDate(null);
+        setOthersToDate(null);
+        setOthersFiltersDropdown([]);
+        setOthersFilterData({});
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData, true)
+    }
+
+    const setOtherFilterData = () => {
+        setOtherTemplatesPaginationCount(1);
+        setOthersFilterModal(false);
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+    };
+  
+    const handleOthersFilter = async (selectedOptions)=>{
+
+        if(!selectedOptions?.table){
+            toast.error('Please Check The Template', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return false;
+        }
+
+        const viewTableData = { table_name: selectedOptions.table };
+        
+        setLoading(true);
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            setLoading(false);
+        
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+                var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
+                var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        
+                var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
+                    const existingField = filterDropdownObj?.find(
+                        (item) => item.name === field.name
+                    );
+                    return {
+                        ...field,
+                        history: false,
+                        info: false,
+                        required: false,
+                        ...(field.is_dependent === "true" && {options: existingField?.options ? [...existingField.options] : [] }),
+                    };
+                });
+        
+                // const today = dayjs().format("YYYY-MM-DD");
+        
+                getAllOptionsforFilter(getOnlyDropdown, true);
+                // if(fromDateValue == null || toDateValue === null){
+                //     setFromDateValue(today);
+                //     setToDateValue(today);
+                // }
+        
+                // setShowFilterModal(true);
+                setOthersFilterModal(true);
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
 
   const handleApprovalSaveData = (name, value) => {
     setApprovalSaveData({
@@ -623,11 +742,16 @@ const Enquiries = () => {
                     setTotalRecord(totalItems);
                 }
 
+                if (meta?.table_name && meta?.template_name) {
+                    setTemplate_name(meta.template_name);
+                    setTable_name(meta.table_name);
+                }
+
                 if (data?.length > 0) {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -637,7 +761,7 @@ const Enquiries = () => {
                             .toLowerCase()
                             .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
     
-                    const renderCellFunc = (key) => (params) => tableCellRender(key, params, params.value);
+                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
     
                     const updatedHeader = [
                         {
@@ -657,7 +781,7 @@ const Enquiries = () => {
                         },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
-                            .map((key) => ({
+                            .map((key, count) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
@@ -665,7 +789,7 @@ const Enquiries = () => {
                                 renderHeader: (params) => (
                                     tableHeaderRender(params)
                                 ),
-                                renderCell: renderCellFunc(key),
+                                renderCell: renderCellFunc(key, count),
                         })),
                     ];
 
@@ -705,11 +829,6 @@ const Enquiries = () => {
                 setEditTemplateData(false);
                 setInitialData({});
                 setFormOpen(false);
-
-                if (meta?.table_name && meta?.template_name) {
-                    setTemplate_name(meta.template_name);
-                    setTable_name(meta.table_name);
-                }
     
                 await getActions();
             } else {
@@ -740,7 +859,7 @@ const Enquiries = () => {
         }
     };
 
-  const tableCellRender = (key, params, value) => {
+  const tableCellRender = (key, params, value, index, tableName) => {
     if (params?.row?.attachments) {
       var attachmentField = params.row.attachments.find(
         (data) => data.field_name === key
@@ -753,11 +872,11 @@ const Enquiries = () => {
     let highlightColor = {};
     let onClickHandler = null;
 
-    // if (params?.row?.linked_profile_info?.[0]?.field === key) {
-    //     highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
+    if (tableName && index !== null && index === 0) {
+        highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
-    //     onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
-    // }
+        onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
+    }
 
     return (
         <Tooltip title={value} placement="top">
@@ -2394,15 +2513,25 @@ const Enquiries = () => {
       // };
     
 
-  const handleOtherTemplateActions = async (options, selectedRow) => {
+  const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
+
+    if(!selectedRow || Object.keys(selectedRow).length === 0){
+        return false
+    }
 
     // const isAuthorized = await handleAssignToIo(selectedRow, "cid_enquiries");
     // setIsIoAuthorized(isAuthorized); 
 
     setSelectedRowData(selectedRow);
     var getTemplatePayload = {
-      table_name: options.table,
-      ui_case_id: selectedRow.id,
+        table_name: options.table,
+        ui_case_id: selectedRow.id,
+        limit : 10,
+        page : !searchFlag ? otherTemplatesPaginationCount : 1,
+        search: !searchFlag ? otherSearchValue : "",        
+        from_date: !searchFlag ? othersFromDate : null,
+        to_date: !searchFlag ? othersToDate : null,
+        filter: !searchFlag ? othersFilterData : {},
     };
 
     setLoading(true);
@@ -3124,7 +3253,7 @@ const Enquiries = () => {
     }
   };
 
-  const getAllOptionsforFilter = async (dropdownFields) => {
+  const getAllOptionsforFilter = async (dropdownFields, others) => {
     try {
       setLoading(true);
 
@@ -3167,7 +3296,12 @@ const Enquiries = () => {
           : field;
       });
 
-      setfilterDropdownObj(updatedFieldsDropdown);
+        if(others){
+            setOthersFiltersDropdown(updatedFieldsDropdown)
+        }else{
+            setfilterDropdownObj(updatedFieldsDropdown);
+        }
+
     } catch (error) {
       setLoading(false);
       console.error("Error fetching template data:", error);
@@ -3188,13 +3322,29 @@ const Enquiries = () => {
     setForceTableLoad((prev) => !prev);
   };
 
-  const handleAutocomplete = (field, selectedValue) => {
-    let updatedFormData = { ...filterValues, [field.name]: selectedValue };
+  const handleAutocomplete = (field, selectedValue, othersFilter) => {
 
-    setFilterValues(updatedFormData);
+    var updatedFormData = {}
+    var selectedFilterDropdown = []
+
+    if(othersFilter){
+
+        selectedFilterDropdown = othersFiltersDropdown
+        updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
+        
+        setOthersFilterData(updatedFormData);
+        
+    }else{
+
+        selectedFilterDropdown = filterDropdownObj
+        updatedFormData = { ...filterValues, [field.name]: selectedValue };
+    
+        setFilterValues(updatedFormData);
+
+    }
 
     if (field?.api && field?.table) {
-      var dependent_field = filterDropdownObj.filter((element) => {
+      var dependent_field = selectedFilterDropdown.filter((element) => {
         return (
           element.dependent_table &&
           element.dependent_table.length > 0 &&
@@ -3210,7 +3360,7 @@ const Enquiries = () => {
             [key]: updatedFormData[field.name],
           };
         } else {
-          var dependentFields = filterDropdownObj.filter((element) => {
+          var dependentFields = selectedFilterDropdown.filter((element) => {
             return dependent_field[0].dependent_table.includes(element.table);
           });
 
@@ -3257,23 +3407,31 @@ const Enquiries = () => {
               options: updatedOptions,
             };
 
-            setfilterDropdownObj(
-              filterDropdownObj.map((element) =>
-                element.id === dependent_field[0].id
-                  ? { ...element, ...userUpdateFields }
-                  : element
-              )
-            );
-
-            dependent_field.map((data) => {
-              delete filterValues[data.name];
-            });
 
             dependent_field.forEach((data) => {
-              delete updatedFormData[data.name];
+                delete updatedFormData[data.name];
             });
 
-            setFilterValues(updatedFormData);
+            if(othersFilter){
+                setOthersFiltersDropdown(
+                    selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                );
+                dependent_field.map((data) => {
+                    delete othersFilterData[data.name];
+                });
+
+                setOthersFilterData(updatedFormData);
+            }else{
+                setfilterDropdownObj(
+                    selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element )
+                );
+                dependent_field.map((data) => {
+                    delete filterValues[data.name];
+                });
+
+                setFilterValues(updatedFormData);
+            }
+
           } catch (error) {
             setLoading(false);
             if (error && error.response && error.response.data) {
@@ -3405,15 +3563,16 @@ const Enquiries = () => {
                 <Button
                   onClick={() => getTemplate(table_name)}
                   sx={{
-                    background: "#32D583",
-                    color: "#101828",
+                    background: "#4D4AF3",
+                    color: "#FFFFFF",
                     textTransform: "none",
                     height: "38px",
                   }}
                   startIcon={
                     <AddIcon
                       sx={{
-                        border: "1.3px solid #101828",
+                        border: "1.3px solid #FFFFFF",
+                        color: "#FFFFFF",
                         borderRadius: "50%",
                       }}
                     />
@@ -3992,60 +4151,252 @@ const Enquiries = () => {
 
       {/* other templates ui */}
 
-      {otherTemplateModalOpen && (
+    {otherTemplateModalOpen && (
         <Dialog
-          open={otherTemplateModalOpen}
-          onClose={() => setOtherTemplateModalOpen(false)}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-          maxWidth="md"
-          fullWidth
-          sx={{ zIndex: "1" }}
+            open={otherTemplateModalOpen}
+            onClose={() => setOtherTemplateModalOpen(false)}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            fullScreen
+            fullWidth
+            sx={{ zIndex: "1", marginLeft: '260px' }}
         >
-          <DialogTitle
-            id="alert-dialog-title"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            {selectedOtherTemplate && selectedOtherTemplate.name}
-            <Box>
-
-            {/* {isIoAuthorized && ( */}
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    showOptionTemplate(selectedOtherTemplate.table);
-                  }}
-                >
-                  Add
-                </Button>
-            {/* )} */}
-              <IconButton
-                aria-label="close"
-                onClick={() => {
-                  setOtherTemplateModalOpen(false);
+            <DialogTitle
+                id="alert-dialog-title"
+                sx={{
+                    display: "flex",
+                    alignItems: "start",
+                    justifyContent: "space-between",
                 }}
-                sx={{ color: (theme) => theme.palette.grey[500] }}
-              >
-                <CloseIcon />
-              </IconButton>
+            >
+            <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
+                <WestIcon  />
+                {selectedOtherTemplate?.name}
+                {selectedRowData?.["field_cid_crime_no./enquiry_no"] || ""}
             </Box>
-          </DialogTitle>
-          <DialogContent>
+            <Box sx={{display: 'flex', alignItems: 'center'}}>
+            <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
+                    <Box>
+                    </Box>
+                    <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                    <TextFieldInput 
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: "#475467" }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    <IconButton
+                                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                                        onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                    >
+                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                    </IconButton>
+                                </Box>
+                            ),
+                        }}
+
+                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                        value={otherSearchValue}
+                        id="tableSearch"
+                        size="small"
+                        placeholder='Search anything'
+                        variant="outlined"
+                        className="profileSearchClass"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                            }
+                        }}
+                        
+                        sx={{
+                            width: '350px', borderRadius: '6px', outline: 'none',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: '1',
+                                fontSize: '14px',
+                                fontWeight: '400',
+                                fontFamily: 'Roboto'
+                            },
+                        }}
+                    />
+                    {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                        <Typography
+                            onClick={handleOtherClear}
+                            sx={{
+                                fontSize: "13px",
+                                fontWeight: "500",
+                                textDecoration: "underline",
+                                cursor: "pointer",
+                            }}
+                            mt={1}
+                        >
+                            Clear Filter
+                        </Typography>
+                    )}
+                    </Box>
+                    {/* {isIoAuthorized && ( */}
+                        <Button
+                            variant="outlined"
+                            sx={{height: '40px'}}
+                            onClick={() =>
+                                showOptionTemplate(selectedOtherTemplate?.table)
+                            }
+                        >
+                            Add
+                        </Button>
+                    {/* )} */}
+                </Box>
+            </Box>
+            </DialogTitle>
+            <DialogContent>
             <DialogContentText id="alert-dialog-description">
-              <Box py={2}>
-                <TableView
-                  rows={otherTemplateData}
-                  columns={otherTemplateColumn}
-                />
-              </Box>
+                <Box>
+                    <TableView
+                        rows={otherTemplateData}
+                        columns={otherTemplateColumn}
+                        totalPage={otherTemplatesTotalPage} 
+                        totalRecord={otherTemplatesTotalRecord} 
+                        paginationCount={otherTemplatesPaginationCount} 
+                        handlePagination={handleOtherPagination} 
+                    />
+                </Box>
             </DialogContentText>
-          </DialogContent>
+            </DialogContent>
         </Dialog>
-      )}
+    )}
+    {othersFilterModal && (
+        <Dialog
+            open={othersFilterModal}
+            onClose={() => setOthersFilterModal(false)}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            maxWidth="md"
+            fullWidth
+        >
+
+            <DialogTitle
+                id="alert-dialog-title"
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                }}
+            >
+                Filter
+                <IconButton
+                    aria-label="close"
+                    onClick={() => setOthersFilterModal(false)}
+                    sx={{ color: (theme) => theme.palette.grey[500] }}
+                >
+                    <CloseIcon />
+                </IconButton>
+            </DialogTitle>
+
+        <DialogContent sx={{ minWidth: "400px" }}>
+            <DialogContentText id="alert-dialog-description">
+                <Grid container sx={{ alignItems: "center" }}>
+                    <Grid item xs={12} md={6} p={2}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                format="DD-MM-YYYY"
+                                sx={{
+                                    width: "100%",
+                                }}
+                                label="From Date"
+                                value={othersFromDate ? dayjs(othersFromDate) : null}
+                                onChange={(e) =>
+                                    setOthersFromDate(e ? e.format("YYYY-MM-DD") : null)
+                                }
+                            />
+                        </LocalizationProvider>
+                    </Grid>
+
+                    <Grid item xs={12} md={6} p={2}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                format="DD-MM-YYYY"
+                                sx={{
+                                    width: "100%",
+                                }}
+                                label="To Date"
+                                value={othersToDate ? dayjs(othersToDate) : null}
+                                onChange={(e) =>
+                                    setOthersToDate(e ? e.format("YYYY-MM-DD") : null)
+                                }
+                            />
+                        </LocalizationProvider>
+                    </Grid>
+
+                    {othersFiltersDropdown.map((field) => {
+                        if (field?.hide_from_ux) {
+                            return null;
+                        }
+                        switch (field.type) {
+
+                            case "dropdown":
+                            return (
+                                <Grid item xs={12} md={6} p={2}>
+                                <div className="form-field-wrapper_selectedField">
+                                    <SelectField
+                                    key={field.id}
+                                    field={field}
+                                    formData={filterValues}
+                                    onChange={(value) =>
+                                        handleAutocomplete(field, value.target.value, true)
+                                    }
+                                    />
+                                </div>
+                                </Grid>
+                            );
+
+                            case "multidropdown":
+                            return (
+                                <Grid item xs={12} md={6} p={2}>
+                                <MultiSelect
+                                    key={field.id}
+                                    field={field}
+                                    formData={filterValues}
+                                    onChange={(name, selectedCode) =>
+                                        handleAutocomplete(field, selectedCode, true)
+                                    }
+                                />
+                                </Grid>
+                            );
+
+                            case "autocomplete":
+                            return (
+                                <Grid item xs={12} md={6} p={2}>
+                                <AutocompleteField
+                                    key={field.id}
+                                    field={field}
+                                    formData={filterValues}
+                                    onChange={(name, selectedCode) =>
+                                        handleAutocomplete(field, selectedCode, true)
+                                    }
+                                />
+                                </Grid>
+                            );
+                    }
+                    })}
+                </Grid>
+            </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+            <Button onClick={() => setOthersFilterModal(false)}>Close</Button>
+            <Button
+                className="fillPrimaryBtn"
+                sx={{ minWidth: "100px" }}
+                onClick={() => setOtherFilterData()}
+            >
+                Apply
+            </Button>
+        </DialogActions>
+        </Dialog>
+    )}
 
       {showFilterModal && (
         <Dialog
