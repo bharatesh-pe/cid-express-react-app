@@ -190,6 +190,56 @@ const UnderInvestigation = () => {
 
   const [approvalSaveData, setApprovalSaveData] = useState({});
 
+    const [listApprovalsData, setListApprovalsData] = useState([]);
+    const [listApproveTableFlag, setListApproveTableFlag] = useState(false);
+    const [listAddApproveFlag, setListAddApproveFlag] = useState(false);
+    const [listApprovalCaseNo, setListApprovalCaseNo] = useState("");
+    const [listApprovalsColumn, setListApprovalsColumn] = useState([
+        { field: "sl_no", headerName: "S.No", width: 80 },
+        { field: "approvalItem", headerName: "Approval Item", width: 150 },
+        { field: "approvedBy", headerName: "Approved By", width: 140 },
+        { field: "approval_date", headerName: "Approval Date", width: 150 },
+        { field: "remarks", headerName: "Remarks", width: 120 },
+    ]);
+  
+    const listApprovalActionColumn = {
+        field: "actions",
+        headerName: "Actions",
+        width: 300,
+        sortable: false,
+        renderCell: (params) => {
+        const row = params.row;
+        return (
+            <Box sx={{ display: "flex", gap: 1 }}>
+            {/* {userPermissions[0]?.view_case && ( */}
+                <Button variant="outlined" >
+                    View
+                </Button>
+            {/* )} */}
+            {/* {userPermissions[0]?.edit_case && ( */}
+                <Button variant="contained" color="primary">
+                    Edit
+                </Button>
+            {/* )} */}
+            {/* {userPermissions[0]?.delete_case && ( */}
+                <Button variant="contained" color="error">
+                    Delete
+                </Button>
+            {/* )} */}
+            </Box>
+        );
+        },
+    };
+  
+    const [listApprovalItem, setListApprovalItem] = useState([]);
+    const [listApprovalItemDisabled, setListApprovalItemDisabled] = useState(false);
+    const [listDesignationData, setListDesignationData] = useState([]);
+
+    const [listRandomApprovalId, setListRandomApprovalId] = useState(0);
+
+    const [listApprovalSaveData, setListApprovalSaveData] = useState({});
+  
+
   const handleApprovalSaveData = (name, value) => {
     setApprovalSaveData({
       ...approvalSaveData,
@@ -1320,7 +1370,7 @@ const UnderInvestigation = () => {
                                         }
                                     }}
                                 >
-                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" sx={{fontSize:'26px'}} /></Tooltip>
+                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
                                 </Button>
                             )
                         },
@@ -5894,6 +5944,150 @@ const UnderInvestigation = () => {
         handleOtherTemplateActions(options, rowData);
     }
 
+    const handleActionShow = (rowData)=>{
+    
+        if(!rowData){
+            toast.error("Please Check Case Data !",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        console.log(rowData)
+
+        setListApprovalsColumn((prev) => {
+            const withoutActions = prev.filter((col) => col.field !== "actions");
+            return [...withoutActions, listApprovalActionColumn];
+        });
+
+        showApprovalListPage(rowData)
+
+    }
+
+    const showApprovalListPage = async (approveData) => {
+        var payloadObj = {
+            case_id: approveData.id,
+        };
+
+        setLoading(true);
+
+        try {
+            const getActionsDetails = await api.post(
+                "/ui_approval/get_ui_case_approvals",
+                payloadObj
+            );
+    
+            setLoading(false);
+    
+            if (getActionsDetails && getActionsDetails.success) {
+                var updatedOptions = [];
+    
+                if (getActionsDetails.data["approvals"].length > 0) {
+                updatedOptions = getActionsDetails.data["approvals"].map(
+                    (data, index) => {
+                    const formatDate = (fieldValue) => {
+                        if (!fieldValue || typeof fieldValue !== "string")
+                        return fieldValue;
+    
+                        var dateValue = new Date(fieldValue);
+    
+                        if (
+                        isNaN(dateValue.getTime()) ||
+                        (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                        ) {
+                        return fieldValue;
+                        }
+    
+                        if (isNaN(dateValue.getTime())) return fieldValue;
+    
+                        var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                        var monthValue = String(dateValue.getMonth() + 1).padStart(
+                        2,
+                        "0"
+                        );
+                        var yearValue = dateValue.getFullYear();
+                        return `${dayValue}/${monthValue}/${yearValue}`;
+                    };
+    
+                    const updatedField = {};
+    
+                    Object.keys(data).forEach((key) => {
+                        if (
+                        data[key] &&
+                        key !== "id" &&
+                        !isNaN(new Date(data[key]).getTime())
+                        ) {
+                        updatedField[key] = formatDate(data[key]);
+                        } else {
+                        updatedField[key] = data[key];
+                        }
+                    });
+    
+                    return {
+                        ...updatedField,
+                        sl_no: index + 1,
+                        id: data.approval_id,
+                    };
+                    }
+                );
+                }
+    
+                setListApprovalsData(updatedOptions);
+                setListApprovalItem(getActionsDetails.data["approval_item"]);
+                setListDesignationData(getActionsDetails.data["designation"]);
+    
+                setListAddApproveFlag(false);
+                setListApproveTableFlag(true);
+                setListApprovalCaseNo(approveData["field_cid_crime_no./enquiry_no"] || "")
+    
+                const randomId = `approval_${Date.now()}_${Math.floor(
+                Math.random() * 1000
+                )}`;
+                setListRandomApprovalId(randomId);
+            } else {
+                const errorMessage = getActionsDetails.message
+                ? getActionsDetails.message
+                : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(
+                error.response["data"].message
+                    ? error.response["data"].message
+                    : "Please Try Again !",
+                {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                }
+                );
+            }
+        }
+    };
+
     const closeOtherForm = ()=>{
         setOtherFormOpen(false)
         setShowPtCaseModal(false);
@@ -7442,6 +7636,186 @@ const UnderInvestigation = () => {
           </DialogContent>
         </Dialog>
       )} */}
+
+        {listApproveTableFlag && (
+              <Dialog
+                open={listApproveTableFlag}
+                onClose={() => setListApproveTableFlag(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+                fullWidth
+                 sx={{ zIndex: "1"}}
+              >
+                <DialogTitle
+                  id="alert-dialog-title"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
+                      <Typography variant="body1" fontWeight={500} fontSize="16px">
+                         Approval
+                      </Typography>
+      
+                      {listApprovalCaseNo && (
+                          <Chip
+                              label={listApprovalCaseNo}
+                              color="primary"
+                              variant="outlined"
+                              size="small"
+                              sx={{ fontWeight: 500, marginTop: '1px' }}
+                          />
+                      )}
+                  </Box>
+                  
+                  <Box >
+                    {!addApproveFlag ? (
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          showApprovalAddPage(selectedOtherTemplate.table);
+                        }}
+                      >
+                        Add
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outlined"
+                        onClick={() => {
+                          saveApprovalData(selectedOtherTemplate.table);
+                        }}
+                      >
+                        Save
+                      </Button>
+                    )}
+                    <IconButton
+                      aria-label="close"
+                      onClick={() => setListApproveTableFlag(false)}
+                      sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                      <CloseIcon />
+                    </IconButton>
+                  </Box>
+                </DialogTitle>
+                <DialogContent>
+                  <DialogContentText id="alert-dialog-description">
+                    <Box py={2} sx={{ width: '100%'}}>
+                      {!listAddApproveFlag ? (
+                        <TableView rows={listApprovalsData} columns={listApprovalsColumn} />
+                      ) : (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "18px",
+                          }}
+                        >                    
+                          <Autocomplete
+                            id=""
+                            options={listApprovalItem}
+                            getOptionLabel={(option) => option.name || ""}
+                            name={"approval_item"}
+                            disabled={listApprovalItemDisabled}
+                            value={
+                              listApprovalItem.find(
+                                (option) =>
+                                  option.approval_item_id ===
+                                  (listApprovalSaveData &&
+                                    listApprovalSaveData["approval_item"])
+                              ) || null
+                            }
+                            onChange={(e, value) =>
+                              handleApprovalSaveData(
+                                "approval_item",
+                                value?.approval_item_id
+                              )
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                className="selectHideHistory"
+                                label={"Approval Item"}
+                              />
+                            )}
+                          />
+                          <Autocomplete
+                            id=""
+                            options={listDesignationData}
+                            getOptionLabel={(option) => option.designation_name || ""}
+                            name={"approved_by"}
+                            value={
+                              listDesignationData.find(
+                                (option) =>
+                                  option.designation_id ===
+                                  (listApprovalSaveData &&
+                                    listApprovalSaveData["approved_by"])
+                              ) || null
+                            }
+                            onChange={(e, value) =>
+                              handleApprovalSaveData(
+                                "approved_by",
+                                value?.designation_id
+                              )
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                className="selectHideHistory"
+                                label={"Designation"}
+                              />
+                            )}
+                          />
+                          <LocalizationProvider
+                            dateAdapter={AdapterDayjs}
+                            sx={{ width: "100%" }}
+                          >
+                            <DemoContainer
+                              components={["DatePicker"]}
+                              sx={{ width: "100%" }}
+                            >
+                              <DatePicker
+                                label="Approval Date"
+                                value={
+                                  listApprovalSaveData["approval_date"]
+                                    ? dayjs(listApprovalSaveData["approval_date"])
+                                    : null
+                                }
+                                name="approval_date"
+                                format="DD/MM/YYYY"
+                                sx={{ width: "100%" }}
+                                onChange={(newValue) => {
+                                  if (newValue && dayjs.isDayjs(newValue)) {
+                                    handleApprovalSaveData(
+                                      "approval_date",
+                                      newValue.toISOString()
+                                    );
+                                  } else {
+                                    handleApprovalSaveData("approval_date", null);
+                                  }
+                                }}
+                              />
+                            </DemoContainer>
+                          </LocalizationProvider>
+                          <TextField
+                            rows={8}
+                            label={"Comments"}
+                            sx={{ width: "100%" }}
+                            name="remarks"
+                            value={listApprovalSaveData["remarks"]}
+                            onChange={(e) =>
+                              handleApprovalSaveData("remarks", e.target.value)
+                            }
+                          />
+                        </Box>
+                      )}
+                    </Box>
+                  </DialogContentText>
+                </DialogContent>
+              </Dialog>
+        )}
 
     {furtherInvestigationPtCase &&
         <Dialog
