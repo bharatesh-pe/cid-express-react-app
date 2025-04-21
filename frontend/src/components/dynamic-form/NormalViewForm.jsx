@@ -955,13 +955,24 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     return null
                 }
 
-                const tabsField = (stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).find(f => f.type === 'tabs');
-                                                            
-                const selectedTabOptions = formData[tabsField?.name] || [];
-
-                const shouldHide = tabsField && field.tabOption && selectedTabOptions !== field.tabOption && tabsField.options.some(option => option.code === field.tabOption);
-
-                if (shouldHide) return null;
+                const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+                
+                const allTabsFields = allFields.filter((f) => f.type === "tabs");
+                
+                const matchingTabsField = allTabsFields.find(tabField =>
+                    Array.isArray(tabField.options) &&
+                    tabField.options.some(option => option.code === field.tabOption)
+                );
+                
+                if (matchingTabsField) {
+                    const selectedTabValues = formData[matchingTabsField.name] || [];
+                
+                    const isSelected = Array.isArray(selectedTabValues) ? selectedTabValues.includes(field.tabOption) : selectedTabValues === field.tabOption;
+                
+                    const shouldHide = !isSelected;
+                
+                    if (shouldHide) return null;
+                }
 
                 const isRequired = field.required === 'true' || field.required === true;
 
