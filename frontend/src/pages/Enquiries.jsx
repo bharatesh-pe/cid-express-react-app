@@ -3987,6 +3987,7 @@ const Enquiries = () => {
                   onUpdate={otherTemplateUpdateFunc}
                   onError={onSaveTemplateError}
                   closeForm={setOtherFormOpen}
+                  headerDetails={selectedRowData?.["field_enquiry_no"]}
                 />
               </FormControl>
             </DialogContentText>
@@ -4192,7 +4193,7 @@ const Enquiries = () => {
                         color="primary"
                         variant="outlined"
                         size="small"
-                        sx={{ fontWeight: 500, marginTop: '1px' }}
+                        sx={{ fontWeight: 500, marginTop: '2px' }}
                     />
                 )}
 

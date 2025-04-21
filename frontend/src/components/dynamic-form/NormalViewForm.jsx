@@ -1,7 +1,7 @@
 // DynamicForm.js
 import React, { useState, useEffect, useRef } from 'react';
 // import formConfig from './formConfig.json';
-import { Button, Grid, Box, Typography, IconButton } from '@mui/material';
+import { Button, Grid, Box, Typography, IconButton, Chip } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
 
 import ShortText from '../form/ShortText';
@@ -41,7 +41,7 @@ import CloseIcon from '@mui/icons-material/Close';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
   const [formData, setFormData] = useState({});
   const [newFormConfig, setNewFormConfig] = useState(formConfig ? formConfig : {})
@@ -892,11 +892,20 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
         )}
 
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '99' }}>
-          <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '1px' }}>
+          <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '4px' }}>
             <ArrowBackIcon sx={{ fontSize: '22px', fontWeight: '500', color: '#171A1C' }} />
             <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
               {template_name ? template_name : 'Form'}
             </Typography>
+            {headerDetails && (
+                <Chip
+                    label={headerDetails}
+                    color="primary"
+                    variant="outlined"
+                    size="small"
+                    sx={{ fontWeight: 500, marginTop: '2px' }}
+                />
+            )}
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
