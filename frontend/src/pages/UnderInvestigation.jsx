@@ -1249,7 +1249,7 @@ const UnderInvestigation = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -1323,9 +1323,20 @@ const UnderInvestigation = () => {
                                 </Button>
                             )
                         },
+                        {
+                            field: "field_cid_crime_no./enquiry_no",
+                            headerName: "Cid Crime No./Enquiry No",
+                            width: 200,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+                            ),
+                            renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+                        },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
-                            .map((key, count) => ({
+                            .map((key) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
@@ -1333,7 +1344,7 @@ const UnderInvestigation = () => {
                                 renderHeader: (params) => (
                                     tableHeaderRender(params, key)
                                 ),
-                                renderCell: renderCellFunc(key, count),
+                                renderCell: renderCellFunc(key),
                         })),
                     ];
   
@@ -3770,10 +3781,7 @@ const UnderInvestigation = () => {
                   return {
                     field: key,
                     headerName: updatedKeyName ? updatedKeyName : "",
-                    width:
-                      options.table === "cid_ui_case_progress_report"
-                        ? 150
-                        : 250,
+                    width: updatedKeyName.length < 15 ? 100 : 180,
                     resizable: true,
                     renderHeader: () => (
                       <div
@@ -4049,7 +4057,6 @@ const UnderInvestigation = () => {
                     const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
                     const canEdit = userPermissions[0]?.action_edit;
                     const canDelete = userPermissions[0]?.action_delete;
-
                     const checkserved =
                       options.table === "cid_ui_case_checking_tabs" &&
                       params.row.field_served_or_unserved === "Yes";
@@ -4465,7 +4472,7 @@ const UnderInvestigation = () => {
         setApprovalItem(getActionsDetails.data["approval_item"]);
         setDesignationData(getActionsDetails.data["designation"]);
 
-        setAddApproveFlag(false);
+        setAddApproveFlag(true);
         setApproveTableFlag(true);
 
         const randomId = `approval_${Date.now()}_${Math.floor(
@@ -5875,6 +5882,7 @@ const UnderInvestigation = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 cursor: "pointer",
+                gap: '6px'
               }}
             >
               {/* <img src='./arrow-left.svg' /> */}
@@ -5885,6 +5893,9 @@ const UnderInvestigation = () => {
                       .replace(/\b\w/g, (c) => c.toUpperCase())
                       : "Under Investigation"}
               </Typography>
+                <Box className="totalRecordCaseStyle">
+                    {totalRecord} Cases
+                </Box>
             </Box>
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
@@ -5961,31 +5972,24 @@ const UnderInvestigation = () => {
               </>
             )}
 
-            {JSON.parse(localStorage.getItem("user_permissions")) &&
-              JSON.parse(localStorage.getItem("user_permissions"))[0]
-                .create_case && (
+            {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && (
                 <Button
-                  onClick={() => getTemplate(table_name)}
-                  sx={{
-                    background: "#4D4AF3",
-                    color: "#FFFFFF",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
-                  startIcon={
-                    <AddIcon
-                      sx={{
-                        border: "1.3px solid #FFFFFF",
-                        borderRadius: "50%",
-                        background:"#4D4AF3 !important"
-                      }}
-                    />
-                  }
-                  variant="contained"
+                    onClick={() => getTemplate(table_name)}
+                    className="blueButton"
+                    startIcon={
+                        <AddIcon
+                            sx={{
+                                border: "1.3px solid #FFFFFF",
+                                borderRadius: "50%",
+                                background:"#4D4AF3 !important"
+                            }}
+                        />
+                    }
+                    variant="contained"
                 >
-                  Add New
+                    Add New
                 </Button>
-              )}
+            )}
             {localStorage.getItem("authAdmin") === "false" && (
               <Button
                 onClick={downloadReportModal}
@@ -6205,7 +6209,7 @@ const UnderInvestigation = () => {
           maxWidth="xl"
           fullWidth
         >
-          <DialogContent sx={{ minWidth: "400px" }}>
+          <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
             <DialogContentText id="alert-dialog-description">
               <FormControl fullWidth>
                 <NormalViewForm
@@ -6422,11 +6426,25 @@ const UnderInvestigation = () => {
               justifyContent: "space-between",
             }}
           >
-            <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
-                <WestIcon  />
-                {selectedOtherTemplate?.name}
-                {selectedRowData?.["field_cc_no./sc_no"] || ""}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setOtherTemplateModalOpen(false)}>
+                <WestIcon />
+
+                <Typography variant="body1" fontWeight={500}>
+                    {selectedOtherTemplate?.name}
+                </Typography>
+
+                {selectedRowData["field_cid_crime_no./enquiry_no"] && (
+                    <Chip
+                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontWeight: 500, marginTop: '1px' }}
+                    />
+                )}
+
             </Box>
+
             <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
               "cid_ui_case_progress_report" ? (
@@ -6704,7 +6722,7 @@ const UnderInvestigation = () => {
           >
             Approval
             <Box>
-              {!addApproveFlag ? (
+              {/* {!addApproveFlag ? (
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -6713,7 +6731,7 @@ const UnderInvestigation = () => {
                 >
                   Add
                 </Button>
-              ) : (
+              ) : ( */}
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -6722,7 +6740,7 @@ const UnderInvestigation = () => {
                 >
                   Save
                 </Button>
-              )}
+              {/* )} */}
               <IconButton
                 aria-label="close"
                 onClick={() => setApproveTableFlag(false)}
@@ -6735,9 +6753,9 @@ const UnderInvestigation = () => {
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               <Box py={2}>
-                {!addApproveFlag ? (
+                {/* {!addApproveFlag ? (
                   <TableView rows={approvalsData} columns={approvalsColumn} />
-                ) : (
+                ) : ( */}
                   <Box
                     sx={{
                       display: "flex",
@@ -6846,7 +6864,7 @@ const UnderInvestigation = () => {
                       }
                     />
                   </Box>
-                )}
+                {/* )} */}
               </Box>
             </DialogContentText>
           </DialogContent>
@@ -7143,7 +7161,7 @@ const UnderInvestigation = () => {
             </Dialog>
         )}
 
-      {approveTableFlag && (
+      {/* {approveTableFlag && (
         <Dialog
           open={approveTableFlag}
           onClose={() => setApproveTableFlag(false)}
@@ -7306,7 +7324,7 @@ const UnderInvestigation = () => {
             </DialogContentText>
           </DialogContent>
         </Dialog>
-      )}
+      )} */}
 
     {furtherInvestigationPtCase &&
         <Dialog
@@ -7317,7 +7335,7 @@ const UnderInvestigation = () => {
             maxWidth="xl"
             fullWidth
         >
-            <DialogContent sx={{ minWidth: '400px' }}>
+            <DialogContent sx={{ minWidth: '400px', padding: '0'  }}>
                 <DialogContentText id="alert-dialog-description">
                     <FormControl fullWidth>
                         <NormalViewForm

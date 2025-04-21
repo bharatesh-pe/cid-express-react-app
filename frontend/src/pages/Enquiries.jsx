@@ -5,7 +5,7 @@ import DynamicForm from "../components/dynamic-form/DynamicForm";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import api from "../services/api";
-import { InputLabel, Select, MenuItem, Tooltip } from "@mui/material";
+import { InputLabel, Select, MenuItem, Tooltip, Chip } from "@mui/material";
 import {
   Box,
   Button,
@@ -751,7 +751,7 @@ const Enquiries = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_enquiry_no"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -779,9 +779,20 @@ const Enquiries = () => {
                             );
                             },
                         },
+                        {
+                            field: "field_enquiry_no",
+                            headerName: "Enquiry No",
+                            width: 130,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_enquiry_no")
+                            ),
+                            renderCell: renderCellFunc("field_enquiry_no", 0),
+                        },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
-                            .map((key, count) => ({
+                            .map((key) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
@@ -789,7 +800,7 @@ const Enquiries = () => {
                                 renderHeader: (params) => (
                                     tableHeaderRender(params)
                                 ),
-                                renderCell: renderCellFunc(key, count),
+                                renderCell: renderCellFunc(key),
                         })),
                     ];
 
@@ -2595,7 +2606,7 @@ const Enquiries = () => {
                   return {
                     field: key,
                     headerName: updatedKeyName ? updatedKeyName : "",
-                    width: 250,
+                    width: updatedKeyName.length < 15 ? 100 : 180,
                     resizable: true,
                     renderHeader: () => (
                       <div
@@ -3543,6 +3554,7 @@ const Enquiries = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 cursor: "pointer",
+                gap: '6px'
               }}
             >
               {/* <img src='./arrow-left.svg' /> */}
@@ -3553,6 +3565,9 @@ const Enquiries = () => {
                       .replace(/^\w|\s\w/, (c) => c.toUpperCase())
                   : "Enquiry"}
               </Typography>
+                <Box className="totalRecordCaseStyle">
+                    {totalRecord} Cases
+                </Box>
             </Box>
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
@@ -3562,12 +3577,7 @@ const Enquiries = () => {
                 .create_enquiry && (
                 <Button
                   onClick={() => getTemplate(table_name)}
-                  sx={{
-                    background: "#4D4AF3",
-                    color: "#FFFFFF",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
+                  className="blueButton"
                   startIcon={
                     <AddIcon
                       sx={{
@@ -3961,7 +3971,7 @@ const Enquiries = () => {
           maxWidth="xl"
           fullWidth
         >
-          <DialogContent sx={{ minWidth: "400px" }}>
+          <DialogContent sx={{ minWidth: "400px", padding: '0'  }}>
             <DialogContentText id="alert-dialog-description">
               <FormControl fullWidth>
                 <NormalViewForm
@@ -4169,10 +4179,23 @@ const Enquiries = () => {
                     justifyContent: "space-between",
                 }}
             >
-            <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
-                <WestIcon  />
-                {selectedOtherTemplate?.name}
-                {selectedRowData?.["field_cid_crime_no./enquiry_no"] || ""}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setOtherTemplateModalOpen(false)}>
+                <WestIcon />
+
+                <Typography variant="body1" fontWeight={500}>
+                    {selectedOtherTemplate?.name}
+                </Typography>
+
+                {selectedRowData["field_enquiry_no"] && (
+                    <Chip
+                        label={selectedRowData["field_enquiry_no"]}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontWeight: 500, marginTop: '1px' }}
+                    />
+                )}
+
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>
             <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
