@@ -820,8 +820,11 @@ exports.getTemplateData = async (req, res, next) => {
     const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
     // Filter fields that have is_primary_field as true
-    const relevantSchema = table_name === "cid_ui_case_progress_report" ? schema : schema.filter((field) => field.is_primary_field === true);
-
+    const relevantSchema = 
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_ui_case_checking_tabs"
+      ? schema
+      : schema.filter((field) => field.is_primary_field === true);
+  
     // Define model attributes based on filtered schema
     const modelAttributes = {
       id: {
@@ -1169,7 +1172,7 @@ exports.getTemplateData = async (req, res, next) => {
         let filteredData;
 
         data.ReadStatus = data.ReadStatus ? true : false;
-        if (table_name === "cid_ui_case_progress_report") {
+        if (table_name === "cid_ui_case_progress_report" ) {
           filteredData = { ...data };
 
           if (data.field_assigned_to || data.field_assigned_by) {
@@ -1217,6 +1220,10 @@ exports.getTemplateData = async (req, res, next) => {
               console.error("Error fetching user details:", error);
             }
           }
+        }else if (table_name === "cid_ui_case_checking_tabs") {
+          filteredData = { ...data };
+          console.log("filteredData", filteredData);
+          console.log("table_name",table_name)
         } else {
           filteredData = {
             id: data.id,
