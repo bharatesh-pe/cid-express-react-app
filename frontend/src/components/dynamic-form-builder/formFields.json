@@ -85,7 +85,6 @@
         "duplicateCheck": false,
         "info": "",
         "disabled": "",
-        "particular_case_option": false,
         "options": [],
         "type": "dropdown",
         "formType": "Dropdown"
@@ -217,7 +216,6 @@
         "duplicateCheck": false,
         "info": "",
         "disabled": "",
-        "particular_case_option": false,
         "options": [],
         "type": "autocomplete",
         "formType": "Autocomplete"
@@ -239,7 +237,6 @@
         "duplicateCheck": false,
         "info": "",
         "disabled": "",
-        "particular_case_option": false,
         "options": [],
         "type": "multidropdown",
         "formType": "Multiple Dropdown"
