@@ -1290,7 +1290,7 @@ const UnderInvestigation = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -1364,9 +1364,20 @@ const UnderInvestigation = () => {
                                 </Button>
                             )
                         },
+                        {
+                            field: "field_cid_crime_no./enquiry_no",
+                            headerName: "Cid Crime No./Enquiry No",
+                            width: 200,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+                            ),
+                            renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+                        },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
-                            .map((key, count) => ({
+                            .map((key) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
                                 width: generateReadableHeader(key).length < 15 ? 100 : 180,
@@ -1374,7 +1385,7 @@ const UnderInvestigation = () => {
                                 renderHeader: (params) => (
                                     tableHeaderRender(params, key)
                                 ),
-                                renderCell: renderCellFunc(key, count),
+                                renderCell: renderCellFunc(key),
                         })),
                     ];
   
@@ -3594,8 +3605,8 @@ const UnderInvestigation = () => {
       icon: "question",
       showCancelButton: true,
       confirmButtonText: "Served",
-      cancelButtonText: "Served Not",
-      reverseButtons: true,
+      cancelButtonText: "UnServed",
+      reverseButtons: false,
     }).then((result) => {
       if (result.isConfirmed) {
         const updatedRow = {
@@ -3623,7 +3634,7 @@ const UnderInvestigation = () => {
       showCancelButton: true,
       confirmButtonText: "Yes, Reappear it!",
       cancelButtonText: "No",
-      reverseButtons: true,
+      reverseButtons: false,
     }).then((result) => {
       if (result.isConfirmed) {
         const updatedRow = {
@@ -3798,10 +3809,7 @@ const UnderInvestigation = () => {
                   return {
                     field: key,
                     headerName: updatedKeyName ? updatedKeyName : "",
-                    width:
-                      options.table === "cid_ui_case_progress_report"
-                        ? 150
-                        : 250,
+                    width: updatedKeyName.length < 15 ? 100 : 180,
                     resizable: true,
                     renderHeader: () => (
                       <div
@@ -3875,10 +3883,12 @@ const UnderInvestigation = () => {
                 ? [
                   {
                     field: "field_served_or_unserved",
-                    headerName: "Served Status",
+                    headerName: "Served/UnServed",
                     width: 150,
                     resizable: true,
                     sortable: true,
+                    // headerAlign: "center",
+                    // align: "center",    
                     sortComparator: (v1, v2) => {
                       if (v1 === "Yes" && v2 === "No") return -1;
                       if (v1 === "No" && v2 === "Yes") return 1;
@@ -3891,49 +3901,64 @@ const UnderInvestigation = () => {
                   
                       if (!isYes && !isNo) {
                         return (
-                          <div
-                            style={{
+                          <Box
+                            sx={{
                               fontFamily: "Roboto",
                               width: "100%",
-                              marginLeft: "10px",
-                            }}
+                              display: "flex",
+                              justifyContent: "center",
+                              }}
                           >
                             -
-                          </div>
+                          </Box>
                         );
                       }
                   
-                      const statusText = isYes ? "Served" : "Not Served";
+                      const statusText = isYes ? "Served" : "UnServed";
                       const statusColor = isYes ? "#22c55e" : "#ef4444";
                       const borderColor = isYes ? "#34D399" : "#EF4444";
-                
+                  
                       return (
-                        <Chip
-                        label={statusText}
-                        size="small"
-                        sx={{
-                          fontFamily: "Roboto",
-                          fontWeight: 400,
-                          color: "white",
-                          borderColor: borderColor,
-                          borderRadius: "4px",
-                          backgroundColor: statusColor,
-                          textTransform: "capitalize",
-                          borderStyle: "solid",
-                          borderWidth: "1px",
-                        }}
-                      />
+                        <div
+                          style={{
+                            width: "100%",
+                            display: "flex",
+                            justifyContent: "center",
+                            paddingTop: "8px",
+                          }}
+                        >
+                          <Chip
+                            label={statusText}
+                            size="small"
+                            sx={{
+                              fontFamily: "Roboto",
+                              fontWeight: 400,
+                              color: "white",
+                              borderColor: borderColor,
+                              borderRadius: "4px",
+                              backgroundColor: statusColor,
+                              textTransform: "capitalize",
+                              borderStyle: "solid",
+                              borderWidth: "1px",
+                              minWidth: "80px",
+                              textAlign: "center",
+                              justifyContent: "center",
+                              display: "flex",
+                            }}
+                          />
+                        </div>
                       );
+                      
                     },
-                  },                  
-                  ]
+                  }
+                ]
                 : []),,
                 ...(options.table === "cid_ui_case_checking_tabs"
                   ? [
                     {
                       field: "field_reappear",
-                      headerName: "Reappear Status",
-                      width: 150,
+                      headerName: "Reappear",
+                      width: 100,
                       resizable: true,
                       sortable: true,
                       sortComparator: (v1, v2) => {
@@ -3941,6 +3966,45 @@ const UnderInvestigation = () => {
                         if (v1 === "No" && v2 === "Yes") return 1;
                         return 0;
                       },
+                      // renderCell: (params) => {
+                      //   const value = params.value;
+                      //   const isYes = value === "Yes";
+                      //   const isNo = value === "No";
+                    
+                      //   if (!isYes && !isNo) {
+                      //     return (
+                      //       <Box
+                      //         sx={{
+                      //           fontFamily: "Roboto",
+                      //           width: "100%",
+                      //           marginLeft: "15px",
+                      //         }}
+                      //       >
+                      //         -
+                      //       </Box>
+                      //     );
+                      //   }
+                                        
+                      //   return (
+                      //     <Box
+                      //       sx={{
+                      //         display: "flex",
+                      //         alignItems: "center",
+                      //         justifyContent: "flex-start",
+                      //         height: "100%",
+                      //         pl: 1,
+                      //       }}
+                      //     >
+                      //       {isYes ? (
+                      //         <CheckCircleIcon sx={{ color: "#22c55e" }} />
+                      //       ) : (
+                      //         <CancelIcon sx={{ color: "#ef4444" }} />
+                      //       )}
+                      //     </Box>
+                      //   );
+                        
+                    
+                      // },
                       renderCell: (params) => {
                         const value = params.value;
                         const isYes = value === "Yes";
@@ -3952,33 +4016,50 @@ const UnderInvestigation = () => {
                               sx={{
                                 fontFamily: "Roboto",
                                 width: "100%",
-                                marginLeft: "15px",
-                              }}
+                                display: "flex",
+                                justifyContent: "center",
+                                }}
                             >
                               -
                             </Box>
                           );
                         }
-                                        
+                    
+                        const statusText = isYes ? "Yes" : "No";
+                        const statusColor = isYes ? "#22c55e" : "#ef4444";
+                        const borderColor = isYes ? "#34D399" : "#EF4444";
+                    
                         return (
-                          <Box
-                            sx={{
+                          <div
+                            style={{
+                              width: "100%",
                               display: "flex",
-                              alignItems: "center",
-                              justifyContent: "flex-start",
-                              height: "100%",
-                              pl: 1,
+                              justifyContent: "center",
+                              paddingTop: "8px",
                             }}
                           >
-                            {isYes ? (
-                              <CheckCircleIcon sx={{ color: "#22c55e" }} />
-                            ) : (
-                              <CancelIcon sx={{ color: "#ef4444" }} />
-                            )}
-                          </Box>
+                            <Chip
+                              label={statusText}
+                              size="small"
+                              sx={{
+                                fontFamily: "Roboto",
+                                fontWeight: 400,
+                                color: "white",
+                                borderColor: borderColor,
+                                borderRadius: "4px",
+                                backgroundColor: statusColor,
+                                textTransform: "capitalize",
+                                borderStyle: "solid",
+                                borderWidth: "1px",
+                                minWidth: "40px",
+                                textAlign: "center",
+                                justifyContent: "center",
+                                display: "flex",
+                              }}
+                            />
+                          </div>
                         );
                         
-                    
                       },
                     },      
                     ]
@@ -4004,14 +4085,20 @@ const UnderInvestigation = () => {
                     const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
                     const canEdit = userPermissions[0]?.action_edit;
                     const canDelete = userPermissions[0]?.action_delete;
-                    console.log("options", options)
                     const checkserved =
                       options.table === "cid_ui_case_checking_tabs" &&
                       params.row.field_served_or_unserved === "Yes";
 
+                    const checkUnServed = 
+                      options.table === "cid_ui_case_checking_tabs" &&
+                      params.row.field_served_or_unserved === "No";
+
+
                     const checkreappear =
                       options.table === "cid_ui_case_checking_tabs" &&
-                      params.row.field_reappear === "Yes";
+                      params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
+
+
 
                     return (
                       <Box
@@ -4066,13 +4153,9 @@ const UnderInvestigation = () => {
                         )}
                         {options.table === "cid_ui_case_checking_tabs" && (
                           <>
-                            {!checkserved && (
+                            {!checkserved && !checkUnServed &&(
                               <Button
                                 variant="contained"
-                                // style={{
-                                //   backgroundColor: "#28a745",
-                                //   color: "white",
-                                // }}
                                 color = "success"
                                 disabled={checkserved}
                                 onClick={(event) => {
@@ -4417,7 +4500,7 @@ const UnderInvestigation = () => {
         setApprovalItem(getActionsDetails.data["approval_item"]);
         setDesignationData(getActionsDetails.data["designation"]);
 
-        setAddApproveFlag(false);
+        setAddApproveFlag(true);
         setApproveTableFlag(true);
 
         const randomId = `approval_${Date.now()}_${Math.floor(
@@ -5971,6 +6054,7 @@ const UnderInvestigation = () => {
                 display: "inline-flex",
                 alignItems: "center",
                 cursor: "pointer",
+                gap: '6px'
               }}
             >
               {/* <img src='./arrow-left.svg' /> */}
@@ -5981,6 +6065,9 @@ const UnderInvestigation = () => {
                       .replace(/\b\w/g, (c) => c.toUpperCase())
                       : "Under Investigation"}
               </Typography>
+                <Box className="totalRecordCaseStyle">
+                    {totalRecord} Cases
+                </Box>
             </Box>
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
@@ -6057,31 +6144,24 @@ const UnderInvestigation = () => {
               </>
             )}
 
-            {JSON.parse(localStorage.getItem("user_permissions")) &&
-              JSON.parse(localStorage.getItem("user_permissions"))[0]
-                .create_case && (
+            {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && (
                 <Button
-                  onClick={() => getTemplate(table_name)}
-                  sx={{
-                    background: "#4D4AF3",
-                    color: "#FFFFFF",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
-                  startIcon={
-                    <AddIcon
-                      sx={{
-                        border: "1.3px solid #FFFFFF",
-                        borderRadius: "50%",
-                        background:"#4D4AF3 !important"
-                      }}
-                    />
-                  }
-                  variant="contained"
+                    onClick={() => getTemplate(table_name)}
+                    className="blueButton"
+                    startIcon={
+                        <AddIcon
+                            sx={{
+                                border: "1.3px solid #FFFFFF",
+                                borderRadius: "50%",
+                                background:"#4D4AF3 !important"
+                            }}
+                        />
+                    }
+                    variant="contained"
                 >
-                  Add New
+                    Add New
                 </Button>
-              )}
+            )}
             {localStorage.getItem("authAdmin") === "false" && (
               <Button
                 onClick={downloadReportModal}
@@ -6301,7 +6381,7 @@ const UnderInvestigation = () => {
           maxWidth="xl"
           fullWidth
         >
-          <DialogContent sx={{ minWidth: "400px" }}>
+          <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
             <DialogContentText id="alert-dialog-description">
               <FormControl fullWidth>
                 <NormalViewForm
@@ -6518,11 +6598,25 @@ const UnderInvestigation = () => {
               justifyContent: "space-between",
             }}
           >
-            <Box sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}} onClick={() => setOtherTemplateModalOpen(false)}>
-                <WestIcon  />
-                {selectedOtherTemplate?.name}
-                {selectedRowData?.["field_cc_no./sc_no"] || ""}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} onClick={() => setOtherTemplateModalOpen(false)}>
+                <WestIcon />
+
+                <Typography variant="body1" fontWeight={500}>
+                    {selectedOtherTemplate?.name}
+                </Typography>
+
+                {selectedRowData["field_cid_crime_no./enquiry_no"] && (
+                    <Chip
+                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontWeight: 500, marginTop: '1px' }}
+                    />
+                )}
+
             </Box>
+
             <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
               "cid_ui_case_progress_report" ? (
@@ -6800,7 +6894,7 @@ const UnderInvestigation = () => {
           >
             Approval
             <Box>
-              {!addApproveFlag ? (
+              {/* {!addApproveFlag ? (
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -6809,7 +6903,7 @@ const UnderInvestigation = () => {
                 >
                   Add
                 </Button>
-              ) : (
+              ) : ( */}
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -6818,7 +6912,7 @@ const UnderInvestigation = () => {
                 >
                   Save
                 </Button>
-              )}
+              {/* )} */}
               <IconButton
                 aria-label="close"
                 onClick={() => setApproveTableFlag(false)}
@@ -6831,9 +6925,9 @@ const UnderInvestigation = () => {
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               <Box py={2}>
-                {!addApproveFlag ? (
+                {/* {!addApproveFlag ? (
                   <TableView rows={approvalsData} columns={approvalsColumn} />
-                ) : (
+                ) : ( */}
                   <Box
                     sx={{
                       display: "flex",
@@ -6942,7 +7036,7 @@ const UnderInvestigation = () => {
                       }
                     />
                   </Box>
-                )}
+                {/* )} */}
               </Box>
             </DialogContentText>
           </DialogContent>
@@ -7239,7 +7333,7 @@ const UnderInvestigation = () => {
             </Dialog>
         )}
 
-      {approveTableFlag && (
+      {/* {approveTableFlag && (
         <Dialog
           open={approveTableFlag}
           onClose={() => setApproveTableFlag(false)}
@@ -7299,7 +7393,7 @@ const UnderInvestigation = () => {
                       flexDirection: "column",
                       gap: "18px",
                     }}
-                  >
+                  >                    
                     <Autocomplete
                       id=""
                       options={approvalItem}
@@ -7328,7 +7422,6 @@ const UnderInvestigation = () => {
                         />
                       )}
                     />
-
                     <Autocomplete
                       id=""
                       options={designationData}
@@ -7356,7 +7449,6 @@ const UnderInvestigation = () => {
                         />
                       )}
                     />
-
                     <LocalizationProvider
                       dateAdapter={AdapterDayjs}
                       sx={{ width: "100%" }}
@@ -7388,7 +7480,6 @@ const UnderInvestigation = () => {
                         />
                       </DemoContainer>
                     </LocalizationProvider>
-
                     <TextField
                       rows={8}
                       label={"Comments"}
@@ -7405,7 +7496,7 @@ const UnderInvestigation = () => {
             </DialogContentText>
           </DialogContent>
         </Dialog>
-      )}
+      )} */}
 
     {furtherInvestigationPtCase &&
         <Dialog
@@ -7416,7 +7507,7 @@ const UnderInvestigation = () => {
             maxWidth="xl"
             fullWidth
         >
-            <DialogContent sx={{ minWidth: '400px' }}>
+            <DialogContent sx={{ minWidth: '400px', padding: '0'  }}>
                 <DialogContentText id="alert-dialog-description">
                     <FormControl fullWidth>
                         <NormalViewForm
