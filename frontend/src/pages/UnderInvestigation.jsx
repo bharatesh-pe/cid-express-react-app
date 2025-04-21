@@ -165,6 +165,8 @@ const UnderInvestigation = () => {
   // transfer to other division states
 
   const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
+  const [showMassiveTransferModal, setShowMassiveTransferModal] = useState(false);
+
   const [otherTransferField, setOtherTransferField] = useState([]);
   const [selectedOtherFields, setSelectedOtherFields] = useState(null);
   const [selectKey, setSelectKey] = useState(null);
@@ -293,7 +295,10 @@ const UnderInvestigation = () => {
     const [othersToDate, setOthersToDate] = useState(null);
     const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     const [othersFilterData, setOthersFilterData] = useState({});
-
+    const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
+    const [showMergeModal, setShowMergeModal] = useState(false);
+    const [selectedParentId, setSelectedParentId] = useState("");
+  
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
@@ -1222,20 +1227,56 @@ const UnderInvestigation = () => {
       }
     }
   };
+  
+  const handleCheckboxChangeField = (event, row) => {
+    const isSelected = event.target.checked;
+  
+    setTableData((prevData) =>
+      prevData.map((data) =>
+        data.id === row.id ? { ...data, isSelected } : data
+      )
+    );
+  
+    if (isSelected) {
+      setSelectedRowIds((prevIds) => [...prevIds, row.id]);
+      setSelectedMergeRowData((prev) => [...prev, row]);
+    } else {
+      setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id));
+      setSelectedMergeRowData((prev) => prev.filter((r) => r.id !== row.id));
+    }
+  };
 
-    const handleCheckboxChangeField = (event, row) => {
-        const isSelected = event.target.checked;
-        setTableData((prevData) =>
-            prevData.map((data) =>
-                data.id === row.id ? { ...data, isSelected } : data
-            )
-        );
-        if (isSelected) {
-            setSelectedRowIds((prevIds) => [...prevIds, row.id]);
-        } else {
-            setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id));
-        }
-    };
+  const handleConfirmMerge = () => {
+    if (!selectedParentId) {
+      Swal.fire({
+        title: 'Error',
+        text: "Select a parent case before merging!",
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+  
+    setLoading(true);
+  
+    setTimeout(() => {
+      setShowMergeModal(false);
+      setSelectedRowIds([]);
+      setSelectedMergeRowData([]);
+      loadTableData();
+  
+      Swal.fire({
+        title: 'Success',
+        text: "Merged successfully!",
+        icon: 'success',
+        confirmButtonText: 'OK',
+      });
+  
+      setLoading(false);
+    }, 1000); 
+  };
+  
+  
     useEffect(() => {
         const anySelected = tableData.some((data) => data.isSelected);
         setIsCheckboxSelected(anySelected);
@@ -4726,11 +4767,7 @@ const UnderInvestigation = () => {
         );
 
 
-        if (
-          (selectedOtherTemplate.field === null ||
-            selectedOtherTemplate.field === "field_nature_of_disposal") &&
-          templateApproval
-        ) {
+        if ((selectedOtherTemplate.field === null || selectedOtherTemplate.field === "field_nature_of_disposal" || selectedOtherTemplate.field === "field_prosecution_sanction") && templateApproval) {
           otherTemplateSaveFunc(templateApprovalData, true);
           return;
         }
@@ -4802,6 +4839,58 @@ const UnderInvestigation = () => {
   };
 
   const handleSaveDivisionChange = async () => {
+    if (!selectedOtherFields || !selectedOtherFields.code) {
+      toast.error("Please Select Data !", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+
+      return;
+    }
+
+    if (
+      selectedOtherTemplate &&
+      selectedOtherTemplate["field"] &&
+      (selectedOtherTemplate["field"] === "field_nature_of_disposal" ||
+        selectedOtherTemplate["field"] === "field_prosecution_sanction" ||
+        selectedOtherTemplate["field"] === "field_17a_pc_act") &&
+      selectedOtherFields &&
+      selectedOtherFields["name"]
+    ) {
+      checkDisposalValues();
+      return;
+    }
+
+    if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
+      showApprovalPage(selectedRow);
+      return;
+    }
+
+    var combinedData = {
+      id: selectedRow.id,
+      [selectKey.name]: selectedOtherFields.code,
+    };
+
+    // update func
+    onUpdateTemplateData(combinedData);
+
+    // reset states
+    setSelectKey(null);
+    setSelectedRow(null);
+    setOtherTransferField([]);
+    setShowOtherTransferModal(false);
+    setSelectedOtherFields(null);
+    setselectedOtherTemplate(null);
+  };
+
+
+  const handleMassiveDivisionChange = async () => {
     if (!selectedOtherFields || !selectedOtherFields.code) {
       toast.error("Please Select Data !", {
         position: "top-right",
@@ -6142,6 +6231,7 @@ const UnderInvestigation = () => {
               <>
                 <Button
                   variant="contained"
+                  className="blueButton"
                   startIcon={
                     <svg
                       width="18"
@@ -6152,24 +6242,20 @@ const UnderInvestigation = () => {
                     >
                       <path
                         d="M1 18V12H3V16H7V18H1ZM13 18V16H17V12H19V18H13ZM5.175 12.825L3.75 11.425L5.175 10H0V8H5.175L3.75 6.575L5.175 5.175L9 9L5.175 12.825ZM14.825 12.825L11 9L14.825 5.175L16.25 6.575L14.825 8H20V10H14.825L16.25 11.425L14.825 12.825ZM1 6V0H7V2H3V6H1ZM17 6V2H13V0H19V6H17Z"
-                        fill="black"
+                        fill="#ffffff"
                       />
                     </svg>
                   }
-                  sx={{
-                    background: "#32D583",
-                    color: "#101828",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
+                  onClick={() => setShowMergeModal(true)}
                 >
                   Merge
                 </Button>
                 <Button
                   variant="contained"
+                  className="blueButton"
                   startIcon={
                     <svg
-                      fill="#000000"
+                      fill="#ffffff"
                       width="22"
                       height="22"
                       viewBox="0 0 20 18"
@@ -6187,12 +6273,7 @@ const UnderInvestigation = () => {
                       </g>
                     </svg>
                   }
-                  sx={{
-                    background: "#32D583",
-                    color: "#101828",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
+                  
                   onClick={() =>
                     showTransferToOtherDivision(
                       {
@@ -6433,6 +6514,41 @@ const UnderInvestigation = () => {
           closeForm={setFormOpen}
         />
       )}
+
+      <Dialog
+        open={showMergeModal}
+        onClose={() => setShowMergeModal(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Select Parent Case</DialogTitle>
+        <DialogContent sx={{ width: "500px" }}>
+          <FormControl fullWidth>
+            <Autocomplete
+              id="parent-case-autocomplete"
+              options={selectedMergeRowData}
+              getOptionLabel={(option) => option["field_cid_crime_no./enquiry_no"] || `Case ${option.id}`}
+              value={selectedParentId || null}
+              onChange={(event, newValue) => setSelectedParentId(newValue)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Parent Case"
+                  // placeholder="Select a case to be a Parent Case"
+                  className="selectHideHistory"
+                />
+              )}
+            />
+          </FormControl>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button onClick={() => setShowMergeModal(false)}>Cancel</Button>
+          <Button className="fillPrimaryBtn" onClick={handleConfirmMerge}>
+            Merge
+          </Button>
+        </DialogActions>
+      </Dialog>
+
 
       {otherFormOpen && (
         <Dialog
@@ -6689,6 +6805,10 @@ const UnderInvestigation = () => {
                         sx={{ fontWeight: 500, marginTop: '2px' }}
                     />
                 )}
+
+                <Box className="totalRecordCaseStyle">
+                    {otherTemplatesTotalRecord} Records
+                </Box>
 
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>
@@ -7212,6 +7332,45 @@ const UnderInvestigation = () => {
         </DialogContent>
         <DialogActions sx={{ padding: "12px 24px" }}>
           <Button onClick={() => setShowOtherTransferModal(false)}>
+            Cancel
+          </Button>
+          <Button className="fillPrimaryBtn" onClick={handleMassiveDivisionChange}>
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+
+      <Dialog
+        open={showMassiveTransferModal}
+        onClose={() => setShowMassiveTransferModal(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title"></DialogTitle>
+        <DialogContent sx={{ width: "400px" }}>
+          <DialogContentText id="alert-dialog-description">
+            <h4 className="form-field-heading">{selectKey?.title}</h4>
+            <FormControl fullWidth>
+              <Autocomplete
+                id=""
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={(event, newValue) => setSelectedOtherFields(newValue)}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label={selectKey?.title}
+                  />
+                )}
+              />
+            </FormControl>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button onClick={() => setShowMassiveTransferModal(false)}>
             Cancel
           </Button>
           <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
