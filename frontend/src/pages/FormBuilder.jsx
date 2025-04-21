@@ -2109,9 +2109,29 @@ const Formbuilder = () => {
                             {/* <Button variant="outlined" className='outlinedBtn' sx={{ textTransform: 'none' }}>Chose old drafts</Button>
                             <Button variant="outlined" className='outlinedBtn' sx={{ textTransform: 'none' }}>Save as drafts</Button> */}
                             {Createdfields && action === 'edit' ?
-                                <Button variant="outlined" className='GreenFillBtn' sx={{ textTransform: 'none', fontSize: '14px', fontWeight: '500', padding: '8px' }} onClick={handleTemplateUpdate}>Update template</Button>
+                                <Button variant="outlined"   
+                                sx={{
+                                    background: "#0167F8",
+                                    borderRadius: "8px",
+                                    fontSize: "14px",
+                                    fontWeight: "500",
+                                    color: "#FFFFFF",
+                                    padding: "6px 16px",
+                                }}
+                                className="Roboto"
+                                onClick={handleTemplateUpdate}>Update template</Button>
                                 :
-                                <Button variant="outlined" className='GreenFillBtn' sx={{ textTransform: 'none', fontSize: '14px', fontWeight: '500', padding: '8px' }} onClick={handleSave}>Save template</Button>
+                                <Button variant="outlined"   
+                                sx={{
+                                    background: "#0167F8",
+                                    borderRadius: "8px",
+                                    fontSize: "14px",
+                                    fontWeight: "500",
+                                    color: "#FFFFFF",
+                                    padding: "6px 16px",
+                                }}
+                                className="Roboto"
+                                onClick={handleSave}>Save template</Button>
                             }
                         </Grid>
                     </Grid>

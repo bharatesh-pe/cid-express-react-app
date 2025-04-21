@@ -546,33 +546,33 @@ exports.updateTemplateData = async (req, res, next) => {
         await record.update(updatedFields);
 
         // Log changes in ProfileHistory (Only for changed fields)
-        // if (userId) {
-        //     for (const key in updatedFields) {
-        //         const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
-        //         const newValue = updatedFields[key];
+        if (userId) {
+            for (const key in updatedFields) {
+                const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
+                const newValue = updatedFields[key];
 
-        //         console.log(">>>>>oldValue1>>>>>>>>", oldValue);
-        //         console.log(">>>>>>newValue1>>>>>>>", newValue);
+                console.log(">>>>>oldValue1>>>>>>>>", oldValue);
+                console.log(">>>>>>newValue1>>>>>>>", newValue);
 
-        //         const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
-        //         const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
+                const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
+                const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
 
-        //         console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
-        //         console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
+                console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
+                console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
 
-        //         // Only log changes, not unchanged fields
-        //         if (oldValue !== newValue) {
-        //             await ProfileHistory.create({
-        //                 template_id: tableData.template_id,
-        //                 table_row_id: id,
-        //                 user_id: userId,
-        //                 field_name: key,
-        //                 old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
-        //                 updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
-        //             });
-        //         }
-        //     }
-        // }
+                // Only log changes, not unchanged fields
+                if (oldValue !== newValue) {
+                    await ProfileHistory.create({
+                        template_id: tableData.template_id,
+                        table_row_id: id,
+                        user_id: userId,
+                        field_name: key,
+                        old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
+                        updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
+                    });
+                }
+            }
+        }
 
         // await ActivityLog.create({
         //     template_id: tableData.template_id,
@@ -1180,7 +1180,18 @@ exports.getTemplateData = async (req, res, next) => {
             try {
               if (data.field_assigned_to) {
                 filteredData.field_assigned_to_id = data.field_assigned_to;
+                let hasAnyYes = false;
 
+                if (typeof data.field_pr_status === "string") {
+                  hasAnyYes = data.field_pr_status === "Yes";
+                }
+              
+                else if (Array.isArray(data.field_pr_status)) {
+                  hasAnyYes = data.field_pr_status.some((statusObj) => statusObj === "Yes" || statusObj.status === "Yes");
+                }
+              
+                filteredData.hasFieldPrStatus = hasAnyYes;
+              
                 const assignedToUser = await Users.findOne({
                   where: { user_id: data.field_assigned_to },
                   attributes: ["kgid_id"],
@@ -4457,15 +4468,30 @@ exports.uploadFile = async (req, res) => {
       const { ui_case_id, created_by } = req.body;
 
       if (!ui_case_id || !created_by) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Missing required fields." });
+        return res.status(400).json({
+          success: false,
+          message: "Missing required fields.",
+        });
       }
 
       if (!req.file) {
-        return res
-          .status(400)
-          .json({ success: false, message: "No file uploaded." });
+        return res.status(400).json({
+          success: false,
+          message: "No file uploaded.",
+        });
+      }
+
+      const existing = await UiProgressReportFileStatus.findOne({
+        where: { ui_case_id },
+      });
+
+      if (existing) {
+        const existingPath = path.join(__dirname, "..", "uploads", existing.file_path);
+        if (fs.existsSync(existingPath)) {
+          fs.unlinkSync(existingPath);
+        }
+
+        await existing.destroy();
       }
 
       const file_name = req.file.filename;
@@ -4487,12 +4513,14 @@ exports.uploadFile = async (req, res) => {
       });
     } catch (error) {
       console.error("Error uploading file:", error);
-      return res
-        .status(500)
-        .json({ success: false, message: "Internal server error." });
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error.",
+      });
     }
   });
 };
+
 
 exports.getUploadedFiles = async (req, res) => {
   try {
@@ -4614,6 +4642,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       delete data.field_assigned_to_id;
       delete data.field_assigned_by_id;
       delete data.ReadStatus;
+      delete data.hasFieldPrStatus;
 
       const { created_by, created_at, ...rest } = data;
       data = { ...rest, created_by, created_at };

@@ -1,6 +1,6 @@
 const Sequelize = require("sequelize");
 const db = require('../models');
-const { Template, ProfileHistory, user } = require("../models");
+const { Template, ProfileHistory, Users , KGID } = require("../models");
 const sequelize = db.sequelize;
 const { Op } = require("sequelize");
 // Import the Template and Comment models
@@ -25,7 +25,8 @@ exports.getProfileHistory = async (req, res, next) => {
         const { template_id, table_row_id, field_name } = req.body;
 
         // Get the logged-in user's user_id from res.locals
-        const user_id = res.locals.user_id;
+        const user_id = req.user?.user_id || null;
+
         if (!user_id) {
             return userSendResponse(res, 401, false, "Unauthorized: User not logged in.");
         }
@@ -89,16 +90,10 @@ exports.getProfileHistory = async (req, res, next) => {
             limit: 10,
             include: [
                 {
-                    model: user,
+                    model: Users,
                     as: 'userDetails',
-                    attributes: [
-                        'user_id',
-                        'user_firstname',
-                        'user_lastname',
-                        'user_email',
-                        'user_phone',
-                        'user_photo_path'
-                    ]
+                    attributes: ['user_id'],
+                    
                 }
             ]
         });
