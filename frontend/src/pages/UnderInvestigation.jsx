@@ -3862,6 +3862,29 @@ const UnderInvestigation = () => {
               excludedKeys.push("field_witness");
               excludedKeys.push("field_accused");
               excludedKeys.push("field_accused/witness");
+              excludedKeys.push("field_cw_attended_the_trial");
+              excludedKeys.push("field_hearing_date");
+              excludedKeys.push("field_next_hearing_date");
+              excludedKeys.push("field_notice_received_on");
+              excludedKeys.push("field_notice_served_on");
+              excludedKeys.push("field_number_of_notice_executed");
+              excludedKeys.push("field_number_of_notice_not_executed");
+              excludedKeys.push("field_number_of_proclamation_executed");
+              excludedKeys.push("field_number_of_proclamation_not_executed");
+              excludedKeys.push("field_number_of_summons_executed");
+              excludedKeys.push("field_number_of_summons_not_executed");
+              excludedKeys.push("field_number_of_warrant_executed");
+              excludedKeys.push("field_number_of_warrant_not_executed");
+              excludedKeys.push("field_process_type");
+              excludedKeys.push("field_proclamation_received_on");
+              excludedKeys.push("field_proclamation_served_on");
+              excludedKeys.push("field_reappear");
+              excludedKeys.push("field_reason");
+              excludedKeys.push("field_summons_received_on");
+              excludedKeys.push("field_summons_served_on");
+              excludedKeys.push("field_trialresult");
+              excludedKeys.push("field_warrant_received_on");
+              excludedKeys.push("field_warrant_served_on");
             }
 
             const updatedHeader = ([
