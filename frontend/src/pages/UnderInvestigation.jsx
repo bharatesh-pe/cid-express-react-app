@@ -211,27 +211,37 @@ const UnderInvestigation = () => {
         width: 300,
         sortable: false,
         renderCell: (params) => {
-        const row = params.row;
-        return (
-            <Box sx={{ display: "flex", gap: 1 }}>
-            {/* {userPermissions[0]?.view_case && ( */}
-                <Button variant="outlined" >
-                    View
-                </Button>
-            {/* )} */}
-            {/* {userPermissions[0]?.edit_case && ( */}
-                <Button variant="contained" color="primary">
-                    Edit
-                </Button>
-            {/* )} */}
-            {/* {userPermissions[0]?.delete_case && ( */}
-                <Button variant="contained" color="error">
-                    Delete
-                </Button>
-            {/* )} */}
-            </Box>
-        );
-        },
+            const row = params.row;
+
+            const handleListApprovalView = () => {
+                setListApprovalSaveData(row); // Set data for read-only view
+                setListApprovalItemDisabled(true); // Disable dropdowns and date picker
+                setListAddApproveFlag(true); // Show form view
+                setListApproveTableFlag(true); // Open dialog
+            };
+
+            const handleListApprovalEdit = () => {
+                setListApprovalSaveData(row); // Prefill form for editing
+                setListApprovalItemDisabled(false); // Enable dropdowns and date picker
+                setListAddApproveFlag(true); // Show form view
+                setListApproveTableFlag(true); // Open dialog
+            };
+
+            return (
+                <Box sx={{ display: "flex", gap: 1 }}>
+                    <Button variant="outlined" onClick={handleListApprovalView}>
+                        View
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={handleListApprovalEdit}>
+                        Edit
+                    </Button>
+                    <Button variant="contained" color="error">
+                        Delete
+                    </Button>
+                </Box>
+            );
+        }
+
     };
   
     const [listApprovalItem, setListApprovalItem] = useState([]);
@@ -259,6 +269,60 @@ const UnderInvestigation = () => {
         setListApprovalFiltersDropdown([]);
         setListApprovalFilterData({});
     }
+
+    const handleListApprovalSaveData = (name, value) => {
+        setListApprovalSaveData({
+        ...approvalSaveData,
+        [name]: value,
+        });
+    };
+
+    const handleUpdateApproval = async () => {
+        setLoading(true);
+
+        try {
+            const { approval_item, approved_by, approval_date, remarks, approval_id } = listApprovalSaveData;
+
+            if (!approval_item || !approved_by || !approval_date) {
+                toast.error("Please fill in all required fields.");
+                setLoading(false);
+                return;
+            }
+
+            const payloadObj = {
+            approval_id,
+            approval_item,
+            approved_by,
+            approval_date,
+            remarks,
+            module: "ui_case_module",
+            action: "update",    
+            transaction_id:  `approval_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
+            created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+            created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+            };
+
+            const response = await api.post(
+            "/ui_approval/update_ui_case_approval",
+            payloadObj
+            );
+
+            setLoading(false);
+
+            if (response.status === 200) {
+                toast.success("Approval updated successfully");
+                setListAddApproveFlag(false);
+            } else {
+                toast.error("Failed to update approval");
+            }
+        } catch (error) {
+            setLoading(false);
+            console.error("Update error:", error);
+            toast.error("Something went wrong");
+        }
+    };
+
+
 
 
   
@@ -1266,7 +1330,7 @@ const UnderInvestigation = () => {
       setSelectedMergeRowData((prev) => prev.filter((r) => r.id !== row.id));
     }
   };
-  
+ 
   const handleConfirmMerge = async () => {
     if (!selectedParentId || selectedParentId.length === 0) {
       Swal.fire({
@@ -1279,25 +1343,70 @@ const UnderInvestigation = () => {
     }
   
     setLoading(true);
-    
     setShowMergeModal(false);
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]);
-    setSelectedParentId(null);
-    
-    await loadTableData();
   
-    Swal.fire({
-      title: 'Success',
-      text: "Merged successfully!",
-      icon: 'success',
-      confirmButtonText: 'OK',
-    });
+    try {
+      const allCaseIdsToMerge = selectedMergeRowData
+        .filter(row => row?.id !== undefined)
+        .map(row => row.id);
   
-    setLoading(false);
+      const payloadSysStatus = {
+        table_name: table_name,
+        data: {
+          id: allCaseIdsToMerge,
+          sys_status: "merge_cases",
+          default_status: "ui_case",
+        },
+      };
+  
+      const sysStatusResponse = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+  
+      if (!sysStatusResponse?.success) {
+        throw new Error(sysStatusResponse.message || "Failed to update case status.");
+      }
+  
+      const mergeDataPayload = allCaseIdsToMerge.map(caseId => ({
+        case_id: caseId,
+        parent_case_id: selectedParentId.id,
+        merged_status: caseId === selectedParentId.id ? "parent" : "child",
+      }));
+  
+      const mergeResponse = await api.post("/templateData/insertMergeData", {
+        table_name: "ui_merged_cases",
+        data: mergeDataPayload,
+      });
+  
+      if (!mergeResponse?.success) {
+        throw new Error(mergeResponse.message || "Failed to insert merge data.");
+      }
+  
+      Swal.fire({
+        title: 'Success',
+        text: "Merged successfully!",
+        icon: 'success',
+        confirmButtonText: 'OK',
+      });
+  
+      setSelectedRowIds([]);
+      setSelectedMergeRowData([]);
+      setSelectedParentId(null);
+  
+      await loadTableData();
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        title: 'Error',
+        text: "Something went wrong during merge!",
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   
+
   
     useEffect(() => {
         const anySelected = tableData.some((data) => data.isSelected);
@@ -1448,6 +1557,38 @@ const UnderInvestigation = () => {
                             ),
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
+                        ...(sysStatus === "merge_cases"
+                          ? [
+                              {
+                                field: "child_case",
+                                headerName: "Child Case",
+                                width: 100,
+                                resizable: true,
+                                renderCell: (params) => {
+                                  const childCount = params.value || '1';
+                                  const statusColor = "#3b82f6";
+                                  const borderColor = "#2563eb";
+                      
+                                  return (
+                                    <Chip
+                                      label={childCount}
+                                      size="small"
+                                      sx={{
+                                        fontFamily: "Roboto",
+                                        fontWeight: 500,
+                                        color: "white",
+                                        borderColor: borderColor,
+                                        borderRadius: "4px",
+                                        backgroundColor: statusColor,
+                                        borderStyle: "solid",
+                                        borderWidth: "1px",
+                                      }}
+                                    />
+                                  );
+                                },
+                              },
+                            ]
+                          : []),
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -3750,10 +3891,33 @@ const UnderInvestigation = () => {
               excludedKeys.push("created_at");
               excludedKeys.push("hasFieldPrStatus");
             }
-            if (options.table === "cid_ui_case_checking_tabs") {
+            if (options.table === "cid_ui_case_trail_monitoring") {
               excludedKeys.push("field_witness");
               excludedKeys.push("field_accused");
               excludedKeys.push("field_accused/witness");
+              excludedKeys.push("field_cw_attended_the_trial");
+              excludedKeys.push("field_hearing_date");
+              excludedKeys.push("field_next_hearing_date");
+              excludedKeys.push("field_notice_received_on");
+              excludedKeys.push("field_notice_served_on");
+              excludedKeys.push("field_number_of_notice_executed");
+              excludedKeys.push("field_number_of_notice_not_executed");
+              excludedKeys.push("field_number_of_proclamation_executed");
+              excludedKeys.push("field_number_of_proclamation_not_executed");
+              excludedKeys.push("field_number_of_summons_executed");
+              excludedKeys.push("field_number_of_summons_not_executed");
+              excludedKeys.push("field_number_of_warrant_executed");
+              excludedKeys.push("field_number_of_warrant_not_executed");
+              excludedKeys.push("field_process_type");
+              excludedKeys.push("field_proclamation_received_on");
+              excludedKeys.push("field_proclamation_served_on");
+              excludedKeys.push("field_reappear");
+              excludedKeys.push("field_reason");
+              excludedKeys.push("field_summons_received_on");
+              excludedKeys.push("field_summons_served_on");
+              excludedKeys.push("field_trialresult");
+              excludedKeys.push("field_warrant_received_on");
+              excludedKeys.push("field_warrant_served_on");
             }
 
             const updatedHeader = ([
@@ -3909,7 +4073,7 @@ const UnderInvestigation = () => {
                   ]
                 : []),
                 ,
-              ...(options.table === "cid_ui_case_checking_tabs"
+              ...(options.table === "cid_ui_case_trail_monitoring"
                 ? [
                   {
                     field: "field_served_or_unserved",
@@ -3983,7 +4147,7 @@ const UnderInvestigation = () => {
                   }
                 ]
                 : []),,
-                ...(options.table === "cid_ui_case_checking_tabs"
+                ...(options.table === "cid_ui_case_trail_monitoring"
                   ? [
                     {
                       field: "field_reappear",
@@ -4117,16 +4281,16 @@ const UnderInvestigation = () => {
                     const canEdit = userPermissions[0]?.action_edit;
                     const canDelete = userPermissions[0]?.action_delete;
                     const checkserved =
-                      options.table === "cid_ui_case_checking_tabs" &&
+                      options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_served_or_unserved === "Yes";
 
                     const checkUnServed = 
-                      options.table === "cid_ui_case_checking_tabs" &&
+                      options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_served_or_unserved === "No";
 
 
                     const checkreappear =
-                      options.table === "cid_ui_case_checking_tabs" &&
+                      options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
 
 
@@ -4182,7 +4346,7 @@ const UnderInvestigation = () => {
                             )}
                           </>
                         )}
-                        {options.table === "cid_ui_case_checking_tabs" && (
+                        {options.table === "cid_ui_case_trail_monitoring" && (
                           <>
                             {!checkserved && !checkUnServed &&(
                               <Button
@@ -4975,7 +5139,9 @@ const UnderInvestigation = () => {
     setSelectedRowIds([]);
     setSelectedMergeRowData([]); 
     setSelectedParentId(null);
-
+    setTableData((prevData) =>
+      prevData.map((item) => ({ ...item, isSelected: false }))
+    );
   };
 
   const showPtCaseTemplate = async () => {
@@ -6419,6 +6585,7 @@ const UnderInvestigation = () => {
                   onClick={() => {
                     setShowMergeModal(true);
                     setMergeDialogData(selectedMergeRowData); 
+                    console.log("selectedMergeRowData",selectedMergeRowData)
                   }}
                   >
                   Merge
@@ -7502,107 +7669,113 @@ const UnderInvestigation = () => {
 
 
       <Dialog
-  open={showMassiveTransferModal}
-  onClose={() => {
-    setShowMassiveTransferModal(false);
-    setSelectKey(null);
-    setSelectedRow([]);
-    setOtherTransferField([]);
-    setSelectedOtherFields(null);
-    setselectedOtherTemplate(null);
-    setUsersBasedOnDivision([]);
-    setSelectedUser(null);
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]); 
-    setSelectedParentId(null);
-   }}
-    aria-labelledby="alert-dialog-title"
-  aria-describedby="alert-dialog-description"
->
-  <DialogTitle id="alert-dialog-title"></DialogTitle>
-  <DialogContent sx={{ width: "400px" }}>
-    <DialogContentText id="alert-dialog-description">
-      <h4 className="form-field-heading">{selectKey?.title}</h4>
-      <FormControl fullWidth>
-        <Autocomplete
-          options={otherTransferField}
-          getOptionLabel={(option) => option.name || ""}
-          value={selectedOtherFields || null}
-          onChange={(event, newValue) => {
-            setSelectedOtherFields(newValue);
-            setSelectedUser(null); 
+        open={showMassiveTransferModal}
+        onClose={() => {
+          setShowMassiveTransferModal(false);
+          setSelectKey(null);
+          setSelectedRow([]);
+          setOtherTransferField([]);
+          setSelectedOtherFields(null);
+          setselectedOtherTemplate(null);
+          setUsersBasedOnDivision([]);
+          setSelectedUser(null);
+          setSelectedRowIds([]);
+          setSelectedMergeRowData([]); 
+          setSelectedParentId(null);
+          setTableData((prevData) =>
+            prevData.map((item) => ({ ...item, isSelected: false }))
+          );
+        }}
+          aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title"></DialogTitle>
+        <DialogContent sx={{ width: "400px" }}>
+          <DialogContentText id="alert-dialog-description">
+            <h4 className="form-field-heading">{selectKey?.title}</h4>
+            <FormControl fullWidth>
+              <Autocomplete
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={(event, newValue) => {
+                  setSelectedOtherFields(newValue);
+                  setSelectedUser(null); 
 
-            if (newValue && newValue.code) {
-              api.post("cidMaster/getIoUsersBasedOnDivision", {
-                division_ids: [newValue.code],
-                role_id: null,
-              }).then((res) => {
-                setUsersBasedOnDivision(res.data || []);
-              }).catch((err) => {
-                console.error("Failed to load users based on division", err);
-                setUsersBasedOnDivision([]);
-              });
-            } else {
+                  if (newValue && newValue.code) {
+                    api.post("cidMaster/getIoUsersBasedOnDivision", {
+                      division_ids: [newValue.code],
+                      role_id: null,
+                    }).then((res) => {
+                      setUsersBasedOnDivision(res.data || []);
+                    }).catch((err) => {
+                      console.error("Failed to load users based on division", err);
+                      setUsersBasedOnDivision([]);
+                    });
+                  } else {
+                    setUsersBasedOnDivision([]);
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label={selectKey?.title}
+                  />
+                )}
+              />
+            </FormControl>
+
+              <>
+                <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
+                <FormControl fullWidth>
+                  <Autocomplete
+                    options={usersBasedOnDivision}
+                    getOptionLabel={(option) => option.name || ""}
+                    value={selectedUser || null}
+                    onChange={(event, newValue) => setSelectedUser(newValue)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        className="selectHideHistory"
+                        label="IO User"
+                      />
+                    )}
+                  />
+                </FormControl>
+              </>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button 
+            onClick={() => {
+              setShowMassiveTransferModal(false);
+              setSelectKey(null);
+              setSelectedRow([]);
+              setOtherTransferField([]);
+              setSelectedOtherFields(null);
+              setselectedOtherTemplate(null);
               setUsersBasedOnDivision([]);
-            }
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              className="selectHideHistory"
-              label={selectKey?.title}
-            />
-          )}
-        />
-      </FormControl>
-
-        <>
-          <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
-          <FormControl fullWidth>
-            <Autocomplete
-              options={usersBasedOnDivision}
-              getOptionLabel={(option) => option.name || ""}
-              value={selectedUser || null}
-              onChange={(event, newValue) => setSelectedUser(newValue)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  className="selectHideHistory"
-                  label="IO User"
-                />
-              )}
-            />
-          </FormControl>
-        </>
-    </DialogContentText>
-  </DialogContent>
-  <DialogActions sx={{ padding: "12px 24px" }}>
-    <Button 
-      onClick={() => {
-        setShowMassiveTransferModal(false);
-        setSelectKey(null);
-        setSelectedRow([]);
-        setOtherTransferField([]);
-        setSelectedOtherFields(null);
-        setselectedOtherTemplate(null);
-        setUsersBasedOnDivision([]);
-        setSelectedUser(null);
-        setSelectedRowIds([]);
-        setSelectedMergeRowData([]); 
-        setSelectedParentId(null);
-      }}
-      >Cancel
-    </Button>
-    <Button
-      className="fillPrimaryBtn"
-      onClick={() => {
-        handleMassiveDivisionChange();
-      }}
-    >
-      Submit
-    </Button>
-  </DialogActions>
-</Dialog>
+              setSelectedUser(null);
+              setSelectedRowIds([]);
+              setSelectedMergeRowData([]); 
+              setSelectedParentId(null);
+              setTableData((prevData) =>
+                prevData.map((item) => ({ ...item, isSelected: false }))
+              );
+            }}
+            >Cancel
+          </Button>
+          <Button
+            className="fillPrimaryBtn"
+            onClick={() => {
+              handleMassiveDivisionChange();
+            }}
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
 
 
       {showFilterModal && (
@@ -8040,32 +8213,52 @@ const UnderInvestigation = () => {
                     justifyContent: "space-between",
                     }}
                 >
-                    <Box 
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
-                        onClick={() => { setListApproveTableFlag(false)}}
-                    >
-
-                        <WestIcon />
-
-                        <Typography variant="body1" fontWeight={500}>
-                            Approval
-                        </Typography>
-
-                        {listApprovalCaseNo && (
-                            <Chip
-                                label={listApprovalCaseNo}
-                                color="primary"
-                                variant="outlined"
-                                size="small"
-                                sx={{ fontWeight: 500, marginTop: '2px' }}
-                            />
-                        )}
-
-                        <Box className="totalRecordCaseStyle">
-                            {listApprovalTotalRecord} Records
+                    {listAddApproveFlag ? (
+                        <Box 
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => {  setListAddApproveFlag(false) }}
+                        >
+                            <WestIcon />
+                            <Typography variant="body1" fontWeight={500}>
+                                Approval
+                            </Typography>
+                            {listApprovalCaseNo && (
+                                <Chip
+                                    label={listApprovalCaseNo}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
+                                />
+                            )}
+                            <Box className="totalRecordCaseStyle">
+                                {listApprovalTotalRecord} Records
+                            </Box>
                         </Box>
+                    ) : (
+                        <Box 
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => { setListApproveTableFlag(false) }}
+                        >
+                            <WestIcon />
+                            <Typography variant="body1" fontWeight={500}>
+                                Approval
+                            </Typography>
+                            {listApprovalCaseNo && (
+                                <Chip
+                                    label={listApprovalCaseNo}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
+                                />
+                            )}
+                            <Box className="totalRecordCaseStyle">
+                                {listApprovalTotalRecord} Records
+                            </Box>
+                        </Box>
+                    )}
 
-                    </Box>
                     <Box sx={{display: 'flex', alignItems: 'center'}}>
                         <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
                             <Box>
@@ -8130,139 +8323,177 @@ const UnderInvestigation = () => {
                                 </Typography>
                             )}
                             </Box>
-                                {addApproveFlag && (
+                                {listAddApproveFlag && !listApprovalItemDisabled && (
                                     <Button
                                         variant="outlined"
-                                        onClick={() => {
-                                        saveApprovalData(selectedOtherTemplate.table);
-                                        }}
+                                        onClick={handleUpdateApproval}
                                     >
-                                        Save
+                                        Update
                                     </Button>
                                 )}
                         </Box>
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setListApproveTableFlag(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
                     </Box>
                 </DialogTitle>
                 <DialogContent>
-                  <DialogContentText id="alert-dialog-description">
-                    <Box py={2} sx={{ width: '100%'}}>
-                      {!listAddApproveFlag ? (
-                        <TableView 
-                            rows={listApprovalsData} 
-                            columns={listApprovalsColumn}
-                            totalPage={listApprovalTotalPage} 
-                            totalRecord={listApprovalTotalRecord} 
-                            paginationCount={listApprovalPaginationCount} 
-                            handlePagination={listApprovalPagination} 
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "18px",
-                          }}
-                        >                    
-                          <Autocomplete
-                            id=""
-                            options={listApprovalItem}
-                            getOptionLabel={(option) => option.name || ""}
-                            name={"approval_item"}
-                            disabled={listApprovalItemDisabled}
-                            value={
-                              listApprovalItem.find(
-                                (option) =>
-                                  option.approval_item_id ===
-                                  (listApprovalSaveData &&
-                                    listApprovalSaveData["approval_item"])
-                              ) || null
-                            }
-                            onChange={(e, value) =>
-                              handleApprovalSaveData(
-                                "approval_item",
-                                value?.approval_item_id
-                              )
-                            }
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                className="selectHideHistory"
-                                label={"Approval Item"}
-                              />
-                            )}
-                          />
-                          <Autocomplete
-                            id=""
-                            options={listDesignationData}
-                            getOptionLabel={(option) => option.designation_name || ""}
-                            name={"approved_by"}
-                            value={
-                              listDesignationData.find(
-                                (option) =>
-                                  option.designation_id ===
-                                  (listApprovalSaveData &&
-                                    listApprovalSaveData["approved_by"])
-                              ) || null
-                            }
-                            onChange={(e, value) =>
-                              handleApprovalSaveData(
-                                "approved_by",
-                                value?.designation_id
-                              )
-                            }
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                className="selectHideHistory"
-                                label={"Designation"}
-                              />
-                            )}
-                          />
-                          <LocalizationProvider
-                            dateAdapter={AdapterDayjs}
-                            sx={{ width: "100%" }}
-                          >
-                            <DemoContainer
-                              components={["DatePicker"]}
-                              sx={{ width: "100%" }}
-                            >
-                              <DatePicker
-                                label="Approval Date"
-                                value={
-                                  listApprovalSaveData["approval_date"]
-                                    ? dayjs(listApprovalSaveData["approval_date"])
-                                    : null
-                                }
-                                name="approval_date"
-                                format="DD/MM/YYYY"
-                                sx={{ width: "100%" }}
-                                onChange={(newValue) => {
-                                  if (newValue && dayjs.isDayjs(newValue)) {
-                                    handleApprovalSaveData(
-                                      "approval_date",
-                                      newValue.toISOString()
-                                    );
-                                  } else {
-                                    handleApprovalSaveData("approval_date", null);
-                                  }
+                    <DialogContentText>
+                        <Box py={2} sx={{ width: '100%'}}>
+                            {!listAddApproveFlag ? (
+                                <TableView 
+                                    rows={listApprovalsData} 
+                                    columns={listApprovalsColumn}
+                                    totalPage={listApprovalTotalPage} 
+                                    totalRecord={listApprovalTotalRecord} 
+                                    paginationCount={listApprovalPaginationCount} 
+                                    handlePagination={listApprovalPagination} 
+                                />
+                            ) : (
+                            <Box
+                                py={2}
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "18px",
                                 }}
-                              />
-                            </DemoContainer>
-                          </LocalizationProvider>
-                          <TextField
-                            rows={8}
-                            label={"Comments"}
-                            sx={{ width: "100%" }}
-                            name="remarks"
-                            value={listApprovalSaveData["remarks"]}
-                            onChange={(e) =>
-                              handleApprovalSaveData("remarks", e.target.value)
-                            }
-                          />
+                            >
+                                    <label
+                                    htmlFor="approval-item"
+                                    style={{
+                                    margin: "0",
+                                    padding: 0, 
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    color: "#475467",
+                                    textTransform: "capitalize",
+                                }}
+                                >
+                                Approval Item
+                                </label>
+        
+                                <Autocomplete
+                                    options={listApprovalItem}
+                                    getOptionLabel={(option) => option.name || ""}
+                                    name="approval_item"
+                                    disabled={listApprovalItemDisabled}
+                                    value={
+                                        listApprovalItem.find((opt) => opt.approval_item_id === listApprovalSaveData?.approval_item ) || null
+                                    }
+                                    onChange={(e, value) =>
+                                        handleListApprovalSaveData( "approval_item", value?.approval_item_id)
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            className="selectHideHistory"
+                                            label="Approval Item"
+                                        />
+                                    )}
+                                />
+                                <label
+                                    htmlFor="designation"
+                                    style={{
+                                    margin: "0",
+                                    padding: 0, 
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    color: "#475467",
+                                    textTransform: "capitalize",
+                                }}
+                                >
+                                Designation
+                                </label>
+        
+                                <Autocomplete
+                                    options={listDesignationData}
+                                    disabled={listApprovalItemDisabled}
+                                    getOptionLabel={(option) =>
+                                        option.designation_name || ""
+                                    }
+                                    name="approved_by"
+                                    value={
+                                        listDesignationData.find((opt) => opt.designation_id === listApprovalSaveData?.approved_by) || null
+                                    }
+                                    onChange={(e, value) =>
+                                        handleListApprovalSaveData( "approved_by", value?.designation_id)
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            className="selectHideHistory"
+                                            label="Designation"
+                                        />
+                                    )}
+                                />
+                                <label
+                                    htmlFor="approval-date"
+                                    style={{
+                                    margin: "0",
+                                    padding: 0, 
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    color: "#475467",
+                                    textTransform: "capitalize",
+                                }}
+                                >
+                                Approval Date
+                                </label>
+        
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DemoContainer components={["DatePicker"]}>
+                                        <DatePicker
+                                            label="Approval Date"
+                                            format="DD/MM/YYYY"
+                                            disabled={listApprovalItemDisabled}
+                                            sx={{width: '100%'}}
+                                            value={
+                                                listApprovalSaveData?.approval_date ? dayjs(listApprovalSaveData?.approval_date) : null
+                                            }
+                                            onChange={(newVal) =>
+                                                handleListApprovalSaveData(
+                                                    "approval_date",
+                                                    dayjs.isDayjs(newVal) ? newVal.toISOString() : null
+                                                )
+                                                }
+                                                maxDate={dayjs()}
+                                        />
+                                    </DemoContainer>
+                                </LocalizationProvider>
+        
+                                <label
+                                    htmlFor="comments"
+                                    style={{
+                                    margin: "0",
+                                    padding: 0, 
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    color: "#475467",
+                                    textTransform: "capitalize",
+                                }}
+                                >
+                                Comments
+                                </label>
+        
+                                <TextField
+                                    rows={8}
+                                    multiline
+                                    label="Comments"
+                                    fullWidth
+                                    name="remarks"
+                                    disabled={listApprovalItemDisabled}
+                                    value={listApprovalSaveData?.remarks}
+                                    onChange={(e) =>
+                                        handleListApprovalSaveData("remarks", e.target.value)
+                                    }
+                                />
+                            </Box>)}
                         </Box>
-                      )}
-                    </Box>
-                  </DialogContentText>
+                    </DialogContentText>
                 </DialogContent>
               </Dialog>
         )}
