@@ -822,7 +822,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_ui_case_checking_tabs"
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_ui_case_trail_monitoring"
       ? schema
       : schema.filter((field) => field.is_primary_field === true);
   
@@ -1232,7 +1232,7 @@ exports.getTemplateData = async (req, res, next) => {
               console.error("Error fetching user details:", error);
             }
           }
-        }else if (table_name === "cid_ui_case_checking_tabs") {
+        }else if (table_name === "cid_ui_case_trail_monitoring") {
           filteredData = { ...data };
           console.log("filteredData", filteredData);
           console.log("table_name",table_name)
