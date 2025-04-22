@@ -26,6 +26,7 @@ const {
 	ApprovalItem,
 	System_Alerts,
 	UiCaseApproval,
+  UiMergedCases,
 } = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
@@ -4214,10 +4215,12 @@ exports.caseSysStatusUpdation = async (req, res) => {
       );
     }
 
-    const recordId = parseInt(id, 10);
-    if (isNaN(recordId)) {
-      return userSendResponse(res, 400, false, "Invalid ID format.");
+    const recordId = Array.isArray(id) ? id : [id];
+    const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
+    if (invalidIds.length > 0) {
+      return userSendResponse(res, 400, false, "Invalid ID format(s).");
     }
+
 
     const tableData = await Template.findOne({ where: { table_name } });
     if (!tableData) {
@@ -4299,15 +4302,35 @@ exports.caseSysStatusUpdation = async (req, res) => {
       modelCache[table_name] = Model;
     }
 
+    if (Array.isArray(recordId)) {
+      const records = await Model.findAll({
+        where: {
+          id: recordId
+        }
+      });
+
+    if (records.length !== recordId.length) {
+      return userSendResponse(
+        res,
+        404,
+        false,
+        `Some records with the provided IDs were not found in table ${table_name}.`
+      );
+    }
+
+  } else {
     const record = await Model.findByPk(recordId);
+  
     if (!record) {
       return userSendResponse(
         res,
         404,
         false,
-        `Record with ID ${id} not found in table ${table_name}.`
+        `Record with ID ${recordId} not found in table ${table_name}.`
       );
     }
+  }
+
 
     const [updatedCount] = await Model.update(
       { sys_status },
@@ -5250,4 +5273,32 @@ exports.getAccusedWitness = async (req, res) => {
 		console.error("Error fetching records:", error);
 		return res.status(500).json({ success: false, message: "Internal server error." });
 	}
+};
+
+
+
+exports.insertMergeData = async (req, res) => {
+  const { table_name, data } = req.body;
+
+  if (table_name !== 'ui_merged_cases' || !Array.isArray(data)) {
+    return res.status(400).json({ success: false, message: "Invalid payload." });
+  }
+
+  try {
+
+    await UiMergedCases.bulkCreate(data, {
+      ignoreDuplicates: true,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Merge data inserted successfully.",
+    });
+  } catch (err) {
+    console.error("insertMergeData error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to insert merge data.",
+    });
+  }
 };
