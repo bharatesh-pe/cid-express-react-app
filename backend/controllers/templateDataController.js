@@ -547,32 +547,38 @@ exports.updateTemplateData = async (req, res, next) => {
 
         // Log changes in ProfileHistory (Only for changed fields)
         if (userId) {
-            for (const key in updatedFields) {
-                const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
-                const newValue = updatedFields[key];
-
-                console.log(">>>>>oldValue1>>>>>>>>", oldValue);
-                console.log(">>>>>>newValue1>>>>>>>", newValue);
-
-                const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
-                const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
-
-                console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
-                console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
-
-                // Only log changes, not unchanged fields
-                if (oldValue !== newValue) {
-                    await ProfileHistory.create({
-                        template_id: tableData.template_id,
-                        table_row_id: id,
-                        user_id: userId,
-                        field_name: key,
-                        old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
-                        updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
-                    });
-                }
-            }
-        }
+          const ids = typeof id === 'string' && id.includes(',')
+              ? id.split(',').map(i => parseInt(i.trim()))
+              : [parseInt(id)];
+      
+          for (const rowId of ids) {
+              for (const key in updatedFields) {
+                  const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
+                  const newValue = updatedFields[key];
+      
+                  console.log(">>>>>oldValue1>>>>>>>>", oldValue);
+                  console.log(">>>>>>newValue1>>>>>>>", newValue);
+      
+                  const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
+                  const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
+      
+                  console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
+                  console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
+      
+                  if (oldValue !== newValue) {
+                      await ProfileHistory.create({
+                          template_id: tableData.template_id,
+                          table_row_id: rowId,
+                          user_id: userId,
+                          field_name: key,
+                          old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
+                          updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
+                      });
+                  }
+              }
+          }
+      }
+      
 
         // await ActivityLog.create({
         //     template_id: tableData.template_id,
@@ -822,7 +828,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_ui_case_checking_tabs"
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_ui_case_trail_monitoring"
       ? schema
       : schema.filter((field) => field.is_primary_field === true);
   
@@ -1232,7 +1238,7 @@ exports.getTemplateData = async (req, res, next) => {
               console.error("Error fetching user details:", error);
             }
           }
-        }else if (table_name === "cid_ui_case_checking_tabs") {
+        }else if (table_name === "cid_ui_case_trail_monitoring") {
           filteredData = { ...data };
           console.log("filteredData", filteredData);
           console.log("table_name",table_name)
