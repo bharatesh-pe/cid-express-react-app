@@ -309,5 +309,8 @@ router.post('/getAccusedWitness',
         // userAuthMiddleware,
         templateDataController.getAccusedWitness)
 
-
+router.post('/insertMergeData',
+    templateDataController.insertMergeData)
+    
+        
 module.exports = router;

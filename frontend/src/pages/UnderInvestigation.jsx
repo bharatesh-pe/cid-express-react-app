@@ -1361,7 +1361,7 @@ const UnderInvestigation = () => {
       setSelectedMergeRowData((prev) => prev.filter((r) => r.id !== row.id));
     }
   };
-  
+ 
   const handleConfirmMerge = async () => {
     if (!selectedParentId || selectedParentId.length === 0) {
       Swal.fire({
@@ -1374,25 +1374,70 @@ const UnderInvestigation = () => {
     }
   
     setLoading(true);
-    
     setShowMergeModal(false);
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]);
-    setSelectedParentId(null);
-    
-    await loadTableData();
   
-    Swal.fire({
-      title: 'Success',
-      text: "Merged successfully!",
-      icon: 'success',
-      confirmButtonText: 'OK',
-    });
+    try {
+      const allCaseIdsToMerge = selectedMergeRowData
+        .filter(row => row?.id !== undefined)
+        .map(row => row.id);
   
-    setLoading(false);
+      const payloadSysStatus = {
+        table_name: table_name,
+        data: {
+          id: allCaseIdsToMerge,
+          sys_status: "merge_cases",
+          default_status: "ui_case",
+        },
+      };
+  
+      const sysStatusResponse = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+  
+      if (!sysStatusResponse?.success) {
+        throw new Error(sysStatusResponse.message || "Failed to update case status.");
+      }
+  
+      const mergeDataPayload = allCaseIdsToMerge.map(caseId => ({
+        case_id: caseId,
+        parent_case_id: selectedParentId.id,
+        merged_status: caseId === selectedParentId.id ? "parent" : "child",
+      }));
+  
+      const mergeResponse = await api.post("/templateData/insertMergeData", {
+        table_name: "ui_merged_cases",
+        data: mergeDataPayload,
+      });
+  
+      if (!mergeResponse?.success) {
+        throw new Error(mergeResponse.message || "Failed to insert merge data.");
+      }
+  
+      Swal.fire({
+        title: 'Success',
+        text: "Merged successfully!",
+        icon: 'success',
+        confirmButtonText: 'OK',
+      });
+  
+      setSelectedRowIds([]);
+      setSelectedMergeRowData([]);
+      setSelectedParentId(null);
+  
+      await loadTableData();
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        title: 'Error',
+        text: "Something went wrong during merge!",
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   
+
   
     useEffect(() => {
         const anySelected = tableData.some((data) => data.isSelected);
@@ -1543,6 +1588,38 @@ const UnderInvestigation = () => {
                             ),
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
+                        ...(sysStatus === "merge_cases"
+                          ? [
+                              {
+                                field: "child_case",
+                                headerName: "Child Case",
+                                width: 100,
+                                resizable: true,
+                                renderCell: (params) => {
+                                  const childCount = params.value || '1';
+                                  const statusColor = "#3b82f6";
+                                  const borderColor = "#2563eb";
+                      
+                                  return (
+                                    <Chip
+                                      label={childCount}
+                                      size="small"
+                                      sx={{
+                                        fontFamily: "Roboto",
+                                        fontWeight: 500,
+                                        color: "white",
+                                        borderColor: borderColor,
+                                        borderRadius: "4px",
+                                        backgroundColor: statusColor,
+                                        borderStyle: "solid",
+                                        borderWidth: "1px",
+                                      }}
+                                    />
+                                  );
+                                },
+                              },
+                            ]
+                          : []),
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -3951,10 +4028,33 @@ const UnderInvestigation = () => {
               excludedKeys.push("created_at");
               excludedKeys.push("hasFieldPrStatus");
             }
-            if (options.table === "cid_ui_case_checking_tabs") {
+            if (options.table === "cid_ui_case_trail_monitoring") {
               excludedKeys.push("field_witness");
               excludedKeys.push("field_accused");
               excludedKeys.push("field_accused/witness");
+              excludedKeys.push("field_cw_attended_the_trial");
+              excludedKeys.push("field_hearing_date");
+              excludedKeys.push("field_next_hearing_date");
+              excludedKeys.push("field_notice_received_on");
+              excludedKeys.push("field_notice_served_on");
+              excludedKeys.push("field_number_of_notice_executed");
+              excludedKeys.push("field_number_of_notice_not_executed");
+              excludedKeys.push("field_number_of_proclamation_executed");
+              excludedKeys.push("field_number_of_proclamation_not_executed");
+              excludedKeys.push("field_number_of_summons_executed");
+              excludedKeys.push("field_number_of_summons_not_executed");
+              excludedKeys.push("field_number_of_warrant_executed");
+              excludedKeys.push("field_number_of_warrant_not_executed");
+              excludedKeys.push("field_process_type");
+              excludedKeys.push("field_proclamation_received_on");
+              excludedKeys.push("field_proclamation_served_on");
+              excludedKeys.push("field_reappear");
+              excludedKeys.push("field_reason");
+              excludedKeys.push("field_summons_received_on");
+              excludedKeys.push("field_summons_served_on");
+              excludedKeys.push("field_trialresult");
+              excludedKeys.push("field_warrant_received_on");
+              excludedKeys.push("field_warrant_served_on");
             }
 
             const updatedHeader = ([
@@ -4110,7 +4210,7 @@ const UnderInvestigation = () => {
                   ]
                 : []),
                 ,
-              ...(options.table === "cid_ui_case_checking_tabs"
+              ...(options.table === "cid_ui_case_trail_monitoring"
                 ? [
                   {
                     field: "field_served_or_unserved",
@@ -4184,7 +4284,7 @@ const UnderInvestigation = () => {
                   }
                 ]
                 : []),,
-                ...(options.table === "cid_ui_case_checking_tabs"
+                ...(options.table === "cid_ui_case_trail_monitoring"
                   ? [
                     {
                       field: "field_reappear",
@@ -4318,16 +4418,16 @@ const UnderInvestigation = () => {
                     const canEdit = userPermissions[0]?.action_edit;
                     const canDelete = userPermissions[0]?.action_delete;
                     const checkserved =
-                      options.table === "cid_ui_case_checking_tabs" &&
+                      options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_served_or_unserved === "Yes";
 
                     const checkUnServed = 
-                      options.table === "cid_ui_case_checking_tabs" &&
+                      options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_served_or_unserved === "No";
 
 
                     const checkreappear =
-                      options.table === "cid_ui_case_checking_tabs" &&
+                      options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
 
 
@@ -4383,7 +4483,7 @@ const UnderInvestigation = () => {
                             )}
                           </>
                         )}
-                        {options.table === "cid_ui_case_checking_tabs" && (
+                        {options.table === "cid_ui_case_trail_monitoring" && (
                           <>
                             {!checkserved && !checkUnServed &&(
                               <Button
@@ -5218,7 +5318,9 @@ const UnderInvestigation = () => {
     setSelectedRowIds([]);
     setSelectedMergeRowData([]); 
     setSelectedParentId(null);
-
+    setTableData((prevData) =>
+      prevData.map((item) => ({ ...item, isSelected: false }))
+    );
   };
 
   const showPtCaseTemplate = async () => {
@@ -6541,6 +6643,7 @@ const UnderInvestigation = () => {
                   onClick={() => {
                     setShowMergeModal(true);
                     setMergeDialogData(selectedMergeRowData); 
+                    console.log("selectedMergeRowData",selectedMergeRowData)
                   }}
                   >
                   Merge
@@ -7659,107 +7762,113 @@ const UnderInvestigation = () => {
 
 
       <Dialog
-  open={showMassiveTransferModal}
-  onClose={() => {
-    setShowMassiveTransferModal(false);
-    setSelectKey(null);
-    setSelectedRow([]);
-    setOtherTransferField([]);
-    setSelectedOtherFields(null);
-    setselectedOtherTemplate(null);
-    setUsersBasedOnDivision([]);
-    setSelectedUser(null);
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]); 
-    setSelectedParentId(null);
-   }}
-    aria-labelledby="alert-dialog-title"
-  aria-describedby="alert-dialog-description"
->
-  <DialogTitle id="alert-dialog-title"></DialogTitle>
-  <DialogContent sx={{ width: "400px" }}>
-    <DialogContentText id="alert-dialog-description">
-      <h4 className="form-field-heading">{selectKey?.title}</h4>
-      <FormControl fullWidth>
-        <Autocomplete
-          options={otherTransferField}
-          getOptionLabel={(option) => option.name || ""}
-          value={selectedOtherFields || null}
-          onChange={(event, newValue) => {
-            setSelectedOtherFields(newValue);
-            setSelectedUser(null); 
+        open={showMassiveTransferModal}
+        onClose={() => {
+          setShowMassiveTransferModal(false);
+          setSelectKey(null);
+          setSelectedRow([]);
+          setOtherTransferField([]);
+          setSelectedOtherFields(null);
+          setselectedOtherTemplate(null);
+          setUsersBasedOnDivision([]);
+          setSelectedUser(null);
+          setSelectedRowIds([]);
+          setSelectedMergeRowData([]); 
+          setSelectedParentId(null);
+          setTableData((prevData) =>
+            prevData.map((item) => ({ ...item, isSelected: false }))
+          );
+        }}
+          aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title"></DialogTitle>
+        <DialogContent sx={{ width: "400px" }}>
+          <DialogContentText id="alert-dialog-description">
+            <h4 className="form-field-heading">{selectKey?.title}</h4>
+            <FormControl fullWidth>
+              <Autocomplete
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={(event, newValue) => {
+                  setSelectedOtherFields(newValue);
+                  setSelectedUser(null); 
 
-            if (newValue && newValue.code) {
-              api.post("cidMaster/getIoUsersBasedOnDivision", {
-                division_ids: [newValue.code],
-                role_id: null,
-              }).then((res) => {
-                setUsersBasedOnDivision(res.data || []);
-              }).catch((err) => {
-                console.error("Failed to load users based on division", err);
-                setUsersBasedOnDivision([]);
-              });
-            } else {
+                  if (newValue && newValue.code) {
+                    api.post("cidMaster/getIoUsersBasedOnDivision", {
+                      division_ids: [newValue.code],
+                      role_id: null,
+                    }).then((res) => {
+                      setUsersBasedOnDivision(res.data || []);
+                    }).catch((err) => {
+                      console.error("Failed to load users based on division", err);
+                      setUsersBasedOnDivision([]);
+                    });
+                  } else {
+                    setUsersBasedOnDivision([]);
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label={selectKey?.title}
+                  />
+                )}
+              />
+            </FormControl>
+
+              <>
+                <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
+                <FormControl fullWidth>
+                  <Autocomplete
+                    options={usersBasedOnDivision}
+                    getOptionLabel={(option) => option.name || ""}
+                    value={selectedUser || null}
+                    onChange={(event, newValue) => setSelectedUser(newValue)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        className="selectHideHistory"
+                        label="IO User"
+                      />
+                    )}
+                  />
+                </FormControl>
+              </>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button 
+            onClick={() => {
+              setShowMassiveTransferModal(false);
+              setSelectKey(null);
+              setSelectedRow([]);
+              setOtherTransferField([]);
+              setSelectedOtherFields(null);
+              setselectedOtherTemplate(null);
               setUsersBasedOnDivision([]);
-            }
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              className="selectHideHistory"
-              label={selectKey?.title}
-            />
-          )}
-        />
-      </FormControl>
-
-        <>
-          <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
-          <FormControl fullWidth>
-            <Autocomplete
-              options={usersBasedOnDivision}
-              getOptionLabel={(option) => option.name || ""}
-              value={selectedUser || null}
-              onChange={(event, newValue) => setSelectedUser(newValue)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  className="selectHideHistory"
-                  label="IO User"
-                />
-              )}
-            />
-          </FormControl>
-        </>
-    </DialogContentText>
-  </DialogContent>
-  <DialogActions sx={{ padding: "12px 24px" }}>
-    <Button 
-      onClick={() => {
-        setShowMassiveTransferModal(false);
-        setSelectKey(null);
-        setSelectedRow([]);
-        setOtherTransferField([]);
-        setSelectedOtherFields(null);
-        setselectedOtherTemplate(null);
-        setUsersBasedOnDivision([]);
-        setSelectedUser(null);
-        setSelectedRowIds([]);
-        setSelectedMergeRowData([]); 
-        setSelectedParentId(null);
-      }}
-      >Cancel
-    </Button>
-    <Button
-      className="fillPrimaryBtn"
-      onClick={() => {
-        handleMassiveDivisionChange();
-      }}
-    >
-      Submit
-    </Button>
-  </DialogActions>
-</Dialog>
+              setSelectedUser(null);
+              setSelectedRowIds([]);
+              setSelectedMergeRowData([]); 
+              setSelectedParentId(null);
+              setTableData((prevData) =>
+                prevData.map((item) => ({ ...item, isSelected: false }))
+              );
+            }}
+            >Cancel
+          </Button>
+          <Button
+            className="fillPrimaryBtn"
+            onClick={() => {
+              handleMassiveDivisionChange();
+            }}
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
 
 
       {showFilterModal && (

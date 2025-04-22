@@ -26,6 +26,7 @@ const {
 	ApprovalItem,
 	System_Alerts,
 	UiCaseApproval,
+  UiMergedCases,
 } = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
@@ -547,32 +548,38 @@ exports.updateTemplateData = async (req, res, next) => {
 
         // Log changes in ProfileHistory (Only for changed fields)
         if (userId) {
-            for (const key in updatedFields) {
-                const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
-                const newValue = updatedFields[key];
-
-                console.log(">>>>>oldValue1>>>>>>>>", oldValue);
-                console.log(">>>>>>newValue1>>>>>>>", newValue);
-
-                const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
-                const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
-
-                console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
-                console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
-
-                // Only log changes, not unchanged fields
-                if (oldValue !== newValue) {
-                    await ProfileHistory.create({
-                        template_id: tableData.template_id,
-                        table_row_id: id,
-                        user_id: userId,
-                        field_name: key,
-                        old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
-                        updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
-                    });
-                }
-            }
-        }
+          const ids = typeof id === 'string' && id.includes(',')
+              ? id.split(',').map(i => parseInt(i.trim()))
+              : [parseInt(id)];
+      
+          for (const rowId of ids) {
+              for (const key in updatedFields) {
+                  const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
+                  const newValue = updatedFields[key];
+      
+                  console.log(">>>>>oldValue1>>>>>>>>", oldValue);
+                  console.log(">>>>>>newValue1>>>>>>>", newValue);
+      
+                  const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
+                  const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
+      
+                  console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
+                  console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
+      
+                  if (oldValue !== newValue) {
+                      await ProfileHistory.create({
+                          template_id: tableData.template_id,
+                          table_row_id: rowId,
+                          user_id: userId,
+                          field_name: key,
+                          old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
+                          updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
+                      });
+                  }
+              }
+          }
+      }
+      
 
         // await ActivityLog.create({
         //     template_id: tableData.template_id,
@@ -822,7 +829,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_ui_case_checking_tabs"
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_ui_case_trail_monitoring"
       ? schema
       : schema.filter((field) => field.is_primary_field === true);
   
@@ -1232,7 +1239,7 @@ exports.getTemplateData = async (req, res, next) => {
               console.error("Error fetching user details:", error);
             }
           }
-        }else if (table_name === "cid_ui_case_checking_tabs") {
+        }else if (table_name === "cid_ui_case_trail_monitoring") {
           filteredData = { ...data };
           console.log("filteredData", filteredData);
           console.log("table_name",table_name)
@@ -4208,10 +4215,12 @@ exports.caseSysStatusUpdation = async (req, res) => {
       );
     }
 
-    const recordId = parseInt(id, 10);
-    if (isNaN(recordId)) {
-      return userSendResponse(res, 400, false, "Invalid ID format.");
+    const recordId = Array.isArray(id) ? id : [id];
+    const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
+    if (invalidIds.length > 0) {
+      return userSendResponse(res, 400, false, "Invalid ID format(s).");
     }
+
 
     const tableData = await Template.findOne({ where: { table_name } });
     if (!tableData) {
@@ -4293,15 +4302,35 @@ exports.caseSysStatusUpdation = async (req, res) => {
       modelCache[table_name] = Model;
     }
 
+    if (Array.isArray(recordId)) {
+      const records = await Model.findAll({
+        where: {
+          id: recordId
+        }
+      });
+
+    if (records.length !== recordId.length) {
+      return userSendResponse(
+        res,
+        404,
+        false,
+        `Some records with the provided IDs were not found in table ${table_name}.`
+      );
+    }
+
+  } else {
     const record = await Model.findByPk(recordId);
+  
     if (!record) {
       return userSendResponse(
         res,
         404,
         false,
-        `Record with ID ${id} not found in table ${table_name}.`
+        `Record with ID ${recordId} not found in table ${table_name}.`
       );
     }
+  }
+
 
     const [updatedCount] = await Model.update(
       { sys_status },
@@ -5244,4 +5273,32 @@ exports.getAccusedWitness = async (req, res) => {
 		console.error("Error fetching records:", error);
 		return res.status(500).json({ success: false, message: "Internal server error." });
 	}
+};
+
+
+
+exports.insertMergeData = async (req, res) => {
+  const { table_name, data } = req.body;
+
+  if (table_name !== 'ui_merged_cases' || !Array.isArray(data)) {
+    return res.status(400).json({ success: false, message: "Invalid payload." });
+  }
+
+  try {
+
+    await UiMergedCases.bulkCreate(data, {
+      ignoreDuplicates: true,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Merge data inserted successfully.",
+    });
+  } catch (err) {
+    console.error("insertMergeData error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to insert merge data.",
+    });
+  }
 };
