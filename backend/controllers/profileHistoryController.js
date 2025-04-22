@@ -84,7 +84,7 @@ exports.getProfileHistory = async (req, res, next) => {
         }
 
         // Fetch Profile History with user details and optional field_name filter
-        const profileHistory = await ProfileHistory.findAll({
+        let profileHistory = await ProfileHistory.findAll({
             where: filter,
             order: [["created_at", "DESC"]],
             limit: 10,
@@ -92,10 +92,30 @@ exports.getProfileHistory = async (req, res, next) => {
                 {
                     model: Users,
                     as: 'userDetails',
-                    attributes: ['user_id'],
+                    attributes: ['kgid_id'],  
+                    include: [
+                       {
+                            model: KGID,
+                            as: "kgidDetails",
+                            attributes: ["kgid", "name", "mobile"],
+                        },
+                    ],  
                     
                 }
             ]
+        });
+
+        profileHistory = profileHistory.map((history) => {
+            const { userDetails } = history;
+            const { kgidDetails } = userDetails;
+            return {
+                ...history.toJSON(),
+                userDetails: {
+                    kgid: kgidDetails.kgid,
+                    user_firstname: kgidDetails.name,
+                    mobile: kgidDetails.mobile,
+                },
+            };
         });
 
         if (profileHistory.length === 0) {

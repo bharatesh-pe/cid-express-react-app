@@ -237,10 +237,30 @@ const UnderInvestigation = () => {
     const [listApprovalItem, setListApprovalItem] = useState([]);
     const [listApprovalItemDisabled, setListApprovalItemDisabled] = useState(false);
     const [listDesignationData, setListDesignationData] = useState([]);
-
     const [listRandomApprovalId, setListRandomApprovalId] = useState(0);
-
     const [listApprovalSaveData, setListApprovalSaveData] = useState({});
+    const [listApprovalTotalRecord, setListApprovalTotalRecord] = useState(0);
+    const [listApprovalTotalPage, setListApprovalTotalPage] = useState(0);
+    const [listApprovalPaginationCount, setListApprovalPaginationCount] = useState(1);
+    const listApprovalPagination = (page) => {
+        setListApprovalPaginationCount(page)
+    }
+    const [listApprovalSearchValue,setListApprovalSearchValue] =  useState('');
+    const [listApprovalFromDate,setListApprovalFromDate] =  useState(null);
+    const [listApprovalToDate,setListApprovalToDate] =  useState(null);
+    const [listApprovalFiltersDropdown,setListApprovalFiltersDropdown] =  useState([]);
+    const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
+
+    const handleListApprovalClear = ()=>{
+        setListApprovalSearchValue('');
+        setListApprovalPaginationCount(1);
+        setListApprovalFromDate(null);
+        setListApprovalToDate(null);
+        setListApprovalFiltersDropdown([]);
+        setListApprovalFilterData({});
+    }
+
+
   
 
   const handleApprovalSaveData = (name, value) => {
@@ -6246,53 +6266,65 @@ const UnderInvestigation = () => {
                 var updatedOptions = [];
     
                 if (getActionsDetails.data["approvals"].length > 0) {
-                updatedOptions = getActionsDetails.data["approvals"].map(
-                    (data, index) => {
-                    const formatDate = (fieldValue) => {
-                        if (!fieldValue || typeof fieldValue !== "string")
-                        return fieldValue;
-    
-                        var dateValue = new Date(fieldValue);
-    
-                        if (
-                        isNaN(dateValue.getTime()) ||
-                        (!fieldValue.includes("-") && !fieldValue.includes("/"))
-                        ) {
-                        return fieldValue;
+                    updatedOptions = getActionsDetails.data["approvals"].map(
+                        (data, index) => {
+                        const formatDate = (fieldValue) => {
+                            if (!fieldValue || typeof fieldValue !== "string")
+                            return fieldValue;
+        
+                            var dateValue = new Date(fieldValue);
+        
+                            if (
+                            isNaN(dateValue.getTime()) ||
+                            (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                            ) {
+                            return fieldValue;
+                            }
+        
+                            if (isNaN(dateValue.getTime())) return fieldValue;
+        
+                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                            var monthValue = String(dateValue.getMonth() + 1).padStart(
+                            2,
+                            "0"
+                            );
+                            var yearValue = dateValue.getFullYear();
+                            return `${dayValue}/${monthValue}/${yearValue}`;
+                        };
+        
+                        const updatedField = {};
+        
+                        Object.keys(data).forEach((key) => {
+                            if (
+                            data[key] &&
+                            key !== "id" &&
+                            !isNaN(new Date(data[key]).getTime())
+                            ) {
+                            updatedField[key] = formatDate(data[key]);
+                            } else {
+                            updatedField[key] = data[key];
+                            }
+                        });
+        
+                        return {
+                            ...updatedField,
+                            sl_no: index + 1,
+                            id: data.approval_id,
+                        };
                         }
-    
-                        if (isNaN(dateValue.getTime())) return fieldValue;
-    
-                        var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                        var monthValue = String(dateValue.getMonth() + 1).padStart(
-                        2,
-                        "0"
-                        );
-                        var yearValue = dateValue.getFullYear();
-                        return `${dayValue}/${monthValue}/${yearValue}`;
-                    };
-    
-                    const updatedField = {};
-    
-                    Object.keys(data).forEach((key) => {
-                        if (
-                        data[key] &&
-                        key !== "id" &&
-                        !isNaN(new Date(data[key]).getTime())
-                        ) {
-                        updatedField[key] = formatDate(data[key]);
-                        } else {
-                        updatedField[key] = data[key];
-                        }
-                    });
-    
-                    return {
-                        ...updatedField,
-                        sl_no: index + 1,
-                        id: data.approval_id,
-                    };
+                    );
+
+                    const approvalMetaData = getActionsDetails.data["meta"]
+
+                    if(approvalMetaData && approvalMetaData.totalItems && approvalMetaData.totalItems > 0){
+                        setListApprovalTotalRecord(approvalMetaData.totalItems);
                     }
-                );
+
+                    if(approvalMetaData && approvalMetaData.totalPages && approvalMetaData.totalPages > 0 )
+                    {
+                        setListApprovalTotalPage(approvalMetaData.totalPages)
+                    }
+
                 }
     
                 setListApprovalsData(updatedOptions);
@@ -8065,63 +8097,128 @@ const UnderInvestigation = () => {
                  sx={{ zIndex: "1"}}
               >
                 <DialogTitle
-                  id="alert-dialog-title"
-                  sx={{
+                    id="alert-dialog-title"
+                    sx={{
                     display: "flex",
-                    alignItems: "center",
+                    alignItems: "start",
                     justifyContent: "space-between",
-                  }}
+                    }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}>
-                      <Typography variant="body1" fontWeight={500} fontSize="16px">
-                         Approval
-                      </Typography>
-      
-                      {listApprovalCaseNo && (
-                          <Chip
-                              label={listApprovalCaseNo}
-                              color="primary"
-                              variant="outlined"
-                              size="small"
-                              sx={{ fontWeight: 500, marginTop: '1px' }}
-                          />
-                      )}
-                  </Box>
-                  
-                  <Box >
-                    {!addApproveFlag ? (
-                      <Button
-                        variant="outlined"
-                        onClick={() => {
-                          showApprovalAddPage(selectedOtherTemplate.table);
-                        }}
-                      >
-                        Add
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outlined"
-                        onClick={() => {
-                          saveApprovalData(selectedOtherTemplate.table);
-                        }}
-                      >
-                        Save
-                      </Button>
-                    )}
-                    <IconButton
-                      aria-label="close"
-                      onClick={() => setListApproveTableFlag(false)}
-                      sx={{ color: (theme) => theme.palette.grey[500] }}
+                    <Box 
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                        onClick={() => { setListApproveTableFlag(false)}}
                     >
-                      <CloseIcon />
-                    </IconButton>
-                  </Box>
+
+                        <WestIcon />
+
+                        <Typography variant="body1" fontWeight={500}>
+                            Approval
+                        </Typography>
+
+                        {listApprovalCaseNo && (
+                            <Chip
+                                label={listApprovalCaseNo}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                                sx={{ fontWeight: 500, marginTop: '2px' }}
+                            />
+                        )}
+
+                        <Box className="totalRecordCaseStyle">
+                            {listApprovalTotalRecord} Records
+                        </Box>
+
+                    </Box>
+                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                        <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
+                            <Box>
+                            </Box>
+                            <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                            <TextFieldInput 
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon sx={{ color: "#475467" }} />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            <IconButton
+                                                sx={{ padding: "0 5px", borderRadius: "0" }}
+                                                onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                            >
+                                                <FilterListIcon sx={{ color: "#475467" }} />
+                                            </IconButton>
+                                        </Box>
+                                    ),
+                                }}
+
+                                onInput={(e) => setListApprovalSearchValue(e.target.value)}
+                                value={listApprovalSearchValue}
+                                id="tableSearch"
+                                size="small"
+                                placeholder='Search anything'
+                                variant="outlined"
+                                className="profileSearchClass"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                                    }
+                                }}
+                                
+                                sx={{
+                                    width: '350px', borderRadius: '6px', outline: 'none',
+                                    '& .MuiInputBase-input::placeholder': {
+                                        color: '#475467',
+                                        opacity: '1',
+                                        fontSize: '14px',
+                                        fontWeight: '400',
+                                        fontFamily: 'Roboto'
+                                    },
+                                }}
+                            />
+                            {(listApprovalSearchValue || listApprovalFromDate || listApprovalToDate || Object.keys(listApprovalFilterData).length > 0) && (
+                                <Typography
+                                    onClick={handleListApprovalClear}
+                                    sx={{
+                                        fontSize: "13px",
+                                        fontWeight: "500",
+                                        textDecoration: "underline",
+                                        cursor: "pointer",
+                                    }}
+                                    mt={1}
+                                >
+                                    Clear Filter
+                                </Typography>
+                            )}
+                            </Box>
+                                {addApproveFlag && (
+                                    <Button
+                                        variant="outlined"
+                                        onClick={() => {
+                                        saveApprovalData(selectedOtherTemplate.table);
+                                        }}
+                                    >
+                                        Save
+                                    </Button>
+                                )}
+                        </Box>
+                    </Box>
                 </DialogTitle>
                 <DialogContent>
                   <DialogContentText id="alert-dialog-description">
                     <Box py={2} sx={{ width: '100%'}}>
                       {!listAddApproveFlag ? (
-                        <TableView rows={listApprovalsData} columns={listApprovalsColumn} />
+                        <TableView 
+                            rows={listApprovalsData} 
+                            columns={listApprovalsColumn}
+                            totalPage={listApprovalTotalPage} 
+                            totalRecord={listApprovalTotalRecord} 
+                            paginationCount={listApprovalPaginationCount} 
+                            handlePagination={listApprovalPagination} 
+                        />
                       ) : (
                         <Box
                           sx={{
