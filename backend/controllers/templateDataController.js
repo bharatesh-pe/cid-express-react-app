@@ -5371,10 +5371,6 @@ exports.getMergeParentData = async (req, res) =>
                 { created_by_id: { [Op.in]: allowedUserIds } },
                 { field_io_name: { [Op.in]: allowedUserIds } },
                 ];
-            } else if (template_module === "pt_case") {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            } else if (template_module === "eq_case") {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             } else {
                 whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             }
@@ -6157,10 +6153,6 @@ exports.getMergeChildData = async (req, res) =>
                 { created_by_id: { [Op.in]: allowedUserIds } },
                 { field_io_name: { [Op.in]: allowedUserIds } },
                 ];
-            } else if (template_module === "pt_case") {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            } else if (template_module === "eq_case") {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             } else {
                 whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             }
@@ -6832,3 +6824,376 @@ exports.getMergeChildData = async (req, res) =>
     return userSendResponse(res, 500, false, "Server error", error);
   }
 }
+
+// exports.deMergeCaseData =  async (req, res) => {
+    
+//     const { template_module = "",  case_id , transaction_id} = req.body;
+//     const { user_id } = req.user;
+//     const userId = user_id;
+
+//     dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+//     if (fs.existsSync(dirPath))
+//          return userSendResponse(res, 400, false, "Duplicate transaction detected.");
+    
+//     fs.mkdirSync(dirPath, { recursive: true });
+
+//     const t = await dbConfig.sequelize.transaction();
+
+//     try {
+
+//        // Fetch designations for the logged-in user
+//         const userDesignations = await UserDesignation.findAll({
+//             where: { user_id },
+//             attributes: ["designation_id"],
+//         });
+
+//         if (!userDesignations.length) {
+//             return userSendResponse(res, 400, false, "User has no designations assigned.");
+//        }
+
+//         const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+
+//         // Fetch subordinates based on supervisor designations
+//         const subordinates = await UsersHierarchy.findAll({
+//             where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+//             attributes: ["officer_designation_id"],
+//         });
+
+//         const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+
+//         // If there are officer designations, fetch subordinate user IDs
+//         let subordinateUserIds = [];
+//         if (officerDesignationIds.length) {
+//             const subordinateUsers = await UserDesignation.findAll({
+//                 where: { designation_id: { [Op.in]: officerDesignationIds } },
+//                 attributes: ["user_id"],
+//             });
+//             subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+//         }
+
+//         // Combine current user ID with subordinate IDs
+//         const allowedUserIds = [userId, ...subordinateUserIds];
+
+//         // Apply allowed user filter once. (Repeat for each template_module as needed.)
+//         if (allowedUserIds.length) {
+//             if (template_module === "ui_case") {
+//                 whereClause[Op.or] = [
+//                 { created_by_id: { [Op.in]: allowedUserIds } },
+//                 { field_io_name: { [Op.in]: allowedUserIds } },
+//                 ];
+//             } else {
+//                 whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+//             }
+//         }
+
+//         const mergedCaseDetails = await UiMergedCases.findAll({
+//             where: {case_id: case_id }, // corrected here
+//             attributes: ['merged_status'],
+//             raw: true,
+//         });
+
+//         if(!mergedCaseDetails.length) {
+//             return userSendResponse(res, 400, false, "Please check the case ,It's not belongs to a merged case.");
+//         }
+
+
+//         if(mergedCaseDetails['merged_status'] == "parent")
+//         {
+//             await UiMergedCases.destroy({
+//                 where: {parent_case_id: case_id }, 
+//                 transaction: t 
+//             });
+//         }
+//         else{
+//             await UiMergedCases.destroy({
+//                 where: {case_id: case_id }, 
+//                 transaction: t 
+//             });
+//         }
+
+//         const recordId = Array.isArray(case_id) ? case_id : [case_id];
+//         const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
+//         if (invalidIds.length > 0) {
+//             return userSendResponse(res, 400, false, "Invalid ID format(s).");
+//         }
+
+
+//         const tableData = await Template.findOne({ where: { table_name:"cid_under_investigation" } });
+//         if (!tableData) {
+//             return userSendResponse( res,400,false,`Table Under Investigation does not exist.`);
+//         }
+
+//         const schema =
+//         typeof tableData.fields === "string"
+//             ? JSON.parse(tableData.fields)
+//             : tableData.fields;
+
+//         const completeSchema = [
+//         {
+//             name: "id",
+//             data_type: "INTEGER",
+//             not_null: true,
+//             primaryKey: true,
+//             autoIncrement: true,
+//         },
+//         {
+//             name: "sys_status",
+//             data_type: "TEXT",
+//             not_null: false,
+//             default_value: 'ui_case',
+//         },
+//         { name: "created_by", data_type: "TEXT", not_null: false },
+//         { name: "updated_by", data_type: "TEXT", not_null: false },
+//         { name: "created_by_id", data_type: "INTEGER", not_null: false },
+//         { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+//         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+//         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+//         ...schema,
+//         ];
+
+//         let Model = modelCache['cid_under_investigation'];
+
+//         if (!Model) {
+//         const modelAttributes = {};
+//         for (const field of completeSchema) {
+//             const {
+//             name,
+//             data_type,
+//             not_null,
+//             default_value,
+//             primaryKey,
+//             autoIncrement,
+//             } = field;
+//             const sequelizeType =
+//             typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+//             modelAttributes[name] = {
+//             type: sequelizeType,
+//             allowNull: !not_null,
+//             };
+
+//             if (default_value) modelAttributes[name].defaultValue = default_value;
+//             if (primaryKey) modelAttributes[name].primaryKey = true;
+//             if (autoIncrement) modelAttributes[name].autoIncrement = true;
+//         }
+
+//         Model = sequelize.define(
+//             table_name,
+//             modelAttributes,
+//             {
+//             freezeTableName: true,
+//             timestamps: true,
+//             createdAt: "created_at",
+//             updatedAt: "updated_at",
+//             underscored: true,
+//             }
+//         );
+
+//         await Model.sync({ alter: true });
+//         modelCache['cid_under_investigation'] = Model;
+//         }
+
+//         if (Array.isArray(recordId)) {
+//         const records = await Model.findAll({
+//             where: {
+//             id: recordId
+//             }
+//         });
+
+//         if (records.length !== recordId.length) {
+//             return userSendResponse(res, 404, false, `Some records with the provided IDs were not found in table Under Investigation.` );
+//         }
+
+//     } else {
+//         const record = await Model.findByPk(recordId);
+    
+//         if (!record) {
+//             return userSendResponse(res, 404, false, `Record with ID ${recordId} not found in table Under Investigation.`);
+//         }
+//     }
+
+
+//         const [updatedCount] = await Model.update(
+//         { sys_status:'ui_case' },
+//         { where: { id: recordId } }
+//         );
+
+//         if (updatedCount === 0) {
+//             return userSendResponse(res, 400, false, "No changes detected or update failed.");
+//         }
+         
+//         return userSendResponse(res, 200, true, "Merge data inserted successfully.");
+//   } catch (err) {
+//     console.error("insertMergeData error:", err);
+//     await t.rollback();
+//     return userSendResponse(res, 500, false, "Failed to de-merge data.");
+//   } finally {
+//     if (fs.existsSync(dirPath))
+//       fs.rmSync(dirPath, { recursive: true, force: true });
+//   }
+// };
+
+exports.deMergeCaseData = async (req, res) => {
+    const { template_module = "", case_id, transaction_id } = req.body;
+    const { user_id } = req.user;
+    const userId = user_id;
+    const recordIds = Array.isArray(case_id) ? case_id : [case_id];
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+    if (fs.existsSync(dirPath))
+        return userSendResponse(res, 400, false, "Duplicate transaction detected.");
+
+    fs.mkdirSync(dirPath, { recursive: true });
+
+    const t = await dbConfig.sequelize.transaction();
+
+    try {
+        const userDesignations = await UserDesignation.findAll({
+            where: { user_id },
+            attributes: ["designation_id"],
+        });
+
+        if (!userDesignations.length)
+            return userSendResponse(res, 400, false, "User has no designations assigned.");
+
+        const supervisorDesignationIds = userDesignations.map(ud => ud.designation_id);
+
+        const subordinates = await UsersHierarchy.findAll({
+            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+            attributes: ["officer_designation_id"],
+        });
+
+        const officerDesignationIds = subordinates.map(sub => sub.officer_designation_id);
+
+        let subordinateUserIds = [];
+        if (officerDesignationIds.length) {
+            const subordinateUsers = await UserDesignation.findAll({
+                where: { designation_id: { [Op.in]: officerDesignationIds } },
+                attributes: ["user_id"],
+            });
+            subordinateUserIds = subordinateUsers.map(ud => ud.user_id);
+        }
+
+        const allowedUserIds = [userId, ...subordinateUserIds];
+
+        let whereClause = {};
+        if (allowedUserIds.length) {
+            if (template_module === "ui_case") {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: allowedUserIds } },
+                    { field_io_name: { [Op.in]: allowedUserIds } },
+                ];
+            } else {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+        }
+
+        const mergedCaseDetails = await UiMergedCases.findAll({
+            where: { case_id: { [Op.in]: recordIds } },
+            attributes: ['case_id', 'merged_status'],
+            raw: true,
+        });
+
+        if (!mergedCaseDetails.length)
+            return userSendResponse(res, 400, false, "None of the case_ids belong to a merged case.");
+
+        const parentIds = mergedCaseDetails
+            .filter(item => item.merged_status === 'parent')
+            .map(item => item.case_id);
+
+        const childIds = mergedCaseDetails
+            .filter(item => item.merged_status === 'child')
+            .map(item => item.case_id);
+
+        if (parentIds.length > 0) {
+            await UiMergedCases.destroy({
+                where: { parent_case_id: { [Op.in]: parentIds } },
+                transaction: t
+            });
+        }
+
+        if (childIds.length > 0) {
+            await UiMergedCases.destroy({
+                where: { case_id: { [Op.in]: childIds } },
+                transaction: t
+            });
+        }
+
+        const invalidIds = recordIds.filter(val => isNaN(parseInt(val)));
+        if (invalidIds.length > 0)
+            return userSendResponse(res, 400, false, "Invalid ID format(s).");
+
+        const tableData = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+        if (!tableData)
+            return userSendResponse(res, 400, false, `Table Under Investigation does not exist.`);
+
+        const schema = typeof tableData.fields === "string"
+            ? JSON.parse(tableData.fields)
+            : tableData.fields;
+
+        const completeSchema = [
+            { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+            { name: "sys_status", data_type: "TEXT", not_null: false, default_value: 'ui_case' },
+            { name: "created_by", data_type: "TEXT", not_null: false },
+            { name: "updated_by", data_type: "TEXT", not_null: false },
+            { name: "created_by_id", data_type: "INTEGER", not_null: false },
+            { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+            { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+            { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+            ...schema,
+        ];
+
+        const table_name = "cid_under_investigation";
+        let Model = modelCache[table_name];
+
+        if (!Model) {
+            const modelAttributes = {};
+            for (const field of completeSchema) {
+                const { name, data_type, not_null, default_value, primaryKey, autoIncrement } = field;
+                const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                };
+                if (default_value) modelAttributes[name].defaultValue = default_value;
+                if (primaryKey) modelAttributes[name].primaryKey = true;
+                if (autoIncrement) modelAttributes[name].autoIncrement = true;
+            }
+
+            Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+                underscored: true,
+            });
+
+            await Model.sync({ alter: true });
+            modelCache[table_name] = Model;
+        }
+
+        const records = await Model.findAll({ where: { id: { [Op.in]: recordIds } } });
+
+        if (records.length !== recordIds.length)
+            return userSendResponse(res, 404, false, "Some records were not found in table Under Investigation.");
+
+        const [updatedCount] = await Model.update(
+            { sys_status: 'ui_case' },
+            { where: { id: { [Op.in]: recordIds } } }
+        );
+
+        if (updatedCount === 0)
+            return userSendResponse(res, 400, false, "No changes detected or update failed.");
+
+        await t.commit();
+        return userSendResponse(res, 200, true, "Merge data updated and de-merged successfully.");
+    } catch (err) {
+        console.error("deMergeCaseData error:", err);
+        await t.rollback();
+        return userSendResponse(res, 500, false, "Failed to de-merge data.");
+    } finally {
+        if (fs.existsSync(dirPath))
+            fs.rmSync(dirPath, { recursive: true, force: true });
+    }
+};

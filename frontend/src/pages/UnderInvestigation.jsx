@@ -8294,9 +8294,10 @@ const UnderInvestigation = () => {
                 onClose={() => setListApproveTableFlag(false)}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                maxWidth="lg"
+                fullScreen
                 fullWidth
-                 sx={{ zIndex: "1"}}
+                sx={{ zIndex: "1", marginLeft: '260px' }}
+
               >
                 <DialogTitle
                     id="alert-dialog-title"

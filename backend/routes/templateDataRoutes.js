@@ -317,6 +317,9 @@ router.post('/getMergeParentData',[validate_token],
 
 router.post('/getMergeChildData',[validate_token],
     templateDataController.getMergeChildData)
+
+router.post('/deMergeCaseData',[validate_token],
+    templateDataController.deMergeCaseData)
     
         
 module.exports = router;
