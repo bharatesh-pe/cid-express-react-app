@@ -196,6 +196,7 @@ const UnderInvestigation = () => {
   const [disabledApprovalItems, setDisabledApprovalItems] = useState(false);
 
   const [newApprovalPage, setNewApprovalPage] = useState(false);
+  const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
 
     // on save approval modal
 
@@ -526,137 +527,141 @@ const UnderInvestigation = () => {
                 cancelButtonText: 'No',
             }).then(async (result) => {
                 if (result.isConfirmed) {
-
-                    var getTemplatePayload = {
-                        "table_name": table_name,
-                        "id": data.id,
-                        "template_module": "ui_case"
-                    }
-                    
-                    setLoading(true);
-            
-                    try {
-                        const getTemplateResponse = await api.post("/templateData/viewTemplateData", getTemplatePayload);
-                        setLoading(false);
-            
-                        if (getTemplateResponse && getTemplateResponse.success) {
-                            
-                            if(getTemplateResponse.data && getTemplateResponse.data['template_module_data']){
-            
-                                if (!getTemplateResponse.data['template_module_data'].table_name || getTemplateResponse.data['template_module_data'].table_name === '') {
-                                    toast.warning('Please Check The Template', {
-                                        position: "top-right",
-                                        autoClose: 3000,
-                                        hideProgressBar: false,
-                                        closeOnClick: true,
-                                        pauseOnHover: true,
-                                        draggable: true,
-                                        progress: undefined,
-                                        className: "toast-warning",
-                                    });
-                                    return;
-                                }
-            
-                                const viewTableData = {
-                                    "table_name": getTemplateResponse.data['template_module_data'].table_name
-                                }
-                                setLoading(true);
-            
-                                    try {
-            
-                                        const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
-            
-                                        setLoading(false);
-                                        if (viewTemplateResponse && viewTemplateResponse.success) {
-            
-                                            setFurtherInvestigationPtCase(true);
-            
-                                            setOtherReadOnlyTemplateData(false);
-                                            setOtherEditTemplateData(false);
-            
-                                            setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
-                                            if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
-                                                setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
-                                            }
-            
-                                            setPtCaseTableName(getTemplateResponse.data['template_module_data'].table_name);
-                                            setPtCaseTemplateName(getTemplateResponse.data['template_module_data'].template_name);
-
-                                            setFurtherInvestigationSelectedRow(data);
-                                            setFurtherInvestigationSelectedValue(value);
-                                            setShowPtCaseModal(true);
-
-                                            var sys_status = {
-                                                "id": data.id, 
-                                                "sys_status": value,
-                                                "default_status": "pt_case"
-                                            }
-
-                                            setSingleApiData({sys_status : sys_status});
-
-                                            var PreDefinedData = {}
-
-                                            if(getTemplateResponse.data){
-                                                viewTemplateResponse.data['fields'].map((element)=>{
-                                                    if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
-                                                        PreDefinedData[element.name] = getTemplateResponse.data[element.name];
-                                                    }
-                                                })
-                                            }
-
-                                            setOtherInitialTemplateData(PreDefinedData);
-            
-                                        } else {
-                                            const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
-                                            toast.error(errorMessage, {
-                                                position: "top-right",
-                                                autoClose: 3000,
-                                                hideProgressBar: false,
-                                                closeOnClick: true,
-                                                pauseOnHover: true,
-                                                draggable: true,
-                                                progress: undefined,
-                                                className: "toast-error",
-                                            });
-                                        }
-            
-                                    } catch (error) {
-                                        setLoading(false);
-                                        if (error && error.response && error.response['data']) {
-                                            toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                                                position: "top-right",
-                                                autoClose: 3000,
-                                                hideProgressBar: false,
-                                                closeOnClick: true,
-                                                pauseOnHover: true,
-                                                draggable: true,
-                                                progress: undefined,
-                                                className: "toast-error",
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-            
-                    } catch (error) {
-                        setLoading(false);
-                        if (error && error.response && error.response['data']) {
-                            toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    }
+                    setFurtherInvestigationSelectedRow(data);
+                    showNewApprovalPage();
                 } else {
                     console.log("sys status updation canceled.");
                 }
             });
+        }
+    };
+
+    const showInvestigationPtCase = async ()=>{
+
+        var getTemplatePayload = {
+            "table_name": table_name,
+            "id": furtherInvestigationSelectedRow.id,
+            "template_module": "ui_case"
+        }
+        
+        setLoading(true);
+
+        try {
+            const getTemplateResponse = await api.post("/templateData/viewTemplateData", getTemplatePayload);
+            setLoading(false);
+
+            if (getTemplateResponse && getTemplateResponse.success) {
+                
+                if(getTemplateResponse.data && getTemplateResponse.data['template_module_data']){
+
+                    if (!getTemplateResponse.data['template_module_data'].table_name || getTemplateResponse.data['template_module_data'].table_name === '') {
+                        toast.warning('Please Check The Template', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-warning",
+                        });
+                        return;
+                    }
+
+                    const viewTableData = {
+                        "table_name": getTemplateResponse.data['template_module_data'].table_name
+                    }
+                    setLoading(true);
+
+                        try {
+
+                            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+
+                            setLoading(false);
+                            if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                                setFurtherInvestigationPtCase(true);
+
+                                setOtherReadOnlyTemplateData(false);
+                                setOtherEditTemplateData(false);
+
+                                setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                                if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                                    setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                                }
+
+                                setPtCaseTableName(getTemplateResponse.data['template_module_data'].table_name);
+                                setPtCaseTemplateName(getTemplateResponse.data['template_module_data'].template_name);
+
+                                setFurtherInvestigationSelectedValue("178_cases");
+                                setShowPtCaseModal(true);
+
+                                var sys_status = {
+                                    "id": furtherInvestigationSelectedRow.id, 
+                                    "sys_status": "178_cases",
+                                    "default_status": "pt_case"
+                                }
+
+                                setSingleApiData({...singleApiData, sys_status : sys_status});
+
+                                var PreDefinedData = {}
+
+                                if(getTemplateResponse.data){
+                                    viewTemplateResponse.data['fields'].map((element)=>{
+                                        if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
+                                            PreDefinedData[element.name] = getTemplateResponse.data[element.name];
+                                        }
+                                    })
+                                }
+
+                                setOtherInitialTemplateData(PreDefinedData);
+
+                            } else {
+                                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                                toast.error(errorMessage, {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                            }
+
+                        } catch (error) {
+                            setLoading(false);
+                            if (error && error.response && error.response['data']) {
+                                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                            }
+                        }
+                    }
+                }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
         }
     }
 
@@ -1445,7 +1450,13 @@ const UnderInvestigation = () => {
     }
   };
 
-  const showOptionTemplate = async (tableName) => {
+  const showOptionTemplate = async (tableName, approved) => {
+
+    if(selectedOtherTemplate.is_approval && !approved){
+        showApprovalPage(selectedRowData);
+        return;
+    }
+
     if (!tableName || tableName === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -1543,210 +1554,10 @@ const UnderInvestigation = () => {
     }
   };
 
-  const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
-    if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
-      toast.warning("Please Check The Template", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
-    }
+    const otherTemplateSaveFunc = async (data) => {
 
-    if (Object.keys(data).length === 0) {
-      toast.warning("Data Is Empty Please Check Once", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
-    }
-
-    if (
-      selectedOtherTemplate &&
-      selectedOtherTemplate.is_approval &&
-      !alreadySavedApproval
-    ) {
-      showApprovalPage(selectedRow);
-      setTemplateApprovalData(data);
-      setTemplateApproval(true);
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append(
-      "table_name",
-      showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table
-    );
-
-    var normalData = {}; // Non-file upload fields
-
-    optionFormTemplateData.forEach((field) => {
-      if (data[field.name]) {
-        if (field.type === "file" || field.type === "profilepicture") {
-          // Append file fields to formData
-          if (field.type === "file") {
-            if (Array.isArray(data[field.name])) {
-              const hasFileInstance = data[field.name].some(
-                (file) => file.filename instanceof File
-              );
-              var filteredArray = data[field.name].filter(
-                (file) => file.filename instanceof File
-              );
-              if (hasFileInstance) {
-                data[field.name].forEach((file) => {
-                  if (file.filename instanceof File) {
-                    formData.append(field.name, file.filename);
-                  }
-                });
-
-                filteredArray = filteredArray.map((obj) => {
-                  return {
-                    ...obj,
-                    filename: obj.filename["name"],
-                  };
-                });
-
-                formData.append(
-                  "folder_attachment_ids",
-                  JSON.stringify(filteredArray)
-                );
-              }
-            }
-          } else {
-            formData.append(field.name, data[field.name]);
-          }
-        } else {
-          // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
-        }
-      }
-    });
-    normalData.sys_status = "pt_case";
-    normalData["pt_case_id"] = selectedRowData.id;
-    normalData["ui_case_id"] = selectedRowData?.ui_case_id;
-
-    formData.append("data", JSON.stringify(normalData));
-    setLoading(true);
-
-    try {
-      let saveTemplateData;
-      if (isUpdatePdf) {
-        const appendText = JSON.stringify(normalData);
-        saveTemplateData = await api.post(
-          "/templateData/appendToLastLineOfPDF",
-          { pt_case_id: selectedRowData.id, appendText }
-        );
-      } else {
-        saveTemplateData = await api.post(
-          "/templateData/insertTemplateData",
-          formData
-        );
-      }
-      setLoading(false);
-
-      localStorage.removeItem(selectedOtherTemplate.name + "-formData");
-
-      if (saveTemplateData && saveTemplateData.success) {
-        toast.success(saveTemplateData.message || "Data Created Successfully", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-success",
-          ...(!showPtCaseModal && {
-            onOpen: () =>
-              handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
-          }),
-        });
-
-        setTemplateApprovalData({});
-        setTemplateApproval(false);
-
-        setAddApproveFlag(false);
-        setApproveTableFlag(false);
-        setApprovalSaveData({});
-
-        if (showPtCaseModal) {
-          setPtCaseTableName(null);
-          setShowPtCaseModal(false);
-          setOtherFormOpen(false);
-          setOptionStepperData([]);
-          setOptionFormTemplateData([]);
-
-          var payloadSysStatus = {
-            table_name: table_name,
-            data: {
-              id: selectedRow.id,
-              sys_status: "disposal",
-            },
-          };
-
-          setLoading(true);
-
-          try {
-            const chnageSysStatus = await api.post(
-              "/templateData/caseSysStatusUpdation",
-              payloadSysStatus
-            );
-
-            setLoading(false);
-
-            if (chnageSysStatus && chnageSysStatus.success) {
-              toast.success(
-                chnageSysStatus.message
-                  ? chnageSysStatus.message
-                  : "Status Changed Successfully",
-                {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-success",
-                }
-              );
-
-              // update func
-              var combinedData = {
-                id: selectedRow.id,
-                [selectKey.name]: selectedOtherFields.code,
-              };
-
-              onUpdateTemplateData(combinedData);
-
-              // reset states
-              setSelectKey(null);
-              setSelectedRow(null);
-              setOtherTransferField([]);
-              setShowOtherTransferModal(false);
-              setSelectedOtherFields(null);
-              setselectedOtherTemplate(null);
-            } else {
-              const errorMessage = chnageSysStatus.message
-                ? chnageSysStatus.message
-                : "Failed to change the status. Please try again.";
-              toast.error(errorMessage, {
+        if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
+            toast.warning("Please Check The Template", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -1754,53 +1565,350 @@ const UnderInvestigation = () => {
                 pauseOnHover: true,
                 draggable: true,
                 progress: undefined,
-                className: "toast-error",
-              });
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        var normalData = {}; // Non-file upload fields
+
+        optionFormTemplateData.forEach((field) => {
+        if (data[field.name]) {
+            if (field.type === "file" || field.type === "profilepicture") {
+            // Append file fields to formData
+            if (field.type === "file") {
+                if (Array.isArray(data[field.name])) {
+                const hasFileInstance = data[field.name].some(
+                    (file) => file.filename instanceof File
+                );
+                var filteredArray = data[field.name].filter(
+                    (file) => file.filename instanceof File
+                );
+                if (hasFileInstance) {
+                    data[field.name].forEach((file) => {
+                    if (file.filename instanceof File) {
+                        formData.append(field.name, file.filename);
+                    }
+                    });
+
+                    filteredArray = filteredArray.map((obj) => {
+                    return {
+                        ...obj,
+                        filename: obj.filename["name"],
+                    };
+                    });
+
+                    formData.append(
+                    "folder_attachment_ids",
+                    JSON.stringify(filteredArray)
+                    );
+                }
+                }
+            } else {
+                formData.append(field.name, data[field.name]);
             }
-          } catch (error) {
+            } else {
+            // Add non-file fields to normalData
+            normalData[field.name] =
+                field.type === "checkbox" || field.type === "multidropdown"
+                ? Array.isArray(data[field.name])
+                    ? data[field.name].join(",")
+                    : data[field.name]
+                : data[field.name];
+            }
+        }
+        });
+
+        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+            normalData["field_pr_status"] = "No";
+        }
+
+        normalData.sys_status = showPtCaseModal ? "ui_case" : "pt_case";
+        normalData["pt_case_id"] = selectedRowData.id;
+
+        var othersData = {};
+
+        if(Object.keys(approvalSaveData).length > 0 ){
+            othersData['approval'] = approvalSaveData;
+
+            var approvalItems = {
+                id : selectedRowData.id,
+                module_name : 'Under Investigation',
+                action : selectedOtherTemplate.name ? selectedOtherTemplate.name : 'Action'
+            }
+
+            othersData = {
+                            ...othersData, 
+                            approval_details : approvalItems
+                        }
+        }
+
+        formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
+        formData.append("data", JSON.stringify(normalData));
+        formData.append("others_data", JSON.stringify(othersData));
+        formData.append("transaction_id", randomApprovalId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
+
+        setLoading(true);
+
+        try {
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
+
+            setLoading(false);
+
+            if (overallSaveData && overallSaveData.success) {
+
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount),
+                });
+
+                setOtherFormOpen(false);
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setOtherTemplateModalOpen(false);
+                setApprovalSaveData({});
+
+                if(selectedOtherTemplate?.field){
+                    var combinedData = {
+                        id: selectedRowData.id,
+                        [selectKey.name]: selectedOtherFields.code,
+                    };
+            
+                    // update func
+                    onUpdateTemplateData(combinedData);
+
+                    setSelectKey(null);
+                    setSelectedRow(null);
+                    setOtherTransferField([]);
+                    setShowOtherTransferModal(false);
+                    setSelectedOtherFields(null);
+                    setselectedOtherTemplate(null);
+                }
+
+            } else {
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
             setLoading(false);
             if (error && error.response && error.response["data"]) {
-              toast.error(
-                error.response["data"].message
-                  ? error.response["data"].message
-                  : "Please Try Again !",
-                {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-error",
-                }
-              );
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
             }
-          }
         }
-      } else {
-        const errorMessage = saveTemplateData.message
-          ? saveTemplateData.message
-          : "Failed to create the profile. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
-        toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-          {
+
+        return;
+        formData.append("data", JSON.stringify(normalData));
+        setLoading(true);
+
+        try {
+        let saveTemplateData;
+        saveTemplateData = await api.post(
+            "/templateData/insertTemplateData",
+            formData
+        );
+        setLoading(false);
+
+        localStorage.removeItem(selectedOtherTemplate.name + "-formData");
+
+        if (saveTemplateData && saveTemplateData.success) {
+            toast.success(saveTemplateData.message || "Data Created Successfully", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+            ...(!showPtCaseModal && {
+                onOpen: () =>
+                handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
+            }),
+            });
+
+            setTemplateApprovalData({});
+            setTemplateApproval(false);
+            setAddApproveFlag(false);
+            setApproveTableFlag(false);
+            setApprovalSaveData({});
+
+            if (showPtCaseModal) {
+            setPtCaseTableName(null);
+            setShowPtCaseModal(false);
+            setOtherFormOpen(false);
+            setOptionStepperData([]);
+            setOptionFormTemplateData([]);
+
+            if (
+                selectedOtherTemplate &&
+                selectedOtherTemplate["field"] &&
+                selectedOtherTemplate["field"] !== "field_nature_of_disposal"
+            ) {
+                // update func
+                var combinedData = {
+                id: selectedRow.id,
+                [selectKey.name]: selectedOtherFields.code,
+                };
+
+                onUpdateTemplateData(combinedData);
+
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+
+                return;
+            }
+
+            var payloadSysStatus = {
+                table_name: table_name,
+                data: {
+                id: selectedRow.id,
+                sys_status: "disposal",
+                },
+            };
+
+            setLoading(true);
+
+            try {
+                const chnageSysStatus = await api.post(
+                "/templateData/caseSysStatusUpdation",
+                payloadSysStatus
+                );
+
+                setLoading(false);
+
+                if (chnageSysStatus && chnageSysStatus.success) {
+                toast.success(
+                    chnageSysStatus.message
+                    ? chnageSysStatus.message
+                    : "Status Changed Successfully",
+                    {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    }
+                );
+
+                // update func
+                var combinedData = {
+                    id: selectedRow.id,
+                    [selectKey.name]: selectedOtherFields.code,
+                };
+
+                onUpdateTemplateData(combinedData);
+
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+                } else {
+                const errorMessage = chnageSysStatus.message
+                    ? chnageSysStatus.message
+                    : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                }
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response["data"]) {
+                toast.error(
+                    error.response["data"].message
+                    ? error.response["data"].message
+                    : "Please Try Again !",
+                    {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                    }
+                );
+                }
+            }
+            } else {
+            setPtCaseTableName(null);
+            setShowPtCaseModal(false);
+            setOtherFormOpen(false);
+            setOptionStepperData([]);
+            setOptionFormTemplateData([]);
+
+            // reset states
+            setSelectKey(null);
+            setOtherTransferField([]);
+            setShowOtherTransferModal(false);
+            setSelectedOtherFields(null);
+            setselectedOtherTemplate(null);
+            }
+        } else {
+            const errorMessage = saveTemplateData.message
+            ? saveTemplateData.message
+            : "Failed to create the profile. Please try again.";
+            toast.error(errorMessage, {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -1809,11 +1917,29 @@ const UnderInvestigation = () => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-          }
-        );
-      }
-    }
-  };
+            });
+        }
+        } catch (error) {
+        setLoading(false);
+        if (error && error.response && error.response["data"]) {
+            toast.error(
+            error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+            {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            }
+            );
+        }
+        }
+    };
 
   const otherTemplateUpdateFunc = async (data) => {
     if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
@@ -2448,6 +2574,7 @@ const UnderInvestigation = () => {
           className: "toast-success",
           onOpen: () => loadTableData(paginationCount),
         });
+        setApprovalSaveData({});
       } else {
         const errorMessage = saveTemplateData.message
           ? saveTemplateData.message
@@ -2768,7 +2895,7 @@ const UnderInvestigation = () => {
 
   const [uploadedFiles, setUploadedFiles] = useState([]);
 
-  const getUploadedFiles = async (selectedRow) => {
+  const getUploadedFiles = async (selectedRow, options) => {
     console.log("for getting uploaded files", selectedRow);
     if (!selectedRow || !selectedRow.id) {
       console.error("Invalid selectedRow for file retrieval:", selectedRow);
@@ -2783,6 +2910,7 @@ const UnderInvestigation = () => {
       if (response && response.success) {
         console.log("Uploaded files:", response.data);
         setUploadedFiles(response.data);
+        handleOtherTemplateActions(options, selectedRow, false, true);
         console.error("Failed to fetch uploaded files:", response.message);
       }
     } catch (error) {
@@ -2861,21 +2989,26 @@ const UnderInvestigation = () => {
 
   const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
-    if(!selectedRow || Object.keys(selectedRow).length === 0){
+    if(!selectedRow || Object.keys(selectedRow).length === 0 || !options || Object.keys(options).length === 0){
         return false
     }
 
-    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_pending_trail");
-    // setIsIoAuthorized(isAuthorized); 
+    const randomId = `random_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+    setRandomApprovalId(randomId);
+
+    // const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
+    // setIsIoAuthorized(isAuthorized);    
 
     setSelectedRowData(selectedRow);
+    setselectedOtherTemplate(options);
+    setApprovalSaveData({});
 
     if (options.table && options.field) {
-      showTransferToOtherDivision(options, selectedRow);
-      return;
+        const selectedFieldValue = options.field;
+        showTransferToOtherDivision(options, selectedRow, selectedFieldValue);
+        return;
     }
-
-    setSelectedRow(selectedRow);
 
     var getTemplatePayload = {
         table_name: options.table,
@@ -3118,13 +3251,11 @@ const UnderInvestigation = () => {
             options.is_pdf
           ) {
             await checkPdfEntryStatus(selectedRow.id);
-            await getUploadedFiles(selectedRow);
+            await getUploadedFiles(selectedRow, options);
           }
 
           setOtherTemplateModalOpen(true);
         }
-
-        setselectedOtherTemplate(options);
 
         setOtherFormOpen(false);
         setOptionStepperData([]);
@@ -3166,11 +3297,19 @@ const UnderInvestigation = () => {
     }
   };
 
-  const showTransferToOtherDivision = async (options, selectedRow) => {
+  const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
+
+    if(options.is_approval && !approved){
+        showApprovalPage(selectedRow);
+        return;
+    }
+
+    const selectedFieldData = selectedRow[selectedFieldValue];
+  
     const viewTableData = {
       table_name: options.table,
     };
-
+  
     setLoading(true);
     try {
       const viewTemplateResponse = await api.post(
@@ -3178,7 +3317,7 @@ const UnderInvestigation = () => {
         viewTableData
       );
       setLoading(false);
-
+  
       if (
         viewTemplateResponse &&
         viewTemplateResponse.success &&
@@ -3186,146 +3325,116 @@ const UnderInvestigation = () => {
       ) {
         if (viewTemplateResponse["data"].fields) {
           setFormTemplateData(viewTemplateResponse["data"].fields);
-
-          var getDivisionField = viewTemplateResponse["data"].fields.filter(
-            (data) => {
-              if (data.name === options.field) {
-                return data;
-              }
-            }
+  
+          const getDivisionField = viewTemplateResponse["data"].fields.filter(
+            (data) => data.name === options.field
           );
-
+  
           if (getDivisionField.length > 0) {
+  
             if (getDivisionField[0].api) {
               setLoading(true);
-
-              var payloadApi = {
+  
+              const payloadApi = {
                 table_name: getDivisionField[0].table,
               };
-
+  
               try {
-                var getOptionsValue = await api.post(
-                  getDivisionField[0].api,
-                  payloadApi
-                );
-
+                const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
                 setLoading(false);
-
-                var updatedOptions = [];
-
+  
+                let updatedOptions = [];
+  
                 if (getOptionsValue && getOptionsValue.data) {
-                  if (
-                    getDivisionField[0].api === "/templateData/getTemplateData"
-                  ) {
-                    updatedOptions = getOptionsValue.data.map(
-                      (templateData) => {
-                        var nameKey = Object.keys(templateData).find(
-                          (key) =>
-                            !["id", "created_at", "updated_at"].includes(key)
-                        );
-
-                        return {
-                          name: nameKey ? templateData[nameKey] : "",
-                          code: templateData.id,
-                        };
-                      }
-                    );
-                  } else {
-                    updatedOptions = getOptionsValue.data.map((field, i) => {
+                  if (getDivisionField[0].api === "/templateData/getTemplateData") {
+                    updatedOptions = getOptionsValue.data.map((templateData) => {
+                      const nameKey = Object.keys(templateData).find(
+                        (key) => !["id", "created_at", "updated_at"].includes(key)
+                      );
                       return {
-                        name: field[
-                          getDivisionField[0].table === "users"
-                            ? "name"
-                            : getDivisionField[0].table + "_name"
-                        ],
-                        code: field[
-                          getDivisionField[0].table === "users"
-                            ? "user_id"
-                            : getDivisionField[0].table + "_id"
-                        ],
+                        name: nameKey ? templateData[nameKey] : "",
+                        code: templateData.id,
                       };
                     });
+                  } else {
+                    updatedOptions = getOptionsValue.data.map((field) => ({
+                      name:
+                      getDivisionField[0].table === "users"
+                          ? field.name
+                          : field[getDivisionField[0].table + "_name"],
+                      code:
+                      getDivisionField[0].table === "users"
+                          ? field.user_id
+                          : field[getDivisionField[0].table + "_id"],
+                    }));
                   }
-
+  
+                  const matchedOption = updatedOptions.find(
+                    (option) =>
+                      (option.code === selectedFieldData || option.name === selectedFieldData)
+                  );
+                  console.log("Pre-selected value:", matchedOption);
+                  setSelectedOtherFields(matchedOption || null);
+  
                   setSelectKey({ name: options.field, title: options.name });
-                  setSelectedRow(selectedRow);
-                  setselectedOtherTemplate(options);
+                //   setSelectedRow(selectedRow);
+                //   setselectedOtherTemplate(options);
                   setOtherTransferField(updatedOptions);
                   setShowOtherTransferModal(true);
                 }
               } catch (error) {
                 setLoading(false);
-
-                if (error && error.response && error.response.data) {
+                if (error?.response?.data) {
                   toast.error(
-                    error.response.data["message"]
-                      ? error.response.data["message"]
-                      : "Division not found",
+                    error.response.data.message || "Division not found",
                     {
                       position: "top-right",
                       autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
                       className: "toast-error",
                     }
                   );
-                  return;
                 }
               }
             } else {
+              const staticOptions = getDivisionField[0].options || [];
+  
+              const matchedOption = staticOptions.find(
+                (option) => option.code === selectedFieldData
+              );
+              setSelectedOtherFields(matchedOption || null);
+  
               setSelectKey({ name: options.field, title: options.name });
-              setSelectedRow(selectedRow);
-              setselectedOtherTemplate(options);
-              setOtherTransferField(getDivisionField[0].options);
+            //   setSelectedRow(selectedRow);
+            //   setselectedOtherTemplate(options);
+              setOtherTransferField(staticOptions);
               setShowOtherTransferModal(true);
             }
           } else {
-            const errorMessage = "Can't able to find Division field";
-            toast.error(errorMessage, {
+            toast.error("Can't able to find Division field", {
               position: "top-right",
               autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
               className: "toast-error",
             });
           }
         }
       } else {
-        const errorMessage = viewTemplateResponse.message
-          ? viewTemplateResponse.message
-          : "Failed to get Template. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
         toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
+          viewTemplateResponse.message || "Failed to get Template. Please try again.",
           {
             position: "top-right",
             autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error?.response?.data) {
+        toast.error(
+          error.response.data.message || "Please Try Again!",
+          {
+            position: "top-right",
+            autoClose: 3000,
             className: "toast-error",
           }
         );
@@ -3405,13 +3514,10 @@ const UnderInvestigation = () => {
         setApprovalItem(getActionsDetails.data["approval_item"]);
         setDesignationData(getActionsDetails.data["designation"]);
 
-        setAddApproveFlag(false);
+        
         setApproveTableFlag(true);
+        showApprovalAddPage();
 
-        const randomId = `approval_${Date.now()}_${Math.floor(
-          Math.random() * 1000
-        )}`;
-        setRandomApprovalId(randomId);
       } else {
         const errorMessage = getActionsDetails.message
           ? getActionsDetails.message
@@ -3455,75 +3561,18 @@ const UnderInvestigation = () => {
       "approval_item",
       Number(selectedOtherTemplate?.approval_items)
     );
+
+    if (selectedOtherTemplate?.approval_items) {
+      setApprovalItemDisabled(true);
+    } else {
+      setApprovalItemDisabled(false);
+    }
   };
 
   const saveApprovalData = async (table) => {
+
     if (!approvalSaveData || !approvalSaveData["approval_item"]) {
-      toast.error("Please Select Approval Item !", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-error",
-      });
-
-      return;
-    }
-
-    if (!approvalSaveData || !approvalSaveData["approved_by"]) {
-      toast.error("Please Select Designation !", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-error",
-      });
-
-      return;
-    }
-
-    var created_by_designation_id =
-      localStorage.getItem("designation_id") || "";
-
-    var created_by_division_id = localStorage.getItem("division_id") || "";
-
-    var payloadApproveData = {
-      ...approvalSaveData,
-      case_id: selectedRow.id,
-      case_type: "pt_case",
-      module: "Pending Trial",
-      action: "Pending Trial Action",
-      transaction_id: randomApprovalId,
-      created_by_designation_id: created_by_designation_id,
-      created_by_division_id: created_by_division_id,
-      info: {
-        module: "Pending Trial",
-        action: "Pending Trial Action",
-      },
-    };
-
-    setLoading(true);
-
-    try {
-      const chnageSysStatus = await api.post(
-        "/ui_approval/create_ui_case_approval",
-        payloadApproveData
-      );
-
-      setLoading(false);
-
-      if (chnageSysStatus && chnageSysStatus.success) {
-        toast.success(
-          chnageSysStatus.message
-            ? chnageSysStatus.message
-            : "Approval Added Successfully Successfully",
-          {
+        toast.error("Please Select Approval Item !", {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -3531,61 +3580,303 @@ const UnderInvestigation = () => {
             pauseOnHover: true,
             draggable: true,
             progress: undefined,
-            className: "toast-success",
-          }
-        );
-
-        if (
-          (selectedOtherTemplate.field === null ||
-            selectedOtherTemplate.field === "field_nature_of_disposal") &&
-          templateApproval
-        ) {
-          otherTemplateSaveFunc(templateApprovalData, true);
-          return;
-        }
-
-        if (disposalUpdate) {
-          updateSysStatusDisposal();
-          return;
-        }
-
-        var combinedData = {
-          id: selectedRow.id,
-          [selectKey.name]: selectedOtherFields.code,
-        };
-
-        // update func
-        onUpdateTemplateData(combinedData);
-
-        // reset states
-        setSelectKey(null);
-        setSelectedRow(null);
-        setOtherTransferField([]);
-        setShowOtherTransferModal(false);
-        setSelectedOtherFields(null);
-        setselectedOtherTemplate(null);
-
-        setApprovalsData([]);
-        setApprovalItem([]);
-        setDesignationData([]);
-
-        setAddApproveFlag(false);
-        setApproveTableFlag(false);
-        setApprovalSaveData({});
-      } else {
-        const errorMessage = chnageSysStatus.message
-          ? chnageSysStatus.message
-          : "Failed to add approval. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
+            className: "toast-error",
         });
+
+        return;
+    }
+
+    if (!approvalSaveData || !approvalSaveData["approved_by"]) {
+        toast.error("Please Select Designation !", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+
+        return;
+    }
+
+    if (!approvalSaveData || !approvalSaveData["approval_date"]) {
+        toast.error("Please Select Approval Date !", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+
+        return;
+    }
+
+    if (!approvalSaveData || !approvalSaveData["remarks"]) {
+        toast.error("Please Enter Comments !", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+
+        return;
+    }
+
+    if (selectedOtherTemplate.table && selectedOtherTemplate.field) {
+        showTransferToOtherDivision(selectedOtherTemplate, selectedRowData, selectedOtherTemplate.field, true);
+    }else{
+        showOptionTemplate(table, true);
+    }
+
+    return;
+};
+
+    const handleSaveDivisionChange = async () => {
+        if (!selectedOtherFields || !selectedOtherFields.code) {
+            toast.error("Please Select Data !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+
+            return;
+        }
+
+        if ((selectedOtherTemplate?.["field"] === "field_nature_of_disposal" || selectedOtherTemplate?.["field"] === "field_prosecution_sanction" || selectedOtherTemplate?.["field"] === "field_17a_pc_act") && selectedOtherFields?.["name"]) {
+            checkDisposalValues();
+            return;
+        }
+
+        if(selectedOtherTemplate.is_approval){
+
+            var payloadApproveData = {
+                ...approvalSaveData,
+                case_id: furtherInvestigationSelectedRow?.id || selectedRowData.id,
+                case_type: "ui_case",
+                module: "Under Investiation",
+                action: "Under Investiation Action",
+                transaction_id: randomApprovalId,
+                created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+                created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+                info: {
+                    module: "Under Investiation",
+                    action: "Under Investiation Action",
+                },
+            };
+        
+            setLoading(true);
+    
+            try {
+                const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval",payloadApproveData);
+        
+                setLoading(false);
+        
+                if (chnageSysStatus && chnageSysStatus.success) {
+
+                    toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Approval Added Successfully Successfully",{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success"
+                    });
+        
+                    var combinedData = {
+                        id: selectedRowData.id,
+                        [selectKey.name]: selectedOtherFields.code,
+                    };
+        
+                    // update func
+                    onUpdateTemplateData(combinedData);
+            
+                    // reset states
+                    setAddApproveFlag(false);
+                    setApproveTableFlag(false);
+                    setShowOtherTransferModal(false);
+
+                } else {
+                    const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to add approval. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response["data"]) {
+                    toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error"
+                    });
+                }
+            }
+
+        }else{     
+    
+            var combinedData = {
+                id: selectedRowData.id,
+                [selectKey.name]: selectedOtherFields.code,
+            };
+
+            // update func
+            onUpdateTemplateData(combinedData);
+
+            // reset states
+            setAddApproveFlag(false);
+            setApproveTableFlag(false);
+            setShowOtherTransferModal(false);
+
+        }
+    };
+
+    const showPtCaseTemplate = async () => {
+        var getTemplatePayload = {
+            "table_name": table_name,
+            "id": selectedRowData.id,
+            "template_module": "ui_case"
+        }
+
+        setLoading(true);
+
+        try {
+            const getTemplateResponse = await api.post("/templateData/viewTemplateData",getTemplatePayload);
+            setLoading(false);
+
+            if (getTemplateResponse && getTemplateResponse.success) {
+                if (getTemplateResponse.data && getTemplateResponse.data["template_module_data"]) {
+                if (
+                    !getTemplateResponse.data["template_module_data"].table_name ||
+                    getTemplateResponse.data["template_module_data"].table_name === ""
+                ) {
+                    toast.warning("Please Check The Template", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                    });
+                    return;
+                }
+
+          const viewTableData = {
+            table_name: getTemplateResponse.data["template_module_data"].table_name,
+          };
+          setLoading(true);
+
+          try {
+            const viewTemplateResponse = await api.post(
+              "/templates/viewTemplate",
+              viewTableData
+            );
+
+            setLoading(false);
+            if (viewTemplateResponse && viewTemplateResponse.success) {
+              setOtherFormOpen(true);
+
+              setOtherReadOnlyTemplateData(false);
+              setOtherEditTemplateData(false);
+
+              setOptionFormTemplateData(
+                viewTemplateResponse.data["fields"]
+                  ? viewTemplateResponse.data["fields"]
+                  : []
+              );
+              if (
+                viewTemplateResponse.data.no_of_sections &&
+                viewTemplateResponse.data.no_of_sections > 0
+              ) {
+                setOptionStepperData(
+                  viewTemplateResponse.data.sections
+                    ? viewTemplateResponse.data.sections
+                    : []
+                );
+              }
+
+              setPtCaseTableName(getTemplateResponse.data["template_module_data"].table_name);
+              setPtCaseTemplateName(
+                getTemplateResponse.data["template_module_data"].template_name
+              );
+              setShowPtCaseModal(true);
+
+              var PreDefinedData = {}
+
+              if(getTemplateResponse.data){
+                  viewTemplateResponse.data['fields'].map((element)=>{
+                      if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
+                          PreDefinedData[element.name] = getTemplateResponse.data[element.name];
+                      }
+                  })
+              }
+              setOtherInitialTemplateData(PreDefinedData);
+
+            } else {
+              const errorMessage = viewTemplateResponse.message
+                ? viewTemplateResponse.message
+                : "Failed to delete the template. Please try again.";
+              toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              });
+            }
+          } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+              toast.error(
+                error.response["data"].message
+                  ? error.response["data"].message
+                  : "Please Try Again !",
+                {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+                }
+              );
+            }
+          }
+        }
       }
     } catch (error) {
       setLoading(false);
@@ -3608,223 +3899,6 @@ const UnderInvestigation = () => {
       }
     }
   };
-
-  const handleSaveDivisionChange = async () => {
-    if (!selectedOtherFields || !selectedOtherFields.code) {
-      toast.error("Please Select Data !", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-error",
-      });
-
-      return;
-    }
-
-    if(selectedOtherTemplate.field === "field_status_update" && selectedOtherFields.code === "Closed"){
-        var payloadSysStatus = {
-            table_name: table_name,
-            data: {
-                "id": selectedRow.id,
-                "sys_status": 'disposal',
-                "default_status": "pt_case"
-            },
-        };
-
-        setLoading(true);
-
-        try {
-            const chnageSysStatus = await api.post( "/templateData/caseSysStatusUpdation", payloadSysStatus);
-            setLoading(false);
-            if (chnageSysStatus && chnageSysStatus.success) {
-                toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount),
-                });
-
-                // reset states
-                setSelectKey(null);
-                setSelectedRow(null);
-                setOtherTransferField([]);
-                setShowOtherTransferModal(false);
-                setSelectedOtherFields(null);
-                setselectedOtherTemplate(null);
-
-            } else {
-                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-        return;
-    }
-
-    if (
-      selectedOtherTemplate &&
-      selectedOtherTemplate["field"] &&
-      selectedOtherTemplate["field"] === "field_nature_of_disposal" &&
-      selectedOtherFields &&
-      selectedOtherFields["name"]
-    ) {
-      checkDisposalValues();
-      return;
-    }
-
-    if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
-      showApprovalPage(selectedRow);
-      return;
-    }
-
-    var combinedData = {
-      id: selectedRow.id,
-      [selectKey.name]: selectedOtherFields.code,
-    };
-
-    // update func
-    onUpdateTemplateData(combinedData);
-
-    // reset states
-    setSelectKey(null);
-    setSelectedRow(null);
-    setOtherTransferField([]);
-    setShowOtherTransferModal(false);
-    setSelectedOtherFields(null);
-    setselectedOtherTemplate(null);
-  };
-
-    const showPtCaseTemplate = async () => {
-        var getTemplatePayload = {
-            page: 1,
-            limit: 0,
-            template_module: "ui_case",
-        };
-
-        setLoading(true);
-
-        try {
-            const getTemplateResponse = await api.post("/templateData/paginateTemplateDataForOtherThanMaster",getTemplatePayload);
-            setLoading(false);
-
-            if (getTemplateResponse && getTemplateResponse.success) {
-                if (getTemplateResponse.data && getTemplateResponse.data["meta"]) {
-
-                    if (!getTemplateResponse.data["meta"].table_name || getTemplateResponse.data["meta"].table_name === "") {
-                        toast.warning("Please Check The Template", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-warning",
-                        });
-                        return;
-                    }
-
-                    const viewTableData = {
-                        table_name: getTemplateResponse.data["meta"].table_name,
-                    };
-                    setLoading(true);
-
-                    try {
-                        const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
-
-                        setLoading(false);
-                        if (viewTemplateResponse && viewTemplateResponse.success) {
-                            setOtherFormOpen(true);
-                            setOtherInitialTemplateData({});
-
-                            setOtherReadOnlyTemplateData(false);
-                            setOtherEditTemplateData(false);
-
-                            setOptionFormTemplateData(viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : []);
-                            if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
-                                setOptionStepperData( viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : [] );
-                            }
-
-                            setPtCaseTableName(getTemplateResponse.data["meta"].table_name);
-                            setPtCaseTemplateName(getTemplateResponse.data["meta"].template_name);
-                            setShowPtCaseModal(true);
-                        } else {
-                            const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
-                            toast.error(errorMessage, {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    } catch (error) {
-                        setLoading(false);
-                        if (error && error.response && error.response["data"]) {
-                            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    }
-                }
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-    };
 
     const furtherInvestigationPtCaseSave = async (data)=>{
 
@@ -3856,13 +3930,13 @@ const UnderInvestigation = () => {
             return;
         }
 
-        showNewApprovalPage(furtherInvestigationSelectedRow);
-
         var ui_case = data;
         setSingleApiData((prev) => ({
             ...prev,
             ui_case: ui_case,
         }));
+
+        saveOverallData(false, ui_case);
 
         return;
     }
@@ -3896,6 +3970,7 @@ const UnderInvestigation = () => {
                     setDisabledApprovalItems(false);
                 }
 
+                setApprovalSaveData({});
                 setNewApprovalPage(true);
 
             } else {
@@ -3943,21 +4018,7 @@ const UnderInvestigation = () => {
         });
     }
 
-    const saveOverallData = async () => {
-
-        if(!ptCaseTableName || ptCaseTableName === ''){
-            toast.error('Please Check Template Name', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
+    const saveOverallData = async (approvedSave, data) => {
 
         if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
             toast.error("Please Select Approval Item !", {
@@ -4016,21 +4077,26 @@ const UnderInvestigation = () => {
             return;
         }
 
+        if(approvedSave){
+            showInvestigationPtCase();
+            return;
+        }
+
         const formData = new FormData();
         formData.append("table_name", ptCaseTableName);
         var normalData = {}; // Non-file upload fields
 
         optionFormTemplateData.forEach((field) => {
 
-            if (singleApiData['ui_case'][field.name]) {
+            if (data[field.name]) {
                 if (field.type === "file" || field.type === "profilepicture") {
                     // Append file fields to formData
                     if (field.type === 'file') {
-                        if (Array.isArray(singleApiData['ui_case'][field.name])) {
-                            const hasFileInstance = singleApiData['ui_case'][field.name].some(file => file.filename instanceof File);
-                            var filteredArray = singleApiData['ui_case'][field.name].filter(file => file.filename instanceof File);
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
+                            var filteredArray = data[field.name].filter(file => file.filename instanceof File);
                             if (hasFileInstance) {
-                                singleApiData['ui_case'][field.name].forEach((file) => {
+                                data[field.name].forEach((file) => {
                                     if (file.filename instanceof File) {
                                         formData.append(field.name, file.filename);
                                     }
@@ -4048,11 +4114,11 @@ const UnderInvestigation = () => {
                             }
                         }
                     } else {
-                        formData.append(field.name, singleApiData['ui_case'][field.name]);
+                        formData.append(field.name, data[field.name]);
                     }
                 } else {
                     // Add non-file fields to normalData
-                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(singleApiData['ui_case'][field.name]) ? singleApiData['ui_case'][field.name].join(',') : singleApiData['ui_case'][field.name] : singleApiData['ui_case'][field.name];
+                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
                 }
             }
         });
@@ -4111,6 +4177,7 @@ const UnderInvestigation = () => {
                 setFurtherInvestigationSelectedRow([]);
                 setFurtherInvestigationPtCase(false);
                 setDisabledApprovalItems(false);
+                setApprovalSaveData({});
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -4143,151 +4210,398 @@ const UnderInvestigation = () => {
     }
 
 
-  const checkDisposalValues = () => {
-    if (
-      selectedOtherTemplate &&
-      selectedOtherTemplate["field"] &&
-      selectedOtherTemplate["field"] === "field_nature_of_disposal" &&
-      selectedOtherFields &&
-      selectedOtherFields["name"]
-    ) {
-      if (selectedOtherFields && selectedOtherFields["name"] === "A") {
-        showPtCaseTemplate();
-        setDisposalUpdate(true);
-      } else {
-        Swal.fire({
-          title:
-            selectedOtherFields["name"] === "B"
-              ? "Approved by Court"
-              : "Are You Sure ?",
-          text:
-            selectedOtherFields["name"] === "B"
-              ? ""
-              : "Do you want to move this case !",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Yes !",
-          cancelButtonText: "No",
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
-              showApprovalPage(selectedRow);
-              setDisposalUpdate(true);
-              return;
+
+    const checkDisposalValues = async () => {
+        if (selectedOtherTemplate?.["field"] === "field_nature_of_disposal" && selectedOtherFields?.["name"]) {
+            if (selectedOtherFields && selectedOtherFields["name"] === "A") {
+                showPtCaseTemplate();
+                setDisposalUpdate(true);
+            } else {
+                Swal.fire({
+                    title: selectedOtherFields["name"] === "B" ? "Approved by Court" : "Are You Sure ?",
+                    text: selectedOtherFields["name"] === "B" ? "" : "Do you want to move this case !",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes !",
+                    cancelButtonText: "No",
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
+
+                            var payloadApproveData = {
+                                ...approvalSaveData,
+                                case_id: furtherInvestigationSelectedRow?.id || selectedRowData.id,
+                                case_type: "ui_case",
+                                module: "Under Investiation",
+                                action: selectedOtherTemplate?.name || "Action",
+                                transaction_id: randomApprovalId,
+                                created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+                                created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+                                info: {
+                                    module: "Under Investiation",
+                                    action: selectedOtherTemplate?.name || "Action",
+                                },
+                            };
+                        
+                            setLoading(true);
+                      
+                            try {
+                                const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval",payloadApproveData);
+                        
+                                setLoading(false);
+                        
+                                if (chnageSysStatus && chnageSysStatus.success) {
+                
+                                    toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Approval Added Successfully Successfully",{
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-success"
+                                    });
+                        
+                                    updateSysStatusDisposal();
+
+                                    // reset states
+                                    setSelectKey(null);
+                                    setSelectedRow(null);
+                                    setOtherTransferField([]);
+                                    setShowOtherTransferModal(false);
+                                    setSelectedOtherFields(null);
+                                    setselectedOtherTemplate(null);
+                                    setAddApproveFlag(false);
+                                    setApproveTableFlag(false);
+                                    setShowOtherTransferModal(false);
+                                    setApprovalSaveData({});
+                
+                                } else {
+                                    const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to add approval. Please try again.";
+                                    toast.error(errorMessage, {
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                }
+                            } catch (error) {
+                                setLoading(false);
+                                if (error && error.response && error.response["data"]) {
+                                    toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error"
+                                    });
+                                }
+                            }
+                            return;
+                        }
+                    } else {
+                        setSelectKey(null);
+                        setSelectedRow(null);
+                        setOtherTransferField([]);
+                        setShowOtherTransferModal(false);
+                        setSelectedOtherFields(null);
+                        setselectedOtherTemplate(null);
+                        setAddApproveFlag(false);
+                        setApproveTableFlag(false);
+                        setShowOtherTransferModal(false);
+                    }
+                });
             }
+        } else if ((selectedOtherTemplate?.["field"] === "field_prosecution_sanction" || selectedOtherTemplate?.["field"] === "field_17a_pc_act") && selectedOtherFields?.["name"]) {
+            if (selectedOtherFields?.["name"].toLowerCase() === "yes" && selectedOtherTemplate?.["field"] === "field_prosecution_sanction") {
 
-            updateSysStatusDisposal();
-          } else {
-            setSelectKey(null);
-            setSelectedRow(null);
-            setOtherTransferField([]);
-            setShowOtherTransferModal(false);
-            setSelectedOtherFields(null);
-            setselectedOtherTemplate(null);
-          }
-        });
-      }
-    }
-  };
+                showActionsOptionsTemplate("cid_ui_case_order_of_prosecution_sanction");
+                return;
 
-  const updateSysStatusDisposal = async () => {
-    var payloadSysStatus = {
-      table_name: table_name,
-      data: {
-        id: selectedRow.id,
-        sys_status: "disposal",
-        default_status: "pt_case",
-      },
+            } else if (selectedOtherFields?.["name"].toLowerCase() === "yes" && selectedOtherTemplate?.["field"] === "field_17a_pc_act") {
+
+                showActionsOptionsTemplate("cid_ui_case_order_of_17a_pc_act");
+                return;
+
+            } else {
+
+                if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
+
+                    var payloadApproveData = {
+                        ...approvalSaveData,
+                        case_id: furtherInvestigationSelectedRow?.id || selectedRowData.id,
+                        case_type: "ui_case",
+                        module: "Under Investiation",
+                        action: selectedOtherTemplate?.name || "Action",
+                        transaction_id: randomApprovalId,
+                        created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+                        created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+                        info: {
+                            module: "Under Investiation",
+                            action: selectedOtherTemplate?.name || "Action",
+                        },
+                    };
+                
+                    setLoading(true);
+            
+                    try {
+                        const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval",payloadApproveData);
+                
+                        setLoading(false);
+                
+                        if (chnageSysStatus && chnageSysStatus.success) {
+        
+                            toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Approval Added Successfully Successfully",{
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-success"
+                            });
+                
+                            var combinedData = {
+                                id: selectedRowData.id,
+                                [selectKey.name]: selectedOtherFields.code,
+                            };
+            
+                            onUpdateTemplateData(combinedData);
+            
+                            // reset states
+                            setSelectKey(null);
+                            setSelectedRow(null);
+                            setOtherTransferField([]);
+                            setShowOtherTransferModal(false);
+                            setSelectedOtherFields(null);
+                            setselectedOtherTemplate(null);
+                            setAddApproveFlag(false);
+                            setApproveTableFlag(false);
+                            setShowOtherTransferModal(false);
+                            setApprovalSaveData({});
+        
+                        } else {
+                            const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to add approval. Please try again.";
+                            toast.error(errorMessage, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response["data"]) {
+                            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error"
+                            });
+                        }
+                    }
+                }else{
+                    var combinedData = {
+                        id: selectedRowData.id,
+                        [selectKey.name]: selectedOtherFields.code,
+                    };
+    
+                    onUpdateTemplateData(combinedData);
+    
+                    // reset states
+                    setSelectKey(null);
+                    setSelectedRow(null);
+                    setOtherTransferField([]);
+                    setShowOtherTransferModal(false);
+                    setSelectedOtherFields(null);
+                    setselectedOtherTemplate(null);
+                    setAddApproveFlag(false);
+                    setApproveTableFlag(false);
+                    setShowOtherTransferModal(false);
+                }
+            }
+        }
     };
 
-    setLoading(true);
-
-    try {
-      const chnageSysStatus = await api.post(
-        "/templateData/caseSysStatusUpdation",
-        payloadSysStatus
-      );
-
-      setLoading(false);
-
-      if (chnageSysStatus && chnageSysStatus.success) {
-        toast.success(
-          chnageSysStatus.message
-            ? chnageSysStatus.message
-            : "Status Changed Successfully",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-          }
-        );
-
-        // update func
-        var combinedData = {
-          id: selectedRow.id,
-          [selectKey.name]: selectedOtherFields.code,
+    const updateSysStatusDisposal = async () => {
+        var payloadSysStatus = {
+            table_name: table_name,
+            data: {
+                id: selectedRowData.id,
+                sys_status: "disposal",
+                default_status: "ui_case",
+            }
         };
 
-        onUpdateTemplateData(combinedData);
+        setLoading(true);
 
-        setDisposalUpdate(false);
+        try {
+            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation",payloadSysStatus);
 
-        // reset states
-        setSelectKey(null);
-        setSelectedRow(null);
-        setOtherTransferField([]);
-        setShowOtherTransferModal(false);
-        setSelectedOtherFields(null);
-        setselectedOtherTemplate(null);
+            setLoading(false);
 
-        setApprovalsData([]);
-        setApprovalItem([]);
-        setDesignationData([]);
+            if (chnageSysStatus && chnageSysStatus.success) {
+                toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
 
-        setAddApproveFlag(false);
-        setApproveTableFlag(false);
-        setApprovalSaveData({});
-      } else {
-        const errorMessage = chnageSysStatus.message
-          ? chnageSysStatus.message
-          : "Failed to change the status. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
-        toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
+                // update func
+                var combinedData = {
+                    id: selectedRowData.id,
+                    [selectKey.name]: selectedOtherFields.code,
+                };
+
+                onUpdateTemplateData(combinedData);
+
+                setDisposalUpdate(false);
+
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+
+                setApprovalsData([]);
+                setApprovalItem([]);
+                setApprovalItemDisabled(false);
+                setDesignationData([]);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
+
+            } else {
+                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error"
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+
+      const showActionsOptionsTemplate = async (table) => {
+        const viewTableData = {
+          table_name: table,
+        };
+    
+        setLoading(true);
+    
+        try {
+          const viewTemplateResponse = await api.post(
+            "/templates/viewTemplate",
+            viewTableData
+          );
+    
+          setLoading(false);
+          if (viewTemplateResponse && viewTemplateResponse.success) {
+            setOtherFormOpen(true);
+            setOtherInitialTemplateData({});
+    
+            setOtherReadOnlyTemplateData(false);
+            setOtherEditTemplateData(false);
+    
+            setOptionFormTemplateData(
+              viewTemplateResponse.data["fields"]
+                ? viewTemplateResponse.data["fields"]
+                : []
+            );
+            if (
+              viewTemplateResponse.data.no_of_sections &&
+              viewTemplateResponse.data.no_of_sections > 0
+            ) {
+              setOptionStepperData(
+                viewTemplateResponse.data.sections
+                  ? viewTemplateResponse.data.sections
+                  : []
+              );
+            }
+    
+            setPtCaseTableName(table);
+            setPtCaseTemplateName(viewTemplateResponse?.data?.template_name);
+            setShowPtCaseModal(true);
+          } else {
+            const errorMessage = viewTemplateResponse.message
+              ? viewTemplateResponse.message
+              : "Failed to delete the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
           }
-        );
-      }
-    }
-  };
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              }
+            );
+          }
+        }
+      };
 
   const [isUpdatePdf, setIsUpdatePdf] = useState(false);
 
@@ -4896,6 +5210,7 @@ const UnderInvestigation = () => {
                 setApprovalSaveCaseData({});
                 setApprovalItemsData([]);
                 setApprovalDesignationData([]);
+                setApprovalSaveData({});
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -5881,16 +6196,7 @@ const UnderInvestigation = () => {
           >
             Approval
             <Box>
-              {!addApproveFlag ? (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    showApprovalAddPage(selectedOtherTemplate.table);
-                  }}
-                >
-                  Add
-                </Button>
-              ) : (
+
                 <Button
                   variant="outlined"
                   onClick={() => {
@@ -5899,7 +6205,6 @@ const UnderInvestigation = () => {
                 >
                   Save
                 </Button>
-              )}
               <IconButton
                 aria-label="close"
                 onClick={() => setApproveTableFlag(false)}
@@ -5912,9 +6217,7 @@ const UnderInvestigation = () => {
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               <Box py={2}>
-                {!addApproveFlag ? (
-                  <TableView rows={approvalsData} columns={approvalsColumn} />
-                ) : (
+
                   <Box
                     sx={{
                       display: "flex",
@@ -5927,6 +6230,7 @@ const UnderInvestigation = () => {
                       options={approvalItem}
                       getOptionLabel={(option) => option.name || ""}
                       name={"approval_item"}
+                      disabled={approvalItemDisabled}
                       value={
                         approvalItem.find(
                           (option) =>
@@ -6021,7 +6325,6 @@ const UnderInvestigation = () => {
                       }
                     />
                   </Box>
-                )}
               </Box>
             </DialogContentText>
           </DialogContent>
@@ -6253,7 +6556,7 @@ const UnderInvestigation = () => {
             <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
                 Approval
                 <Box>
-                    <Button variant="outlined" onClick={() => {saveOverallData()}}>Save</Button>
+                    <Button variant="outlined" onClick={() => {saveOverallData(true)}}>Save</Button>
                     <IconButton
                         aria-label="close"
                         onClick={() => setNewApprovalPage(false)}
