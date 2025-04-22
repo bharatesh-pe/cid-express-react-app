@@ -129,8 +129,17 @@ exports.create_ui_case_approval = async (req, res) => {
 // Function to view all approvals
 exports.get_ui_case_approvals = async (req, res) => {
   try {
-    const { case_id, approval_type} = req.body;
+    const { case_id, approval_type , page = 1, limit = 10, sort_by = "created_at", order = "DESC", search = "", search_field = "",} = req.body;
+    const { filter = {}, from_date = null, to_date = null } = req.body;
+    const userId = req.user?.user_id || null;
     let whereCondition = {};
+    const offset = (page - 1) * limit;
+
+    const fields = Object.keys(UiCaseApproval.rawAttributes).reduce((acc, key) => {
+        acc[key] = true;
+        return acc;
+    }, {});
+
 
     // Dynamically add conditions
     if (case_id) {
@@ -141,48 +150,215 @@ exports.get_ui_case_approvals = async (req, res) => {
       whereCondition.approval_type = approval_type; 
     }
 
-    let formattedApprovals = [];
-    let approvals = [];
-    if (whereCondition && Object.keys(whereCondition).length > 0) {
-      approvals = await UiCaseApproval.findAll({
-        include: [
-          {
-            model: ApprovalItem,
-            as: "approvalItem",
-            attributes: ["name"],
-          },
-          {
-            model: Designation,
-            as: "approvedBy",
-            attributes: ["designation_name"],
-          },
-        ],
-        where: whereCondition,
-      });
+     // Apply field filters if provided
+    if (filter && typeof filter === "object") {
+        Object.entries(filter).forEach(([key, value]) => {
+            if (fields[key]) {
+            whereCondition[key] = value;
+            }
+        });
+    }
 
-      formattedApprovals = approvals.map((approval) => ({
-        approval_id: approval.approval_id,
-        approval_item: approval.approval_item,
-        approved_by: approval.approved_by,
-        approval_date: approval.approval_date,
-        remarks: approval.remarks,
-        approvalItem: approval.approvalItem?.name || null, // Extract the name directly
-        approvedBy: approval.approvedBy?.designation_name || null, // Extract the designation_name directly
-      }));
+    if (from_date || to_date) {
+      whereClause["created_at"] = {};
+
+      if (from_date) {
+        whereClause["created_at"][Op.gte] = new Date(
+          `${from_date}T00:00:00.000Z`
+        );
+      }
+      if (to_date) {
+        whereClause["created_at"][Op.lte] = new Date(
+          `${to_date}T23:59:59.999Z`
+        );
+      }
+    }
+
+    if (search) {
+        const searchConditions = [];
+
+        if (search_field && fields[search_field]) {
+            const fieldConfig = fieldConfigs[search_field];
+            const fieldType = fields[search_field]?.type?.key;
+            const isForeignKey = associations.some(
+            (assoc) => assoc.foreignKey === search_field
+            );
+
+            // Handle field type based search
+            if (["STRING", "TEXT"].includes(fieldType)) {
+            searchConditions.push({
+                [search_field]: { [Op.iLike]: `%${search}%` },
+            });
+            } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+            if (!isNaN(search)) {
+                searchConditions.push({ [search_field]: parseInt(search, 10) });
+            }
+            } else if (fieldType === "BOOLEAN") {
+            if (["true", "false"].includes(search.toLowerCase())) {
+                const boolValue = search.toLowerCase() === "true";
+                searchConditions.push({ [search_field]: boolValue });
+            }
+            } else if (fieldType === "DATE") {
+            const parsedDate = Date.parse(search);
+            if (!isNaN(parsedDate)) {
+                searchConditions.push({ [search_field]: new Date(parsedDate) });
+            }
+            }
+
+            // Handle dropdown/radio/checkbox option label search
+            if (
+            fieldConfig &&
+            ["dropdown", "radio", "checkbox"].includes(fieldConfig.type) &&
+            Array.isArray(fieldConfig.options)
+            ) {
+            const matchingOption = fieldConfig.options.find((option) =>
+                option.name.toLowerCase().includes(search.toLowerCase())
+            );
+
+            if (matchingOption) {
+                searchConditions.push({ [search_field]: matchingOption.code });
+            }
+            }
+
+            // Handle foreign key search
+            if (isForeignKey) {
+            const association = associations.find(
+                (assoc) => assoc.foreignKey === search_field
+            );
+
+            if (association) {
+                const associatedModel = include.find(
+                (inc) => inc.as === `${association.relatedTable}Details`
+                );
+
+                if (associatedModel) {
+                searchConditions.push({
+                    [`$${association.relatedTable}Details.${association.targetAttribute}$`]: {
+                    [Op.iLike]: `%${search}%`,
+                    },
+                });
+                }
+            }
+            }
+        } else {
+            // General search across all fields
+            Object.keys(fields).forEach((field) => {
+            const fieldType = fields[field]?.type?.key;
+            const fieldConfig = fieldConfigs[field];
+            const isForeignKey = associations.some(
+                (assoc) => assoc.foreignKey === field
+            );
+
+            if (["STRING", "TEXT"].includes(fieldType)) {
+                searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
+            } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+                if (!isNaN(search)) {
+                searchConditions.push({ [field]: parseInt(search, 10) });
+                }
+            }
+
+            if (
+                fieldConfig &&
+                ["dropdown", "radio", "checkbox"].includes(fieldConfig.type) &&
+                Array.isArray(fieldConfig.options)
+            ) {
+                const matchingOption = fieldConfig.options.find((option) =>
+                option.name.toLowerCase().includes(search.toLowerCase())
+                );
+
+                if (matchingOption) {
+                searchConditions.push({ [field]: matchingOption.code });
+                }
+            }
+
+            if (isForeignKey) {
+                const association = associations.find(
+                (assoc) => assoc.foreignKey === field
+                );
+
+                if (association) {
+                const associatedModel = include.find(
+                    (inc) => inc.as === `${association.relatedTable}Details`
+                );
+
+                if (associatedModel) {
+                    searchConditions.push({
+                    [`$${association.relatedTable}Details.${association.targetAttribute}$`]: {
+                        [Op.iLike]: `%${search}%`,
+                    },
+                    });
+                }
+                }
+            }
+            });
+        }
+
+        if (searchConditions.length > 0) {
+            whereCondition[Op.or] = searchConditions;
+        }
+    }
+
+    // Safe fallback for sorting field
+    const validSortBy = fields[sort_by] ? sort_by : "created_at";
+
+
+    let formattedApprovals = [];
+    let approvals = { count: 0, rows: [] };
+
+    if (whereCondition && Object.keys(whereCondition).length > 0) {
+        approvals = await UiCaseApproval.findAndCountAll({
+            where: whereCondition,
+            limit,
+            offset,
+            order: [[validSortBy, order.toUpperCase()]],
+            include: [
+            {
+                model: ApprovalItem,
+                as: "approvalItem",
+                attributes: ["name"],
+            },
+            {
+                model: Designation,
+                as: "approvedBy",
+                attributes: ["designation_name"],
+            },
+            ],
+        });
+
+        formattedApprovals = approvals.rows.map((approval) => ({
+            approval_id: approval.approval_id,
+            approval_item: approval.approval_item,
+            approved_by: approval.approved_by,
+            approval_date: approval.approval_date,
+            remarks: approval.remarks,
+            approvalItem: approval.approvalItem?.name || null,
+            approvedBy: approval.approvedBy?.designation_name || null,
+        }));
     }
 
     const approval_item = await ApprovalItem.findAll();
-
     const designation = await Designation.findAll();
 
+    const totalItems = approvals.count;
+    const totalPages = Math.ceil(totalItems / limit);
+
     return res.status(200).json({
-      success: true,
-      data: {
-        approvals: formattedApprovals,
-        approval_item: approval_item,
-        designation: designation,
-      },
+        success: true,
+        data: {
+            approvals: formattedApprovals,
+            approval_item,
+            designation,
+            meta: {
+            page,
+            limit,
+            totalItems,
+            totalPages,
+            sort_by: validSortBy,
+            order,
+            },
+        },
     });
+
   } catch (error) {
     console.error("Error fetching Approvals:", error);
     return res.status(500).json({
