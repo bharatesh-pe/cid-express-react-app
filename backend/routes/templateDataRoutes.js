@@ -314,6 +314,9 @@ router.post('/insertMergeData',[validate_token],
 
 router.post('/getMergeParentData',[validate_token],
     templateDataController.getMergeParentData)
+
+router.post('/getMergeChildData',[validate_token],
+    templateDataController.getMergeChildData)
     
         
 module.exports = router;

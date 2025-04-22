@@ -5411,14 +5411,19 @@ exports.getMergeParentData = async (req, res) =>
             return acc;
         }, {});
 
+        // const parentCaseMap = parentCases.map(parent => {
+        //     const childCount = childCounts.find(child => child.parent_case_id === parent.case_id);
+        //     return {
+        //         case_id: parent.case_id,
+        //         child_count: childCount ? childCount.child_count : 0,
+        //     };
+        // });
+
         if (parentCaseIds.length === 0) {
             return userSendResponse(res, 400, false, "No merged case found", null);
         }
 
-        if(parentCaseIds.length > 0)
-        {
-             whereClause["id"] = { [Op.in]: parentCaseIds };
-        }
+        whereClause["id"] = { [Op.in]: parentCaseIds };
 
         // Fetch the template using template_module to get the table_name
         const template = await Template.findOne({ where: { template_module } });
@@ -5756,7 +5761,7 @@ exports.getMergeParentData = async (req, res) =>
             attributesArray.push("sys_status");
         }
 
-    // Add other fields from fields object
+        // Add other fields from fields object
         attributesArray = [
         ...attributesArray,
         ...Object.keys(fields).filter((field) => fields[field].displayContent),
@@ -5931,6 +5936,14 @@ exports.getMergeParentData = async (req, res) =>
         data.ReadStatus = data.ReadStatus ? true : false;
 
         const case_id =  data.id || null;
+
+       if (
+        parentCaseMap &&
+        parentCaseMap[case_id.toString()] &&
+        parentCaseMap[case_id.toString()]['count']
+        ) {
+            data.childCount = parentCaseMap[case_id.toString()]['count'];
+        }
 
         const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
             where: {
@@ -6089,6 +6102,7 @@ exports.getMergeChildData = async (req, res) =>
         sys_status,
         is_read,
         get_sys,
+        case_id
         } = req.body;
 
         const { filter = {}, from_date = null, to_date = null } = req.body;
@@ -6117,7 +6131,7 @@ exports.getMergeChildData = async (req, res) =>
 
         // Fetch subordinates based on supervisor designations
         const subordinates = await UsersHierarchy.findAll({
-        where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
             attributes: ["officer_designation_id"],
         });
 
@@ -6152,45 +6166,19 @@ exports.getMergeChildData = async (req, res) =>
             }
         }
 
-        const parentCases = await UiMergedCases.findAll({
-            where: { merged_status: 'parent' },
+        const childCases = await UiMergedCases.findAll({
+            where: { merged_status: 'child', parent_case_id: case_id }, // corrected here
             attributes: ['case_id'],
             raw: true,
         });
 
-        const parentCaseIds = parentCases.map(item => item.case_id);
+        const childCaseIds = childCases.map(item => item.case_id);
 
-        const childCounts = await UiMergedCases.findAll({
-            where: {
-                merged_status: 'child',
-                parent_case_id: { [Sequelize.Op.in]: parentCaseIds }
-            },
-            attributes: [
-                'parent_case_id',
-                [Sequelize.fn('COUNT', Sequelize.col('case_id')), 'child_count']
-            ],
-            group: ['parent_case_id'],
-            raw: true,
-        });
-
-        const parentCaseMap = parentCases.reduce((acc, parent) => {
-            // Find the child count for the current parent case
-            const childCount = childCounts.find(child => child.parent_case_id === parent.case_id);
-
-            // Add the case_id and child_count to the accumulator object
-            acc[parent.case_id] = { count: childCount ? childCount.child_count : 0 };
-
-            return acc;
-        }, {});
-
-        if (parentCaseIds.length === 0) {
+        if (childCaseIds.length === 0) {
             return userSendResponse(res, 400, false, "No merged case found", null);
         }
 
-        if(parentCaseIds.length > 0)
-        {
-             whereClause["id"] = { [Op.in]: parentCaseIds };
-        }
+        whereClause["id"] = { [Op.in]: childCaseIds };
 
         // Fetch the template using template_module to get the table_name
         const template = await Template.findOne({ where: { template_module } });
@@ -6829,8 +6817,6 @@ exports.getMergeChildData = async (req, res) =>
         sort_by: validSortBy,
         order,
       },
-      metaChildCount:parentCaseMap,
-      parentCaseIds:parentCaseIds
     };
 
     return userSendResponse(
