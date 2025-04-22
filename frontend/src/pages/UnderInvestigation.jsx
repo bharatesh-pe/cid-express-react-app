@@ -8205,6 +8205,13 @@ const UnderInvestigation = () => {
                                     </Button>
                                 )}
                         </Box>
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setListApproveTableFlag(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
                     </Box>
                 </DialogTitle>
                 <DialogContent>
