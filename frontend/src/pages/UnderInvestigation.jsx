@@ -272,7 +272,7 @@ const UnderInvestigation = () => {
 
     const handleListApprovalSaveData = (name, value) => {
         setListApprovalSaveData({
-        ...approvalSaveData,
+        ...listApprovalSaveData,
         [name]: value,
         });
     };
@@ -309,16 +309,45 @@ const UnderInvestigation = () => {
 
             setLoading(false);
 
-            if (response.status === 200) {
-                toast.success("Approval updated successfully");
-                setListAddApproveFlag(false);
+            if (response && response.success)
+            {
+                toast.success('Approval updated successfully', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+                setListApproveTableFlag(false);
             } else {
-                toast.error("Failed to update approval");
+                toast.error('Failed to update approval', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
             }
         } catch (error) {
             setLoading(false);
             console.error("Update error:", error);
-            toast.error("Something went wrong");
+            toast.error('Something went wrong', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return false;
         }
     };
 
@@ -8405,17 +8434,19 @@ const UnderInvestigation = () => {
                                             label="Approval Date"
                                             format="DD/MM/YYYY"
                                             disabled={listApprovalItemDisabled}
-                                            sx={{width: '100%'}}
+                                            sx={{ width: '100%' }}
                                             value={
-                                                listApprovalSaveData?.approval_date ? dayjs(listApprovalSaveData?.approval_date) : null
+                                                listApprovalSaveData?.approval_date
+                                                ? dayjs(listApprovalSaveData.approval_date)
+                                                : null
                                             }
                                             onChange={(newVal) =>
                                                 handleListApprovalSaveData(
-                                                    "approval_date",
-                                                    dayjs.isDayjs(newVal) ? newVal.toISOString() : null
+                                                "approval_date",
+                                                newVal ? newVal.toISOString() : null
                                                 )
-                                                }
-                                                maxDate={dayjs()}
+                                            }
+                                            maxDate={dayjs()}
                                         />
                                     </DemoContainer>
                                 </LocalizationProvider>
