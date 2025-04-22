@@ -1268,7 +1268,7 @@ const UnderInvestigation = () => {
       setSelectedMergeRowData((prev) => prev.filter((r) => r.id !== row.id));
     }
   };
-  
+ 
   const handleConfirmMerge = async () => {
     if (!selectedParentId || selectedParentId.length === 0) {
       Swal.fire({
@@ -1281,25 +1281,70 @@ const UnderInvestigation = () => {
     }
   
     setLoading(true);
-    
     setShowMergeModal(false);
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]);
-    setSelectedParentId(null);
-    
-    await loadTableData();
   
-    Swal.fire({
-      title: 'Success',
-      text: "Merged successfully!",
-      icon: 'success',
-      confirmButtonText: 'OK',
-    });
+    try {
+      const allCaseIdsToMerge = selectedMergeRowData
+        .filter(row => row?.id !== undefined)
+        .map(row => row.id);
   
-    setLoading(false);
+      const payloadSysStatus = {
+        table_name: table_name,
+        data: {
+          id: allCaseIdsToMerge,
+          sys_status: "merge_cases",
+          default_status: "ui_case",
+        },
+      };
+  
+      const sysStatusResponse = await api.post("/templateData/caseSysStatusUpdation", payloadSysStatus);
+  
+      if (!sysStatusResponse?.success) {
+        throw new Error(sysStatusResponse.message || "Failed to update case status.");
+      }
+  
+      const mergeDataPayload = allCaseIdsToMerge.map(caseId => ({
+        case_id: caseId,
+        parent_id: selectedParentId.id,
+        merge_status: caseId === selectedParentId.id ? "Parent" : "Child",
+      }));
+  
+      const mergeResponse = await api.post("/templateData/insertMergeData", {
+        table_name: "merge_table",
+        data: mergeDataPayload,
+      });
+  
+      if (!mergeResponse?.success) {
+        throw new Error(mergeResponse.message || "Failed to insert merge data.");
+      }
+  
+      Swal.fire({
+        title: 'Success',
+        text: "Merged successfully!",
+        icon: 'success',
+        confirmButtonText: 'OK',
+      });
+  
+      setSelectedRowIds([]);
+      setSelectedMergeRowData([]);
+      setSelectedParentId(null);
+  
+      await loadTableData();
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        title: 'Error',
+        text: "Something went wrong during merge!",
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
   
   
+
   
     useEffect(() => {
         const anySelected = tableData.some((data) => data.isSelected);
@@ -1450,6 +1495,38 @@ const UnderInvestigation = () => {
                             ),
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
+                        ...(sysStatus === "merge_cases"
+                          ? [
+                              {
+                                field: "child_case",
+                                headerName: "Child Case",
+                                width: 100,
+                                resizable: true,
+                                renderCell: (params) => {
+                                  const childCount = params.value || '1';
+                                  const statusColor = "#3b82f6";
+                                  const borderColor = "#2563eb";
+                      
+                                  return (
+                                    <Chip
+                                      label={childCount}
+                                      size="small"
+                                      sx={{
+                                        fontFamily: "Roboto",
+                                        fontWeight: 500,
+                                        color: "white",
+                                        borderColor: borderColor,
+                                        borderRadius: "4px",
+                                        backgroundColor: statusColor,
+                                        borderStyle: "solid",
+                                        borderWidth: "1px",
+                                      }}
+                                    />
+                                  );
+                                },
+                              },
+                            ]
+                          : []),
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -6473,6 +6550,7 @@ const UnderInvestigation = () => {
                   onClick={() => {
                     setShowMergeModal(true);
                     setMergeDialogData(selectedMergeRowData); 
+                    console.log("selectedMergeRowData",selectedMergeRowData)
                   }}
                   >
                   Merge
