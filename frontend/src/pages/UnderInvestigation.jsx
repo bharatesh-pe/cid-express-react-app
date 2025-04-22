@@ -211,27 +211,37 @@ const UnderInvestigation = () => {
         width: 300,
         sortable: false,
         renderCell: (params) => {
-        const row = params.row;
-        return (
-            <Box sx={{ display: "flex", gap: 1 }}>
-            {/* {userPermissions[0]?.view_case && ( */}
-                <Button variant="outlined" >
-                    View
-                </Button>
-            {/* )} */}
-            {/* {userPermissions[0]?.edit_case && ( */}
-                <Button variant="contained" color="primary">
-                    Edit
-                </Button>
-            {/* )} */}
-            {/* {userPermissions[0]?.delete_case && ( */}
-                <Button variant="contained" color="error">
-                    Delete
-                </Button>
-            {/* )} */}
-            </Box>
-        );
-        },
+            const row = params.row;
+
+            const handleListApprovalView = () => {
+                setListApprovalSaveData(row); // Set data for read-only view
+                setListApprovalItemDisabled(true); // Disable dropdowns and date picker
+                setListAddApproveFlag(true); // Show form view
+                setListApproveTableFlag(true); // Open dialog
+            };
+
+            const handleListApprovalEdit = () => {
+                setListApprovalSaveData(row); // Prefill form for editing
+                setListApprovalItemDisabled(false); // Enable dropdowns and date picker
+                setListAddApproveFlag(true); // Show form view
+                setListApproveTableFlag(true); // Open dialog
+            };
+
+            return (
+                <Box sx={{ display: "flex", gap: 1 }}>
+                    <Button variant="outlined" onClick={handleListApprovalView}>
+                        View
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={handleListApprovalEdit}>
+                        Edit
+                    </Button>
+                    <Button variant="contained" color="error">
+                        Delete
+                    </Button>
+                </Box>
+            );
+        }
+
     };
   
     const [listApprovalItem, setListApprovalItem] = useState([]);
@@ -259,6 +269,60 @@ const UnderInvestigation = () => {
         setListApprovalFiltersDropdown([]);
         setListApprovalFilterData({});
     }
+
+    const handleListApprovalSaveData = (name, value) => {
+        setListApprovalSaveData({
+        ...approvalSaveData,
+        [name]: value,
+        });
+    };
+
+    const handleUpdateApproval = async () => {
+        setLoading(true);
+
+        try {
+            const { approval_item, approved_by, approval_date, remarks, approval_id } = listApprovalSaveData;
+
+            if (!approval_item || !approved_by || !approval_date) {
+                toast.error("Please fill in all required fields.");
+                setLoading(false);
+                return;
+            }
+
+            const payloadObj = {
+            approval_id,
+            approval_item,
+            approved_by,
+            approval_date,
+            remarks,
+            module: "ui_case_module",
+            action: "update",    
+            transaction_id:  `approval_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
+            created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+            created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+            };
+
+            const response = await api.post(
+            "/ui_approval/update_ui_case_approval",
+            payloadObj
+            );
+
+            setLoading(false);
+
+            if (response.status === 200) {
+                toast.success("Approval updated successfully");
+                setListAddApproveFlag(false);
+            } else {
+                toast.error("Failed to update approval");
+            }
+        } catch (error) {
+            setLoading(false);
+            console.error("Update error:", error);
+            toast.error("Something went wrong");
+        }
+    };
+
+
 
 
   
@@ -8213,32 +8277,52 @@ const UnderInvestigation = () => {
                     justifyContent: "space-between",
                     }}
                 >
-                    <Box 
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
-                        onClick={() => { setListApproveTableFlag(false)}}
-                    >
-
-                        <WestIcon />
-
-                        <Typography variant="body1" fontWeight={500}>
-                            Approval
-                        </Typography>
-
-                        {listApprovalCaseNo && (
-                            <Chip
-                                label={listApprovalCaseNo}
-                                color="primary"
-                                variant="outlined"
-                                size="small"
-                                sx={{ fontWeight: 500, marginTop: '2px' }}
-                            />
-                        )}
-
-                        <Box className="totalRecordCaseStyle">
-                            {listApprovalTotalRecord} Records
+                    {listAddApproveFlag ? (
+                        <Box 
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => {  setListAddApproveFlag(false) }}
+                        >
+                            <WestIcon />
+                            <Typography variant="body1" fontWeight={500}>
+                                Approval
+                            </Typography>
+                            {listApprovalCaseNo && (
+                                <Chip
+                                    label={listApprovalCaseNo}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
+                                />
+                            )}
+                            <Box className="totalRecordCaseStyle">
+                                {listApprovalTotalRecord} Records
+                            </Box>
                         </Box>
+                    ) : (
+                        <Box 
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => { setListApproveTableFlag(false) }}
+                        >
+                            <WestIcon />
+                            <Typography variant="body1" fontWeight={500}>
+                                Approval
+                            </Typography>
+                            {listApprovalCaseNo && (
+                                <Chip
+                                    label={listApprovalCaseNo}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
+                                />
+                            )}
+                            <Box className="totalRecordCaseStyle">
+                                {listApprovalTotalRecord} Records
+                            </Box>
+                        </Box>
+                    )}
 
-                    </Box>
                     <Box sx={{display: 'flex', alignItems: 'center'}}>
                         <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
                             <Box>
@@ -8303,139 +8387,177 @@ const UnderInvestigation = () => {
                                 </Typography>
                             )}
                             </Box>
-                                {addApproveFlag && (
+                                {listAddApproveFlag && !listApprovalItemDisabled && (
                                     <Button
                                         variant="outlined"
-                                        onClick={() => {
-                                        saveApprovalData(selectedOtherTemplate.table);
-                                        }}
+                                        onClick={handleUpdateApproval}
                                     >
-                                        Save
+                                        Update
                                     </Button>
                                 )}
                         </Box>
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setListApproveTableFlag(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
                     </Box>
                 </DialogTitle>
                 <DialogContent>
-                  <DialogContentText id="alert-dialog-description">
-                    <Box py={2} sx={{ width: '100%'}}>
-                      {!listAddApproveFlag ? (
-                        <TableView 
-                            rows={listApprovalsData} 
-                            columns={listApprovalsColumn}
-                            totalPage={listApprovalTotalPage} 
-                            totalRecord={listApprovalTotalRecord} 
-                            paginationCount={listApprovalPaginationCount} 
-                            handlePagination={listApprovalPagination} 
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "18px",
-                          }}
-                        >                    
-                          <Autocomplete
-                            id=""
-                            options={listApprovalItem}
-                            getOptionLabel={(option) => option.name || ""}
-                            name={"approval_item"}
-                            disabled={listApprovalItemDisabled}
-                            value={
-                              listApprovalItem.find(
-                                (option) =>
-                                  option.approval_item_id ===
-                                  (listApprovalSaveData &&
-                                    listApprovalSaveData["approval_item"])
-                              ) || null
-                            }
-                            onChange={(e, value) =>
-                              handleApprovalSaveData(
-                                "approval_item",
-                                value?.approval_item_id
-                              )
-                            }
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                className="selectHideHistory"
-                                label={"Approval Item"}
-                              />
-                            )}
-                          />
-                          <Autocomplete
-                            id=""
-                            options={listDesignationData}
-                            getOptionLabel={(option) => option.designation_name || ""}
-                            name={"approved_by"}
-                            value={
-                              listDesignationData.find(
-                                (option) =>
-                                  option.designation_id ===
-                                  (listApprovalSaveData &&
-                                    listApprovalSaveData["approved_by"])
-                              ) || null
-                            }
-                            onChange={(e, value) =>
-                              handleApprovalSaveData(
-                                "approved_by",
-                                value?.designation_id
-                              )
-                            }
-                            renderInput={(params) => (
-                              <TextField
-                                {...params}
-                                className="selectHideHistory"
-                                label={"Designation"}
-                              />
-                            )}
-                          />
-                          <LocalizationProvider
-                            dateAdapter={AdapterDayjs}
-                            sx={{ width: "100%" }}
-                          >
-                            <DemoContainer
-                              components={["DatePicker"]}
-                              sx={{ width: "100%" }}
-                            >
-                              <DatePicker
-                                label="Approval Date"
-                                value={
-                                  listApprovalSaveData["approval_date"]
-                                    ? dayjs(listApprovalSaveData["approval_date"])
-                                    : null
-                                }
-                                name="approval_date"
-                                format="DD/MM/YYYY"
-                                sx={{ width: "100%" }}
-                                onChange={(newValue) => {
-                                  if (newValue && dayjs.isDayjs(newValue)) {
-                                    handleApprovalSaveData(
-                                      "approval_date",
-                                      newValue.toISOString()
-                                    );
-                                  } else {
-                                    handleApprovalSaveData("approval_date", null);
-                                  }
+                    <DialogContentText>
+                        <Box py={2} sx={{ width: '100%'}}>
+                            {!listAddApproveFlag ? (
+                                <TableView 
+                                    rows={listApprovalsData} 
+                                    columns={listApprovalsColumn}
+                                    totalPage={listApprovalTotalPage} 
+                                    totalRecord={listApprovalTotalRecord} 
+                                    paginationCount={listApprovalPaginationCount} 
+                                    handlePagination={listApprovalPagination} 
+                                />
+                            ) : (
+                            <Box
+                                py={2}
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "18px",
                                 }}
-                              />
-                            </DemoContainer>
-                          </LocalizationProvider>
-                          <TextField
-                            rows={8}
-                            label={"Comments"}
-                            sx={{ width: "100%" }}
-                            name="remarks"
-                            value={listApprovalSaveData["remarks"]}
-                            onChange={(e) =>
-                              handleApprovalSaveData("remarks", e.target.value)
-                            }
-                          />
+                            >
+                                    <label
+                                    htmlFor="approval-item"
+                                    style={{
+                                    margin: "0",
+                                    padding: 0, 
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    color: "#475467",
+                                    textTransform: "capitalize",
+                                }}
+                                >
+                                Approval Item
+                                </label>
+        
+                                <Autocomplete
+                                    options={listApprovalItem}
+                                    getOptionLabel={(option) => option.name || ""}
+                                    name="approval_item"
+                                    disabled={listApprovalItemDisabled}
+                                    value={
+                                        listApprovalItem.find((opt) => opt.approval_item_id === listApprovalSaveData?.approval_item ) || null
+                                    }
+                                    onChange={(e, value) =>
+                                        handleListApprovalSaveData( "approval_item", value?.approval_item_id)
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            className="selectHideHistory"
+                                            label="Approval Item"
+                                        />
+                                    )}
+                                />
+                                <label
+                                    htmlFor="designation"
+                                    style={{
+                                    margin: "0",
+                                    padding: 0, 
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    color: "#475467",
+                                    textTransform: "capitalize",
+                                }}
+                                >
+                                Designation
+                                </label>
+        
+                                <Autocomplete
+                                    options={listDesignationData}
+                                    disabled={listApprovalItemDisabled}
+                                    getOptionLabel={(option) =>
+                                        option.designation_name || ""
+                                    }
+                                    name="approved_by"
+                                    value={
+                                        listDesignationData.find((opt) => opt.designation_id === listApprovalSaveData?.approved_by) || null
+                                    }
+                                    onChange={(e, value) =>
+                                        handleListApprovalSaveData( "approved_by", value?.designation_id)
+                                    }
+                                    renderInput={(params) => (
+                                        <TextField
+                                            {...params}
+                                            className="selectHideHistory"
+                                            label="Designation"
+                                        />
+                                    )}
+                                />
+                                <label
+                                    htmlFor="approval-date"
+                                    style={{
+                                    margin: "0",
+                                    padding: 0, 
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    color: "#475467",
+                                    textTransform: "capitalize",
+                                }}
+                                >
+                                Approval Date
+                                </label>
+        
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DemoContainer components={["DatePicker"]}>
+                                        <DatePicker
+                                            label="Approval Date"
+                                            format="DD/MM/YYYY"
+                                            disabled={listApprovalItemDisabled}
+                                            sx={{width: '100%'}}
+                                            value={
+                                                listApprovalSaveData?.approval_date ? dayjs(listApprovalSaveData?.approval_date) : null
+                                            }
+                                            onChange={(newVal) =>
+                                                handleListApprovalSaveData(
+                                                    "approval_date",
+                                                    dayjs.isDayjs(newVal) ? newVal.toISOString() : null
+                                                )
+                                                }
+                                                maxDate={dayjs()}
+                                        />
+                                    </DemoContainer>
+                                </LocalizationProvider>
+        
+                                <label
+                                    htmlFor="comments"
+                                    style={{
+                                    margin: "0",
+                                    padding: 0, 
+                                    fontSize: "16px",
+                                    fontWeight: 500,
+                                    color: "#475467",
+                                    textTransform: "capitalize",
+                                }}
+                                >
+                                Comments
+                                </label>
+        
+                                <TextField
+                                    rows={8}
+                                    multiline
+                                    label="Comments"
+                                    fullWidth
+                                    name="remarks"
+                                    disabled={listApprovalItemDisabled}
+                                    value={listApprovalSaveData?.remarks}
+                                    onChange={(e) =>
+                                        handleListApprovalSaveData("remarks", e.target.value)
+                                    }
+                                />
+                            </Box>)}
                         </Box>
-                      )}
-                    </Box>
-                  </DialogContentText>
+                    </DialogContentText>
                 </DialogContent>
               </Dialog>
         )}

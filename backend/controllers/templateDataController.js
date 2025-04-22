@@ -5059,52 +5059,52 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 					return userSendResponse(res, 400, false, "Default status is required.");
 				}
 				
-				// Handle approval logic
-				if (otherParsedData.approval_details && otherParsedData.approval) {
-					const approval = otherParsedData.approval;
-					const approvalDetails = otherParsedData.approval_details;
-	
-					const existingApprovalItem = await ApprovalItem.findByPk(approval?.approval_item);
-					if (!existingApprovalItem) {
-						await t.rollback();
-						return userSendResponse(res, 400, false, "Invalid approval item ID.");
-					}
-					
-					const newApproval = await UiCaseApproval.create(
-						{
-							approval_item: approval.approval_item,
-							approved_by: approval.approved_by,
-							approval_date: approval.approval_date || new Date(),
-							remarks: approval.remarks,
-							reference_id: recordId,
-							approval_type: default_status,
-							module: approvalDetails.module_name,
-							action: approvalDetails.action,
-							created_by: userId,
-						},
-						{ transaction: t }
-					);
-					
-					if (!recordId) {
-						await t.rollback();
-						return userSendResponse(res, 400, false, "Reference ID is required.");
-					}
-	
-					await System_Alerts.create(
-						{
-							approval_id: newApproval.approval_id,
-							reference_id : recordId,
-							alert_type: "Approval",
-							alert_message: newApproval.remarks,
-							created_by: userId,
-							created_by_designation_id: user_designation_id,
-							created_by_division_id: null,
-							send_to :insertedIO || null,
-						},
-						{ transaction: t }
-					);
-				}
 			}
+            // Handle approval logic
+            if (otherParsedData.approval_details && otherParsedData.approval) {
+                const approval = otherParsedData.approval;
+                const approvalDetails = otherParsedData.approval_details;
+
+                const existingApprovalItem = await ApprovalItem.findByPk(approval?.approval_item);
+                if (!existingApprovalItem) {
+                    await t.rollback();
+                    return userSendResponse(res, 400, false, "Invalid approval item ID.");
+                }
+                
+                const newApproval = await UiCaseApproval.create(
+                    {
+                        approval_item: approval.approval_item,
+                        approved_by: approval.approved_by,
+                        approval_date: approval.approval_date || new Date(),
+                        remarks: approval.remarks,
+                        reference_id: recordId,
+                        approval_type: default_status,
+                        module: approvalDetails.module_name,
+                        action: approvalDetails.action,
+                        created_by: userId,
+                    },
+                    { transaction: t }
+                );
+                
+                if (!recordId) {
+                    await t.rollback();
+                    return userSendResponse(res, 400, false, "Reference ID is required.");
+                }
+
+                await System_Alerts.create(
+                    {
+                        approval_id: newApproval.approval_id,
+                        reference_id : recordId,
+                        alert_type: "Approval",
+                        alert_message: newApproval.remarks,
+                        created_by: userId,
+                        created_by_designation_id: user_designation_id,
+                        created_by_division_id: null,
+                        send_to :insertedIO || null,
+                    },
+                    { transaction: t }
+                );
+            }
 
 		}
 
