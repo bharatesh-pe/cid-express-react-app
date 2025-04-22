@@ -1369,12 +1369,12 @@ const UnderInvestigation = () => {
   
       const mergeDataPayload = allCaseIdsToMerge.map(caseId => ({
         case_id: caseId,
-        parent_id: selectedParentId.id,
-        merge_status: caseId === selectedParentId.id ? "Parent" : "Child",
+        parent_case_id: selectedParentId.id,
+        merged_status: caseId === selectedParentId.id ? "parent" : "child",
       }));
   
       const mergeResponse = await api.post("/templateData/insertMergeData", {
-        table_name: "merge_table",
+        table_name: "ui_merged_cases",
         data: mergeDataPayload,
       });
   

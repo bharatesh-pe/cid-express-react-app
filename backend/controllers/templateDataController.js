@@ -26,6 +26,7 @@ const {
 	ApprovalItem,
 	System_Alerts,
 	UiCaseApproval,
+  UiMergedCases,
 } = require("../models");
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
@@ -5272,4 +5273,32 @@ exports.getAccusedWitness = async (req, res) => {
 		console.error("Error fetching records:", error);
 		return res.status(500).json({ success: false, message: "Internal server error." });
 	}
+};
+
+
+
+exports.insertMergeData = async (req, res) => {
+  const { table_name, data } = req.body;
+
+  if (table_name !== 'ui_merged_cases' || !Array.isArray(data)) {
+    return res.status(400).json({ success: false, message: "Invalid payload." });
+  }
+
+  try {
+
+    await UiMergedCases.bulkCreate(data, {
+      ignoreDuplicates: true,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Merge data inserted successfully.",
+    });
+  } catch (err) {
+    console.error("insertMergeData error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to insert merge data.",
+    });
+  }
 };

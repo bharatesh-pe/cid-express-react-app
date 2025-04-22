@@ -20,6 +20,9 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     sequelize,
     modelName: 'UiMergedCases',
+    tableName: 'ui_merged_cases', 
+    createdAt: 'created_at', 
+    updatedAt: 'updated_at',
   });
   return UiMergedCases;
 };
