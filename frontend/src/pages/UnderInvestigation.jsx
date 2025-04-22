@@ -5148,7 +5148,9 @@ const UnderInvestigation = () => {
     setSelectedRowIds([]);
     setSelectedMergeRowData([]); 
     setSelectedParentId(null);
-
+    setTableData((prevData) =>
+      prevData.map((item) => ({ ...item, isSelected: false }))
+    );
   };
 
   const showPtCaseTemplate = async () => {
@@ -7589,107 +7591,113 @@ const UnderInvestigation = () => {
 
 
       <Dialog
-  open={showMassiveTransferModal}
-  onClose={() => {
-    setShowMassiveTransferModal(false);
-    setSelectKey(null);
-    setSelectedRow([]);
-    setOtherTransferField([]);
-    setSelectedOtherFields(null);
-    setselectedOtherTemplate(null);
-    setUsersBasedOnDivision([]);
-    setSelectedUser(null);
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]); 
-    setSelectedParentId(null);
-   }}
-    aria-labelledby="alert-dialog-title"
-  aria-describedby="alert-dialog-description"
->
-  <DialogTitle id="alert-dialog-title"></DialogTitle>
-  <DialogContent sx={{ width: "400px" }}>
-    <DialogContentText id="alert-dialog-description">
-      <h4 className="form-field-heading">{selectKey?.title}</h4>
-      <FormControl fullWidth>
-        <Autocomplete
-          options={otherTransferField}
-          getOptionLabel={(option) => option.name || ""}
-          value={selectedOtherFields || null}
-          onChange={(event, newValue) => {
-            setSelectedOtherFields(newValue);
-            setSelectedUser(null); 
+        open={showMassiveTransferModal}
+        onClose={() => {
+          setShowMassiveTransferModal(false);
+          setSelectKey(null);
+          setSelectedRow([]);
+          setOtherTransferField([]);
+          setSelectedOtherFields(null);
+          setselectedOtherTemplate(null);
+          setUsersBasedOnDivision([]);
+          setSelectedUser(null);
+          setSelectedRowIds([]);
+          setSelectedMergeRowData([]); 
+          setSelectedParentId(null);
+          setTableData((prevData) =>
+            prevData.map((item) => ({ ...item, isSelected: false }))
+          );
+        }}
+          aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title"></DialogTitle>
+        <DialogContent sx={{ width: "400px" }}>
+          <DialogContentText id="alert-dialog-description">
+            <h4 className="form-field-heading">{selectKey?.title}</h4>
+            <FormControl fullWidth>
+              <Autocomplete
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={(event, newValue) => {
+                  setSelectedOtherFields(newValue);
+                  setSelectedUser(null); 
 
-            if (newValue && newValue.code) {
-              api.post("cidMaster/getIoUsersBasedOnDivision", {
-                division_ids: [newValue.code],
-                role_id: null,
-              }).then((res) => {
-                setUsersBasedOnDivision(res.data || []);
-              }).catch((err) => {
-                console.error("Failed to load users based on division", err);
-                setUsersBasedOnDivision([]);
-              });
-            } else {
+                  if (newValue && newValue.code) {
+                    api.post("cidMaster/getIoUsersBasedOnDivision", {
+                      division_ids: [newValue.code],
+                      role_id: null,
+                    }).then((res) => {
+                      setUsersBasedOnDivision(res.data || []);
+                    }).catch((err) => {
+                      console.error("Failed to load users based on division", err);
+                      setUsersBasedOnDivision([]);
+                    });
+                  } else {
+                    setUsersBasedOnDivision([]);
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label={selectKey?.title}
+                  />
+                )}
+              />
+            </FormControl>
+
+              <>
+                <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
+                <FormControl fullWidth>
+                  <Autocomplete
+                    options={usersBasedOnDivision}
+                    getOptionLabel={(option) => option.name || ""}
+                    value={selectedUser || null}
+                    onChange={(event, newValue) => setSelectedUser(newValue)}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        className="selectHideHistory"
+                        label="IO User"
+                      />
+                    )}
+                  />
+                </FormControl>
+              </>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button 
+            onClick={() => {
+              setShowMassiveTransferModal(false);
+              setSelectKey(null);
+              setSelectedRow([]);
+              setOtherTransferField([]);
+              setSelectedOtherFields(null);
+              setselectedOtherTemplate(null);
               setUsersBasedOnDivision([]);
-            }
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              className="selectHideHistory"
-              label={selectKey?.title}
-            />
-          )}
-        />
-      </FormControl>
-
-        <>
-          <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
-          <FormControl fullWidth>
-            <Autocomplete
-              options={usersBasedOnDivision}
-              getOptionLabel={(option) => option.name || ""}
-              value={selectedUser || null}
-              onChange={(event, newValue) => setSelectedUser(newValue)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  className="selectHideHistory"
-                  label="IO User"
-                />
-              )}
-            />
-          </FormControl>
-        </>
-    </DialogContentText>
-  </DialogContent>
-  <DialogActions sx={{ padding: "12px 24px" }}>
-    <Button 
-      onClick={() => {
-        setShowMassiveTransferModal(false);
-        setSelectKey(null);
-        setSelectedRow([]);
-        setOtherTransferField([]);
-        setSelectedOtherFields(null);
-        setselectedOtherTemplate(null);
-        setUsersBasedOnDivision([]);
-        setSelectedUser(null);
-        setSelectedRowIds([]);
-        setSelectedMergeRowData([]); 
-        setSelectedParentId(null);
-      }}
-      >Cancel
-    </Button>
-    <Button
-      className="fillPrimaryBtn"
-      onClick={() => {
-        handleMassiveDivisionChange();
-      }}
-    >
-      Submit
-    </Button>
-  </DialogActions>
-</Dialog>
+              setSelectedUser(null);
+              setSelectedRowIds([]);
+              setSelectedMergeRowData([]); 
+              setSelectedParentId(null);
+              setTableData((prevData) =>
+                prevData.map((item) => ({ ...item, isSelected: false }))
+              );
+            }}
+            >Cancel
+          </Button>
+          <Button
+            className="fillPrimaryBtn"
+            onClick={() => {
+              handleMassiveDivisionChange();
+            }}
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
 
 
       {showFilterModal && (
