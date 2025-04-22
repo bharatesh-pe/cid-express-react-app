@@ -5411,6 +5411,14 @@ exports.getMergeParentData = async (req, res) =>
             return acc;
         }, {});
 
+        // const parentCaseMap = parentCases.map(parent => {
+        //     const childCount = childCounts.find(child => child.parent_case_id === parent.case_id);
+        //     return {
+        //         case_id: parent.case_id,
+        //         child_count: childCount ? childCount.child_count : 0,
+        //     };
+        // });
+
         if (parentCaseIds.length === 0) {
             return userSendResponse(res, 400, false, "No merged case found", null);
         }
@@ -5753,7 +5761,7 @@ exports.getMergeParentData = async (req, res) =>
             attributesArray.push("sys_status");
         }
 
-    // Add other fields from fields object
+        // Add other fields from fields object
         attributesArray = [
         ...attributesArray,
         ...Object.keys(fields).filter((field) => fields[field].displayContent),
@@ -5928,6 +5936,14 @@ exports.getMergeParentData = async (req, res) =>
         data.ReadStatus = data.ReadStatus ? true : false;
 
         const case_id =  data.id || null;
+
+       if (
+        parentCaseMap &&
+        parentCaseMap[case_id.toString()] &&
+        parentCaseMap[case_id.toString()]['count']
+        ) {
+            data.childCount = parentCaseMap[case_id.toString()]['count'];
+        }
 
         const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
             where: {
