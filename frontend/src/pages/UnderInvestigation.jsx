@@ -170,6 +170,7 @@ const UnderInvestigation = () => {
   const [otherTransferField, setOtherTransferField] = useState([]);
   const [selectedOtherFields, setSelectedOtherFields] = useState(null);
   const [selectKey, setSelectKey] = useState(null);
+  const [mergeDialogData, setMergeDialogData] = useState([]);
 
   // for approve states
 
@@ -318,7 +319,9 @@ const UnderInvestigation = () => {
     const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
     const [showMergeModal, setShowMergeModal] = useState(false);
     const [selectedParentId, setSelectedParentId] = useState("");
-  
+    const [usersBasedOnDivision, setUsersBasedOnDivision] = useState([]);
+    const [selectedUser, setSelectedUser] = useState(null);
+    
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
@@ -1265,9 +1268,9 @@ const UnderInvestigation = () => {
       setSelectedMergeRowData((prev) => prev.filter((r) => r.id !== row.id));
     }
   };
-
-  const handleConfirmMerge = () => {
-    if (!selectedParentId) {
+  
+  const handleConfirmMerge = async () => {
+    if (!selectedParentId || selectedParentId.length === 0) {
       Swal.fire({
         title: 'Error',
         text: "Select a parent case before merging!",
@@ -1278,23 +1281,24 @@ const UnderInvestigation = () => {
     }
   
     setLoading(true);
+    
+    setShowMergeModal(false);
+    setSelectedRowIds([]);
+    setSelectedMergeRowData([]);
+    setSelectedParentId(null);
+    
+    await loadTableData();
   
-    setTimeout(() => {
-      setShowMergeModal(false);
-      setSelectedRowIds([]);
-      setSelectedMergeRowData([]);
-      loadTableData();
+    Swal.fire({
+      title: 'Success',
+      text: "Merged successfully!",
+      icon: 'success',
+      confirmButtonText: 'OK',
+    });
   
-      Swal.fire({
-        title: 'Success',
-        text: "Merged successfully!",
-        icon: 'success',
-        confirmButtonText: 'OK',
-      });
-  
-      setLoading(false);
-    }, 1000); 
+    setLoading(false);
   };
+  
   
   
     useEffect(() => {
@@ -1495,6 +1499,8 @@ const UnderInvestigation = () => {
                 setEditTemplateData(false);
                 setInitialData({});
                 setFormOpen(false);
+                setSelectedRow(null);
+                setSelectedParentId([]);
     
                 await getActions();
             } else {
@@ -3292,6 +3298,18 @@ const UnderInvestigation = () => {
           className: "toast-success",
           onOpen: () => loadTableData(paginationCount),
         });
+
+        setSelectKey(null);
+        setSelectedRow([]);
+        setOtherTransferField([]);
+        setSelectedOtherFields(null);
+        setselectedOtherTemplate(null);
+        setUsersBasedOnDivision([]);
+        setSelectedUser(null);
+        setSelectedRowIds([]);
+        setSelectedMergeRowData([]); 
+        setSelectedParentId(null);    
+
       } else {
         const errorMessage = saveTemplateData.message
           ? saveTemplateData.message
@@ -3560,6 +3578,7 @@ const UnderInvestigation = () => {
   };
 
   const getUploadedFiles = async (selectedRow) => {
+
     if (!selectedRow || !selectedRow.id) {
       console.error("Invalid selectedRow for file retrieval:", selectedRow);
       return;
@@ -3571,6 +3590,7 @@ const UnderInvestigation = () => {
 
       if (response && response.success) {
         setUploadedFiles(response.data);
+        handleOtherTemplateActions(selectedOtherTemplate, selectedRow, false, true);
       }
     } catch (error) {
       console.error("Error fetching uploaded files:", error);
@@ -3749,7 +3769,8 @@ const UnderInvestigation = () => {
     };
   
   
-  const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
+  const handleOtherTemplateActions = async (options, selectedRow, searchFlag,fromUploadedFiles) => {
+    fromUploadedFiles = fromUploadedFiles ?? false;
 
     if(!selectedRow || Object.keys(selectedRow).length === 0){
         return false
@@ -4355,8 +4376,8 @@ const UnderInvestigation = () => {
         });
 
         setOtherTemplateData(updatedTableData);
-        if (options.table === "cid_ui_case_progress_report" && options.is_pdf) {
-            await checkPdfEntryStatus(selectedRow.id);
+        if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
+          await checkPdfEntryStatus(selectedRow.id);
             await getUploadedFiles(selectedRow);
         }
 
@@ -4405,6 +4426,144 @@ const UnderInvestigation = () => {
     }
   };
 
+  const showMassiveDivision = async (options, selectedRow, selectedFieldValue) => {
+    const selectedFieldData = selectedRow[selectedFieldValue];
+  
+    const viewTableData = {
+      table_name: options.table,
+    };
+  
+    setLoading(true);
+    try {
+      const viewTemplateResponse = await api.post(
+        "/templates/viewTemplate",
+        viewTableData
+      );
+      setLoading(false);
+  
+      if (
+        viewTemplateResponse &&
+        viewTemplateResponse.success &&
+        viewTemplateResponse["data"]
+      ) {
+        if (viewTemplateResponse["data"].fields) {
+          setFormTemplateData(viewTemplateResponse["data"].fields);
+  
+          const getDivisionField = viewTemplateResponse["data"].fields.filter(
+            (data) => data.name === options.field
+          );
+  
+          if (getDivisionField.length > 0) {
+  
+            if (getDivisionField[0].api) {
+              setLoading(true);
+  
+              const payloadApi = {
+                table_name: getDivisionField[0].table,
+              };
+  
+              try {
+                const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
+                setLoading(false);
+  
+                let updatedOptions = [];
+  
+                if (getOptionsValue && getOptionsValue.data) {
+                  if (getDivisionField[0].api === "/templateData/getTemplateData") {
+                    updatedOptions = getOptionsValue.data.map((templateData) => {
+                      const nameKey = Object.keys(templateData).find(
+                        (key) => !["id", "created_at", "updated_at"].includes(key)
+                      );
+                      return {
+                        name: nameKey ? templateData[nameKey] : "",
+                        code: templateData.id,
+                      };
+                    });
+                  } else {
+                    updatedOptions = getOptionsValue.data.map((field) => ({
+                      name:
+                      getDivisionField[0].table === "users"
+                          ? field.name
+                          : field[getDivisionField[0].table + "_name"],
+                      code:
+                      getDivisionField[0].table === "users"
+                          ? field.user_id
+                          : field[getDivisionField[0].table + "_id"],
+                    }));
+                  }
+  
+                  const matchedOption = updatedOptions.find(
+                    (option) =>
+                      (option.code === selectedFieldData || option.name === selectedFieldData)
+                  );
+                  console.log("Pre-selected value:", matchedOption);
+                  setSelectedOtherFields(matchedOption || null);
+  
+                  setSelectKey({ name: options.field, title: options.name });
+                  setSelectedRow(selectedRow);
+                  setselectedOtherTemplate(options);
+                  setOtherTransferField(updatedOptions);
+                  setShowMassiveTransferModal(true);
+                }
+              } catch (error) {
+                setLoading(false);
+                if (error?.response?.data) {
+                  toast.error(
+                    error.response.data.message || "Division not found",
+                    {
+                      position: "top-right",
+                      autoClose: 3000,
+                      className: "toast-error",
+                    }
+                  );
+                }
+              }
+            } else {
+              const staticOptions = getDivisionField[0].options || [];
+  
+              const matchedOption = staticOptions.find(
+                (option) => option.code === selectedFieldData
+              );
+              setSelectedOtherFields(matchedOption || null);
+  
+              setSelectKey({ name: options.field, title: options.name });
+              setSelectedRow(selectedRow);
+              setselectedOtherTemplate(options);
+              setOtherTransferField(staticOptions);
+              setShowMassiveTransferModal(true);
+            }
+          } else {
+            toast.error("Can't able to find Division field", {
+              position: "top-right",
+              autoClose: 3000,
+              className: "toast-error",
+            });
+          }
+        }
+      } else {
+        toast.error(
+          viewTemplateResponse.message || "Failed to get Template. Please try again.",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            className: "toast-error",
+          }
+        );
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error?.response?.data) {
+        toast.error(
+          error.response.data.message || "Please Try Again!",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            className: "toast-error",
+          }
+        );
+      }
+    }
+  };
   const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue) => {
     const selectedFieldData = selectedRow[selectedFieldValue];
   
@@ -4909,7 +5068,7 @@ const UnderInvestigation = () => {
     setselectedOtherTemplate(null);
   };
 
-
+  
   const handleMassiveDivisionChange = async () => {
     if (!selectedOtherFields || !selectedOtherFields.code) {
       toast.error("Please Select Data !", {
@@ -4947,18 +5106,26 @@ const UnderInvestigation = () => {
     var combinedData = {
       id: selectedRow.id,
       [selectKey.name]: selectedOtherFields.code,
+      field_io_name: selectedUser?.user_id,
     };
 
     // update func
     onUpdateTemplateData(combinedData);
 
     // reset states
+    setShowMassiveTransferModal(false);
     setSelectKey(null);
-    setSelectedRow(null);
+    setSelectedRow([]);
     setOtherTransferField([]);
-    setShowOtherTransferModal(false);
     setSelectedOtherFields(null);
     setselectedOtherTemplate(null);
+    setUsersBasedOnDivision([]);
+    setSelectedRowIds([]);
+    setSelectedUser(null);
+    setSelectedRowIds([]);
+    setSelectedMergeRowData([]); 
+    setSelectedParentId(null);
+
   };
 
   const showPtCaseTemplate = async () => {
@@ -6278,8 +6445,11 @@ const UnderInvestigation = () => {
                       />
                     </svg>
                   }
-                  onClick={() => setShowMergeModal(true)}
-                >
+                  onClick={() => {
+                    setShowMergeModal(true);
+                    setMergeDialogData(selectedMergeRowData); 
+                  }}
+                  >
                   Merge
                 </Button>
                 <Button
@@ -6307,7 +6477,7 @@ const UnderInvestigation = () => {
                   }
                   
                   onClick={() =>
-                    showTransferToOtherDivision(
+                    showMassiveDivision(
                       {
                         table: "cid_under_investigation",
                         field: "field_division",
@@ -6558,18 +6728,40 @@ const UnderInvestigation = () => {
           <FormControl fullWidth>
             <Autocomplete
               id="parent-case-autocomplete"
-              options={selectedMergeRowData}
-              getOptionLabel={(option) => option["field_cid_crime_no./enquiry_no"] || `Case ${option.id}`}
-              value={selectedParentId || null}
-              onChange={(event, newValue) => setSelectedParentId(newValue)}
+              options={
+                Array.isArray(selectedMergeRowData)
+                  ? selectedMergeRowData
+                      .filter(row => row?.id !== undefined)
+                      .filter((value, index, self) => 
+                        index === self.findIndex((t) => t.id === value.id)
+                      )
+                  : []
+              }
+              
+              getOptionLabel={(option) => {
+                return (
+                  option?.["field_cid_crime_no./enquiry_no"] ||
+                  `Case ${option?.id}`
+                );
+              }}
+              value={
+                selectedParentId
+                  ? selectedMergeRowData.find((r) => r.id === selectedParentId.id)
+                  : null
+              }
+              onChange={(event, newValue) => {
+                setSelectedParentId(newValue);
+              }}
               renderInput={(params) => (
                 <TextField
                   {...params}
                   label="Parent Case"
-                  // placeholder="Select a case to be a Parent Case"
                   className="selectHideHistory"
                 />
               )}
+              isOptionEqualToValue={(option, value) => {
+                return option?.id === value?.id;
+              }}
             />
           </FormControl>
         </DialogContent>
@@ -6933,7 +7125,6 @@ const UnderInvestigation = () => {
                     >
                       Update PDF
                     </Button>
-                    {console.log("it replacingggggg",showReplacePdfButton)}
                     {showReplacePdfButton && (
                       <Button variant="outlined" component="label" style={{ marginLeft: "10px", height: '40px' }}>
                       Replace PDF
@@ -7289,6 +7480,7 @@ const UnderInvestigation = () => {
                           name="approval_date"
                           format="DD/MM/YYYY"
                           sx={{ width: "100%" }}
+                          maxDate={dayjs()}
                           onChange={(newValue) => {
                             if (newValue && dayjs.isDayjs(newValue)) {
                               handleApprovalSaveData(
@@ -7366,7 +7558,7 @@ const UnderInvestigation = () => {
           <Button onClick={() => setShowOtherTransferModal(false)}>
             Cancel
           </Button>
-          <Button className="fillPrimaryBtn" onClick={handleMassiveDivisionChange}>
+          <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
             Submit
           </Button>
         </DialogActions>
@@ -7374,42 +7566,108 @@ const UnderInvestigation = () => {
 
 
       <Dialog
-        open={showMassiveTransferModal}
-        onClose={() => setShowMassiveTransferModal(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title"></DialogTitle>
-        <DialogContent sx={{ width: "400px" }}>
-          <DialogContentText id="alert-dialog-description">
-            <h4 className="form-field-heading">{selectKey?.title}</h4>
-            <FormControl fullWidth>
-              <Autocomplete
-                id=""
-                options={otherTransferField}
-                getOptionLabel={(option) => option.name || ""}
-                value={selectedOtherFields || null}
-                onChange={(event, newValue) => setSelectedOtherFields(newValue)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    className="selectHideHistory"
-                    label={selectKey?.title}
-                  />
-                )}
-              />
-            </FormControl>
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ padding: "12px 24px" }}>
-          <Button onClick={() => setShowMassiveTransferModal(false)}>
-            Cancel
-          </Button>
-          <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
-            Submit
-          </Button>
-        </DialogActions>
-      </Dialog>
+  open={showMassiveTransferModal}
+  onClose={() => {
+    setShowMassiveTransferModal(false);
+    setSelectKey(null);
+    setSelectedRow([]);
+    setOtherTransferField([]);
+    setSelectedOtherFields(null);
+    setselectedOtherTemplate(null);
+    setUsersBasedOnDivision([]);
+    setSelectedUser(null);
+    setSelectedRowIds([]);
+    setSelectedMergeRowData([]); 
+    setSelectedParentId(null);
+   }}
+    aria-labelledby="alert-dialog-title"
+  aria-describedby="alert-dialog-description"
+>
+  <DialogTitle id="alert-dialog-title"></DialogTitle>
+  <DialogContent sx={{ width: "400px" }}>
+    <DialogContentText id="alert-dialog-description">
+      <h4 className="form-field-heading">{selectKey?.title}</h4>
+      <FormControl fullWidth>
+        <Autocomplete
+          options={otherTransferField}
+          getOptionLabel={(option) => option.name || ""}
+          value={selectedOtherFields || null}
+          onChange={(event, newValue) => {
+            setSelectedOtherFields(newValue);
+            setSelectedUser(null); 
+
+            if (newValue && newValue.code) {
+              api.post("cidMaster/getIoUsersBasedOnDivision", {
+                division_ids: [newValue.code],
+                role_id: null,
+              }).then((res) => {
+                setUsersBasedOnDivision(res.data || []);
+              }).catch((err) => {
+                console.error("Failed to load users based on division", err);
+                setUsersBasedOnDivision([]);
+              });
+            } else {
+              setUsersBasedOnDivision([]);
+            }
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              className="selectHideHistory"
+              label={selectKey?.title}
+            />
+          )}
+        />
+      </FormControl>
+
+        <>
+          <h4 className="form-field-heading" style={{ marginTop: "20px" }}>IO User</h4>
+          <FormControl fullWidth>
+            <Autocomplete
+              options={usersBasedOnDivision}
+              getOptionLabel={(option) => option.name || ""}
+              value={selectedUser || null}
+              onChange={(event, newValue) => setSelectedUser(newValue)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  className="selectHideHistory"
+                  label="IO User"
+                />
+              )}
+            />
+          </FormControl>
+        </>
+    </DialogContentText>
+  </DialogContent>
+  <DialogActions sx={{ padding: "12px 24px" }}>
+    <Button 
+      onClick={() => {
+        setShowMassiveTransferModal(false);
+        setSelectKey(null);
+        setSelectedRow([]);
+        setOtherTransferField([]);
+        setSelectedOtherFields(null);
+        setselectedOtherTemplate(null);
+        setUsersBasedOnDivision([]);
+        setSelectedUser(null);
+        setSelectedRowIds([]);
+        setSelectedMergeRowData([]); 
+        setSelectedParentId(null);
+      }}
+      >Cancel
+    </Button>
+    <Button
+      className="fillPrimaryBtn"
+      onClick={() => {
+        handleMassiveDivisionChange();
+      }}
+    >
+      Submit
+    </Button>
+  </DialogActions>
+</Dialog>
+
 
       {showFilterModal && (
         <Dialog
@@ -8251,6 +8509,7 @@ const UnderInvestigation = () => {
                                                 name="approval_date" 
                                                 format="DD/MM/YYYY"
                                                 sx={{width:'100%'}}
+                                                maxDate={dayjs()}
                                                 onChange={(newValue) => {
                                                     if (newValue && dayjs.isDayjs(newValue)) {
                                                         approvalNewDataSave("approval_date", newValue.toISOString());

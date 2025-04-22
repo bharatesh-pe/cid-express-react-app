@@ -159,8 +159,12 @@ export default function ApprovalModal({
                                         formData?.approval?.approval_date ? dayjs(formData?.approval_date) : null
                                     }
                                     onChange={(newVal) =>
-                                        onChange( "approval_date",dayjs.isDayjs(newVal) ? newVal.toISOString() : null)
-                                    }
+                                        onChange(
+                                          "approval_date",
+                                          dayjs.isDayjs(newVal) ? newVal.toISOString() : null
+                                        )
+                                      }
+                                      maxDate={dayjs()}
                                 />
                             </DemoContainer>
                         </LocalizationProvider>
