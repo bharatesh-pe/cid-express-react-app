@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    const schema = process.env.DB_SCHEMA || "public"; // Default to 'public' if DB_SCHEMA is not set
+    const schema = process.env.DB_SCHEMA || "public";
 
     await queryInterface.sequelize.query(
       `CREATE SCHEMA IF NOT EXISTS ${schema};`
@@ -58,6 +58,11 @@ module.exports = {
         action: {
           type: Sequelize.STRING(255),
           allowNull: true,
+        },
+        status: {
+          type: Sequelize.BOOLEAN,
+          allowNull: false,
+          defaultValue: true,
         },
         info: {
           type: Sequelize.STRING(255),

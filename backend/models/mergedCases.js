@@ -19,11 +19,30 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.ENUM('parent', 'child'),
       allowNull: false,
     },
+    created_at: {
+      allowNull: false,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
+    updated_at: {
+      allowNull: false,
+      type: DataTypes.DATE,
+      defaultValue: DataTypes.NOW,
+    },
   }, {
     tableName: 'ui_merged_cases',
     underscored: true,
-    timestamps: true, // This enables created_at and updated_at automatically
+    timestamps: true, // enables Sequelize to auto-update created_at and updated_at
   });
+
+  // Self-association: parent -> children
+  UiMergedCases.associate = (models) => {
+    UiMergedCases.hasMany(models.UiMergedCases, {
+      foreignKey: 'parent_case_id',
+      sourceKey: 'case_id',
+      as: 'children',
+    });
+  };
 
   return UiMergedCases;
 };
