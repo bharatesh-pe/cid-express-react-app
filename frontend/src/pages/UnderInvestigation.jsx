@@ -498,11 +498,23 @@ const UnderInvestigation = () => {
     const [selectedParentId, setSelectedParentId] = useState("");
     const [usersBasedOnDivision, setUsersBasedOnDivision] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [childMergedDialogOpen, setChildMergedDialogOpen] = useState(false);
+    const [childMergedData, setChildMergedData] = useState([]);
+    const [childMergedColumns, setChildMergedColumns] = useState([]);
+    const [childMergedPagination, setChildMergedPagination] = useState(1);
+    const [childMergedTotalPages, setChildMergedTotalPages] = useState(0);
+    const [childMergedTotalRecords, setChildMergedTotalRecords] = useState(0);
+    const [childMergedCaseTitle, setChildMergedCaseTitle] = useState("");
+    const [childMergedCaseCID, setChildMergedCaseCID] = useState("");
+    const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
     
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
-
+    const handleChildMergePagination = (page) => {
+      setChildMergedPagination(page);
+    };
+    
     useEffect(()=>{
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
     },[otherTemplatesPaginationCount, ]);
@@ -1531,7 +1543,74 @@ const UnderInvestigation = () => {
   };
   
   
+  const handleConfirmDemerge = async () => {
+    if (!selectedRowIds || selectedRowIds.length === 0) {
+      Swal.fire({
+        title: 'Error',
+        text: "Select at least one case to demerge!",
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+  
+    const confirmation = await Swal.fire({
+      title: 'Are you sure?',
+      text: "Are you sure you want to demerge the selected cases?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Demerge',
+      cancelButtonText: 'Cancel',
+    });
+  
+    if (!confirmation.isConfirmed) return;
+    setChildMergedDialogOpen(false);
 
+    setLoading(true);
+    const randomDateId = `txn_${new Date().toISOString().replace(/[-:.TZ]/g, '')}_${Math.random().toString(36).substring(2, 8)}`;
+  
+    try {
+      const demergePayload = {
+        template_module: 'ui_case',
+        transaction_id: randomDateId,
+        case_id: selectedRowIds.length
+          ? selectedRowIds.map(String)
+          : [String(selectedMergeRowData.id)],
+      };
+      
+  
+      const demergeResponse = await api.post("/templateData/deMergeCaseData", demergePayload);
+  
+      if (!demergeResponse?.success) {
+        throw new Error(demergeResponse.message || "Failed to demerge selected cases.");
+      }
+  
+      Swal.fire({
+        title: 'Success',
+        text: "Demerged successfully!",
+        icon: 'success',
+        confirmButtonText: 'OK',
+      });
+  
+      setSelectedRowIds([]);
+      setSelectedRowData([]);
+      setSelectedMergeRowData([]);
+      await loadMergedCasesData("1");
+      setChildMergedDialogOpen(false);
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        title: 'Error',
+        text: "Something went wrong during demerge!",
+        icon: 'error',
+        confirmButtonText: 'OK',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
   
     useEffect(() => {
         const anySelected = tableData.some((data) => data.isSelected);
@@ -1554,42 +1633,37 @@ const UnderInvestigation = () => {
       forceTableLoad,
   ]);
 
-  const [childMergedDialogOpen, setChildMergedDialogOpen] = useState(false);
-const [childMergedData, setChildMergedData] = useState([]);
-const [childMergedColumns, setChildMergedColumns] = useState([]);
-const [childMergedPagination, setChildMergedPagination] = useState(1);
-const [childMergedTotalPages, setChildMergedTotalPages] = useState(0);
-const [childMergedTotalRecords, setChildMergedTotalRecords] = useState(0);
-const [childMergedCaseTitle, setChildMergedCaseTitle] = useState("");
-const [childMergedCaseCID, setChildMergedCaseCID] = useState("");
-const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
-
 const handleCheckboxDemerge = (event, row) => {
   const isSelected = event.target.checked;
-  console.log("Checkbox clicked:", row.id, "Selected:", isSelected);
 
-  // Update all rows: unselect all, then select only the current one if checked
   setTableData((prevData) =>
     prevData.map((data) =>
-      data.id === row.id ? { ...data, isSelected } : { ...data, isSelected: false }
+      data.id === row.id ? { ...data, isSelected } : data
     )
   );
 
-  if (isSelected) {
-    // Only one selected row
-    setSelectedRowIds([row.id]);
-    setSelectedMergeRowData([row]);
-  } else {
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]);
-  }
-};
+  setSelectedRowIds((prevIds) => {
+    if (isSelected) {
+      return [...prevIds, row.id];
+    } else {
+      return prevIds.filter((id) => id !== row.id);
+    }
+  });
 
+  setSelectedMergeRowData((prevData) => {
+    if (isSelected) {
+      return [...prevData, row];
+    } else {
+      return prevData.filter((r) => r.id !== row.id);
+    }
+  });
+};
 
 
 const loadChildMergedCasesData = async (page, caseId) => {
   setIsChildMergedLoading(true); 
   setLoading(true);
+
   const payload = {
     page,
     limit: 10,
@@ -1607,8 +1681,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
     case_id: String(caseId),
   };
 
-  getActions();
-
   try {
     const response = await api.post("/templateData/getMergeChildData", payload);
 
@@ -1623,7 +1695,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       setTableData(processedData);
 
       const excludedKeys = [
-        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id"
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no"
       ];
 
       const generateReadableHeader = (key) =>
@@ -1637,30 +1709,28 @@ const loadChildMergedCasesData = async (page, caseId) => {
         tableCellRender(key, params, params.value, count, meta.table_name);
 
       const updatedHeader = [
-{
-  field: "select",
-  headerName: (
-    <Tooltip title="Select All">
-      <SelectAllIcon sx={{ fill: "#1f1dac" }} />
-    </Tooltip>
-  ),
-  width: 50,
-  resizable: false,
-  renderCell: (params) => (
-    <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-      <Checkbox
-        checked={params.row.isSelected || false}
-        onChange={(event) => {
-          console.log("params", params);
-          handleCheckboxDemerge(event, params.row);
-        }}
-      />
-    </Box>
-  ),
-}
-,
+        {
+          field: "select_child",
+          headerName: (
+            <Tooltip title="Select All">
+              <SelectAllIcon sx={{ fill: "#1f1dac" }} />
+            </Tooltip>
+          ),
+          width: 50,
+          resizable: false,
+          renderCell: (params) => (
+            <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+              <Checkbox
+                onChange={(event) => {
+                  handleCheckboxDemerge(event, params.row);
+                }}
+              />
+            </Box>
+          ),
+        }
+        ,
       {
-          field: "task",
+          field: "task_child",
           headerName: "",
           width: 50,
           resizable: true,
@@ -1678,7 +1748,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           ),
       },
       {
-          field: "approval",
+          field: "approval_child",
           headerName: "Approval",
           width: 50,
           resizable: true,
@@ -1702,7 +1772,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   }}
               >
                   <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
-                    console.log("clicked approval");
                     setIsChildMergedLoading(true);
                     handleActionShow(params?.row, true);
                   }}
@@ -1778,8 +1847,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
         setLoading(false);
 
-        if (getTemplateResponse?.success) {
-            const { data, meta } = getTemplateResponse.data;
+        if (getTemplateResponse?.success && getTemplateResponse?.message !== "No merged case found") {
+          const { data, meta } = getTemplateResponse.data;
 
             const totalPages = meta?.totalPages;
             const totalItems = meta?.totalItems;
@@ -1894,11 +1963,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             width: 100,
                             resizable: true,
                             renderCell: (params) => {
-                              const childCount = params.row.childCount;
+                              const childCount = params.row.childCount || 0;
                               const caseId = params.row.id;
 
                               const handleClick = async () => {
-                                getActions();
                                 loadChildMergedCasesData("1", caseId);
                               };
                               
@@ -1979,7 +2047,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setSelectedParentId([]);
 
             await getActions();
-        } else {
+        }else if (getTemplateResponse?.success && getTemplateResponse?.message === "No merged case found") {
+          setTableData([]);
+      }  else {
             setLoading(false);
             toast.error(getTemplateResponse.message || "Failed to load template data.", {
                 position: "top-right",
@@ -2295,7 +2365,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     let highlightColor = {};
     let onClickHandler = null;
 
-    if (tableName && index !== null && index === 0) {
+    if (tableName && index !== null && index === 0 ) {
         highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
         onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
@@ -4505,7 +4575,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       // const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
                     
                       return isPdfUpdated ? null : (
+                        <div onClick={(e) => e.stopPropagation()}>
                         <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                      </div>
                       );
                     }
                     
@@ -5649,7 +5721,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
   const handleMassiveDivisionChange = async () => {
 
     if (!selectedOtherFields || !selectedOtherFields.code) {
-      toast.error("Please Select Data !", {
+      toast.error("Please Select Division !", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -6949,7 +7021,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
     const handleActionShow = (rowData, isLoading)=>{
     
-      console.log(isLoading, "isloadinggg")
         if(!rowData){
             toast.error("Please Check Case Data !",{
                 position: "top-right",
@@ -7160,7 +7231,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
 
 
-            {isCheckboxSelected && (
+            {isCheckboxSelected && sysStatus !== 'merge_cases' && (
               <>
                 <Button
                   variant="contained"
@@ -7182,7 +7253,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   onClick={() => {
                     setShowMergeModal(true);
                     setMergeDialogData(selectedMergeRowData); 
-                    console.log("selectedMergeRowData",selectedMergeRowData)
                   }}
                   >
                   Merge
@@ -7227,7 +7297,39 @@ const loadChildMergedCasesData = async (page, caseId) => {
               </>
             )}
 
-            {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && (
+
+          {isCheckboxSelected && sysStatus === 'merge_cases' && (
+              <>
+              <Button 
+                variant="contained"
+                style={{ backgroundColor: '#DC2626', color: '#ffffff' }}
+                startIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9.172 14.828a4 4 0 1 1 0-5.656M14.828 9.172a4 4 0 1 1 0 5.656M4 20l5.5-5.5M20 4l-5.5 5.5"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                }
+                onClick={() => {
+                  handleConfirmDemerge();
+                }}
+              >
+                De-Merge
+              </Button>
+              </>
+            )}
+
+            {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && (
                 <Button
                     onClick={() => getTemplate(table_name)}
                     className="blueButton"
@@ -7985,7 +8087,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 totalRecord={otherTemplatesTotalRecord} 
                                 paginationCount={otherTemplatesPaginationCount} 
                                 handlePagination={handleOtherPagination} 
-                            />
+                                handleRowClick={(row) => handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)}
+                                />
                         </Box>
                         <Box
                           display="flex"
@@ -8047,90 +8150,101 @@ const loadChildMergedCasesData = async (page, caseId) => {
           </DialogContent>
         </Dialog>
       )}
- 
-    <Dialog
-      open={childMergedDialogOpen}
-      onClose={() => {
-        setIsChildMergedLoading(true); // Set loading to true when closing the dialog
-        setChildMergedDialogOpen(false); // Close the dialog
-        setTimeout(() => setIsChildMergedLoading(false), 300); // Adjust timeout if needed
-      }}
-      aria-labelledby="alert-dialog-title"
-      aria-describedby="alert-dialog-description"
-      fullScreen
-      fullWidth
-      sx={{ marginLeft: '260px' }}
-    >
-      <DialogTitle>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          {/* Left side: Back icon and case info */}
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-            onClick={() => {
-              setIsChildMergedLoading(true);
-              setChildMergedDialogOpen(false);
-              setTimeout(() => setIsChildMergedLoading(false), 300);
-            }}
-          >
-            <WestIcon sx={{ color: 'black' }} />
-            <Typography sx={{ fontSize: '15px', fontWeight: 600, color: 'black' }}>
-              Child Merged Cases
-            </Typography>
-            {childMergedCaseCID && (
-              <Chip
-                label={childMergedCaseCID}
-                color="primary"
-                variant="outlined"
-                size="small"
-                sx={{ fontSize: '12px', fontWeight: 500, marginTop: '2px' }}
-              />
-            )}
-            <Box className="totalRecordCaseStyle" sx={{ fontSize: '12px' }}>
-              {childMergedTotalRecords} Records
-            </Box>
-          </Box>
-
-          {/* Right side: Demerge button */}
-          <Box>
-            <Button
-              variant="contained"
-              size="small"
-              color="error"
-              sx={{ textTransform: 'none' }}
+  
+      <Dialog
+        open={childMergedDialogOpen}
+        onClose={() => {
+          setIsChildMergedLoading(true);
+          setChildMergedDialogOpen(false);
+          setTimeout(() => setIsChildMergedLoading(false), 300);
+        }}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        fullScreen
+        fullWidth
+        sx={{ marginLeft: '260px' }}
+        >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
               onClick={() => {
-                // Add your demerge logic here, using selectedRowIds or selectedMergeRowData
-                console.log('Demerge clicked:', selectedRowIds);
-                // Example: call a function like handleDemerge(selectedRowIds)
+                setIsChildMergedLoading(true);
+                setChildMergedDialogOpen(false);
+                setTimeout(() => setIsChildMergedLoading(false), 300);
+                loadMergedCasesData('1');
               }}
-              disabled={selectedRowIds.length === 0}
             >
-              Demerge
-            </Button>
-          </Box>
-        </Box>
-      </DialogTitle>
+              <WestIcon sx={{ color: 'black' }}/>
+              <Typography sx={{ fontSize: '15px', fontWeight: 600, color: 'black' }}>
+                Child Merged Cases
+              </Typography>
+              {childMergedCaseCID && (
+                <Chip
+                  label={childMergedCaseCID}
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                  sx={{ fontSize: '12px', fontWeight: 500, marginTop: '2px' }}
+                />
+              )}
+              <Box className="totalRecordCaseStyle" sx={{ fontSize: '12px' }}>
+                {childMergedTotalRecords} Records
+              </Box>
+            </Box>
 
-      <DialogContent sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 64px)' }}>
-        {childMergedData.length > 0 ? (
-          <TableView
-            hoverTable={true} // Enables hover actions
-            hoverTableOptions={hoverExtraOptions} // Pass your hover options here
-            hoverActionFuncHandle={handleOtherTemplateActions} // Callback for action handling
-            height={true}
-            rows={childMergedData}
-            columns={childMergedColumns}
-            totalPage={childMergedTotalPages}
-            totalRecord={childMergedTotalRecords}
-            paginationCount={childMergedPagination}
-            handlePagination={(page) =>
-              loadChildMergedCasesData(page, childMergedData[0]?.parent_case_id)
-            }
-          />
-        ) : (
-          <Typography>No child merged cases found.</Typography>
-        )}
-      </DialogContent>
-    </Dialog>
+            {selectedRowIds.length > 0 && (
+            <Box>
+              <Button 
+                variant="contained"
+                style={{ backgroundColor: '#DC2626', color: '#ffffff' }}
+                startIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9.172 14.828a4 4 0 1 1 0-5.656M14.828 9.172a4 4 0 1 1 0 5.656M4 20l5.5-5.5M20 4l-5.5 5.5"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                }
+                onClick={() => {
+                  handleConfirmDemerge();
+                }}
+              >
+                De-Merge
+              </Button>
+            </Box>
+              )}
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 64px)' }}>
+          {childMergedData.length > 0 ? (
+            <TableView
+              hoverTable={true}
+              hoverTableOptions={hoverExtraOptions}
+              hoverActionFuncHandle={handleOtherTemplateActions}
+              height={true}
+              rows={childMergedData}
+              columns={childMergedColumns}
+              totalPage={childMergedTotalPages}
+              totalRecord={childMergedTotalRecords}
+              paginationCount={childMergedPagination}
+              handlePagination={handleChildMergePagination}
+            />
+          ) : (
+            <Typography>No child merged cases found.</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
 
 
         {approveTableFlag && (

@@ -5917,7 +5917,7 @@ exports.getMergeParentData = async (req, res) =>
         // });
 
         if (parentCaseIds.length === 0) {
-            return userSendResponse(res, 400, false, "No merged case found", null);
+            return userSendResponse(res, 200, true, "No merged case found", null);
         }
 
         whereClause["id"] = { [Op.in]: parentCaseIds };
