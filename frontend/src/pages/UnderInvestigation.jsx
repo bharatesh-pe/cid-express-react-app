@@ -290,17 +290,23 @@ const UnderInvestigation = () => {
                 }
             };
 
+            console.log("isChildMergedLoading from approval:", isChildMergedLoading);
+
             return (
                 <Box sx={{ display: "flex", gap: 1 }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
-                    <Button variant="contained" color="primary" onClick={handleListApprovalEdit}>
+                    {!isChildMergedLoading && (
+                      <>
+                    <Button variant="contained" color="primary" onClick={handleListApprovalEdit} >
                         Edit
                     </Button>
                     <Button variant="contained" color="error" onClick={handleListApprovalDelete}>
                         Delete
                     </Button>
+                    </>
+                    )}
                 </Box>
             );
         }
@@ -781,7 +787,13 @@ const UnderInvestigation = () => {
                                 draggable: true,
                                 progress: undefined,
                                 className: "toast-success",
-                                onOpen: () => loadTableData(paginationCount),
+                                onOpen: () => {
+                                  if (sysStatus === "merge_cases") {
+                                    loadMergedCasesData(paginationCount);
+                                  } else {
+                                    loadTableData(paginationCount);
+                                  }
+                                },
                             });
                         } else {
                             const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
@@ -1232,7 +1244,13 @@ const UnderInvestigation = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount),
+                    onOpen: () => {
+                      if (sysStatus === "merge_cases") {
+                        loadMergedCasesData(paginationCount);
+                      } else {
+                        loadTableData(paginationCount);
+                      }
+                    },
                 });
 
                 setSingleApiData({});
@@ -1520,17 +1538,473 @@ const UnderInvestigation = () => {
     }, [tableData]);
 
     useEffect(() => {
-        loadTableData(paginationCount);
-    }, [
-        paginationCount,
-        tableSortKey,
-        tableSortOption,
-        starFlag,
-        readFlag,
-        sysStatus,
-        forceTableLoad,
-    ]);
+      if (sysStatus === "merge_cases") {
+          loadMergedCasesData(paginationCount);
+      } else {
+          loadTableData(paginationCount);
+      }
+  }, [
+      paginationCount,
+      tableSortKey,
+      tableSortOption,
+      starFlag,
+      readFlag,
+      sysStatus,
+      forceTableLoad,
+  ]);
+
+  const [childMergedDialogOpen, setChildMergedDialogOpen] = useState(false);
+const [childMergedData, setChildMergedData] = useState([]);
+const [childMergedColumns, setChildMergedColumns] = useState([]);
+const [childMergedPagination, setChildMergedPagination] = useState(1);
+const [childMergedTotalPages, setChildMergedTotalPages] = useState(0);
+const [childMergedTotalRecords, setChildMergedTotalRecords] = useState(0);
+const [childMergedCaseTitle, setChildMergedCaseTitle] = useState("");
+const [childMergedCaseCID, setChildMergedCaseCID] = useState("");
+const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
+
+const handleCheckboxDemerge = (event, row) => {
+  const isSelected = event.target.checked;
+  console.log("Checkbox clicked:", row.id, "Selected:", isSelected);
+
+  // Update all rows: unselect all, then select only the current one if checked
+  setTableData((prevData) =>
+    prevData.map((data) =>
+      data.id === row.id ? { ...data, isSelected } : { ...data, isSelected: false }
+    )
+  );
+
+  if (isSelected) {
+    // Only one selected row
+    setSelectedRowIds([row.id]);
+    setSelectedMergeRowData([row]);
+  } else {
+    setSelectedRowIds([]);
+    setSelectedMergeRowData([]);
+  }
+};
+
+
+
+const loadChildMergedCasesData = async (page, caseId) => {
+  setIsChildMergedLoading(true); 
+  setLoading(true);
+  const payload = {
+    page,
+    limit: 10,
+    sort_by: tableSortKey,
+    order: tableSortOption,
+    search: searchValue || "",
+    table_name,
+    is_starred: starFlag,
+    is_read: readFlag,
+    template_module: "ui_case",
+    sys_status: sysStatus,
+    from_date: fromDateValue,
+    to_date: toDateValue,
+    filter: filterValues,
+    case_id: String(caseId),
+  };
+
+  getActions();
+
+  try {
+    const response = await api.post("/templateData/getMergeChildData", payload);
+
+    if (response?.success) {
+      const { data, meta } = response.data;
+
+      const processedData = data.map((row) => ({
+        ...row,
+        isSelected: false,
+      }));
+
+      setTableData(processedData);
+
+      const excludedKeys = [
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id"
+      ];
+
+      const generateReadableHeader = (key) =>
+        key
+          .replace(/^field_/, "")
+          .replace(/_/g, " ")
+          .toLowerCase()
+          .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+      const renderCellFunc = (key, count) => (params) =>
+        tableCellRender(key, params, params.value, count, meta.table_name);
+
+      const updatedHeader = [
+{
+  field: "select",
+  headerName: (
+    <Tooltip title="Select All">
+      <SelectAllIcon sx={{ fill: "#1f1dac" }} />
+    </Tooltip>
+  ),
+  width: 50,
+  resizable: false,
+  renderCell: (params) => (
+    <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+      <Checkbox
+        checked={params.row.isSelected || false}
+        onChange={(event) => {
+          console.log("params", params);
+          handleCheckboxDemerge(event, params.row);
+        }}
+      />
+    </Box>
+  ),
+}
+,
+      {
+          field: "task",
+          headerName: "",
+          width: 50,
+          resizable: true,
+          renderHeader: (params) => (
+              <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+          ),
+          renderCell: (params) => (
+              <Badge
+                  badgeContent={params?.row?.['task_unread_count']}
+                  color="primary"
+                  sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+              >
+                  <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+              </Badge>
+          ),
+      },
+      {
+          field: "approval",
+          headerName: "Approval",
+          width: 50,
+          resizable: true,
+          cellClassName: 'justify-content-start',
+          renderHeader: (params) => (
+              <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+          ),                            
+          renderCell: (params) => (
+              <Button
+                  variant="contained"
+                  color="transparent"
+                  size="small"
+                  sx={{
+                      padding: 0,
+                      fontSize: '0.75rem',
+                      textTransform: 'none',
+                      boxShadow: 'none',
+                      '&:hover':{
+                          boxShadow: 'none',
+                      }
+                  }}
+              >
+                  <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
+                    console.log("clicked approval");
+                    setIsChildMergedLoading(true);
+                    handleActionShow(params?.row, true);
+                  }}
+                  sx={{fontSize:'26px'}} /></Tooltip>
+              </Button>
+          )
+      },
+      {
+          field: "field_cid_crime_no./enquiry_no",
+          headerName: "Cid Crime No./Enquiry No",
+          width: 200,
+          resizable: true,
+          cellClassName: 'justify-content-start',
+          renderHeader: (params) => (
+              tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+          ),
+          renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+      },
+        ...Object.keys(data[0])
+          .filter((key) => !excludedKeys.includes(key))
+          .map((key) => ({
+            field: key,
+            headerName: generateReadableHeader(key),
+            width: generateReadableHeader(key).length < 15 ? 120 : 180,
+            resizable: true,
+            renderHeader: (params) => tableHeaderRender(params, key),
+            renderCell: renderCellFunc(key),
+          })),
+      ];
+
+      setChildMergedData(data || []);
+      setChildMergedColumns(updatedHeader);
+      setChildMergedPagination(page);
+      setChildMergedTotalPages(meta?.totalPages || 0);
+      setChildMergedTotalRecords(meta?.totalItems || 0);
+      setChildMergedDialogOpen(true);
+      setChildMergedCaseCID(data?.[0]?.["field_cid_crime_no./enquiry_no"] || "");
+      setChildMergedCaseTitle(selectedOtherTemplate?.name || "");
+    } else {
+      toast.error(response?.message || "Failed to load child merged cases.");
+    }
+  } catch (error) {
+    toast.error(error?.message || "Something went wrong.");
+  }
+  finally {
+    setLoading(false);
+  }
+};
+
+ 
   
+  const loadMergedCasesData = async (page) => {
+    const getTemplatePayload = {
+        page,
+        limit: 10,
+        sort_by: tableSortKey,
+        order: tableSortOption,
+        search: searchValue || "",
+        table_name,
+        is_starred: starFlag,
+        is_read: readFlag,
+        template_module: "ui_case",
+        sys_status: sysStatus,
+        from_date: fromDateValue,
+        to_date: toDateValue,
+        filter: filterValues,
+    };
+
+    setLoading(true);
+
+    try {
+        const getTemplateResponse = await api.post( "/templateData/getMergeParentData", getTemplatePayload);
+
+        setLoading(false);
+
+        if (getTemplateResponse?.success) {
+            const { data, meta } = getTemplateResponse.data;
+
+            const totalPages = meta?.totalPages;
+            const totalItems = meta?.totalItems;
+
+            if (totalPages !== null && totalPages !== undefined) {
+                setTotalPage(totalPages);
+            }
+
+            if (totalItems !== null && totalItems !== undefined) {
+                setTotalRecord(totalItems);
+            }
+
+            if (meta?.table_name && meta?.template_name) {
+                setTemplate_name(meta.template_name);
+                setTable_name(meta.table_name);
+            }
+
+            if (data?.length > 0) {
+                const excludedKeys = [
+                    "created_at", "updated_at", "id", "deleted_at", "attachments",
+                    "Starred", "ReadStatus", "linked_profile_info",
+                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no"
+                ];
+
+                const generateReadableHeader = (key) =>
+                    key
+                        .replace(/^field_/, "")
+                        .replace(/_/g, " ")
+                        .toLowerCase()
+                        .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
+
+                const updatedHeader = [
+                    
+                    {
+                        field: "select",
+                        headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
+                        width: 50,
+                        resizable: false,
+                        renderCell: (params) => (
+                            <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                                <Checkbox
+                                    checked={params.row.isSelected || false}
+                                    onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                />
+                            </Box>
+                        ),
+                    },
+                    {
+                        field: "task",
+                        headerName: "",
+                        width: 50,
+                        resizable: true,
+                        renderHeader: (params) => (
+                            <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+                        ),
+                        renderCell: (params) => (
+                            <Badge
+                                badgeContent={params?.row?.['task_unread_count']}
+                                color="primary"
+                                sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+                            >
+                                <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                            </Badge>
+                        ),
+                    },
+                    {
+                        field: "approval",
+                        headerName: "Approval",
+                        width: 50,
+                        resizable: true,
+                        cellClassName: 'justify-content-start',
+                        renderHeader: (params) => (
+                            <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+                        ),                            
+                        renderCell: (params) => (
+                            <Button
+                                variant="contained"
+                                color="transparent"
+                                size="small"
+                                sx={{
+                                    padding: 0,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'none',
+                                    boxShadow: 'none',
+                                    '&:hover':{
+                                        boxShadow: 'none',
+                                    }
+                                }}
+                            >
+                                <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
+                            </Button>
+                        )
+                    },
+                    {
+                        field: "field_cid_crime_no./enquiry_no",
+                        headerName: "Cid Crime No./Enquiry No",
+                        width: 200,
+                        resizable: true,
+                        cellClassName: 'justify-content-start',
+                        renderHeader: (params) => (
+                            tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+                        ),
+                        renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+                    },
+                    ...(sysStatus === "merge_cases"
+                      ? [
+                          {
+                            field: "child_case",
+                            headerName: "Child Case",
+                            width: 100,
+                            resizable: true,
+                            renderCell: (params) => {
+                              const childCount = params.row.childCount;
+                              const caseId = params.row.id;
+
+                              const handleClick = async () => {
+                                getActions();
+                                loadChildMergedCasesData("1", caseId);
+                              };
+                              
+                              const statusColor = "#3b82f6";
+                              const borderColor = "#2563eb";
+                  
+                              return (
+                                <Chip
+                                  label={childCount}
+                                  size="small"
+                                  onClick={handleClick} 
+                                  sx={{
+                                    fontFamily: "Roboto",
+                                    fontWeight: 500,
+                                    color: "white",
+                                    borderColor: borderColor,
+                                    borderRadius: "4px",
+                                    backgroundColor: statusColor,
+                                    borderStyle: "solid",
+                                    borderWidth: "1px",
+                                  }}
+                                />
+                              );
+                            },
+                          },
+                        ]
+                      : []),
+                    ...Object.keys(data[0])
+                        .filter((key) => !excludedKeys.includes(key))
+                        .map((key) => ({
+                            field: key,
+                            headerName: generateReadableHeader(key),
+                            width: generateReadableHeader(key).length < 15 ? 100 : 180,
+                            resizable: true,
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, key)
+                            ),
+                            renderCell: renderCellFunc(key),
+                    })),
+                ];
+
+                setviewTemplateTableData(updatedHeader);
+
+                const formatDate = (value) => {
+                    const parsed = Date.parse(value);
+                    if (isNaN(parsed)) return value;
+                    return new Date(parsed).toLocaleDateString("en-GB");
+                };
+
+                const updatedTableData = data.map((field, index) => {
+                    const updatedField = {};
+
+                    for (const [key, val] of Object.entries(field)) {
+                        if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
+                            updatedField[key] = formatDate(val);
+                        } else {
+                            updatedField[key] = val;
+                        }
+                    }
+
+                    return {
+                        ...updatedField,
+                        sl_no: (page - 1) * 10 + (index + 1),
+                        ...(field.id ? {} : { id: "unique_id_" + index }),
+                    };
+                });
+
+                setTableData(updatedTableData);
+            }else{
+                setTableData([]);
+            }
+
+            setviewReadonly(false);
+            setEditTemplateData(false);
+            setInitialData({});
+            setFormOpen(false);
+            setSelectedRow(null);
+            setSelectedParentId([]);
+
+            await getActions();
+        } else {
+            setLoading(false);
+            toast.error(getTemplateResponse.message || "Failed to load template data.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    } catch (error) {
+        setLoading(false);
+        toast.error(error?.response?.data?.message || "Please Try Again!", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+    }
+};
     const loadTableData = async (page) => {
         const getTemplatePayload = {
             page,
@@ -1663,38 +2137,6 @@ const UnderInvestigation = () => {
                             ),
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
-                        ...(sysStatus === "merge_cases"
-                          ? [
-                              {
-                                field: "child_case",
-                                headerName: "Child Case",
-                                width: 100,
-                                resizable: true,
-                                renderCell: (params) => {
-                                  const childCount = params.value || '1';
-                                  const statusColor = "#3b82f6";
-                                  const borderColor = "#2563eb";
-                      
-                                  return (
-                                    <Chip
-                                      label={childCount}
-                                      size="small"
-                                      sx={{
-                                        fontFamily: "Roboto",
-                                        fontWeight: 500,
-                                        color: "white",
-                                        borderColor: borderColor,
-                                        borderRadius: "4px",
-                                        backgroundColor: statusColor,
-                                        borderStyle: "solid",
-                                        borderWidth: "1px",
-                                      }}
-                                    />
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -1776,6 +2218,7 @@ const UnderInvestigation = () => {
         }
     };
   
+
     const getActions = async () => {
         const payloadObj = {
             module: "ui_case",
@@ -2142,7 +2585,13 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
-                onOpen: () => loadTableData(paginationCount),
+                onOpen: () => {
+                  if (sysStatus === "merge_cases") {
+                    loadMergedCasesData(paginationCount);
+                  } else {
+                    loadTableData(paginationCount);
+                  }
+                },
               }
             );
           } else {
@@ -3430,7 +3879,13 @@ const UnderInvestigation = () => {
           draggable: true,
           progress: undefined,
           className: "toast-success",
-          onOpen: () => loadTableData(paginationCount),
+          onOpen: () => {
+            if (sysStatus === "merge_cases") {
+              loadMergedCasesData(paginationCount);
+            } else {
+              loadTableData(paginationCount);
+            }
+          },
         });
 
         setSelectKey(null);
@@ -4422,8 +4877,8 @@ const UnderInvestigation = () => {
                         </Button>
                 
                         {canEdit&& (
-                          <>
-                            {!isPdfUpdated && (
+                            !isPdfUpdated && (
+                               !isChildMergedLoading && (
                               <Button
                                 variant="contained"
                                 color="primary"
@@ -4434,12 +4889,12 @@ const UnderInvestigation = () => {
                               >
                                 Edit
                               </Button>
-                            )}
-                           </>
-                        )}
+                            )
+                            )
+                          )}
                         {canDelete&& (
-                          <>
-                            {!isPdfUpdated && (
+                            !isPdfUpdated && (
+                              !isChildMergedLoading && (
                               <Button
                                 variant="contained"
                                 color="error"
@@ -4450,8 +4905,8 @@ const UnderInvestigation = () => {
                               >
                                 Delete
                               </Button>
-                            )}
-                          </>
+                           )
+                          )
                         )}
                         {options.table === "cid_ui_case_trail_monitoring" && (
                           <>
@@ -5191,6 +5646,7 @@ const UnderInvestigation = () => {
 
   
   const handleMassiveDivisionChange = async () => {
+
     if (!selectedOtherFields || !selectedOtherFields.code) {
       toast.error("Please Select Data !", {
         position: "top-right",
@@ -5203,6 +5659,20 @@ const UnderInvestigation = () => {
         className: "toast-error",
       });
 
+      return;
+    }
+
+    if (!selectedUser || !selectedUser.user_id) {
+      toast.error("Please select IO User!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
       return;
     }
 
@@ -5224,9 +5694,8 @@ const UnderInvestigation = () => {
         showApprovalPage(selectedRow, selectedOtherTemplate);
         return;
     }
-
     var combinedData = {
-      id: selectedRowData.id,
+      id: selectedRowIds.join(","),
       [selectKey.name]: selectedOtherFields.code,
       field_io_name: selectedUser?.user_id,
     };
@@ -5789,6 +6258,7 @@ const UnderInvestigation = () => {
 
   var userPermissions =
     JSON.parse(localStorage.getItem("user_permissions")) || [];
+    console.log("isChildMergedLoading",isChildMergedLoading)
   var hoverExtraOptions = [
     userPermissions[0]?.view_case
       ? {
@@ -5812,8 +6282,11 @@ const UnderInvestigation = () => {
           ),
         }
       : null,
+      
     userPermissions[0]?.edit_case
-      ? {
+      ?  isChildMergedLoading
+      ? null
+      : {
           name: "Edit",
           onclick: (selectedRow) =>
             handleTemplateDataView(selectedRow, true, table_name),
@@ -5850,7 +6323,9 @@ const UnderInvestigation = () => {
         }
       : null,
     userPermissions[0]?.delete_case
-      ? {
+      ?  isChildMergedLoading
+      ? null
+      : {
           name: "Delete",
           onclick: (selectedRow) =>
             handleDeleteTemplateData(selectedRow, table_name),
@@ -6399,7 +6874,13 @@ const UnderInvestigation = () => {
                       draggable: true,
                       progress: undefined,
                       className: "toast-success",
-                      onOpen: () => loadTableData(paginationCount),
+                      onOpen: () => {
+                        if (sysStatus === "merge_cases") {
+                          loadMergedCasesData(paginationCount);
+                        } else {
+                          loadTableData(paginationCount);
+                        }
+                      },
                   });
   
                   setShowApprovalModal(false);
@@ -6465,8 +6946,9 @@ const UnderInvestigation = () => {
         handleOtherTemplateActions(options, rowData);
     }
 
-    const handleActionShow = (rowData)=>{
+    const handleActionShow = (rowData, isLoading)=>{
     
+      console.log(isLoading, "isloadinggg")
         if(!rowData){
             toast.error("Please Check Case Data !",{
                 position: "top-right",
@@ -6481,8 +6963,14 @@ const UnderInvestigation = () => {
             return;
         }
 
-        // console.log(rowData)
+        console.log(rowData)
 
+        if (isLoading) {
+          console.log(isLoading, "isloadinggg coming inside")
+
+          setIsChildMergedLoading(true);
+      }
+  
         setListApprovalsColumn((prev) => {
             const withoutActions = prev.filter((col) => col.field !== "actions");
             return [...withoutActions, listApprovalActionColumn];
@@ -7255,7 +7743,11 @@ const UnderInvestigation = () => {
                     setOtherTemplateModalOpen(false);
                     
                     if (selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
-                        loadTableData(paginationCount);
+                        if (sysStatus === "merge_cases") {
+                          loadMergedCasesData(paginationCount);
+                        } else {
+                          loadTableData(paginationCount);
+                        }
                     }
                 }}
             >
@@ -7347,6 +7839,7 @@ const UnderInvestigation = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
+                    {!isChildMergedLoading && (
                       <Button
                         variant="outlined"
                         sx={{marginLeft: "10px", height: '40px'}}
@@ -7356,6 +7849,7 @@ const UnderInvestigation = () => {
                       >
                         Add
                       </Button>
+                    )}
                     {/* )} */}
                     <Button
                       variant="outlined"
@@ -7451,6 +7945,7 @@ const UnderInvestigation = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
+                    {!isChildMergedLoading && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -7460,6 +7955,7 @@ const UnderInvestigation = () => {
                         >
                             Add
                         </Button>
+                    )}
                     {/* )} */}
                 </Box>
               )}
@@ -7522,7 +8018,7 @@ const UnderInvestigation = () => {
                       <Typography>
                         Please Upload your Progress Report Pdf
                       </Typography>
-                      <Button variant="contained" component="label">
+                      <Button variant="contained" component="label"  disabled={isChildMergedLoading}>
                         Upload File
                         <input
                           type="file"
@@ -7550,6 +8046,91 @@ const UnderInvestigation = () => {
           </DialogContent>
         </Dialog>
       )}
+ 
+    <Dialog
+      open={childMergedDialogOpen}
+      onClose={() => {
+        setIsChildMergedLoading(true); // Set loading to true when closing the dialog
+        setChildMergedDialogOpen(false); // Close the dialog
+        setTimeout(() => setIsChildMergedLoading(false), 300); // Adjust timeout if needed
+      }}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+      fullScreen
+      fullWidth
+      sx={{ marginLeft: '260px' }}
+    >
+      <DialogTitle>
+        <Box display="flex" alignItems="center" justifyContent="space-between">
+          {/* Left side: Back icon and case info */}
+          <Box
+            sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+            onClick={() => {
+              setIsChildMergedLoading(true);
+              setChildMergedDialogOpen(false);
+              setTimeout(() => setIsChildMergedLoading(false), 300);
+            }}
+          >
+            <WestIcon sx={{ color: 'black' }} />
+            <Typography sx={{ fontSize: '15px', fontWeight: 600, color: 'black' }}>
+              Child Merged Cases
+            </Typography>
+            {childMergedCaseCID && (
+              <Chip
+                label={childMergedCaseCID}
+                color="primary"
+                variant="outlined"
+                size="small"
+                sx={{ fontSize: '12px', fontWeight: 500, marginTop: '2px' }}
+              />
+            )}
+            <Box className="totalRecordCaseStyle" sx={{ fontSize: '12px' }}>
+              {childMergedTotalRecords} Records
+            </Box>
+          </Box>
+
+          {/* Right side: Demerge button */}
+          <Box>
+            <Button
+              variant="contained"
+              size="small"
+              color="error"
+              sx={{ textTransform: 'none' }}
+              onClick={() => {
+                // Add your demerge logic here, using selectedRowIds or selectedMergeRowData
+                console.log('Demerge clicked:', selectedRowIds);
+                // Example: call a function like handleDemerge(selectedRowIds)
+              }}
+              disabled={selectedRowIds.length === 0}
+            >
+              Demerge
+            </Button>
+          </Box>
+        </Box>
+      </DialogTitle>
+
+      <DialogContent sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 64px)' }}>
+        {childMergedData.length > 0 ? (
+          <TableView
+            hoverTable={true} // Enables hover actions
+            hoverTableOptions={hoverExtraOptions} // Pass your hover options here
+            hoverActionFuncHandle={handleOtherTemplateActions} // Callback for action handling
+            height={true}
+            rows={childMergedData}
+            columns={childMergedColumns}
+            totalPage={childMergedTotalPages}
+            totalRecord={childMergedTotalRecords}
+            paginationCount={childMergedPagination}
+            handlePagination={(page) =>
+              loadChildMergedCasesData(page, childMergedData[0]?.parent_case_id)
+            }
+          />
+        ) : (
+          <Typography>No child merged cases found.</Typography>
+        )}
+      </DialogContent>
+    </Dialog>
+
 
         {approveTableFlag && (
             <Dialog
@@ -7737,43 +8318,49 @@ const UnderInvestigation = () => {
             </Dialog>
         )}
 
-        <Dialog
-            open={showOtherTransferModal}
-            onClose={() => setShowOtherTransferModal(false)}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-        >
-            <DialogTitle id="alert-dialog-title"></DialogTitle>
-            <DialogContent sx={{ width: "400px" }}>
-                <DialogContentText id="alert-dialog-description">
-                    <h4 className="form-field-heading">{selectKey?.title}</h4>
-                    <FormControl fullWidth>
-                        <Autocomplete
-                            id=""
-                            options={otherTransferField}
-                            getOptionLabel={(option) => option.name || ""}
-                            value={selectedOtherFields || null}
-                            onChange={(event, newValue) => setSelectedOtherFields(newValue)}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    className="selectHideHistory"
-                                    label={selectKey?.title}
-                                />
-                            )}
-                        />
-                    </FormControl>
-                </DialogContentText>
-            </DialogContent>
-            <DialogActions sx={{ padding: "12px 24px" }}>
-                <Button onClick={() => setShowOtherTransferModal(false)}>
-                    Cancel
-                </Button>
-                <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
-                    Submit
-                </Button>
-            </DialogActions>
-        </Dialog>
+      <Dialog
+        open={showOtherTransferModal}
+        onClose={() => setShowOtherTransferModal(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title"></DialogTitle>
+        <DialogContent sx={{ width: "400px" }}>
+          <DialogContentText id="alert-dialog-description">
+            <h4 className="form-field-heading">{selectKey?.title}</h4>
+            <FormControl fullWidth>
+              <Autocomplete
+                id=""
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={(event, newValue) => setSelectedOtherFields(newValue)}
+                disabled={isChildMergedLoading}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label={selectKey?.title}
+                  />
+                )}
+              />
+            </FormControl>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button onClick={() => setShowOtherTransferModal(false)} 
+          >
+            Cancel
+          </Button>
+          {!isChildMergedLoading && (
+            <>
+              <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
+                Submit
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
 
 
       <Dialog
