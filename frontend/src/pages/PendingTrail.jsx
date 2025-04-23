@@ -1591,7 +1591,8 @@ const UnderInvestigation = () => {
   const showOptionTemplate = async (tableName, approved) => {
 
     if(selectedOtherTemplate.is_approval && !approved){
-        showApprovalPage(selectedRowData);
+        setApprovalSaveData({});
+        showApprovalPage(selectedRowData, selectedOtherTemplate);
         return;
     }
 
@@ -3787,7 +3788,8 @@ const UnderInvestigation = () => {
   const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
 
     if(options.is_approval && !approved){
-        showApprovalPage(selectedRow);
+        setApprovalSaveData({});
+        showApprovalPage(selectedRow, options);
         return;
     }
 
@@ -3929,7 +3931,7 @@ const UnderInvestigation = () => {
     }
   };
 
-  const showApprovalPage = async (approveData) => {
+  const showApprovalPage = async (approveData, Options) => {
     var payloadObj = {
       case_id: approveData.id,
     };
@@ -3997,13 +3999,13 @@ const UnderInvestigation = () => {
           );
         }
 
+        showApprovalAddPage(Options);
         setApprovalsData(updatedOptions);
         setApprovalItem(getActionsDetails.data["approval_item"]);
         setDesignationData(getActionsDetails.data["designation"]);
 
         
         setApproveTableFlag(true);
-        showApprovalAddPage();
 
       } else {
         const errorMessage = getActionsDetails.message
@@ -4042,14 +4044,17 @@ const UnderInvestigation = () => {
     }
   };
 
-  const showApprovalAddPage = (table) => {
+  const showApprovalAddPage = (Options) => {
+
+    console.log(Options,"Options Options Options");
+
     setAddApproveFlag(true);
     handleApprovalSaveData(
       "approval_item",
-      Number(selectedOtherTemplate?.approval_items)
+      Number(Options?.approval_items)
     );
 
-    if (selectedOtherTemplate?.approval_items) {
+    if (Options?.approval_items) {
       setApprovalItemDisabled(true);
     } else {
       setApprovalItemDisabled(false);
@@ -6666,7 +6671,7 @@ const UnderInvestigation = () => {
       {approveTableFlag && (
         <Dialog
           open={approveTableFlag}
-          onClose={() => setApproveTableFlag(false)}
+          onClose={() => {setApprovalSaveData({});setApproveTableFlag(false)}}
           aria-labelledby="alert-dialog-title"
           aria-describedby="alert-dialog-description"
           maxWidth="lg"
@@ -6694,7 +6699,7 @@ const UnderInvestigation = () => {
                 </Button>
               <IconButton
                 aria-label="close"
-                onClick={() => setApproveTableFlag(false)}
+                onClick={() => {setApprovalSaveData({}); setApproveTableFlag(false)}}
                 sx={{ color: (theme) => theme.palette.grey[500] }}
               >
                 <CloseIcon />
