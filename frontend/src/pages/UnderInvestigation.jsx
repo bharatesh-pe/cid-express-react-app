@@ -9041,9 +9041,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     sx={{ fontWeight: 500, marginTop: '2px' }}
                                 />
                             )}
-                            <Box className="totalRecordCaseStyle">
-                                {listApprovalTotalRecord} Records
-                            </Box>
+                            {!listAddApproveFlag &&
+                            (
+                                <Box className="totalRecordCaseStyle">
+                                    {listApprovalTotalRecord} Records
+                                </Box>
+                            )}
                         </Box>
                     ) : (
                         <Box 
@@ -9063,9 +9066,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     sx={{ fontWeight: 500, marginTop: '2px' }}
                                 />
                             )}
-                            <Box className="totalRecordCaseStyle">
-                                {listApprovalTotalRecord} Records
-                            </Box>
+                            {!listAddApproveFlag &&
+                            (
+                                <Box className="totalRecordCaseStyle">
+                                    {listApprovalTotalRecord} Records
+                                </Box>
+                            )}
                         </Box>
                     )}
 
@@ -9073,66 +9079,69 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
                             <Box>
                             </Box>
-                            <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
-                            <TextFieldInput 
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon sx={{ color: "#475467" }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <IconButton
-                                                sx={{ padding: "0 5px", borderRadius: "0" }}
-                                                onClick={()=>handleOthersFilter(selectedOtherTemplate)}
-                                            >
-                                                <FilterListIcon sx={{ color: "#475467" }} />
-                                            </IconButton>
-                                        </Box>
-                                    ),
-                                }}
+                            {!listAddApproveFlag &&
+                            (
+                                <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                                    <TextFieldInput 
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ color: "#475467" }} />
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: (
+                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                    <IconButton
+                                                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                                                        onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                                    >
+                                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                                    </IconButton>
+                                                </Box>
+                                            ),
+                                        }}
 
-                                onInput={(e) => setListApprovalSearchValue(e.target.value)}
-                                value={listApprovalSearchValue}
-                                id="tableSearch"
-                                size="small"
-                                placeholder='Search anything'
-                                variant="outlined"
-                                className="profileSearchClass"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
-                                    }
-                                }}
-                                
-                                sx={{
-                                    width: '350px', borderRadius: '6px', outline: 'none',
-                                    '& .MuiInputBase-input::placeholder': {
-                                        color: '#475467',
-                                        opacity: '1',
-                                        fontSize: '14px',
-                                        fontWeight: '400',
-                                        fontFamily: 'Roboto'
-                                    },
-                                }}
-                            />
-                            {(listApprovalSearchValue || listApprovalFromDate || listApprovalToDate || Object.keys(listApprovalFilterData).length > 0) && (
-                                <Typography
-                                    onClick={handleListApprovalClear}
-                                    sx={{
-                                        fontSize: "13px",
-                                        fontWeight: "500",
-                                        textDecoration: "underline",
-                                        cursor: "pointer",
-                                    }}
-                                    mt={1}
-                                >
-                                    Clear Filter
-                                </Typography>
+                                        onInput={(e) => setListApprovalSearchValue(e.target.value)}
+                                        value={listApprovalSearchValue}
+                                        id="tableSearch"
+                                        size="small"
+                                        placeholder='Search anything'
+                                        variant="outlined"
+                                        className="profileSearchClass"
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                                            }
+                                        }}
+                                        
+                                        sx={{
+                                            width: '350px', borderRadius: '6px', outline: 'none',
+                                            '& .MuiInputBase-input::placeholder': {
+                                                color: '#475467',
+                                                opacity: '1',
+                                                fontSize: '14px',
+                                                fontWeight: '400',
+                                                fontFamily: 'Roboto'
+                                            },
+                                        }}
+                                    />
+                                    {(listApprovalSearchValue || listApprovalFromDate || listApprovalToDate || Object.keys(listApprovalFilterData).length > 0) && (
+                                        <Typography
+                                            onClick={handleListApprovalClear}
+                                            sx={{
+                                                fontSize: "13px",
+                                                fontWeight: "500",
+                                                textDecoration: "underline",
+                                                cursor: "pointer",
+                                            }}
+                                            mt={1}
+                                        >
+                                            Clear Filter
+                                        </Typography>
+                                    )}
+                                </Box>
                             )}
-                            </Box>
                                 {listAddApproveFlag && !listApprovalItemDisabled && (
                                     <Button
                                         variant="outlined"
@@ -9190,7 +9199,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     options={listApprovalItem}
                                     getOptionLabel={(option) => option.name || ""}
                                     name="approval_item"
-                                    disabled={listApprovalItemDisabled}
+                                    disabled={true}
                                     value={
                                         listApprovalItem.find((opt) => opt.approval_item_id === listApprovalSaveData?.approval_item ) || null
                                     }
