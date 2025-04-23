@@ -2473,6 +2473,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const offset = (page - 1) * limit;
     const whereClause = {};
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> starting UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
     // Fetch designations for the logged-in user
     const userDesignations = await UserDesignation.findAll({
       where: { user_id },
@@ -2520,58 +2523,39 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       }
     }
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>After get the higher users UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
     if (!template_module) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        "Template module is required",
-        null
-      );
+      return userSendResponse( res, 400, false, "Template module is required", null );
     }
 
     // Fetch the template using template_module to get the table_name
-    const template = await Template.findOne({ where: { template_module } });
-    if (!template) {
+    const tableTemplate = await Template.findOne({ where: { template_module } });
+    if (!tableTemplate) {
       return userSendResponse(res, 400, false, "Template not found", null);
     }
-
-    const table_name = template.table_name;
-    const template_name = template.template_name;
+    const table_name = tableTemplate.table_name;
+    const template_name = tableTemplate.template_name;
 
     if (!table_name) {
-      return userSendResponse(res, 400, false, "Table name is required.", null);
-    }
-
-    const tableTemplate = await Template.findOne({ where: { table_name } });
-    if (!tableTemplate) {
-      return userSendResponse(
-        res,
-        404,
-        false,
-        `Table ${table_name} does not exist.`,
-        null
-      );
+      return userSendResponse(res, 404, false, `Table ${table_name} does not exist.`, null );
     }
 
     let fieldsArray;
     try {
-      fieldsArray =
-        typeof tableTemplate.fields === "string" ? JSON.parse(tableTemplate.fields) : tableTemplate.fields;
+      fieldsArray = typeof tableTemplate.fields === "string" ? JSON.parse(tableTemplate.fields) : tableTemplate.fields;
     } catch (err) {
       console.error("Error parsing fields:", err);
       return userSendResponse( res, 500, false, "Invalid table schema format.",null);
     }
 
     if (!Array.isArray(fieldsArray)) {
-      return userSendResponse(
-        res,
-        500,
-        false,
-        "Fields must be an array in the table schema.",
-        null
-      );
+      return userSendResponse(res, 500, false, "Fields must be an array in the table schema.", null);
     }
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After get the template fields UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const fields = {};
     const associations = [];
@@ -2629,12 +2613,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }, {});
       }
 
-      if (
-        (type === "dropdown" ||
-          type === "multidropdown" ||
-          type === "autocomplete") &&
-        Array.isArray(options)
-      ) {
+      if ( (type === "dropdown" || type === "multidropdown" || type === "autocomplete") && Array.isArray(options)) {
         dropdownFieldMappings[columnName] = options.reduce((acc, option) => {
           acc[option.code] = option.name;
           return acc;
@@ -2650,10 +2629,18 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       }
     }
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the fields Mapping UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
     const DynamicTable = sequelize.define(table_name, fields, {
       freezeTableName: true,
       timestamps: true,
     });
+
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the sequelize inti UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
 
     const include = [];
     for (const association of associations) {
@@ -2673,6 +2660,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         });
       }
     }
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the including the association UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     // // Add TemplateStar association
     // DynamicTable.hasOne(db.TemplateStar, {
@@ -2900,11 +2890,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
     const validSortBy = fields[sort_by] ? sort_by : "id";
 
-    if (
-      sys_status !== null &&
-      sys_status !== undefined &&
-      sys_status !== "all"
-    ) {
+    if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
       whereClause["sys_status"] = sys_status;
     }
 
@@ -2928,6 +2914,12 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     // Ensure valid sort order
     const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "ASC";
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the whereClause and attributesArray set  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before fetch the data from table  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
     // Run Sequelize query
     const result = await DynamicTable.findAndCountAll({
     where: whereClause,
@@ -2939,111 +2931,136 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     logging: console.log,
     });
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After fetch the data from table  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
     const totalItems = result.count;
     const totalPages = Math.ceil(totalItems / limit);
+    
+    let progressReportTableData = {};
+    let progressReportModel = {};
+    if(table_name == "cid_under_investigation")
+    {
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before fetch progress report execute  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
-    const progressReportTableData =  await Template.findOne({ where:{ table_name: "cid_ui_case_progress_report" } });
-
-    if (!progressReportTableData) {
-      const message = `Table "Progress Report" does not exist.`;
-      return userSendResponse(res, 400, false, message, null);
-    }
-
-    // Parse the schema fields from Template
-    const progressReportschema = typeof progressReportTableData.fields === "string" ? JSON.parse(progressReportTableData.fields) : progressReportTableData.fields;
-
-    // Filter fields that have is_primary_field as true
-    const progressReportRelevantSchema =  progressReportschema ;
-
-    // Define model attributes based on filtered schema
-    const progressReportModelAttributes = {
-      id: {
-        type: Sequelize.DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      created_at: {
-        type: Sequelize.DataTypes.DATE,
-        allowNull: false,
-      },
-      updated_at: {
-        type: Sequelize.DataTypes.DATE,
-        allowNull: false,
-      },
-      created_by: {
-        type: Sequelize.DataTypes.STRING,
-        allowNull: true,  
-      } 
-    };
-
-    const progressReportAssociations = [];
-    const progressReportFields = {};
-
-    for (const field of progressReportRelevantSchema) {
-    const {
-        name: columnName,
-        data_type,
-        not_null,
-        default_value,
-        table,
-        forign_key,
-        attributes,
-    } = field;
-
-    if (!columnName || !data_type) {
-        console.warn(
-        `Missing required attributes for field ${columnName}. Using default type STRING.`
-        );
-        progressReportModelAttributes[columnName] = {
-        type: Sequelize.DataTypes.STRING,
-        allowNull: not_null ? false : true,
-        defaultValue: default_value || null,
+        progressReportTableData =  await Template.findOne({ where:{ table_name: "cid_ui_case_progress_report" } });
+    
+        if (!progressReportTableData) {
+          const message = `Table "Progress Report" does not exist.`;
+          return userSendResponse(res, 400, false, message, null);
+        }
+    
+        // Parse the schema fields from Template
+        const progressReportschema = typeof progressReportTableData.fields === "string" ? JSON.parse(progressReportTableData.fields) : progressReportTableData.fields;
+    
+        // Filter fields that have is_primary_field as true
+        const progressReportRelevantSchema =  progressReportschema ;
+    
+        // Define model attributes based on filtered schema
+        const progressReportModelAttributes = {
+          id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+          },
+          updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+          },
+          created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,  
+          } 
         };
-        continue;
-    }
+    
+        const progressReportAssociations = [];
+        const progressReportFields = {};
+    
+        for (const field of progressReportRelevantSchema) {
+            const {
+                name: columnName,
+                data_type,
+                not_null,
+                default_value,
+                table,
+                forign_key,
+                attributes,
+            } = field;
+    
+            if (!columnName || !data_type) {
+                console.warn(
+                `Missing required attributes for field ${columnName}. Using default type STRING.`
+                );
+                progressReportModelAttributes[columnName] = {
+                type: Sequelize.DataTypes.STRING,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+                };
+                continue;
+            }
+            
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before Sequelize progress report execute  UV");
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
-    const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            progressReportModelAttributes[columnName] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+    
+            progressReportFields[columnName] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+    
+            if (table && forign_key && attributes) {
+                progressReportAssociations.push({
+                relatedTable: table,
+                foreignKey: columnName,
+                targetAttribute: attributes,
+                });
+            }
+        }
 
-    progressReportModelAttributes[columnName] = {
-        type: sequelizeType,
-        allowNull: not_null ? false : true,
-        defaultValue: default_value || null,
-    };
-
-    progressReportFields[columnName] = {
-        type: sequelizeType,
-        allowNull: !not_null,
-        defaultValue: default_value || null,
-    };
-
-    if (table && forign_key && attributes) {
-        progressReportAssociations.push({
-        relatedTable: table,
-        foreignKey: columnName,
-        targetAttribute: attributes,
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before sequelize.define progress report execute  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+    
+        // Define the model
+        progressReportModel = sequelize.define("cid_ui_case_progress_report", progressReportModelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
         });
+
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before Define association progress report execute  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+    
+        // Define association (read status)
+        progressReportModel.hasOne(db.TemplateUserStatus, {
+        foreignKey: 'table_row_id',
+        sourceKey: 'id',
+        as: 'ReadStatus',
+        constraints: false,
+        });
+    
+        // Sync the model
+        await progressReportModel.sync();
     }
-    }
 
-    // Define the model
-    const progressReportModel = sequelize.define("cid_ui_case_progress_report", progressReportModelAttributes, {
-    freezeTableName: true,
-    timestamps: true,
-    createdAt: "created_at",
-    updatedAt: "updated_at",
-    });
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After progress report Sync to DB  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
-    // Define association (read status)
-    progressReportModel.hasOne(db.TemplateUserStatus, {
-    foreignKey: 'table_row_id',
-    sourceKey: 'id',
-    as: 'ReadStatus',
-    constraints: false,
-    });
-
-    // Sync the model
-    await progressReportModel.sync();
-
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before transformedRows  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const transformedRows = await Promise.all(
       result.rows.map(async (record) => {
@@ -3092,44 +3109,62 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         const case_id =  data.id || null;
 
-        const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
-            where: {
-                ui_case_id: case_id,
-            },
-        });
-
-        const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
-            where: {
-                ui_case_id: case_id,  
-            },
-            include: {
-                model: db.TemplateUserStatus,
-                as: 'ReadStatus',
-                required: is_read,
-                where: {
-                    user_id: userId,
-                    template_id: progressReportTableData.template_id
-                },
-                attributes: ['template_user_status_id']
-            },
-        });
-
         let task_read_count = 0;
         let task_unread_count = 0;
 
-        if (task_readed_records && task_readed_records.length > 0) {
-            task_readed_records.forEach((record) => {
-                const readStatus = record.ReadStatus;
-                if (readStatus) {
-                    task_read_count += 1;
-                }
+        if(table_name == "cid_under_investigation")
+        {
+
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_all_records of progress report from DB  UV");
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+            
+            const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
+                where: {
+                    ui_case_id: case_id,
+                },
             });
+
+
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_readed_records of progress report from DB  UV");
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+            
+
+            const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
+                where: {
+                    ui_case_id: case_id,  
+                },
+                include: {
+                    model: db.TemplateUserStatus,
+                    as: 'ReadStatus',
+                    required: is_read,
+                    where: {
+                        user_id: userId,
+                        template_id: progressReportTableData.template_id
+                    },
+                    attributes: ['template_user_status_id']
+                },
+            });
+
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_read_count of progress report from DB  UV");
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
+            if (task_readed_records && task_readed_records.length > 0) {
+                task_readed_records.forEach((record) => {
+                    const readStatus = record.ReadStatus;
+                    if (readStatus) {
+                        task_read_count += 1;
+                    }
+                });
+            }
+
+            if(task_read_count != 0) 
+                task_unread_count = task_count - task_read_count;
+            else
+                task_unread_count = task_count;
         }
 
-        if(task_read_count != 0) 
-            task_unread_count = task_count - task_read_count;
-        else
-            task_unread_count = task_count;
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After task_unread_count of progress report from DB  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         data.task_unread_count = task_unread_count || 0;
 
@@ -3143,6 +3178,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 delete data[alias]; // Remove unnecessary alias object from response
             }
         }
+
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After Handle alias mappings before processing associations  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         // Fetch linked profile info manually
         const linkedProfileInfo = [];
@@ -3183,6 +3221,8 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 }
             }
         }
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fetch associated table metadata from the Template model UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         // Add linked profile info to the response
         data.linked_profile_info = linkedProfileInfo.length ? linkedProfileInfo : null;
@@ -3190,6 +3230,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         return data;
       })
     );
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After transformedRows  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const responseData = {
       // data: transformedRows,
