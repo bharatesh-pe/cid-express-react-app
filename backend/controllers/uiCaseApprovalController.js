@@ -75,6 +75,7 @@ exports.create_ui_case_approval = async (req, res) => {
         module,
         action,
         created_by: user_id || null,
+        status:true
       },
       { transaction: t }
     );
@@ -133,6 +134,9 @@ exports.get_ui_case_approvals = async (req, res) => {
     const { filter = {}, from_date = null, to_date = null } = req.body;
     const userId = req.user?.user_id || null;
     let whereCondition = {};
+
+    whereCondition.status = true;
+
     const offset = (page - 1) * limit;
 
     const fields = Object.keys(UiCaseApproval.rawAttributes).reduce((acc, key) => {
@@ -304,6 +308,7 @@ exports.get_ui_case_approvals = async (req, res) => {
 
     let formattedApprovals = [];
     let approvals = { count: 0, rows: [] };
+
 
     if (whereCondition && Object.keys(whereCondition).length > 0) {
         approvals = await UiCaseApproval.findAndCountAll({
@@ -488,7 +493,7 @@ exports.get_case_approval_by_id = async (req, res) => {
 
     // Get approval details
     const approvalDetails = await UiCaseApproval.findOne({
-      where: { approval_id },
+      where: { approval_id , status : true },
       include: [
         {
           model: ApprovalItem,
@@ -728,16 +733,25 @@ exports.delete_ui_case_approval = async (req, res) => {
       transaction: t,
     });
 
-    // Step 5: Delete the approval record
-    await UiCaseApproval.destroy({
-      where: { approval_id },
-      transaction: t,
-    });
+    // // Step 5: Delete the approval record
+    // await UiCaseApproval.destroy({
+    //   where: { approval_id },
+    //   transaction: t,
+    // });
+
+    // Step 5: Update the status to false instead of deleting the approval record
+    await UiCaseApproval.update(
+    { status: false },  // Set status to false
+    {
+        where: { approval_id }, // Condition for the specific record
+        transaction: t, // Ensure this is part of the transaction
+    }
+    );
 
     // Step 6: Log the delete action in system alerts
     const deleteAlert = await System_Alerts.create(
       {
-        approval_id: null, // Approval no longer exists
+        approval_id: approval.approval_id, 
         reference_id: approval.reference_id,
         alert_type: "Approval Delete",
         alert_message: "Approval record deleted",

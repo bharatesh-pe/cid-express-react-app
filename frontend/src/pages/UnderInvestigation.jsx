@@ -214,17 +214,80 @@ const UnderInvestigation = () => {
             const row = params.row;
 
             const handleListApprovalView = () => {
-                setListApprovalSaveData(row); // Set data for read-only view
-                setListApprovalItemDisabled(true); // Disable dropdowns and date picker
-                setListAddApproveFlag(true); // Show form view
-                setListApproveTableFlag(true); // Open dialog
+                setListApprovalSaveData(row);
+                setListApprovalItemDisabled(true);
+                setListAddApproveFlag(true);
+                setListApproveTableFlag(true);
             };
 
             const handleListApprovalEdit = () => {
-                setListApprovalSaveData(row); // Prefill form for editing
-                setListApprovalItemDisabled(false); // Enable dropdowns and date picker
-                setListAddApproveFlag(true); // Show form view
-                setListApproveTableFlag(true); // Open dialog
+                setListApprovalSaveData(row);
+                setListApprovalItemDisabled(false);
+                setListAddApproveFlag(true);
+                setListApproveTableFlag(true);
+            };
+
+            const handleListApprovalDelete = async () => {
+                const result = await Swal.fire({
+                    title: "Are you sure?",
+                    text: "This action will permanently delete the approval record.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, Delete it!",
+                    cancelButtonText: "No",
+                });
+
+                if (result.isConfirmed) {
+                    setLoading(true);
+                    try {
+                        const response = await api.post("/ui_approval/delete_ui_case_approval", {
+                            approval_id: row.approval_id,
+                            transaction_id: `approval_delete_${Date.now()}`,
+                        });
+
+                        if (response && response.success) {
+                            toast.success('The approval record has been deleted.', {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-success",
+                            });
+                            // showApprovalListPage(row)
+                            setListApprovalTotalRecord(0);
+                            setListApprovalTotalPage(0);
+                            setListApproveTableFlag(false);
+                        } else {
+                            toast.error(response?.message || "Could not delete the record.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                         setLoading(false);
+                    } catch (error) {
+                        console.error("Delete error:", error);
+                        toast.error('Something went wrong during deletion.', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                         setLoading(false);
+                    }
+                }
             };
 
             console.log("isChildMergedLoading from approval:", isChildMergedLoading);
@@ -239,7 +302,7 @@ const UnderInvestigation = () => {
                     <Button variant="contained" color="primary" onClick={handleListApprovalEdit} >
                         Edit
                     </Button>
-                    <Button variant="contained" color="error">
+                    <Button variant="contained" color="error" onClick={handleListApprovalDelete}>
                         Delete
                     </Button>
                     </>
@@ -247,8 +310,8 @@ const UnderInvestigation = () => {
                 </Box>
             );
         }
-
     };
+
   
     const [listApprovalItem, setListApprovalItem] = useState([]);
     const [listApprovalItemDisabled, setListApprovalItemDisabled] = useState(false);
@@ -288,9 +351,22 @@ const UnderInvestigation = () => {
 
         try {
             const { approval_item, approved_by, approval_date, remarks, approval_id } = listApprovalSaveData;
+            
+            // Ensure DD/MM/YYYY format is parsed properly
+            const parsedDate = dayjs(approval_date, "DD/MM/YYYY", true);
+            const formattedApprovalDate = parsedDate.isValid() ? parsedDate.toISOString() : null;
 
-            if (!approval_item || !approved_by || !approval_date) {
-                toast.error("Please fill in all required fields.");
+            if (!approval_item || !approved_by || !formattedApprovalDate) {
+                toast.error('Please fill in all required fields.', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
                 setLoading(false);
                 return;
             }
@@ -299,7 +375,7 @@ const UnderInvestigation = () => {
             approval_id,
             approval_item,
             approved_by,
-            approval_date,
+            approval_date:formattedApprovalDate,
             remarks,
             module: "ui_case_module",
             action: "update",    
@@ -327,6 +403,7 @@ const UnderInvestigation = () => {
                     progress: undefined,
                     className: "toast-success",
                 });
+                // showApprovalListPage(listApprovalSaveData)
                 setListApproveTableFlag(false);
             } else {
                 toast.error('Failed to update approval', {
@@ -761,138 +838,143 @@ const UnderInvestigation = () => {
                 cancelButtonText: 'No',
             }).then(async (result) => {
                 if (result.isConfirmed) {
-
-                    var getTemplatePayload = {
-                        "table_name": table_name,
-                        "id": data.id,
-                        "template_module": "pt_case"
-                    }
-                    
-                    setLoading(true);
-            
-                    try {
-                        const getTemplateResponse = await api.post("/templateData/viewTemplateData", getTemplatePayload);
-                        setLoading(false);
-            
-                        if (getTemplateResponse && getTemplateResponse.success) {
-                            
-                            if(getTemplateResponse.data && getTemplateResponse.data['template_module_data']){
-            
-                                if (!getTemplateResponse.data['template_module_data'].table_name || getTemplateResponse.data['template_module_data'].table_name === '') {
-                                    toast.warning('Please Check The Template', {
-                                        position: "top-right",
-                                        autoClose: 3000,
-                                        hideProgressBar: false,
-                                        closeOnClick: true,
-                                        pauseOnHover: true,
-                                        draggable: true,
-                                        progress: undefined,
-                                        className: "toast-warning",
-                                    });
-                                    return;
-                                }
-            
-                                const viewTableData = {
-                                    "table_name": getTemplateResponse.data['template_module_data'].table_name
-                                }
-                                setLoading(true);
-            
-                                    try {
-            
-                                        const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
-            
-                                        setLoading(false);
-                                        if (viewTemplateResponse && viewTemplateResponse.success) {
-            
-                                            setFurtherInvestigationPtCase(true);
-            
-                                            setOtherReadOnlyTemplateData(false);
-                                            setOtherEditTemplateData(false);
-            
-                                            setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
-                                            if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
-                                                setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
-                                            }
-            
-                                            setPtCaseTableName(getTemplateResponse.data['template_module_data'].table_name);
-                                            setPtCaseTemplateName(getTemplateResponse.data['template_module_data'].template_name);
-
-                                            setFurtherInvestigationSelectedRow(data);
-                                            setFurtherInvestigationSelectedValue(value);
-                                            setShowPtCaseModal(true);
-
-                                            var sys_status = {
-                                                "id": data.id, 
-                                                "sys_status": value,
-                                                "default_status": "ui_case"
-                                            }
-
-                                            setSingleApiData({sys_status : sys_status});
-
-                                            var PreDefinedData = {}
-
-                                            if(getTemplateResponse.data){
-                                                viewTemplateResponse.data['fields'].map((element)=>{
-                                                    if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
-                                                        PreDefinedData[element.name] = getTemplateResponse.data[element.name];
-                                                    }
-                                                })
-                                            }
-                                            setOtherInitialTemplateData(PreDefinedData);
-            
-                                        } else {
-                                            const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
-                                            toast.error(errorMessage, {
-                                                position: "top-right",
-                                                autoClose: 3000,
-                                                hideProgressBar: false,
-                                                closeOnClick: true,
-                                                pauseOnHover: true,
-                                                draggable: true,
-                                                progress: undefined,
-                                                className: "toast-error",
-                                            });
-                                        }
-            
-                                    } catch (error) {
-                                        setLoading(false);
-                                        if (error && error.response && error.response['data']) {
-                                            toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                                                position: "top-right",
-                                                autoClose: 3000,
-                                                hideProgressBar: false,
-                                                closeOnClick: true,
-                                                pauseOnHover: true,
-                                                draggable: true,
-                                                progress: undefined,
-                                                className: "toast-error",
-                                            });
-                                        }
-                                    }
-                                }
-                            }
-            
-                    } catch (error) {
-                        setLoading(false);
-                        if (error && error.response && error.response['data']) {
-                            toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    }
+                    setFurtherInvestigationSelectedRow(data);
+                    showNewApprovalPage();
                 } else {
                     console.log("sys status updation canceled.");
                 }
             });
         }
     };
+
+    const showInvestigationPtCase = async ()=>{
+
+        var getTemplatePayload = {
+            "table_name": table_name,
+            "id": furtherInvestigationSelectedRow.id,
+            "template_module": "pt_case"
+        }
+        
+        setLoading(true);
+
+        try {
+            const getTemplateResponse = await api.post("/templateData/viewTemplateData", getTemplatePayload);
+            setLoading(false);
+
+            if (getTemplateResponse && getTemplateResponse.success) {
+                
+                if(getTemplateResponse.data && getTemplateResponse.data['template_module_data']){
+
+                    if (!getTemplateResponse.data['template_module_data'].table_name || getTemplateResponse.data['template_module_data'].table_name === '') {
+                        toast.warning('Please Check The Template', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-warning",
+                        });
+                        return;
+                    }
+
+                    const viewTableData = {
+                        "table_name": getTemplateResponse.data['template_module_data'].table_name
+                    }
+                    setLoading(true);
+
+                        try {
+
+                            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+
+                            setLoading(false);
+                            if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                                setFurtherInvestigationPtCase(true);
+
+                                setOtherReadOnlyTemplateData(false);
+                                setOtherEditTemplateData(false);
+
+                                setOptionFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                                if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                                    setOptionStepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                                }
+
+                                setPtCaseTableName(getTemplateResponse.data['template_module_data'].table_name);
+                                setPtCaseTemplateName(getTemplateResponse.data['template_module_data'].template_name);
+
+                                setFurtherInvestigationSelectedValue("178_cases");
+                                setShowPtCaseModal(true);
+
+                                var sys_status = {
+                                    "id": furtherInvestigationSelectedRow.id, 
+                                    "sys_status": "178_cases",
+                                    "default_status": "ui_case"
+                                }
+
+                                setSingleApiData({...singleApiData, sys_status : sys_status});
+
+                                var PreDefinedData = {}
+
+                                if(getTemplateResponse.data){
+                                    viewTemplateResponse.data['fields'].map((element)=>{
+                                        if(element.name && getTemplateResponse.data[element.name] !== null && getTemplateResponse.data[element.name] !== undefined){
+                                            PreDefinedData[element.name] = getTemplateResponse.data[element.name];
+                                        }
+                                    })
+                                }
+
+                                setOtherInitialTemplateData(PreDefinedData);
+
+                            } else {
+                                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                                toast.error(errorMessage, {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                            }
+
+                        } catch (error) {
+                            setLoading(false);
+                            if (error && error.response && error.response['data']) {
+                                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                            }
+                        }
+                    }
+                }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
 
     const furtherInvestigationPtCaseSave = async (data)=>{
 
@@ -924,13 +1006,13 @@ const UnderInvestigation = () => {
             return;
         }
 
-        showNewApprovalPage(furtherInvestigationSelectedRow);
-
         var pt_case = data;
         setSingleApiData((prev) => ({
             ...prev,
             pt_case: pt_case,
         }));
+
+        saveOverallData(false, pt_case);
 
         return;
     }
@@ -964,6 +1046,7 @@ const UnderInvestigation = () => {
                     setDisabledApprovalItems(false);
                 }
 
+                setApprovalSaveData({});
                 setNewApprovalPage(true);
 
             } else {
@@ -1011,21 +1094,7 @@ const UnderInvestigation = () => {
         });
     }
 
-    const saveOverallData = async () => {
-
-        if(!ptCaseTableName || ptCaseTableName === ''){
-            toast.error('Please Check Template Name', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
+    const saveOverallData = async (approvedSave, data) => {
 
         if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
             toast.error("Please Select Approval Item !", {
@@ -1084,21 +1153,26 @@ const UnderInvestigation = () => {
             return;
         }
 
+        if(approvedSave){
+            showInvestigationPtCase();
+            return;
+        }
+
         const formData = new FormData();
         formData.append("table_name", ptCaseTableName);
         var normalData = {}; // Non-file upload fields
 
         optionFormTemplateData.forEach((field) => {
 
-            if (singleApiData['pt_case'][field.name]) {
+            if (data[field.name]) {
                 if (field.type === "file" || field.type === "profilepicture") {
                     // Append file fields to formData
                     if (field.type === 'file') {
-                        if (Array.isArray(singleApiData['pt_case'][field.name])) {
-                            const hasFileInstance = singleApiData['pt_case'][field.name].some(file => file.filename instanceof File);
-                            var filteredArray = singleApiData['pt_case'][field.name].filter(file => file.filename instanceof File);
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
+                            var filteredArray = data[field.name].filter(file => file.filename instanceof File);
                             if (hasFileInstance) {
-                                singleApiData['pt_case'][field.name].forEach((file) => {
+                                data[field.name].forEach((file) => {
                                     if (file.filename instanceof File) {
                                         formData.append(field.name, file.filename);
                                     }
@@ -1116,11 +1190,11 @@ const UnderInvestigation = () => {
                             }
                         }
                     } else {
-                        formData.append(field.name, singleApiData['pt_case'][field.name]);
+                        formData.append(field.name, data[field.name]);
                     }
                 } else {
                     // Add non-file fields to normalData
-                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(singleApiData['pt_case'][field.name]) ? singleApiData['pt_case'][field.name].join(',') : singleApiData['pt_case'][field.name] : singleApiData['pt_case'][field.name];
+                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
                 }
             }
         });
@@ -1185,6 +1259,7 @@ const UnderInvestigation = () => {
                 setFurtherInvestigationSelectedRow([]);
                 setFurtherInvestigationPtCase(false);
                 setDisabledApprovalItems(false);
+                setApprovalSaveData({});
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -2615,7 +2690,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
-  const showOptionTemplate = async (tableName) => {
+  const showOptionTemplate = async (tableName, approved) => {
+
+    if(selectedOtherTemplate.is_approval && !approved){
+        showApprovalPage(selectedRowData);
+        return;
+    }
+
     if (!tableName || tableName === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -2888,51 +2969,37 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
-  const otherTemplateSaveFunc = async (data, alreadySavedApproval) => {
+  const otherTemplateSaveFunc = async (data) => {
+
     if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
-      toast.warning("Please Check The Template", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
+        toast.warning("Please Check The Template", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-warning",
+        });
+        return;
     }
 
     if (Object.keys(data).length === 0) {
-      toast.warning("Data Is Empty Please Check Once", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
-    }
-
-    if (
-      selectedOtherTemplate &&
-      selectedOtherTemplate.is_approval &&
-      !alreadySavedApproval
-    ) {
-      showApprovalPage(selectedRow);
-      setTemplateApprovalData(data);
-      setTemplateApproval(true);
-      return;
+        toast.warning("Data Is Empty Please Check Once", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-warning",
+        });
+        return;
     }
 
     const formData = new FormData();
-    formData.append(
-      "table_name",
-      showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table
-    );
 
     var normalData = {}; // Non-file upload fields
 
@@ -2984,132 +3051,82 @@ const loadChildMergedCasesData = async (page, caseId) => {
     });
 
     if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
-      normalData["field_pr_status"] = "No";
+        normalData["field_pr_status"] = "No";
     }
+
     normalData.sys_status = showPtCaseModal ? "pt_case" : "ui_case";
     normalData["ui_case_id"] = selectedRowData.id;
+
+    var othersData = {};
+
+    if(Object.keys(approvalSaveData).length > 0 ){
+        othersData['approval'] = approvalSaveData;
+
+        var approvalItems = {
+            id : selectedRowData.id,
+            module_name : 'Under Investigation',
+            action : selectedOtherTemplate.name ? selectedOtherTemplate.name : 'Action'
+        }
+
+        othersData = {
+                        ...othersData, 
+                        approval_details : approvalItems
+                    }
+    }
+
+    formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
     formData.append("data", JSON.stringify(normalData));
+    formData.append("others_data", JSON.stringify(othersData));
+    formData.append("transaction_id", randomApprovalId);
+    formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
+
     setLoading(true);
 
     try {
-      let saveTemplateData;
-      saveTemplateData = await api.post(
-        "/templateData/insertTemplateData",
-        formData
-      );
-      setLoading(false);
+        const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
 
-      localStorage.removeItem(selectedOtherTemplate.name + "-formData");
+        setLoading(false);
 
-      if (saveTemplateData && saveTemplateData.success) {
-        toast.success(saveTemplateData.message || "Data Created Successfully", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-success",
-          ...(!showPtCaseModal && {
-            onOpen: () =>
-              handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
-          }),
-        });
+        if (overallSaveData && overallSaveData.success) {
 
-        setTemplateApprovalData({});
-        setTemplateApproval(false);
-        setAddApproveFlag(false);
-        setApproveTableFlag(false);
-        setApprovalSaveData({});
-        setSelectedIds([]);
+            toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-success",
+                onOpen: () => loadTableData(paginationCount),
+            });
 
-        if (showPtCaseModal) {
-          setPtCaseTableName(null);
-          setShowPtCaseModal(false);
-          setOtherFormOpen(false);
-          setOptionStepperData([]);
-          setOptionFormTemplateData([]);
+            setOtherFormOpen(false);
+            setAddApproveFlag(false);
+            setApproveTableFlag(false);
+            setOtherTemplateModalOpen(false);
+            setApprovalSaveData({});
 
-          if (
-            selectedOtherTemplate &&
-            selectedOtherTemplate["field"] &&
-            selectedOtherTemplate["field"] !== "field_nature_of_disposal"
-          ) {
-            // update func
-            var combinedData = {
-              id: selectedRow.id,
-              [selectKey.name]: selectedOtherFields.code,
-            };
+            if(selectedOtherTemplate?.field){
+                var combinedData = {
+                    id: selectedRowData.id,
+                    [selectKey.name]: selectedOtherFields.code,
+                };
+        
+                // update func
+                onUpdateTemplateData(combinedData);
 
-            onUpdateTemplateData(combinedData);
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+            }
 
-            // reset states
-            setSelectKey(null);
-            setSelectedRow(null);
-            setOtherTransferField([]);
-            setShowOtherTransferModal(false);
-            setSelectedOtherFields(null);
-            setselectedOtherTemplate(null);
-
-            return;
-          }
-
-          var payloadSysStatus = {
-            table_name: table_name,
-            data: {
-              id: selectedRow.id,
-              sys_status: "disposal",
-            },
-          };
-
-          setLoading(true);
-
-          try {
-            const chnageSysStatus = await api.post(
-              "/templateData/caseSysStatusUpdation",
-              payloadSysStatus
-            );
-
-            setLoading(false);
-
-            if (chnageSysStatus && chnageSysStatus.success) {
-              toast.success(
-                chnageSysStatus.message
-                  ? chnageSysStatus.message
-                  : "Status Changed Successfully",
-                {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-success",
-                }
-              );
-
-              // update func
-              var combinedData = {
-                id: selectedRow.id,
-                [selectKey.name]: selectedOtherFields.code,
-              };
-
-              onUpdateTemplateData(combinedData);
-
-              // reset states
-              setSelectKey(null);
-              setSelectedRow(null);
-              setOtherTransferField([]);
-              setShowOtherTransferModal(false);
-              setSelectedOtherFields(null);
-              setselectedOtherTemplate(null);
-            } else {
-              const errorMessage = chnageSysStatus.message
-                ? chnageSysStatus.message
-                : "Failed to change the status. Please try again.";
-              toast.error(errorMessage, {
+        } else {
+            const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+            toast.error(errorMessage, {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -3118,76 +3135,22 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-error",
-              });
-            }
-          } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-              toast.error(
-                error.response["data"].message
-                  ? error.response["data"].message
-                  : "Please Try Again !",
-                {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-error",
-                }
-              );
-            }
-          }
-        } else {
-          setPtCaseTableName(null);
-          setShowPtCaseModal(false);
-          setOtherFormOpen(false);
-          setOptionStepperData([]);
-          setOptionFormTemplateData([]);
-
-          // reset states
-          setSelectKey(null);
-          setOtherTransferField([]);
-          setShowOtherTransferModal(false);
-          setSelectedOtherFields(null);
-          setselectedOtherTemplate(null);
+            });
         }
-      } else {
-        const errorMessage = saveTemplateData.message
-          ? saveTemplateData.message
-          : "Failed to create the profile. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
     } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
-        toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          }
-        );
-      }
+        setLoading(false);
+        if (error && error.response && error.response["data"]) {
+            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
     }
   };
 
@@ -3899,6 +3862,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
         setSelectedRowIds([]);
         setSelectedMergeRowData([]); 
         setSelectedParentId(null);    
+        setApprovalSaveData({});
 
       } else {
         const errorMessage = saveTemplateData.message
@@ -4167,7 +4131,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
-  const getUploadedFiles = async (selectedRow) => {
+  const getUploadedFiles = async (selectedRow, options) => {
 
     if (!selectedRow || !selectedRow.id) {
       console.error("Invalid selectedRow for file retrieval:", selectedRow);
@@ -4180,7 +4144,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
       if (response && response.success) {
         setUploadedFiles(response.data);
-        handleOtherTemplateActions(selectedOtherTemplate, selectedRow, false, true);
+        handleOtherTemplateActions(options, selectedRow, false, true);
       }
     } catch (error) {
       console.error("Error fetching uploaded files:", error);
@@ -4362,21 +4326,26 @@ const loadChildMergedCasesData = async (page, caseId) => {
   const handleOtherTemplateActions = async (options, selectedRow, searchFlag,fromUploadedFiles) => {
     fromUploadedFiles = fromUploadedFiles ?? false;
 
-    if(!selectedRow || Object.keys(selectedRow).length === 0){
+    if(!selectedRow || Object.keys(selectedRow).length === 0 || !options || Object.keys(options).length === 0){
         return false
     }
+
+    const randomId = `random_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
+    setRandomApprovalId(randomId);
 
     // const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
     // setIsIoAuthorized(isAuthorized);    
 
     setSelectedRowData(selectedRow);
-
+    setselectedOtherTemplate(options);
+    setApprovalSaveData({});
 
 
     if (options.table && options.field) {
-      const selectedFieldValue = options.field;
+        const selectedFieldValue = options.field;
         showTransferToOtherDivision(options, selectedRow, selectedFieldValue);
-      return;
+        return;
     }
 
     setSelectedRow(selectedRow);
@@ -4991,13 +4960,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
         setOtherTemplateData(updatedTableData);
         if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
           await checkPdfEntryStatus(selectedRow.id);
-            await getUploadedFiles(selectedRow);
+            await getUploadedFiles(selectedRow, options);
         }
 
         setOtherTemplateModalOpen(true);
     }
-
-        setselectedOtherTemplate(options);
 
         setOtherFormOpen(false);
         setOptionStepperData([]);
@@ -5177,7 +5144,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
     }
   };
-  const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue) => {
+  const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
+
+    if(options.is_approval && !approved){
+        showApprovalPage(selectedRow);
+        return;
+    }
+
     const selectedFieldData = selectedRow[selectedFieldValue];
   
     const viewTableData = {
@@ -5251,8 +5224,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   setSelectedOtherFields(matchedOption || null);
   
                   setSelectKey({ name: options.field, title: options.name });
-                  setSelectedRow(selectedRow);
-                  setselectedOtherTemplate(options);
+                //   setSelectedRow(selectedRow);
+                //   setselectedOtherTemplate(options);
                   setOtherTransferField(updatedOptions);
                   setShowOtherTransferModal(true);
                 }
@@ -5278,8 +5251,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
               setSelectedOtherFields(matchedOption || null);
   
               setSelectKey({ name: options.field, title: options.name });
-              setSelectedRow(selectedRow);
-              setselectedOtherTemplate(options);
+            //   setSelectedRow(selectedRow);
+            //   setselectedOtherTemplate(options);
               setOtherTransferField(staticOptions);
               setShowOtherTransferModal(true);
             }
@@ -5392,11 +5365,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
         setAddApproveFlag(true);
         setApproveTableFlag(true);
+        showApprovalAddPage();
 
-        const randomId = `approval_${Date.now()}_${Math.floor(
-          Math.random() * 1000
-        )}`;
-        setRandomApprovalId(randomId);
       } else {
         const errorMessage = getActionsDetails.message
           ? getActionsDetails.message
@@ -5448,237 +5418,194 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
-  const saveApprovalData = async (table) => {
-    if (!approvalSaveData || !approvalSaveData["approval_item"]) {
-      toast.error("Please Select Approval Item !", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-error",
-      });
+    const saveApprovalData = async (table) => {
 
-      return;
-    }
+        if (!approvalSaveData || !approvalSaveData["approval_item"]) {
+            toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
 
-    if (!approvalSaveData || !approvalSaveData["approved_by"]) {
-      toast.error("Please Select Designation !", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-error",
-      });
-
-      return;
-    }
-    if (!approvalSaveData || !approvalSaveData["approval_date"]) {
-        toast.error("Please Select Approval Date !", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-
-        return;
-    }
-
-    if (!approvalSaveData || !approvalSaveData["remarks"]) {
-
-        toast.error("Please Enter Comments !", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-
-        return;
-    }
-
-    var payloadApproveData = {
-      ...approvalSaveData,
-      case_id:
-        furtherInvestigationSelectedRow && furtherInvestigationSelectedRow.id
-          ? furtherInvestigationSelectedRow.id
-          : selectedRow.id,
-      case_type: "ui_case",
-      module: "Under Investiation",
-      action: "Under Investiation Action",
-      transaction_id: randomApprovalId,
-      created_by_designation_id: localStorage.getItem("designation_id")
-        ? localStorage.getItem("designation_id")
-        : "",
-      created_by_division_id: localStorage.getItem("division_id")
-        ? localStorage.getItem("division_id")
-        : "",
-      info: {
-        module: "Under Investiation",
-        action: "Under Investiation Action",
-      },
-    };
-
-    setLoading(true);
-
-    try {
-      const chnageSysStatus = await api.post(
-        "/ui_approval/create_ui_case_approval",
-        payloadApproveData
-      );
-
-      setLoading(false);
-
-      if (chnageSysStatus && chnageSysStatus.success) {
-        toast.success(
-          chnageSysStatus.message
-            ? chnageSysStatus.message
-            : "Approval Added Successfully Successfully",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-          }
-        );
-
-
-        if ((selectedOtherTemplate.field === null || selectedOtherTemplate.field === "field_nature_of_disposal" || selectedOtherTemplate.field === "field_prosecution_sanction") && templateApproval) {
-          otherTemplateSaveFunc(templateApprovalData, true);
-          return;
+            return;
         }
 
-        if (disposalUpdate) {
-          updateSysStatusDisposal();
-          return;
+        if (!approvalSaveData || !approvalSaveData["approved_by"]) {
+            toast.error("Please Select Designation !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+
+            return;
         }
 
-        var combinedData = {
-          id: selectedRow.id,
-          [selectKey.name]: selectedOtherFields.code,
-        };
+        if (!approvalSaveData || !approvalSaveData["approval_date"]) {
+            toast.error("Please Select Approval Date !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
 
-        // update func
-        onUpdateTemplateData(combinedData);
+            return;
+        }
 
-        // reset states
-        setSelectKey(null);
-        setSelectedRow(null);
-        setOtherTransferField([]);
-        setShowOtherTransferModal(false);
-        setSelectedOtherFields(null);
-        setselectedOtherTemplate(null);
+        if (!approvalSaveData || !approvalSaveData["remarks"]) {
+            toast.error("Please Enter Comments !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
 
-        setApprovalsData([]);
-        setApprovalItem([]);
-        setApprovalItemDisabled(false);
-        setDesignationData([]);
+            return;
+        }
 
-        setAddApproveFlag(false);
-        setApproveTableFlag(false);
-        setApprovalSaveData({});
-      } else {
-        const errorMessage = chnageSysStatus.message
-          ? chnageSysStatus.message
-          : "Failed to add approval. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
-        toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          }
-        );
-      }
-    }
-  };
+        if (selectedOtherTemplate.table && selectedOtherTemplate.field) {
+            showTransferToOtherDivision(selectedOtherTemplate, selectedRowData, selectedOtherTemplate.field, true);
+        }else{
+            showOptionTemplate(table, true);
+        }
 
-  const handleSaveDivisionChange = async () => {
-    if (!selectedOtherFields || !selectedOtherFields.code) {
-      toast.error("Please Select Data !", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-error",
-      });
-
-      return;
-    }
-
-    if (
-      selectedOtherTemplate &&
-      selectedOtherTemplate["field"] &&
-      (selectedOtherTemplate["field"] === "field_nature_of_disposal" ||
-        selectedOtherTemplate["field"] === "field_prosecution_sanction" ||
-        selectedOtherTemplate["field"] === "field_17a_pc_act") &&
-      selectedOtherFields &&
-      selectedOtherFields["name"]
-    ) {
-      checkDisposalValues();
-      return;
-    }
-
-    if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
-      showApprovalPage(selectedRow);
-      return;
-    }
-
-    var combinedData = {
-      id: selectedRow.id,
-      [selectKey.name]: selectedOtherFields.code,
+        return;
     };
 
-    // update func
-    onUpdateTemplateData(combinedData);
+    const handleSaveDivisionChange = async () => {
+        if (!selectedOtherFields || !selectedOtherFields.code) {
+            toast.error("Please Select Data !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
 
-    // reset states
-    setSelectKey(null);
-    setSelectedRow(null);
-    setOtherTransferField([]);
-    setShowOtherTransferModal(false);
-    setSelectedOtherFields(null);
-    setselectedOtherTemplate(null);
+            return;
+        }
+
+        if ((selectedOtherTemplate?.["field"] === "field_nature_of_disposal" || selectedOtherTemplate?.["field"] === "field_prosecution_sanction" || selectedOtherTemplate?.["field"] === "field_17a_pc_act") && selectedOtherFields?.["name"]) {
+            checkDisposalValues();
+            return;
+        }
+
+        if(selectedOtherTemplate.is_approval){
+
+            var payloadApproveData = {
+                ...approvalSaveData,
+                case_id: furtherInvestigationSelectedRow?.id || selectedRowData.id,
+                case_type: "ui_case",
+                module: "Under Investiation",
+                action: "Under Investiation Action",
+                transaction_id: randomApprovalId,
+                created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+                created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+                info: {
+                    module: "Under Investiation",
+                    action: "Under Investiation Action",
+                },
+            };
+        
+            setLoading(true);
+      
+            try {
+                const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval",payloadApproveData);
+        
+                setLoading(false);
+        
+                if (chnageSysStatus && chnageSysStatus.success) {
+
+                    toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Approval Added Successfully Successfully",{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success"
+                    });
+        
+                    var combinedData = {
+                        id: selectedRowData.id,
+                        [selectKey.name]: selectedOtherFields.code,
+                    };
+        
+                    // update func
+                    onUpdateTemplateData(combinedData);
+            
+                    // reset states
+                    setAddApproveFlag(false);
+                    setApproveTableFlag(false);
+                    setShowOtherTransferModal(false);
+                    setApprovalSaveData({});
+
+                } else {
+                    const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to add approval. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response["data"]) {
+                    toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error"
+                    });
+                }
+            }
+
+        }else{     
+       
+            var combinedData = {
+                id: selectedRowData.id,
+                [selectKey.name]: selectedOtherFields.code,
+            };
+    
+            // update func
+            onUpdateTemplateData(combinedData);
+    
+            // reset states
+            setAddApproveFlag(false);
+            setApproveTableFlag(false);
+            setShowOtherTransferModal(false);
+
+        }
   };
 
   
@@ -5717,7 +5644,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
 
     var combinedData = {
-      id: selectedRow.id,
+      id: selectedRowData.id,
       [selectKey.name]: selectedOtherFields.code,
       field_io_name: selectedUser?.user_id,
     };
@@ -5747,7 +5674,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
     var getTemplatePayload = {
         "table_name": table_name,
-        "id": selectedRow.id,
+        "id": selectedRowData.id,
         "template_module": "pt_case"
     }
 
@@ -5966,197 +5893,317 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
-  const checkDisposalValues = () => {
-    if (
-      selectedOtherTemplate &&
-      selectedOtherTemplate["field"] &&
-      selectedOtherTemplate["field"] === "field_nature_of_disposal" &&
-      selectedOtherFields &&
-      selectedOtherFields["name"]
-    ) {
-      if (selectedOtherFields && selectedOtherFields["name"] === "A") {
-        showPtCaseTemplate();
-        setDisposalUpdate(true);
-      } else {
-        Swal.fire({
-          title:
-            selectedOtherFields["name"] === "B"
-              ? "Approved by Court"
-              : "Are You Sure ?",
-          text:
-            selectedOtherFields["name"] === "B"
-              ? ""
-              : "Do you want to move this case !",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Yes !",
-          cancelButtonText: "No",
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
-              showApprovalPage(selectedRow);
-              setDisposalUpdate(true);
-              return;
+    const checkDisposalValues = async () => {
+        if (selectedOtherTemplate?.["field"] === "field_nature_of_disposal" && selectedOtherFields?.["name"]) {
+            if (selectedOtherFields && selectedOtherFields["name"] === "A") {
+                showPtCaseTemplate();
+                setDisposalUpdate(true);
+            } else {
+                Swal.fire({
+                    title: selectedOtherFields["name"] === "B" ? "Approved by Court" : "Are You Sure ?",
+                    text: selectedOtherFields["name"] === "B" ? "" : "Do you want to move this case !",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes !",
+                    cancelButtonText: "No",
+                }).then(async (result) => {
+                    if (result.isConfirmed) {
+                        if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
+
+                            var payloadApproveData = {
+                                ...approvalSaveData,
+                                case_id: furtherInvestigationSelectedRow?.id || selectedRowData.id,
+                                case_type: "ui_case",
+                                module: "Under Investiation",
+                                action: selectedOtherTemplate?.name || "Action",
+                                transaction_id: randomApprovalId,
+                                created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+                                created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+                                info: {
+                                    module: "Under Investiation",
+                                    action: selectedOtherTemplate?.name || "Action",
+                                },
+                            };
+                        
+                            setLoading(true);
+                      
+                            try {
+                                const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval",payloadApproveData);
+                        
+                                setLoading(false);
+                        
+                                if (chnageSysStatus && chnageSysStatus.success) {
+                
+                                    toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Approval Added Successfully Successfully",{
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-success"
+                                    });
+                        
+                                    updateSysStatusDisposal();
+
+                                    // reset states
+                                    setSelectKey(null);
+                                    setSelectedRow(null);
+                                    setOtherTransferField([]);
+                                    setShowOtherTransferModal(false);
+                                    setSelectedOtherFields(null);
+                                    setselectedOtherTemplate(null);
+                                    setAddApproveFlag(false);
+                                    setApproveTableFlag(false);
+                                    setShowOtherTransferModal(false);
+                
+                                } else {
+                                    const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to add approval. Please try again.";
+                                    toast.error(errorMessage, {
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                }
+                            } catch (error) {
+                                setLoading(false);
+                                if (error && error.response && error.response["data"]) {
+                                    toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error"
+                                    });
+                                }
+                            }
+                            return;
+                        }
+                    } else {
+                        setSelectKey(null);
+                        setSelectedRow(null);
+                        setOtherTransferField([]);
+                        setShowOtherTransferModal(false);
+                        setSelectedOtherFields(null);
+                        setselectedOtherTemplate(null);
+                        setAddApproveFlag(false);
+                        setApproveTableFlag(false);
+                        setShowOtherTransferModal(false);
+                    }
+                });
             }
+        } else if ((selectedOtherTemplate?.["field"] === "field_prosecution_sanction" || selectedOtherTemplate?.["field"] === "field_17a_pc_act") && selectedOtherFields?.["name"]) {
+            if (selectedOtherFields?.["name"].toLowerCase() === "yes" && selectedOtherTemplate?.["field"] === "field_prosecution_sanction") {
 
-            updateSysStatusDisposal();
-          } else {
-            setSelectKey(null);
-            setSelectedRow(null);
-            setOtherTransferField([]);
-            setShowOtherTransferModal(false);
-            setSelectedOtherFields(null);
-            setselectedOtherTemplate(null);
-          }
-        });
-      }
-    } else if (
-      selectedOtherTemplate &&
-      selectedOtherTemplate["field"] &&
-      (selectedOtherTemplate["field"] === "field_prosecution_sanction" ||
-        selectedOtherTemplate["field"] === "field_17a_pc_act") &&
-      selectedOtherFields &&
-      selectedOtherFields["name"]
-    ) {
-      if (
-        selectedOtherFields &&
-        selectedOtherFields["name"] &&
-        selectedOtherFields["name"].toLowerCase() === "yes" &&
-        selectedOtherTemplate["field"] === "field_prosecution_sanction"
-      ) {
-        showActionsOptionsTemplate("cid_ui_case_order_of_prosecution_sanction");
-        return;
-      } else if (
-        selectedOtherFields &&
-        selectedOtherFields["name"] &&
-        selectedOtherFields["name"].toLowerCase() === "yes" &&
-        selectedOtherTemplate["field"] === "field_17a_pc_act"
-      ) {
-        showActionsOptionsTemplate("cid_ui_case_order_of_17a_pc_act");
-        return;
-      } else {
-        if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
-          showApprovalPage(selectedRow);
-          return;
+                showActionsOptionsTemplate("cid_ui_case_order_of_prosecution_sanction");
+                return;
+
+            } else if (selectedOtherFields?.["name"].toLowerCase() === "yes" && selectedOtherTemplate?.["field"] === "field_17a_pc_act") {
+
+                showActionsOptionsTemplate("cid_ui_case_order_of_17a_pc_act");
+                return;
+
+            } else {
+
+                if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
+
+                    var payloadApproveData = {
+                        ...approvalSaveData,
+                        case_id: furtherInvestigationSelectedRow?.id || selectedRowData.id,
+                        case_type: "ui_case",
+                        module: "Under Investiation",
+                        action: selectedOtherTemplate?.name || "Action",
+                        transaction_id: randomApprovalId,
+                        created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+                        created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+                        info: {
+                            module: "Under Investiation",
+                            action: selectedOtherTemplate?.name || "Action",
+                        },
+                    };
+                
+                    setLoading(true);
+            
+                    try {
+                        const chnageSysStatus = await api.post( "/ui_approval/create_ui_case_approval",payloadApproveData);
+                
+                        setLoading(false);
+                
+                        if (chnageSysStatus && chnageSysStatus.success) {
+        
+                            toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Approval Added Successfully Successfully",{
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-success"
+                            });
+                
+                            var combinedData = {
+                                id: selectedRowData.id,
+                                [selectKey.name]: selectedOtherFields.code,
+                            };
+            
+                            onUpdateTemplateData(combinedData);
+            
+                            // reset states
+                            setSelectKey(null);
+                            setSelectedRow(null);
+                            setOtherTransferField([]);
+                            setShowOtherTransferModal(false);
+                            setSelectedOtherFields(null);
+                            setselectedOtherTemplate(null);
+                            setAddApproveFlag(false);
+                            setApproveTableFlag(false);
+                            setShowOtherTransferModal(false);
+        
+                        } else {
+                            const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to add approval. Please try again.";
+                            toast.error(errorMessage, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response["data"]) {
+                            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error"
+                            });
+                        }
+                    }
+                }else{
+                    var combinedData = {
+                        id: selectedRowData.id,
+                        [selectKey.name]: selectedOtherFields.code,
+                    };
+    
+                    onUpdateTemplateData(combinedData);
+    
+                    // reset states
+                    setSelectKey(null);
+                    setSelectedRow(null);
+                    setOtherTransferField([]);
+                    setShowOtherTransferModal(false);
+                    setSelectedOtherFields(null);
+                    setselectedOtherTemplate(null);
+                    setAddApproveFlag(false);
+                    setApproveTableFlag(false);
+                    setShowOtherTransferModal(false);
+                }
+            }
         }
-
-        var combinedData = {
-          id: selectedRow.id,
-          [selectKey.name]: selectedOtherFields.code,
-        };
-
-        onUpdateTemplateData(combinedData);
-
-        // reset states
-        setSelectKey(null);
-        setSelectedRow(null);
-        setOtherTransferField([]);
-        setShowOtherTransferModal(false);
-        setSelectedOtherFields(null);
-        setselectedOtherTemplate(null);
-      }
-    }
-  };
-
-  const updateSysStatusDisposal = async () => {
-    var payloadSysStatus = {
-      table_name: table_name,
-      data: {
-        id: selectedRow.id,
-        sys_status: "disposal",
-        default_status: "ui_case",
-      },
     };
 
-    setLoading(true);
-
-    try {
-      const chnageSysStatus = await api.post(
-        "/templateData/caseSysStatusUpdation",
-        payloadSysStatus
-      );
-
-      setLoading(false);
-
-      if (chnageSysStatus && chnageSysStatus.success) {
-        toast.success(
-          chnageSysStatus.message
-            ? chnageSysStatus.message
-            : "Status Changed Successfully",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-          }
-        );
-
-        // update func
-        var combinedData = {
-          id: selectedRow.id,
-          [selectKey.name]: selectedOtherFields.code,
+    const updateSysStatusDisposal = async () => {
+        var payloadSysStatus = {
+            table_name: table_name,
+            data: {
+                id: selectedRowData.id,
+                sys_status: "disposal",
+                default_status: "ui_case",
+            }
         };
 
-        onUpdateTemplateData(combinedData);
+        setLoading(true);
 
-        setDisposalUpdate(false);
+        try {
+            const chnageSysStatus = await api.post("/templateData/caseSysStatusUpdation",payloadSysStatus);
 
-        // reset states
-        setSelectKey(null);
-        setSelectedRow(null);
-        setOtherTransferField([]);
-        setShowOtherTransferModal(false);
-        setSelectedOtherFields(null);
-        setselectedOtherTemplate(null);
+            setLoading(false);
 
-        setApprovalsData([]);
-        setApprovalItem([]);
-        setApprovalItemDisabled(false);
-        setDesignationData([]);
+            if (chnageSysStatus && chnageSysStatus.success) {
+                toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
 
-        setAddApproveFlag(false);
-        setApproveTableFlag(false);
-        setApprovalSaveData({});
-      } else {
-        const errorMessage = chnageSysStatus.message
-          ? chnageSysStatus.message
-          : "Failed to change the status. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
-        toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          }
-        );
-      }
-    }
-  };
+                // update func
+                var combinedData = {
+                    id: selectedRowData.id,
+                    [selectKey.name]: selectedOtherFields.code,
+                };
+
+                onUpdateTemplateData(combinedData);
+
+                setDisposalUpdate(false);
+
+                // reset states
+                setSelectKey(null);
+                setSelectedRow(null);
+                setOtherTransferField([]);
+                setShowOtherTransferModal(false);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+
+                setApprovalsData([]);
+                setApprovalItem([]);
+                setApprovalItemDisabled(false);
+                setDesignationData([]);
+
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+                setApprovalSaveData({});
+            } else {
+                const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error"
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
 
   var userPermissions =
     JSON.parse(localStorage.getItem("user_permissions")) || [];
@@ -6789,6 +6836,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   setApprovalSaveCaseData({});
                   setApprovalItemsData([]);
                   setApprovalDesignationData([]);
+                setApprovalSaveData({});
   
               } else {
                   const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -7449,7 +7497,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             </DialogContentText>
           </DialogContent>
           <DialogActions sx={{ padding: "12px 24px" }}>
-            <Button onClick={() => closeOtherForm}>
+            <Button onClick={closeOtherForm}>
                 Cancel
             </Button>
           </DialogActions>
@@ -8039,226 +8087,191 @@ const loadChildMergedCasesData = async (page, caseId) => {
 </Dialog>
 
 
-      {approveTableFlag && (
-        <Dialog
-          open={approveTableFlag}
-          onClose={() => setApproveTableFlag(false)}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-          maxWidth="lg"
-          fullWidth
-          sx={{ zIndex: "1" }}
-        >
-          <DialogTitle
-            id="alert-dialog-title"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            Approval
-            <Box>
-              {/* {!addApproveFlag ? (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    showApprovalAddPage(selectedOtherTemplate.table);
-                  }}
-                >
-                  Add
-                </Button>
-              ) : ( */}
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    saveApprovalData(selectedOtherTemplate.table);
-                  }}
-                >
-                  Save
-                </Button>
-              {/* )} */}
-              <IconButton
-                aria-label="close"
-                onClick={() => setApproveTableFlag(false)}
-                sx={{ color: (theme) => theme.palette.grey[500] }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              <Box py={2}>
-                {/* {!addApproveFlag ? (
-                  <TableView rows={approvalsData} columns={approvalsColumn} />
-                ) : ( */}
-                  <Box
+        {approveTableFlag && (
+            <Dialog
+                open={approveTableFlag}
+                onClose={() => setApproveTableFlag(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+                fullWidth
+                sx={{ zIndex: "1" }}
+            >
+                <DialogTitle
+                    id="alert-dialog-title"
                     sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "18px",
-                      
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
                     }}
-                  >
-                      <label
-                        htmlFor="approval-item"
-                        style={{
-                          margin: "0",
-                          padding: 0, 
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "#475467",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        Approval Item
-                      </label>
-                    <Autocomplete
-                      id=""
-                      options={approvalItem}
-                      getOptionLabel={(option) => option.name || ""}
-                      name={"approval_item"}
-                      disabled={approvalItemDisabled}
-                      value={
-                        approvalItem.find(
-                          (option) =>
-                            option.approval_item_id ===
-                            (approvalSaveData &&
-                              approvalSaveData["approval_item"])
-                        ) || null
-                      }
-                      onChange={(e, value) =>
-                        handleApprovalSaveData(
-                          "approval_item",
-                          value?.approval_item_id
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          className="selectHideHistory"
-                          label={"Approval Item"}
-                        />
-                      )}
-                    />
-                      <label
-                        htmlFor="designation"
-                        style={{
-                          margin: "0",
-                          padding: 0, 
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "#475467",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        Designation
-                      </label>
-                    <Autocomplete
-                      id=""
-                      options={designationData}
-                      getOptionLabel={(option) => option.designation_name || ""}
-                      name={"approved_by"}
-                      value={
-                        designationData.find(
-                          (option) =>
-                            option.designation_id ===
-                            (approvalSaveData &&
-                              approvalSaveData["approved_by"])
-                        ) || null
-                      }
-                      onChange={(e, value) =>
-                        handleApprovalSaveData(
-                          "approved_by",
-                          value?.designation_id
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          className="selectHideHistory"
-                          label={"Designation"}
-                        />
-                      )}
-                    />
+                >
+                    Approval
+                    <Box>
 
-                    <label
-                        htmlFor="approval-date"
-                        style={{
-                          margin: "0",
-                          padding: 0, 
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "#475467",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        Approval Date
-                      </label>
-                    <LocalizationProvider
-                      dateAdapter={AdapterDayjs}
-                      sx={{ width: "100%" }}
-                    >
-                      <DemoContainer
-                        components={["DatePicker"]}
-                        sx={{ width: "100%" }}
-                      >
-                        <DatePicker
-                          label="Approval Date"
-                          value={
-                            approvalSaveData["approval_date"]
-                              ? dayjs(approvalSaveData["approval_date"])
-                              : null
-                          }
-                          name="approval_date"
-                          format="DD/MM/YYYY"
-                          sx={{ width: "100%" }}
-                          maxDate={dayjs()}
-                          onChange={(newValue) => {
-                            if (newValue && dayjs.isDayjs(newValue)) {
-                              handleApprovalSaveData(
-                                "approval_date",
-                                newValue.toISOString()
-                              );
-                            } else {
-                              handleApprovalSaveData("approval_date", null);
-                            }
-                          }}
-                        />
-                      </DemoContainer>
-                    </LocalizationProvider>
-
-                    <label
-                        htmlFor="remarks"
-                        style={{
-                          margin: "0",
-                          padding: 0, 
-                          fontSize: "16px",
-                          fontWeight: 500,
-                          color: "#475467",
-                          textTransform: "capitalize",
-                        }}
-                      >
-                        Remarks
-                      </label>
-                    <TextField
-                      rows={8}
-                      label={"Comments"}
-                      sx={{ width: "100%" }}
-                      name="remarks"
-                      value={approvalSaveData["remarks"]}
-                      onChange={(e) =>
-                        handleApprovalSaveData("remarks", e.target.value)
-                      }
-                    />
-                  </Box>
-                {/* )} */}
-              </Box>
-            </DialogContentText>
-          </DialogContent>
-        </Dialog>
-      )}
+                        <Button variant="outlined"
+                            onClick={() => {
+                                saveApprovalData(selectedOtherTemplate.table);
+                            }}
+                        >
+                            Save
+                        </Button>
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setApproveTableFlag(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        <Box py={2}>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "18px",
+                                }}
+                            >
+                                <Box>
+                                    <label
+                                        htmlFor="approval-item"
+                                        style={{
+                                            margin: "0",
+                                            padding: 0, 
+                                            fontSize: "16px",
+                                            fontWeight: 500,
+                                            color: "#475467",
+                                            textTransform: "capitalize",
+                                        }}
+                                    >
+                                        Approval Item
+                                    </label>
+                                    <Autocomplete
+                                        id=""
+                                        options={approvalItem}
+                                        getOptionLabel={(option) => option.name || ""}
+                                        name={"approval_item"}
+                                        disabled={approvalItemDisabled}
+                                        sx={{marginTop: '8px'}}
+                                        value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData &&approvalSaveData["approval_item"])) || null}
+                                        onChange={(e, value) =>
+                                            handleApprovalSaveData("approval_item",value?.approval_item_id)
+                                        }
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                className="selectHideHistory"
+                                                label={"Approval Item"}
+                                            />
+                                        )}
+                                    />
+                                </Box>
+                                <Box>
+                                    <label
+                                        htmlFor="designation"
+                                        style={{
+                                            margin: "0",
+                                            padding: 0, 
+                                            fontSize: "16px",
+                                            fontWeight: 500,
+                                            color: "#475467",
+                                            textTransform: "capitalize",
+                                        }}
+                                    >
+                                        Designation
+                                    </label>
+                                    <Autocomplete
+                                        id=""
+                                        options={designationData}
+                                        getOptionLabel={(option) => option.designation_name || ""}
+                                        name={"approved_by"}
+                                        value={designationData.find((option) => option.designation_id === (approvalSaveData && approvalSaveData["approved_by"])) || null}
+                                        onChange={(e, value) =>
+                                            handleApprovalSaveData("approved_by",value?.designation_id)
+                                        }
+                                        sx={{marginTop: '8px'}}
+                                        renderInput={(params) => (
+                                            <TextField
+                                                {...params}
+                                                className="selectHideHistory"
+                                                label={"Designation"}
+                                            />
+                                        )}
+                                    />
+                                </Box>
+                                <Box>
+                                    <label
+                                        htmlFor="approval-date"
+                                        style={{
+                                            margin: "0",
+                                            padding: 0, 
+                                            fontSize: "16px",
+                                            fontWeight: 500,
+                                            color: "#475467",
+                                            textTransform: "capitalize",
+                                        }}
+                                    >
+                                        Approval Date
+                                    </label>
+                                    <LocalizationProvider
+                                        dateAdapter={AdapterDayjs}
+                                        sx={{ width: "100%" }}
+                                    >
+                                        <DemoContainer
+                                            components={["DatePicker"]}
+                                            sx={{ width: "100%" }}
+                                        >
+                                            <DatePicker
+                                                label="Approval Date"
+                                                value={ approvalSaveData["approval_date"] ? dayjs(approvalSaveData["approval_date"]) : null }
+                                                name="approval_date"
+                                                format="DD/MM/YYYY"
+                                                sx={{ width: "100%",marginTop: '8px' }}
+                                                maxDate={dayjs()}
+                                                onChange={(newValue) => {
+                                                    if (newValue && dayjs.isDayjs(newValue)) {
+                                                        handleApprovalSaveData( "approval_date", newValue.toISOString());
+                                                    } else {
+                                                        handleApprovalSaveData("approval_date", null);
+                                                    }
+                                                }}
+                                            />
+                                        </DemoContainer>
+                                    </LocalizationProvider>
+                                </Box>
+                                <Box>
+                                    <label
+                                        htmlFor="remarks"
+                                        style={{
+                                            margin: "0",
+                                            padding: 0, 
+                                            fontSize: "16px",
+                                            fontWeight: 500,
+                                            color: "#475467",
+                                            textTransform: "capitalize",
+                                        }}
+                                    >
+                                        Remarks
+                                    </label>
+                                    <TextField
+                                        rows={8}
+                                        label={"Comments"}
+                                        sx={{ width: "100%",marginTop: '8px' }}
+                                        name="remarks"
+                                        value={approvalSaveData["remarks"]}
+                                        onChange={(e) =>
+                                            handleApprovalSaveData("remarks", e.target.value)
+                                        }
+                                    />
+                                </Box>
+                            </Box>
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
+        )}
 
       <Dialog
         open={showOtherTransferModal}
@@ -8838,9 +8851,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 onClose={() => setListApproveTableFlag(false)}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                maxWidth="lg"
+                fullScreen
                 fullWidth
-                 sx={{ zIndex: "1"}}
+                sx={{ zIndex: "1", marginLeft: '260px' }}
+
               >
                 <DialogTitle
                     id="alert-dialog-title"
@@ -8969,13 +8983,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     </Button>
                                 )}
                         </Box>
-                        <IconButton
+                        {/* <IconButton
                             aria-label="close"
                             onClick={() => setListApproveTableFlag(false)}
                             sx={{ color: (theme) => theme.palette.grey[500] }}
                         >
                             <CloseIcon />
-                        </IconButton>
+                        </IconButton> */}
                     </Box>
                 </DialogTitle>
                 <DialogContent>
@@ -9090,13 +9104,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                             sx={{ width: '100%' }}
                                             value={
                                                 listApprovalSaveData?.approval_date
-                                                ? dayjs(listApprovalSaveData.approval_date)
+                                                ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
                                                 : null
                                             }
                                             onChange={(newVal) =>
                                                 handleListApprovalSaveData(
                                                 "approval_date",
-                                                newVal ? newVal.toISOString() : null
+                                                newVal ? newVal.format('DD/MM/YYYY') : null // save in DD/MM/YYYY format if you want
                                                 )
                                             }
                                             maxDate={dayjs()}
@@ -9217,7 +9231,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
                     Approval
                     <Box>
-                        <Button variant="outlined" onClick={() => {saveOverallData()}}>Save</Button>
+                        <Button variant="outlined" onClick={() => {saveOverallData(true)}}>Save</Button>
                         <IconButton
                             aria-label="close"
                             onClick={() => setNewApprovalPage(false)}
@@ -9326,6 +9340,21 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                             />
                                         </DemoContainer>
                                     </LocalizationProvider>    
+
+                                    <label
+                                        htmlFor="designation"
+                                        style={{
+                                            margin: "0",
+                                            padding: 0, 
+                                            fontSize: "16px",
+                                            fontWeight: 500,
+                                            color: "#475467",
+                                            textTransform: "capitalize",
+                                        }}
+                                    >
+                                      Remarks
+                                    </label>
+
                                     <TextField
                                         rows={8}
                                         label={'Comments'}

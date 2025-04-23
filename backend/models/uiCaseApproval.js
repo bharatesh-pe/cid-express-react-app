@@ -64,6 +64,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING(255),
         allowNull: true,
       },
+      status: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
       info: {
         type: DataTypes.STRING(255),
         allowNull: true,
@@ -86,8 +91,8 @@ module.exports = (sequelize, DataTypes) => {
       sequelize,
       modelName: "UiCaseApproval",
       tableName: "ui_case_approval",
-      underscored: true, // Use snake_case for database columns
-      timestamps: false, // Set to true if you want createdAt and updatedAt fields
+      underscored: true,
+      timestamps: false,
     }
   );
 

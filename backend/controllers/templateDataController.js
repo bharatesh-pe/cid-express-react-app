@@ -5371,10 +5371,6 @@ exports.getMergeParentData = async (req, res) =>
                 { created_by_id: { [Op.in]: allowedUserIds } },
                 { field_io_name: { [Op.in]: allowedUserIds } },
                 ];
-            } else if (template_module === "pt_case") {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            } else if (template_module === "eq_case") {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             } else {
                 whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             }
@@ -6157,10 +6153,6 @@ exports.getMergeChildData = async (req, res) =>
                 { created_by_id: { [Op.in]: allowedUserIds } },
                 { field_io_name: { [Op.in]: allowedUserIds } },
                 ];
-            } else if (template_module === "pt_case") {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            } else if (template_module === "eq_case") {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             } else {
                 whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             }
@@ -6832,3 +6824,238 @@ exports.getMergeChildData = async (req, res) =>
     return userSendResponse(res, 500, false, "Server error", error);
   }
 }
+
+exports.deMergeCaseData = async (req, res) => {
+    const { template_module = "", case_id, transaction_id } = req.body;
+    const { user_id } = req.user;
+    const userId = user_id;
+    let recordIds = Array.isArray(case_id) ? case_id : [case_id];
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+    if (fs.existsSync(dirPath))
+        return userSendResponse(res, 400, false, "Duplicate transaction detected.");
+
+    fs.mkdirSync(dirPath, { recursive: true });
+
+    const t = await dbConfig.sequelize.transaction();
+
+    try {
+        const userDesignations = await UserDesignation.findAll({
+            where: { user_id },
+            attributes: ["designation_id"],
+        });
+
+        if (!userDesignations.length)
+            return userSendResponse(res, 400, false, "User has no designations assigned.");
+
+        const supervisorDesignationIds = userDesignations.map(ud => ud.designation_id);
+
+        const subordinates = await UsersHierarchy.findAll({
+            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+            attributes: ["officer_designation_id"],
+        });
+
+        const officerDesignationIds = subordinates.map(sub => sub.officer_designation_id);
+
+        let subordinateUserIds = [];
+        if (officerDesignationIds.length) {
+            const subordinateUsers = await UserDesignation.findAll({
+                where: { designation_id: { [Op.in]: officerDesignationIds } },
+                attributes: ["user_id"],
+            });
+            subordinateUserIds = subordinateUsers.map(ud => ud.user_id);
+        }
+
+        const allowedUserIds = [userId, ...subordinateUserIds];
+
+        let whereClause = {};
+        if (allowedUserIds.length) {
+            if (template_module === "ui_case") {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: allowedUserIds } },
+                    { field_io_name: { [Op.in]: allowedUserIds } },
+                ];
+            } else {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+        }
+
+        const mergedCaseDetails = await UiMergedCases.findAll({
+            where: { case_id: { [Op.in]: recordIds } },
+            attributes: ['case_id', 'merged_status'],
+            raw: true,
+        });
+
+        if (!mergedCaseDetails.length)
+            return userSendResponse(res, 400, false, "None of the case_ids belong to a merged case.");
+
+        const parentIds = mergedCaseDetails
+            .filter(item => item.merged_status === 'parent')
+            .map(item => item.case_id);
+
+        const childIds = mergedCaseDetails
+            .filter(item => item.merged_status === 'child')
+            .map(item => item.case_id);
+
+        if (parentIds.length > 0) {
+
+            const childCaseDetails = await UiMergedCases.findAll({
+                where: {
+                    parent_case_id: { [Op.in]: parentIds },
+                    merged_status: 'child',
+                },
+                attributes: ['case_id'],
+                raw: true,
+            });
+
+            const childCaseIds = childCaseDetails.map(item => item.case_id);
+
+            // Add child case_ids to recordIds only if not already present
+            for (const childId of childCaseIds) {
+                if (!recordIds.includes(childId)) {
+                    recordIds.push(childId);
+                }
+            }
+
+            await UiMergedCases.destroy({
+                where: { parent_case_id: { [Op.in]: parentIds } },
+                transaction: t
+            });
+
+
+        }
+
+        if (childIds.length > 0) {
+            // Fetch all child records grouped by parent_case_id
+            const allChildCases = await UiMergedCases.findAll({
+                where: { merged_status: 'child' },
+                attributes: ['case_id', 'parent_case_id'],
+                raw: true,
+            });
+
+            const parentToChildrenMap = {};
+            for (const { parent_case_id, case_id } of allChildCases) {
+                if (!parentToChildrenMap[parent_case_id]) {
+                    parentToChildrenMap[parent_case_id] = [];
+                }
+                parentToChildrenMap[parent_case_id].push(case_id);
+            }
+
+            const childIdSet = new Set(childIds);
+            const parentIdsToDelete = [];
+
+            // Check for each parent if all child cases are selected
+            for (const [parentId, children] of Object.entries(parentToChildrenMap)) {
+                const allSelected = children.every(childId => childIdSet.has(childId));
+                if (allSelected) {
+                    parentIdsToDelete.push(parentId);
+                    // Also include these childIds in recordIds if not already included
+                    children.forEach(id => {
+                        if (!recordIds.includes(id)) recordIds.push(id);
+                    });
+                    if (!recordIds.includes(parentId)) recordIds.push(parentId);
+                }
+            }
+
+            // Delete all child cases whose parent had all children selected
+            if (parentIdsToDelete.length > 0) {
+                await UiMergedCases.destroy({
+                    where: { parent_case_id: { [Op.in]: parentIdsToDelete } },
+                    transaction: t,
+                });
+            }
+
+            // Delete individual selected child cases (excluding ones from fully selected parents)
+            const childIdsToDelete = childIds.filter(
+                id => !parentIdsToDelete.some(parentId =>
+                    parentToChildrenMap[parentId]?.includes(id)
+                )
+            );
+
+            if (childIdsToDelete.length > 0) {
+                await UiMergedCases.destroy({
+                    where: { case_id: { [Op.in]: childIdsToDelete } },
+                    transaction: t,
+                });
+            }
+        }
+
+        const invalidIds = recordIds.filter(val => isNaN(parseInt(val)));
+        
+        if (invalidIds.length > 0)
+            return userSendResponse(res, 400, false, "Invalid ID format(s).");
+
+        const tableData = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+        if (!tableData)
+            return userSendResponse(res, 400, false, `Table Under Investigation does not exist.`);
+
+        const schema = typeof tableData.fields === "string"
+            ? JSON.parse(tableData.fields)
+            : tableData.fields;
+
+        const completeSchema = [
+            { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+            { name: "sys_status", data_type: "TEXT", not_null: false, default_value: 'ui_case' },
+            { name: "created_by", data_type: "TEXT", not_null: false },
+            { name: "updated_by", data_type: "TEXT", not_null: false },
+            { name: "created_by_id", data_type: "INTEGER", not_null: false },
+            { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+            { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+            { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+            ...schema,
+        ];
+
+        const table_name = "cid_under_investigation";
+        let Model = modelCache[table_name];
+
+        if (!Model) {
+            const modelAttributes = {};
+            for (const field of completeSchema) {
+                const { name, data_type, not_null, default_value, primaryKey, autoIncrement } = field;
+                const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                };
+                if (default_value) modelAttributes[name].defaultValue = default_value;
+                if (primaryKey) modelAttributes[name].primaryKey = true;
+                if (autoIncrement) modelAttributes[name].autoIncrement = true;
+            }
+
+            Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+                underscored: true,
+            });
+
+            await Model.sync({ alter: true });
+            modelCache[table_name] = Model;
+        }
+
+        const records = await Model.findAll({ where: { id: { [Op.in]: recordIds } } });
+
+        if (records.length !== recordIds.length)
+            return userSendResponse(res, 404, false, "Some records were not found in table Under Investigation.");
+
+        const [updatedCount] = await Model.update(
+            { sys_status: 'ui_case' },
+            { where: { id: { [Op.in]: recordIds } } }
+        );
+
+        if (updatedCount === 0)
+            return userSendResponse(res, 400, false, "No changes detected or update failed.");
+
+        await t.commit();
+        return userSendResponse(res, 200, true, "Merge data updated and de-merged successfully.");
+    } catch (err) {
+        console.error("deMergeCaseData error:", err);
+        await t.rollback();
+        return userSendResponse(res, 500, false, "Failed to de-merge data.");
+    } finally {
+        if (fs.existsSync(dirPath))
+            fs.rmSync(dirPath, { recursive: true, force: true });
+    }
+};

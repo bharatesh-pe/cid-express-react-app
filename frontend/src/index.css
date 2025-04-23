@@ -1121,4 +1121,6 @@ div::first-letter {
         font-weight: 600 !important;
     }
 
-            
+    .MuiDataGrid-cell:focus, .MuiDataGrid-cell:focus-within{
+        outline: none !important;
+    }
