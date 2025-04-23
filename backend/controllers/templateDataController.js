@@ -6926,58 +6926,63 @@ exports.deMergeCaseData = async (req, res) => {
         }
 
         if (childIds.length > 0) {
-            // Fetch all child records grouped by parent_case_id
-            const allChildCases = await UiMergedCases.findAll({
-                where: { merged_status: 'child' },
-                attributes: ['case_id', 'parent_case_id'],
-                raw: true,
+            // // Fetch all child records grouped by parent_case_id
+            // const allChildCases = await UiMergedCases.findAll({
+            //     where: { merged_status: 'child' },
+            //     attributes: ['case_id', 'parent_case_id'],
+            //     raw: true,
+            // });
+
+            // const parentToChildrenMap = {};
+            // for (const { parent_case_id, case_id } of allChildCases) {
+            //     if (!parentToChildrenMap[parent_case_id]) {
+            //         parentToChildrenMap[parent_case_id] = [];
+            //     }
+            //     parentToChildrenMap[parent_case_id].push(case_id);
+            // }
+
+            // const childIdSet = new Set(childIds);
+            // const parentIdsToDelete = [];
+
+            // // Check for each parent if all child cases are selected
+            // for (const [parentId, children] of Object.entries(parentToChildrenMap)) {
+            //     const allSelected = children.every(childId => childIdSet.has(childId));
+            //     if (allSelected) {
+            //         parentIdsToDelete.push(parentId);
+            //         // Also include these childIds in recordIds if not already included
+            //         children.forEach(id => {
+            //             if (!recordIds.includes(id)) recordIds.push(id);
+            //         });
+            //         if (!recordIds.includes(parentId)) recordIds.push(parentId);
+            //     }
+            // }
+
+            // // Delete all child cases whose parent had all children selected
+            // if (parentIdsToDelete.length > 0) {
+            //     await UiMergedCases.destroy({
+            //         where: { parent_case_id: { [Op.in]: parentIdsToDelete } },
+            //         transaction: t,
+            //     });
+            // }
+
+            // // Delete individual selected child cases (excluding ones from fully selected parents)
+            // const childIdsToDelete = childIds.filter(
+            //     id => !parentIdsToDelete.some(parentId =>
+            //         parentToChildrenMap[parentId]?.includes(id)
+            //     )
+            // );
+
+            // if (childIdsToDelete.length > 0) {
+            //     await UiMergedCases.destroy({
+            //         where: { case_id: { [Op.in]: childIdsToDelete } },
+            //         transaction: t,
+            //     });
+            // }
+
+            await UiMergedCases.destroy({
+                where: { case_id: { [Op.in]: childIds} , merged_status: 'child'  },
+                transaction: t
             });
-
-            const parentToChildrenMap = {};
-            for (const { parent_case_id, case_id } of allChildCases) {
-                if (!parentToChildrenMap[parent_case_id]) {
-                    parentToChildrenMap[parent_case_id] = [];
-                }
-                parentToChildrenMap[parent_case_id].push(case_id);
-            }
-
-            const childIdSet = new Set(childIds);
-            const parentIdsToDelete = [];
-
-            // Check for each parent if all child cases are selected
-            for (const [parentId, children] of Object.entries(parentToChildrenMap)) {
-                const allSelected = children.every(childId => childIdSet.has(childId));
-                if (allSelected) {
-                    parentIdsToDelete.push(parentId);
-                    // Also include these childIds in recordIds if not already included
-                    children.forEach(id => {
-                        if (!recordIds.includes(id)) recordIds.push(id);
-                    });
-                    if (!recordIds.includes(parentId)) recordIds.push(parentId);
-                }
-            }
-
-            // Delete all child cases whose parent had all children selected
-            if (parentIdsToDelete.length > 0) {
-                await UiMergedCases.destroy({
-                    where: { parent_case_id: { [Op.in]: parentIdsToDelete } },
-                    transaction: t,
-                });
-            }
-
-            // Delete individual selected child cases (excluding ones from fully selected parents)
-            const childIdsToDelete = childIds.filter(
-                id => !parentIdsToDelete.some(parentId =>
-                    parentToChildrenMap[parentId]?.includes(id)
-                )
-            );
-
-            if (childIdsToDelete.length > 0) {
-                await UiMergedCases.destroy({
-                    where: { case_id: { [Op.in]: childIdsToDelete } },
-                    transaction: t,
-                });
-            }
         }
 
         const invalidIds = recordIds.filter(val => isNaN(parseInt(val)));
