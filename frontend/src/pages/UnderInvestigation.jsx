@@ -214,17 +214,80 @@ const UnderInvestigation = () => {
             const row = params.row;
 
             const handleListApprovalView = () => {
-                setListApprovalSaveData(row); // Set data for read-only view
-                setListApprovalItemDisabled(true); // Disable dropdowns and date picker
-                setListAddApproveFlag(true); // Show form view
-                setListApproveTableFlag(true); // Open dialog
+                setListApprovalSaveData(row);
+                setListApprovalItemDisabled(true);
+                setListAddApproveFlag(true);
+                setListApproveTableFlag(true);
             };
 
             const handleListApprovalEdit = () => {
-                setListApprovalSaveData(row); // Prefill form for editing
-                setListApprovalItemDisabled(false); // Enable dropdowns and date picker
-                setListAddApproveFlag(true); // Show form view
-                setListApproveTableFlag(true); // Open dialog
+                setListApprovalSaveData(row);
+                setListApprovalItemDisabled(false);
+                setListAddApproveFlag(true);
+                setListApproveTableFlag(true);
+            };
+
+            const handleListApprovalDelete = async () => {
+                const result = await Swal.fire({
+                    title: "Are you sure?",
+                    text: "This action will permanently delete the approval record.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, Delete it!",
+                    cancelButtonText: "No",
+                });
+
+                if (result.isConfirmed) {
+                    setLoading(true);
+                    try {
+                        const response = await api.post("/ui_approval/delete_ui_case_approval", {
+                            approval_id: row.approval_id,
+                            transaction_id: `approval_delete_${Date.now()}`,
+                        });
+
+                        if (response && response.success) {
+                            toast.success('The approval record has been deleted.', {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-success",
+                            });
+                            // showApprovalListPage(row)
+                            setListApprovalTotalRecord(0);
+                            setListApprovalTotalPage(0);
+                            setListApproveTableFlag(false);
+                        } else {
+                            toast.error(response?.message || "Could not delete the record.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                         setLoading(false);
+                    } catch (error) {
+                        console.error("Delete error:", error);
+                        toast.error('Something went wrong during deletion.', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                         setLoading(false);
+                    }
+                }
             };
 
             return (
@@ -235,14 +298,14 @@ const UnderInvestigation = () => {
                     <Button variant="contained" color="primary" onClick={handleListApprovalEdit}>
                         Edit
                     </Button>
-                    <Button variant="contained" color="error">
+                    <Button variant="contained" color="error" onClick={handleListApprovalDelete}>
                         Delete
                     </Button>
                 </Box>
             );
         }
-
     };
+
   
     const [listApprovalItem, setListApprovalItem] = useState([]);
     const [listApprovalItemDisabled, setListApprovalItemDisabled] = useState(false);
@@ -282,9 +345,22 @@ const UnderInvestigation = () => {
 
         try {
             const { approval_item, approved_by, approval_date, remarks, approval_id } = listApprovalSaveData;
+            
+            // Ensure DD/MM/YYYY format is parsed properly
+            const parsedDate = dayjs(approval_date, "DD/MM/YYYY", true);
+            const formattedApprovalDate = parsedDate.isValid() ? parsedDate.toISOString() : null;
 
-            if (!approval_item || !approved_by || !approval_date) {
-                toast.error("Please fill in all required fields.");
+            if (!approval_item || !approved_by || !formattedApprovalDate) {
+                toast.error('Please fill in all required fields.', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
                 setLoading(false);
                 return;
             }
@@ -293,7 +369,7 @@ const UnderInvestigation = () => {
             approval_id,
             approval_item,
             approved_by,
-            approval_date,
+            approval_date:formattedApprovalDate,
             remarks,
             module: "ui_case_module",
             action: "update",    
@@ -321,6 +397,7 @@ const UnderInvestigation = () => {
                     progress: undefined,
                     className: "toast-success",
                 });
+                // showApprovalListPage(listApprovalSaveData)
                 setListApproveTableFlag(false);
             } else {
                 toast.error('Failed to update approval', {
@@ -8426,13 +8503,13 @@ const UnderInvestigation = () => {
                                     </Button>
                                 )}
                         </Box>
-                        <IconButton
+                        {/* <IconButton
                             aria-label="close"
                             onClick={() => setListApproveTableFlag(false)}
                             sx={{ color: (theme) => theme.palette.grey[500] }}
                         >
                             <CloseIcon />
-                        </IconButton>
+                        </IconButton> */}
                     </Box>
                 </DialogTitle>
                 <DialogContent>
@@ -8547,13 +8624,13 @@ const UnderInvestigation = () => {
                                             sx={{ width: '100%' }}
                                             value={
                                                 listApprovalSaveData?.approval_date
-                                                ? dayjs(listApprovalSaveData.approval_date)
+                                                ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
                                                 : null
                                             }
                                             onChange={(newVal) =>
                                                 handleListApprovalSaveData(
                                                 "approval_date",
-                                                newVal ? newVal.toISOString() : null
+                                                newVal ? newVal.format('DD/MM/YYYY') : null // save in DD/MM/YYYY format if you want
                                                 )
                                             }
                                             maxDate={dayjs()}
