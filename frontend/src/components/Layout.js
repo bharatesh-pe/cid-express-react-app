@@ -293,6 +293,7 @@ const Layout = ({ children }) => {
             localStorage.removeItem("user_permissions");
             localStorage.removeItem("designation_id");
             localStorage.removeItem("designation_name");
+            localStorage.removeItem("allowedUserIds");
             navigate("/");
           }
         }
@@ -339,7 +340,7 @@ const Layout = ({ children }) => {
       localStorage.removeItem("user_id");
       localStorage.removeItem("division_id");
       localStorage.removeItem("division_name");
-
+      localStorage.removeItem("allowedUserIds");
       navigate("/");
     } catch (err) {
       var errMessage = "Something went wrong. Please try again.";
@@ -357,6 +358,7 @@ const Layout = ({ children }) => {
           localStorage.removeItem("user_permissions");
           localStorage.removeItem("designation_id");
           localStorage.removeItem("designation_name");
+          localStorage.removeItem("allowedUserIds");
           navigate("/");
         }
       }
