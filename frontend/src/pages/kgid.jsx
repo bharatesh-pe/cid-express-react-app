@@ -218,7 +218,7 @@ const KGID = () => {
                 return;
             }
 
-            toast.success(response.message || "KGID Deleted Successfully", {
+            toast.success("KGID Deleted Successfully", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -405,7 +405,7 @@ const KGID = () => {
                 return;
             }
 
-            toast.success(response.message || "KGID Created Successfully", {
+            toast.success("KGID Created Successfully", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -557,7 +557,7 @@ const KGID = () => {
                 return;
             }
 
-            toast.success(response.message || "KGID updated successfully", {
+            toast.success("KGID updated successfully", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
