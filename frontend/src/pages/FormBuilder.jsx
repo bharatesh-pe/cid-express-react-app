@@ -2353,7 +2353,7 @@ const Formbuilder = () => {
 
                                                         var switchOnChange = handleSwitch;
 
-                                                        if (prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux') {
+                                                        if (prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'particular_case_options') {
                                                             rowColValue = 2;
                                                             colText = (prop === 'required') ? 'Mandatory field' : (prop === 'history') ? 'Enable field history' : 'Disabled';
 
@@ -2373,6 +2373,8 @@ const Formbuilder = () => {
                                                                 switchOnChange = changePrimaryValue;
                                                             }else if(prop === 'hide_from_ux'){
                                                                 colText = 'Hide in UX'
+                                                            }else if(prop === 'particular_case_options'){
+                                                                colText = 'Particular Case Options'
                                                             }
                                                         }
 
@@ -2405,7 +2407,7 @@ const Formbuilder = () => {
                                                                                 </Box>
                                                                             </Box>
                                                                         ) :
-                                                                        prop === 'hide_from_ux' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' ? (
+                                                                        prop === 'hide_from_ux' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                                     <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && type !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
