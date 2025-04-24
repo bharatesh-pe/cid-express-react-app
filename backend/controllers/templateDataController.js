@@ -4968,7 +4968,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             insertedIO = insertedData.field_io_name || null;
         }
 
-
 		const fileUpdates = {};
 
         if(folder_attachment_ids)
@@ -5021,7 +5020,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
         if(second_table_name && second_table_name != "")
 		{
-			const secondTableData = await Template.findOne({ where: { second_table_name } });
+			const secondTableData = await Template.findOne({ where: { table_name:second_table_name } });
 			if (!secondTableData) {
 				return userSendResponse(res, 400, false, `Table ${second_table_name} does not exist.`, null);
 			}
