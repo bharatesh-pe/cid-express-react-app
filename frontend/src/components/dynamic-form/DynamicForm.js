@@ -1508,6 +1508,7 @@ const DynamicForm = ({
           aria-describedby="alert-dialog-description"
           maxWidth="md"
           fullWidth
+          className="approvalModal"
         >
           <DialogTitle
             id="alert-dialog-title"

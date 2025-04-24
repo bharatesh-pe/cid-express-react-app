@@ -636,6 +636,7 @@ const UnderInvestigation = () => {
 
     const showNatureOfDisposal = (selectedRow) => {
         setSelectedRowData(selectedRow);
+        setNatureOfDisposalValue(null);
         setNatureOfDisposalModal(true);
     };
 
@@ -809,6 +810,8 @@ const UnderInvestigation = () => {
                 }
             }
         });
+        
+        normalData['ui_case_id'] = selectedRowData.id;
 
         formData.append("table_name", ptCaseTableName);
         formData.append("data", JSON.stringify(normalData));
@@ -852,6 +855,8 @@ const UnderInvestigation = () => {
                     }
                 }
             });
+
+            secondNormalData['ui_case_id'] = selectedRowData.id;
     
             formData.append("second_table_name", moreThenTemplateTableName);
             formData.append("second_data", JSON.stringify(secondNormalData));
@@ -915,6 +920,7 @@ const UnderInvestigation = () => {
                 setNewApprovalPage(false);
                 setMoreThenTemplate(false);
                 setOtherFormOpen(false);
+                setNatureOfDisposalValue(null);
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -1006,6 +1012,7 @@ const UnderInvestigation = () => {
                 setNewApprovalPage(false);
                 setMoreThenTemplate(false);
                 setOtherFormOpen(false);
+                setNatureOfDisposalValue(null);
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -1105,6 +1112,8 @@ const UnderInvestigation = () => {
                             approval_details : approvalItems,
                         }
         }
+
+        normalData['ui_case_id'] = selectedRowData.id;
         
         formData.append("table_name", ptCaseTableName);
         formData.append("data", JSON.stringify(normalData));
@@ -1142,6 +1151,7 @@ const UnderInvestigation = () => {
                 setShowOrderCopy(false);
                 setMoreThenTemplate(false);
                 setOtherFormOpen(false);
+                setNatureOfDisposalValue(null);
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";

@@ -1256,6 +1256,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           aria-describedby="alert-dialog-description"
           maxWidth="md"
           fullWidth
+          className="approvalModal"
         >
           <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
             <Box>
