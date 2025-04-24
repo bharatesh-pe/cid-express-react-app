@@ -4852,7 +4852,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
-	const { table_name  , data, others_data, transaction_id, user_designation_id , second_table_name, second_data , second_folder_attachment_ids } = req.body;
+	const { table_name  , data, others_data, transaction_id, user_designation_id , folder_attachment_ids , second_table_name, second_data , second_folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -4883,123 +4883,140 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 		let userName = userData?.kgidDetails?.name || null;
 
-		const tableData = await Template.findOne({ where: { table_name } });
-		if (!tableData) {
-			return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
-		}
+        let insertedData = null ;
+        let insertedId =  null;
+        let insertedType = null;
+        let insertedIO = null;
 
-		const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+        if(table_name  && data)
+        {
+            const tableData = await Template.findOne({ where: { table_name } });
+            if (!tableData) {
+                return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+            }
+    
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+    
+            let parsedData;
+            try {
+                parsedData = JSON.parse(data);
+            } catch (err) {
+                return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+            }
+    
+            const validData = {};
+            for (const field of schema) {
+                const { name, not_null, default_value } = field;
+                if (parsedData.hasOwnProperty(name)) {
+                    validData[name] = parsedData[name];
+                } else if (not_null && default_value === undefined) {
+                    return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
+                } else if (default_value !== undefined) {
+                    validData[name] = default_value;
+                }
+            }
+    
+            validData.created_by = userName;
+            validData.created_by_id = userId;
+    
+            const completeSchema = [
+                { name: "created_by", data_type: "TEXT", not_null: false },
+                { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                ...schema
+            ];
+    
+            ["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
+                if (parsedData[field]) {
+                    completeSchema.unshift({
+                        name: field,
+                        data_type: typeof parsedData[field] === "number" ? "INTEGER" : "TEXT",
+                        not_null: false
+                    });
+                    validData[field] = parsedData[field];
+                }
+            });
+    
+            const modelAttributes = {};
+            for (const field of completeSchema) {
+                const { name, data_type, not_null, default_value } = field;
+                const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+            }
+    
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+    
+            await Model.sync();
+    
+            insertedData = await Model.create(validData, { transaction: t });
+            if (!insertedData) {
+                await t.rollback();
+                return userSendResponse(res, 400, false, "Failed to insert data.", null);
+            }
+            
+            insertedId = insertedData.id || null;
+            insertedType = insertedData.sys_status || null;
+            insertedIO = insertedData.field_io_name || null;
+        }
 
-		let parsedData;
-		try {
-			parsedData = JSON.parse(data);
-		} catch (err) {
-			return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
-		}
-
-		const validData = {};
-		for (const field of schema) {
-			const { name, not_null, default_value } = field;
-			if (parsedData.hasOwnProperty(name)) {
-				validData[name] = parsedData[name];
-			} else if (not_null && default_value === undefined) {
-				return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
-			} else if (default_value !== undefined) {
-				validData[name] = default_value;
-			}
-		}
-
-		validData.created_by = userName;
-		validData.created_by_id = userId;
-
-		const completeSchema = [
-			{ name: "created_by", data_type: "TEXT", not_null: false },
-			{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-			...schema
-		];
-
-		["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
-			if (parsedData[field]) {
-				completeSchema.unshift({
-					name: field,
-					data_type: typeof parsedData[field] === "number" ? "INTEGER" : "TEXT",
-					not_null: false
-				});
-				validData[field] = parsedData[field];
-			}
-		});
-
-		const modelAttributes = {};
-		for (const field of completeSchema) {
-			const { name, data_type, not_null, default_value } = field;
-			const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-			modelAttributes[name] = {
-				type: sequelizeType,
-				allowNull: !not_null,
-				defaultValue: default_value || null,
-			};
-		}
-
-		const Model = sequelize.define(table_name, modelAttributes, {
-			freezeTableName: true,
-			timestamps: true,
-			createdAt: "created_at",
-			updatedAt: "updated_at",
-		});
-
-		await Model.sync();
-
-		const insertedData = await Model.create(validData, { transaction: t });
-		if (!insertedData) {
-			await t.rollback();
-			return userSendResponse(res, 400, false, "Failed to insert data.", null);
-		}
 
 		const fileUpdates = {};
 
-		if (req.files && req.files.length > 0) {
-			const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
+        if(folder_attachment_ids)
+        {
+            if (req.files && req.files.length > 0) {
+                const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
+    
+                for (const file of req.files) {
+                    const { originalname, size, key, fieldname } = file;
+                    const fileExtension = path.extname(originalname);
+    
+                    // Find matching folder_id from the payload (if any)
+                    const matchingFolder = folderAttachments.find(
+                    (attachment) =>
+                        attachment.filename === originalname &&
+                        attachment.field_name === fieldname
+                    );
+    
+                    const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
+    
+                    await ProfileAttachment.create({
+                        template_id: tableData.template_id,
+                        table_row_id: insertedData.id,
+                        attachment_name: originalname,
+                        attachment_extension: fileExtension,
+                        attachment_size: size,
+                        s3_key: key,
+                        field_name: fieldname,
+                        folder_id: folderId, // Store NULL if no folder_id provided
+                    });
+    
+                    if (!fileUpdates[fieldname]) {
+                        fileUpdates[fieldname] = originalname;
+                    } else {
+                        fileUpdates[fieldname] += `,${originalname}`;
+                    }
+                }
+    
+                
+                for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+                    await Model.update(
+                    { [fieldname]: filenames },
+                    { where: { id: insertedData.id }, transaction: t }
+                    );
+                }
+          
+            }
+        }
 
-			for (const file of req.files) {
-				const { originalname, size, key, fieldname } = file;
-				const fileExtension = path.extname(originalname);
-
-				// Find matching folder_id from the payload (if any)
-				const matchingFolder = folderAttachments.find(
-				(attachment) =>
-					attachment.filename === originalname &&
-					attachment.field_name === fieldname
-				);
-
-				const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
-
-				await ProfileAttachment.create({
-					template_id: tableData.template_id,
-					table_row_id: insertedData.id,
-					attachment_name: originalname,
-					attachment_extension: fileExtension,
-					attachment_size: size,
-					s3_key: key,
-					field_name: fieldname,
-					folder_id: folderId, // Store NULL if no folder_id provided
-				});
-
-				if (!fileUpdates[fieldname]) {
-					fileUpdates[fieldname] = originalname;
-				} else {
-					fileUpdates[fieldname] += `,${originalname}`;
-				}
-			}
-
-			
-      for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-        await Model.update(
-          { [fieldname]: filenames },
-          { where: { id: insertedData.id }, transaction: t }
-        );
-      }
-      
-		}
 
         if(second_table_name && second_table_name != "")
 		{
@@ -5122,12 +5139,11 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
-		const insertedId = insertedData.id;
-		const insertedtype = insertedData.sys_status;
-		const insertedIO = insertedData.field_io_name || null;
-		let recordId = insertedData.id;
-		let sys_status = insertedData.sys_status;;
-		let default_status = insertedData.sys_status;;
+      
+
+        let recordId = insertedId;
+        let sys_status = insertedType;
+        let default_status = insertedType;
 
 		if(insertedIO && insertedIO !== null) {
 			const userData = await Users.findOne({
@@ -5140,12 +5156,18 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
+         console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>table_name",others_data)
 		let otherParsedData  = {};
 		try {
 			otherParsedData = JSON.parse(others_data);
 		} catch (err) {
-			return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+            otherParsedData = others_data;
+			// return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
 		}
+
+        if (typeof otherParsedData !== 'object' || otherParsedData === null) {
+            return userSendResponse(res, 400, false, "Invalid data format in others_data.", null);
+        }
 
 		// Handle others_data
 		if (otherParsedData && typeof otherParsedData === "object") {
