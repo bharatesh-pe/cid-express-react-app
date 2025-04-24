@@ -5052,7 +5052,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			const secondCompleteSchema = [
 				{ name: "created_by", data_type: "TEXT", not_null: false },
 				{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-				...schema
+				...secondSchema
 			];
 
 			["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
