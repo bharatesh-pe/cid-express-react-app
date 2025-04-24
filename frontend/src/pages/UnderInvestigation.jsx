@@ -639,7 +639,7 @@ const UnderInvestigation = () => {
         setNatureOfDisposalModal(true);
     };
 
-    const showOrderCopyCourt =  (selectedRow, approved)=> {
+    const showOrderCopyCourt =  (selectedRow, tableName, approved)=> {
         setSelectedRowData(selectedRow);
         setApprovedByCourt(approved);
         setShowOrderCopy(true);
@@ -1408,6 +1408,7 @@ const UnderInvestigation = () => {
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     setFurtherInvestigationSelectedRow(data);
+                    setSelectedRowData(selectedRow);
                     showNewApprovalPage();
                 } else {
                     console.log("sys status updation canceled.");
@@ -7177,7 +7178,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           ),
         }
       : null,
-    ...hoverTableOptions,
+    ...(sysStatus !== "b_Report" ? hoverTableOptions : []),
     sysStatus === "ui_case" || sysStatus === "all"
       ? {
           name: "Preliminary Charge Sheet - 173 (8)",
@@ -7201,18 +7202,20 @@ const loadChildMergedCasesData = async (page, caseId) => {
             ),
         }
       : null,
-        {
+        sysStatus !== "b_Report" ?{
             name: "Nature of Disposal",
             onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
-        },
+        } : null,
+        sysStatus === "b_Report" ?
         {
             name: "Approved By Court",
             onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
-        },
+        } : null,
+        sysStatus === "b_Report" ? 
         {
             name: "Rejected By Court",
             onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
-        },
+        } : null,
     userPermissions[0]?.case_details_download
       ? {
           name: "Download",
@@ -7893,7 +7896,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     
                 setListAddApproveFlag(false);
                 setListApproveTableFlag(true);
-                setListApprovalCaseNo(approveData["field_cid_crime_no./enquiry_no"] || "")
+                setListApprovalCaseNo(approveData?.["field_cid_crime_no./enquiry_no"] || "")
     
                 const randomId = `approval_${Date.now()}_${Math.floor(
                 Math.random() * 1000
@@ -8626,7 +8629,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     {selectedOtherTemplate?.name}
                 </Typography>
 
-                {selectedRowData["field_cid_crime_no./enquiry_no"] && (
+                {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
                     <Chip
                         label={selectedRowData["field_cid_crime_no./enquiry_no"]}
                         color="primary"
@@ -10170,7 +10173,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
                     <Box sx={{display: 'flex', alignItems: 'center', gap: '4px'}}>
                         Approval
-                        {selectedRowData["field_cid_crime_no./enquiry_no"] && (
+                        {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
                             <Chip
                                 label={selectedRowData["field_cid_crime_no./enquiry_no"]}
                                 color="primary"
@@ -10341,7 +10344,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 <DialogTitle id="nature-of-disposal-dialog-title">
                     <Box sx={{display: 'flex', alignItems: 'center', gap: '4px'}}>
                         Nature of Disposal
-                        {selectedRowData["field_cid_crime_no./enquiry_no"] && (
+                        {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
                             <Chip
                                 label={selectedRowData["field_cid_crime_no./enquiry_no"]}
                                 color="primary"
