@@ -613,6 +613,65 @@ const update_pin = async (req, res) => {
   }
 };
 
+const get_supervisor_id = async (req, res) => {
+  try {
+
+    const { user_id } = req.user;
+    const userId = user_id;
+    const { user_designation_id, user_division_id } = req.body;
+
+    // Fetch designations for the logged-in user
+    const userDesignations = await UserDesignation.findAll({
+    where: { user_id },
+    attributes: ["designation_id"],
+    });
+    if (!userDesignations.length) {
+    return res
+        .status(404)
+        .json({ message: "User has no designations assigned" });
+    }
+    const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+
+    // Fetch subordinates based on supervisor designations
+    const subordinates = await UsersHierarchy.findAll({
+    where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+    attributes: ["officer_designation_id"],
+    });
+    const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+
+    // Fetch subordinate user IDs if any officer designations found
+    let subordinateUserIds = [];
+    if (officerDesignationIds.length) {
+    const subordinateUsers = await UserDesignation.findAll({
+        where: { designation_id: { [Op.in]: officerDesignationIds } },
+        attributes: ["user_id"],
+    });
+    subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+    }
+
+    // Combine userId with subordinates and remove duplicates
+    const allowedUserIds = Array.from(new Set([userId, ...subordinateUserIds]));
+
+    if(allowedUserIds.length > 0)
+    {
+        return res
+          .status(200)
+          .json({ success: true, message: "Fetched supervisor data successfully." , supervisor_id : allowedUserIds });
+    }
+    else
+    {
+         return res
+          .status(404)
+          .json({ success: false, message: "supervisors not found" });
+    }
+  } catch (error) {
+    console.error("Error logging out:", error.message);
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   generate_OTP,
   verify_OTP,
@@ -621,4 +680,5 @@ module.exports = {
   generate_OTP_without_pin,
   verify_OTP_without_pin,
   update_pin,
+  get_supervisor_id,
 };

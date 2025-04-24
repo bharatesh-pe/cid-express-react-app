@@ -186,6 +186,60 @@ const Layout = ({ children }) => {
     }));
   };
 
+  const handleMenuClick = async () => {
+    setLoading(true);
+    try {
+        var user_designation_id = localStorage.getItem("designation_id") || "";
+        var user_division_id = localStorage.getItem("division_id") || "0";
+        const token = localStorage.getItem("auth_token");
+        const serverURL = process.env.REACT_APP_SERVER_URL;
+
+        const response = await fetch(`${serverURL}/auth/get_supervisor_id`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            token: token,
+          },
+          body: JSON.stringify({
+            user_designation_id: user_designation_id,
+            user_division_id: user_division_id,
+          }),
+        });
+        setLoading(false);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message);
+        }
+
+        if (data && data.success && data.supervisor_id) {
+            localStorage.setItem(
+            "allowedUserIds",
+            JSON.stringify(data.supervisor_id)
+            );
+        }   
+
+      } catch (err) {
+        setLoading(false);
+        var errMessage = "Something went wrong. Please try again.";
+        if (err && err.message) {
+          errMessage = err.message;
+        }
+
+        toast.error(errMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-warning",
+        });
+        return;
+      }
+  }
+
   useEffect(() => {
     const ApprunCall = async () => {
       setLoading(true);
@@ -194,8 +248,6 @@ const Layout = ({ children }) => {
         var user_division_id = localStorage.getItem("division_id") || "0";
         const token = localStorage.getItem("auth_token");
         const serverURL = process.env.REACT_APP_SERVER_URL;
-        var user_designation_id = localStorage.getItem("designation_id") || "";
-        var user_division_id = localStorage.getItem("division_id") || "0";
 
         const response = await fetch(`${serverURL}/auth/get_module`, {
           method: "POST",
@@ -418,7 +470,9 @@ const Layout = ({ children }) => {
 
                             <ListItem
                               sx={{ cursor: "pointer" }}
-                              onClick={() => handleDropdownToggle(element.name)}
+                              onClick={() => {
+                                    handleDropdownToggle(element.name);
+                                }}
                               className={`sidebarMenus ${mainActiveClass}`}
                             >
                               <ListItemIcon>
@@ -449,8 +503,10 @@ const Layout = ({ children }) => {
                                     <ListItem
                                       key={subIndex}
                                       sx={{ pl: 4, cursor: "pointer" }}
-                                      onClick={() =>
-                                        navigate(subModule.location)
+                                      onClick={() =>{
+                                          handleMenuClick() // Fetch userid based on hierarchy
+                                          navigate(subModule.location)
+                                        }
                                       }
                                       className={`subMenuSidebarMenus ${
                                         subModule?.active_location?.includes(
