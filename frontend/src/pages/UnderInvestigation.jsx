@@ -598,6 +598,561 @@ const UnderInvestigation = () => {
         }
     };
 
+    
+    // nature of disposal state
+    const [natureOfDisposalModal, setNatureOfDisposalModal] = useState(false);
+    const [natureOfDisposalValue, setNatureOfDisposalValue] = useState(null);
+    const [overallDisposalData, setOverallDisposalData] = useState({});
+    const [approvedByCourt, setApprovedByCourt] = useState(false);
+    const [showOrderCopy, setShowOrderCopy] = useState(false);
+
+    // more then one template state
+    const [moreThenTemplate, setMoreThenTemplate] = useState(false);
+    const [moreThenTemplateTableName, setMoreThenTemplateTableName] = useState(null);
+    const [moreThenTemplateTemplateName, setMoreThenTemplateTemplateName] = useState(null);
+    const [moreThenTemplateTemplateFields, setMoreThenTemplateTemplateFields] = useState(null);
+    const [moreThenTemplateStepperData, setMoreThenTemplateStepperData] = useState([]);
+    const [moreThenTemplateInitialData, setMoreThenTemplateInitialData] = useState([]);
+
+    const showNatureOfDisposal = (selectedRow) => {
+        setSelectedRowData(selectedRow);
+        setNatureOfDisposalModal(true);
+    };
+
+    const showOrderCopyCourt =  (selectedRow, approved)=> {
+        setSelectedRowData(selectedRow);
+        setApprovedByCourt(approved);
+        setShowOrderCopy(true);
+        showNewApprovalPage();
+    }
+
+    const handleNatureOfDisposalSubmit = () => {
+        if (natureOfDisposalValue) {
+            
+            if(natureOfDisposalValue?.code){
+                switch (natureOfDisposalValue?.code) {
+                    case "disposal":
+                        showMorethenOneTemplate("cid_ui_case_charge_sheet");
+                        break;
+                    case "178_cases":
+                        showPtCaseTemplate();
+                        break;
+                    case "b_Report":
+                        natureOfDisposalSysStatus("b_Report");
+                        break;
+                    case "c_Report":
+                        natureOfDisposalSysStatus("disposal")
+                        break;
+                    default:
+                        setNatureOfDisposalModal(false);
+                        setNatureOfDisposalValue(null);
+                        break;
+                }
+            }else{
+                setNatureOfDisposalModal(false);
+                setNatureOfDisposalValue(null);
+            }
+
+        }else{
+            setNatureOfDisposalModal(false);
+            setNatureOfDisposalValue(null);
+        }
+    };
+
+    const showMorethenOneTemplate = async (table)=>{
+        const viewTableData = {
+            table_name: table,
+        };
+        
+        setLoading(true);
+    
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+        
+            setLoading(false);
+            if (viewTemplateResponse && viewTemplateResponse.success) {
+                
+                setMoreThenTemplate(true);
+                setMoreThenTemplateInitialData(overallDisposalData?.['charge_sheet'] || {});
+        
+                setMoreThenTemplateTemplateFields(viewTemplateResponse.data["fields"]? viewTemplateResponse.data["fields"]: []);
+                
+                if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                    setMoreThenTemplateStepperData(viewTemplateResponse.data.sections? viewTemplateResponse.data.sections: []);
+                }
+        
+                setMoreThenTemplateTableName(table);
+                setMoreThenTemplateTemplateName(viewTemplateResponse?.data?.template_name);
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const moreThenTemplateSaveFunc = (data)=> {
+        if (Object.keys(data).length === 0) {
+            toast.warning('Data Is Empty Please Check Once', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if(natureOfDisposalModal){
+        
+            setOverallDisposalData({
+                ...overallDisposalData,
+                "charge_sheet": data,
+            });
+        
+            showPtCaseTemplate();
+            return
+        }
+    }
+
+    const moreThenTemplateErrorFunc = (data)=> {
+        console.log(data,"data data");
+    }
+
+    const moreThenTemplateCloseFunc = (data)=> {
+        setMoreThenTemplate(false);
+    }
+
+    const natureOfDisposalFinalReport = async (data)=>{
+
+        const formData = new FormData();
+        var normalData = {};
+
+        optionFormTemplateData.forEach((field) => {
+
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+
+                    if (field.type === 'file') {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
+                            var filteredArray = data[field.name].filter(file => file.filename instanceof File);
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename['name']
+                                    }
+                                });
+
+                                formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
+
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
+                }
+            }
+        });
+
+        formData.append("table_name", ptCaseTableName);
+        formData.append("data", JSON.stringify(normalData));
+
+        if(moreThenTemplate && overallDisposalData?.['charge_sheet']){
+
+            var secondNormalData = {};
+    
+            moreThenTemplateTemplateFields.forEach((field) => {
+    
+                if (overallDisposalData['charge_sheet'][field.name]) {
+                    if (field.type === "file" || field.type === "profilepicture") {
+    
+                        if (field.type === 'file') {
+                            if (Array.isArray(overallDisposalData['charge_sheet'][field.name])) {
+                                const hasFileInstance = overallDisposalData['charge_sheet'][field.name].some(file => file.filename instanceof File);
+                                var filteredArray = overallDisposalData['charge_sheet'][field.name].filter(file => file.filename instanceof File);
+                                if (hasFileInstance) {
+                                    overallDisposalData['charge_sheet'][field.name].forEach((file) => {
+                                        if (file.filename instanceof File) {
+                                            formData.append(field.name, file.filename);
+                                        }
+                                    });
+    
+                                    filteredArray = filteredArray.map((obj) => {
+                                        return {
+                                            ...obj,
+                                            filename: obj.filename['name']
+                                        }
+                                    });
+    
+                                    formData.append('second_folder_attachment_ids', JSON.stringify(filteredArray));
+    
+                                }
+                            }
+                        } else {
+                            formData.append(field.name, overallDisposalData['charge_sheet'][field.name]);
+                        }
+                    } else {
+                        secondNormalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(overallDisposalData['charge_sheet'][field.name]) ? overallDisposalData['charge_sheet'][field.name].join(',') : overallDisposalData['charge_sheet'][field.name] : overallDisposalData['charge_sheet'][field.name];
+                    }
+                }
+            });
+    
+            formData.append("second_table_name", moreThenTemplateTableName);
+            formData.append("second_data", JSON.stringify(secondNormalData));
+
+        }
+
+        var othersUpdateData = {
+            id : selectedRowData.id,
+            sys_status : natureOfDisposalValue.code,
+            default_status : "ui_case"
+        }
+        
+        var othersData = { 
+            "sys_status" : othersUpdateData,
+            "others_table_name" : table_name
+        }
+
+        if(singleApiData?.['approval']){
+            var approvalItems = {
+                id : selectedRowData.id,
+                module_name : 'Under Investigation',
+                action : 'Disposal Change'
+            }
+
+            othersData = {
+                            ...othersData, 
+                            ...singleApiData,
+                            approval_details : approvalItems,
+                        }
+        }
+
+
+        formData.append("others_data", JSON.stringify(othersData));
+        var transitionId = `ui_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transitionId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
+
+        setLoading(true);
+
+        try {
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
+
+            setLoading(false);
+
+            if (overallSaveData && overallSaveData.success) {
+
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount),
+                });
+
+                setNatureOfDisposalModal(false);
+                setSingleApiData({});
+                setNewApprovalPage(false);
+                setMoreThenTemplate(false);
+                setOtherFormOpen(false);
+
+            } else {
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
+    
+    const natureOfDisposalSysStatus = async (sys_status)=>{
+
+        var othersUpdateData = {
+            id : selectedRowData.id,
+            sys_status : sys_status,
+            default_status : "ui_case"
+        }
+        
+        var othersData = { 
+            "sys_status" : othersUpdateData,
+            "others_table_name" : table_name
+        }
+
+        if(singleApiData?.['approval']){
+            var approvalItems = {
+                id : selectedRowData.id,
+                module_name : 'Under Investigation',
+                action : 'B Report Change'
+            }
+
+            othersData = {
+                            ...othersData, 
+                            ...singleApiData,
+                            approval_details : approvalItems,
+                        }
+        }
+
+        const formData = new FormData();
+        formData.append("others_data", JSON.stringify(othersData));
+        var transitionId = `ui_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transitionId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
+
+        setLoading(true);
+
+        try {
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
+
+            setLoading(false);
+
+            if (overallSaveData && overallSaveData.success) {
+
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount),
+                });
+
+                setNatureOfDisposalModal(false);
+                setSingleApiData({});
+                setNewApprovalPage(false);
+                setMoreThenTemplate(false);
+                setOtherFormOpen(false);
+
+            } else {
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+
+    }
+
+    // order copy from action
+
+    const natureOfDisposalOrderCopy = async (data)=>{
+
+        const formData = new FormData();
+        var normalData = {};
+
+        optionFormTemplateData.forEach((field) => {
+
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+
+                    if (field.type === 'file') {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(file => file.filename instanceof File);
+                            var filteredArray = data[field.name].filter(file => file.filename instanceof File);
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename['name']
+                                    }
+                                });
+
+                                formData.append('folder_attachment_ids', JSON.stringify(filteredArray));
+
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = field.type === 'checkbox' || field.type === 'multidropdown' ? Array.isArray(data[field.name]) ? data[field.name].join(',') : data[field.name] : data[field.name];
+                }
+            }
+        });
+
+        var othersUpdateData = {
+            id : selectedRowData.id,
+            sys_status : approvedByCourt ? 'disposal' : 'ui_case',
+            default_status : "ui_case"
+        }
+        
+        var othersData = { 
+            "sys_status" : othersUpdateData,
+            "others_table_name" : table_name
+        }
+
+        if(singleApiData?.['approval']){
+            var approvalItems = {
+                id : selectedRowData.id,
+                module_name : 'Under Investigation',
+                action : 'Disposal Change'
+            }
+
+            othersData = {
+                            ...othersData, 
+                            ...singleApiData,
+                            approval_details : approvalItems,
+                        }
+        }
+        
+        formData.append("table_name", ptCaseTableName);
+        formData.append("data", JSON.stringify(normalData));
+
+        formData.append("others_data", JSON.stringify(othersData));
+        var transitionId = `ui_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transitionId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
+
+
+        setLoading(true);
+
+        try {
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
+
+            setLoading(false);
+
+            if (overallSaveData && overallSaveData.success) {
+
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => loadTableData(paginationCount),
+                });
+
+                setNatureOfDisposalModal(false);
+                setSingleApiData({});
+                setNewApprovalPage(false);
+                setShowOrderCopy(false);
+                setMoreThenTemplate(false);
+                setOtherFormOpen(false);
+
+            } else {
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
   const toggleSelectRow = (id) => {
     setSelectedIds((prevSelectedIds) => {
       const updated = prevSelectedIds.includes(id)
@@ -1020,8 +1575,14 @@ const UnderInvestigation = () => {
                 setApprovalItem(getActionsDetails.data['approval_item']);
                 setDesignationData(getActionsDetails.data['designation']);
 
+                var approvalItemName = "further investigation"
+
+                if(natureOfDisposalModal || showOrderCopy){
+                    approvalItemName = "Change of Disposal Type"
+                }
+
                 var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                    if((data.name).toLowerCase() === 'further investigation'){
+                    if((data.name).toLowerCase() === approvalItemName.toLowerCase()){
                         return data;
                     }
                 });
@@ -1138,6 +1699,16 @@ const UnderInvestigation = () => {
                 progress: undefined,
                 className: "toast-error",
             });
+            return;
+        }
+
+        if(natureOfDisposalModal){
+            handleNatureOfDisposalSubmit();
+            return
+        }
+
+        if(showOrderCopy){
+            showActionsOptionsTemplate("cid_ui_case_court_order_copy");
             return;
         }
 
@@ -2558,7 +3129,7 @@ const UnderInvestigation = () => {
 
   const otherTemplateSaveFunc = async (data) => {
 
-    if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
+    if ((!natureOfDisposalModal && !showOrderCopy) && (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
         toast.warning("Please Check The Template", {
             position: "top-right",
             autoClose: 3000,
@@ -2583,6 +3154,15 @@ const UnderInvestigation = () => {
             progress: undefined,
             className: "toast-warning",
         });
+        return;
+    }
+
+    if(natureOfDisposalModal){
+        natureOfDisposalFinalReport(data);
+        return;
+    }
+    if(showOrderCopy){
+        natureOfDisposalOrderCopy(data);
         return;
     }
 
@@ -5482,8 +6062,8 @@ const UnderInvestigation = () => {
                 setDisposalUpdate(true);
             } else {
                 Swal.fire({
-                    title: selectedOtherFields["name"] === "B" ? "Approved by Court" : "Are You Sure ?",
-                    text: selectedOtherFields["name"] === "B" ? "" : "Do you want to move this case !",
+                    title: "Are You Sure ?",
+                    text: "Do you want to move this case !",
                     icon: "warning",
                     showCancelButton: true,
                     confirmButtonText: "Yes !",
@@ -5494,16 +6074,16 @@ const UnderInvestigation = () => {
 
                             var payloadApproveData = {
                                 ...approvalSaveData,
-                                case_id: furtherInvestigationSelectedRow?.id || selectedRowData.id,
+                                case_id: selectedRowData.id,
                                 case_type: "ui_case",
                                 module: "Under Investiation",
-                                action: selectedOtherTemplate?.name || "Action",
+                                action: "Nature Of Disposal",
                                 transaction_id: randomApprovalId,
                                 created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
                                 created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
                                 info: {
                                     module: "Under Investiation",
-                                    action: selectedOtherTemplate?.name || "Action",
+                                    action: "Nature Of Disposal",
                                 },
                             };
                         
@@ -5910,6 +6490,18 @@ const UnderInvestigation = () => {
             ),
         }
       : null,
+        {
+            name: "Nature of Disposal",
+            onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
+        },
+        {
+            name: "Approved By Court",
+            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
+        },
+        {
+            name: "Rejected By Court",
+            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
+        },
     userPermissions[0]?.case_details_download
       ? {
           name: "Download",
@@ -6820,6 +7412,16 @@ const UnderInvestigation = () => {
               }`}
             >
               Merged Cases
+            </Box>
+            <Box
+                onClick={() => {
+                    setSysSattus("b_Report");
+                    setPaginationCount(1);
+                }}
+                id="filterReinvestigation"
+                className={`filterTabs ${sysStatus === "b_Report" ? "Active" : ""}`}
+            >
+                B Report
             </Box>
             <Box
               onClick={() => {
@@ -8679,7 +9281,7 @@ const UnderInvestigation = () => {
         {newApprovalPage &&
             <Dialog
                 open={newApprovalPage}
-                onClose={() => setNewApprovalPage(false)}
+                onClose={() => {setNewApprovalPage(false);setSingleApiData({});}}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
                 maxWidth="lg"
@@ -8687,12 +9289,23 @@ const UnderInvestigation = () => {
                 sx={{zIndex:'1'}}
             >
                 <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                    Approval
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                        Approval
+                        {selectedRowData["field_cid_crime_no./enquiry_no"] && (
+                            <Chip
+                                label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                                sx={{ fontWeight: 500, marginTop: '2px' }}
+                            />
+                        )}
+                    </Box>
                     <Box>
                         <Button variant="outlined" onClick={() => {saveOverallData(true)}}>Save</Button>
                         <IconButton
                             aria-label="close"
-                            onClick={() => setNewApprovalPage(false)}
+                            onClick={() => {setNewApprovalPage(false);setSingleApiData({});}}
                             sx={{ color: (theme) => theme.palette.grey[500] }}
                         >
                             <CloseIcon />
@@ -8706,6 +9319,7 @@ const UnderInvestigation = () => {
                             {
                                 <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
     
+                                    <Box>
                                     <label
                                       htmlFor="approval-item"
                                       style={{
@@ -8725,6 +9339,7 @@ const UnderInvestigation = () => {
                                         getOptionLabel={(option) => option.name || ''}
                                         name={'approval_item'}
                                         disabled={disabledApprovalItems}
+                                        sx={{marginTop: '8px' }}
                                         value={approvalItem.find((option) => option.approval_item_id === (singleApiData?.['approval'] && singleApiData?.['approval']?.['approval_item'])) || null}
                                         onChange={(e,value)=>approvalNewDataSave('approval_item',value?.approval_item_id)}
                                         renderInput={(params) =>
@@ -8735,6 +9350,8 @@ const UnderInvestigation = () => {
                                             />
                                         }
                                     />
+                                    </Box>
+                                    <Box>
                                     <label
                                       htmlFor="designation"
                                       style={{
@@ -8754,6 +9371,7 @@ const UnderInvestigation = () => {
                                         options={designationData}
                                         getOptionLabel={(option) => option.designation_name || ''}
                                         name={'approved_by'}
+                                        sx={{marginTop: '8px' }}
                                         value={designationData.find((option) => option.designation_id === (singleApiData?.['approval'] && singleApiData?.['approval']?.['approved_by'])) || null}
                                         onChange={(e,value)=>approvalNewDataSave('approved_by',value?.designation_id)}
                                         renderInput={(params) =>
@@ -8764,7 +9382,8 @@ const UnderInvestigation = () => {
                                             />
                                         }
                                     />
-    
+                                    </Box>
+                                    <Box>
                                     <label
                                       htmlFor="approval-date"
                                       style={{
@@ -8786,7 +9405,7 @@ const UnderInvestigation = () => {
                                                 value={singleApiData?.['approval']?.['approval_date'] ? dayjs(singleApiData?.['approval']?.['approval_date']) : null} 
                                                 name="approval_date" 
                                                 format="DD/MM/YYYY"
-                                                sx={{width:'100%'}}
+                                                sx={{width:'100%', marginTop: '8px' }}
                                                 maxDate={dayjs()}
                                                 onChange={(newValue) => {
                                                     if (newValue && dayjs.isDayjs(newValue)) {
@@ -8798,7 +9417,8 @@ const UnderInvestigation = () => {
                                             />
                                         </DemoContainer>
                                     </LocalizationProvider>    
-
+                                    </Box>
+                                    <Box>
                                     <label
                                         htmlFor="designation"
                                         style={{
@@ -8816,12 +9436,12 @@ const UnderInvestigation = () => {
                                     <TextField
                                         rows={8}
                                         label={'Comments'}
-                                        sx={{width:'100%'}}
+                                        sx={{width:'100%', marginTop: '8px' }}
                                         name="remarks"
                                         value={singleApiData?.['approval']?.['remarks']}
                                         onChange={(e)=>approvalNewDataSave('remarks', e.target.value)}
                                     />
-    
+                                    </Box>
                                 </Box>
                             }
                         </Box>
@@ -8829,6 +9449,118 @@ const UnderInvestigation = () => {
                 </DialogContent>
             </Dialog>
         }
+
+        {natureOfDisposalModal && (
+            <Dialog
+                open={natureOfDisposalModal}
+                onClose={() => {setNatureOfDisposalModal(false);setNatureOfDisposalValue(null);}}
+                aria-labelledby="nature-of-disposal-dialog-title"
+                aria-describedby="nature-of-disposal-dialog-description"
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle id="nature-of-disposal-dialog-title">
+                    <Box sx={{display: 'flex', alignItems: 'center', gap: '4px'}}>
+                        Nature of Disposal
+                        {selectedRowData["field_cid_crime_no./enquiry_no"] && (
+                            <Chip
+                                label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                                sx={{ fontWeight: 500, marginTop: '2px' }}
+                            />
+                        )}
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="nature-of-disposal-dialog-description">
+                        <FormControl fullWidth>
+                            <Autocomplete
+                                options={[
+                                    { name: "A Final Charge Sheet", code: "disposal" },
+                                    { name: "A Preliminary Charge Sheet", code: "178_cases" },
+                                    { name: "B Report", code: "b_Report" },
+                                    { name: "C Report", code: "c_Report" },
+                                ]}
+                                getOptionLabel={(option) => option.name || ""}
+                                value={natureOfDisposalValue || null}
+                                onChange={(event, newValue) => setNatureOfDisposalValue(newValue)}
+                                renderInput={(params) => (
+                                    <TextField
+                                        {...params}
+                                        label="Select Nature of Disposal"
+                                        className="selectHideHistory"
+                                    />
+                                )}
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => {setNatureOfDisposalModal(false);setNatureOfDisposalValue(null);}}>Cancel</Button>
+                    <Button
+                        className="fillPrimaryBtn"
+                        onClick={()=>{
+                            if (!natureOfDisposalValue) {
+                                toast.error("Please fill the required value",{
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+                            showNewApprovalPage();
+                        }}
+                    >
+                        Submit
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        )}
+
+        {moreThenTemplate && (
+            <Dialog
+                open={moreThenTemplate}
+                onClose={() => setMoreThenTemplate(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+                <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                    <DialogContentText id="alert-dialog-description">
+                        <FormControl fullWidth>
+                            <NormalViewForm
+                                table_row_id={selectedRowData.id}
+                                template_id={selectedRowData.id}
+                                template_name={moreThenTemplateTemplateName}
+                                table_name={moreThenTemplateTableName}
+                                readOnly={false}
+                                editData={false}
+                                initialData={moreThenTemplateInitialData}
+                                formConfig={moreThenTemplateTemplateFields}
+                                stepperData={moreThenTemplateStepperData}
+                                onSubmit={moreThenTemplateSaveFunc}
+                                onError={moreThenTemplateErrorFunc}
+                                closeForm={moreThenTemplateCloseFunc}
+                                headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={()=>setMoreThenTemplate(false)}>
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        )}
 
     </Box>
   );
