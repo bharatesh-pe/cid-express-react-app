@@ -1017,34 +1017,34 @@ const Enquiries = () => {
                             );
                             },
                         },
-                        {
-                            field: "approval",
-                            headerName: "Approval",
-                            width: 50,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
-                            ),                            
-                            renderCell: (params) => (
-                                <Button
-                                    variant="contained"
-                                    color="transparent"
-                                    size="small"
-                                    sx={{
-                                        padding: 0,
-                                        fontSize: '0.75rem',
-                                        textTransform: 'none',
-                                        boxShadow: 'none',
-                                        '&:hover':{
-                                            boxShadow: 'none',
-                                        }
-                                    }}
-                                >
-                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
-                                </Button>
-                            )
-                        },
+                        // {
+                        //     field: "approval",
+                        //     headerName: "Approval",
+                        //     width: 50,
+                        //     resizable: true,
+                        //     cellClassName: 'justify-content-start',
+                        //     renderHeader: (params) => (
+                        //         <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+                        //     ),                            
+                        //     renderCell: (params) => (
+                        //         <Button
+                        //             variant="contained"
+                        //             color="transparent"
+                        //             size="small"
+                        //             sx={{
+                        //                 padding: 0,
+                        //                 fontSize: '0.75rem',
+                        //                 textTransform: 'none',
+                        //                 boxShadow: 'none',
+                        //                 '&:hover':{
+                        //                     boxShadow: 'none',
+                        //                 }
+                        //             }}
+                        //         >
+                        //             <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
+                        //         </Button>
+                        //     )
+                        // },
                         {
                             field: "field_enquiry_no",
                             headerName: "Enquiry No",
@@ -1083,9 +1083,9 @@ const Enquiries = () => {
     
                         for (const [key, val] of Object.entries(field)) {
                             if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val);
+                                updatedField[key] = formatDate(val) || '-';
                             } else {
-                                updatedField[key] = val;
+                                updatedField[key] = val || '-';
                             }
                         }
     
