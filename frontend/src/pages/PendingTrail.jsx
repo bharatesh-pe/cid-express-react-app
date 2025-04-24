@@ -5,6 +5,9 @@ import DynamicForm from "../components/dynamic-form/DynamicForm";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import api from "../services/api";
+import VerifiedIcon from '@mui/icons-material/Verified';
+import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import HistoryIcon from '@mui/icons-material/History';
 
 import {
   Box,
@@ -59,7 +62,8 @@ import dayjs from "dayjs";
 import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
-
+import DateField from "../components/form/Date";
+import LongText from "../components/form/LongText";
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import GenerateProfilePdf from "./GenerateProfilePdf";
 import WestIcon from '@mui/icons-material/West';
@@ -224,6 +228,240 @@ const UnderInvestigation = () => {
     const [othersToDate, setOthersToDate] = useState(null);
     const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     const [othersFilterData, setOthersFilterData] = useState({});
+    const [listApprovalsData, setListApprovalsData] = useState([]);
+    const [listApproveTableFlag, setListApproveTableFlag] = useState(false);
+    const [listAddApproveFlag, setListAddApproveFlag] = useState(false);
+    const [listApprovalCaseNo, setListApprovalCaseNo] = useState("");
+    const [listApprovalsColumn, setListApprovalsColumn] = useState([
+        { field: "sl_no", headerName: "S.No", width: 80 },
+        { field: "approvalItem", headerName: "Approval Item", width: 150 },
+        { field: "approvedBy", headerName: "Approved By", width: 140 },
+        { field: "approval_date", headerName: "Approval Date", width: 150 },
+        { field: "remarks", headerName: "Remarks", width: 120 },
+    ]);
+  
+    const listApprovalActionColumn = {
+        field: "actions",
+        headerName: "Actions",
+        width: 300,
+        sortable: false,
+        renderCell: (params) => {
+            const row = params.row;
+
+            const handleListApprovalView = () => {
+                setListApprovalSaveData(row);
+                setListApprovalItemDisabled(true);
+                setListAddApproveFlag(true);
+                setListApproveTableFlag(true);
+            };
+
+            const handleListApprovalEdit = () => {
+                setListApprovalSaveData(row);
+                setListApprovalItemDisabled(false);
+                setListAddApproveFlag(true);
+                setListApproveTableFlag(true);
+            };
+
+            const handleListApprovalDelete = async () => {
+                const result = await Swal.fire({
+                    title: "Are you sure?",
+                    text: "This action will permanently delete the approval record.",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: "Yes, Delete it!",
+                    cancelButtonText: "No",
+                });
+
+                if (result.isConfirmed) {
+                    setLoading(true);
+                    try {
+                        const response = await api.post("/ui_approval/delete_ui_case_approval", {
+                            approval_id: row.approval_id,
+                            transaction_id: `approval_delete_${Date.now()}`,
+                        });
+
+                        if (response && response.success) {
+                            toast.success('The approval record has been deleted.', {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-success",
+                            });
+                            // showApprovalListPage(row)
+                            setListApprovalTotalRecord(0);
+                            setListApprovalTotalPage(0);
+                            setListApproveTableFlag(false);
+                        } else {
+                            toast.error(response?.message || "Could not delete the record.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                         setLoading(false);
+                    } catch (error) {
+                        console.error("Delete error:", error);
+                        toast.error('Something went wrong during deletion.', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                         setLoading(false);
+                    }
+                }
+            };
+
+            return (
+                <Box sx={{ display: "flex", gap: 1 }}>
+                    <Button variant="outlined" onClick={handleListApprovalView}>
+                        View
+                    </Button>
+                    <Button variant="contained" color="primary" onClick={handleListApprovalEdit} >
+                        Edit
+                    </Button>
+                    <Button variant="contained" color="error" onClick={handleListApprovalDelete}>
+                        Delete
+                    </Button>
+                </Box>
+            );
+        }
+    };
+
+  
+    const [listApprovalItem, setListApprovalItem] = useState([]);
+    const [listApprovalItemDisabled, setListApprovalItemDisabled] = useState(false);
+    const [listDesignationData, setListDesignationData] = useState([]);
+    const [listRandomApprovalId, setListRandomApprovalId] = useState(0);
+    const [listApprovalSaveData, setListApprovalSaveData] = useState({});
+    const [listApprovalTotalRecord, setListApprovalTotalRecord] = useState(0);
+    const [listApprovalTotalPage, setListApprovalTotalPage] = useState(0);
+    const [listApprovalPaginationCount, setListApprovalPaginationCount] = useState(1);
+    const listApprovalPagination = (page) => {
+        setListApprovalPaginationCount(page)
+    }
+    const [listApprovalSearchValue,setListApprovalSearchValue] =  useState('');
+    const [listApprovalFromDate,setListApprovalFromDate] =  useState(null);
+    const [listApprovalToDate,setListApprovalToDate] =  useState(null);
+    const [listApprovalFiltersDropdown,setListApprovalFiltersDropdown] =  useState([]);
+    const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
+
+    const handleListApprovalClear = ()=>{
+        setListApprovalSearchValue('');
+        setListApprovalPaginationCount(1);
+        setListApprovalFromDate(null);
+        setListApprovalToDate(null);
+        setListApprovalFiltersDropdown([]);
+        setListApprovalFilterData({});
+    }
+
+    const handleListApprovalSaveData = (name, value) => {
+        setListApprovalSaveData({
+        ...listApprovalSaveData,
+        [name]: value,
+        });
+    };
+
+    const handleUpdateApproval = async () => {
+        setLoading(true);
+
+        try {
+            const { approval_item, approved_by, approval_date, remarks, approval_id } = listApprovalSaveData;
+            
+            // Ensure DD/MM/YYYY format is parsed properly
+            const parsedDate = dayjs(approval_date, "DD/MM/YYYY", true);
+            const formattedApprovalDate = parsedDate.isValid() ? parsedDate.toISOString() : null;
+
+            if (!approval_item || !approved_by || !formattedApprovalDate) {
+                toast.error('Please fill in all required fields.', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                setLoading(false);
+                return;
+            }
+
+            const payloadObj = {
+            approval_id,
+            approval_item,
+            approved_by,
+            approval_date:formattedApprovalDate,
+            remarks,
+            module: "ui_case_module",
+            action: "update",    
+            transaction_id:  `approval_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
+            created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
+            created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+            };
+
+            const response = await api.post(
+            "/ui_approval/update_ui_case_approval",
+            payloadObj
+            );
+
+            setLoading(false);
+
+            if (response && response.success)
+            {
+                toast.success('Approval updated successfully', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+                // showApprovalListPage(listApprovalSaveData)
+                setListApproveTableFlag(false);
+            } else {
+                toast.error('Failed to update approval', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            console.error("Update error:", error);
+            toast.error('Something went wrong', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return false;
+        }
+    };
 
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
@@ -1054,7 +1292,35 @@ const UnderInvestigation = () => {
                                 </Box>
                             ),
                         },
-                        {
+                          {
+                              field: "approval",
+                              headerName: "Approval",
+                              width: 50,
+                              resizable: true,
+                              cellClassName: 'justify-content-start',
+                              renderHeader: (params) => (
+                                  <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+                              ),                            
+                              renderCell: (params) => (
+                                  <Button
+                                      variant="contained"
+                                      color="transparent"
+                                      size="small"
+                                      sx={{
+                                          padding: 0,
+                                          fontSize: '0.75rem',
+                                          textTransform: 'none',
+                                          boxShadow: 'none',
+                                          '&:hover':{
+                                              boxShadow: 'none',
+                                          }
+                                      }}
+                                  >
+                                      <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
+                                  </Button>
+                              )
+                          },
+                          {
                             field: "field_cc_no./sc_no",
                             headerName: "Cc No./Sc No",
                             width: 130,
@@ -1092,9 +1358,9 @@ const UnderInvestigation = () => {
     
                         for (const [key, val] of Object.entries(field)) {
                             if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val);
+                                updatedField[key] = formatDate(val) || '-';
                             } else {
-                                updatedField[key] = val;
+                                updatedField[key] = val || '-';
                             }
                         }
     
@@ -1505,6 +1771,163 @@ const UnderInvestigation = () => {
     setTableSortKey(key);
   };
 
+    const handleActionShow = (rowData)=>{
+      
+          if(!rowData){
+              toast.error("Please Check Case Data !",{
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+              });
+              return;
+          }
+  
+          console.log(rowData)
+  
+    
+          setListApprovalsColumn((prev) => {
+              const withoutActions = prev.filter((col) => col.field !== "actions");
+              return [...withoutActions, listApprovalActionColumn];
+          });
+  
+          showApprovalListPage(rowData)
+  
+      }
+
+      const showApprovalListPage = async (approveData) => {
+              var payloadObj = {
+                  case_id: approveData.id,
+              };
+      
+              setLoading(true);
+      
+              try {
+                  const getActionsDetails = await api.post(
+                      "/ui_approval/get_ui_case_approvals",
+                      payloadObj
+                  );
+          
+                  setLoading(false);
+          
+                  if (getActionsDetails && getActionsDetails.success) {
+                      var updatedOptions = [];
+          
+                      if (getActionsDetails.data["approvals"].length > 0) {
+                          updatedOptions = getActionsDetails.data["approvals"].map(
+                              (data, index) => {
+                              const formatDate = (fieldValue) => {
+                                  if (!fieldValue || typeof fieldValue !== "string")
+                                  return fieldValue;
+              
+                                  var dateValue = new Date(fieldValue);
+              
+                                  if (
+                                  isNaN(dateValue.getTime()) ||
+                                  (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                                  ) {
+                                  return fieldValue;
+                                  }
+              
+                                  if (isNaN(dateValue.getTime())) return fieldValue;
+              
+                                  var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                                  var monthValue = String(dateValue.getMonth() + 1).padStart(
+                                  2,
+                                  "0"
+                                  );
+                                  var yearValue = dateValue.getFullYear();
+                                  return `${dayValue}/${monthValue}/${yearValue}`;
+                              };
+              
+                              const updatedField = {};
+              
+                              Object.keys(data).forEach((key) => {
+                                  if (
+                                  data[key] &&
+                                  key !== "id" &&
+                                  !isNaN(new Date(data[key]).getTime())
+                                  ) {
+                                  updatedField[key] = formatDate(data[key]);
+                                  } else {
+                                  updatedField[key] = data[key];
+                                  }
+                              });
+              
+                              return {
+                                  ...updatedField,
+                                  sl_no: index + 1,
+                                  id: data.approval_id,
+                              };
+                              }
+                          );
+      
+                          const approvalMetaData = getActionsDetails.data["meta"]
+      
+                          if(approvalMetaData && approvalMetaData.totalItems && approvalMetaData.totalItems > 0){
+                              setListApprovalTotalRecord(approvalMetaData.totalItems);
+                          }
+      
+                          if(approvalMetaData && approvalMetaData.totalPages && approvalMetaData.totalPages > 0 )
+                          {
+                              setListApprovalTotalPage(approvalMetaData.totalPages)
+                          }
+      
+                      }
+          
+                      setListApprovalsData(updatedOptions);
+                      setListApprovalItem(getActionsDetails.data["approval_item"]);
+                      setListDesignationData(getActionsDetails.data["designation"]);
+          
+                      setListAddApproveFlag(false);
+                      setListApproveTableFlag(true);
+                      setListApprovalCaseNo(approveData["field_cid_crime_no./enquiry_no"] || "")
+          
+                      const randomId = `approval_${Date.now()}_${Math.floor(
+                      Math.random() * 1000
+                      )}`;
+                      setListRandomApprovalId(randomId);
+                  } else {
+                      const errorMessage = getActionsDetails.message
+                      ? getActionsDetails.message
+                      : "Failed to create the template. Please try again.";
+                      toast.error(errorMessage, {
+                      position: "top-right",
+                      autoClose: 3000,
+                      hideProgressBar: false,
+                      closeOnClick: true,
+                      pauseOnHover: true,
+                      draggable: true,
+                      progress: undefined,
+                      className: "toast-error",
+                      });
+                  }
+              } catch (error) {
+                  setLoading(false);
+                  if (error && error.response && error.response["data"]) {
+                      toast.error(
+                      error.response["data"].message
+                          ? error.response["data"].message
+                          : "Please Try Again !",
+                      {
+                          position: "top-right",
+                          autoClose: 3000,
+                          hideProgressBar: false,
+                          closeOnClick: true,
+                          pauseOnHover: true,
+                          draggable: true,
+                          progress: undefined,
+                          className: "toast-error",
+                      }
+                      );
+                  }
+              }
+          };
+      
   const getTemplate = async (table_name) => {
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
@@ -7043,6 +7466,322 @@ const UnderInvestigation = () => {
         </Dialog>
       )}
 
+
+          {listApproveTableFlag && (
+              <Dialog
+                open={listApproveTableFlag}
+                onClose={() => setListApproveTableFlag(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                fullScreen
+                fullWidth
+                sx={{ zIndex: "1", marginLeft: '260px' }}
+
+              >
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                    display: "flex",
+                    alignItems: "start",
+                    justifyContent: "space-between",
+                    }}
+                >
+                    {listAddApproveFlag ? (
+                        <Box 
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => {  setListAddApproveFlag(false) }}
+                        >
+                            <WestIcon />
+                            <Typography variant="body1" fontWeight={500}>
+                                Approval
+                            </Typography>
+                            {listApprovalCaseNo && (
+                                <Chip
+                                    label={listApprovalCaseNo}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
+                                />
+                            )}
+                            {!listAddApproveFlag &&
+                            (
+                                <Box className="totalRecordCaseStyle">
+                                    {listApprovalTotalRecord} Records
+                                </Box>
+                            )}
+                        </Box>
+                    ) : (
+                        <Box 
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => { setListApproveTableFlag(false) }}
+                        >
+                            <WestIcon />
+                            <Typography variant="body1" fontWeight={500}>
+                                Approval
+                            </Typography>
+                            {listApprovalCaseNo && (
+                                <Chip
+                                    label={listApprovalCaseNo}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
+                                />
+                            )}
+                            {!listAddApproveFlag &&
+                            (
+                                <Box className="totalRecordCaseStyle">
+                                    {listApprovalTotalRecord} Records
+                                </Box>
+                            )}
+                        </Box>
+                    )}
+
+                    <Box sx={{display: 'flex', alignItems: 'center'}}>
+                        <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
+                            <Box>
+                            </Box>
+                            {!listAddApproveFlag &&
+                            (
+                                   <Button
+                                      variant="outlined"
+                                      sx={{marginLeft: "10px", height: '40px'}}
+                                    >
+                                      Approval Log
+                                  </Button>
+                            )}
+                            {!listAddApproveFlag &&
+                            (
+                                <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                                    <TextFieldInput 
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ color: "#475467" }} />
+                                                </InputAdornment>
+                                            ),
+                                            // endAdornment: (
+                                            //     // <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //     //     <IconButton
+                                            //     //         sx={{ padding: "0 5px", borderRadius: "0" }}
+                                            //     //         onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                            //     //     >
+                                            //     //         <FilterListIcon sx={{ color: "#475467" }} />
+                                            //     //     </IconButton>
+                                            //     // </Box>
+                                            // ),
+                                        }}
+
+                                        onInput={(e) => setListApprovalSearchValue(e.target.value)}
+                                        value={listApprovalSearchValue}
+                                        id="tableSearch"
+                                        size="small"
+                                        placeholder='Search anything'
+                                        variant="outlined"
+                                        className="profileSearchClass"
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                                            }
+                                        }}
+                                        
+                                        sx={{
+                                            width: '350px', borderRadius: '6px', outline: 'none',
+                                            '& .MuiInputBase-input::placeholder': {
+                                                color: '#475467',
+                                                opacity: '1',
+                                                fontSize: '14px',
+                                                fontWeight: '400',
+                                                fontFamily: 'Roboto'
+                                            },
+                                        }}
+                                    />
+                                    {(listApprovalSearchValue || listApprovalFromDate || listApprovalToDate || Object.keys(listApprovalFilterData).length > 0) && (
+                                        <Typography
+                                            onClick={handleListApprovalClear}
+                                            sx={{
+                                                fontSize: "13px",
+                                                fontWeight: "500",
+                                                textDecoration: "underline",
+                                                cursor: "pointer",
+                                            }}
+                                            mt={1}
+                                        >
+                                            Clear Filter
+                                        </Typography>
+                                    )}
+                                </Box>
+                            )}
+                                {listAddApproveFlag && !listApprovalItemDisabled && (
+                                    <Button
+                                        variant="outlined"
+                                        onClick={handleUpdateApproval}
+                                    >
+                                        Update
+                                    </Button>
+                                )}
+                        </Box>
+                        {/* <IconButton
+                            aria-label="close"
+                            onClick={() => setListApproveTableFlag(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton> */}
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        <Box py={2} sx={{ width: '100%'}}>
+                            {!listAddApproveFlag ? (
+                                <TableView 
+                                    rows={listApprovalsData} 
+                                    columns={listApprovalsColumn}
+                                    totalPage={listApprovalTotalPage} 
+                                    totalRecord={listApprovalTotalRecord} 
+                                    paginationCount={listApprovalPaginationCount} 
+                                    handlePagination={listApprovalPagination} 
+                                />
+                            ) : (
+                            <Box
+                                py={2}
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "18px",
+                                }}
+                            >
+
+                                <AutocompleteField
+                                  formData={{ approval_item: listApprovalSaveData?.approval_item }}
+                                  errors={{}}
+                                  field={{
+                                      heading: 'Approval Item',
+                                      name: 'approval_item',
+                                      label: 'Approval Item',
+                                      options: listApprovalItem.map(item => ({
+                                          ...item,
+                                          code: item.approval_item_id
+                                      })),
+                                      disabled: true,
+                                      required: true ,
+                                      history: true
+                                  }}
+                                  value={listApprovalSaveData?.approval_item}
+                                  onChange={(fieldName, newValue) => {
+                                      handleListApprovalSaveData(fieldName, newValue);
+                                  }}
+                                  onFocus={() => {}}
+                                  isFocused={false}
+                              />
+        
+                                <AutocompleteField
+                                    formData={{ approved_by: listApprovalSaveData?.approved_by }}
+                                    errors={{}} 
+                                    field={{
+                                        heading: 'Designation',
+                                        name: 'approved_by',
+                                        label: 'Designation',
+                                        options: listDesignationData.map(item => ({
+                                            ...item,
+                                            code: item.designation_id,
+                                            name: item.designation_name
+                                        })),
+                                        disabled: listApprovalItemDisabled,
+                                        required: true,
+                                        history: true
+                                    }}
+                                    value={listApprovalSaveData?.approved_by}
+                                    onChange={(fieldName, newValue) => {
+                                        handleListApprovalSaveData(fieldName, newValue);
+                                    }}
+                                    onFocus={() => {}}
+                                    isFocused={false}
+                                />
+       
+                              <Box>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                  {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                  <DemoContainer components={['DatePicker']}>
+                                  <DatePicker
+                                    className='selectHideHistory'
+                                    label={
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                      <span>Approval Date</span>
+                                      <span
+                                      style={{
+                                        padding: '0px 0px 0px 5px',
+                                        verticalAlign: 'middle'
+                                      }}
+                                      className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
+                                      >
+                                      *
+                                      </span>
+                                      <HistoryIcon
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        console.log('Approval Date history clicked');
+                                        // You can replace this with your actual onHistory callback
+                                      }}
+                                      className='historyIcon'
+                                      sx={{
+                                        color: '#1570EF',
+                                        padding: '0 1px',
+                                        fontSize: '20px',
+                                        verticalAlign: 'middle',
+                                        cursor: 'pointer',
+                                        pointerEvents: 'auto',
+                                        marginBottom: '3px'
+                                      }}
+                                      />
+                                    </div>
+                                    }
+                                    format="DD/MM/YYYY"
+                                    disabled={listApprovalItemDisabled}
+                                    required={true}
+                                    sx={{ width: '100%' }}
+                                    value={
+                                    listApprovalSaveData?.approval_date
+                                      ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
+                                      : null
+                                    }
+                                    onChange={(newVal) =>
+                                    handleListApprovalSaveData(
+                                      'approval_date',
+                                      newVal ? newVal.format('DD/MM/YYYY') : null
+                                    )
+                                    }
+                                    maxDate={dayjs()}
+                                  />
+                                  </DemoContainer>
+                                </LocalizationProvider>
+                                </Box>
+
+                                <LongText
+                                  field={{
+                                      heading: 'Comments',
+                                      name: 'remarks',
+                                      label: 'Comments',
+                                      required: true,
+                                      history: true,
+                                      disabled: listApprovalItemDisabled,
+                                  }}
+                                  formData={listApprovalSaveData}
+                                  onChange={(e) => handleListApprovalSaveData("remarks", e.target.value)}
+                                  
+                                  onFocus={() => {}}
+                                  isFocused={false}
+                              />
+
+                            </Box>)}
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+              </Dialog>
+        )}
     {furtherInvestigationPtCase &&
         <Dialog
             open={furtherInvestigationPtCase}

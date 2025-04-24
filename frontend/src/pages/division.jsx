@@ -428,7 +428,7 @@ const Division = () => {
                 department_id: '',
                 created_by: '0',
             });
-            setSelectedDepartment("");
+            setSelectedDepartment(null);
             setShowRoleAddModal(false);
 
         } catch (err) {
@@ -691,6 +691,10 @@ const Division = () => {
                             setShowEditModal(false);
                             setShowRoleAddModal(false);
                             setErrorRoleData({ division_name: '', description: '' });
+                            setSelectedDepartment(null);
+                            setAddRoleData({ division_name: '', description: '' });
+                            setSelectedRole(null);
+
                         }}
                         sx={{ color: (theme) => theme.palette.grey[500] }}
                     >

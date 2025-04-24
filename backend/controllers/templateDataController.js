@@ -5263,7 +5263,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                         approved_by: approval.approved_by,
                         approval_date: approval.approval_date || new Date(),
                         remarks: approval.remarks,
-                        reference_id: approvalDetails.id,
+                        reference_id: approvalDetails.id || recordId,
                         approval_type: default_status,
                         module: approvalDetails.module_name,
                         action: approvalDetails.action,
