@@ -68,6 +68,8 @@ import dayjs from "dayjs";
 import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
+import LongText from "../components/form/LongText";
+import DateField from "../components/form/Date";
 import GenerateProfilePdf from "./GenerateProfilePdf";
 
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
@@ -202,7 +204,7 @@ const UnderInvestigation = () => {
         { field: "sl_no", headerName: "S.No", width: 80 },
         { field: "approvalItem", headerName: "Approval Item", width: 150 },
         { field: "approvedBy", headerName: "Approved By", width: 140 },
-        { field: "approval_date", headerName: "Approval Date", width: 150 },
+        // { field: "approval_date", headerName: "Approval Date", width: 150 },
         { field: "remarks", headerName: "Remarks", width: 120 },
     ]);
   
@@ -1682,7 +1684,6 @@ const handleCheckboxDemerge = (event, row) => {
     }
   });
 };
-
 
 const loadChildMergedCasesData = async (page, caseId) => {
   setIsChildMergedLoading(true); 
@@ -6494,7 +6495,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
   var userPermissions =
     JSON.parse(localStorage.getItem("user_permissions")) || [];
-    console.log("isChildMergedLoading",isChildMergedLoading)
   var hoverExtraOptions = [
     userPermissions[0]?.view_case
       ? {
@@ -9247,6 +9247,15 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             </Box>
                             {!listAddApproveFlag &&
                             (
+                                   <Button
+                                      variant="outlined"
+                                      sx={{marginLeft: "10px", height: '40px'}}
+                                    >
+                                      Approval Log
+                                  </Button>
+                            )}
+                            {!listAddApproveFlag &&
+                            (
                                 <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
                                     <TextFieldInput 
                                         InputProps={{
@@ -9347,140 +9356,96 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     gap: "18px",
                                 }}
                             >
-                                    <label
-                                    htmlFor="approval-item"
-                                    style={{
-                                    margin: "0",
-                                    padding: 0, 
-                                    fontSize: "16px",
-                                    fontWeight: 500,
-                                    color: "#475467",
-                                    textTransform: "capitalize",
-                                }}
-                                >
-                                Approval Item
-                                </label>
+
+                                <AutocompleteField
+                                  formData={{ approval_item: listApprovalSaveData?.approval_item }}
+                                  errors={{}}
+                                  field={{
+                                      heading: 'Approval Item',
+                                      name: 'approval_item',
+                                      label: 'Approval Item',
+                                      options: listApprovalItem.map(item => ({
+                                          ...item,
+                                          code: item.approval_item_id
+                                      })),
+                                      disabled: true,
+                                      required: true ,
+                                      history: true
+                                  }}
+                                  value={listApprovalSaveData?.approval_item}
+                                  onChange={(fieldName, newValue) => {
+                                      handleListApprovalSaveData(fieldName, newValue);
+                                  }}
+                                  onFocus={() => {}}
+                                  isFocused={false}
+                              />
         
-                                <Autocomplete
-                                    options={listApprovalItem}
-                                    getOptionLabel={(option) => option.name || ""}
-                                    name="approval_item"
-                                    disabled={true}
-                                    value={
-                                        listApprovalItem.find((opt) => opt.approval_item_id === listApprovalSaveData?.approval_item ) || null
-                                    }
-                                    onChange={(e, value) =>
-                                        handleListApprovalSaveData( "approval_item", value?.approval_item_id)
-                                    }
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            className="selectHideHistory"
-                                            label="Approval Item"
-                                        />
-                                    )}
+                                <AutocompleteField
+                                    formData={{ approved_by: listApprovalSaveData?.approved_by }}
+                                    errors={{}} 
+                                    field={{
+                                        heading: 'Designation',
+                                        name: 'approved_by',
+                                        label: 'Designation',
+                                        options: listDesignationData.map(item => ({
+                                            ...item,
+                                            code: item.designation_id,
+                                            name: item.designation_name
+                                        })),
+                                        disabled: listApprovalItemDisabled,
+                                        required: true,
+                                        history: true
+                                    }}
+                                    value={listApprovalSaveData?.approved_by}
+                                    onChange={(fieldName, newValue) => {
+                                        handleListApprovalSaveData(fieldName, newValue);
+                                    }}
+                                    onFocus={() => {}}
+                                    isFocused={false}
                                 />
-                                <label
-                                    htmlFor="designation"
-                                    style={{
-                                    margin: "0",
-                                    padding: 0, 
-                                    fontSize: "16px",
-                                    fontWeight: 500,
-                                    color: "#475467",
-                                    textTransform: "capitalize",
-                                }}
-                                >
-                                Designation
-                                </label>
-        
-                                <Autocomplete
-                                    options={listDesignationData}
-                                    disabled={listApprovalItemDisabled}
-                                    getOptionLabel={(option) =>
-                                        option.designation_name || ""
-                                    }
-                                    onHistory
-                                    name="approved_by"
-                                    value={
-                                        listDesignationData.find((opt) => opt.designation_id === listApprovalSaveData?.approved_by) || null
-                                    }
-                                    onChange={(e, value) =>
-                                        handleListApprovalSaveData( "approved_by", value?.designation_id)
-                                    }
-                                    renderInput={(params) => (
-                                        <TextField
-                                            {...params}
-                                            className="selectHideHistory"
-                                            label="Designation"
-                                        />
-                                    )}
+       
+                                <DateField
+                                  field={{
+                                    heading: "Approval Date",
+                                    name: "approval_date",
+                                    label: "Approval Date",
+                                    required: true,
+                                    history: true,
+                                    disableFutureDate: 'true',
+                                    disabled: listApprovalItemDisabled,
+                                  }}
+                                  formData={listApprovalSaveData}
+                                  value={
+                                    listApprovalSaveData.approval_date
+
+                                  }
+                                  onChange={(date) => {
+                                    handleListApprovalSaveData("approval_date", date ? dayjs(date).toISOString() : null);
+                                  }}
+
+                                  onHistory={() => {
+                                    console.log("Show approval_date history");
+                                  }}
+                                  onFocus={() => {}}
+                                  isFocused={false}
                                 />
-                                <label
-                                    htmlFor="approval-date"
-                                    style={{
-                                    margin: "0",
-                                    padding: 0, 
-                                    fontSize: "16px",
-                                    fontWeight: 500,
-                                    color: "#475467",
-                                    textTransform: "capitalize",
-                                }}
-                                >
-                                Approval Date
-                                </label>
-        
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <DemoContainer components={["DatePicker"]}>
-                                        <DatePicker
-                                            label="Approval Date"
-                                            format="DD/MM/YYYY"
-                                            onHistory
-                                            disabled={listApprovalItemDisabled}
-                                            sx={{ width: '100%' }}
-                                            value={
-                                                listApprovalSaveData?.approval_date
-                                                ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
-                                                : null
-                                            }
-                                            onChange={(newVal) =>
-                                                handleListApprovalSaveData(
-                                                "approval_date",
-                                                newVal ? newVal.format('DD/MM/YYYY') : null // save in DD/MM/YYYY format if you want
-                                                )
-                                            }
-                                            maxDate={dayjs()}
-                                        />
-                                    </DemoContainer>
-                                </LocalizationProvider>
-        
-                                <label
-                                    htmlFor="comments"
-                                    style={{
-                                    margin: "0",
-                                    padding: 0, 
-                                    fontSize: "16px",
-                                    fontWeight: 500,
-                                    color: "#475467",
-                                    textTransform: "capitalize",
-                                }}
-                                >
-                                Comments
-                                </label>
-        
-                                <TextField
-                                    rows={8}
-                                    multiline
-                                    label="Comments"
-                                    fullWidth
-                                    name="remarks"
-                                    onHistory
-                                    disabled={listApprovalItemDisabled}
-                                    value={listApprovalSaveData?.remarks}
-                                    onChange={(e) =>
-                                        handleListApprovalSaveData("remarks", e.target.value)
-                                    }
-                                />
+
+                                <LongText
+                                  field={{
+                                      heading: 'Comments',
+                                      name: 'remarks',
+                                      label: 'Comments',
+                                      required: true,
+                                      history: true,
+                                      disabled: listApprovalItemDisabled,
+                                  }}
+                                  formData={listApprovalSaveData}
+                                  onChange={(e) => handleListApprovalSaveData("remarks", e.target.value)}
+                                  
+                                  onFocus={() => {}}
+                                  isFocused={false}
+                              />
+
                             </Box>)}
                         </Box>
                     </DialogContentText>
