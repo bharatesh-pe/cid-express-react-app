@@ -949,7 +949,8 @@ exports.getMasterTemplates = async (req, res, next) => {
         table: "users",
         is_master: "false",
         api: "cidMaster/getIoUsers",
-        is_dependent: "false",
+        is_dependent: "true",
+        dependent_table: ["division"]
       },
     ];
 
