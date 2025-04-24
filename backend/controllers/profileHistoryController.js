@@ -119,7 +119,7 @@ exports.getProfileHistory = async (req, res, next) => {
         });
 
         if (profileHistory.length === 0) {
-            return userSendResponse(res, 404, false, "No profile history found for the given criteria.");
+            return userSendResponse(res, 404, false, "No records found for the specified filters.");
         }
 
         return userSendResponse(res, 200, true, "Profile History retrieved successfully.", profileHistory);
