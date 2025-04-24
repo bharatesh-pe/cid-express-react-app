@@ -33,7 +33,8 @@ export default function ApprovalModal({
             aria-labelledby="approval-dialog-title"
             maxWidth="lg"
             fullWidth
-            sx={{ zIndex: "99" }}
+            className="approvalModal"
+            sx={{ zIndex: "100" }}
         >
             <DialogTitle
                 id="approval-dialog-title"

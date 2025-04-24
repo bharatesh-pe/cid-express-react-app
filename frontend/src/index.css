@@ -1124,3 +1124,7 @@ div::first-letter {
     .MuiDataGrid-cell:focus, .MuiDataGrid-cell:focus-within{
         outline: none !important;
     }
+
+    .approvalModal{
+        z-index: 100 !important;
+    }
