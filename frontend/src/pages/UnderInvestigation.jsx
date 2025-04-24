@@ -5278,7 +5278,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             fontWeight: "500",
                           }}
                         >
-                          {updatedKeyName ? updatedKeyName : ""}
+                          {updatedKeyName ? updatedKeyName : "-"}
                         </span>
                       </div>
                     ),

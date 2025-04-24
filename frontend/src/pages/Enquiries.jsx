@@ -3047,7 +3047,7 @@ const Enquiries = () => {
                             fontWeight: "500",
                           }}
                         >
-                          {updatedKeyName ? updatedKeyName : ""}
+                          {updatedKeyName ? updatedKeyName : "-"}
                         </span>
                       </div>
                     ),
