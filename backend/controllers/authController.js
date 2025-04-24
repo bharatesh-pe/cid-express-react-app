@@ -219,6 +219,40 @@ const verify_OTP = async (req, res) => {
             },
           });
 
+            const userId = user.user_id;
+            // Fetch designations for the logged-in user
+            const userDesignations = await UserDesignation.findAll({
+            where: { user_id : userId },
+            attributes: ["designation_id"],
+            });
+            if (!userDesignations.length) {
+            return res
+                .status(404)
+                .json({ message: "User has no designations assigned" });
+            }
+            const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+
+            // Fetch subordinates based on supervisor designations
+            const subordinates = await UsersHierarchy.findAll({
+            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+            attributes: ["officer_designation_id"],
+            });
+            const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+
+            // Fetch subordinate user IDs if any officer designations found
+            let subordinateUserIds = [];
+            if (officerDesignationIds.length) {
+            const subordinateUsers = await UserDesignation.findAll({
+                where: { designation_id: { [Op.in]: officerDesignationIds } },
+                attributes: ["user_id"],
+            });
+            subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+            }
+
+            // Combine userId with subordinates and remove duplicates
+            const allowedUserIds = Array.from(new Set([userId, ...subordinateUserIds]));
+
+
           return res.status(200).json({
             success: true,
             message: "OTP verified successfully.",
@@ -229,7 +263,9 @@ const verify_OTP = async (req, res) => {
             user_position: formattedResponse,
             userRole,
             user_role_permissions,
+            allowedUserIds,
           });
+
         } else {
           // Return error if the otp is invalid or has expired
           return res.status(401).json({

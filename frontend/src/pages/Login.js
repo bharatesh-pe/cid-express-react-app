@@ -237,6 +237,12 @@ const Login = () => {
         );
       }
 
+       if(data.allowedUserIds)
+        {
+            localStorage.setItem("allowedUserIds",JSON.stringify(data.allowedUserIds));
+        }
+
+
       if (data && data.userRole) {
         localStorage.setItem(
           "user_id",
