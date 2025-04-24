@@ -204,7 +204,7 @@ const UnderInvestigation = () => {
         { field: "sl_no", headerName: "S.No", width: 80 },
         { field: "approvalItem", headerName: "Approval Item", width: 150 },
         { field: "approvedBy", headerName: "Approved By", width: 140 },
-        // { field: "approval_date", headerName: "Approval Date", width: 150 },
+        { field: "approval_date", headerName: "Approval Date", width: 150 },
         { field: "remarks", headerName: "Remarks", width: 120 },
     ]);
   
@@ -10019,7 +10019,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     isFocused={false}
                                 />
        
-                                <DateField
+                                {/* <DateField
                                   field={{
                                     heading: "Approval Date",
                                     name: "approval_date",
@@ -10029,21 +10029,89 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     disableFutureDate: 'true',
                                     disabled: listApprovalItemDisabled,
                                   }}
+                                  format="DD/MM/YYYY"
                                   formData={listApprovalSaveData}
                                   value={
-                                    listApprovalSaveData.approval_date
-
+                                    listApprovalSaveData?.approval_date
+                                      ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
+                                      : null
                                   }
-                                  onChange={(date) => {
-                                    handleListApprovalSaveData("approval_date", date ? dayjs(date).toISOString() : null);
-                                  }}
+                                  onChange={(newVal) =>
+                                    handleListApprovalSaveData(
+                                      'approval_date',
+                                      newVal ? newVal.format('DD/MM/YYYY') : null
+                                    )
+                                  }
+  
 
                                   onHistory={() => {
                                     console.log("Show approval_date history");
                                   }}
                                   onFocus={() => {}}
                                   isFocused={false}
-                                />
+                                /> */}
+
+                              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                  <DemoContainer components={['DatePicker']}>
+                                  {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                  <DatePicker
+                                      label={
+                                        <Box
+                                          sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            flexWrap: 'nowrap',
+                                          }}>
+                                        <Typography sx={{ color: '#344054', fontWeight: 400, fontSize: '16px' }}>
+                                          Approval Date
+                                        </Typography>
+                                        <Typography
+                                          component="span"
+                                          sx={{
+                                            color: '#F04438',
+                                            fontWeight: 600,
+                                            marginLeft: '2px',
+                                            fontSize: '14px'
+                                          }}
+                                        >
+                                          *
+                                        </Typography>
+                                        <Tooltip title="View History">
+                                          <HistoryIcon
+                                            className='historyIcon'
+                                            sx={{
+                                              color: '#1570EF',
+                                              padding: '0px',
+                                              fontSize: '20px',
+                                              verticalAlign: 'middle',
+                                              // cursor: 'pointer',
+                                              pointerEvents: 'auto',
+                                              marginBottom:'3px'
+                                          }}
+                                          />
+                                        </Tooltip>
+                                      </Box>
+                                    }
+                                    format="DD/MM/YYYY"
+                                    disabled={listApprovalItemDisabled}
+                                    sx={{ width: '100%' }}
+                                    value={
+                                      listApprovalSaveData?.approval_date
+                                        ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
+                                        : null
+                                    }
+                                    onChange={(newVal) =>
+                                      handleListApprovalSaveData(
+                                        'approval_date',
+                                        newVal ? newVal.format('DD/MM/YYYY') : null
+                                      )
+                                    }
+                                    maxDate={dayjs()}
+                                  />
+
+                                  </DemoContainer>
+                                </LocalizationProvider>
+
 
                                 <LongText
                                   field={{

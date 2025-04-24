@@ -7,6 +7,7 @@ import TableView from "../components/table-view/TableView";
 import api from "../services/api";
 import VerifiedIcon from '@mui/icons-material/Verified';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
+import HistoryIcon from '@mui/icons-material/History';
 
 import {
   Box,
@@ -7466,7 +7467,7 @@ const UnderInvestigation = () => {
       )}
 
 
-  {listApproveTableFlag && (
+          {listApproveTableFlag && (
               <Dialog
                 open={listApproveTableFlag}
                 onClose={() => setListApproveTableFlag(false)}
@@ -7697,29 +7698,66 @@ const UnderInvestigation = () => {
                                     isFocused={false}
                                 />
        
-                                <DateField
-                                  field={{
-                                    heading: "Approval Date",
-                                    name: "approval_date",
-                                    label: "Approval Date",
-                                    required: true,
-                                    history: true,
-                                    disableFutureDate: 'true',
-                                    disabled: listApprovalItemDisabled,
-                                  }}
-                                  formData={listApprovalSaveData}
-                                  value={
-                                    listApprovalSaveData.approval_date
-                                    ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
-                                    : null
-                                  }
-                                  onChange={(date) => {
-                                    handleListApprovalSaveData("approval_date", date ? dayjs(date) : null);
-                                  }}
-                                  
-                                  onFocus={() => {}}
-                                  isFocused={false}
-                                />
+                                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                      <DemoContainer components={['DatePicker']}>
+                                                                  {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                                                  <DatePicker
+                                                                      label={
+                                                                        <Box
+                                                                          sx={{
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            flexWrap: 'nowrap',
+                                                                          }}>
+                                                                        <Typography sx={{ color: '#344054', fontWeight: 400, fontSize: '16px' }}>
+                                                                          Approval Date
+                                                                        </Typography>
+                                                                        <Typography
+                                                                          component="span"
+                                                                          sx={{
+                                                                            color: '#F04438',
+                                                                            fontWeight: 600,
+                                                                            marginLeft: '2px',
+                                                                            fontSize: '14px'
+                                                                          }}
+                                                                        >
+                                                                          *
+                                                                        </Typography>
+                                                                        <Tooltip title="View History">
+                                                                          <HistoryIcon
+                                                                            className='historyIcon'
+                                                                            sx={{
+                                                                              color: '#1570EF',
+                                                                              padding: '0px',
+                                                                              fontSize: '20px',
+                                                                              verticalAlign: 'middle',
+                                                                              // cursor: 'pointer',
+                                                                              pointerEvents: 'auto',
+                                                                              marginBottom:'3px'
+                                                                          }}
+                                                                          />
+                                                                        </Tooltip>
+                                                                      </Box>
+                                                                    }
+                                                                    format="DD/MM/YYYY"
+                                                                    disabled={listApprovalItemDisabled}
+                                                                    sx={{ width: '100%' }}
+                                                                    value={
+                                                                      listApprovalSaveData?.approval_date
+                                                                        ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
+                                                                        : null
+                                                                    }
+                                                                    onChange={(newVal) =>
+                                                                      handleListApprovalSaveData(
+                                                                        'approval_date',
+                                                                        newVal ? newVal.format('DD/MM/YYYY') : null
+                                                                      )
+                                                                    }
+                                                                    maxDate={dayjs()}
+                                                                  />
+                                
+                                      </DemoContainer>
+                                  </LocalizationProvider>
 
                                 <LongText
                                   field={{
