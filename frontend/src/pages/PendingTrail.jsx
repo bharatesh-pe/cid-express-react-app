@@ -1278,20 +1278,20 @@ const UnderInvestigation = () => {
                     const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
     
                     const updatedHeader = [
-                        {
-                            field: "select",
-                            headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
-                            width: 50,
-                            resizable: false,
-                            renderCell: (params) => (
-                                <Box display="flex" justifyContent="center" alignItems="center" width="100%">                                
-                                    <Checkbox
-                                        checked={params.row.isSelected || false}
-                                        onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                                    />
-                                </Box>
-                            ),
-                        },
+                        // {
+                        //     field: "select",
+                        //     headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
+                        //     width: 50,
+                        //     resizable: false,
+                        //     renderCell: (params) => (
+                        //         <Box display="flex" justifyContent="center" alignItems="center" width="100%">                                
+                        //             <Checkbox
+                        //                 checked={params.row.isSelected || false}
+                        //                 onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                        //             />
+                        //         </Box>
+                        //     ),
+                        // },
                           {
                               field: "approval",
                               headerName: "Approval",
