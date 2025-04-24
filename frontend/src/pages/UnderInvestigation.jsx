@@ -10,6 +10,7 @@ import SelectAllIcon from '@mui/icons-material/SelectAll';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import HistoryIcon from '@mui/icons-material/History';
 
 
 import api from "../services/api";
@@ -9231,16 +9232,16 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                                     <SearchIcon sx={{ color: "#475467" }} />
                                                 </InputAdornment>
                                             ),
-                                            endAdornment: (
-                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                    <IconButton
-                                                        sx={{ padding: "0 5px", borderRadius: "0" }}
-                                                        onClick={()=>handleOthersFilter(selectedOtherTemplate)}
-                                                    >
-                                                        <FilterListIcon sx={{ color: "#475467" }} />
-                                                    </IconButton>
-                                                </Box>
-                                            ),
+                                            // endAdornment: (
+                                            //     // <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //     //     <IconButton
+                                            //     //         sx={{ padding: "0 5px", borderRadius: "0" }}
+                                            //     //         onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                            //     //     >
+                                            //     //         <FilterListIcon sx={{ color: "#475467" }} />
+                                            //     //     </IconButton>
+                                            //     // </Box>
+                                            // ),
                                         }}
 
                                         onInput={(e) => setListApprovalSearchValue(e.target.value)}
@@ -9376,6 +9377,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     getOptionLabel={(option) =>
                                         option.designation_name || ""
                                     }
+                                    onHistory
                                     name="approved_by"
                                     value={
                                         listDesignationData.find((opt) => opt.designation_id === listApprovalSaveData?.approved_by) || null
@@ -9410,6 +9412,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         <DatePicker
                                             label="Approval Date"
                                             format="DD/MM/YYYY"
+                                            onHistory
                                             disabled={listApprovalItemDisabled}
                                             sx={{ width: '100%' }}
                                             value={
@@ -9448,6 +9451,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     label="Comments"
                                     fullWidth
                                     name="remarks"
+                                    onHistory
                                     disabled={listApprovalItemDisabled}
                                     value={listApprovalSaveData?.remarks}
                                     onChange={(e) =>

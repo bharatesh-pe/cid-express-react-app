@@ -2473,105 +2473,88 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const offset = (page - 1) * limit;
     const whereClause = {};
 
-    // Fetch designations for the logged-in user
-    const userDesignations = await UserDesignation.findAll({
-      where: { user_id },
-      attributes: ["designation_id"],
-    });
-    if (!userDesignations.length) {
-      return res
-        .status(404)
-        .json({ message: "User has no designations assigned" });
-    }
-    const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> starting UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
-    // Fetch subordinates based on supervisor designations
-    const subordinates = await UsersHierarchy.findAll({
-      where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-      attributes: ["officer_designation_id"],
-    });
-    const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+    // // Fetch designations for the logged-in user
+    // const userDesignations = await UserDesignation.findAll({
+    // where: { user_id },
+    // attributes: ["designation_id"],
+    // });
+    // if (!userDesignations.length) {
+    // return res
+    //     .status(404)
+    //     .json({ message: "User has no designations assigned" });
+    // }
+    // const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
 
-    // If there are officer designations, fetch subordinate user IDs
-    let subordinateUserIds = [];
-    if (officerDesignationIds.length) {
-      const subordinateUsers = await UserDesignation.findAll({
-        where: { designation_id: { [Op.in]: officerDesignationIds } },
-        attributes: ["user_id"],
-      });
-      subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
-    }
-    // Combine current user ID with subordinate IDs
-    const allowedUserIds = [userId, ...subordinateUserIds];
+    // // Fetch subordinates based on supervisor designations
+    // const subordinates = await UsersHierarchy.findAll({
+    // where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+    // attributes: ["officer_designation_id"],
+    // });
+    // const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
 
-    // Apply allowed user filter once. (Repeat for each template_module as needed.)
-    if (allowedUserIds.length) {
-      if (template_module === "ui_case") {
-        whereClause[Op.or] = [
-          { created_by_id: { [Op.in]: allowedUserIds } },
-          { field_io_name: { [Op.in]: allowedUserIds } },
-        ];
-      } else if (template_module === "pt_case") {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      } else if (template_module === "eq_case") {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      } else {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      }
+    // // Fetch subordinate user IDs if any officer designations found
+    // let subordinateUserIds = [];
+    // if (officerDesignationIds.length) {
+    // const subordinateUsers = await UserDesignation.findAll({
+    //     where: { designation_id: { [Op.in]: officerDesignationIds } },
+    //     attributes: ["user_id"],
+    // });
+    // subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+    // }
+
+    // // Combine userId with subordinates and remove duplicates
+    // const allowedUserIds = Array.from(new Set([userId, ...subordinateUserIds]));
+
+    const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
+
+    if (allowedUserIds.length > 0) {
+        if (template_module === "ui_case") {
+            whereClause[Op.or] = [
+            { created_by_id: { [Op.in]: allowedUserIds } },
+            { field_io_name: { [Op.in]: allowedUserIds } },
+            ];
+        } else {
+            whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+        }
     }
+
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>After get the higher users UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     if (!template_module) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        "Template module is required",
-        null
-      );
+      return userSendResponse( res, 400, false, "Template module is required", null );
     }
 
     // Fetch the template using template_module to get the table_name
-    const template = await Template.findOne({ where: { template_module } });
-    if (!template) {
+    const tableTemplate = await Template.findOne({ where: { template_module } });
+    if (!tableTemplate) {
       return userSendResponse(res, 400, false, "Template not found", null);
     }
-
-    const table_name = template.table_name;
-    const template_name = template.template_name;
+    const table_name = tableTemplate.table_name;
+    const template_name = tableTemplate.template_name;
 
     if (!table_name) {
-      return userSendResponse(res, 400, false, "Table name is required.", null);
-    }
-
-    const tableTemplate = await Template.findOne({ where: { table_name } });
-    if (!tableTemplate) {
-      return userSendResponse(
-        res,
-        404,
-        false,
-        `Table ${table_name} does not exist.`,
-        null
-      );
+      return userSendResponse(res, 404, false, `Table ${table_name} does not exist.`, null );
     }
 
     let fieldsArray;
     try {
-      fieldsArray =
-        typeof tableTemplate.fields === "string" ? JSON.parse(tableTemplate.fields) : tableTemplate.fields;
+      fieldsArray = typeof tableTemplate.fields === "string" ? JSON.parse(tableTemplate.fields) : tableTemplate.fields;
     } catch (err) {
       console.error("Error parsing fields:", err);
       return userSendResponse( res, 500, false, "Invalid table schema format.",null);
     }
 
     if (!Array.isArray(fieldsArray)) {
-      return userSendResponse(
-        res,
-        500,
-        false,
-        "Fields must be an array in the table schema.",
-        null
-      );
+      return userSendResponse(res, 500, false, "Fields must be an array in the table schema.", null);
     }
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After get the template fields UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const fields = {};
     const associations = [];
@@ -2629,12 +2612,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }, {});
       }
 
-      if (
-        (type === "dropdown" ||
-          type === "multidropdown" ||
-          type === "autocomplete") &&
-        Array.isArray(options)
-      ) {
+      if ( (type === "dropdown" || type === "multidropdown" || type === "autocomplete") && Array.isArray(options)) {
         dropdownFieldMappings[columnName] = options.reduce((acc, option) => {
           acc[option.code] = option.name;
           return acc;
@@ -2650,10 +2628,18 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       }
     }
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the fields Mapping UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
     const DynamicTable = sequelize.define(table_name, fields, {
       freezeTableName: true,
       timestamps: true,
     });
+
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the sequelize inti UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
 
     const include = [];
     for (const association of associations) {
@@ -2673,6 +2659,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         });
       }
     }
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the including the association UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     // // Add TemplateStar association
     // DynamicTable.hasOne(db.TemplateStar, {
@@ -2900,11 +2889,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
     const validSortBy = fields[sort_by] ? sort_by : "id";
 
-    if (
-      sys_status !== null &&
-      sys_status !== undefined &&
-      sys_status !== "all"
-    ) {
+    if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
       whereClause["sys_status"] = sys_status;
     }
 
@@ -2928,6 +2913,12 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     // Ensure valid sort order
     const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "ASC";
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the whereClause and attributesArray set  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before fetch the data from table  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
     // Run Sequelize query
     const result = await DynamicTable.findAndCountAll({
     where: whereClause,
@@ -2939,111 +2930,136 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     logging: console.log,
     });
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After fetch the data from table  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
     const totalItems = result.count;
     const totalPages = Math.ceil(totalItems / limit);
+    
+    let progressReportTableData = {};
+    let progressReportModel = {};
+    if(table_name == "cid_under_investigation")
+    {
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before fetch progress report execute  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
-    const progressReportTableData =  await Template.findOne({ where:{ table_name: "cid_ui_case_progress_report" } });
-
-    if (!progressReportTableData) {
-      const message = `Table "Progress Report" does not exist.`;
-      return userSendResponse(res, 400, false, message, null);
-    }
-
-    // Parse the schema fields from Template
-    const progressReportschema = typeof progressReportTableData.fields === "string" ? JSON.parse(progressReportTableData.fields) : progressReportTableData.fields;
-
-    // Filter fields that have is_primary_field as true
-    const progressReportRelevantSchema =  progressReportschema ;
-
-    // Define model attributes based on filtered schema
-    const progressReportModelAttributes = {
-      id: {
-        type: Sequelize.DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      created_at: {
-        type: Sequelize.DataTypes.DATE,
-        allowNull: false,
-      },
-      updated_at: {
-        type: Sequelize.DataTypes.DATE,
-        allowNull: false,
-      },
-      created_by: {
-        type: Sequelize.DataTypes.STRING,
-        allowNull: true,  
-      } 
-    };
-
-    const progressReportAssociations = [];
-    const progressReportFields = {};
-
-    for (const field of progressReportRelevantSchema) {
-    const {
-        name: columnName,
-        data_type,
-        not_null,
-        default_value,
-        table,
-        forign_key,
-        attributes,
-    } = field;
-
-    if (!columnName || !data_type) {
-        console.warn(
-        `Missing required attributes for field ${columnName}. Using default type STRING.`
-        );
-        progressReportModelAttributes[columnName] = {
-        type: Sequelize.DataTypes.STRING,
-        allowNull: not_null ? false : true,
-        defaultValue: default_value || null,
+        progressReportTableData =  await Template.findOne({ where:{ table_name: "cid_ui_case_progress_report" } });
+    
+        if (!progressReportTableData) {
+          const message = `Table "Progress Report" does not exist.`;
+          return userSendResponse(res, 400, false, message, null);
+        }
+    
+        // Parse the schema fields from Template
+        const progressReportschema = typeof progressReportTableData.fields === "string" ? JSON.parse(progressReportTableData.fields) : progressReportTableData.fields;
+    
+        // Filter fields that have is_primary_field as true
+        const progressReportRelevantSchema =  progressReportschema ;
+    
+        // Define model attributes based on filtered schema
+        const progressReportModelAttributes = {
+          id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+          },
+          updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+          },
+          created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,  
+          } 
         };
-        continue;
-    }
+    
+        const progressReportAssociations = [];
+        const progressReportFields = {};
+    
+        for (const field of progressReportRelevantSchema) {
+            const {
+                name: columnName,
+                data_type,
+                not_null,
+                default_value,
+                table,
+                forign_key,
+                attributes,
+            } = field;
+    
+            if (!columnName || !data_type) {
+                console.warn(
+                `Missing required attributes for field ${columnName}. Using default type STRING.`
+                );
+                progressReportModelAttributes[columnName] = {
+                type: Sequelize.DataTypes.STRING,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+                };
+                continue;
+            }
+            
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before Sequelize progress report execute  UV");
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
-    const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            progressReportModelAttributes[columnName] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+    
+            progressReportFields[columnName] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+    
+            if (table && forign_key && attributes) {
+                progressReportAssociations.push({
+                relatedTable: table,
+                foreignKey: columnName,
+                targetAttribute: attributes,
+                });
+            }
+        }
 
-    progressReportModelAttributes[columnName] = {
-        type: sequelizeType,
-        allowNull: not_null ? false : true,
-        defaultValue: default_value || null,
-    };
-
-    progressReportFields[columnName] = {
-        type: sequelizeType,
-        allowNull: !not_null,
-        defaultValue: default_value || null,
-    };
-
-    if (table && forign_key && attributes) {
-        progressReportAssociations.push({
-        relatedTable: table,
-        foreignKey: columnName,
-        targetAttribute: attributes,
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before sequelize.define progress report execute  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+    
+        // Define the model
+        progressReportModel = sequelize.define("cid_ui_case_progress_report", progressReportModelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
         });
+
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before Define association progress report execute  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+    
+        // Define association (read status)
+        progressReportModel.hasOne(db.TemplateUserStatus, {
+        foreignKey: 'table_row_id',
+        sourceKey: 'id',
+        as: 'ReadStatus',
+        constraints: false,
+        });
+    
+        // Sync the model
+        await progressReportModel.sync();
     }
-    }
 
-    // Define the model
-    const progressReportModel = sequelize.define("cid_ui_case_progress_report", progressReportModelAttributes, {
-    freezeTableName: true,
-    timestamps: true,
-    createdAt: "created_at",
-    updatedAt: "updated_at",
-    });
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After progress report Sync to DB  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
-    // Define association (read status)
-    progressReportModel.hasOne(db.TemplateUserStatus, {
-    foreignKey: 'table_row_id',
-    sourceKey: 'id',
-    as: 'ReadStatus',
-    constraints: false,
-    });
-
-    // Sync the model
-    await progressReportModel.sync();
-
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before transformedRows  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const transformedRows = await Promise.all(
       result.rows.map(async (record) => {
@@ -3092,44 +3108,62 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
         const case_id =  data.id || null;
 
-        const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
-            where: {
-                ui_case_id: case_id,
-            },
-        });
-
-        const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
-            where: {
-                ui_case_id: case_id,  
-            },
-            include: {
-                model: db.TemplateUserStatus,
-                as: 'ReadStatus',
-                required: is_read,
-                where: {
-                    user_id: userId,
-                    template_id: progressReportTableData.template_id
-                },
-                attributes: ['template_user_status_id']
-            },
-        });
-
         let task_read_count = 0;
         let task_unread_count = 0;
 
-        if (task_readed_records && task_readed_records.length > 0) {
-            task_readed_records.forEach((record) => {
-                const readStatus = record.ReadStatus;
-                if (readStatus) {
-                    task_read_count += 1;
-                }
+        if(table_name == "cid_under_investigation")
+        {
+
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_all_records of progress report from DB  UV");
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+            
+            const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
+                where: {
+                    ui_case_id: case_id,
+                },
             });
+
+
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_readed_records of progress report from DB  UV");
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+            
+
+            const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
+                where: {
+                    ui_case_id: case_id,  
+                },
+                include: {
+                    model: db.TemplateUserStatus,
+                    as: 'ReadStatus',
+                    required: is_read,
+                    where: {
+                        user_id: userId,
+                        template_id: progressReportTableData.template_id
+                    },
+                    attributes: ['template_user_status_id']
+                },
+            });
+
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_read_count of progress report from DB  UV");
+            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
+
+            if (task_readed_records && task_readed_records.length > 0) {
+                task_readed_records.forEach((record) => {
+                    const readStatus = record.ReadStatus;
+                    if (readStatus) {
+                        task_read_count += 1;
+                    }
+                });
+            }
+
+            if(task_read_count != 0) 
+                task_unread_count = task_count - task_read_count;
+            else
+                task_unread_count = task_count;
         }
 
-        if(task_read_count != 0) 
-            task_unread_count = task_count - task_read_count;
-        else
-            task_unread_count = task_count;
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After task_unread_count of progress report from DB  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         data.task_unread_count = task_unread_count || 0;
 
@@ -3143,6 +3177,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 delete data[alias]; // Remove unnecessary alias object from response
             }
         }
+
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After Handle alias mappings before processing associations  UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         // Fetch linked profile info manually
         const linkedProfileInfo = [];
@@ -3183,6 +3220,8 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 }
             }
         }
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fetch associated table metadata from the Template model UV");
+        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         // Add linked profile info to the response
         data.linked_profile_info = linkedProfileInfo.length ? linkedProfileInfo : null;
@@ -3190,6 +3229,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         return data;
       })
     );
+
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After transformedRows  UV");
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const responseData = {
       // data: transformedRows,
@@ -4810,7 +4852,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
-	const { table_name, data, others_data, transaction_id, user_designation_id , folder_attachment_ids } = req.body;
+	const { table_name  , data, others_data, transaction_id, user_designation_id , second_table_name, second_data , second_folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -4959,6 +5001,127 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
       
 		}
 
+        if(second_table_name && second_table_name != "")
+		{
+			const secondTableData = await Template.findOne({ where: { second_table_name } });
+			if (!secondTableData) {
+				return userSendResponse(res, 400, false, `Table ${second_table_name} does not exist.`, null);
+			}
+
+			const secondSchema = typeof secondTableData.fields === "string" ? JSON.parse(secondTableData.fields) : secondTableData.fields;
+
+			let secondParsedData;
+			try {
+				secondParsedData = JSON.parse(second_data);
+			} catch (err) {
+				return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+			}
+
+			const secondValidData = {};
+			for (const field of secondSchema) {
+				const { name, not_null, default_value } = field;
+				if (secondParsedData.hasOwnProperty(name)) {
+					secondValidData[name] = secondParsedData[name];
+				} else if (not_null && default_value === undefined) {
+					return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
+				} else if (default_value !== undefined) {
+					secondValidData[name] = default_value;
+				}
+			}
+
+			secondValidData.created_by = userName;
+			secondValidData.created_by_id = userId;
+
+			const secondCompleteSchema = [
+				{ name: "created_by", data_type: "TEXT", not_null: false },
+				{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+				...schema
+			];
+
+			["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
+				if (secondParsedData[field]) {
+					secondCompleteSchema.unshift({
+						name: field,
+						data_type: typeof secondParsedData[field] === "number" ? "INTEGER" : "TEXT",
+						not_null: false
+					});
+					secondValidData[field] = secondParsedData[field];
+				}
+			});
+
+			const secondModelAttributes = {};
+			for (const field of secondCompleteSchema) {
+				const { name, data_type, not_null, default_value } = field;
+				const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+				secondModelAttributes[name] = {
+					type: sequelizeType,
+					allowNull: !not_null,
+					defaultValue: default_value || null,
+				};
+			}
+
+			const secondModel = sequelize.define(second_table_name, secondModelAttributes, {
+				freezeTableName: true,
+				timestamps: true,
+				createdAt: "created_at",
+				updatedAt: "updated_at",
+			});
+
+			await secondModel.sync();
+
+			const secondInsertedData = await secondModel.create(secondValidData, { transaction: t });
+
+			if (!secondInsertedData) {
+				await t.rollback();
+				return userSendResponse(res, 400, false, "Failed to insert data.", null);
+			}
+
+			const secondFileUpdates = {};
+
+			if (req.files && req.files.length > 0) {
+				const secondFolderAttachments = second_folder_attachment_ids ? JSON.parse(second_folder_attachment_ids): []; // Parse if provided, else empty array
+
+				for (const file of req.files) {
+					const { originalname, size, key, fieldname } = file;
+					const fileExtension = path.extname(originalname);
+
+					// Find matching folder_id from the payload (if any)
+					const seconsFileMatchingFolder = secondFolderAttachments.find(
+					(attachment) =>
+						attachment.filename === originalname &&
+						attachment.field_name === fieldname
+					);
+
+					const folderId = seconsFileMatchingFolder ? seconsFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
+
+					await ProfileAttachment.create({
+						template_id: secondTableData.template_id,
+						table_row_id: secondInsertedData.id,
+						attachment_name: originalname,
+						attachment_extension: fileExtension,
+						attachment_size: size,
+						s3_key: key,
+						field_name: fieldname,
+						folder_id: folderId, // Store NULL if no folder_id provided
+					});
+
+					if (!secondFileUpdates[fieldname]) {
+						secondFileUpdates[fieldname] = originalname;
+					} else {
+						secondFileUpdates[fieldname] += `,${originalname}`;
+					}
+				}
+
+				
+				for (const [fieldname, filenames] of Object.entries(secondFileUpdates)) {
+					await secondModel.update(
+					{ [fieldname]: filenames },
+					{ where: { id: secondInsertedData.id }, transaction: t }
+					);
+				}
+			}
+		}
+
 		const insertedId = insertedData.id;
 		const insertedtype = insertedData.sys_status;
 		const insertedIO = insertedData.field_io_name || null;
@@ -5078,7 +5241,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                         approved_by: approval.approved_by,
                         approval_date: approval.approval_date || new Date(),
                         remarks: approval.remarks,
-                        reference_id: recordId,
+                        reference_id: approvalDetails.id,
                         approval_type: default_status,
                         module: approvalDetails.module_name,
                         action: approvalDetails.action,
@@ -5124,6 +5287,343 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 	}
 };
 
+
+// exports.saveMultipleDataWithApprovalToTemplates = async (req, res, next) => {
+// 	const { user_designation_id, transaction_id, entries } = req.body;
+
+// 	if (!user_designation_id) {
+// 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
+// 	}
+// 	if (!transaction_id) {
+// 		return userSendResponse(res, 400, false, "transaction_id is required.", null);
+// 	}
+// 	if (!Array.isArray(entries) || entries.length === 0) {
+// 		return userSendResponse(res, 400, false, "Entries must be a non-empty array.", null);
+// 	}
+
+// 	const t = await dbConfig.sequelize.transaction();
+// 	const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+// 	try {
+// 		const userId = req.user?.user_id;
+// 		if (!userId) return userSendResponse(res, 403, false, "Unauthorized access.", null);
+// 		if (fs.existsSync(dirPath)) {
+// 			return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath });
+// 		}
+// 		fs.mkdirSync(dirPath, { recursive: true });
+
+// 		const userData = await Users.findOne({
+// 			include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
+// 			where: { user_id: userId },
+// 		});
+// 		const userName = userData?.kgidDetails?.name || null;
+
+// 		for (const entry of entries) {
+// 			try {
+// 				const { table_name, data, others_data, folder_attachment_ids, approval, approval_details, update_table_name, update_data , update_folder_attachment_ids} = entry;
+// 				const tableData = await Template.findOne({ where: { table_name }, transaction: t });
+// 				if (!tableData) throw new Error(`Table ${table_name} does not exist.`);
+
+// 				const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+// 				const parsedData = typeof data === "string" ? JSON.parse(data) : data;
+// 				const validData = {};
+
+// 				for (const field of schema) {
+// 					const { name, not_null, default_value } = field;
+// 					if (parsedData.hasOwnProperty(name)) {
+// 						validData[name] = parsedData[name];
+// 					} else if (not_null && default_value === undefined) {
+// 						throw new Error(`Field ${name} cannot be null.`);
+// 					} else if (default_value !== undefined) {
+// 						validData[name] = default_value;
+// 					}
+// 				}
+// 				validData.created_by = userName;
+// 				validData.created_by_id = userId;
+
+// 				const completeSchema = [
+// 					{ name: "created_by", data_type: "TEXT", not_null: false },
+// 					{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+// 					...schema,
+// 				];
+
+// 				const modelAttributes = {};
+// 				for (const field of completeSchema) {
+// 					const sequelizeType = typeMapping[field.data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+// 					modelAttributes[field.name] = {
+// 						type: sequelizeType,
+// 						allowNull: !field.not_null,
+// 						defaultValue: field.default_value ?? null,
+// 					};
+// 				}
+
+// 				const Model = sequelize.define(table_name, modelAttributes, {
+// 					freezeTableName: true,
+// 					timestamps: true,
+// 					createdAt: "created_at",
+// 					updatedAt: "updated_at",
+// 				});
+
+// 				await Model.sync();
+
+// 				let dbEntry;
+// 				if (parsedData.id) {
+// 					await Model.update(validData, { where: { id: parsedData.id }, transaction: t });
+// 					dbEntry = await Model.findByPk(parsedData.id, { transaction: t });
+// 				} else {
+// 					dbEntry = await Model.create(validData, { transaction: t });
+// 				}
+
+// 				const fileUpdates = {};
+// 				if (req.files && req.files.length > 0) {
+// 					const attachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : [];
+// 					for (const file of req.files) {
+// 						const matchingFolder = attachments.find(att => att.filename === file.originalname && att.field_name === file.fieldname);
+// 						await ProfileAttachment.create({
+// 							template_id: tableData.template_id,
+// 							table_row_id: dbEntry.id,
+// 							attachment_name: file.originalname,
+// 							attachment_extension: path.extname(file.originalname),
+// 							attachment_size: file.size,
+// 							s3_key: file.key,
+// 							field_name: file.fieldname,
+// 							folder_id: matchingFolder?.folder_id ?? null,
+// 						});
+// 						fileUpdates[file.fieldname] = fileUpdates[file.fieldname]
+// 							? fileUpdates[file.fieldname] + `,${file.originalname}`
+// 							: file.originalname;
+// 					}
+// 					for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+// 						await Model.update({ [fieldname]: filenames }, { where: { id: dbEntry.id }, transaction: t });
+// 					}
+// 				}
+
+// 				if (others_data) {
+// 					const otherData = typeof others_data === "string" ? JSON.parse(others_data) : others_data;
+// 					if (otherData.others_table_name) {
+// 						const { others_table_name, sys_status } = otherData;
+// 						const otherTable = await Template.findOne({ where: { table_name: others_table_name }, transaction: t });
+// 						if (!otherTable) throw new Error(`Table ${others_table_name} does not exist.`);
+
+// 						const otherSchema = typeof otherTable.fields === "string" ? JSON.parse(otherTable.fields) : otherTable.fields;
+// 						const OtherModel = sequelize.define(
+// 							others_table_name,
+// 							otherSchema.reduce((acc, field) => {
+// 								acc[field.name] = {
+// 									type: typeMapping[field.data_type.toUpperCase()] || Sequelize.DataTypes.STRING,
+// 									allowNull: !field.not_null,
+// 								};
+// 								if (field.default_value) acc[field.name].defaultValue = field.default_value;
+// 								if (field.primaryKey) acc[field.name].primaryKey = true;
+// 								if (field.autoIncrement) acc[field.name].autoIncrement = true;
+// 								return acc;
+// 							}, {}),
+// 							{
+// 								freezeTableName: true,
+// 								timestamps: true,
+// 								createdAt: "created_at",
+// 								updatedAt: "updated_at",
+// 								underscored: true,
+// 							}
+// 						);
+// 						await OtherModel.sync({ alter: true });
+// 						await OtherModel.update({ sys_status: sys_status?.sys_status }, {
+// 							where: { id: sys_status?.id },
+// 							transaction: t
+// 						});
+// 					}
+// 				}
+
+// 				if (update_table_name && update_data) {
+//                         // Fetch the table template
+//                         const updateTableData = await Template.findOne({ where: { update_table_name } });
+
+//                         if (!updateTableData) {
+//                             return userSendResponse( res, 400, false, `Table ${update_table_name} does not exist.`, null);
+//                         }
+
+//                         // Parse schema and request data
+//                         const updateSchema = typeof updateTableData.fields === "string" ? JSON.parse(updateTableData.fields): updateTableData.fields;
+//                         const updateValidData = {};
+
+//                         let updateParsedData;
+//                         try {
+//                             updateParsedData = JSON.parse(data);
+//                         } catch (err) {
+//                             return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+//                         }
+
+//                         // Validate and filter data for schema-based fields
+//                         for (const field of updateSchema) {
+//                             const { name, not_null } = field;
+
+//                             if (updateParsedData.hasOwnProperty(name)) {
+//                                 updateValidData[name] = updateParsedData[name];
+//                             } else if (not_null && !updateParsedData[name]) {
+//                                 return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null );
+//                             }
+//                         }
+
+//                         updateValidData.sys_status = updateParsedData.sys_status;
+//                         updateValidData.updated_by = userName;
+//                         updateValidData.updated_by_id = userId;
+
+//                         // Include additional system fields dynamically
+//                         let updateCompleteSchema = updateParsedData?.sys_status
+//                         ? [
+//                             {
+//                                 name: "sys_status",
+//                                 data_type: "TEXT",
+//                                 not_null: false,
+//                                 default_value: updateParsedData.sys_status.trim(),
+//                             },
+//                             { name: "updated_by", data_type: "TEXT", not_null: false },
+//                             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+//                             ...schema,
+//                             ]
+//                         : [
+//                             { name: "updated_by", data_type: "TEXT", not_null: false },
+//                             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+//                             ...schema,
+//                             ];
+
+//                         if (updateParsedData?.ui_case_id && updateParsedData.ui_case_id != "") {
+//                             updateCompleteSchema = [
+//                                 { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+//                                 ...updateCompleteSchema,
+//                             ];
+//                             updateValidData.ui_case_id = updateParsedData.ui_case_id;
+//                         }
+
+//                         if (updateParsedData?.pt_case_id && updateParsedData.pt_case_id != "") {
+//                             updateCompleteSchema = [
+//                                 { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+//                                 ...updateCompleteSchema,
+//                             ];
+//                             updateValidData.pt_case_id = updateParsedData.pt_case_id;
+//                         }
+
+//                         // Define Sequelize model dynamically
+//                         const updateModelAttributes = {};
+//                         for (const field of updateCompleteSchema) {
+//                             const { name, data_type, not_null, default_value } = field;
+//                             const sequelizeType =
+//                                 typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+//                                 updateModelAttributes[name] = {
+//                                     type: sequelizeType,
+//                                     allowNull: !not_null,
+//                                     defaultValue: default_value || null,
+//                                 };
+//                             }
+
+//                             const Model = sequelize.define(update_table_name, updateModelAttributes, {
+//                                 freezeTableName: true,
+//                                 timestamps: true,
+//                                 createdAt: "created_at",
+//                                 updatedAt: "updated_at",
+//                             });
+
+//                             // Find existing record by ID
+//                             const ids = id.split(",").map((id) => id.trim());
+
+//                             for (const singleId of ids) {
+//                                 // Find existing record by ID
+//                                 const record = await Model.findByPk(singleId);
+//                                 if (!record) {
+//                                     return userSendResponse(
+//                                     res, 400, false, `Record with ID ${singleId} does not exist in table ${update_table_name}.`, null
+//                                     );
+//                                 }
+
+//                                 const originalData = record.toJSON();
+//                                 const updatedFields = {};
+
+//                                 // Update fields only if they are changed
+//                                 for (const key in updateValidData) {
+//                                     if (originalData[key] !== updateValidData[key]) {
+//                                     updatedFields[key] = updateValidData[key];
+//                                     }
+//                                 }
+
+//                                 // Perform the database update if there are changes
+//                                 if (Object.keys(updatedFields).length > 0) {
+//                                     await record.update(updatedFields);
+
+//                                     // Log changes in ProfileHistory (Only for changed fields)
+//                                     if (userId) {
+//                                     const ids = typeof id === 'string' && id.includes(',')
+//                                         ? id.split(',').map(i => parseInt(i.trim()))
+//                                         : [parseInt(id)];
+                                
+//                                     for (const rowId of ids) {
+//                                         for (const key in updatedFields) {
+//                                             const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
+//                                             const newValue = updatedFields[key];
+                                
+//                                             const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
+//                                             const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
+                                
+                                
+//                                             if (oldValue !== newValue) {
+//                                                 await ProfileHistory.create({
+//                                                     template_id: tableData.template_id,
+//                                                     table_row_id: rowId,
+//                                                     user_id: userId,
+//                                                     field_name: key,
+//                                                     old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
+//                                                     updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
+//                                                 });
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+                                
+//                                 }
+//                         }
+// 				}
+
+// 				if (!parsedData.id && approval && approval_details) {
+// 					const approvalItem = await ApprovalItem.findByPk(approval.approval_item);
+// 					if (!approvalItem) throw new Error("Invalid approval item ID.");
+// 					const newApproval = await UiCaseApproval.create(
+// 						{
+// 							approval_item: approval.approval_item,
+// 							approved_by: approval.approved_by,
+// 							approval_date: approval.approval_date || new Date(),
+// 							remarks: approval.remarks,
+// 							reference_id: dbEntry.id,
+// 							approval_type: approval_details.default_status || 'General',
+// 							module: approval_details.module_name,
+// 							action: approval_details.action,
+// 							created_by: userId,
+// 						},
+// 						{ transaction: t }
+// 					);
+// 					await System_Alerts.create({
+// 						approval_id: newApproval.approval_id,
+// 						reference_id: dbEntry.id,
+// 						alert_type: "Approval",
+// 						alert_message: newApproval.remarks,
+// 						created_by: userId,
+// 						created_by_designation_id: user_designation_id,
+// 						send_to: parsedData.field_io_name || null,
+// 					}, { transaction: t });
+// 				}
+// 			} catch (entryError) {
+// 				console.error("Error processing entry:", entryError);
+// 				continue;
+// 			}
+// 		}
+
+// 		await t.commit();
+// 		return userSendResponse(res, 200, true, "All records processed successfully.", null);
+// 	} catch (error) {
+// 		console.error("Error:", error);
+// 		await t.rollback();
+// 		if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
+// 		return userSendResponse(res, 500, false, error.message || "Internal Server Error", error);
+// 	}
+// };
 
 exports.getAccusedWitness = async (req, res) => {
 	try {
@@ -5329,43 +5829,9 @@ exports.getMergeParentData = async (req, res) =>
             return userSendResponse(res, 400, false, "Template module is required", null );
         }
 
-        // Fetch designations for the logged-in user
-        const userDesignations = await UserDesignation.findAll({
-            where: { user_id },
-            attributes: ["designation_id"],
-        });
+        const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
 
-        if (!userDesignations.length) {
-        return res
-            .status(404)
-            .json({ message: "User has no designations assigned" });
-        }
-
-        const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
-
-        // Fetch subordinates based on supervisor designations
-        const subordinates = await UsersHierarchy.findAll({
-        where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-            attributes: ["officer_designation_id"],
-        });
-
-        const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
-
-        // If there are officer designations, fetch subordinate user IDs
-        let subordinateUserIds = [];
-        if (officerDesignationIds.length) {
-            const subordinateUsers = await UserDesignation.findAll({
-                where: { designation_id: { [Op.in]: officerDesignationIds } },
-                attributes: ["user_id"],
-            });
-            subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
-        }
-
-        // Combine current user ID with subordinate IDs
-        const allowedUserIds = [userId, ...subordinateUserIds];
-
-        // Apply allowed user filter once. (Repeat for each template_module as needed.)
-        if (allowedUserIds.length) {
+        if (allowedUserIds.length > 0) {
             if (template_module === "ui_case") {
                 whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: allowedUserIds } },
@@ -6111,43 +6577,9 @@ exports.getMergeChildData = async (req, res) =>
             return userSendResponse(res, 400, false, "Template module is required", null );
         }
 
-        // Fetch designations for the logged-in user
-        const userDesignations = await UserDesignation.findAll({
-            where: { user_id },
-            attributes: ["designation_id"],
-        });
+        const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
 
-        if (!userDesignations.length) {
-        return res
-            .status(404)
-            .json({ message: "User has no designations assigned" });
-        }
-
-        const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
-
-        // Fetch subordinates based on supervisor designations
-        const subordinates = await UsersHierarchy.findAll({
-            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-            attributes: ["officer_designation_id"],
-        });
-
-        const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
-
-        // If there are officer designations, fetch subordinate user IDs
-        let subordinateUserIds = [];
-        if (officerDesignationIds.length) {
-            const subordinateUsers = await UserDesignation.findAll({
-                where: { designation_id: { [Op.in]: officerDesignationIds } },
-                attributes: ["user_id"],
-            });
-            subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
-        }
-
-        // Combine current user ID with subordinate IDs
-        const allowedUserIds = [userId, ...subordinateUserIds];
-
-        // Apply allowed user filter once. (Repeat for each template_module as needed.)
-        if (allowedUserIds.length) {
+        if (allowedUserIds.length > 0) {
             if (template_module === "ui_case") {
                 whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: allowedUserIds } },
@@ -6157,7 +6589,6 @@ exports.getMergeChildData = async (req, res) =>
                 whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             }
         }
-
         const childCases = await UiMergedCases.findAll({
             where: { merged_status: 'child', parent_case_id: case_id }, // corrected here
             attributes: ['case_id'],
@@ -6840,46 +7271,6 @@ exports.deMergeCaseData = async (req, res) => {
     const t = await dbConfig.sequelize.transaction();
 
     try {
-        const userDesignations = await UserDesignation.findAll({
-            where: { user_id },
-            attributes: ["designation_id"],
-        });
-
-        if (!userDesignations.length)
-            return userSendResponse(res, 400, false, "User has no designations assigned.");
-
-        const supervisorDesignationIds = userDesignations.map(ud => ud.designation_id);
-
-        const subordinates = await UsersHierarchy.findAll({
-            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-            attributes: ["officer_designation_id"],
-        });
-
-        const officerDesignationIds = subordinates.map(sub => sub.officer_designation_id);
-
-        let subordinateUserIds = [];
-        if (officerDesignationIds.length) {
-            const subordinateUsers = await UserDesignation.findAll({
-                where: { designation_id: { [Op.in]: officerDesignationIds } },
-                attributes: ["user_id"],
-            });
-            subordinateUserIds = subordinateUsers.map(ud => ud.user_id);
-        }
-
-        const allowedUserIds = [userId, ...subordinateUserIds];
-
-        let whereClause = {};
-        if (allowedUserIds.length) {
-            if (template_module === "ui_case") {
-                whereClause[Op.or] = [
-                    { created_by_id: { [Op.in]: allowedUserIds } },
-                    { field_io_name: { [Op.in]: allowedUserIds } },
-                ];
-            } else {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            }
-        }
-
         const mergedCaseDetails = await UiMergedCases.findAll({
             where: { case_id: { [Op.in]: recordIds } },
             attributes: ['case_id', 'merged_status'],
