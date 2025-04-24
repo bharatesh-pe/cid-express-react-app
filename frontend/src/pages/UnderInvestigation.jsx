@@ -810,6 +810,8 @@ const UnderInvestigation = () => {
                 }
             }
         });
+        
+        normalData['ui_case_id'] = selectedRowData.id;
 
         formData.append("table_name", ptCaseTableName);
         formData.append("data", JSON.stringify(normalData));
@@ -853,6 +855,8 @@ const UnderInvestigation = () => {
                     }
                 }
             });
+
+            secondNormalData['ui_case_id'] = selectedRowData.id;
     
             formData.append("second_table_name", moreThenTemplateTableName);
             formData.append("second_data", JSON.stringify(secondNormalData));
@@ -1108,6 +1112,8 @@ const UnderInvestigation = () => {
                             approval_details : approvalItems,
                         }
         }
+
+        normalData['ui_case_id'] = selectedRowData.id;
         
         formData.append("table_name", ptCaseTableName);
         formData.append("data", JSON.stringify(normalData));
