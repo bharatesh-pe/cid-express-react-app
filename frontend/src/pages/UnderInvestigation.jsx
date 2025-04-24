@@ -636,6 +636,7 @@ const UnderInvestigation = () => {
 
     const showNatureOfDisposal = (selectedRow) => {
         setSelectedRowData(selectedRow);
+        setNatureOfDisposalValue(null);
         setNatureOfDisposalModal(true);
     };
 
@@ -915,6 +916,7 @@ const UnderInvestigation = () => {
                 setNewApprovalPage(false);
                 setMoreThenTemplate(false);
                 setOtherFormOpen(false);
+                setNatureOfDisposalValue(null);
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -1006,6 +1008,7 @@ const UnderInvestigation = () => {
                 setNewApprovalPage(false);
                 setMoreThenTemplate(false);
                 setOtherFormOpen(false);
+                setNatureOfDisposalValue(null);
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -1142,6 +1145,7 @@ const UnderInvestigation = () => {
                 setShowOrderCopy(false);
                 setMoreThenTemplate(false);
                 setOtherFormOpen(false);
+                setNatureOfDisposalValue(null);
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
