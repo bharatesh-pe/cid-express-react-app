@@ -506,7 +506,8 @@ const UnderInvestigation = () => {
     const [childMergedCaseTitle, setChildMergedCaseTitle] = useState("");
     const [childMergedCaseCID, setChildMergedCaseCID] = useState("");
     const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
-    
+    const [hasApproval, setHasApproval] = useState(false);
+
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
@@ -3204,7 +3205,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
-                onOpen: () => loadTableData(paginationCount),
+                onOpen: () => {
+                  if (sysStatus === "merge_cases") {
+                    loadMergedCasesData(paginationCount);
+                  } else {
+                    loadTableData(paginationCount);
+                  }
+                },
             });
 
             setOtherFormOpen(false);
@@ -3969,6 +3976,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
         setSelectedMergeRowData([]); 
         setSelectedParentId(null);    
         setApprovalSaveData({});
+        setHasApproval(false);
 
       } else {
         const errorMessage = saveTemplateData.message
@@ -5252,10 +5260,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
     }
   };
+
   const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
 
     if(options.is_approval && !approved){
         setApprovalSaveData({});
+        setHasApproval(true); 
         showApprovalPage(selectedRow, options);
         return;
     }
@@ -5330,13 +5340,34 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       (option.code === selectedFieldData || option.name === selectedFieldData)
                   );
                   console.log("Pre-selected value:", matchedOption);
-                  setSelectedOtherFields(matchedOption || null);
-  
+                  const preSelectedDivision = matchedOption || null;
+                  setSelectedOtherFields(preSelectedDivision);
+                  
+                  if (options.name === "Tranfer to other division" && preSelectedDivision?.code) {
+                    api
+                      .post("cidMaster/getIoUsersBasedOnDivision", {
+                        division_ids: [preSelectedDivision.code],
+                        role_id: null,
+                      })
+                      .then((res) => {
+                        setUsersBasedOnDivision(res.data || []);
+                      })
+                      .catch((err) => {
+                        console.error("Failed to load users based on division", err);
+                        setUsersBasedOnDivision([]);
+                      });
+                  }
+                    
                   setSelectKey({ name: options.field, title: options.name });
                 //   setSelectedRow(selectedRow);
                 //   setselectedOtherTemplate(options);
                   setOtherTransferField(updatedOptions);
-                  setShowOtherTransferModal(true);
+                  if (options.name === "Tranfer to other division") {
+                    setShowMassiveTransferModal(true);
+                    setSelectedRowIds([selectedRow.id])
+                  } else {
+                    setShowOtherTransferModal(true);
+                  }
                 }
               } catch (error) {
                 setLoading(false);
@@ -5357,13 +5388,33 @@ const loadChildMergedCasesData = async (page, caseId) => {
               const matchedOption = staticOptions.find(
                 (option) => option.code === selectedFieldData
               );
-              setSelectedOtherFields(matchedOption || null);
-  
+              const preSelectedDivision = matchedOption || null;
+              setSelectedOtherFields(preSelectedDivision);
+              
+              if (options.name === "Tranfer to other division" && preSelectedDivision?.code) {
+                api
+                  .post("cidMaster/getIoUsersBasedOnDivision", {
+                    division_ids: [preSelectedDivision.code],
+                    role_id: null,
+                  })
+                  .then((res) => {
+                    setUsersBasedOnDivision(res.data || []);
+                  })
+                  .catch((err) => {
+                    console.error("Failed to load users based on division", err);
+                    setUsersBasedOnDivision([]);
+                  });
+              }
+                
               setSelectKey({ name: options.field, title: options.name });
             //   setSelectedRow(selectedRow);
             //   setselectedOtherTemplate(options);
               setOtherTransferField(staticOptions);
-              setShowOtherTransferModal(true);
+              if (options.name === "Tranfer to other division") {
+                setShowMassiveTransferModal(true);
+              } else {
+                setShowOtherTransferModal(true);
+              }
             }
           } else {
             toast.error("Can't able to find Division field", {
@@ -5718,9 +5769,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
   
   const handleMassiveDivisionChange = async () => {
-
     if (!selectedOtherFields || !selectedOtherFields.code) {
-      toast.error("Please Select Division !", {
+      toast.error("Please Select Division!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -5730,10 +5780,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
         progress: undefined,
         className: "toast-error",
       });
-
       return;
     }
-
+  
     if (!selectedUser || !selectedUser.user_id) {
       toast.error("Please select IO User!", {
         position: "top-right",
@@ -5747,7 +5796,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       });
       return;
     }
-
+  
     if (
       selectedOtherTemplate &&
       selectedOtherTemplate["field"] &&
@@ -5760,38 +5809,129 @@ const loadChildMergedCasesData = async (page, caseId) => {
       checkDisposalValues();
       return;
     }
-
-    if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
-        setApprovalSaveData({});
-        showApprovalPage(selectedRow, selectedOtherTemplate);
-        return;
+    
+    if (selectedOtherTemplate && selectedOtherTemplate.is_approval && !hasApproval) {
+      setApprovalSaveData({});
+      showApprovalPage(selectedRow, selectedOtherTemplate);
+      return;
     }
+  
     var combinedData = {
       id: selectedRowIds.join(","),
       [selectKey.name]: selectedOtherFields.code,
       field_io_name: selectedUser?.user_id,
     };
-
-    // update func
-    onUpdateTemplateData(combinedData);
-
-    // reset states
-    setShowMassiveTransferModal(false);
-    setSelectKey(null);
-    setSelectedRow([]);
-    setOtherTransferField([]);
-    setSelectedOtherFields(null);
-    setselectedOtherTemplate(null);
-    setUsersBasedOnDivision([]);
-    setSelectedRowIds([]);
-    setSelectedUser(null);
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]); 
-    setSelectedParentId(null);
-    setTableData((prevData) =>
-      prevData.map((item) => ({ ...item, isSelected: false }))
-    );
+  
+    if (selectedOtherTemplate.is_approval) {
+      var payloadApproveData = {
+        ...approvalSaveData,
+        case_id: selectedRowData?.id || selectedRowIds[0],
+        case_type: "ui_case",
+        module: "Under Investigation",
+        action: "Under Investigation Action",
+        transaction_id: randomApprovalId,
+        created_by_designation_id: localStorage.getItem("designation_id") || "",
+        created_by_division_id: localStorage.getItem("division_id") || "",
+        info: {
+          module: "Under Investigation",
+          action: "Under Investigation Action",
+        },
+      };
+  
+      setLoading(true);
+  
+      try {
+        const approvalResponse = await api.post("/ui_approval/create_ui_case_approval", payloadApproveData);
+  
+        setLoading(false);
+  
+        if (approvalResponse && approvalResponse.success) {
+          toast.success(approvalResponse.message || "Approval Added Successfully", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+          });
+  
+          onUpdateTemplateData(combinedData);
+  
+          // reset states
+          setAddApproveFlag(false);
+          setApproveTableFlag(false);
+          setShowOtherTransferModal(false);
+          setApprovalSaveData({});
+          setShowMassiveTransferModal(false);
+          setSelectKey(null);
+          setSelectedRow([]);
+          setOtherTransferField([]);
+          setSelectedOtherFields(null);
+          setselectedOtherTemplate(null);
+          setUsersBasedOnDivision([]);
+          setSelectedRowIds([]);
+          setSelectedUser(null);
+          setSelectedRowIds([]);
+          setSelectedMergeRowData([]);
+          setSelectedParentId(null);
+          setTableData((prevData) =>
+            prevData.map((item) => ({ ...item, isSelected: false }))
+          );
+          setHasApproval(false);
+        } else {
+          toast.error(approvalResponse.message || "Failed to add approval. Please try again.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          });
+        }
+      } catch (error) {
+        setLoading(false);
+        toast.error(error?.response?.data?.message || "Error during approval!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } else {
+      onUpdateTemplateData(combinedData);
+  
+      // reset states
+      setShowMassiveTransferModal(false);
+      setSelectKey(null);
+      setSelectedRow([]);
+      setOtherTransferField([]);
+      setSelectedOtherFields(null);
+      setselectedOtherTemplate(null);
+      setUsersBasedOnDivision([]);
+      setSelectedRowIds([]);
+      setSelectedUser(null);
+      setSelectedRowIds([]);
+      setSelectedMergeRowData([]);
+      setSelectedParentId(null);
+      setTableData((prevData) =>
+        prevData.map((item) => ({ ...item, isSelected: false }))
+      );
+      setAddApproveFlag(false);
+      setApproveTableFlag(false);
+      setShowOtherTransferModal(false);
+      setApprovalSaveData({});
+      setHasApproval(false);
+    }
   };
+  
 
   const showPtCaseTemplate = async () => {
 
@@ -8494,6 +8634,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           setTableData((prevData) =>
             prevData.map((item) => ({ ...item, isSelected: false }))
           );
+          setHasApproval(false);
         }}
           aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
@@ -8572,6 +8713,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               setTableData((prevData) =>
                 prevData.map((item) => ({ ...item, isSelected: false }))
               );
+              setHasApproval(false);
             }}
             >Cancel
           </Button>
