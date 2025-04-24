@@ -1516,14 +1516,19 @@ const UnderInvestigation = () => {
       if (!mergeResponse?.success) {
         throw new Error(mergeResponse.message || "Failed to insert merge data.");
       }
-  
-      Swal.fire({
-        title: 'Success',
-        text: "Merged successfully!",
-        icon: 'success',
-        confirmButtonText: 'OK',
-      });
-  
+    
+      toast.success("Merged Successfully",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+        }
+      );
       setSelectedRowIds([]);
       setSelectedMergeRowData([]);
       setSelectedParentId(null);
@@ -1531,12 +1536,18 @@ const UnderInvestigation = () => {
       await loadTableData();
     } catch (err) {
       console.error(err);
-      Swal.fire({
-        title: 'Error',
-        text: "Something went wrong during merge!",
-        icon: 'error',
-        confirmButtonText: 'OK',
-      });
+      toast.error("Something went wrong during merge",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        }
+      );
     } finally {
       setLoading(false);
     }
