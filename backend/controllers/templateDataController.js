@@ -4852,7 +4852,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
-	const { table_name  , data, others_data, transaction_id, user_designation_id , second_table_name, second_data , second_folder_attachment_ids } = req.body;
+	const { table_name  , data, others_data, transaction_id, user_designation_id , folder_attachment_ids , second_table_name, second_data , second_folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -4883,127 +4883,144 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 		let userName = userData?.kgidDetails?.name || null;
 
-		const tableData = await Template.findOne({ where: { table_name } });
-		if (!tableData) {
-			return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
-		}
+        let insertedData = null ;
+        let insertedId =  null;
+        let insertedType = null;
+        let insertedIO = null;
+        let tableData = null;
 
-		const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
-
-		let parsedData;
-		try {
-			parsedData = JSON.parse(data);
-		} catch (err) {
-			return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
-		}
-
-		const validData = {};
-		for (const field of schema) {
-			const { name, not_null, default_value } = field;
-			if (parsedData.hasOwnProperty(name)) {
-				validData[name] = parsedData[name];
-			} else if (not_null && default_value === undefined) {
-				return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
-			} else if (default_value !== undefined) {
-				validData[name] = default_value;
-			}
-		}
-
-		validData.created_by = userName;
-		validData.created_by_id = userId;
-
-		const completeSchema = [
-			{ name: "created_by", data_type: "TEXT", not_null: false },
-			{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-			...schema
-		];
-
-		["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
-			if (parsedData[field]) {
-				completeSchema.unshift({
-					name: field,
-					data_type: typeof parsedData[field] === "number" ? "INTEGER" : "TEXT",
-					not_null: false
-				});
-				validData[field] = parsedData[field];
-			}
-		});
-
-		const modelAttributes = {};
-		for (const field of completeSchema) {
-			const { name, data_type, not_null, default_value } = field;
-			const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-			modelAttributes[name] = {
-				type: sequelizeType,
-				allowNull: !not_null,
-				defaultValue: default_value || null,
-			};
-		}
-
-		const Model = sequelize.define(table_name, modelAttributes, {
-			freezeTableName: true,
-			timestamps: true,
-			createdAt: "created_at",
-			updatedAt: "updated_at",
-		});
-
-		await Model.sync();
-
-		const insertedData = await Model.create(validData, { transaction: t });
-		if (!insertedData) {
-			await t.rollback();
-			return userSendResponse(res, 400, false, "Failed to insert data.", null);
-		}
+        if(table_name  && data)
+        {
+            tableData = await Template.findOne({ where: { table_name } });
+            if (!tableData) {
+                return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+            }
+    
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+    
+            let parsedData;
+            try {
+                parsedData = JSON.parse(data);
+            } catch (err) {
+                return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+            }
+    
+            const validData = {};
+            for (const field of schema) {
+                const { name, not_null, default_value } = field;
+                if (parsedData.hasOwnProperty(name)) {
+                    validData[name] = parsedData[name];
+                } else if (not_null && default_value === undefined) {
+                    return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
+                } else if (default_value !== undefined) {
+                    validData[name] = default_value;
+                }
+            }
+    
+            validData.created_by = userName;
+            validData.created_by_id = userId;
+    
+            const completeSchema = [
+                { name: "created_by", data_type: "TEXT", not_null: false },
+                { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                ...schema
+            ];
+    
+            ["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
+                if (parsedData[field]) {
+                    completeSchema.unshift({
+                        name: field,
+                        data_type: typeof parsedData[field] === "number" ? "INTEGER" : "TEXT",
+                        not_null: false
+                    });
+                    validData[field] = parsedData[field];
+                }
+            });
+    
+            const modelAttributes = {};
+            for (const field of completeSchema) {
+                const { name, data_type, not_null, default_value } = field;
+                const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+            }
+    
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+    
+            await Model.sync();
+    
+            insertedData = await Model.create(validData, { transaction: t });
+            if (!insertedData) {
+                await t.rollback();
+                return userSendResponse(res, 400, false, "Failed to insert data.", null);
+            }
+            
+            insertedId = insertedData.id || null;
+            insertedType = insertedData.sys_status || null;
+            insertedIO = insertedData.field_io_name || null;
+        }
 
 		const fileUpdates = {};
 
-		if (req.files && req.files.length > 0) {
-			const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
+        if(folder_attachment_ids)
+        {
+            if (req.files && req.files.length > 0) {
+                const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
+    
+                for (const file of req.files) {
+                    const { originalname, size, key, fieldname } = file;
+                    const fileExtension = path.extname(originalname);
+    
+                    // Find matching folder_id from the payload (if any)
+                    const matchingFolder = folderAttachments.find(
+                    (attachment) =>
+                        attachment.filename === originalname &&
+                        attachment.field_name === fieldname
+                    );
+    
+                    const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
+    
+                    await ProfileAttachment.create({
+                        template_id: tableData.template_id,
+                        table_row_id: insertedData.id,
+                        attachment_name: originalname,
+                        attachment_extension: fileExtension,
+                        attachment_size: size,
+                        s3_key: key,
+                        field_name: fieldname,
+                        folder_id: folderId, // Store NULL if no folder_id provided
+                    });
+    
+                    if (!fileUpdates[fieldname]) {
+                        fileUpdates[fieldname] = originalname;
+                    } else {
+                        fileUpdates[fieldname] += `,${originalname}`;
+                    }
+                }
+    
+                
+                for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+                    await Model.update(
+                    { [fieldname]: filenames },
+                    { where: { id: insertedData.id }, transaction: t }
+                    );
+                }
+          
+            }
+        }
 
-			for (const file of req.files) {
-				const { originalname, size, key, fieldname } = file;
-				const fileExtension = path.extname(originalname);
-
-				// Find matching folder_id from the payload (if any)
-				const matchingFolder = folderAttachments.find(
-				(attachment) =>
-					attachment.filename === originalname &&
-					attachment.field_name === fieldname
-				);
-
-				const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
-
-				await ProfileAttachment.create({
-					template_id: tableData.template_id,
-					table_row_id: insertedData.id,
-					attachment_name: originalname,
-					attachment_extension: fileExtension,
-					attachment_size: size,
-					s3_key: key,
-					field_name: fieldname,
-					folder_id: folderId, // Store NULL if no folder_id provided
-				});
-
-				if (!fileUpdates[fieldname]) {
-					fileUpdates[fieldname] = originalname;
-				} else {
-					fileUpdates[fieldname] += `,${originalname}`;
-				}
-			}
-
-			
-      for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-        await Model.update(
-          { [fieldname]: filenames },
-          { where: { id: insertedData.id }, transaction: t }
-        );
-      }
-      
-		}
 
         if(second_table_name && second_table_name != "")
 		{
-			const secondTableData = await Template.findOne({ where: { second_table_name } });
+			const secondTableData = await Template.findOne({ where: { table_name:second_table_name } });
 			if (!secondTableData) {
 				return userSendResponse(res, 400, false, `Table ${second_table_name} does not exist.`, null);
 			}
@@ -5035,7 +5052,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			const secondCompleteSchema = [
 				{ name: "created_by", data_type: "TEXT", not_null: false },
 				{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-				...schema
+				...secondSchema
 			];
 
 			["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
@@ -5122,12 +5139,11 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
-		const insertedId = insertedData.id;
-		const insertedtype = insertedData.sys_status;
-		const insertedIO = insertedData.field_io_name || null;
-		let recordId = insertedData.id;
-		let sys_status = insertedData.sys_status;;
-		let default_status = insertedData.sys_status;;
+      
+
+        let recordId = insertedId;
+        let sys_status = insertedType;
+        let default_status = insertedType;
 
 		if(insertedIO && insertedIO !== null) {
 			const userData = await Users.findOne({
@@ -5140,12 +5156,18 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
+         console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>table_name",others_data)
 		let otherParsedData  = {};
 		try {
 			otherParsedData = JSON.parse(others_data);
 		} catch (err) {
-			return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+            otherParsedData = others_data;
+			// return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
 		}
+
+        if (typeof otherParsedData !== 'object' || otherParsedData === null) {
+            return userSendResponse(res, 400, false, "Invalid data format in others_data.", null);
+        }
 
 		// Handle others_data
 		if (otherParsedData && typeof otherParsedData === "object") {
@@ -5287,343 +5309,496 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 	}
 };
 
+exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
+    const { template_id, id, model_name, attachments, others_data, others_table_name, others_data_id, approval_status, sys_status } = parsedData;
 
-// exports.saveMultipleDataWithApprovalToTemplates = async (req, res, next) => {
-// 	const { user_designation_id, transaction_id, entries } = req.body;
+	if (user_designation_id === undefined || user_designation_id === null) {
+		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
+	}
+	if (transaction_id === undefined || transaction_id === null) {
+		return userSendResponse(res, 400, false, "transaction_id is required.", null);
+	}
 
-// 	if (!user_designation_id) {
-// 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
-// 	}
-// 	if (!transaction_id) {
-// 		return userSendResponse(res, 400, false, "transaction_id is required.", null);
-// 	}
-// 	if (!Array.isArray(entries) || entries.length === 0) {
-// 		return userSendResponse(res, 400, false, "Entries must be a non-empty array.", null);
-// 	}
+	const t = await dbConfig.sequelize.transaction();
+	let dirPath = "";
 
-// 	const t = await dbConfig.sequelize.transaction();
-// 	const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+	// try {
+	// 	const userId = req.user?.user_id || null;
+	// 	if (!userId) {
+	// 		return userSendResponse(res, 403, false, "Unauthorized access.", null);
+	// 	}
 
-// 	try {
-// 		const userId = req.user?.user_id;
-// 		if (!userId) return userSendResponse(res, 403, false, "Unauthorized access.", null);
-// 		if (fs.existsSync(dirPath)) {
-// 			return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath });
-// 		}
-// 		fs.mkdirSync(dirPath, { recursive: true });
+	// 	dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+	// 	if (fs.existsSync(dirPath)) {
+	// 		return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath });
+	// 	}
+	// 	fs.mkdirSync(dirPath, { recursive: true });
 
-// 		const userData = await Users.findOne({
-// 			include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
-// 			where: { user_id: userId },
-// 		});
-// 		const userName = userData?.kgidDetails?.name || null;
+	// 	const userData = await Users.findOne({
+	// 		include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
+	// 		where: { user_id: userId },
+	// 	});
 
-// 		for (const entry of entries) {
-// 			try {
-// 				const { table_name, data, others_data, folder_attachment_ids, approval, approval_details, update_table_name, update_data , update_folder_attachment_ids} = entry;
-// 				const tableData = await Template.findOne({ where: { table_name }, transaction: t });
-// 				if (!tableData) throw new Error(`Table ${table_name} does not exist.`);
+	// 	let userName = userData?.kgidDetails?.name || null;
 
-// 				const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
-// 				const parsedData = typeof data === "string" ? JSON.parse(data) : data;
-// 				const validData = {};
+    //     let insertedIO = null;
 
-// 				for (const field of schema) {
-// 					const { name, not_null, default_value } = field;
-// 					if (parsedData.hasOwnProperty(name)) {
-// 						validData[name] = parsedData[name];
-// 					} else if (not_null && default_value === undefined) {
-// 						throw new Error(`Field ${name} cannot be null.`);
-// 					} else if (default_value !== undefined) {
-// 						validData[name] = default_value;
-// 					}
-// 				}
-// 				validData.created_by = userName;
-// 				validData.created_by_id = userId;
+    //     if(table_name  && data)
+    //     {
+    //         const tableData = await Template.findOne({ where: { table_name } });
+    //         if (!tableData) {
+    //             return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+    //         }
+    
+    //         const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+    
+    //         let parsedData;
+    //         try {
+    //             parsedData = JSON.parse(data);
+    //         } catch (err) {
+    //             return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+    //         }
 
-// 				const completeSchema = [
-// 					{ name: "created_by", data_type: "TEXT", not_null: false },
-// 					{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-// 					...schema,
-// 				];
+    //         // Validate and filter data for schema-based fields
+    //         for (const field of schema) {
+    //             const { name, not_null } = field;
 
-// 				const modelAttributes = {};
-// 				for (const field of completeSchema) {
-// 					const sequelizeType = typeMapping[field.data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-// 					modelAttributes[field.name] = {
-// 						type: sequelizeType,
-// 						allowNull: !field.not_null,
-// 						defaultValue: field.default_value ?? null,
-// 					};
-// 				}
+    //             if (parsedData.hasOwnProperty(name)) {
+    //                 validData[name] = parsedData[name];
+    //             } else if (not_null && !parsedData[name]) {
+    //                 return userSendResponse( res,  400,  false,  `Field ${name} cannot be null.`,  null );
+    //             }
+    //         }
+    //         validData.sys_status = parsedData.sys_status;
+    //         validData.updated_by = userName;
+    //         validData.updated_by_id = userId;
 
-// 				const Model = sequelize.define(table_name, modelAttributes, {
-// 					freezeTableName: true,
-// 					timestamps: true,
-// 					createdAt: "created_at",
-// 					updatedAt: "updated_at",
-// 				});
+    //         // Include additional system fields dynamically
+    //         let completeSchema = parsedData?.sys_status
+    //         ? [
+    //             {
+    //                 name: "sys_status",
+    //                 data_type: "TEXT",
+    //                 not_null: false,
+    //                 default_value: parsedData.sys_status.trim(),
+    //             },
+    //             { name: "updated_by", data_type: "TEXT", not_null: false },
+    //             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+    //             ...schema,
+    //             ]
+    //         : [
+    //             { name: "updated_by", data_type: "TEXT", not_null: false },
+    //             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+    //             ...schema,
+    //             ];
 
-// 				await Model.sync();
+    //         if (parsedData?.ui_case_id && parsedData.ui_case_id != "") {
+    //             completeSchema = [
+    //                 { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+    //                 ...completeSchema,
+    //             ];
+    //             validData.ui_case_id = parsedData.ui_case_id;
+    //         }
 
-// 				let dbEntry;
-// 				if (parsedData.id) {
-// 					await Model.update(validData, { where: { id: parsedData.id }, transaction: t });
-// 					dbEntry = await Model.findByPk(parsedData.id, { transaction: t });
-// 				} else {
-// 					dbEntry = await Model.create(validData, { transaction: t });
-// 				}
+    //         if (parsedData?.pt_case_id && parsedData.pt_case_id != "") {
+    //             completeSchema = [
+    //                 { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+    //                 ...completeSchema,
+    //             ];
+    //             validData.pt_case_id = parsedData.pt_case_id;
+    //         }
 
-// 				const fileUpdates = {};
-// 				if (req.files && req.files.length > 0) {
-// 					const attachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : [];
-// 					for (const file of req.files) {
-// 						const matchingFolder = attachments.find(att => att.filename === file.originalname && att.field_name === file.fieldname);
-// 						await ProfileAttachment.create({
-// 							template_id: tableData.template_id,
-// 							table_row_id: dbEntry.id,
-// 							attachment_name: file.originalname,
-// 							attachment_extension: path.extname(file.originalname),
-// 							attachment_size: file.size,
-// 							s3_key: file.key,
-// 							field_name: file.fieldname,
-// 							folder_id: matchingFolder?.folder_id ?? null,
-// 						});
-// 						fileUpdates[file.fieldname] = fileUpdates[file.fieldname]
-// 							? fileUpdates[file.fieldname] + `,${file.originalname}`
-// 							: file.originalname;
-// 					}
-// 					for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-// 						await Model.update({ [fieldname]: filenames }, { where: { id: dbEntry.id }, transaction: t });
-// 					}
-// 				}
+    //         // Define Sequelize model dynamically
+    //         const modelAttributes = {};
+    //         for (const field of completeSchema) {
+    //             const { name, data_type, not_null, default_value } = field;
+    //             const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+    //             modelAttributes[name] = {
+    //                 type: sequelizeType,
+    //                 allowNull: !not_null,
+    //                 defaultValue: default_value || null,
+    //             };
+    //         }
 
-// 				if (others_data) {
-// 					const otherData = typeof others_data === "string" ? JSON.parse(others_data) : others_data;
-// 					if (otherData.others_table_name) {
-// 						const { others_table_name, sys_status } = otherData;
-// 						const otherTable = await Template.findOne({ where: { table_name: others_table_name }, transaction: t });
-// 						if (!otherTable) throw new Error(`Table ${others_table_name} does not exist.`);
+    //         const Model = sequelize.define(table_name, modelAttributes, {
+    //             freezeTableName: true,
+    //             timestamps: true,
+    //             createdAt: "created_at",
+    //             updatedAt: "updated_at",
+    //         });
 
-// 						const otherSchema = typeof otherTable.fields === "string" ? JSON.parse(otherTable.fields) : otherTable.fields;
-// 						const OtherModel = sequelize.define(
-// 							others_table_name,
-// 							otherSchema.reduce((acc, field) => {
-// 								acc[field.name] = {
-// 									type: typeMapping[field.data_type.toUpperCase()] || Sequelize.DataTypes.STRING,
-// 									allowNull: !field.not_null,
-// 								};
-// 								if (field.default_value) acc[field.name].defaultValue = field.default_value;
-// 								if (field.primaryKey) acc[field.name].primaryKey = true;
-// 								if (field.autoIncrement) acc[field.name].autoIncrement = true;
-// 								return acc;
-// 							}, {}),
-// 							{
-// 								freezeTableName: true,
-// 								timestamps: true,
-// 								createdAt: "created_at",
-// 								updatedAt: "updated_at",
-// 								underscored: true,
-// 							}
-// 						);
-// 						await OtherModel.sync({ alter: true });
-// 						await OtherModel.update({ sys_status: sys_status?.sys_status }, {
-// 							where: { id: sys_status?.id },
-// 							transaction: t
-// 						});
-// 					}
-// 				}
+    //         // Find existing record by ID
+    //         const ids = id.split(",").map((id) => id.trim());
 
-// 				if (update_table_name && update_data) {
-//                         // Fetch the table template
-//                         const updateTableData = await Template.findOne({ where: { update_table_name } });
+    //         for (const singleId of ids) {
+    //         // Find existing record by ID
+    //             const record = await Model.findByPk(singleId);
+    //             if (!record) {
+    //                 return userSendResponse(res, 400, false, `Record with ID ${singleId} does not exist in table ${table_name}.`, null);
+    //             }
 
-//                         if (!updateTableData) {
-//                             return userSendResponse( res, 400, false, `Table ${update_table_name} does not exist.`, null);
-//                         }
+    //             const originalData = record.toJSON();
+    //             const updatedFields = {};
 
-//                         // Parse schema and request data
-//                         const updateSchema = typeof updateTableData.fields === "string" ? JSON.parse(updateTableData.fields): updateTableData.fields;
-//                         const updateValidData = {};
+    //             // Update fields only if they are changed
+    //             for (const key in validData) {
+    //                 if (originalData[key] !== validData[key]) {
+    //                 updatedFields[key] = validData[key];
+    //                 }
+    //             }
 
-//                         let updateParsedData;
-//                         try {
-//                             updateParsedData = JSON.parse(data);
-//                         } catch (err) {
-//                             return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
-//                         }
+    //             // Perform the database update if there are changes
+    //             if (Object.keys(updatedFields).length > 0) {
+    //                 await record.update(updatedFields , { transaction: t });
 
-//                         // Validate and filter data for schema-based fields
-//                         for (const field of updateSchema) {
-//                             const { name, not_null } = field;
+    //                 // Log changes in ProfileHistory (Only for changed fields)
+    //                 if (userId) {
+    //                     const ids = typeof id === 'string' && id.includes(',')
+    //                         ? id.split(',').map(i => parseInt(i.trim()))
+    //                         : [parseInt(id)];
+                
+    //                     for (const rowId of ids) {
+    //                         for (const key in updatedFields) {
+    //                             const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
+    //                             const newValue = updatedFields[key];
+                    
+    //                             console.log(">>>>>oldValue1>>>>>>>>", oldValue);
+    //                             console.log(">>>>>>newValue1>>>>>>>", newValue);
+                    
+    //                             const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
+    //                             const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
+                    
+    //                             console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
+    //                             console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
+                    
+    //                             if (oldValue !== newValue) {
+    //                                 await ProfileHistory.create({
+    //                                     template_id: tableData.template_id,
+    //                                     table_row_id: rowId,
+    //                                     user_id: userId,
+    //                                     field_name: key,
+    //                                     old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
+    //                                     updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
+    //                                 });
+    //                             }
+    //                         }
+    //                     }
+    //                 }
+            
+    //                 // await ActivityLog.create({
+    //                 //     template_id: tableData.template_id,
+    //                 //     table_row_id: id,
+    //                 //     user_id: actorId,
+    //                 //     actor_name: actorName,
+    //                 //     activity: `Updated`,
+    //                 // });
+    //             }
 
-//                             if (updateParsedData.hasOwnProperty(name)) {
-//                                 updateValidData[name] = updateParsedData[name];
-//                             } else if (not_null && !updateParsedData[name]) {
-//                                 return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null );
-//                             }
-//                         }
+    //             const fileUpdates = {};
 
-//                         updateValidData.sys_status = updateParsedData.sys_status;
-//                         updateValidData.updated_by = userName;
-//                         updateValidData.updated_by_id = userId;
+    //             if (req.files && req.files.length > 0) {
+    //                 const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : []; // Parse if provided, else empty array
 
-//                         // Include additional system fields dynamically
-//                         let updateCompleteSchema = updateParsedData?.sys_status
-//                         ? [
-//                             {
-//                                 name: "sys_status",
-//                                 data_type: "TEXT",
-//                                 not_null: false,
-//                                 default_value: updateParsedData.sys_status.trim(),
-//                             },
-//                             { name: "updated_by", data_type: "TEXT", not_null: false },
-//                             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-//                             ...schema,
-//                             ]
-//                         : [
-//                             { name: "updated_by", data_type: "TEXT", not_null: false },
-//                             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-//                             ...schema,
-//                             ];
+    //                 for (const file of req.files) {
+    //                     const { originalname, size, key, fieldname } = file;
+    //                     const fileExtension = path.extname(originalname);
 
-//                         if (updateParsedData?.ui_case_id && updateParsedData.ui_case_id != "") {
-//                             updateCompleteSchema = [
-//                                 { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-//                                 ...updateCompleteSchema,
-//                             ];
-//                             updateValidData.ui_case_id = updateParsedData.ui_case_id;
-//                         }
+    //                     // Find matching folder_id from the payload (if any)
+    //                     const matchingFolder = folderAttachments.find(
+    //                         (attachment) =>
+    //                         attachment.filename === originalname &&
+    //                         attachment.field_name === fieldname
+    //                     );
 
-//                         if (updateParsedData?.pt_case_id && updateParsedData.pt_case_id != "") {
-//                             updateCompleteSchema = [
-//                                 { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-//                                 ...updateCompleteSchema,
-//                             ];
-//                             updateValidData.pt_case_id = updateParsedData.pt_case_id;
-//                         }
+    //                     const folderId = matchingFolder ? matchingFolder.folder_id : null; // Store NULL if no folder_id provided
 
-//                         // Define Sequelize model dynamically
-//                         const updateModelAttributes = {};
-//                         for (const field of updateCompleteSchema) {
-//                             const { name, data_type, not_null, default_value } = field;
-//                             const sequelizeType =
-//                                 typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-//                                 updateModelAttributes[name] = {
-//                                     type: sequelizeType,
-//                                     allowNull: !not_null,
-//                                     defaultValue: default_value || null,
-//                                 };
-//                             }
+    //                     await ProfileAttachment.create({
+    //                         template_id: tableData.template_id,
+    //                         table_row_id: id,
+    //                         attachment_name: originalname,
+    //                         attachment_extension: fileExtension,
+    //                         attachment_size: size,
+    //                         s3_key: key,
+    //                         field_name: fieldname,
+    //                         folder_id: folderId, // Store NULL if no folder_id provided
+    //                     }, { transaction: t });
 
-//                             const Model = sequelize.define(update_table_name, updateModelAttributes, {
-//                                 freezeTableName: true,
-//                                 timestamps: true,
-//                                 createdAt: "created_at",
-//                                 updatedAt: "updated_at",
-//                             });
+    //                     // Fetch current field value if it exists
+    //                     const existingRecord = await Model.findOne({
+    //                         where: { id },
+    //                         attributes: [fieldname],
+    //                     });
 
-//                             // Find existing record by ID
-//                             const ids = id.split(",").map((id) => id.trim());
+    //                     let currentFilenames = existingRecord?.[fieldname] || "";
 
-//                             for (const singleId of ids) {
-//                                 // Find existing record by ID
-//                                 const record = await Model.findByPk(singleId);
-//                                 if (!record) {
-//                                     return userSendResponse(
-//                                     res, 400, false, `Record with ID ${singleId} does not exist in table ${update_table_name}.`, null
-//                                     );
-//                                 }
+    //                     // Append new filename to the existing comma-separated list
+    //                     currentFilenames = currentFilenames ? `${currentFilenames},${originalname}` : originalname;
 
-//                                 const originalData = record.toJSON();
-//                                 const updatedFields = {};
+    //                     // Add/accumulate new filenames for each field
+    //                     if (fileUpdates[fieldname]) {
+    //                         fileUpdates[
+    //                         fieldname
+    //                         ] = `${fileUpdates[fieldname]},${originalname}`;
+    //                     } else {
+    //                         fileUpdates[fieldname] = currentFilenames;
+    //                     }
+    //                 }
 
-//                                 // Update fields only if they are changed
-//                                 for (const key in updateValidData) {
-//                                     if (originalData[key] !== updateValidData[key]) {
-//                                     updatedFields[key] = updateValidData[key];
-//                                     }
-//                                 }
+    //                 // Update the model with the updated filenames
+    //                 for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+    //                     await Model.update(
+    //                         { [fieldname]: filenames },
+    //                         { where: { id: singleId } },
+    //                         { transaction: t }
+    //                     );
+    //                 }
+    //             }
+    //         }
+    //     }
 
-//                                 // Perform the database update if there are changes
-//                                 if (Object.keys(updatedFields).length > 0) {
-//                                     await record.update(updatedFields);
+	// 	let otherParsedData  = {};
+	// 	try {
+	// 		otherParsedData = JSON.parse(others_data);
+	// 	} catch (err) {
+    //         otherParsedData = others_data;
+	// 		// return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+	// 	}
 
-//                                     // Log changes in ProfileHistory (Only for changed fields)
-//                                     if (userId) {
-//                                     const ids = typeof id === 'string' && id.includes(',')
-//                                         ? id.split(',').map(i => parseInt(i.trim()))
-//                                         : [parseInt(id)];
-                                
-//                                     for (const rowId of ids) {
-//                                         for (const key in updatedFields) {
-//                                             const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
-//                                             const newValue = updatedFields[key];
-                                
-//                                             const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
-//                                             const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
-                                
-                                
-//                                             if (oldValue !== newValue) {
-//                                                 await ProfileHistory.create({
-//                                                     template_id: tableData.template_id,
-//                                                     table_row_id: rowId,
-//                                                     user_id: userId,
-//                                                     field_name: key,
-//                                                     old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
-//                                                     updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
-//                                                 });
-//                                             }
-//                                         }
-//                                     }
-//                                 }
-                                
-//                                 }
-//                         }
-// 				}
+    //     if (typeof otherParsedData !== 'object' || otherParsedData === null) {
+    //         return userSendResponse(res, 400, false, "Invalid data format in others_data.", null);
+    //     }
 
-// 				if (!parsedData.id && approval && approval_details) {
-// 					const approvalItem = await ApprovalItem.findByPk(approval.approval_item);
-// 					if (!approvalItem) throw new Error("Invalid approval item ID.");
-// 					const newApproval = await UiCaseApproval.create(
-// 						{
-// 							approval_item: approval.approval_item,
-// 							approved_by: approval.approved_by,
-// 							approval_date: approval.approval_date || new Date(),
-// 							remarks: approval.remarks,
-// 							reference_id: dbEntry.id,
-// 							approval_type: approval_details.default_status || 'General',
-// 							module: approval_details.module_name,
-// 							action: approval_details.action,
-// 							created_by: userId,
-// 						},
-// 						{ transaction: t }
-// 					);
-// 					await System_Alerts.create({
-// 						approval_id: newApproval.approval_id,
-// 						reference_id: dbEntry.id,
-// 						alert_type: "Approval",
-// 						alert_message: newApproval.remarks,
-// 						created_by: userId,
-// 						created_by_designation_id: user_designation_id,
-// 						send_to: parsedData.field_io_name || null,
-// 					}, { transaction: t });
-// 				}
-// 			} catch (entryError) {
-// 				console.error("Error processing entry:", entryError);
-// 				continue;
-// 			}
-// 		}
+	// 	// Handle others_data
+	// 	if (otherParsedData && typeof otherParsedData === "object") {
+	// 		if (otherParsedData.others_table_name) {
+	// 			const others_table_name = otherParsedData.others_table_name;
+	// 			const otherTableData = await Template.findOne({ where: { table_name: others_table_name }, transaction: t });
+	// 			if (!otherTableData) {
+	// 				await t.rollback();
+	// 				return userSendResponse(res, 400, false, `Table ${others_table_name} does not exist.`);
+	// 			}
 
-// 		await t.commit();
-// 		return userSendResponse(res, 200, true, "All records processed successfully.", null);
-// 	} catch (error) {
-// 		console.error("Error:", error);
-// 		await t.rollback();
-// 		if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
-// 		return userSendResponse(res, 500, false, error.message || "Internal Server Error", error);
-// 	}
-// };
+	// 			const otherSchema = typeof otherTableData.fields === "string" ? JSON.parse(otherTableData.fields) : otherTableData.fields;
+
+	// 			if (otherParsedData.sys_status?.id && otherParsedData.sys_status?.sys_status && otherParsedData.sys_status?.default_status) {
+	// 				recordId = otherParsedData.sys_status.id;
+	// 				sys_status = otherParsedData.sys_status.sys_status.trim();
+	// 				default_status = otherParsedData.sys_status.default_status.trim();
+
+	// 				const otherCompleteSchema = [
+	// 					{ name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+	// 					{ name: "sys_status", data_type: "TEXT", not_null: false, default_value: default_status },
+	// 					{ name: "created_by", data_type: "TEXT", not_null: false },
+	// 					{ name: "updated_by", data_type: "TEXT", not_null: false },
+	// 					{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+	// 					{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
+	// 					{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
+	// 					{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+	// 					...otherSchema
+	// 				];
+
+	// 				const otherModelAttributes = {};
+	// 				for (const field of otherCompleteSchema) {
+	// 					const { name, data_type, not_null, default_value, primaryKey, autoIncrement } = field;
+	// 					const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+	// 					otherModelAttributes[name] = { type: sequelizeType, allowNull: !not_null };
+	// 					if (default_value) otherModelAttributes[name].defaultValue = default_value;
+	// 					if (primaryKey) otherModelAttributes[name].primaryKey = true;
+	// 					if (autoIncrement) otherModelAttributes[name].autoIncrement = true;
+	// 				}
+
+	// 				const OtherModel = sequelize.define(others_table_name, otherModelAttributes, {
+	// 					freezeTableName: true,
+	// 					timestamps: true,
+	// 					createdAt: "created_at",
+	// 					updatedAt: "updated_at",
+	// 					underscored: true,
+	// 				});
+
+	// 				await OtherModel.sync({ alter: true });
+
+	// 				const record = await OtherModel.findByPk(recordId);
+	// 				if (!record) {
+	// 					await t.rollback();
+	// 					return userSendResponse(res, 404, false, `Record with ID ${recordId} not found in table ${others_table_name}.`);
+	// 				}
+
+	// 				const [updatedCount] = await OtherModel.update(
+	// 					{ sys_status },
+	// 					{ where: { id: recordId }, transaction: t }
+	// 				);
+
+	// 				if (updatedCount === 0) {
+	// 					await t.rollback();
+	// 					return userSendResponse(res, 400, false, "No changes detected or update failed.");
+	// 				}
+	// 			}
+
+	// 			if(!recordId) {
+	// 				await t.rollback();
+	// 				return userSendResponse(res, 400, false, "Record ID is required.");
+	// 			}
+
+	// 			if (!default_status) {
+	// 				await t.rollback();
+	// 				return userSendResponse(res, 400, false, "Default status is required.");
+	// 			}
+				
+	// 		}
+    //         // Handle approval logic
+    //         if (otherParsedData.approval_details && otherParsedData.approval) {
+    //             const approval = otherParsedData.approval;
+    //             const approvalDetails = otherParsedData.approval_details;
+
+    //             const existingApprovalItem = await ApprovalItem.findByPk(approval?.approval_item);
+    //             if (!existingApprovalItem) {
+    //                 await t.rollback();
+    //                 return userSendResponse(res, 400, false, "Invalid approval item ID.");
+    //             }
+                
+    //             const newApproval = await UiCaseApproval.create(
+    //                 {
+    //                     approval_item: approval.approval_item,
+    //                     approved_by: approval.approved_by,
+    //                     approval_date: approval.approval_date || new Date(),
+    //                     remarks: approval.remarks,
+    //                     reference_id: approvalDetails.id,
+    //                     approval_type: default_status,
+    //                     module: approvalDetails.module_name,
+    //                     action: approvalDetails.action,
+    //                     created_by: userId,
+    //                 },
+    //                 { transaction: t }
+    //             );
+                
+    //             if (!recordId) {
+    //                 await t.rollback();
+    //                 return userSendResponse(res, 400, false, "Reference ID is required.");
+    //             }
+
+    //             await System_Alerts.create(
+    //                 {
+    //                     approval_id: newApproval.approval_id,
+    //                     reference_id : recordId,
+    //                     alert_type: "Approval",
+    //                     alert_message: newApproval.remarks,
+    //                     created_by: userId,
+    //                     created_by_designation_id: user_designation_id,
+    //                     created_by_division_id: null,
+    //                     send_to :insertedIO || null,
+    //                 },
+    //                 { transaction: t }
+    //             );
+    //         }
+
+	// 	}
+
+	// 	await t.commit();
+	// 	return userSendResponse(res, 200, true, `Record Created Successfully`, null);
+
+	// } catch (error) {
+	// 	console.error("Error saving data to templates:", error);
+	// 	if (t) await t.rollback();
+	// 	const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+	// 	return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
+	// } finally {
+	// 	if (fs.existsSync(dirPath)) {
+	// 		fs.rmSync(dirPath, { recursive: true, force: true });
+	// 	}
+	// }
+
+    try {
+        const parsedData = JSON.parse(req.body.data);
+
+        const schema = await getSchema(template_id);
+        const Model = getDynamicModel(model_name, schema);
+        const recordId = id || parsedData.recordId;
+
+        const existingData = await Model.findByPk(recordId, { transaction: t });
+        if (!existingData) throw new Error("Record not found");
+
+        // Track changes
+        const profileChanges = [];
+
+        let validData = {};
+        for (const field of schema) {
+            const { name } = field;
+            if (parsedData.hasOwnProperty(name)) {
+            validData[name] = parsedData[name];
+            if (existingData[name] !== parsedData[name]) {
+                profileChanges.push({ field: name, old_value: existingData[name], new_value: parsedData[name] });
+            }
+            }
+        }
+
+        await Model.update(validData, { where: { id: recordId }, transaction: t });
+
+        // Handle attachments
+        if (attachments) {
+            const filenames = await handleMultipleFileUpload(req, recordId, model_name);
+            await Model.update({ attachments: filenames }, { where: { id: recordId }, transaction: t });
+        }
+
+        // Handle others table update
+        if (others_table_name && others_data) {
+            const OtherModel = db[others_table_name];
+            let otherParsedData;
+            try {
+            otherParsedData = JSON.parse(others_data);
+            } catch {
+            otherParsedData = others_data;
+            }
+
+            const updateCondition = others_data_id ? { id: others_data_id } : { record_id: recordId };
+            await OtherModel.update(otherParsedData, { where: updateCondition, transaction: t });
+        }
+
+        // Log profile history
+        for (const change of profileChanges) {
+            await db.ProfileHistory.create({
+            template_id,
+            model_name,
+            record_id: recordId,
+            user_id: req.user.id,
+            field: change.field,
+            old_value: change.old_value,
+            new_value: change.new_value,
+            }, { transaction: t });
+        }
+
+        // Approval logic
+        if (approval_status && approval_status !== "Approved") {
+            const approval = await db.UiCaseApproval.create({
+            table_name: model_name,
+            record_id: recordId,
+            user_id: req.user.id,
+            status: approval_status,
+            }, { transaction: t });
+
+            await db.System_Alerts.create({
+            type: "approval",
+            approval_id: approval.id,
+            model_name,
+            record_id: recordId,
+            template_id,
+            created_by: req.user.id,
+            }, { transaction: t });
+        }
+
+        await t.commit();
+        return userSendResponse(res, 200, true, "Record Updated Successfully", { recordId });
+
+    } catch (error) {
+        await t.rollback();
+        console.error("Transaction failed:", error);
+        return userSendResponse(res, 500, false, "Transaction failed", { error: error.message });
+    }finally {
+		if (fs.existsSync(dirPath)) {
+			fs.rmSync(dirPath, { recursive: true, force: true });
+		}
+	}
+
+};
 
 exports.getAccusedWitness = async (req, res) => {
 	try {

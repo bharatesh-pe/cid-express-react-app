@@ -807,14 +807,25 @@ const DynamicForm = ({
               }
             }
 
-            const readableDate = new Date(data.updated_at).toLocaleString(
-              "en-US",
-              {
+            // const readableDate = new Date(data.updated_at).toLocaleString(
+            //   "en-US",
+            //   {
+            //     year: "numeric",
+            //     month: "long",
+            //     day: "2-digit",
+            //   }
+            // );
+
+            const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
                 year: "numeric",
                 month: "long",
                 day: "2-digit",
-              }
-            );
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true, // Optional: shows time in AM/PM format
+            });
+
 
             return {
               ...data,

@@ -838,7 +838,7 @@ div::first-letter {
     .filterTabs{
         height: 28px !important;
         width: auto !important;
-        padding: 0 22px;
+        padding: 0 12px;
         border-radius: 6px !important;
         font-size: 14px !important;
         font-weight: 400 !important;
