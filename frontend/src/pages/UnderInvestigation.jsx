@@ -1537,7 +1537,7 @@ const UnderInvestigation = () => {
       await loadTableData();
     } catch (err) {
       console.error(err);
-      toast.error("Something went wrong during merge",
+      toast.error("Something went wrong during merge"|| err,
         {
           position: "top-right",
           autoClose: 3000,
@@ -1597,12 +1597,18 @@ const UnderInvestigation = () => {
         throw new Error(demergeResponse.message || "Failed to demerge selected cases.");
       }
   
-      Swal.fire({
-        title: 'Success',
-        text: "Demerged successfully!",
-        icon: 'success',
-        confirmButtonText: 'OK',
-      });
+      toast.success("Demerged Successfully",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+        }
+      );
   
       setSelectedRowIds([]);
       setSelectedRowData([]);
@@ -1611,12 +1617,18 @@ const UnderInvestigation = () => {
       setChildMergedDialogOpen(false);
     } catch (err) {
       console.error(err);
-      Swal.fire({
-        title: 'Error',
-        text: "Something went wrong during demerge!",
-        icon: 'error',
-        confirmButtonText: 'OK',
-      });
+      toast.error("Something went wrong during merge"|| err,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        }
+      );
     } finally {
       setLoading(false);
     }
