@@ -2476,52 +2476,51 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> starting UV");
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
-    // Fetch designations for the logged-in user
-    const userDesignations = await UserDesignation.findAll({
-      where: { user_id },
-      attributes: ["designation_id"],
-    });
-    if (!userDesignations.length) {
-      return res
-        .status(404)
-        .json({ message: "User has no designations assigned" });
-    }
-    const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+    // // Fetch designations for the logged-in user
+    // const userDesignations = await UserDesignation.findAll({
+    // where: { user_id },
+    // attributes: ["designation_id"],
+    // });
+    // if (!userDesignations.length) {
+    // return res
+    //     .status(404)
+    //     .json({ message: "User has no designations assigned" });
+    // }
+    // const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
 
-    // Fetch subordinates based on supervisor designations
-    const subordinates = await UsersHierarchy.findAll({
-      where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-      attributes: ["officer_designation_id"],
-    });
-    const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+    // // Fetch subordinates based on supervisor designations
+    // const subordinates = await UsersHierarchy.findAll({
+    // where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+    // attributes: ["officer_designation_id"],
+    // });
+    // const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
 
-    // If there are officer designations, fetch subordinate user IDs
-    let subordinateUserIds = [];
-    if (officerDesignationIds.length) {
-      const subordinateUsers = await UserDesignation.findAll({
-        where: { designation_id: { [Op.in]: officerDesignationIds } },
-        attributes: ["user_id"],
-      });
-      subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
-    }
-    // Combine current user ID with subordinate IDs
-    const allowedUserIds = [userId, ...subordinateUserIds];
+    // // Fetch subordinate user IDs if any officer designations found
+    // let subordinateUserIds = [];
+    // if (officerDesignationIds.length) {
+    // const subordinateUsers = await UserDesignation.findAll({
+    //     where: { designation_id: { [Op.in]: officerDesignationIds } },
+    //     attributes: ["user_id"],
+    // });
+    // subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+    // }
 
-    // Apply allowed user filter once. (Repeat for each template_module as needed.)
-    if (allowedUserIds.length) {
-      if (template_module === "ui_case") {
-        whereClause[Op.or] = [
-          { created_by_id: { [Op.in]: allowedUserIds } },
-          { field_io_name: { [Op.in]: allowedUserIds } },
-        ];
-      } else if (template_module === "pt_case") {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      } else if (template_module === "eq_case") {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      } else {
-        whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-      }
+    // // Combine userId with subordinates and remove duplicates
+    // const allowedUserIds = Array.from(new Set([userId, ...subordinateUserIds]));
+
+    const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
+
+    if (allowedUserIds.length > 0) {
+        if (template_module === "ui_case") {
+            whereClause[Op.or] = [
+            { created_by_id: { [Op.in]: allowedUserIds } },
+            { field_io_name: { [Op.in]: allowedUserIds } },
+            ];
+        } else {
+            whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+        }
     }
+
 
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>After get the higher users UV");
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
@@ -5830,43 +5829,9 @@ exports.getMergeParentData = async (req, res) =>
             return userSendResponse(res, 400, false, "Template module is required", null );
         }
 
-        // Fetch designations for the logged-in user
-        const userDesignations = await UserDesignation.findAll({
-            where: { user_id },
-            attributes: ["designation_id"],
-        });
+        const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
 
-        if (!userDesignations.length) {
-        return res
-            .status(404)
-            .json({ message: "User has no designations assigned" });
-        }
-
-        const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
-
-        // Fetch subordinates based on supervisor designations
-        const subordinates = await UsersHierarchy.findAll({
-        where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-            attributes: ["officer_designation_id"],
-        });
-
-        const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
-
-        // If there are officer designations, fetch subordinate user IDs
-        let subordinateUserIds = [];
-        if (officerDesignationIds.length) {
-            const subordinateUsers = await UserDesignation.findAll({
-                where: { designation_id: { [Op.in]: officerDesignationIds } },
-                attributes: ["user_id"],
-            });
-            subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
-        }
-
-        // Combine current user ID with subordinate IDs
-        const allowedUserIds = [userId, ...subordinateUserIds];
-
-        // Apply allowed user filter once. (Repeat for each template_module as needed.)
-        if (allowedUserIds.length) {
+        if (allowedUserIds.length > 0) {
             if (template_module === "ui_case") {
                 whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: allowedUserIds } },
@@ -6612,43 +6577,9 @@ exports.getMergeChildData = async (req, res) =>
             return userSendResponse(res, 400, false, "Template module is required", null );
         }
 
-        // Fetch designations for the logged-in user
-        const userDesignations = await UserDesignation.findAll({
-            where: { user_id },
-            attributes: ["designation_id"],
-        });
+        const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
 
-        if (!userDesignations.length) {
-        return res
-            .status(404)
-            .json({ message: "User has no designations assigned" });
-        }
-
-        const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
-
-        // Fetch subordinates based on supervisor designations
-        const subordinates = await UsersHierarchy.findAll({
-            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-            attributes: ["officer_designation_id"],
-        });
-
-        const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
-
-        // If there are officer designations, fetch subordinate user IDs
-        let subordinateUserIds = [];
-        if (officerDesignationIds.length) {
-            const subordinateUsers = await UserDesignation.findAll({
-                where: { designation_id: { [Op.in]: officerDesignationIds } },
-                attributes: ["user_id"],
-            });
-            subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
-        }
-
-        // Combine current user ID with subordinate IDs
-        const allowedUserIds = [userId, ...subordinateUserIds];
-
-        // Apply allowed user filter once. (Repeat for each template_module as needed.)
-        if (allowedUserIds.length) {
+        if (allowedUserIds.length > 0) {
             if (template_module === "ui_case") {
                 whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: allowedUserIds } },
@@ -6658,7 +6589,6 @@ exports.getMergeChildData = async (req, res) =>
                 whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
             }
         }
-
         const childCases = await UiMergedCases.findAll({
             where: { merged_status: 'child', parent_case_id: case_id }, // corrected here
             attributes: ['case_id'],
@@ -7341,46 +7271,6 @@ exports.deMergeCaseData = async (req, res) => {
     const t = await dbConfig.sequelize.transaction();
 
     try {
-        const userDesignations = await UserDesignation.findAll({
-            where: { user_id },
-            attributes: ["designation_id"],
-        });
-
-        if (!userDesignations.length)
-            return userSendResponse(res, 400, false, "User has no designations assigned.");
-
-        const supervisorDesignationIds = userDesignations.map(ud => ud.designation_id);
-
-        const subordinates = await UsersHierarchy.findAll({
-            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-            attributes: ["officer_designation_id"],
-        });
-
-        const officerDesignationIds = subordinates.map(sub => sub.officer_designation_id);
-
-        let subordinateUserIds = [];
-        if (officerDesignationIds.length) {
-            const subordinateUsers = await UserDesignation.findAll({
-                where: { designation_id: { [Op.in]: officerDesignationIds } },
-                attributes: ["user_id"],
-            });
-            subordinateUserIds = subordinateUsers.map(ud => ud.user_id);
-        }
-
-        const allowedUserIds = [userId, ...subordinateUserIds];
-
-        let whereClause = {};
-        if (allowedUserIds.length) {
-            if (template_module === "ui_case") {
-                whereClause[Op.or] = [
-                    { created_by_id: { [Op.in]: allowedUserIds } },
-                    { field_io_name: { [Op.in]: allowedUserIds } },
-                ];
-            } else {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
-            }
-        }
-
         const mergedCaseDetails = await UiMergedCases.findAll({
             where: { case_id: { [Op.in]: recordIds } },
             attributes: ['case_id', 'merged_status'],
