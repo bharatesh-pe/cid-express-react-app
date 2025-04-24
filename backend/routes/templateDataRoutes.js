@@ -304,6 +304,26 @@ router.post('/saveDataWithApprovalToTemplates',
     },
     [validate_token],
     templateDataController.saveDataWithApprovalToTemplates)
+
+
+router.post('/updateDataWithApprovalToTemplates',
+      (req, res, next) => {
+        if (req.is('multipart/form-data')) {
+            upload.any()(req, res, (err) => {
+                if (err) {
+                    console.error('Error during file upload:', err);
+                    return res.status(400).json(
+                        userSendResponse(false, req, 'File upload failed', err)
+                    );
+                }
+                next();
+            });
+        } else {
+            next();
+        }
+    },
+    [validate_token],
+    templateDataController.updateDataWithApprovalToTemplates)
     
 router.post('/getAccusedWitness',
         // userAuthMiddleware,
