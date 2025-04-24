@@ -5044,12 +5044,15 @@ const Enquiries = () => {
                         <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
                             <Box>
                             </Box>
-                                   <Button
-                                      variant="outlined"
-                                      sx={{marginLeft: "10px", height: '40px'}}
-                                    >
-                                      Approval Log
-                                  </Button>
+							{!listAddApproveFlag &&
+							(
+								   <Button
+									  variant="outlined"
+									  sx={{marginLeft: "10px", height: '40px'}}
+									>
+									  Approval Log
+								  </Button>
+							)}
                             {!listAddApproveFlag &&
                             (
                                 <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
