@@ -302,7 +302,7 @@ router.post('/saveDataWithApprovalToTemplates',
             next();
         }
     },
-    [insertDataValidation],[validate_token],
+    [validate_token],
     templateDataController.saveDataWithApprovalToTemplates)
     
 router.post('/getAccusedWitness',
