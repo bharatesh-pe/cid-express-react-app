@@ -7698,66 +7698,64 @@ const UnderInvestigation = () => {
                                     isFocused={false}
                                 />
        
-                                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                      <DemoContainer components={['DatePicker']}>
-                                                                  {<h4 className='form-field-heading_date'>Approval Date</h4>}
-                                                                  <DatePicker
-                                                                      label={
-                                                                        <Box
-                                                                          sx={{
-                                                                            display: 'flex',
-                                                                            alignItems: 'center',
-                                                                            flexWrap: 'nowrap',
-                                                                          }}>
-                                                                        <Typography sx={{ color: '#344054', fontWeight: 400, fontSize: '16px' }}>
-                                                                          Approval Date
-                                                                        </Typography>
-                                                                        <Typography
-                                                                          component="span"
-                                                                          sx={{
-                                                                            color: '#F04438',
-                                                                            fontWeight: 600,
-                                                                            marginLeft: '2px',
-                                                                            fontSize: '14px'
-                                                                          }}
-                                                                        >
-                                                                          *
-                                                                        </Typography>
-                                                                        <Tooltip title="View History">
-                                                                          <HistoryIcon
-                                                                            className='historyIcon'
-                                                                            sx={{
-                                                                              color: '#1570EF',
-                                                                              padding: '0px',
-                                                                              fontSize: '20px',
-                                                                              verticalAlign: 'middle',
-                                                                              // cursor: 'pointer',
-                                                                              pointerEvents: 'auto',
-                                                                              marginBottom:'3px'
-                                                                          }}
-                                                                          />
-                                                                        </Tooltip>
-                                                                      </Box>
-                                                                    }
-                                                                    format="DD/MM/YYYY"
-                                                                    disabled={listApprovalItemDisabled}
-                                                                    sx={{ width: '100%' }}
-                                                                    value={
-                                                                      listApprovalSaveData?.approval_date
-                                                                        ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
-                                                                        : null
-                                                                    }
-                                                                    onChange={(newVal) =>
-                                                                      handleListApprovalSaveData(
-                                                                        'approval_date',
-                                                                        newVal ? newVal.format('DD/MM/YYYY') : null
-                                                                      )
-                                                                    }
-                                                                    maxDate={dayjs()}
-                                                                  />
-                                
-                                      </DemoContainer>
-                                  </LocalizationProvider>
+                              <Box>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                  {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                  <DemoContainer components={['DatePicker']}>
+                                  <DatePicker
+                                    className='selectHideHistory'
+                                    label={
+                                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                                      <span>Approval Date</span>
+                                      <span
+                                      style={{
+                                        padding: '0px 0px 0px 5px',
+                                        verticalAlign: 'middle'
+                                      }}
+                                      className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
+                                      >
+                                      *
+                                      </span>
+                                      <HistoryIcon
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        console.log('Approval Date history clicked');
+                                        // You can replace this with your actual onHistory callback
+                                      }}
+                                      className='historyIcon'
+                                      sx={{
+                                        color: '#1570EF',
+                                        padding: '0 1px',
+                                        fontSize: '20px',
+                                        verticalAlign: 'middle',
+                                        cursor: 'pointer',
+                                        pointerEvents: 'auto',
+                                        marginBottom: '3px'
+                                      }}
+                                      />
+                                    </div>
+                                    }
+                                    format="DD/MM/YYYY"
+                                    disabled={listApprovalItemDisabled}
+                                    required={true}
+                                    sx={{ width: '100%' }}
+                                    value={
+                                    listApprovalSaveData?.approval_date
+                                      ? dayjs(listApprovalSaveData.approval_date, 'DD/MM/YYYY')
+                                      : null
+                                    }
+                                    onChange={(newVal) =>
+                                    handleListApprovalSaveData(
+                                      'approval_date',
+                                      newVal ? newVal.format('DD/MM/YYYY') : null
+                                    )
+                                    }
+                                    maxDate={dayjs()}
+                                  />
+                                  </DemoContainer>
+                                </LocalizationProvider>
+                                </Box>
 
                                 <LongText
                                   field={{

@@ -77,7 +77,8 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
                                             console.log("clicked");
                                         }
                                     }}
-                                    className='historyIcon' sx={{
+                                    className='historyIcon' 
+                                    sx={{
                                     color: '#1570EF', 
                                     padding: '0 1px', 
                                     fontSize: '20px',
