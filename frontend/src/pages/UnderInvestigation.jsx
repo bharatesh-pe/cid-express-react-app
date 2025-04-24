@@ -2628,9 +2628,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                     for (const [key, val] of Object.entries(field)) {
                         if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                            updatedField[key] = formatDate(val);
+                            updatedField[key] = formatDate(val) || '-';
                         } else {
-                            updatedField[key] = val;
+                            updatedField[key] = val || '-';
                         }
                     }
 
@@ -5278,7 +5278,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             fontWeight: "500",
                           }}
                         >
-                          {updatedKeyName ? updatedKeyName : ""}
+                          {updatedKeyName ? updatedKeyName : "-"}
                         </span>
                       </div>
                     ),
