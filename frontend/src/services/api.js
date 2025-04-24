@@ -32,20 +32,56 @@ const api = axios.create({
 // Interceptor for request (optional, for adding authorization tokens, etc.)
 api.interceptors.request.use(
     (config) => {
+        // // You can add auth token here or other headers
+        // const token = localStorage.getItem('auth_token');
+        // if (token) {
+        //     config.headers['token'] = token;
+        // }
+        // if (config.data instanceof FormData) {
+        //     config.headers['Content-Type'] = 'multipart/form-data';
+        // } else {
+        //     config.headers['Content-Type'] = 'application/json';
+        // }
+
+        // if (config.url.includes('/downloadDocumentAttachments/') || config.url.includes('/downloadExcelData')) {
+        //     config.responseType = 'blob';
+        // }
+
         // You can add auth token here or other headers
         const token = localStorage.getItem('auth_token');
         if (token) {
             config.headers['token'] = token;
         }
+
         if (config.data instanceof FormData) {
             config.headers['Content-Type'] = 'multipart/form-data';
         } else {
             config.headers['Content-Type'] = 'application/json';
         }
 
-        if (config.url.includes('/downloadDocumentAttachments/') || config.url.includes('/downloadExcelData')) {
+        // Set response type for specific URLs
+        if (
+            config.url.includes('/downloadDocumentAttachments/') || 
+            config.url.includes('/downloadExcelData')
+        ) {
             config.responseType = 'blob';
         }
+
+        // Inject allowedUserIds into body if applicable
+        const allowedUserIds = JSON.parse(localStorage.getItem('allowedUserIds') || '[]');
+
+        const method = config.method?.toLowerCase();
+        if (['post', 'put', 'patch'].includes(method)) {
+            if (config.data instanceof FormData) {
+                config.data.append('allowedUserIds', JSON.stringify(allowedUserIds));
+            } else {
+                config.data = {
+                    ...(config.data || {}),
+                    allowedUserIds,
+                };
+            }
+        }
+
         
         return config;
     },

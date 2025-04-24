@@ -10,6 +10,7 @@ import SelectAllIcon from '@mui/icons-material/SelectAll';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
+import HistoryIcon from '@mui/icons-material/History';
 
 
 import api from "../services/api";
@@ -290,17 +291,23 @@ const UnderInvestigation = () => {
                 }
             };
 
+            console.log("isChildMergedLoading from approval:", isChildMergedLoading);
+
             return (
                 <Box sx={{ display: "flex", gap: 1 }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
-                    <Button variant="contained" color="primary" onClick={handleListApprovalEdit}>
+                    {!isChildMergedLoading && (
+                      <>
+                    <Button variant="contained" color="primary" onClick={handleListApprovalEdit} >
                         Edit
                     </Button>
                     <Button variant="contained" color="error" onClick={handleListApprovalDelete}>
                         Delete
                     </Button>
+                    </>
+                    )}
                 </Box>
             );
         }
@@ -491,11 +498,24 @@ const UnderInvestigation = () => {
     const [selectedParentId, setSelectedParentId] = useState("");
     const [usersBasedOnDivision, setUsersBasedOnDivision] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
-    
+    const [childMergedDialogOpen, setChildMergedDialogOpen] = useState(false);
+    const [childMergedData, setChildMergedData] = useState([]);
+    const [childMergedColumns, setChildMergedColumns] = useState([]);
+    const [childMergedPagination, setChildMergedPagination] = useState(1);
+    const [childMergedTotalPages, setChildMergedTotalPages] = useState(0);
+    const [childMergedTotalRecords, setChildMergedTotalRecords] = useState(0);
+    const [childMergedCaseTitle, setChildMergedCaseTitle] = useState("");
+    const [childMergedCaseCID, setChildMergedCaseCID] = useState("");
+    const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
+    const [hasApproval, setHasApproval] = useState(false);
+
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
-
+    const handleChildMergePagination = (page) => {
+      setChildMergedPagination(page);
+    };
+    
     useEffect(()=>{
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
     },[otherTemplatesPaginationCount, ]);
@@ -1336,7 +1356,13 @@ const UnderInvestigation = () => {
                                 draggable: true,
                                 progress: undefined,
                                 className: "toast-success",
-                                onOpen: () => loadTableData(paginationCount),
+                                onOpen: () => {
+                                  if (sysStatus === "merge_cases") {
+                                    loadMergedCasesData(paginationCount);
+                                  } else {
+                                    loadTableData(paginationCount);
+                                  }
+                                },
                             });
                         } else {
                             const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
@@ -1803,7 +1829,13 @@ const UnderInvestigation = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => loadTableData(paginationCount),
+                    onOpen: () => {
+                      if (sysStatus === "merge_cases") {
+                        loadMergedCasesData(paginationCount);
+                      } else {
+                        loadTableData(paginationCount);
+                      }
+                    },
                 });
 
                 setSingleApiData({});
@@ -2056,14 +2088,19 @@ const UnderInvestigation = () => {
       if (!mergeResponse?.success) {
         throw new Error(mergeResponse.message || "Failed to insert merge data.");
       }
-  
-      Swal.fire({
-        title: 'Success',
-        text: "Merged successfully!",
-        icon: 'success',
-        confirmButtonText: 'OK',
-      });
-  
+    
+      toast.success("Merged Successfully",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+        }
+      );
       setSelectedRowIds([]);
       setSelectedMergeRowData([]);
       setSelectedParentId(null);
@@ -2071,19 +2108,104 @@ const UnderInvestigation = () => {
       await loadTableData();
     } catch (err) {
       console.error(err);
-      Swal.fire({
-        title: 'Error',
-        text: "Something went wrong during merge!",
-        icon: 'error',
-        confirmButtonText: 'OK',
-      });
+      toast.error("Something went wrong during merge"|| err,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        }
+      );
     } finally {
       setLoading(false);
     }
   };
   
   
+  const handleConfirmDemerge = async () => {
+    if (!selectedRowIds || selectedRowIds.length === 0) {
+      Swal.fire({
+        title: 'Error',
+        text: "Select at least one case to demerge!",
+        icon: 'warning',
+        confirmButtonText: 'OK',
+      });
+      return;
+    }
+  
+    const confirmation = await Swal.fire({
+      title: 'Are you sure?',
+      text: "Are you sure you want to demerge the selected cases?",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, Demerge',
+      cancelButtonText: 'Cancel',
+    });
+  
+    if (!confirmation.isConfirmed) return;
+    setChildMergedDialogOpen(false);
 
+    setLoading(true);
+    const randomDateId = `txn_${new Date().toISOString().replace(/[-:.TZ]/g, '')}_${Math.random().toString(36).substring(2, 8)}`;
+  
+    try {
+      const demergePayload = {
+        template_module: 'ui_case',
+        transaction_id: randomDateId,
+        case_id: selectedRowIds.length
+          ? selectedRowIds.map(String)
+          : [String(selectedMergeRowData.id)],
+      };
+      
+  
+      const demergeResponse = await api.post("/templateData/deMergeCaseData", demergePayload);
+  
+      if (!demergeResponse?.success) {
+        throw new Error(demergeResponse.message || "Failed to demerge selected cases.");
+      }
+  
+      toast.success("Demerged Successfully",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+        }
+      );
+  
+      setSelectedRowIds([]);
+      setSelectedRowData([]);
+      setSelectedMergeRowData([]);
+      await loadMergedCasesData("1");
+      setChildMergedDialogOpen(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Something went wrong during merge"|| err,
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  
   
     useEffect(() => {
         const anySelected = tableData.some((data) => data.isSelected);
@@ -2091,17 +2213,464 @@ const UnderInvestigation = () => {
     }, [tableData]);
 
     useEffect(() => {
-        loadTableData(paginationCount);
-    }, [
-        paginationCount,
-        tableSortKey,
-        tableSortOption,
-        starFlag,
-        readFlag,
-        sysStatus,
-        forceTableLoad,
-    ]);
+      if (sysStatus === "merge_cases") {
+          loadMergedCasesData(paginationCount);
+      } else {
+          loadTableData(paginationCount);
+      }
+  }, [
+      paginationCount,
+      tableSortKey,
+      tableSortOption,
+      starFlag,
+      readFlag,
+      sysStatus,
+      forceTableLoad,
+  ]);
+
+const handleCheckboxDemerge = (event, row) => {
+  const isSelected = event.target.checked;
+
+  setTableData((prevData) =>
+    prevData.map((data) =>
+      data.id === row.id ? { ...data, isSelected } : data
+    )
+  );
+
+  setSelectedRowIds((prevIds) => {
+    if (isSelected) {
+      return [...prevIds, row.id];
+    } else {
+      return prevIds.filter((id) => id !== row.id);
+    }
+  });
+
+  setSelectedMergeRowData((prevData) => {
+    if (isSelected) {
+      return [...prevData, row];
+    } else {
+      return prevData.filter((r) => r.id !== row.id);
+    }
+  });
+};
+
+
+const loadChildMergedCasesData = async (page, caseId) => {
+  setIsChildMergedLoading(true); 
+  setLoading(true);
+
+  const payload = {
+    page,
+    limit: 10,
+    sort_by: tableSortKey,
+    order: tableSortOption,
+    search: searchValue || "",
+    table_name,
+    is_starred: starFlag,
+    is_read: readFlag,
+    template_module: "ui_case",
+    sys_status: sysStatus,
+    from_date: fromDateValue,
+    to_date: toDateValue,
+    filter: filterValues,
+    case_id: String(caseId),
+  };
+
+  try {
+    const response = await api.post("/templateData/getMergeChildData", payload);
+
+    if (response?.success) {
+      const { data, meta } = response.data;
+
+      const processedData = data.map((row) => ({
+        ...row,
+        isSelected: false,
+      }));
+
+      setTableData(processedData);
+
+      const excludedKeys = [
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no"
+      ];
+
+      const generateReadableHeader = (key) =>
+        key
+          .replace(/^field_/, "")
+          .replace(/_/g, " ")
+          .toLowerCase()
+          .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+      const renderCellFunc = (key, count) => (params) =>
+        tableCellRender(key, params, params.value, count, meta.table_name);
+
+      const updatedHeader = [
+        {
+          field: "select_child",
+          headerName: (
+            <Tooltip title="Select All">
+              <SelectAllIcon sx={{ fill: "#1f1dac" }} />
+            </Tooltip>
+          ),
+          width: 50,
+          resizable: false,
+          renderCell: (params) => (
+            <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+              <Checkbox
+                onChange={(event) => {
+                  handleCheckboxDemerge(event, params.row);
+                }}
+              />
+            </Box>
+          ),
+        }
+        ,
+      {
+          field: "task_child",
+          headerName: "",
+          width: 50,
+          resizable: true,
+          renderHeader: (params) => (
+              <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+          ),
+          renderCell: (params) => (
+              <Badge
+                  badgeContent={params?.row?.['task_unread_count']}
+                  color="primary"
+                  sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+              >
+                  <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+              </Badge>
+          ),
+      },
+      {
+          field: "approval_child",
+          headerName: "Approval",
+          width: 50,
+          resizable: true,
+          cellClassName: 'justify-content-start',
+          renderHeader: (params) => (
+              <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+          ),                            
+          renderCell: (params) => (
+              <Button
+                  variant="contained"
+                  color="transparent"
+                  size="small"
+                  sx={{
+                      padding: 0,
+                      fontSize: '0.75rem',
+                      textTransform: 'none',
+                      boxShadow: 'none',
+                      '&:hover':{
+                          boxShadow: 'none',
+                      }
+                  }}
+              >
+                  <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
+                    setIsChildMergedLoading(true);
+                    handleActionShow(params?.row, true);
+                  }}
+                  sx={{fontSize:'26px'}} /></Tooltip>
+              </Button>
+          )
+      },
+      {
+          field: "field_cid_crime_no./enquiry_no",
+          headerName: "Cid Crime No./Enquiry No",
+          width: 200,
+          resizable: true,
+          cellClassName: 'justify-content-start',
+          renderHeader: (params) => (
+              tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+          ),
+          renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+      },
+        ...Object.keys(data[0])
+          .filter((key) => !excludedKeys.includes(key))
+          .map((key) => ({
+            field: key,
+            headerName: generateReadableHeader(key),
+            width: generateReadableHeader(key).length < 15 ? 120 : 180,
+            resizable: true,
+            renderHeader: (params) => tableHeaderRender(params, key),
+            renderCell: renderCellFunc(key),
+          })),
+      ];
+
+      setChildMergedData(data || []);
+      setChildMergedColumns(updatedHeader);
+      setChildMergedPagination(page);
+      setChildMergedTotalPages(meta?.totalPages || 0);
+      setChildMergedTotalRecords(meta?.totalItems || 0);
+      setChildMergedDialogOpen(true);
+      setChildMergedCaseCID(data?.[0]?.["field_cid_crime_no./enquiry_no"] || "");
+      setChildMergedCaseTitle(selectedOtherTemplate?.name || "");
+    } else {
+      toast.error(response?.message || "Failed to load child merged cases.");
+    }
+  } catch (error) {
+    toast.error(error?.message || "Something went wrong.");
+  }
+  finally {
+    setLoading(false);
+  }
+};
+
+ 
   
+  const loadMergedCasesData = async (page) => {
+    const getTemplatePayload = {
+        page,
+        limit: 10,
+        sort_by: tableSortKey,
+        order: tableSortOption,
+        search: searchValue || "",
+        table_name,
+        is_starred: starFlag,
+        is_read: readFlag,
+        template_module: "ui_case",
+        sys_status: sysStatus,
+        from_date: fromDateValue,
+        to_date: toDateValue,
+        filter: filterValues,
+    };
+
+    setLoading(true);
+
+    try {
+        const getTemplateResponse = await api.post( "/templateData/getMergeParentData", getTemplatePayload);
+
+        setLoading(false);
+
+        if (getTemplateResponse?.success && getTemplateResponse?.message !== "No merged case found") {
+          const { data, meta } = getTemplateResponse.data;
+
+            const totalPages = meta?.totalPages;
+            const totalItems = meta?.totalItems;
+
+            if (totalPages !== null && totalPages !== undefined) {
+                setTotalPage(totalPages);
+            }
+
+            if (totalItems !== null && totalItems !== undefined) {
+                setTotalRecord(totalItems);
+            }
+
+            if (meta?.table_name && meta?.template_name) {
+                setTemplate_name(meta.template_name);
+                setTable_name(meta.table_name);
+            }
+
+            if (data?.length > 0) {
+                const excludedKeys = [
+                    "created_at", "updated_at", "id", "deleted_at", "attachments",
+                    "Starred", "ReadStatus", "linked_profile_info",
+                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no"
+                ];
+
+                const generateReadableHeader = (key) =>
+                    key
+                        .replace(/^field_/, "")
+                        .replace(/_/g, " ")
+                        .toLowerCase()
+                        .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
+
+                const updatedHeader = [
+                    
+                    {
+                        field: "select",
+                        headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
+                        width: 50,
+                        resizable: false,
+                        renderCell: (params) => (
+                            <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                                <Checkbox
+                                    checked={params.row.isSelected || false}
+                                    onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                />
+                            </Box>
+                        ),
+                    },
+                    {
+                        field: "task",
+                        headerName: "",
+                        width: 50,
+                        resizable: true,
+                        renderHeader: (params) => (
+                            <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+                        ),
+                        renderCell: (params) => (
+                            <Badge
+                                badgeContent={params?.row?.['task_unread_count']}
+                                color="primary"
+                                sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+                            >
+                                <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                            </Badge>
+                        ),
+                    },
+                    {
+                        field: "approval",
+                        headerName: "Approval",
+                        width: 50,
+                        resizable: true,
+                        cellClassName: 'justify-content-start',
+                        renderHeader: (params) => (
+                            <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+                        ),                            
+                        renderCell: (params) => (
+                            <Button
+                                variant="contained"
+                                color="transparent"
+                                size="small"
+                                sx={{
+                                    padding: 0,
+                                    fontSize: '0.75rem',
+                                    textTransform: 'none',
+                                    boxShadow: 'none',
+                                    '&:hover':{
+                                        boxShadow: 'none',
+                                    }
+                                }}
+                            >
+                                <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
+                            </Button>
+                        )
+                    },
+                    {
+                        field: "field_cid_crime_no./enquiry_no",
+                        headerName: "Cid Crime No./Enquiry No",
+                        width: 200,
+                        resizable: true,
+                        cellClassName: 'justify-content-start',
+                        renderHeader: (params) => (
+                            tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+                        ),
+                        renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+                    },
+                    ...(sysStatus === "merge_cases"
+                      ? [
+                          {
+                            field: "child_case",
+                            headerName: "Child Case",
+                            width: 100,
+                            resizable: true,
+                            renderCell: (params) => {
+                              const childCount = params.row.childCount || 0;
+                              const caseId = params.row.id;
+
+                              const handleClick = async () => {
+                                loadChildMergedCasesData("1", caseId);
+                              };
+                              
+                              const statusColor = "#3b82f6";
+                              const borderColor = "#2563eb";
+                  
+                              return (
+                                <Chip
+                                  label={childCount}
+                                  size="small"
+                                  onClick={handleClick} 
+                                  sx={{
+                                    fontFamily: "Roboto",
+                                    fontWeight: 500,
+                                    color: "white",
+                                    borderColor: borderColor,
+                                    borderRadius: "4px",
+                                    backgroundColor: statusColor,
+                                    borderStyle: "solid",
+                                    borderWidth: "1px",
+                                  }}
+                                />
+                              );
+                            },
+                          },
+                        ]
+                      : []),
+                    ...Object.keys(data[0])
+                        .filter((key) => !excludedKeys.includes(key))
+                        .map((key) => ({
+                            field: key,
+                            headerName: generateReadableHeader(key),
+                            width: generateReadableHeader(key).length < 15 ? 100 : 180,
+                            resizable: true,
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, key)
+                            ),
+                            renderCell: renderCellFunc(key),
+                    })),
+                ];
+
+                setviewTemplateTableData(updatedHeader);
+
+                const formatDate = (value) => {
+                    const parsed = Date.parse(value);
+                    if (isNaN(parsed)) return value;
+                    return new Date(parsed).toLocaleDateString("en-GB");
+                };
+
+                const updatedTableData = data.map((field, index) => {
+                    const updatedField = {};
+
+                    for (const [key, val] of Object.entries(field)) {
+                        if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
+                            updatedField[key] = formatDate(val);
+                        } else {
+                            updatedField[key] = val;
+                        }
+                    }
+
+                    return {
+                        ...updatedField,
+                        sl_no: (page - 1) * 10 + (index + 1),
+                        ...(field.id ? {} : { id: "unique_id_" + index }),
+                    };
+                });
+
+                setTableData(updatedTableData);
+            }else{
+                setTableData([]);
+            }
+
+            setviewReadonly(false);
+            setEditTemplateData(false);
+            setInitialData({});
+            setFormOpen(false);
+            setSelectedRow(null);
+            setSelectedParentId([]);
+
+            await getActions();
+        }else if (getTemplateResponse?.success && getTemplateResponse?.message === "No merged case found") {
+          setTableData([]);
+      }  else {
+            setLoading(false);
+            toast.error(getTemplateResponse.message || "Failed to load template data.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    } catch (error) {
+        setLoading(false);
+        toast.error(error?.response?.data?.message || "Please Try Again!", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+    }
+};
     const loadTableData = async (page) => {
         const getTemplatePayload = {
             page,
@@ -2234,38 +2803,6 @@ const UnderInvestigation = () => {
                             ),
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
-                        ...(sysStatus === "merge_cases"
-                          ? [
-                              {
-                                field: "child_case",
-                                headerName: "Child Case",
-                                width: 100,
-                                resizable: true,
-                                renderCell: (params) => {
-                                  const childCount = params.value || '1';
-                                  const statusColor = "#3b82f6";
-                                  const borderColor = "#2563eb";
-                      
-                                  return (
-                                    <Chip
-                                      label={childCount}
-                                      size="small"
-                                      sx={{
-                                        fontFamily: "Roboto",
-                                        fontWeight: 500,
-                                        color: "white",
-                                        borderColor: borderColor,
-                                        borderRadius: "4px",
-                                        backgroundColor: statusColor,
-                                        borderStyle: "solid",
-                                        borderWidth: "1px",
-                                      }}
-                                    />
-                                  );
-                                },
-                              },
-                            ]
-                          : []),
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -2347,6 +2884,7 @@ const UnderInvestigation = () => {
         }
     };
   
+
     const getActions = async () => {
         const payloadObj = {
             module: "ui_case",
@@ -2422,7 +2960,7 @@ const UnderInvestigation = () => {
     let highlightColor = {};
     let onClickHandler = null;
 
-    if (tableName && index !== null && index === 0) {
+    if (tableName && index !== null && index === 0 ) {
         highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
         onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
@@ -2713,7 +3251,13 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
-                onOpen: () => loadTableData(paginationCount),
+                onOpen: () => {
+                  if (sysStatus === "merge_cases") {
+                    loadMergedCasesData(paginationCount);
+                  } else {
+                    loadTableData(paginationCount);
+                  }
+                },
               }
             );
           } else {
@@ -3265,7 +3809,13 @@ const UnderInvestigation = () => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
-                onOpen: () => loadTableData(paginationCount),
+                onOpen: () => {
+                  if (sysStatus === "merge_cases") {
+                    loadMergedCasesData(paginationCount);
+                  } else {
+                    loadTableData(paginationCount);
+                  }
+                },
             });
 
             setOtherFormOpen(false);
@@ -4010,7 +4560,13 @@ const UnderInvestigation = () => {
           draggable: true,
           progress: undefined,
           className: "toast-success",
-          onOpen: () => loadTableData(paginationCount),
+          onOpen: () => {
+            if (sysStatus === "merge_cases") {
+              loadMergedCasesData(paginationCount);
+            } else {
+              loadTableData(paginationCount);
+            }
+          },
         });
 
         setSelectKey(null);
@@ -4024,6 +4580,7 @@ const UnderInvestigation = () => {
         setSelectedMergeRowData([]); 
         setSelectedParentId(null);    
         setApprovalSaveData({});
+        setHasApproval(false);
 
       } else {
         const errorMessage = saveTemplateData.message
@@ -4629,7 +5186,9 @@ const UnderInvestigation = () => {
                       // const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
                     
                       return isPdfUpdated ? null : (
+                        <div onClick={(e) => e.stopPropagation()}>
                         <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                      </div>
                       );
                     }
                     
@@ -5002,8 +5561,8 @@ const UnderInvestigation = () => {
                         </Button>
                 
                         {canEdit&& (
-                          <>
-                            {!isPdfUpdated && (
+                            !isPdfUpdated && (
+                               !isChildMergedLoading && (
                               <Button
                                 variant="contained"
                                 color="primary"
@@ -5014,12 +5573,12 @@ const UnderInvestigation = () => {
                               >
                                 Edit
                               </Button>
-                            )}
-                           </>
-                        )}
+                            )
+                            )
+                          )}
                         {canDelete&& (
-                          <>
-                            {!isPdfUpdated && (
+                            !isPdfUpdated && (
+                              !isChildMergedLoading && (
                               <Button
                                 variant="contained"
                                 color="error"
@@ -5030,8 +5589,8 @@ const UnderInvestigation = () => {
                               >
                                 Delete
                               </Button>
-                            )}
-                          </>
+                           )
+                          )
                         )}
                         {options.table === "cid_ui_case_trail_monitoring" && (
                           <>
@@ -5305,10 +5864,12 @@ const UnderInvestigation = () => {
       }
     }
   };
+
   const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
 
     if(options.is_approval && !approved){
         setApprovalSaveData({});
+        setHasApproval(true); 
         showApprovalPage(selectedRow, options);
         return;
     }
@@ -5383,13 +5944,34 @@ const UnderInvestigation = () => {
                       (option.code === selectedFieldData || option.name === selectedFieldData)
                   );
                   console.log("Pre-selected value:", matchedOption);
-                  setSelectedOtherFields(matchedOption || null);
-  
+                  const preSelectedDivision = matchedOption || null;
+                  setSelectedOtherFields(preSelectedDivision);
+                  
+                  if (options.name === "Tranfer to other division" && preSelectedDivision?.code) {
+                    api
+                      .post("cidMaster/getIoUsersBasedOnDivision", {
+                        division_ids: [preSelectedDivision.code],
+                        role_id: null,
+                      })
+                      .then((res) => {
+                        setUsersBasedOnDivision(res.data || []);
+                      })
+                      .catch((err) => {
+                        console.error("Failed to load users based on division", err);
+                        setUsersBasedOnDivision([]);
+                      });
+                  }
+                    
                   setSelectKey({ name: options.field, title: options.name });
                 //   setSelectedRow(selectedRow);
                 //   setselectedOtherTemplate(options);
                   setOtherTransferField(updatedOptions);
-                  setShowOtherTransferModal(true);
+                  if (options.name === "Tranfer to other division") {
+                    setShowMassiveTransferModal(true);
+                    setSelectedRowIds([selectedRow.id])
+                  } else {
+                    setShowOtherTransferModal(true);
+                  }
                 }
               } catch (error) {
                 setLoading(false);
@@ -5410,13 +5992,33 @@ const UnderInvestigation = () => {
               const matchedOption = staticOptions.find(
                 (option) => option.code === selectedFieldData
               );
-              setSelectedOtherFields(matchedOption || null);
-  
+              const preSelectedDivision = matchedOption || null;
+              setSelectedOtherFields(preSelectedDivision);
+              
+              if (options.name === "Tranfer to other division" && preSelectedDivision?.code) {
+                api
+                  .post("cidMaster/getIoUsersBasedOnDivision", {
+                    division_ids: [preSelectedDivision.code],
+                    role_id: null,
+                  })
+                  .then((res) => {
+                    setUsersBasedOnDivision(res.data || []);
+                  })
+                  .catch((err) => {
+                    console.error("Failed to load users based on division", err);
+                    setUsersBasedOnDivision([]);
+                  });
+              }
+                
               setSelectKey({ name: options.field, title: options.name });
             //   setSelectedRow(selectedRow);
             //   setselectedOtherTemplate(options);
               setOtherTransferField(staticOptions);
-              setShowOtherTransferModal(true);
+              if (options.name === "Tranfer to other division") {
+                setShowMassiveTransferModal(true);
+              } else {
+                setShowOtherTransferModal(true);
+              }
             }
           } else {
             toast.error("Can't able to find Division field", {
@@ -5772,7 +6374,7 @@ const UnderInvestigation = () => {
   
   const handleMassiveDivisionChange = async () => {
     if (!selectedOtherFields || !selectedOtherFields.code) {
-      toast.error("Please Select Data !", {
+      toast.error("Please Select Division!", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -5782,10 +6384,23 @@ const UnderInvestigation = () => {
         progress: undefined,
         className: "toast-error",
       });
-
       return;
     }
-
+  
+    if (!selectedUser || !selectedUser.user_id) {
+      toast.error("Please select IO User!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
+  
     if (
       selectedOtherTemplate &&
       selectedOtherTemplate["field"] &&
@@ -5798,39 +6413,129 @@ const UnderInvestigation = () => {
       checkDisposalValues();
       return;
     }
-
-    if (selectedOtherTemplate && selectedOtherTemplate.is_approval) {
-        setApprovalSaveData({});
-        showApprovalPage(selectedRow, selectedOtherTemplate);
-        return;
+    
+    if (selectedOtherTemplate && selectedOtherTemplate.is_approval && !hasApproval) {
+      setApprovalSaveData({});
+      showApprovalPage(selectedRow, selectedOtherTemplate);
+      return;
     }
-
+  
     var combinedData = {
-      id: selectedRowData.id,
+      id: selectedRowIds.join(","),
       [selectKey.name]: selectedOtherFields.code,
       field_io_name: selectedUser?.user_id,
     };
-
-    // update func
-    onUpdateTemplateData(combinedData);
-
-    // reset states
-    setShowMassiveTransferModal(false);
-    setSelectKey(null);
-    setSelectedRow([]);
-    setOtherTransferField([]);
-    setSelectedOtherFields(null);
-    setselectedOtherTemplate(null);
-    setUsersBasedOnDivision([]);
-    setSelectedRowIds([]);
-    setSelectedUser(null);
-    setSelectedRowIds([]);
-    setSelectedMergeRowData([]); 
-    setSelectedParentId(null);
-    setTableData((prevData) =>
-      prevData.map((item) => ({ ...item, isSelected: false }))
-    );
+  
+    if (selectedOtherTemplate.is_approval) {
+      var payloadApproveData = {
+        ...approvalSaveData,
+        case_id: selectedRowData?.id || selectedRowIds[0],
+        case_type: "ui_case",
+        module: "Under Investigation",
+        action: "Under Investigation Action",
+        transaction_id: randomApprovalId,
+        created_by_designation_id: localStorage.getItem("designation_id") || "",
+        created_by_division_id: localStorage.getItem("division_id") || "",
+        info: {
+          module: "Under Investigation",
+          action: "Under Investigation Action",
+        },
+      };
+  
+      setLoading(true);
+  
+      try {
+        const approvalResponse = await api.post("/ui_approval/create_ui_case_approval", payloadApproveData);
+  
+        setLoading(false);
+  
+        if (approvalResponse && approvalResponse.success) {
+          toast.success(approvalResponse.message || "Approval Added Successfully", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+          });
+  
+          onUpdateTemplateData(combinedData);
+  
+          // reset states
+          setAddApproveFlag(false);
+          setApproveTableFlag(false);
+          setShowOtherTransferModal(false);
+          setApprovalSaveData({});
+          setShowMassiveTransferModal(false);
+          setSelectKey(null);
+          setSelectedRow([]);
+          setOtherTransferField([]);
+          setSelectedOtherFields(null);
+          setselectedOtherTemplate(null);
+          setUsersBasedOnDivision([]);
+          setSelectedRowIds([]);
+          setSelectedUser(null);
+          setSelectedRowIds([]);
+          setSelectedMergeRowData([]);
+          setSelectedParentId(null);
+          setTableData((prevData) =>
+            prevData.map((item) => ({ ...item, isSelected: false }))
+          );
+          setHasApproval(false);
+        } else {
+          toast.error(approvalResponse.message || "Failed to add approval. Please try again.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          });
+        }
+      } catch (error) {
+        setLoading(false);
+        toast.error(error?.response?.data?.message || "Error during approval!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } else {
+      onUpdateTemplateData(combinedData);
+  
+      // reset states
+      setShowMassiveTransferModal(false);
+      setSelectKey(null);
+      setSelectedRow([]);
+      setOtherTransferField([]);
+      setSelectedOtherFields(null);
+      setselectedOtherTemplate(null);
+      setUsersBasedOnDivision([]);
+      setSelectedRowIds([]);
+      setSelectedUser(null);
+      setSelectedRowIds([]);
+      setSelectedMergeRowData([]);
+      setSelectedParentId(null);
+      setTableData((prevData) =>
+        prevData.map((item) => ({ ...item, isSelected: false }))
+      );
+      setAddApproveFlag(false);
+      setApproveTableFlag(false);
+      setShowOtherTransferModal(false);
+      setApprovalSaveData({});
+      setHasApproval(false);
+    }
   };
+  
 
   const showPtCaseTemplate = async () => {
 
@@ -6369,6 +7074,7 @@ const UnderInvestigation = () => {
 
   var userPermissions =
     JSON.parse(localStorage.getItem("user_permissions")) || [];
+    console.log("isChildMergedLoading",isChildMergedLoading)
   var hoverExtraOptions = [
     userPermissions[0]?.view_case
       ? {
@@ -6392,8 +7098,11 @@ const UnderInvestigation = () => {
           ),
         }
       : null,
+      
     userPermissions[0]?.edit_case
-      ? {
+      ?  isChildMergedLoading
+      ? null
+      : {
           name: "Edit",
           onclick: (selectedRow) =>
             handleTemplateDataView(selectedRow, true, table_name),
@@ -6430,7 +7139,9 @@ const UnderInvestigation = () => {
         }
       : null,
     userPermissions[0]?.delete_case
-      ? {
+      ?  isChildMergedLoading
+      ? null
+      : {
           name: "Delete",
           onclick: (selectedRow) =>
             handleDeleteTemplateData(selectedRow, table_name),
@@ -6991,7 +7702,13 @@ const UnderInvestigation = () => {
                       draggable: true,
                       progress: undefined,
                       className: "toast-success",
-                      onOpen: () => loadTableData(paginationCount),
+                      onOpen: () => {
+                        if (sysStatus === "merge_cases") {
+                          loadMergedCasesData(paginationCount);
+                        } else {
+                          loadTableData(paginationCount);
+                        }
+                      },
                   });
   
                   setShowApprovalModal(false);
@@ -7057,7 +7774,7 @@ const UnderInvestigation = () => {
         handleOtherTemplateActions(options, rowData);
     }
 
-    const handleActionShow = (rowData)=>{
+    const handleActionShow = (rowData, isLoading)=>{
     
         if(!rowData){
             toast.error("Please Check Case Data !",{
@@ -7073,8 +7790,14 @@ const UnderInvestigation = () => {
             return;
         }
 
-        // console.log(rowData)
+        console.log(rowData)
 
+        if (isLoading) {
+          console.log(isLoading, "isloadinggg coming inside")
+
+          setIsChildMergedLoading(true);
+      }
+  
         setListApprovalsColumn((prev) => {
             const withoutActions = prev.filter((col) => col.field !== "actions");
             return [...withoutActions, listApprovalActionColumn];
@@ -7263,7 +7986,7 @@ const UnderInvestigation = () => {
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
 
 
-            {isCheckboxSelected && (
+            {isCheckboxSelected && sysStatus !== 'merge_cases' && (
               <>
                 <Button
                   variant="contained"
@@ -7285,7 +8008,6 @@ const UnderInvestigation = () => {
                   onClick={() => {
                     setShowMergeModal(true);
                     setMergeDialogData(selectedMergeRowData); 
-                    console.log("selectedMergeRowData",selectedMergeRowData)
                   }}
                   >
                   Merge
@@ -7330,7 +8052,39 @@ const UnderInvestigation = () => {
               </>
             )}
 
-            {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && (
+
+          {isCheckboxSelected && sysStatus === 'merge_cases' && (
+              <>
+              <Button 
+                variant="contained"
+                style={{ backgroundColor: '#DC2626', color: '#ffffff' }}
+                startIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9.172 14.828a4 4 0 1 1 0-5.656M14.828 9.172a4 4 0 1 1 0 5.656M4 20l5.5-5.5M20 4l-5.5 5.5"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                }
+                onClick={() => {
+                  handleConfirmDemerge();
+                }}
+              >
+                De-Merge
+              </Button>
+              </>
+            )}
+
+            {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && (
                 <Button
                     onClick={() => getTemplate(table_name)}
                     className="blueButton"
@@ -7857,7 +8611,11 @@ const UnderInvestigation = () => {
                     setOtherTemplateModalOpen(false);
                     
                     if (selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
-                        loadTableData(paginationCount);
+                        if (sysStatus === "merge_cases") {
+                          loadMergedCasesData(paginationCount);
+                        } else {
+                          loadTableData(paginationCount);
+                        }
                     }
                 }}
             >
@@ -7949,6 +8707,7 @@ const UnderInvestigation = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
+                    {!isChildMergedLoading && (
                       <Button
                         variant="outlined"
                         sx={{marginLeft: "10px", height: '40px'}}
@@ -7958,6 +8717,7 @@ const UnderInvestigation = () => {
                       >
                         Add
                       </Button>
+                    )}
                     {/* )} */}
                     <Button
                       variant="outlined"
@@ -8053,6 +8813,7 @@ const UnderInvestigation = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
+                    {!isChildMergedLoading && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -8062,6 +8823,7 @@ const UnderInvestigation = () => {
                         >
                             Add
                         </Button>
+                    )}
                     {/* )} */}
                 </Box>
               )}
@@ -8090,7 +8852,8 @@ const UnderInvestigation = () => {
                                 totalRecord={otherTemplatesTotalRecord} 
                                 paginationCount={otherTemplatesPaginationCount} 
                                 handlePagination={handleOtherPagination} 
-                            />
+                                handleRowClick={(row) => handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)}
+                                />
                         </Box>
                         <Box
                           display="flex"
@@ -8124,7 +8887,7 @@ const UnderInvestigation = () => {
                       <Typography>
                         Please Upload your Progress Report Pdf
                       </Typography>
-                      <Button variant="contained" component="label">
+                      <Button variant="contained" component="label"  disabled={isChildMergedLoading}>
                         Upload File
                         <input
                           type="file"
@@ -8152,6 +8915,102 @@ const UnderInvestigation = () => {
           </DialogContent>
         </Dialog>
       )}
+  
+      <Dialog
+        open={childMergedDialogOpen}
+        onClose={() => {
+          setIsChildMergedLoading(true);
+          setChildMergedDialogOpen(false);
+          setTimeout(() => setIsChildMergedLoading(false), 300);
+        }}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        fullScreen
+        fullWidth
+        sx={{ marginLeft: '260px' }}
+        >
+        <DialogTitle>
+          <Box display="flex" alignItems="center" justifyContent="space-between">
+            <Box
+              sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+              onClick={() => {
+                setIsChildMergedLoading(true);
+                setChildMergedDialogOpen(false);
+                setTimeout(() => setIsChildMergedLoading(false), 300);
+                loadMergedCasesData('1');
+              }}
+            >
+              <WestIcon sx={{ color: 'black' }}/>
+              <Typography sx={{ fontSize: '15px', fontWeight: 600, color: 'black' }}>
+                Child Merged Cases
+              </Typography>
+              {childMergedCaseCID && (
+                <Chip
+                  label={childMergedCaseCID}
+                  color="primary"
+                  variant="outlined"
+                  size="small"
+                  sx={{ fontSize: '12px', fontWeight: 500, marginTop: '2px' }}
+                />
+              )}
+              <Box className="totalRecordCaseStyle" sx={{ fontSize: '12px' }}>
+                {childMergedTotalRecords} Records
+              </Box>
+            </Box>
+
+            {selectedRowIds.length > 0 && (
+            <Box>
+              <Button 
+                variant="contained"
+                style={{ backgroundColor: '#DC2626', color: '#ffffff' }}
+                startIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M9.172 14.828a4 4 0 1 1 0-5.656M14.828 9.172a4 4 0 1 1 0 5.656M4 20l5.5-5.5M20 4l-5.5 5.5"
+                      stroke="#ffffff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                }
+                onClick={() => {
+                  handleConfirmDemerge();
+                }}
+              >
+                De-Merge
+              </Button>
+            </Box>
+              )}
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ overflowY: 'auto', maxHeight: 'calc(100vh - 64px)' }}>
+          {childMergedData.length > 0 ? (
+            <TableView
+              hoverTable={true}
+              hoverTableOptions={hoverExtraOptions}
+              hoverActionFuncHandle={handleOtherTemplateActions}
+              height={true}
+              rows={childMergedData}
+              columns={childMergedColumns}
+              totalPage={childMergedTotalPages}
+              totalRecord={childMergedTotalRecords}
+              paginationCount={childMergedPagination}
+              handlePagination={handleChildMergePagination}
+            />
+          ) : (
+            <Typography>No child merged cases found.</Typography>
+          )}
+        </DialogContent>
+      </Dialog>
+
 
         {approveTableFlag && (
             <Dialog
@@ -8339,43 +9198,49 @@ const UnderInvestigation = () => {
             </Dialog>
         )}
 
-        <Dialog
-            open={showOtherTransferModal}
-            onClose={() => setShowOtherTransferModal(false)}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-        >
-            <DialogTitle id="alert-dialog-title"></DialogTitle>
-            <DialogContent sx={{ width: "400px" }}>
-                <DialogContentText id="alert-dialog-description">
-                    <h4 className="form-field-heading">{selectKey?.title}</h4>
-                    <FormControl fullWidth>
-                        <Autocomplete
-                            id=""
-                            options={otherTransferField}
-                            getOptionLabel={(option) => option.name || ""}
-                            value={selectedOtherFields || null}
-                            onChange={(event, newValue) => setSelectedOtherFields(newValue)}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    className="selectHideHistory"
-                                    label={selectKey?.title}
-                                />
-                            )}
-                        />
-                    </FormControl>
-                </DialogContentText>
-            </DialogContent>
-            <DialogActions sx={{ padding: "12px 24px" }}>
-                <Button onClick={() => setShowOtherTransferModal(false)}>
-                    Cancel
-                </Button>
-                <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
-                    Submit
-                </Button>
-            </DialogActions>
-        </Dialog>
+      <Dialog
+        open={showOtherTransferModal}
+        onClose={() => setShowOtherTransferModal(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title"></DialogTitle>
+        <DialogContent sx={{ width: "400px" }}>
+          <DialogContentText id="alert-dialog-description">
+            <h4 className="form-field-heading">{selectKey?.title}</h4>
+            <FormControl fullWidth>
+              <Autocomplete
+                id=""
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={(event, newValue) => setSelectedOtherFields(newValue)}
+                disabled={isChildMergedLoading}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label={selectKey?.title}
+                  />
+                )}
+              />
+            </FormControl>
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: "12px 24px" }}>
+          <Button onClick={() => setShowOtherTransferModal(false)} 
+          >
+            Cancel
+          </Button>
+          {!isChildMergedLoading && (
+            <>
+              <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
+                Submit
+              </Button>
+            </>
+          )}
+        </DialogActions>
+      </Dialog>
 
 
       <Dialog
@@ -8395,6 +9260,7 @@ const UnderInvestigation = () => {
           setTableData((prevData) =>
             prevData.map((item) => ({ ...item, isSelected: false }))
           );
+          setHasApproval(false);
         }}
           aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
@@ -8473,6 +9339,7 @@ const UnderInvestigation = () => {
               setTableData((prevData) =>
                 prevData.map((item) => ({ ...item, isSelected: false }))
               );
+              setHasApproval(false);
             }}
             >Cancel
           </Button>
@@ -8942,9 +9809,12 @@ const UnderInvestigation = () => {
                                     sx={{ fontWeight: 500, marginTop: '2px' }}
                                 />
                             )}
-                            <Box className="totalRecordCaseStyle">
-                                {listApprovalTotalRecord} Records
-                            </Box>
+                            {!listAddApproveFlag &&
+                            (
+                                <Box className="totalRecordCaseStyle">
+                                    {listApprovalTotalRecord} Records
+                                </Box>
+                            )}
                         </Box>
                     ) : (
                         <Box 
@@ -8964,9 +9834,12 @@ const UnderInvestigation = () => {
                                     sx={{ fontWeight: 500, marginTop: '2px' }}
                                 />
                             )}
-                            <Box className="totalRecordCaseStyle">
-                                {listApprovalTotalRecord} Records
-                            </Box>
+                            {!listAddApproveFlag &&
+                            (
+                                <Box className="totalRecordCaseStyle">
+                                    {listApprovalTotalRecord} Records
+                                </Box>
+                            )}
                         </Box>
                     )}
 
@@ -8974,66 +9847,69 @@ const UnderInvestigation = () => {
                         <Box sx={{display: 'flex', alignItems: 'start' ,justifyContent: 'space-between', gap: '12px'}}>
                             <Box>
                             </Box>
-                            <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
-                            <TextFieldInput 
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchIcon sx={{ color: "#475467" }} />
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: (
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <IconButton
-                                                sx={{ padding: "0 5px", borderRadius: "0" }}
-                                                onClick={()=>handleOthersFilter(selectedOtherTemplate)}
-                                            >
-                                                <FilterListIcon sx={{ color: "#475467" }} />
-                                            </IconButton>
-                                        </Box>
-                                    ),
-                                }}
+                            {!listAddApproveFlag &&
+                            (
+                                <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                                    <TextFieldInput 
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ color: "#475467" }} />
+                                                </InputAdornment>
+                                            ),
+                                            // endAdornment: (
+                                            //     // <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            //     //     <IconButton
+                                            //     //         sx={{ padding: "0 5px", borderRadius: "0" }}
+                                            //     //         onClick={()=>handleOthersFilter(selectedOtherTemplate)}
+                                            //     //     >
+                                            //     //         <FilterListIcon sx={{ color: "#475467" }} />
+                                            //     //     </IconButton>
+                                            //     // </Box>
+                                            // ),
+                                        }}
 
-                                onInput={(e) => setListApprovalSearchValue(e.target.value)}
-                                value={listApprovalSearchValue}
-                                id="tableSearch"
-                                size="small"
-                                placeholder='Search anything'
-                                variant="outlined"
-                                className="profileSearchClass"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
-                                    }
-                                }}
-                                
-                                sx={{
-                                    width: '350px', borderRadius: '6px', outline: 'none',
-                                    '& .MuiInputBase-input::placeholder': {
-                                        color: '#475467',
-                                        opacity: '1',
-                                        fontSize: '14px',
-                                        fontWeight: '400',
-                                        fontFamily: 'Roboto'
-                                    },
-                                }}
-                            />
-                            {(listApprovalSearchValue || listApprovalFromDate || listApprovalToDate || Object.keys(listApprovalFilterData).length > 0) && (
-                                <Typography
-                                    onClick={handleListApprovalClear}
-                                    sx={{
-                                        fontSize: "13px",
-                                        fontWeight: "500",
-                                        textDecoration: "underline",
-                                        cursor: "pointer",
-                                    }}
-                                    mt={1}
-                                >
-                                    Clear Filter
-                                </Typography>
+                                        onInput={(e) => setListApprovalSearchValue(e.target.value)}
+                                        value={listApprovalSearchValue}
+                                        id="tableSearch"
+                                        size="small"
+                                        placeholder='Search anything'
+                                        variant="outlined"
+                                        className="profileSearchClass"
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                                            }
+                                        }}
+                                        
+                                        sx={{
+                                            width: '350px', borderRadius: '6px', outline: 'none',
+                                            '& .MuiInputBase-input::placeholder': {
+                                                color: '#475467',
+                                                opacity: '1',
+                                                fontSize: '14px',
+                                                fontWeight: '400',
+                                                fontFamily: 'Roboto'
+                                            },
+                                        }}
+                                    />
+                                    {(listApprovalSearchValue || listApprovalFromDate || listApprovalToDate || Object.keys(listApprovalFilterData).length > 0) && (
+                                        <Typography
+                                            onClick={handleListApprovalClear}
+                                            sx={{
+                                                fontSize: "13px",
+                                                fontWeight: "500",
+                                                textDecoration: "underline",
+                                                cursor: "pointer",
+                                            }}
+                                            mt={1}
+                                        >
+                                            Clear Filter
+                                        </Typography>
+                                    )}
+                                </Box>
                             )}
-                            </Box>
                                 {listAddApproveFlag && !listApprovalItemDisabled && (
                                     <Button
                                         variant="outlined"
@@ -9091,7 +9967,7 @@ const UnderInvestigation = () => {
                                     options={listApprovalItem}
                                     getOptionLabel={(option) => option.name || ""}
                                     name="approval_item"
-                                    disabled={listApprovalItemDisabled}
+                                    disabled={true}
                                     value={
                                         listApprovalItem.find((opt) => opt.approval_item_id === listApprovalSaveData?.approval_item ) || null
                                     }
@@ -9126,6 +10002,7 @@ const UnderInvestigation = () => {
                                     getOptionLabel={(option) =>
                                         option.designation_name || ""
                                     }
+                                    onHistory
                                     name="approved_by"
                                     value={
                                         listDesignationData.find((opt) => opt.designation_id === listApprovalSaveData?.approved_by) || null
@@ -9160,6 +10037,7 @@ const UnderInvestigation = () => {
                                         <DatePicker
                                             label="Approval Date"
                                             format="DD/MM/YYYY"
+                                            onHistory
                                             disabled={listApprovalItemDisabled}
                                             sx={{ width: '100%' }}
                                             value={
@@ -9198,6 +10076,7 @@ const UnderInvestigation = () => {
                                     label="Comments"
                                     fullWidth
                                     name="remarks"
+                                    onHistory
                                     disabled={listApprovalItemDisabled}
                                     value={listApprovalSaveData?.remarks}
                                     onChange={(e) =>

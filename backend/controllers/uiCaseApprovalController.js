@@ -658,7 +658,6 @@ exports.update_ui_case_approval = async (req, res) => {
         alert_message: `Updated: ${remarks}`,
         created_by: user_id,
         created_by_designation_id,
-        created_by_division_id,
       },
       { transaction: t }
     );
