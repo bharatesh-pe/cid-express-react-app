@@ -4966,56 +4966,56 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             insertedId = insertedData.id || null;
             insertedType = insertedData.sys_status || null;
             insertedIO = insertedData.field_io_name || null;
-        }
-
-		const fileUpdates = {};
-
-        if(folder_attachment_ids)
-        {
-            if (req.files && req.files.length > 0) {
-                const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
+            const fileUpdates = {};
     
-                for (const file of req.files) {
-                    const { originalname, size, key, fieldname } = file;
-                    const fileExtension = path.extname(originalname);
-    
-                    // Find matching folder_id from the payload (if any)
-                    const matchingFolder = folderAttachments.find(
-                    (attachment) =>
-                        attachment.filename === originalname &&
-                        attachment.field_name === fieldname
-                    );
-    
-                    const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
-    
-                    await ProfileAttachment.create({
-                        template_id: tableData.template_id,
-                        table_row_id: insertedData.id,
-                        attachment_name: originalname,
-                        attachment_extension: fileExtension,
-                        attachment_size: size,
-                        s3_key: key,
-                        field_name: fieldname,
-                        folder_id: folderId, // Store NULL if no folder_id provided
-                    });
-    
-                    if (!fileUpdates[fieldname]) {
-                        fileUpdates[fieldname] = originalname;
-                    } else {
-                        fileUpdates[fieldname] += `,${originalname}`;
+            if(folder_attachment_ids)
+            {
+                if (req.files && req.files.length > 0) {
+                    const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
+        
+                    for (const file of req.files) {
+                        const { originalname, size, key, fieldname } = file;
+                        const fileExtension = path.extname(originalname);
+        
+                        // Find matching folder_id from the payload (if any)
+                        const matchingFolder = folderAttachments.find(
+                        (attachment) =>
+                            attachment.filename === originalname &&
+                            attachment.field_name === fieldname
+                        );
+        
+                        const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
+        
+                        await ProfileAttachment.create({
+                            template_id: tableData.template_id,
+                            table_row_id: insertedData.id,
+                            attachment_name: originalname,
+                            attachment_extension: fileExtension,
+                            attachment_size: size,
+                            s3_key: key,
+                            field_name: fieldname,
+                            folder_id: folderId, // Store NULL if no folder_id provided
+                        });
+        
+                        if (!fileUpdates[fieldname]) {
+                            fileUpdates[fieldname] = originalname;
+                        } else {
+                            fileUpdates[fieldname] += `,${originalname}`;
+                        }
                     }
+        
+                    
+                    for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+                        await Model.update(
+                        { [fieldname]: filenames },
+                        { where: { id: insertedData.id }, transaction: t }
+                        );
+                    }
+              
                 }
-    
-                
-                for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-                    await Model.update(
-                    { [fieldname]: filenames },
-                    { where: { id: insertedData.id }, transaction: t }
-                    );
-                }
-          
             }
         }
+
 
 
         if(second_table_name && second_table_name != "")
