@@ -296,7 +296,7 @@ const UnderInvestigation = () => {
             console.log("isChildMergedLoading from approval:", isChildMergedLoading);
 
             return (
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1, marginTop: '4px' }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
@@ -635,6 +635,7 @@ const UnderInvestigation = () => {
     const [moreThenTemplateTemplateFields, setMoreThenTemplateTemplateFields] = useState(null);
     const [moreThenTemplateStepperData, setMoreThenTemplateStepperData] = useState([]);
     const [moreThenTemplateInitialData, setMoreThenTemplateInitialData] = useState([]);
+    const [viewModeOnly,setViewModeOnly] = useState(false);
 
     const showNatureOfDisposal = (selectedRow) => {
         setSelectedRowData(selectedRow);
@@ -3836,7 +3837,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setOtherFormOpen(false);
             setAddApproveFlag(false);
             setApproveTableFlag(false);
-            setOtherTemplateModalOpen(false);
+            if (Object.keys(othersData).length > 0) {
+              setOtherTemplateModalOpen(false);
+            }
+            else{
+            setOtherTemplateModalOpen(true);
+            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+
+          }
             setApprovalSaveData({});
 
             if(selectedOtherTemplate?.field){
@@ -5555,8 +5563,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
 
-
-
+                    const isViewAction = options.is_view_action === true
                     return (
                       <Box
                         sx={{
@@ -5577,6 +5584,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         </Button>
                 
                         {canEdit&& (
+                          !isViewAction && (
                             !isPdfUpdated && (
                                !isChildMergedLoading && (
                               <Button
@@ -5590,9 +5598,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 Edit
                               </Button>
                             )
-                            )
+                            ))
                           )}
                         {canDelete&& (
+                          !isViewAction && (
                             !isPdfUpdated && (
                               !isChildMergedLoading && (
                               <Button
@@ -5606,7 +5615,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 Delete
                               </Button>
                            )
-                          )
+                          ))
                         )}
                         {options.table === "cid_ui_case_trail_monitoring" && (
                           <>
@@ -5699,6 +5708,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
             await getUploadedFiles(selectedRow, options);
         }
 
+        if(options.is_view_action === true){
+          setViewModeOnly(true)
+        }
+        else{
+          setViewModeOnly(false)
+        }
         setOtherTemplateModalOpen(true);
     }
 
@@ -8830,7 +8845,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!isChildMergedLoading && (
+                    {!viewModeOnly && (
+                    !isChildMergedLoading && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -8840,7 +8856,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         >
                             Add
                         </Button>
-                    )}
+                    ))}
                     {/* )} */}
                 </Box>
               )}
@@ -10057,7 +10073,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                                 <Box>
                                   <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                    {<h4 className='form-field-heading'>Approval Date</h4>}
                                     <DemoContainer components={['DatePicker']}>
                                     <DatePicker
                                       className='selectHideHistory'

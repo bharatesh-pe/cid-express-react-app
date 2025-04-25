@@ -127,6 +127,23 @@ const CaseActions = () => {
                 )
             }
         },
+        { 
+            field: 'is_view_action', 
+            headerName: 'View Action',
+            resizable: true,
+            flex: 1,
+            renderCell: (params) => {
+                return (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                            {
+                                params && params.row && params.row.is_view_action ? 'True' : ''
+                            }
+                        </span>
+                    </div>
+                )
+            }
+        },
         {
             field: '',
             headerName: 'Action',
@@ -1174,6 +1191,12 @@ const CaseActions = () => {
                                         <Switch name={'is_approval'} checked={addActionFormData['is_approval']} onChange={handleSwitch} />
                                         <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
                                             Do you want to enable Approval
+                                        </Typography>
+                                    </Box>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <Switch name={'is_view_action'} checked={addActionFormData['is_view_action']} onChange={handleSwitch} />
+                                        <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
+                                            Do you want to enable only View Action
                                         </Typography>
                                     </Box>
                                     {
