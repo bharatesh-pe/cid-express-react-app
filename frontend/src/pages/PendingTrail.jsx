@@ -326,7 +326,7 @@ const UnderInvestigation = () => {
             };
 
             return (
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1 , marginTop: '4px' }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
@@ -358,6 +358,7 @@ const UnderInvestigation = () => {
     const [listApprovalToDate,setListApprovalToDate] =  useState(null);
     const [listApprovalFiltersDropdown,setListApprovalFiltersDropdown] =  useState([]);
     const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
+    const [viewModeOnly,setViewModeOnly] = useState(false);
 
     const handleListApprovalClear = ()=>{
         setListApprovalSearchValue('');
@@ -4025,7 +4026,7 @@ const UnderInvestigation = () => {
                         options.table === "cid_ui_case_trail_monitoring" &&
                         params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
   
-  
+                        const isViewAction = options.is_view_action === true
   
                       return (
                         <Box
@@ -4047,6 +4048,7 @@ const UnderInvestigation = () => {
                           </Button>
                   
                           {canEdit&& (
+                            !isViewAction && (
                               !isPdfUpdated && (
                                 <Button
                                   variant="contained"
@@ -4058,9 +4060,10 @@ const UnderInvestigation = () => {
                                 >
                                   Edit
                                 </Button>
-                              )
+                              ))
                             )}
                           {canDelete&& (
+                            !isViewAction && (
                               !isPdfUpdated && (
                                 <Button
                                   variant="contained"
@@ -4072,7 +4075,7 @@ const UnderInvestigation = () => {
                                 >
                                   Delete
                                 </Button>
-                            )
+                            ))
                           )}
                           {options.table === "cid_ui_case_trail_monitoring" && (
                             <>
@@ -4163,6 +4166,12 @@ const UnderInvestigation = () => {
           if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
             await checkPdfEntryStatus(selectedRow.id);
               await getUploadedFiles(selectedRow, options);
+          }
+          if(options.is_view_action === true){
+            setViewModeOnly(true)
+          }
+          else{
+            setViewModeOnly(false)
           }
   
           setOtherTemplateModalOpen(true);
@@ -6794,6 +6803,7 @@ const UnderInvestigation = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
+                    {!viewModeOnly && (
                       <Button
                         variant="outlined"
                         onClick={() => {
@@ -6802,6 +6812,7 @@ const UnderInvestigation = () => {
                       >
                         Add
                       </Button>
+                      )}
                     {/* )} */}
                   </>
                 )
@@ -7704,7 +7715,7 @@ const UnderInvestigation = () => {
        
                               <Box>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                  {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                  {<h4 className='form-field-heading'>Approval Date</h4>}
                                   <DemoContainer components={['DatePicker']}>
                                   <DatePicker
                                     className='selectHideHistory'
