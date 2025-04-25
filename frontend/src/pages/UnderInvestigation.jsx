@@ -3625,7 +3625,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
       const payload = {
         selected_row_id: selectedIds,
-        ui_case_id: parsedAppendText[0]?.field_ui_case_id,
+        ui_case_id: selectedRow.id,
         appendText: JSON.stringify(parsedAppendText),
       };
 
