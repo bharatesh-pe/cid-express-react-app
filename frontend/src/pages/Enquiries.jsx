@@ -466,6 +466,7 @@ const Enquiries = () => {
     const [listApprovalToDate,setListApprovalToDate] =  useState(null);
     const [listApprovalFiltersDropdown,setListApprovalFiltersDropdown] =  useState([]);
     const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
+    const [viewModeOnly,setViewModeOnly] = useState(false);
 
     const handleListApprovalClear = ()=>{
         setListApprovalSearchValue('');
@@ -3064,6 +3065,7 @@ const Enquiries = () => {
                   const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
                   const canEdit = userPermissions[0]?.action_edit;
                   const canDelete = userPermissions[0]?.action_delete;  
+                  const isViewAction = options.is_view_action === true
                   return (
                     <Box
                       sx={{
@@ -3087,6 +3089,7 @@ const Enquiries = () => {
                         View
                       </Button>
                         {canEdit&& (
+                          !isViewAction && (
                           <>
                           {/* {isAuthorized && ( */}
                             <Button
@@ -3101,9 +3104,10 @@ const Enquiries = () => {
                               </Button>
                             {/* )} */}
                            </>
-                         )}
+                         ))}
                       
                         {canDelete&& (
+                          !isViewAction && (
                           <>
                           {/* {isAuthorized && ( */}
                             <Button
@@ -3121,7 +3125,7 @@ const Enquiries = () => {
                             </Button>
                           {/* )} */}
                          </>
-                        )}
+                        ))}
                      
                     </Box>
                   );
@@ -3183,6 +3187,12 @@ const Enquiries = () => {
           );
 
           setOtherTemplateData(updatedTableData);
+          if(options.is_view_action === true){
+            setViewModeOnly(true)
+          }
+          else{
+            setViewModeOnly(false)
+          }
           setOtherTemplateModalOpen(true);
         }
 
@@ -4686,6 +4696,7 @@ const Enquiries = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
+                    {!viewModeOnly && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -4695,6 +4706,7 @@ const Enquiries = () => {
                         >
                             Add
                         </Button>
+                    )}
                     {/* )} */}
                 </Box>
             </Box>

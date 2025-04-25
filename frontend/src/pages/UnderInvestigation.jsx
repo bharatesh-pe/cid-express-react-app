@@ -635,6 +635,7 @@ const UnderInvestigation = () => {
     const [moreThenTemplateTemplateFields, setMoreThenTemplateTemplateFields] = useState(null);
     const [moreThenTemplateStepperData, setMoreThenTemplateStepperData] = useState([]);
     const [moreThenTemplateInitialData, setMoreThenTemplateInitialData] = useState([]);
+    const [viewModeOnly,setViewModeOnly] = useState(false);
 
     const showNatureOfDisposal = (selectedRow) => {
         setSelectedRowData(selectedRow);
@@ -5558,8 +5559,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
 
-
-
+                    const isViewAction = options.is_view_action === true
                     return (
                       <Box
                         sx={{
@@ -5580,6 +5580,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         </Button>
                 
                         {canEdit&& (
+                          !isViewAction && (
                             !isPdfUpdated && (
                                !isChildMergedLoading && (
                               <Button
@@ -5593,9 +5594,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 Edit
                               </Button>
                             )
-                            )
+                            ))
                           )}
                         {canDelete&& (
+                          !isViewAction && (
                             !isPdfUpdated && (
                               !isChildMergedLoading && (
                               <Button
@@ -5609,7 +5611,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 Delete
                               </Button>
                            )
-                          )
+                          ))
                         )}
                         {options.table === "cid_ui_case_trail_monitoring" && (
                           <>
@@ -5702,6 +5704,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
             await getUploadedFiles(selectedRow, options);
         }
 
+        if(options.is_view_action === true){
+          setViewModeOnly(true)
+        }
+        else{
+          setViewModeOnly(false)
+        }
         setOtherTemplateModalOpen(true);
     }
 
@@ -8833,7 +8841,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!isChildMergedLoading && (
+                    {!viewModeOnly && (
+                    !isChildMergedLoading && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -8843,7 +8852,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         >
                             Add
                         </Button>
-                    )}
+                    ))}
                     {/* )} */}
                 </Box>
               )}
