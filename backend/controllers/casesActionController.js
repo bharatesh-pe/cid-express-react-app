@@ -12,21 +12,23 @@ const path = require("path");
 exports.get_overall_actions = async (req, res) => {
   try {
     const {
-      page = 1,
-      limit = 10,
-      search = "",
-      sort_by = "created_at",
-      sort_order = "DESC",
+        page = 1,
+        limit = 5,
+        sort_by = "created_at",
+        order = "DESC",
+        search = "",
+        search_field = "",
     } = req.query;
 
-    // Validate pagination parameters
-    const pageNum = Math.max(1, parseInt(page) || 1);
-    const limitNum = Math.max(1, parseInt(limit) || 10);
-    const offset = (pageNum - 1) * limitNum;
 
-    // Validate sort order
-    const finalSortOrder =
-      String(sort_order).toUpperCase() === "DESC" ? "DESC" : "ASC";
+
+    const { filter = {}, from_date = null, to_date = null } = req.body;
+    const fields = {};
+    const offset = (page - 1) * limit;
+
+    // // Validate sort order
+    // const finalSortOrder =
+    //   String(sort_order).toUpperCase() === "DESC" ? "DESC" : "ASC";
 
     // Build where clause for search
     const whereClause = search.trim()
@@ -39,14 +41,14 @@ exports.get_overall_actions = async (req, res) => {
         }
       : {};
 
-    // Get total count for pagination
-    const total = await CasesAction.count({
-      where: whereClause,
-      distinct: true,
-    });
+    // // Get total count for pagination
+    // const total = await CasesAction.count({
+    //   where: whereClause,
+    //   distinct: true,
+    // });
 
     // Get paginated and sorted data
-    const actions = await CasesAction.findAll({
+    const { rows: actions, count: totalItems } = await CasesAction.findAndCountAll({
       where: whereClause,
       attributes: [
         "id",
@@ -60,22 +62,18 @@ exports.get_overall_actions = async (req, res) => {
         "approval_items",
         "created_at",
       ],
-      order: [[sort_by, finalSortOrder]],
-      offset: offset,
-      limit: limitNum,
+      order: [[sort_by, order]],
+      limit,
+      offset,
     });
+
+    // const totalItems = records.count;
+    const totalPages = Math.ceil(totalItems / limit);
 
     return res.status(200).json({
       success: true,
       data: actions,
-      meta: {
-        total,
-        totalPages: Math.ceil(total / limitNum),
-        currentPage: pageNum,
-        hasNextPage: pageNum < Math.ceil(total / limitNum),
-        hasPrevPage: pageNum > 1,
-        limit: limitNum,
-      },
+      meta: { page, limit, totalItems,totalPages, order,}
     });
   } catch (error) {
     console.error("Error fetching actions:", error);
