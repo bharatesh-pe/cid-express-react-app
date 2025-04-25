@@ -61,13 +61,26 @@ exports.create_role = async (req, res) => {
 
 exports.get_all_roles = async (req, res) => {
   try {
+     const {
+        page = 1,
+        limit = 5,
+        sort_by = "id",
+        order = "ASC",
+        search = "",
+        search_field = "",
+    } = req.body;
+    const { filter = {}, from_date = null, to_date = null } = req.body;
+    const fields = {};
+    const offset = (page - 1) * limit;
     const excluded_role_ids = [1];
-    const roles = await Role.findAll({
+    const { rows: roles, count: totalItems }  = await Role.findAndCountAll({
       where: {
         role_id: {
           [Op.notIn]: excluded_role_ids,
         },
       },
+      limit,
+      offset,
     });
 
     if (!roles.length) {
@@ -77,10 +90,20 @@ exports.get_all_roles = async (req, res) => {
       });
     }
 
+     // const totalItems = records.count;
+    const totalPages = Math.ceil(totalItems / limit);
+
     return res.status(200).json({
       success: true,
       message: "Roles fetched successfully.",
       data: roles,
+      meta: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+        order,
+      },
     });
   } catch (error) {
     return res.status(500).json({
