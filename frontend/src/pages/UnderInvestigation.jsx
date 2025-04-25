@@ -5127,7 +5127,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
           let showReplacePdf = false;
 
-          if (selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
+          if (selectedOtherTemplate?.table || options.table === "cid_ui_case_progress_report") {
             const anyHasPRStatus = records.some(record => record.hasFieldPrStatus === true);
           
             // Show button only if no one has PR status true
