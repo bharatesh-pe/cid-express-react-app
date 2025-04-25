@@ -248,7 +248,9 @@ const UserManagement = () => {
 
     const searchTableData = ()=>{
         setPaginationCount(1);
-        setForceTableLoad((prev) => !prev);
+        // setForceTableLoad((prev) => !prev);
+        handleFilters();
+        setIsFilterApplied(true);
     }
 
     const handlePagination = (page) => {
@@ -376,21 +378,37 @@ const UserManagement = () => {
   const handleFilters = async () => {
     setLoading(true);
     try {
-      const filters = {};
-      if (searchValue) filters.searchvalue = searchValue;
-      if (newUser.name) filters.name = newUser.name;
-      if (newUser.kgid) filters.kgid = newUser.kgid;
-      if (newUser.role) filters.role_id = newUser.role;
-      if (newUser.mobile) filters.mobile = newUser.mobile;
-      if (newUser.department) filters.department_id = newUser.department;
-      if (newUser.division) filters.division_id = newUser.division;
-      if (newUser.designation) filters.designation_id = newUser.designation;
-      if (newUser.dev_status !== undefined)
+
+        const filters = {};
+        if (searchValue) filters.searchvalue = searchValue || "";
+        if (newUser.name) filters.name = newUser.name;
+        if (newUser.kgid) filters.kgid = newUser.kgid;
+        if (newUser.role) filters.role_id = newUser.role;
+        if (newUser.mobile) filters.mobile = newUser.mobile;
+        if (newUser.department) filters.department_id = newUser.department;
+        if (newUser.division) filters.division_id = newUser.division;
+        if (newUser.designation) filters.designation_id = newUser.designation;
+        if (newUser.dev_status !== undefined)
         filters.dev_status = newUser.dev_status;
+        filters.page = paginationCount;
+        filters.limit = 10;
 
      
-      const response = await api.post("/user/filter_users", filters);
-      const users = response.users || response.data?.users;
+        const response = await api.post("/user/filter_users", filters);
+        const users = response.users || response.data?.users;
+
+        const { meta } = response;
+
+        const totalPages = meta?.totalPages;
+        const totalItems = meta?.totalItems;
+
+        if (totalPages !== null && totalPages !== undefined) {
+            setTotalPage(totalPages);
+        }
+
+        if (totalItems !== null && totalItems !== undefined) {
+            setTotalRecord(totalItems);
+        }
 
       if (!users || !Array.isArray(users)) {
         toast.error("Failed to fetch filtered users.", {
@@ -439,21 +457,21 @@ const UserManagement = () => {
 
       setUsers(formattedUsers);
       setCurrentPage(0);
-      if (searchValue || Object.keys(filters).length === 0) {
+      if (Object.keys(filters).length === 0) {
         setIsFilterApplied(false);
       } else {
         setIsFilterApplied(true);
       }
       setNewUser({});
-      toast.success("Filters applied successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        className: "toast-success",
-      });
+    //   toast.success("Filters applied successfully!", {
+    //     position: "top-right",
+    //     autoClose: 3000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     pauseOnHover: true,
+    //     draggable: true,
+    //     className: "toast-success",
+    //   });
 
       setIsModalOpen(false);
       setModalTitle("Add New User");
@@ -1213,7 +1231,7 @@ const UserManagement = () => {
                   height: "auto",
                 }}
               >
-                {users.length} profiles
+                {totalRecord} profiles
               </p>
             </div>
           </div>
@@ -1321,7 +1339,8 @@ const UserManagement = () => {
                     },
                   }}
                   onClick={() => {
-                    fetchUsers();
+                    handleClear();
+                    // fetchUsers();
                     setIsFilterApplied(false);
                   }}
                 >

@@ -1012,13 +1012,13 @@ const RolePage = () => {
                                             <SearchIcon sx={{ color: '#475467' }} />
                                         </InputAdornment>
                                     ),
-                                    endAdornment: (
-                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            <IconButton sx={{ padding: "0 5px", borderRadius: "0" }} onClick={handleFilter}>
-                                                <FilterListIcon sx={{ color: "#475467" }} />
-                                            </IconButton>
-                                        </Box>
-                                    )
+                                    // endAdornment: (
+                                    //     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                    //         <IconButton sx={{ padding: "0 5px", borderRadius: "0" }} onClick={handleFilter}>
+                                    //             <FilterListIcon sx={{ color: "#475467" }} />
+                                    //         </IconButton>
+                                    //     </Box>
+                                    // )
                                 }}
                                 onInput={(e) => setSearchValue(e.target.value)}
                                 value={searchValue}
