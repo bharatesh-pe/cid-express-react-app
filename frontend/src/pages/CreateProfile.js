@@ -129,33 +129,33 @@ const CreateProfile = () => {
                 )
             }
         },
-        {
-            field: 'link_module',
-            headerName: 'Linked Module',
-            width: 200,
-            resizable: false,
-            renderHeader: () => (
-                <div onClick={()=>ApplyTableSort('link_module')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                    <span style={{color:'#1D2939',fontSize:'15px',fontWeight:'500'}}>Linked Module</span>
-                    {tableSortOption === 'ASC' ? <ASC sx={{color:'#475467',width:'18px'}} /> : <DESC sx={{color:'#475467',width:'18px'}} /> }
-                </div>
-            ),
-            renderCell: (params) => {
-                return (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                        <span style={{fontSize:'15px',fontWeight:'400'}}>
-                            {
-                                params && params.row && params.row.link_module ? changeHeaderNameModule(params.row.link_module) : ''
-                            }
-                        </span>
-                    </div>
-                )
-            }
-        },
+        // {
+        //     field: 'link_module',
+        //     headerName: 'Linked Module',
+        //     width: 200,
+        //     resizable: false,
+        //     renderHeader: () => (
+        //         <div onClick={()=>ApplyTableSort('link_module')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+        //             <span style={{color:'#1D2939',fontSize:'15px',fontWeight:'500'}}>Linked Module</span>
+        //             {tableSortOption === 'ASC' ? <ASC sx={{color:'#475467',width:'18px'}} /> : <DESC sx={{color:'#475467',width:'18px'}} /> }
+        //         </div>
+        //     ),
+        //     renderCell: (params) => {
+        //         return (
+        //             <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+        //                 <span style={{fontSize:'15px',fontWeight:'400'}}>
+        //                     {
+        //                         params && params.row && params.row.link_module ? changeHeaderNameModule(params.row.link_module) : ''
+        //                     }
+        //                 </span>
+        //             </div>
+        //         )
+        //     }
+        // },
         {
             field: '',
             headerName: 'Action',
-            flex: 1,
+            width: 250,
             resizable: false,
             renderCell: (params) => {
                 return (
@@ -976,14 +976,16 @@ const CreateProfile = () => {
                 </DialogContent>
             </Dialog>
 
-            <TableView 
-                rows={tableData} 
-                columns={columns} 
-                totalPage={totalPage} 
-                totalRecord={totalRecord} 
-                paginationCount={paginationCount} 
-                handlePagination={handlePagination} 
-            />
+            <Box>
+                <TableView 
+                    rows={tableData} 
+                    columns={columns} 
+                    totalPage={totalPage} 
+                    totalRecord={totalRecord} 
+                    paginationCount={paginationCount} 
+                    handlePagination={handlePagination} 
+                />
+            </Box>
 
             {showOptionModal && 
                 <Dialog

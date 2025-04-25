@@ -22,6 +22,11 @@ import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
 import ErrorIcon from "../Images/erroricon.png";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import dayjs from "dayjs";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+
 
 const RolePage = () => {
 
@@ -61,89 +66,42 @@ const RolePage = () => {
         }
     };
 
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+
+    // filter states
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filterDropdownObj, setfilterDropdownObj] = useState([]);
+    const [filterValues, setFilterValues] = useState({});
+    const [fromDateValue, setFromDateValue] = useState(null);
+    const [toDateValue, setToDateValue] = useState(null);
+    const [forceTableLoad, setForceTableLoad] = useState(false);
+    const [othersFilterData, setOthersFilterData] = useState({});
+    const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
+
+    const [paginationCount, setPaginationCount] = useState(1);
+
 
     // table column variable
     const [roleColumnData, setRoleColumnData] = useState([
-        { field: 'title', headerName: 'Title', flex: 1 },
-        { field: 'description', headerName: 'Description', flex: 1 },
+        { field : "S_No", headerName : "S.No", width: 70 },
+        { field: 'title', headerName: 'Title', width : 200 },
+        { field: 'description', headerName: 'Description', width : 200 },
         {
             field: '',
             headerName: 'Action',
-            flex: 1,
+            width : 250,
             renderCell: (params) => {
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => handleViewRole(params.row)}
-                        >
-                            <img
-                                src={eyes}
-                                alt="View"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>View</span>
+                        <Button variant="outlined"  onClick={() => handleViewRole(params.row)}>
+                            View
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => {
-
-                                handleEditRole(params.row)
-                            }}
-                        >
-                            <img
-                                src={edit}
-                                alt="Edit"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Edit</span>
+                        <Button variant="contained" color="primary" onClick={() => { handleEditRole(params.row)}}>
+                            Edit
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "Red",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => showDeleteRoleDialoge(params.row.id, params.row.role_title)}
-                            >
-                            <img
-                                src={trash}
-                                alt="Delete"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Delete</span>
+                        <Button variant="contained" color="error" onClick={() => showDeleteRoleDialoge(params.row.id, params.row.role_title)}>
+                            Delete
                         </Button>
                     </Box>
                 );
@@ -235,13 +193,27 @@ const RolePage = () => {
     };
     
     
-    const get_details = async () => {
-         setLoading(true);
+    useEffect(() => {
+        get_details(paginationCount);
+    }, [paginationCount, forceTableLoad])
+
+    const get_details = async (page) => {
+
+        var payload = {
+            page,
+            limit: 10,
+            search: searchValue || "",
+            from_date: fromDateValue,
+            to_date: toDateValue
+        }
+
+        setLoading(true);
         try {
-            const response = await api.post("/role/get_all_roles");
+            setLoading(false);
+            const response = await api.post("/role/get_all_roles", payload);
     
             if (response && response.success) {
-                const updatedData = response.data.map(row => {
+                const updatedData = response.data.map((row, index) => {
                     const permissions = Object.keys(row).reduce((acc, key) => {
                         if (typeof row[key] === 'boolean') {
                             acc[key] = row[key];
@@ -251,6 +223,7 @@ const RolePage = () => {
     
                     return {
                         ...row,
+                        S_No : index + 1,
                         id: row.role_id,
                         title: row.role_title,
                         description: row.role_description,
@@ -263,6 +236,7 @@ const RolePage = () => {
                 toast.error(response.message || "Failed to fetch roles");
             }
         } catch (err) {
+            setLoading(false);
             let errorMessage = err.message || "Something went wrong. Please try again.";
             if(err?.response?.data?.message)
             {
@@ -270,7 +244,87 @@ const RolePage = () => {
             }
             toast.error(errorMessage);
         }
-         setLoading(false);
+    };
+
+    const setFilterData = () => {
+        setPaginationCount(1);
+        setShowFilterModal(false);
+        setForceTableLoad((prev) => !prev);
+    };
+
+    const handleFilter = async () => {
+        // const viewTableData = { table_name: table_name};
+    
+        // setLoading(true);
+        // try {
+        //     const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+        //     setLoading(false);
+    
+        //     if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+        //         var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
+    
+        //         var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        
+        //         var getOnlyDropdown = templateFields
+        //         .filter((element) => validFilterFields.includes(element.type))
+        //         .map((field) => {
+        //             const existingField = filterDropdownObj?.find((item) => item.name === field.name);
+        //             return {
+        //                 ...field,
+        //                 history: false,
+        //                 info: false,
+        //                 required: false,
+        //                 ...(field.is_dependent === "true" && {
+        //                     options: existingField?.options ? [...existingField.options] : [],
+        //                 }),
+        //             };
+        //         });
+    
+                // const today = dayjs().format("YYYY-MM-DD");
+        
+                setfilterDropdownObj([]);
+                // if(fromDateValue == null || toDateValue === null){
+                //     setFromDateValue(today);
+                //     setToDateValue(today);
+                // }
+        
+                setShowFilterModal(true);
+        //     } else {
+        //         const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
+        //         toast.error(errorMessage, {
+        //             position: "top-right",
+        //             autoClose: 3000,
+        //             hideProgressBar: false,
+        //             closeOnClick: true,
+        //             pauseOnHover: true,
+        //             draggable: true,
+        //             progress: undefined,
+        //             className: "toast-error",
+        //         });
+        //     }
+        // } catch (error) {
+        //     setLoading(false);
+        //     if (error && error.response && error.response["data"]) {
+        //         toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+        //             position: "top-right",
+        //             autoClose: 3000,
+        //             hideProgressBar: false,
+        //             closeOnClick: true,
+        //             pauseOnHover: true,
+        //             draggable: true,
+        //             progress: undefined,
+        //             className: "toast-error",
+        //         });
+        //     }
+        // }
+    };
+
+    const handleClear = () => {
+        setSearchValue("");
+        setFilterValues({});
+        setFromDateValue(null);
+        setToDateValue(null);
+        setForceTableLoad((prev) => !prev);
     };
 
 
@@ -631,22 +685,22 @@ const RolePage = () => {
          setLoading(false);
     };
 
-    const [filteredRows, setFilteredRows] = useState(roleRowData);
-    useEffect(() => {
-        if (!searchValue) {
-            setFilteredRows(roleRowData);
-            return;
-        }
+    // const [filteredRows, setFilteredRows] = useState(roleRowData);
+    // useEffect(() => {
+    //     if (!searchValue) {
+    //         setFilteredRows(roleRowData);
+    //         return;
+    //     }
     
-        const lowercasedSearch = searchValue.toLowerCase();
-        const filteredData = roleRowData.filter(row =>
-            Object.values(row).some(value =>
-                typeof value === "string" && value.toLowerCase().includes(lowercasedSearch)
-            )
-        );
+    //     const lowercasedSearch = searchValue.toLowerCase();
+    //     const filteredData = roleRowData.filter(row =>
+    //         Object.values(row).some(value =>
+    //             typeof value === "string" && value.toLowerCase().includes(lowercasedSearch)
+    //         )
+    //     );
     
-        setFilteredRows(filteredData);
-    }, [searchValue, roleRowData]);
+    //     setFilteredRows(filteredData);
+    // }, [searchValue, roleRowData]);
     
 
     return (
@@ -963,43 +1017,62 @@ const RolePage = () => {
                     <Box>
                         <Typography className='Roboto' sx={{ fontSize: '20px', fontWeight: '600', color: '#1D2939' }}>Role Management</Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <TextFieldInput InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: '#475467' }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: (
-                                searchValue && (
-                                    <IconButton sx={{ padding: 0 }} onClick={() => setSearchValue('')} size="small">
-                                        <ClearIcon sx={{ color: '#475467' }} />
-                                    </IconButton>
-                                )
-                            )
-                        }}
-                            onInput={(e) => setSearchValue(e.target.value)}
-                            value={searchValue}
-                            id="tableSearch"
-                            size="small"
-                            placeholder='Search anything'
-                            variant="outlined"
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.preventDefault();
-                                }
-                            }}
-                            sx={{
-                                width: '400px', borderRadius: '6px', outline: 'none',
-                                '& .MuiInputBase-input::placeholder': {
-                                    color: '#475467',
-                                    opacity: '1',
-                                    fontSize: '14px',
-                                    fontWeight: '400',
-                                    fontFamily: 'Roboto'
-                                },
-                            }}
-                        />
+                    <Box sx={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                            <TextFieldInput 
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon sx={{ color: '#475467' }} />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            <IconButton sx={{ padding: "0 5px", borderRadius: "0" }} onClick={handleFilter}>
+                                                <FilterListIcon sx={{ color: "#475467" }} />
+                                            </IconButton>
+                                        </Box>
+                                    )
+                                }}
+                                onInput={(e) => setSearchValue(e.target.value)}
+                                value={searchValue}
+                                id="tableSearch"
+                                size="small"
+                                placeholder='Search anything'
+                                variant="outlined"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        setFilterData();
+                                    }
+                                }}
+                                className="profileSearchClass"
+                                sx={{
+                                    width: '400px', borderRadius: '6px', outline: 'none',
+                                    '& .MuiInputBase-input::placeholder': {
+                                        color: '#475467',
+                                        opacity: '1',
+                                        fontSize: '14px',
+                                        fontWeight: '400',
+                                        fontFamily: 'Roboto'
+                                    },
+                                }}
+                            />
+                            {(searchValue || fromDateValue || toDateValue || Object.keys(filterValues).length > 0) && (
+                                <Typography
+                                    onClick={handleClear}
+                                    sx={{
+                                        fontSize: "13px",
+                                        fontWeight: "500",
+                                        textDecoration: "underline",
+                                        cursor: "pointer",
+                                    }}
+                                    mt={1}
+                                >
+                                    Clear Filter
+                                </Typography>
+                            )}
+                        </Box>
                         <Button
                             onClick={() => {
                                 setAddRoleData(prevData => ({
@@ -1028,8 +1101,13 @@ const RolePage = () => {
                     </Box>
                 </Box>
                 <Box py={2}>
-                <TableView rows={filteredRows} columns={roleColumnData} backBtn={tablePagination !== 1} 
-                    nextBtn={filteredRows.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage}
+                <TableView 
+                    rows={roleRowData} 
+                    columns={roleColumnData} 
+                    backBtn={tablePagination !== 1} 
+                    nextBtn={roleRowData.length === 10} 
+                    handleBack={handlePrevPage} 
+                    handleNext={handleNextPage}
                     getRowId={(row) => row.id} />
                 </Box>
             </Box>
@@ -1298,6 +1376,83 @@ const RolePage = () => {
                       </DialogActions>
                     </Dialog>
                   </div>
+
+
+                {showFilterModal && (
+                    <Dialog
+                        open={showFilterModal}
+                        onClose={() => setShowFilterModal(false)}
+                        aria-labelledby="alert-dialog-title"
+                        aria-describedby="alert-dialog-description"
+                        maxWidth="md"
+                        fullWidth
+                    >
+                        <DialogTitle
+                            id="alert-dialog-title"
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                            }}
+                        >
+                            Filter
+                            <IconButton
+                                aria-label="close"
+                                onClick={() => setShowFilterModal(false)}
+                                sx={{ color: (theme) => theme.palette.grey[500] }}
+                            >
+                                <CloseIcon />
+                            </IconButton>
+                        </DialogTitle>
+                        <DialogContent sx={{ minWidth: "400px" }}>
+                            <DialogContentText id="alert-dialog-description">
+                            <Grid container sx={{ alignItems: "center" }}>
+                                <Grid item xs={12} md={6} p={2}>
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DatePicker
+                                            format="DD-MM-YYYY"
+                                            sx={{
+                                                width: "100%",
+                                            }}
+                                            label="From Date"
+                                            value={fromDateValue ? dayjs(fromDateValue) : null}
+                                            onChange={(e) =>
+                                                setFromDateValue(e ? e.format("YYYY-MM-DD") : null)
+                                            }
+                                        />
+                                    </LocalizationProvider>
+                                </Grid>
+    
+                                <Grid item xs={12} md={6} p={2}>
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DatePicker
+                                            format="DD-MM-YYYY"
+                                            sx={{
+                                                width: "100%",
+                                            }}
+                                            label="To Date"
+                                            value={toDateValue ? dayjs(toDateValue) : null}
+                                            onChange={(e) =>
+                                                setToDateValue(e ? e.format("YYYY-MM-DD") : null)
+                                            }
+                                        />
+                                    </LocalizationProvider>
+                                </Grid>
+                            </Grid>
+                            </DialogContentText>
+                        </DialogContent>
+                        <DialogActions sx={{ padding: "12px 24px" }}>
+                            <Button onClick={() => setShowFilterModal(false)}>Close</Button>
+                            <Button
+                                className="fillPrimaryBtn"
+                                sx={{ minWidth: "100px" }}
+                                onClick={() => setFilterData()}
+                            >
+                                Apply
+                            </Button>
+                        </DialogActions>
+                        </Dialog>
+                    )}
 
             {
                 loading && <div className='parent_spinner' tabIndex="-1" aria-hidden="true">
