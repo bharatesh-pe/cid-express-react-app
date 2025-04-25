@@ -1,4 +1,4 @@
-import { Box, Button, Checkbox, CircularProgress, FormControl, Grid, IconButton, InputAdornment, TextField, Typography , Accordion, AccordionSummary, AccordionDetails } from "@mui/material"
+import { Box, Button, Checkbox, CircularProgress, FormControl, Grid, IconButton, InputAdornment, TextField, Typography , Accordion, AccordionSummary, AccordionDetails, Tooltip } from "@mui/material"
 import { useEffect, useState } from "react"
 import TableView from "../components/table-view/TableView";
 import TextFieldInput from '@mui/material/TextField';
@@ -84,9 +84,24 @@ const RolePage = () => {
 
     // table column variable
     const [roleColumnData, setRoleColumnData] = useState([
-        { field : "S_No", headerName : "S.No", width: 70 },
-        { field: 'title', headerName: 'Title', width : 200 },
-        { field: 'description', headerName: 'Description', width : 200 },
+        { 
+            field : "S_No", 
+            headerName : "S.No", 
+            width: 70,
+            renderCell: (params) => tableCellRender(params, "S_No"),
+        },
+        { 
+            field: 'title', 
+            headerName: 'Title', 
+            width : 200,
+            renderCell: (params) => tableCellRender(params, "title"),
+        },
+        { 
+            field: 'description', 
+            headerName: 'Description', 
+            width : 200,
+            renderCell: (params) => tableCellRender(params, "description"),
+        },
         {
             field: '',
             headerName: 'Action',
@@ -108,6 +123,21 @@ const RolePage = () => {
             }
         }
     ]);
+
+    const tableCellRender = (params, key) => {
+    
+        var value = params?.row?.[key]
+
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
+        );
+    };
 
     const handleViewRole = (role) => {
         setSelectedRole(role);
@@ -165,7 +195,7 @@ const RolePage = () => {
                 className: "toast-success",
             });
     
-            get_details();
+            get_details(paginationCount);
     
         } catch (err) {
             let errorMessage = err.message || "Something went wrong. Please try again.";
@@ -209,10 +239,25 @@ const RolePage = () => {
 
         setLoading(true);
         try {
-            setLoading(false);
+
             const response = await api.post("/role/get_all_roles", payload);
+            setLoading(false);
     
             if (response && response.success) {
+
+                const { meta } = response;
+
+                const totalPages = meta?.totalPages;
+                const totalItems = meta?.totalItems;
+
+                if (totalPages !== null && totalPages !== undefined) {
+                    setTotalPage(totalPages);
+                }
+
+                if (totalItems !== null && totalItems !== undefined) {
+                    setTotalRecord(totalItems);
+                }
+
                 const updatedData = response.data.map((row, index) => {
                     const permissions = Object.keys(row).reduce((acc, key) => {
                         if (typeof row[key] === 'boolean') {
@@ -223,7 +268,7 @@ const RolePage = () => {
     
                     return {
                         ...row,
-                        S_No : index + 1,
+                        S_No : (page - 1) * 10 + (index + 1),
                         id: row.role_id,
                         title: row.role_title,
                         description: row.role_description,
@@ -252,71 +297,13 @@ const RolePage = () => {
         setForceTableLoad((prev) => !prev);
     };
 
-    const handleFilter = async () => {
-        // const viewTableData = { table_name: table_name};
-    
-        // setLoading(true);
-        // try {
-        //     const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
-        //     setLoading(false);
-    
-        //     if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
-        //         var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
-    
-        //         var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
-        
-        //         var getOnlyDropdown = templateFields
-        //         .filter((element) => validFilterFields.includes(element.type))
-        //         .map((field) => {
-        //             const existingField = filterDropdownObj?.find((item) => item.name === field.name);
-        //             return {
-        //                 ...field,
-        //                 history: false,
-        //                 info: false,
-        //                 required: false,
-        //                 ...(field.is_dependent === "true" && {
-        //                     options: existingField?.options ? [...existingField.options] : [],
-        //                 }),
-        //             };
-        //         });
-    
-                // const today = dayjs().format("YYYY-MM-DD");
-        
-                setfilterDropdownObj([]);
-                // if(fromDateValue == null || toDateValue === null){
-                //     setFromDateValue(today);
-                //     setToDateValue(today);
-                // }
-        
-                setShowFilterModal(true);
-        //     } else {
-        //         const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
-        //         toast.error(errorMessage, {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // } catch (error) {
-        //     setLoading(false);
-        //     if (error && error.response && error.response["data"]) {
-        //         toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // }
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
+
+    const handleFilter = async () => {        
+        setfilterDropdownObj([]);
+        setShowFilterModal(true);
     };
 
     const handleClear = () => {
@@ -386,7 +373,6 @@ const RolePage = () => {
     };
         
     useEffect(() => {
-        get_details();
         get_permissions();
         get_module();
     }, [])
@@ -523,7 +509,7 @@ const RolePage = () => {
                 className: "toast-success"
             });
     
-            get_details(); // Refresh role list after creation
+            get_details(paginationCount); // Refresh role list after creation
     
             setAddRoleData({
                 "transaction_id": "",
@@ -663,7 +649,7 @@ const RolePage = () => {
                 className: "toast-success",
             });
     
-            get_details();
+            get_details(paginationCount);
             setShowEditModal(false);
         } catch (err) {
              let errorMessage = err.message || "Something went wrong. Please try again.";
@@ -1104,10 +1090,10 @@ const RolePage = () => {
                 <TableView 
                     rows={roleRowData} 
                     columns={roleColumnData} 
-                    backBtn={tablePagination !== 1} 
-                    nextBtn={roleRowData.length === 10} 
-                    handleBack={handlePrevPage} 
-                    handleNext={handleNextPage}
+                    totalPage={totalPage} 
+                    totalRecord={totalRecord} 
+                    paginationCount={paginationCount} 
+                    handlePagination={handlePagination} 
                     getRowId={(row) => row.id} />
                 </Box>
             </Box>
