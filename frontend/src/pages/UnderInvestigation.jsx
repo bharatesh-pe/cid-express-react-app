@@ -296,7 +296,7 @@ const UnderInvestigation = () => {
             console.log("isChildMergedLoading from approval:", isChildMergedLoading);
 
             return (
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1, marginTop: '4px' }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
@@ -635,6 +635,7 @@ const UnderInvestigation = () => {
     const [moreThenTemplateTemplateFields, setMoreThenTemplateTemplateFields] = useState(null);
     const [moreThenTemplateStepperData, setMoreThenTemplateStepperData] = useState([]);
     const [moreThenTemplateInitialData, setMoreThenTemplateInitialData] = useState([]);
+    const [viewModeOnly,setViewModeOnly] = useState(false);
 
     const showNatureOfDisposal = (selectedRow) => {
         setSelectedRowData(selectedRow);
@@ -646,7 +647,7 @@ const UnderInvestigation = () => {
         setSelectedRowData(selectedRow);
         setApprovedByCourt(approved);
         setShowOrderCopy(true);
-        showNewApprovalPage();
+        showNewApprovalPage("B Report");
     }
 
     const handleNatureOfDisposalSubmit = () => {
@@ -1599,7 +1600,7 @@ const UnderInvestigation = () => {
         return;
     }
 
-    const showNewApprovalPage = async ()=>{
+    const showNewApprovalPage = async (approvalItem)=>{
 
         setLoading(true);
 
@@ -1618,6 +1619,10 @@ const UnderInvestigation = () => {
 
                 if(natureOfDisposalModal || showOrderCopy){
                     approvalItemName = "Change of Disposal Type"
+                }
+
+                if(approvalItem){
+                    approvalItemName = approvalItem
                 }
 
                 var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
@@ -2840,13 +2845,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     const updatedTableData = data.map((field, index) => {
                         const updatedField = {};
     
-                        for (const [key, val] of Object.entries(field)) {
-                            if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val);
+                        Object.keys(field).forEach((key) => {
+                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                              updatedField[key] = formatDate(field[key]);
                             } else {
-                                updatedField[key] = val;
+                              updatedField[key] = field[key];
                             }
-                        }
+                        });
     
                         return {
                             ...updatedField,
@@ -2895,6 +2900,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
             });
         }
     };
+
+    function isValidISODate(value) {
+        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
+    }
   
 
     const getActions = async () => {
@@ -3187,12 +3196,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
       var separateAttachment = attachment.split(",");
       return (
         <Box
-          mt={1}
-          sx={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            showAttachmentFileModal(type, rowData.row);
-          }}
+            sx={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: '100%' }}
+            onClick={(e) => {
+                e.stopPropagation();
+                showAttachmentFileModal(type, rowData.row);
+            }}
         >
           <Box className="Roboto attachmentTableBox">
             <span style={{ display: "flex" }}>
@@ -3624,7 +3632,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
       const payload = {
         selected_row_id: selectedIds,
-        ui_case_id: parsedAppendText[0]?.field_ui_case_id,
+        ui_case_id: selectedRow.id,
         appendText: JSON.stringify(parsedAppendText),
       };
 
@@ -3834,6 +3842,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setAddApproveFlag(false);
             setApproveTableFlag(false);
             setOtherTemplateModalOpen(false);
+          //   if (Object.keys(othersData).length > 0) {
+          //     setOtherTemplateModalOpen(false);
+          //   }
+          //   else{
+          //   setOtherTemplateModalOpen(true);
+          //   handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+
+          // }
             setApprovalSaveData({});
 
             if(selectedOtherTemplate?.field){
@@ -4097,7 +4113,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
             const processedFields = rawFields.map((field) => {
               if (
                 field.name === "field_assigned_by" &&
-                editData === true &&
                 templateData.table_name === "cid_ui_case_progress_report"
               ) {
                 return {
@@ -5082,6 +5097,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     var getTemplatePayload = {
         table_name: options.table,
         ui_case_id: selectedRow.id,
+        pt_case_id: selectedRow?.pt_case_id || null,
         limit : 10,
         page : !searchFlag ? otherTemplatesPaginationCount : 1,
         search: !searchFlag ? otherSearchValue : "",        
@@ -5119,7 +5135,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
           let showReplacePdf = false;
 
-          if (selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
+          if (selectedOtherTemplate?.table || options.table === "cid_ui_case_progress_report") {
             const anyHasPRStatus = records.some(record => record.hasFieldPrStatus === true);
           
             // Show button only if no one has PR status true
@@ -5551,8 +5567,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       options.table === "cid_ui_case_trail_monitoring" &&
                       params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
 
-
-
+                    const isViewAction = options.is_view_action === true
                     return (
                       <Box
                         sx={{
@@ -5573,6 +5588,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         </Button>
                 
                         {canEdit&& (
+                          !isViewAction && (
                             !isPdfUpdated && (
                                !isChildMergedLoading && (
                               <Button
@@ -5586,9 +5602,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 Edit
                               </Button>
                             )
-                            )
+                            ))
                           )}
                         {canDelete&& (
+                          !isViewAction && (
                             !isPdfUpdated && (
                               !isChildMergedLoading && (
                               <Button
@@ -5602,7 +5619,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 Delete
                               </Button>
                            )
-                          )
+                          ))
                         )}
                         {options.table === "cid_ui_case_trail_monitoring" && (
                           <>
@@ -5695,6 +5712,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
             await getUploadedFiles(selectedRow, options);
         }
 
+        if(options.is_view_action === true){
+          setViewModeOnly(true)
+        }
+        else{
+          setViewModeOnly(false)
+        }
         setOtherTemplateModalOpen(true);
     }
 
@@ -8826,7 +8849,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!isChildMergedLoading && (
+                    {!viewModeOnly && (
+                    !isChildMergedLoading && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -8836,7 +8860,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         >
                             Add
                         </Button>
-                    )}
+                    ))}
                     {/* )} */}
                 </Box>
               )}
@@ -10053,7 +10077,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                                 <Box>
                                   <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                    {<h4 className='form-field-heading'>Approval Date</h4>}
                                     <DemoContainer components={['DatePicker']}>
                                     <DatePicker
                                       className='selectHideHistory'

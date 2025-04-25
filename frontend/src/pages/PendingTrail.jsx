@@ -326,7 +326,7 @@ const UnderInvestigation = () => {
             };
 
             return (
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1 , marginTop: '4px' }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
@@ -358,6 +358,7 @@ const UnderInvestigation = () => {
     const [listApprovalToDate,setListApprovalToDate] =  useState(null);
     const [listApprovalFiltersDropdown,setListApprovalFiltersDropdown] =  useState([]);
     const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
+    const [viewModeOnly,setViewModeOnly] = useState(false);
 
     const handleListApprovalClear = ()=>{
         setListApprovalSearchValue('');
@@ -1356,13 +1357,13 @@ const UnderInvestigation = () => {
                     const updatedTableData = data.map((field, index) => {
                         const updatedField = {};
     
-                        for (const [key, val] of Object.entries(field)) {
-                            if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val);
+                        Object.keys(field).forEach((key) => {
+                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                              updatedField[key] = formatDate(field[key]);
                             } else {
-                                updatedField[key] = val;
+                              updatedField[key] = field[key];
                             }
-                        }
+                        });
     
                         return {
                             ...updatedField,
@@ -1410,6 +1411,10 @@ const UnderInvestigation = () => {
             });
         }
     };
+
+    function isValidISODate(value) {
+        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
+    }
 
   const tableCellRender = (key, params, value, index, tableName) => {
     if (params?.row?.attachments) {
@@ -1644,12 +1649,11 @@ const UnderInvestigation = () => {
       var separateAttachment = attachment.split(",");
       return (
         <Box
-          mt={1}
-          sx={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            showAttachmentFileModal(type, rowData.row);
-          }}
+            sx={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: '100%' }}
+            onClick={(e) => {
+                e.stopPropagation();
+                showAttachmentFileModal(type, rowData.row);
+            }}
         >
           <Box className="Roboto attachmentTableBox">
             <span style={{ display: "flex" }}>
@@ -3586,7 +3590,7 @@ const UnderInvestigation = () => {
       setSelectedRow(selectedRow);
       var getTemplatePayload = {
           table_name: options.table,
-          ui_case_id: selectedRow.id,
+          ui_case_id: selectedRow?.ui_case_id || null,
           pt_case_id: selectedRow.id,
           limit : 10,
           page : !searchFlag ? otherTemplatesPaginationCount : 1,
@@ -4025,7 +4029,7 @@ const UnderInvestigation = () => {
                         options.table === "cid_ui_case_trail_monitoring" &&
                         params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
   
-  
+                        const isViewAction = options.is_view_action === true
   
                       return (
                         <Box
@@ -4047,6 +4051,7 @@ const UnderInvestigation = () => {
                           </Button>
                   
                           {canEdit&& (
+                            !isViewAction && (
                               !isPdfUpdated && (
                                 <Button
                                   variant="contained"
@@ -4058,9 +4063,10 @@ const UnderInvestigation = () => {
                                 >
                                   Edit
                                 </Button>
-                              )
+                              ))
                             )}
                           {canDelete&& (
+                            !isViewAction && (
                               !isPdfUpdated && (
                                 <Button
                                   variant="contained"
@@ -4072,7 +4078,7 @@ const UnderInvestigation = () => {
                                 >
                                   Delete
                                 </Button>
-                            )
+                            ))
                           )}
                           {options.table === "cid_ui_case_trail_monitoring" && (
                             <>
@@ -4163,6 +4169,12 @@ const UnderInvestigation = () => {
           if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
             await checkPdfEntryStatus(selectedRow.id);
               await getUploadedFiles(selectedRow, options);
+          }
+          if(options.is_view_action === true){
+            setViewModeOnly(true)
+          }
+          else{
+            setViewModeOnly(false)
           }
   
           setOtherTemplateModalOpen(true);
@@ -6794,6 +6806,7 @@ const UnderInvestigation = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
+                    {!viewModeOnly && (
                       <Button
                         variant="outlined"
                         onClick={() => {
@@ -6802,6 +6815,7 @@ const UnderInvestigation = () => {
                       >
                         Add
                       </Button>
+                      )}
                     {/* )} */}
                   </>
                 )
@@ -7704,7 +7718,7 @@ const UnderInvestigation = () => {
        
                               <Box>
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                  {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                  {<h4 className='form-field-heading'>Approval Date</h4>}
                                   <DemoContainer components={['DatePicker']}>
                                   <DatePicker
                                     className='selectHideHistory'

@@ -434,7 +434,7 @@ const Enquiries = () => {
             };
 
             return (
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1 , marginTop: '4px' }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
@@ -466,6 +466,7 @@ const Enquiries = () => {
     const [listApprovalToDate,setListApprovalToDate] =  useState(null);
     const [listApprovalFiltersDropdown,setListApprovalFiltersDropdown] =  useState([]);
     const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
+    const [viewModeOnly,setViewModeOnly] = useState(false);
 
     const handleListApprovalClear = ()=>{
         setListApprovalSearchValue('');
@@ -1077,17 +1078,17 @@ const Enquiries = () => {
                         if (isNaN(parsed)) return value;
                         return new Date(parsed).toLocaleDateString("en-GB");
                     };
-
+  
                     const updatedTableData = data.map((field, index) => {
                         const updatedField = {};
     
-                        for (const [key, val] of Object.entries(field)) {
-                            if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val);
+                        Object.keys(field).forEach((key) => {
+                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                              updatedField[key] = formatDate(field[key]);
                             } else {
-                                updatedField[key] = val;
+                              updatedField[key] = field[key];
                             }
-                        }
+                        });
     
                         return {
                             ...updatedField,
@@ -1135,6 +1136,10 @@ const Enquiries = () => {
             });
         }
     };
+
+    function isValidISODate(value) {
+        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
+    }
 
   const tableCellRender = (key, params, value, index, tableName) => {
     if (params?.row?.attachments) {
@@ -1369,12 +1374,11 @@ const Enquiries = () => {
       var separateAttachment = attachment.split(",");
       return (
         <Box
-          mt={1}
-          sx={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            showAttachmentFileModal(type, rowData.row);
-          }}
+            sx={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: '100%' }}
+            onClick={(e) => {
+                e.stopPropagation();
+                showAttachmentFileModal(type, rowData.row);
+            }}
         >
           <Box className="Roboto attachmentTableBox">
             <span style={{ display: "flex" }}>
@@ -3064,6 +3068,7 @@ const Enquiries = () => {
                   const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
                   const canEdit = userPermissions[0]?.action_edit;
                   const canDelete = userPermissions[0]?.action_delete;  
+                  const isViewAction = options.is_view_action === true
                   return (
                     <Box
                       sx={{
@@ -3087,6 +3092,7 @@ const Enquiries = () => {
                         View
                       </Button>
                         {canEdit&& (
+                          !isViewAction && (
                           <>
                           {/* {isAuthorized && ( */}
                             <Button
@@ -3101,9 +3107,10 @@ const Enquiries = () => {
                               </Button>
                             {/* )} */}
                            </>
-                         )}
+                         ))}
                       
                         {canDelete&& (
+                          !isViewAction && (
                           <>
                           {/* {isAuthorized && ( */}
                             <Button
@@ -3121,7 +3128,7 @@ const Enquiries = () => {
                             </Button>
                           {/* )} */}
                          </>
-                        )}
+                        ))}
                      
                     </Box>
                   );
@@ -3183,6 +3190,12 @@ const Enquiries = () => {
           );
 
           setOtherTemplateData(updatedTableData);
+          if(options.is_view_action === true){
+            setViewModeOnly(true)
+          }
+          else{
+            setViewModeOnly(false)
+          }
           setOtherTemplateModalOpen(true);
         }
 
@@ -4686,6 +4699,7 @@ const Enquiries = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
+                    {!viewModeOnly && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -4695,6 +4709,7 @@ const Enquiries = () => {
                         >
                             Add
                         </Button>
+                    )}
                     {/* )} */}
                 </Box>
             </Box>
@@ -5205,7 +5220,7 @@ const Enquiries = () => {
        
 								<Box>
 								<LocalizationProvider dateAdapter={AdapterDayjs}>
-									{<h4 className='form-field-heading_date'>Approval Date</h4>}
+									{<h4 className='form-field-heading'>Approval Date</h4>}
 									<DemoContainer components={['DatePicker']}>
 									<DatePicker
 										className='selectHideHistory'
