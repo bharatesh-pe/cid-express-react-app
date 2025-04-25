@@ -748,7 +748,7 @@ exports.paginateTemplate = async (req, res) => {
       page = 1,
       limit = 10,
       sort_by = "created_at",
-      order = "ASC",
+      order = "DESC",
       search = "",
       template_module = "", // Optional admin field
     } = req.body;
@@ -775,12 +775,14 @@ exports.paginateTemplate = async (req, res) => {
     // Apply search filter
     if (search) {
       const searchConditions = [];
-      searchConditions.push({ table_name: { [Op.iLike]: `%${search}%` } });
+      searchConditions.push({ template_name: { [Op.iLike]: `%${search}%` } });
 
       if (searchConditions.length > 0) {
         whereClause[Op.or] = searchConditions;
       }
     }
+    
+    
 
     // Apply template_module filter if provided
     if (template_module) {
