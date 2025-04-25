@@ -2840,13 +2840,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     const updatedTableData = data.map((field, index) => {
                         const updatedField = {};
     
-                        for (const [key, val] of Object.entries(field)) {
-                            if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val);
+                        Object.keys(field).forEach((key) => {
+                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                              updatedField[key] = formatDate(field[key]);
                             } else {
-                                updatedField[key] = val;
+                              updatedField[key] = field[key];
                             }
-                        }
+                        });
     
                         return {
                             ...updatedField,
@@ -2895,6 +2895,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
             });
         }
     };
+
+    function isValidISODate(value) {
+        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
+    }
   
 
     const getActions = async () => {
@@ -3187,12 +3191,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
       var separateAttachment = attachment.split(",");
       return (
         <Box
-          mt={1}
-          sx={{ display: "inline-flex", alignItems: "center", gap: "4px" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            showAttachmentFileModal(type, rowData.row);
-          }}
+            sx={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: '100%' }}
+            onClick={(e) => {
+                e.stopPropagation();
+                showAttachmentFileModal(type, rowData.row);
+            }}
         >
           <Box className="Roboto attachmentTableBox">
             <span style={{ display: "flex" }}>
@@ -5082,6 +5085,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     var getTemplatePayload = {
         table_name: options.table,
         ui_case_id: selectedRow.id,
+        pt_case_id: selectedRow?.pt_case_id || null,
         limit : 10,
         page : !searchFlag ? otherTemplatesPaginationCount : 1,
         search: !searchFlag ? otherSearchValue : "",        
