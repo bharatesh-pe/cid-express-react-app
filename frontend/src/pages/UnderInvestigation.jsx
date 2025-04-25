@@ -4415,7 +4415,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     });
     normalData.sys_status = "ui_case";
     
-    showCaseApprovalPage(normalData,formData);
+    showCaseApprovalPage(normalData,formData, true);
     return;
 
     formData.append("data", JSON.stringify(normalData));
@@ -4559,9 +4559,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
     });
 
-    formData.append("data", JSON.stringify(normalData));
     formData.append("id", data.id);
+    showCaseApprovalPage(normalData,formData, false);
+    return;
     setLoading(true);
+    formData.append("data", JSON.stringify(normalData));
 
     try {
       const saveTemplateData = await api.post(
@@ -7552,7 +7554,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
-  const showCaseApprovalPage = async (caseData, formData)=>{
+  const showCaseApprovalPage = async (caseData, formData,isSave)=>{
   
           setLoading(true);
   
@@ -7563,6 +7565,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               setLoading(false);
   
               if (getActionsDetails && getActionsDetails.success) {
+                 console.log("getActionsDetails", getActionsDetails)
   
                   setApprovalItemsData(getActionsDetails.data['approval_item']);
                   setApprovalDesignationData(getActionsDetails.data['designation']);
@@ -7574,6 +7577,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   });
 
                   if(getFurtherInvestigationItems?.[0]){
+                    console.log(getFurtherInvestigationItems[0], "getFurtherInvestigationItems")
                     caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
                     setReadonlyApprovalItems(true);
                   }else{
@@ -7586,7 +7590,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       caseData : caseData,
                       formData : formData
                   });
-  
               } else {
   
                   const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
@@ -7776,6 +7779,164 @@ const loadChildMergedCasesData = async (page, caseId) => {
   
       }
 
+
+      const handleApprovalWithUpdate = async () => {
+        console.log(approvalFormData, "approvalFormData")
+        console.log("coming here only")
+        // Validate Approval Item
+        if (!approvalFormData || !approvalFormData["approval_item"]) {
+            toast.error("Please Select Approval Item!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        // Validate Designation
+        if (!approvalFormData || !approvalFormData["approved_by"]) {
+            toast.error("Please Select Designation!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        // Validate Approval Date
+        if (!approvalFormData || !approvalFormData["approval_date"]) {
+            toast.error("Please Select Approval Date!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        // Validate Remarks
+        if (!approvalFormData || !approvalFormData["remarks"]) {
+            toast.error("Please Enter Comments!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        const formData = new FormData();
+    
+        // Approval Items for action and module details
+        const approvalItems = {
+            module_name: 'Under Investigation',
+            action: 'Update Case',  // Updated action for the case update
+        };
+    
+        // Create approval data object
+        const approvalData = {
+            approval: approvalFormData,
+            approval_details: approvalItems,
+            others_table_name: table_name,  // assuming this is defined earlier
+        };
+    
+        // Add other form data to FormData
+        for (let [key, value] of approvalSaveCaseData.formData.entries()) {
+            formData.append(key, value);
+        }
+    
+        // Append the updated case data and approval data
+        formData.append("data", JSON.stringify(approvalSaveCaseData['caseData']));
+        formData.append("others_data", JSON.stringify(approvalData));
+    
+        // Generate a unique transaction ID
+        const transitionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transitionId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
+    
+        setLoading(true);
+    
+        try {
+            // Make the API request to update data with approval
+            const overallUpdateData = await api.post("/templateData/updateDataWithApprovalToTemplates", formData);
+    
+            setLoading(false);
+    
+            if (overallUpdateData && overallUpdateData.success) {
+                toast.success(overallUpdateData.message || "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        // Load the updated data based on the status
+                        if (sysStatus === "merge_cases") {
+                            loadMergedCasesData(paginationCount);  // assuming this is a function you have
+                        } else {
+                            loadTableData(paginationCount);  // assuming this is another function
+                        }
+                    },
+                });
+    
+                // Reset modal and state after success
+                setShowApprovalModal(false);
+                setApprovalSaveCaseData({});
+                setApprovalItemsData([]);
+                setApprovalDesignationData([]);
+                setApprovalSaveData({});
+            } else {
+                // Handle failure scenario
+                const errorMessage = overallUpdateData.message || "Failed to update the case. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message || "Please Try Again!", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+    
     const handleTaskShow = (rowData)=>{
 
         if(!rowData){
@@ -10206,7 +10367,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     <ApprovalModal
         open={showApprovalModal}
         onClose={() => setShowApprovalModal(false)}
-        onSave={handleApprovalWithSave}
+        onSave={handleApprovalWithUpdate}
         
         approvalItem={approvalItemsData}
         disabledApprovalItems={readonlyApprovalItems}
