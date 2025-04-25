@@ -2409,7 +2409,7 @@ const Formbuilder = () => {
                                                                         ) :
                                                                         prop === 'hide_from_ux' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                                    <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && type !== 'master') ? true : false} />
+                                                                                    <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && module !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
                                                                                         {colText}
                                                                                     </Typography>

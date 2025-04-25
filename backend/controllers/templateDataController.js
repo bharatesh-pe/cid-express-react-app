@@ -5344,6 +5344,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 
         let insertedIO = null;
         let validData = {};
+        let recordId = null;
         if(table_name  && data)
         {
             const tableData = await Template.findOne({ where: { table_name } });

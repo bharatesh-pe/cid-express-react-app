@@ -473,7 +473,18 @@ exports.user_active_deactive = async (req, res) => {
 exports.get_users = async (req, res) => {
   const excluded_role_ids = [1, 10, 21];
   try {
-    const users = await Users.findAll({
+    const {
+        page = 1,
+        limit = 10,
+        sort_by = "id",
+        order = "ASC",
+        search = "",
+        search_field = "",
+    } = req.body;
+     const { filter = {}, from_date = null, to_date = null } = req.body;
+    const fields = {};
+    const offset = (page - 1) * limit;
+    const  { rows: users, count: totalItems } = await Users.findAndCountAll({
       include: [
         {
           model: Role,
@@ -528,9 +539,14 @@ exports.get_users = async (req, res) => {
         },
       ],
       attributes: ["user_id", "role_id", "dev_status"],
+      limit,
+      offset,
     });
 
-    return res.status(200).json({ users });
+    // const totalItems = records.count;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return res.status(200).json({ users , meta: { page, limit, totalItems,totalPages, order,} });
   } catch (error) {
     console.error("Error fetching users:", error);
     return res

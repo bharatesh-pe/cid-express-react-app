@@ -14,16 +14,32 @@ const path = require("path");
 
 exports.fetch_masters_meta = async (req, res) => {
   try {
+    const {
+        page = 1,
+        limit = 5,
+        sort_by = "id",
+        order = "ASC",
+        search = "",
+        search_field = "",
+    } = req.body;
+    const { filter = {}, from_date = null, to_date = null } = req.body;
+    const fields = {};
+    const offset = (page - 1) * limit;
+
     const excluded_masters_ids = [];
 
-    const master = await MastersMeta.findAll({
+    const { rows: master, count: totalItems }  = await MastersMeta.findAndCountAll({
       where: {
         masters_meta_id: {
           [Op.notIn]: excluded_masters_ids,
         },
       },
+      limit,
+      offset,
     });
-    return res.status(200).json({ success: true, master });
+     // const totalItems = records.count;
+    const totalPages = Math.ceil(totalItems / limit);
+    return res.status(200).json({ success: true, master ,meta: { page, limit, totalItems,totalPages, order,},});
   } catch (error) {
     res.status(500).json({ error: "Internal server error" });
   }

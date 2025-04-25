@@ -9,7 +9,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from "dayjs";
-import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField} from "@mui/material";
+import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField, Tooltip} from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -36,6 +36,9 @@ import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
+import SelectField from "../components/form/Select";
+import MultiSelect from "../components/form/MultiSelect";
+import AutocompleteField from "../components/form/AutoComplete";
 
 const Circular = () => {
     const location = useLocation();
@@ -152,6 +155,19 @@ const Circular = () => {
     const [pendingSaveData, setPendingSaveData] = useState(null);
     const [pendingDeleteData, setPendingDeleteData] = useState(null);
     const [approvalPurpose, setApprovalPurpose] = useState(null);
+
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+
+    // filter states
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filterDropdownObj, setfilterDropdownObj] = useState([]);
+    const [filterValues, setFilterValues] = useState({});
+    const [fromDateValue, setFromDateValue] = useState(null);
+    const [toDateValue, setToDateValue] = useState(null);
+    const [forceTableLoad, setForceTableLoad] = useState(false);
+    const [othersFilterData, setOthersFilterData] = useState({});
+    const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
@@ -758,24 +774,24 @@ const Circular = () => {
             };
                               
 
-    useEffect(() => {
+     useEffect(() => {
         loadTableData(paginationCount);
+    }, [paginationCount, forceTableLoad])
 
-    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag])
+    const loadTableData = async (page) => {
 
-    const loadTableData = async (page, searchValue) => {
-
-        var getTemplatePayload = {
-            "page": page,
-            "limit": 10,
-            "sort_by": tableSortKey,
-            "order": tableSortOption,
-            "search": searchValue ? searchValue : '',
-            "table_name": table_name,
-            "is_starred": starFlag,
-            "is_read": readFlag,
-            "template_module": "circular"
-        }
+        const getTemplatePayload = {
+            page,
+            limit: 10,
+            sort_by: tableSortKey,
+            order: tableSortOption,
+            search: searchValue || "",
+            table_name,
+            template_module: "circular",
+            from_date: fromDateValue,
+            to_date: toDateValue,
+            filter: filterValues,
+        };
         
         setLoading(true);
 
@@ -786,8 +802,28 @@ const Circular = () => {
             if (getTemplateResponse && getTemplateResponse.success) {
                 if (getTemplateResponse.data && getTemplateResponse.data['data']) {
 
-                    if(getTemplateResponse.data['data'][0]){
+                    const { data, meta } = getTemplateResponse.data;
+
+                    const totalPages = meta?.totalPages;
+                    const totalItems = meta?.totalItems;
+    
+                    if (totalPages !== null && totalPages !== undefined) {
+                        setTotalPage(totalPages);
+                    }
+    
+                    if (totalItems !== null && totalItems !== undefined) {
+                        setTotalRecord(totalItems);
+                    }
+    
+                    if (meta?.table_name && meta?.template_name) {
+                        setTemplate_name(meta.template_name);
+                        setTable_name(meta.table_name);
+                    }
+
+                    if(data.length > 0){
                         var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info", "ui_case_id", "pt_case_id","task_unread_count"];
+
+                        const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
 
                         const updatedHeader = [
                             {
@@ -803,7 +839,7 @@ const Circular = () => {
                                     )
                                 },
                             },
-                            ...Object.keys(getTemplateResponse.data['data'][0])
+                            ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key) && key !== 'created_by') // Exclude 'created_by'
                                 .map((key) => {
                                     var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase())
@@ -813,14 +849,10 @@ const Circular = () => {
                                         headerName: updatedKeyName ? updatedKeyName : '',
                                         width: 250,
                                         resizable: true,
-                                        renderHeader: () => (
-                                            <div onClick={() => ApplySortTable(key)} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '100%' }}>
-                                                <span style={{ color: '#1D2939', fontSize: '15px', fontWeight: '500' }}>{updatedKeyName ? updatedKeyName : ''}</span>
-                                            </div>
+                                        renderHeader: (params) => (
+                                            tableHeaderRender(params, key)
                                         ),
-                                        renderCell: (params) => {
-                                            return tableCellRender(key, params, params.value)
-                                        },
+                                        renderCell: renderCellFunc(key),
                                     };
                                 }),
                             {
@@ -831,56 +863,17 @@ const Circular = () => {
                                 renderCell: (params) => {
                                     return (
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                                        <Button
-                                            style={{
-                                                background: "transparent",
-                                                border: "none",
-                                                padding: "0",
-                                                boxShadow: "none",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "6px",
-                                                color: "black",
-                                                fontSize: "14px",
-                                                textAlign: "center",
-                                                textTransform: "none",
-                                            }}
-                                            onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                >
-                                            <img src={eyes} alt="View" style={{ width: "20px", height: "20px" }}/> <span>View</span>
+                                        <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                >
+                                            {/* <img src={eyes} alt="View" style={{ width: "20px", height: "20px" }}/> */}
+                                            View
                                         </Button>
-                                        <Button
-                                            style={{
-                                                background: "transparent",
-                                                border: "none",
-                                                padding: "0",
-                                                boxShadow: "none",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "6px",
-                                                color: "black",
-                                                fontSize: "14px",
-                                                textAlign: "center",
-                                                textTransform: "none",
-                                            }}
-                                            onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                >
-                                            <img src={edit} alt="Edit" style={{ width: "20px", height: "20px" }}/> <span>Edit</span>
+                                        <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                >
+                                            {/* <img src={edit} alt="Edit" style={{ width: "20px", height: "20px" }}/> */}
+                                            Edit
                                         </Button>
-                                        <Button
-                                            style={{
-                                                background: "transparent",
-                                                border: "none",
-                                                padding: "0",
-                                                boxShadow: "none",
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "6px",
-                                                color: "Red",
-                                                fontSize: "14px",
-                                                textAlign: "center",
-                                                textTransform: "none",
-                                            }}
-                                            onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                    >
-                                            <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} /> <span>Delete</span>
+                                        <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                    >
+                                            {/* <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} /> */}
+                                            Delete
                                         </Button>
                                     </Box>
                                     );
@@ -907,41 +900,29 @@ const Circular = () => {
                         setviewTemplateTableData(updatedHeader)
                     }
 
-                    var updatedTableData = getTemplateResponse.data['data'].map((field, index) => {
 
-                        const formatDate = (fieldValue) => {
-                            if (!fieldValue || typeof fieldValue !== "string") return fieldValue;
-
-                            var dateValue = new Date(fieldValue);
-
-                            if (isNaN(dateValue.getTime()) || !fieldValue.includes("-") && !fieldValue.includes("/")) {
-                                return fieldValue;
-                            }
-
-                            if (isNaN(dateValue.getTime())) return fieldValue;
-
-                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                            var monthValue = String(dateValue.getMonth() + 1).padStart(2, "0");
-                            var yearValue = dateValue.getFullYear();
-                            return `${dayValue}/${monthValue}/${yearValue}`;
-                        };
-
+                    const formatDate = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleDateString("en-GB");
+                    };
+    
+                    const updatedTableData = data.map((field, index) => {
                         const updatedField = {};
-
+    
                         Object.keys(field).forEach((key) => {
-                            if (field[key] && key !== 'id' && !isNaN(new Date(field[key]).getTime())) {
+                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
                                 updatedField[key] = formatDate(field[key]);
                             } else {
                                 updatedField[key] = field[key];
                             }
                         });
-
+    
                         return {
                             ...updatedField,
                             sl_no: (page - 1) * 10 + (index + 1),
                             ...(field.id ? {} : { id: "unique_id_" + index }),
                         };
-
                     });
 
 
@@ -950,13 +931,6 @@ const Circular = () => {
                     setEditTemplateData(false);
                     setInitialData({});
                     setFormOpen(false)
-                }
-
-                if(getTemplateResponse.data && getTemplateResponse.data['meta']){
-                    if(getTemplateResponse.data['meta'].table_name && getTemplateResponse.data['meta'].template_name){
-                        setTemplate_name(getTemplateResponse.data['meta'].template_name);
-                        setTable_name(getTemplateResponse.data['meta'].table_name);
-                    }
                 }
 
             } else {
@@ -990,30 +964,306 @@ const Circular = () => {
         }
     }
 
-    const tableCellRender = (key, params, value) => {
+    function isValidISODate(value) {
+        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
+    }
+
+    const tableCellRender = (key, params, value, index, tableName) => {
+        if (params?.row?.attachments) {
+            var attachmentField = params.row.attachments.find(
+                (data) => data.field_name === key
+            );
+            if (attachmentField) {
+                return fileUploadTableView(key, params, params.value);
+            }
+        }
+
         let highlightColor = {};
         let onClickHandler = null;
-    
-        if (params?.row?.linked_profile_info?.[0]?.field === key) {
+
+        if (tableName && index !== null && index === 0 ) {
             highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
-            
-            onClickHandler = (event) => {event.stopPropagation();hyperLinkShow(params.row.linked_profile_info[0])};
+            onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
         }
-    
+
         return (
-            <span 
-                style={highlightColor}
-                onClick={onClickHandler}
-                className={`tableValueTextView Roboto ${
-                    params?.row && !params.row['ReadStatus'] && localStorage.getItem('authAdmin') === "false"
-                        ? 'unreadMsgText'
-                        : 'read'
-                }`}
-            >
-                {value}
-            </span>
+            <Tooltip title={value} placement="top">
+                <span
+                    style={highlightColor}
+                    onClick={onClickHandler}
+                    className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
         );
     };
+
+    const tableHeaderRender = (params, key)=>{
+        return (
+            <Tooltip title={params.colDef.headerName} arrow placement="top">
+                <Typography
+                    className="MuiDataGrid-columnHeaderTitle"
+                    noWrap
+                    sx={{
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        width: '100%',
+                        color: "#1D2939", 
+                        fontSize: "15px", 
+                        fontWeight: "500"
+                    }}
+                >
+                    {params.colDef.headerName}
+                </Typography>
+            </Tooltip>
+        )
+    }
+
+    const setFilterData = () => {
+        setPaginationCount(1);
+        setShowFilterModal(false);
+        setForceTableLoad((prev) => !prev);
+    };
+
+    const handleFilter = async () => {
+        const viewTableData = { table_name: table_name};
+    
+        setLoading(true);
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+            setLoading(false);
+    
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+                var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
+    
+                var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
+        
+                var getOnlyDropdown = templateFields
+                .filter((element) => validFilterFields.includes(element.type))
+                .map((field) => {
+                    const existingField = filterDropdownObj?.find((item) => item.name === field.name);
+                    return {
+                        ...field,
+                        history: false,
+                        info: false,
+                        required: false,
+                        ...(field.is_dependent === "true" && {
+                            options: existingField?.options ? [...existingField.options] : [],
+                        }),
+                    };
+                });
+    
+                // const today = dayjs().format("YYYY-MM-DD");
+        
+                getAllOptionsforFilter(getOnlyDropdown);
+                // if(fromDateValue == null || toDateValue === null){
+                //     setFromDateValue(today);
+                //     setToDateValue(today);
+                // }
+        
+                setShowFilterModal(true);
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to Get Template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+
+    const getAllOptionsforFilter = async (dropdownFields, others) => {
+        try {
+            setLoading(true);
+    
+            const apiCalls = dropdownFields
+            .filter((field) => field.api === "/templateData/getTemplateData" && field.table)
+            .map(async (field) => {
+                try {
+                    const response = await api.post(field.api, {table_name: field.table});
+        
+                    if (!response.data) return { id: field.id, options: [] };
+        
+                    const updatedOptions = response.data.map((templateData) => {
+                    const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                        return {
+                            name: nameKey ? templateData[nameKey] : "",
+                            code: templateData.id,
+                        };
+                    });
+        
+                    return { id: field.id, options: updatedOptions };
+                } catch (error) {
+                    return { id: field.id, options: [] };
+                }
+            });
+    
+            const results = await Promise.all(apiCalls);
+        
+            setLoading(false);
+            var updatedFieldsDropdown = dropdownFields.map((field) => {
+                const updatedField = results.find((res) => res.id === field.id);
+                return updatedField ? { ...field, options: updatedField.options } : field;
+            });
+    
+            if(others){
+                setOthersFiltersDropdown(updatedFieldsDropdown)
+            }else{
+                setfilterDropdownObj(updatedFieldsDropdown);
+            }
+    
+        } catch (error) {
+            setLoading(false);
+        }
+    };
+
+    const handleAutocomplete = (field, selectedValue, othersFilter) => {
+    
+        var updatedFormData = {}
+        var selectedFilterDropdown = []
+    
+        if(othersFilter){
+    
+            selectedFilterDropdown = othersFiltersDropdown
+            updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
+            
+            setOthersFilterData(updatedFormData);
+            
+        }else{
+    
+            selectedFilterDropdown = filterDropdownObj
+            updatedFormData = { ...filterValues, [field.name]: selectedValue };
+        
+            setFilterValues(updatedFormData);
+    
+        }
+    
+        if (field?.api && field?.table) {
+            var dependent_field = selectedFilterDropdown.filter((element) => {
+                return (
+                    element.dependent_table &&
+                    element.dependent_table.length > 0 &&
+                    element.dependent_table.includes(field.table)
+                );
+            });
+    
+            if (dependent_field && dependent_field[0] && dependent_field[0].api) {
+                var apiPayload = {};
+                if (dependent_field[0].dependent_table.length === 1) {
+
+                    const key = field.table === "users" ? "user_id" : `${field.table}_id`;
+                    apiPayload = {
+                        [key]: updatedFormData[field.name],
+                    };
+
+                } else {
+                    var dependentFields = selectedFilterDropdown.filter((element) => {
+                        return dependent_field[0].dependent_table.includes(element.table);
+                    });
+    
+                    apiPayload = dependentFields.reduce((payload, element) => {
+                        if (updatedFormData && updatedFormData[element.name]) {
+                            const key = element.table === "users" ? "user_id" : `${element.table}_id`;
+                            payload[key] = updatedFormData[element.name];
+                        }
+                        return payload;
+                    }, {});
+                }
+    
+                const callApi = async () => {
+                    setLoading(true);
+            
+                    try {
+                        var getOptionsValue = await api.post(dependent_field[0].api, apiPayload);
+                        setLoading(false);
+            
+                        var updatedOptions = [];
+            
+                        if (getOptionsValue && getOptionsValue.data) {
+                            updatedOptions = getOptionsValue.data.map((element, i) => {
+                                return {
+                                    name: element[dependent_field[0].table === "users" ? "name" : dependent_field[0].table + "_name"],
+                                    code: element[dependent_field[0].table === "users" ? "user_id" : dependent_field[0].table + "_id"],
+                                };
+                            });
+                        }
+        
+                        var userUpdateFields = {
+                            options: updatedOptions,
+                        };
+        
+        
+                        dependent_field.forEach((data) => {
+                            delete updatedFormData[data.name];
+                        });
+            
+                        if(othersFilter){
+                            setOthersFiltersDropdown(
+                                selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                            );
+                            dependent_field.map((data) => {
+                                delete othersFilterData[data.name];
+                            });
+            
+                            setOthersFilterData(updatedFormData);
+                        }else{
+                            setfilterDropdownObj(
+                                selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element )
+                            );
+                            dependent_field.map((data) => {
+                                delete filterValues[data.name];
+                            });
+            
+                            setFilterValues(updatedFormData);
+                        }
+        
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response.data) {
+                            toast.error(error.response?.data?.message || "Need dependent Fields",{
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                            return;
+                        }
+                    }
+                };
+                callApi();
+            }
+        }
+    };
+
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
 
     const hyperLinkShow = async (params)=> {
         
@@ -1159,21 +1409,33 @@ const Circular = () => {
     };
 
     const fileUploadTableView = (type, rowData, attachment) => {
-
-        if (attachment && attachment !== '') {
-            var separateAttachment = attachment.split(',');
+        if (attachment && attachment !== "") {
+            var separateAttachment = attachment.split(",");
             return (
-                <Box mt={1} sx={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }} onClick={(e) => { e.stopPropagation(); showAttachmentFileModal(type, rowData.row) }}>
-                    <Box className="Roboto attachmentTableBox">
-                        <span style={{ display: 'flex' }}>{getFileIcon(separateAttachment[0])}</span>
-                        <span className="Roboto attachmentTableName">{separateAttachment[0]}</span>
-                    </Box>
-                    {separateAttachment.length > 1 && <button className="Roboto attachmentTableBtn">{separateAttachment.length - 1}+</button>}
+                <Box
+                    sx={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: '100%' }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        showAttachmentFileModal(type, rowData.row);
+                    }}
+                >
+                <Box className="Roboto attachmentTableBox">
+                    <span style={{ display: "flex" }}>
+                        {getFileIcon(separateAttachment[0])}
+                    </span>
+                    <span className="Roboto attachmentTableName">
+                        {separateAttachment[0]}
+                    </span>
                 </Box>
-            )
+                {separateAttachment.length > 1 && (
+                    <button className="Roboto attachmentTableBtn">
+                        {separateAttachment.length - 1}+
+                    </button>
+                )}
+                </Box>
+            );
         }
-
-    }
+    };
 
     const showAttachmentFileModal = (type, row) => {
         if (row[type]) {
@@ -2046,9 +2308,12 @@ const Circular = () => {
     }
 
     const handleClear = () => {
-        setSearchValue('');
-        loadTableData(paginationCount);
-    }
+        setSearchValue("");
+        setFilterValues({});
+        setFromDateValue(null);
+        setToDateValue(null);
+        setForceTableLoad((prev) => !prev);
+    };
 
     const showIndivitualAttachment = async (attachmentName) => {
         if (showAttachmentKey['attachments'] && showAttachmentKey['attachments'].length > 0) {
@@ -2189,13 +2454,6 @@ const Circular = () => {
             }
         }
     },[])
-
-
-    // Advance filter functions
-
-    const handleFilter = ()=> {
-        console.log("hello calling func")
-    }
 
     const handleOtherTemplateActions = async (options)=>{
 
@@ -2376,13 +2634,9 @@ const defaultGovernmentOrderItem = approvalItem.find(
                             </Typography>
                         </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-
-                        {            
-                            localStorage.getItem('authAdmin') === "true" &&
-
-                            <TextFieldInput 
-                            
+                    <Box sx={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                            <TextFieldInput                         
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
@@ -2391,13 +2645,8 @@ const defaultGovernmentOrderItem = approvalItem.find(
                                     ),
                                     endAdornment: (
                                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            {searchValue && (
-                                                <IconButton sx={{ padding: 0 }} onClick={handleClear} size="small">
-                                                    <ClearIcon sx={{ color: '#475467' }} />
-                                                </IconButton>
-                                            )}
-                                            <IconButton sx={{ padding: 0, border:'1px solid #D0D5DD', borderRadius: '0' }} onClick={handleFilter}>
-                                                <FilterListIcon sx={{ color: '#475467' }} />
+                                            <IconButton sx={{ padding: "0 5px", borderRadius: "0" }} onClick={handleFilter}>
+                                                <FilterListIcon sx={{ color: "#475467" }} />
                                             </IconButton>
                                         </Box>
                                     )
@@ -2407,13 +2656,13 @@ const defaultGovernmentOrderItem = approvalItem.find(
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder='Search anything'
+                                placeholder='Search Cases'
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         e.preventDefault();
-                                        loadTableData(paginationCount, e.target.value);
+                                        setFilterData();
                                     }
                                 }}
                                 
@@ -2428,8 +2677,22 @@ const defaultGovernmentOrderItem = approvalItem.find(
                                     },
                                 }}
                             />
-
-                        }
+                            {(searchValue || fromDateValue || toDateValue ||
+                                Object.keys(filterValues).length > 0) && (
+                                <Typography
+                                    onClick={handleClear}
+                                    sx={{
+                                        fontSize: "13px",
+                                        fontWeight: "500",
+                                        textDecoration: "underline",
+                                        cursor: "pointer",
+                                    }}
+                                    mt={1}
+                                >
+                                    Clear Filter
+                                </Typography>
+                            )}
+                        </Box>
                         <Button
                             onClick={() => getTemplate(table_name)}
                             className="blueButton"
@@ -2515,7 +2778,14 @@ const defaultGovernmentOrderItem = approvalItem.find(
                 </Box>
                 }
                 <Box py={2}>
-                    <TableView  rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
+                    <TableView  
+                        rows={tableData} 
+                        columns={viewTemplateTableColumns} 
+                        totalPage={totalPage} 
+                        totalRecord={totalRecord} 
+                        paginationCount={paginationCount} 
+                        handlePagination={handlePagination} 
+                    />
                 </Box>
             </>
             {formOpen &&
@@ -2904,19 +3174,143 @@ const defaultGovernmentOrderItem = approvalItem.find(
                     </Dialog>
                   )}
             
-    <ApprovalModal
-        open={showApprovalModal}
-        onClose={() => setShowApprovalModal(false)}
-        onSave={handleApprovalWithSave}
-        
-        approvalItem={approvalItemsData}
-        disabledApprovalItems={readonlyApprovalItems}
+            <ApprovalModal
+                open={showApprovalModal}
+                onClose={() => setShowApprovalModal(false)}
+                onSave={handleApprovalWithSave}
+                
+                approvalItem={approvalItemsData}
+                disabledApprovalItems={readonlyApprovalItems}
 
-        designationData={approvalDesignationData}
-        
-        formData={approvalFormData}
-        onChange={caseApprovalOnChange}
-    />
+                designationData={approvalDesignationData}
+                
+                formData={approvalFormData}
+                onChange={caseApprovalOnChange}
+            />
+
+            {showFilterModal && (
+                <Dialog
+                    open={showFilterModal}
+                    onClose={() => setShowFilterModal(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle
+                        id="alert-dialog-title"
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                        }}
+                    >
+                        Filter
+                        <IconButton
+                            aria-label="close"
+                            onClick={() => setShowFilterModal(false)}
+                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ minWidth: "400px" }}>
+                        <DialogContentText id="alert-dialog-description">
+                        <Grid container sx={{ alignItems: "center" }}>
+                            <Grid item xs={12} md={6} p={2}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        format="DD-MM-YYYY"
+                                        sx={{
+                                            width: "100%",
+                                        }}
+                                        label="From Date"
+                                        value={fromDateValue ? dayjs(fromDateValue) : null}
+                                        onChange={(e) =>
+                                            setFromDateValue(e ? e.format("YYYY-MM-DD") : null)
+                                        }
+                                    />
+                                </LocalizationProvider>
+                            </Grid>
+
+                            <Grid item xs={12} md={6} p={2}>
+                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <DatePicker
+                                        format="DD-MM-YYYY"
+                                        sx={{
+                                            width: "100%",
+                                        }}
+                                        label="To Date"
+                                        value={toDateValue ? dayjs(toDateValue) : null}
+                                        onChange={(e) =>
+                                            setToDateValue(e ? e.format("YYYY-MM-DD") : null)
+                                        }
+                                    />
+                                </LocalizationProvider>
+                            </Grid>
+
+                            {filterDropdownObj.map((field) => {
+                                switch (field.type) {
+                                    case "dropdown":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2}>
+                                            <div className="form-field-wrapper_selectedField">
+                                                <SelectField
+                                                    key={field.id}
+                                                    field={field}
+                                                    formData={filterValues}
+                                                    onChange={(value) =>
+                                                        handleAutocomplete(field, value.target.value)
+                                                    }
+                                                />
+                                            </div>
+                                        </Grid>
+                                    );
+
+                                    case "multidropdown":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2}>
+                                            <MultiSelect
+                                                key={field.id}
+                                                field={field}
+                                                formData={filterValues}
+                                                onChange={(name, selectedCode) =>
+                                                    handleAutocomplete(field, selectedCode)
+                                                }
+                                            />
+                                        </Grid>
+                                    );
+
+                                    case "autocomplete":
+                                    return (
+                                        <Grid item xs={12} md={6} p={2}>
+                                            <AutocompleteField
+                                                key={field.id}
+                                                field={field}
+                                                formData={filterValues}
+                                                onChange={(name, selectedCode) =>
+                                                    handleAutocomplete(field, selectedCode)
+                                                }
+                                            />
+                                        </Grid>
+                                    );
+                                }
+                            })}
+                        </Grid>
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: "12px 24px" }}>
+                        <Button onClick={() => setShowFilterModal(false)}>Close</Button>
+                        <Button
+                            className="fillPrimaryBtn"
+                            sx={{ minWidth: "100px" }}
+                            onClick={() => setFilterData()}
+                        >
+                            Apply
+                        </Button>
+                    </DialogActions>
+                    </Dialog>
+                )}
 
         </Box>
     )
