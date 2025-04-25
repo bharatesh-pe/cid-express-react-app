@@ -5,6 +5,7 @@ const {
   System_Alerts,
   UsersHierarchy,
   AlertViewStatus,
+  UserDesignation,
   KGID,
   Users,
 } = require("../models");
@@ -133,6 +134,39 @@ exports.get_ui_case_approvals = async (req, res) => {
     const { case_id, approval_type , page = 1, limit = 10, sort_by = "created_at", order = "DESC", search = "", search_field = "",} = req.body;
     const { filter = {}, from_date = null, to_date = null } = req.body;
     const userId = req.user?.user_id || null;
+
+    // Fetch designations for the logged-in user
+    const userDesignations = await UserDesignation.findAll({
+    where: { user_id : userId },
+    attributes: ["designation_id"],
+    });
+    if (!userDesignations.length) {
+    return res
+        .status(404)
+        .json({ message: "User has no designations assigned" });
+    }
+    const officerDesignationIds = userDesignations.map((ud) => ud.designation_id);
+
+    // Fetch subordinates based on officer designations
+    const supervisor = await UsersHierarchy.findAll({
+        where: { officer_designation_id : { [Op.in]: officerDesignationIds } },
+        attributes: ["supervisor_designation_id"],
+    });
+    const supervisorDesignationIds = supervisor.map((sub) => sub.supervisor_designation_id);
+
+    // // Fetch subordinate user IDs if any officer designations found
+    // let subordinateUserIds = [];
+    // if (officerDesignationIds.length) {
+    // const subordinateUsers = await UserDesignation.findAll({
+    //     where: { designation_id: { [Op.in]: officerDesignationIds } },
+    //     attributes: ["user_id"],
+    // });
+    // subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+    // }
+
+    // // Combine userId with subordinates and remove duplicates
+    // const allowedUserIds = Array.from(new Set([userId, ...subordinateUserIds]));
+
     let whereCondition = {};
 
     whereCondition.status = true;
@@ -342,7 +376,11 @@ exports.get_ui_case_approvals = async (req, res) => {
     }
 
     const approval_item = await ApprovalItem.findAll();
-    const designation = await Designation.findAll();
+    const designation = await Designation.findAll(
+        {
+            where: { designation_id : { [Op.in]: supervisorDesignationIds } }
+        }
+    );
 
     const totalItems = approvals.count;
     const totalPages = Math.ceil(totalItems / limit);
