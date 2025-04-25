@@ -3834,14 +3834,15 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setOtherFormOpen(false);
             setAddApproveFlag(false);
             setApproveTableFlag(false);
-            if (Object.keys(othersData).length > 0) {
-              setOtherTemplateModalOpen(false);
-            }
-            else{
-            setOtherTemplateModalOpen(true);
-            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+            setOtherTemplateModalOpen(false);
+          //   if (Object.keys(othersData).length > 0) {
+          //     setOtherTemplateModalOpen(false);
+          //   }
+          //   else{
+          //   setOtherTemplateModalOpen(true);
+          //   handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
 
-          }
+          // }
             setApprovalSaveData({});
 
             if(selectedOtherTemplate?.field){
