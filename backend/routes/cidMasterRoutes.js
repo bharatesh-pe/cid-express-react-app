@@ -5,6 +5,7 @@ const authValidations = require('../validations/authValidations');
 const siimsDataValidations = require('../validations/siimsDataValidations');
 const adminAuthMiddleware = require('../middleware/adminAuthMiddleware');
 const userAuthMiddleware = require('../middleware/userAuthMiddleware');
+const { validate_token } = require("../helper/validations");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
 
@@ -43,7 +44,7 @@ const eitherAuthMiddleware = async (req, res, next) => {
 
 router.post('/getAllDepartment', cidMasterController.getAllDepartments)
 router.post('/getAllDesignations', cidMasterController.getAllDesignations)
-router.post('/getAllDivisions', cidMasterController.getAllDivisions)
+router.post('/getAllDivisions',  [validate_token],cidMasterController.getAllDivisions)
 router.post('/getIoUsers' , cidMasterController.getIoUsers)
 router.post('/getIoUsersBasedOnDivision' , cidMasterController.getIoUsersBasedOnDivision)
 
