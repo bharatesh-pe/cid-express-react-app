@@ -97,7 +97,7 @@ const TemplateMastersView = () => {
         navigate('/profile-data', { state: {"table_name" : row.table_name, "selected_template_id" : row.template_id, "template_name" : row.template_name ? row.template_name : '', pagination : paginationCount, selectedFields : row.fields && row.fields.length > 0 ? row.fields : [] } });
     }   
 
-    const loadTableData = async (page, searchValue)=>{
+    const loadTableData = async (page)=>{
 
         var getTemplatePayload = {
             "page" : page,

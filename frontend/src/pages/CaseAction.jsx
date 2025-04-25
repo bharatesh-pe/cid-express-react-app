@@ -999,7 +999,7 @@ const CaseActions = () => {
                             value={searchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder='Search anything'
+                            placeholder='Search actions names'
                             variant="outlined"
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
