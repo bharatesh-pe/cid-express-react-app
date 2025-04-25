@@ -41,8 +41,24 @@ const getAllDesignations = async (req, res) => {
 };
 const getAllDivisions = async (req, res) => {
     try {
+
+        const userId = req.user?.user_id || null;
+
+        // Fetch division for the logged-in user
+        const userDivision = await UsersDivision.findAll({
+            where: { user_id : userId },
+            attributes: ["division_id"],
+        });
+        
+        if (!userDivision.length) {
+            return res.status(404).json({ message: "User has no designations assigned" });
+        }
+        const userDivisions = userDivision.map((ud) => ud.division_id);
+
+
         const divisions = await Division.findAll({
             // include: [{ model: Department, as: "department" }],
+            where: { division_id : { [Op.in]: userDivisions } },
             order: [["division_name", "ASC"]]
         });
 
