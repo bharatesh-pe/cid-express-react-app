@@ -2628,9 +2628,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                     for (const [key, val] of Object.entries(field)) {
                         if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                            updatedField[key] = formatDate(val) || '-';
+                            updatedField[key] = formatDate(val);
                         } else {
-                            updatedField[key] = val || '-';
+                            updatedField[key] = val;
                         }
                     }
 
@@ -2842,9 +2842,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
     
                         for (const [key, val] of Object.entries(field)) {
                             if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val) || '-';
+                                updatedField[key] = formatDate(val);
                             } else {
-                                updatedField[key] = val || '-';
+                                updatedField[key] = val;
                             }
                         }
     
@@ -2986,7 +2986,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 onClick={onClickHandler}
                 className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
             >
-                {value}
+                {value || "-"}
             </span>
         </Tooltip>
     );
