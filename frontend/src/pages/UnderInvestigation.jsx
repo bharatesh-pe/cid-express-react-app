@@ -3625,7 +3625,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
       const payload = {
         selected_row_id: selectedIds,
-        ui_case_id: parsedAppendText[0]?.field_ui_case_id,
+        ui_case_id: selectedRow.id,
         appendText: JSON.stringify(parsedAppendText),
       };
 
@@ -3834,14 +3834,15 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setOtherFormOpen(false);
             setAddApproveFlag(false);
             setApproveTableFlag(false);
-            if (Object.keys(othersData).length > 0) {
-              setOtherTemplateModalOpen(false);
-            }
-            else{
-            setOtherTemplateModalOpen(true);
-            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+            setOtherTemplateModalOpen(false);
+          //   if (Object.keys(othersData).length > 0) {
+          //     setOtherTemplateModalOpen(false);
+          //   }
+          //   else{
+          //   setOtherTemplateModalOpen(true);
+          //   handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
 
-          }
+          // }
             setApprovalSaveData({});
 
             if(selectedOtherTemplate?.field){
@@ -4105,7 +4106,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
             const processedFields = rawFields.map((field) => {
               if (
                 field.name === "field_assigned_by" &&
-                editData === true &&
                 templateData.table_name === "cid_ui_case_progress_report"
               ) {
                 return {
@@ -5127,7 +5127,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
           let showReplacePdf = false;
 
-          if (selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
+          if (selectedOtherTemplate?.table || options.table === "cid_ui_case_progress_report") {
             const anyHasPRStatus = records.some(record => record.hasFieldPrStatus === true);
           
             // Show button only if no one has PR status true
