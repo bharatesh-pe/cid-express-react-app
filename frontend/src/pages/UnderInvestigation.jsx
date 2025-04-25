@@ -4106,7 +4106,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
             const processedFields = rawFields.map((field) => {
               if (
                 field.name === "field_assigned_by" &&
-                editData === true &&
                 templateData.table_name === "cid_ui_case_progress_report"
               ) {
                 return {
