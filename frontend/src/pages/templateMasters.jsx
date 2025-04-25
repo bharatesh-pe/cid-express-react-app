@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Typography, Button, InputAdornment, IconButton } from '@mui/material';
+import { Box, Typography, Button, InputAdornment, IconButton, Tooltip } from '@mui/material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import api from '../services/api';
 import TableView from '../components/table-view/TableView';
@@ -32,12 +32,13 @@ const TemplateMastersView = () => {
     }, [paginationCount, tableSortOption, forceTableLoad]);
 
     const columns: GridColDef[] = [
-        { field: 'sl_no', headerName: 'S.No',resizable: false},
+        { field: 'sl_no', headerName: 'S.No',resizable: false, width: 70, renderCell: (params) => tableCellRender(params, "sl_no")},
         { 
             field: 'template_name', 
             headerName: 'Table Name',
             resizable: false,
-            flex: 2,
+            width: 250,
+            renderCell: (params) => tableCellRender(params, "template_name"),
             renderHeader: () => (
                 <div onClick={()=>ApplyTableSort('table_name')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
                     <span style={{color:'#1D2939',fontSize:'15px',fontWeight:'500'}}>Template Name</span>
@@ -49,7 +50,7 @@ const TemplateMastersView = () => {
             field: '',
             headerName: 'Action',
             resizable: false,
-            flex: 3,
+            width: 100,
             renderCell: (params) => {
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
@@ -61,6 +62,21 @@ const TemplateMastersView = () => {
             }
         }
     ];
+
+    const tableCellRender = (params, key) => {
+    
+        var value = params?.row?.[key]
+
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
+        );
+    };
 
 
     const handleView = async (row) => {
