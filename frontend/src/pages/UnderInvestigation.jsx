@@ -647,7 +647,7 @@ const UnderInvestigation = () => {
         setSelectedRowData(selectedRow);
         setApprovedByCourt(approved);
         setShowOrderCopy(true);
-        showNewApprovalPage();
+        showNewApprovalPage("B Report");
     }
 
     const handleNatureOfDisposalSubmit = () => {
@@ -1600,7 +1600,7 @@ const UnderInvestigation = () => {
         return;
     }
 
-    const showNewApprovalPage = async ()=>{
+    const showNewApprovalPage = async (approvalItem)=>{
 
         setLoading(true);
 
@@ -1619,6 +1619,10 @@ const UnderInvestigation = () => {
 
                 if(natureOfDisposalModal || showOrderCopy){
                     approvalItemName = "Change of Disposal Type"
+                }
+
+                if(approvalItem){
+                    approvalItemName = approvalItem
                 }
 
                 var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
