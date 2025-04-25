@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, TextField, FormControl, Box, Typography, Radio, InputAdornment, IconButton } from '@mui/material';
+import { Button, TextField, FormControl, Box, Typography, Radio, InputAdornment, IconButton, Tooltip } from '@mui/material';
 import TableView from '../components/table-view/TableView';
 import AddIcon from '@mui/icons-material/Add';
 import Dialog from "@mui/material/Dialog";
@@ -92,13 +92,14 @@ const CreateProfile = () => {
 
     const columns: GridColDef[] = [
         {
-            field: 'sl_no', headerName: 'S.No.', resizable: false
+            field: 'sl_no', headerName: 'S.No.', resizable: false, renderCell: (params) => tableCellRender(params, "sl_no"),
         },
         { 
             field: 'template_name', 
             headerName: 'Template', 
             width: 200,
             resizable: false,
+            renderCell: (params) => tableCellRender(params, "template_name"),
             renderHeader: () => (
                 <div onClick={()=>ApplyTableSort('table_name')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
                     <span style={{color:'#1D2939',fontSize:'15px',fontWeight:'500'}}>Template</span>
@@ -117,17 +118,18 @@ const CreateProfile = () => {
                     {tableSortOption === 'ASC' ? <ASC sx={{color:'#475467',width:'18px'}} /> : <DESC sx={{color:'#475467',width:'18px'}} /> }
                 </div>
             ),
-            renderCell: (params) => {
-                return (
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                        <span style={{fontSize:'15px',fontWeight:'400'}}>
-                            {
-                                params && params.row && params.row.template_module ? changeHeaderNameModule(params.row.template_module) : ''
-                            }
-                        </span>
-                    </div>
-                )
-            }
+            renderCell: (params) => tableCellRender(params, "template_module"),
+            // renderCell: (params) => {
+            //     return (
+            //         <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
+            //             <span style={{fontSize:'15px',fontWeight:'400'}}>
+            //                 {
+            //                     params && params.row && params.row.template_module ? changeHeaderNameModule(params.row.template_module) : ''
+            //                 }
+            //             </span>
+            //         </div>
+            //     )
+            // }
         },
         // {
         //     field: 'link_module',
@@ -174,6 +176,21 @@ const CreateProfile = () => {
             }
         }
     ];
+
+    const tableCellRender = (params, key) => {
+    
+        var value = params?.row?.[key]
+
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                >
+                    {value ? key === "template_module" ? changeHeaderNameModule(value) : value : "-" }
+                </span>
+            </Tooltip>
+        );
+    };
 
     const handleTemplateEdit = async (row) => {
         if (!row || !row.table_name || row.table_name === '') {
