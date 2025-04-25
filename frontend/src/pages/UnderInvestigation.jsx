@@ -296,7 +296,7 @@ const UnderInvestigation = () => {
             console.log("isChildMergedLoading from approval:", isChildMergedLoading);
 
             return (
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1, marginTop: '4px' }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
@@ -3833,7 +3833,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setOtherFormOpen(false);
             setAddApproveFlag(false);
             setApproveTableFlag(false);
-            setOtherTemplateModalOpen(false);
+            if (Object.keys(othersData).length > 0) {
+              setOtherTemplateModalOpen(false);
+            }
+            else{
+            setOtherTemplateModalOpen(true);
+            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+
+          }
             setApprovalSaveData({});
 
             if(selectedOtherTemplate?.field){
@@ -10053,7 +10060,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                                 <Box>
                                   <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    {<h4 className='form-field-heading_date'>Approval Date</h4>}
+                                    {<h4 className='form-field-heading'>Approval Date</h4>}
                                     <DemoContainer components={['DatePicker']}>
                                     <DatePicker
                                       className='selectHideHistory'

@@ -434,7 +434,7 @@ const Enquiries = () => {
             };
 
             return (
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1 , marginTop: '4px' }}>
                     <Button variant="outlined" onClick={handleListApprovalView}>
                         View
                     </Button>
@@ -5205,7 +5205,7 @@ const Enquiries = () => {
        
 								<Box>
 								<LocalizationProvider dateAdapter={AdapterDayjs}>
-									{<h4 className='form-field-heading_date'>Approval Date</h4>}
+									{<h4 className='form-field-heading'>Approval Date</h4>}
 									<DemoContainer components={['DatePicker']}>
 									<DatePicker
 										className='selectHideHistory'
