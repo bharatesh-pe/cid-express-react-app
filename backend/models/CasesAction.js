@@ -28,10 +28,6 @@ module.exports = (sequelize, DataTypes) => {
           type: DataTypes.BOOLEAN,
           allowNull: true,
         },
-        is_view_action: {
-            type: DataTypes.BOOLEAN,
-            allowNull: true,
-          },
         permissions: {
           type: DataTypes.TEXT,
           allowNull: true,

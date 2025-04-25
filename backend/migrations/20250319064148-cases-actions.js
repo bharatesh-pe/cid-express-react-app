@@ -35,10 +35,6 @@ module.exports = {
           type: Sequelize.BOOLEAN,
           allowNull: true,
         },
-        is_view_action: {
-          type: Sequelize.BOOLEAN,
-          allowNull: true,
-        },
         permissions: {
           type: Sequelize.TEXT,
           allowNull: true,
