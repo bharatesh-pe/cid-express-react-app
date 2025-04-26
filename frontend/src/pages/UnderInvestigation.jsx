@@ -3465,28 +3465,21 @@ const loadChildMergedCasesData = async (page, caseId) => {
       if (viewTemplateResponse && viewTemplateResponse.success) {
         var caseFields = [];
         const userId = localStorage.getItem("user_id");
-
+        const userName = localStorage.getItem("username");
         var getCaseIdFields = viewTemplateResponse.data["fields"].map(
           (field) => {
 
-            if (
-              field.name === "field_assigned_by" &&
-              field.formType === "Dropdown" &&
-              field.options &&
-              Array.isArray(field.options)
-            ) {
-              const matchedOption = field.options.find(
-                (opt) => String(opt.code) === String(userId)
-              );
-              console.log("fields", field.options)
-    
-              if (matchedOption) {
-                field.defaultValue = matchedOption.code;
-                field.disabled = true;
-              } else {
-                console.warn("No matching user found in dropdown options for user_id:", userId);
+            if (field.name === "field_assigned_by" && field.formType === "Dropdown" && Array.isArray(field.options)) {
+              let matchedOption = field.options.find(opt => String(opt.code) === String(userId));
+              
+              if (!matchedOption) {
+                field.options.push({ code: userId, name: userName || `User ${userId}` });
               }
+          
+              field.defaultValue = userId;
+              field.disabled = true;
             }
+          
   
             if (field && field.table && field.table === table_name) {
               caseFields = field;
