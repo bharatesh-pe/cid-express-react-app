@@ -2624,7 +2624,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                     {
                         model: KGID,
                         as: "kgidDetails",
-                        attributes: ["kgid", "name", "mobile"],
+                        attributes: [ "name"],
                     },
                 ],
                 attributes: ["user_id"],
@@ -2660,9 +2660,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             }
         }
       }
-        
-      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the fields Mapping UV",options);
-
 
       if (type === "radio" && Array.isArray(options)) {
         radioFieldMappings[columnName] = options.reduce((acc, option) => {
