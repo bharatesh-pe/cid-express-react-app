@@ -3478,6 +3478,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               const matchedOption = field.options.find(
                 (opt) => String(opt.code) === String(userId)
               );
+              console.log("fields", field.options)
     
               if (matchedOption) {
                 field.defaultValue = matchedOption.code;
