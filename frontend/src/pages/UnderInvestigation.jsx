@@ -3465,7 +3465,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
       if (viewTemplateResponse && viewTemplateResponse.success) {
         var caseFields = [];
         const userId = localStorage.getItem("user_id");
-        const userName = localStorage.getItem("username");
         var getCaseIdFields = viewTemplateResponse.data["fields"].map(
           (field) => {
 
@@ -3473,7 +3472,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               let matchedOption = field.options.find(opt => String(opt.code) === String(userId));
               
               if (!matchedOption) {
-                field.options.push({ code: userId, name: userName || `User ${userId}` });
+                field.options.push({ code: userId, name: userId });
               }
           
               field.defaultValue = userId;
