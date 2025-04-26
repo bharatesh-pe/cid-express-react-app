@@ -41,7 +41,6 @@ const getAllDesignations = async (req, res) => {
 };
 const getAllDivisions = async (req, res) => {
     try {
-
         const userId = req.user?.user_id || null;
 
         // Fetch division for the logged-in user
@@ -72,7 +71,6 @@ const getAllDivisions = async (req, res) => {
         return adminSendResponse(res, 500, false, "Internal Server Error");
     }
 };
-
 
 const getIoUsers = async (req, res) => {
   const excluded_role_ids = [1, 10, 21];

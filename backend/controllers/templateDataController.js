@@ -9,6 +9,7 @@ const {
 	Template,
 	admin_user,
 	Users,
+    Role,
 	KGID,
 	ActivityLog,
 	Download,
@@ -28,6 +29,7 @@ const {
 	UiCaseApproval,
   UiMergedCases,
 } = require("../models");
+const excluded_role_ids = [1, 10, 21];
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 
@@ -1146,7 +1148,7 @@ exports.getTemplateData = async (req, res, next) => {
       }
     }
 
-    const validSortBy = fields[sort_by] ? sort_by : "id";
+    const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     // Fetch data with dynamic includes
     // const records = await Model.findAll({
@@ -1165,6 +1167,7 @@ exports.getTemplateData = async (req, res, next) => {
       limit,
       offset,
       include,
+      order: [[col(validSortBy), order.toUpperCase()]],
     });
 
 
@@ -2291,7 +2294,7 @@ exports.paginateTemplateData = async (req, res) => {
       }
     }
 
-    const validSortBy = fields[sort_by] ? sort_by : "id";
+    const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     const result = await DynamicTable.findAndCountAll({
       where: whereClause,
@@ -2566,7 +2569,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const fieldConfigs = {};
 
     for (const field of fieldsArray) {
-      const {
+      var {
         name: columnName,
         data_type,
         max_length,
@@ -2597,6 +2600,69 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         defaultValue: default_value || null,
         displayContent: table_display_content,
       };
+
+      if(attributes && attributes.length > 0) 
+      {
+        if(table && forign_key && attributes) {
+            attributes.push(forign_key); // Add the primary key to the attributes array
+        }
+        options = [];
+        if(table ==="users") {
+            IOData = await Users.findAll({
+                where: {dev_status: true},
+                include: [
+                    {
+                        model: Role,
+                        as: "role",
+                        attributes: ["role_id", "role_title"],
+                        where: {
+                            role_id: {
+                                [Op.notIn]: excluded_role_ids,
+                            },
+                        },
+                    },
+                    {
+                        model: KGID,
+                        as: "kgidDetails",
+                        attributes: ["kgid", "name", "mobile"],
+                    },
+                ],
+                attributes: ["user_id"],
+                raw: true,
+                nest: true,
+            });
+            if(IOData.length > 0) {
+                IOData.forEach((result) => {
+                    var code = result["user_id"];
+                    var name = result["kgidDetails"]["name"] || '';
+                    options.push({ code, name });
+                });
+            }
+        }
+        else
+        {
+            //get the table primary key value of the table
+            var query = `SELECT ${attributes}  FROM ${table}`;
+            const [results, metadata] = await sequelize.query(query);
+            if(results.length > 0) {
+                results.forEach((result) => {
+                        if(result[forign_key]) {
+                            var code = result[forign_key];
+                            var name  = '';
+                            attributes.forEach((attribute) => {
+                                if(attribute !== forign_key) {
+                                    name = result[attribute];
+                                }
+                            });
+                            options.push({ code, name });
+                        }
+                    });
+            }
+        }
+      }
+        
+      console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the fields Mapping UV",options);
+
 
       if (type === "radio" && Array.isArray(options)) {
         radioFieldMappings[columnName] = options.reduce((acc, option) => {
@@ -2887,7 +2953,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       }
     }
 
-    const validSortBy = fields[sort_by] ? sort_by : "id";
+    const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
       whereClause["sys_status"] = sys_status;
@@ -3495,6 +3561,7 @@ exports.fetchAndDownloadExcel = async (req, res) => {
 const { S3Client, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { Readable } = require("stream");
 const e = require("express");
+const { json } = require("stream/consumers");
 
 // AWS S3 Configuration
 const s3Client = new S3Client({
@@ -6386,7 +6453,7 @@ exports.getMergeParentData = async (req, res) =>
         }
         }
 
-        const validSortBy = fields[sort_by] ? sort_by : "id";
+        const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
         if (
         sys_status !== null &&
@@ -7102,7 +7169,7 @@ exports.getMergeChildData = async (req, res) =>
         }
         }
 
-        const validSortBy = fields[sort_by] ? sort_by : "id";
+        const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
         if (
         sys_status !== null &&
