@@ -406,7 +406,8 @@ const Hierarchy = () => {
                 officer_designation_id: '',
                 supervisor_designation_id: '',
             });
-            setSelectedDesignation("");
+            setSelectedDesignation(null);
+            setSelectedSupervisorDesignation(null)
             setShowRoleAddModal(false);
 
         } catch (err) {
@@ -501,6 +502,8 @@ const Hierarchy = () => {
             });
 
             get_hierarchy_details();
+            setSelectedDesignation(null);
+            setSelectedSupervisorDesignation(null)
             setShowEditModal(false);
         } catch (err) {
             let errorMessage = err.message || "Something went wrong. Please try again.";
