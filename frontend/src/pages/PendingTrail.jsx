@@ -203,6 +203,8 @@ const UnderInvestigation = () => {
   const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
 
     // on save approval modal
+    const [isFromEdit, setIsFromEdit] = useState(false);
+    const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
 
     const [showApprovalModal, setShowApprovalModal] = useState(false);
     const [approvalItemsData, setApprovalItemsData] = useState([]);
@@ -2508,144 +2510,153 @@ const UnderInvestigation = () => {
         }
     };
 
-  const otherTemplateUpdateFunc = async (data) => {
-    if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
-      toast.warning("Please Check The Template", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
-    }
-
-    if (Object.keys(data).length === 0) {
-      toast.warning("Data Is Empty Please Check Once", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
-    }
-
-    const formData = new FormData();
-
-    formData.append("table_name", selectedOtherTemplate.table);
-    var normalData = {}; // Non-file upload fields
-
-    optionFormTemplateData.forEach((field) => {
-      if (data[field.name]) {
-        if (field.type === "file" || field.type === "profilepicture") {
-          // Append file fields to formData
-          if (field.type === "file") {
-            if (Array.isArray(data[field.name])) {
+    const otherTemplateUpdateFunc = async (data) => {
+      if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
+        toast.warning("Please Check The Template", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-warning",
+        });
+        return;
+      }
+    
+      if (Object.keys(data).length === 0) {
+        toast.warning("Data Is Empty Please Check Once", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-warning",
+        });
+        return;
+      }
+    
+      const formData = new FormData();
+      let normalData = {};
+      let filteredFileArray = [];
+    
+      optionFormTemplateData.forEach((field) => {
+        if (data[field.name]) {
+          if (field.type === "file" || field.type === "profilepicture") {
+            if (field.type === "file" && Array.isArray(data[field.name])) {
               const hasFileInstance = data[field.name].some(
                 (file) => file.filename instanceof File
               );
-              var filteredArray = data[field.name].filter(
+              filteredFileArray = data[field.name].filter(
                 (file) => file.filename instanceof File
               );
+    
               if (hasFileInstance) {
                 data[field.name].forEach((file) => {
                   if (file.filename instanceof File) {
                     formData.append(field.name, file.filename);
                   }
                 });
-
-                filteredArray = filteredArray.map((obj) => {
-                  return {
-                    ...obj,
-                    filename: obj.filename["name"],
-                  };
-                });
+    
+                const folderInfo = filteredFileArray.map((file) => ({
+                  ...file,
+                  filename: file.filename.name,
+                }));
+    
                 formData.append(
                   "folder_attachment_ids",
-                  JSON.stringify(filteredArray)
+                  JSON.stringify(folderInfo)
                 );
               }
+            } else {
+              formData.append(field.name, data[field.name]);
             }
           } else {
-            formData.append(field.name, data[field.name]);
+            normalData[field.name] =
+              field.type === "checkbox" || field.type === "multidropdown"
+                ? Array.isArray(data[field.name])
+                  ? data[field.name].join(",")
+                  : data[field.name]
+                : data[field.name];
           }
-        } else {
-          // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
         }
+      });
+    
+      formData.append("table_name", selectedOtherTemplate.table);
+      formData.append("id", data.id);
+      formData.append("data", JSON.stringify(normalData));
+      formData.append("transaction_id", randomApprovalId);
+      formData.append( "user_designation_id", localStorage.getItem("designation_id") || null);
+    
+      let othersData = {};
+    
+      if (Object.keys(approvalSaveData).length > 0) {
+        const approvalDetails = {
+          id: selectedRowData.id,
+          type: 'pt_case',
+          module_name: "Pending Trail",
+          action: selectedOtherTemplate.name || "Action",
+        };
+    
+        othersData = {
+          approval: approvalSaveData,
+          approval_details: approvalDetails,
+        };
+    
+        formData.append("others_data", JSON.stringify(othersData));
       }
-    });
-
-    formData.append("data", JSON.stringify(normalData));
-    formData.append("id", data.id);
-    setLoading(true);
-
-    try {
-      const saveTemplateData = await api.post(
-        "/templateData/updateTemplateData",
-        formData
-      );
-      setLoading(false);
-
-      if (saveTemplateData && saveTemplateData.success) {
-        localStorage.removeItem(selectedOtherTemplate.name + "-formData");
-
-        toast.success(saveTemplateData.message || "Data Updated Successfully", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-success",
-          onOpen: () =>
-            handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
-        });
-
-        setOtherEditTemplateData(false);
-        setOtherReadOnlyTemplateData(false);
-
-        setTemplateApprovalData({});
-        setTemplateApproval(false);
-
-        setAddApproveFlag(false);
-        setApproveTableFlag(false);
-        setApprovalSaveData({});
-      } else {
-        const errorMessage = saveTemplateData.message
-          ? saveTemplateData.message
-          : "Failed to create the profile. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
+    
+      setLoading(true);
+    
+      try {
+        const updateRes = await api.post(
+          "/templateData/updateDataWithApprovalToTemplates",
+          formData
+        );
+        setLoading(false);
+    
+        if (updateRes && updateRes.success) {
+          toast.success(updateRes.message || "Data Updated Successfully", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+            onOpen: () =>
+              handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
+          });
+    
+          setOtherEditTemplateData(false);
+          setOtherReadOnlyTemplateData(false);
+          setTemplateApprovalData({});
+          setTemplateApproval(false);
+          setAddApproveFlag(false);
+          setApproveTableFlag(false);
+          setApprovalSaveData({});
+        } else {
+          const errorMessage =
+            updateRes.message || "Failed to update. Please try again.";
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          });
+        }
+      } catch (error) {
+        setLoading(false);
         toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
+          error?.response?.data?.message || "Update failed. Please try again.",
           {
             position: "top-right",
             autoClose: 3000,
@@ -2658,9 +2669,7 @@ const UnderInvestigation = () => {
           }
         );
       }
-    }
-  };
-
+    };
   const handleOthersTemplateDataView = async (
     rowData,
     editData,
@@ -3037,8 +3046,7 @@ const UnderInvestigation = () => {
       }
     }
   };
-
-  const onUpdateTemplateData = async (data) => {
+  const onCaseUpdateTemplateData = async (data) => {
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -3121,6 +3129,146 @@ const UnderInvestigation = () => {
     formData.append("id", data.id);
     showCaseApprovalPage(normalData,formData, false);
     return;
+
+    formData.append("data", JSON.stringify(normalData));
+    formData.append("id", data.id);
+    setLoading(true);
+
+    try {
+      const saveTemplateData = await api.post(
+        "/templateData/updateTemplateData",
+        formData
+      );
+      setLoading(false);
+
+      if (saveTemplateData && saveTemplateData.success) {
+        toast.success(saveTemplateData.message || "Data Updated Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () => loadTableData(paginationCount),
+        });
+        setApprovalSaveData({});
+      } else {
+        const errorMessage = saveTemplateData.message
+          ? saveTemplateData.message
+          : "Failed to create the profile. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
+    }
+  };
+  const onUpdateTemplateData = async (data) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    if (Object.keys(data).length === 0) {
+      toast.warning("Data Is Empty Please Check Once", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+
+    formData.append("table_name", table_name);
+    var normalData = {}; // Non-file upload fields
+
+    formTemplateData.forEach((field) => {
+      if (data[field.name]) {
+        if (field.type === "file" || field.type === "profilepicture") {
+          // Append file fields to formData
+          if (field.type === "file") {
+            if (Array.isArray(data[field.name])) {
+              const hasFileInstance = data[field.name].some(
+                (file) => file.filename instanceof File
+              );
+              var filteredArray = data[field.name].filter(
+                (file) => file.filename instanceof File
+              );
+              if (hasFileInstance) {
+                data[field.name].forEach((file) => {
+                  if (file.filename instanceof File) {
+                    formData.append(field.name, file.filename);
+                  }
+                });
+
+                filteredArray = filteredArray.map((obj) => {
+                  return {
+                    ...obj,
+                    filename: obj.filename["name"],
+                  };
+                });
+                formData.append(
+                  "folder_attachment_ids",
+                  JSON.stringify(filteredArray)
+                );
+              }
+            }
+          } else {
+            formData.append(field.name, data[field.name]);
+          }
+        } else {
+          // Add non-file fields to normalData
+          normalData[field.name] =
+            field.type === "checkbox" || field.type === "multidropdown"
+              ? Array.isArray(data[field.name])
+                ? data[field.name].join(",")
+                : data[field.name]
+              : data[field.name];
+        }
+      }
+    });
 
     formData.append("data", JSON.stringify(normalData));
     formData.append("id", data.id);
@@ -4061,9 +4209,15 @@ const UnderInvestigation = () => {
                                 <Button
                                   variant="contained"
                                   color="primary"
-                                  onClick={(event) => {
+                                  onClick={async (event) => {
                                     event.stopPropagation();
-                                    handleOthersTemplateDataView(params.row, true, options.table);
+                                    setIsFromEdit(true);
+                                    setSelectedApprovalEdit(params.row);
+                                    if (options.is_approval) {
+                                      await showApprovalPage(params.row, options);
+                                    } else {
+                                      handleOthersTemplateDataView(params.row, true, options.table);
+                                    }
                                   }}
                                 >
                                   Edit
@@ -4565,6 +4719,9 @@ const UnderInvestigation = () => {
 
     if (selectedOtherTemplate.table && selectedOtherTemplate.field) {
         showTransferToOtherDivision(selectedOtherTemplate, selectedRowData, selectedOtherTemplate.field, true);
+    }else if (isFromEdit ) {
+      handleOthersTemplateDataView(selectedApprovalEdit, true, table);
+      setIsFromEdit(false);
     }else{
         showOptionTemplate(table, true);
     }
@@ -4573,7 +4730,8 @@ const UnderInvestigation = () => {
 };
 
     const handleSaveDivisionChange = async () => {
-        if (!selectedOtherFields || !selectedOtherFields.code) {
+
+      if (!selectedOtherFields || !selectedOtherFields.code) {
             toast.error("Please Select Data !", {
                 position: "top-right",
                 autoClose: 3000,
@@ -5958,6 +6116,7 @@ const UnderInvestigation = () => {
 
 
   const showCaseApprovalPage = async (caseData, formData,isSave)=>{
+
     setIsApprovalSaveMode(isSave);
         setLoading(true);
 
@@ -5973,9 +6132,16 @@ const UnderInvestigation = () => {
                 setApprovalDesignationData(getActionsDetails.data['designation']);
 
                 var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                    if((data.name).toLowerCase() === 'case registration'){
+                  if(!isSave){
+                    if((data.name).toLowerCase() === 'case updation'){
                         return data;
                     }
+                  }
+                  else{
+                    if((data.name).toLowerCase() === 'case registration'){
+                      return data;
+                  }
+                  }
                 });
 
                 if(getFurtherInvestigationItems?.[0]){
@@ -6236,6 +6402,7 @@ const UnderInvestigation = () => {
             const formData = new FormData();
             const approvalItems = {
               id: approvalSaveCaseData.caseData.id,
+              type: 'pt_case',
                 module_name: 'Pending Trail',
                 action: 'Update Case',
             };
@@ -6623,7 +6790,7 @@ const UnderInvestigation = () => {
           template_name={template_name}
           readOnly={viewReadonly}
           editData={editTemplateData}
-          onUpdate={onUpdateTemplateData}
+          onUpdate={onCaseUpdateTemplateData}
           formConfig={formTemplateData}
           stepperData={stepperData}
           initialData={initialData}
