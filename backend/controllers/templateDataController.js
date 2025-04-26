@@ -1146,7 +1146,7 @@ exports.getTemplateData = async (req, res, next) => {
       }
     }
 
-    const validSortBy = fields[sort_by] ? sort_by : "id";
+    const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     // Fetch data with dynamic includes
     // const records = await Model.findAll({
@@ -1165,6 +1165,7 @@ exports.getTemplateData = async (req, res, next) => {
       limit,
       offset,
       include,
+      order: [[col(validSortBy), order.toUpperCase()]],
     });
 
 
@@ -2291,7 +2292,7 @@ exports.paginateTemplateData = async (req, res) => {
       }
     }
 
-    const validSortBy = fields[sort_by] ? sort_by : "id";
+    const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     const result = await DynamicTable.findAndCountAll({
       where: whereClause,
@@ -2887,7 +2888,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       }
     }
 
-    const validSortBy = fields[sort_by] ? sort_by : "id";
+    const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
       whereClause["sys_status"] = sys_status;
@@ -6386,7 +6387,7 @@ exports.getMergeParentData = async (req, res) =>
         }
         }
 
-        const validSortBy = fields[sort_by] ? sort_by : "id";
+        const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
         if (
         sys_status !== null &&
@@ -7102,7 +7103,7 @@ exports.getMergeChildData = async (req, res) =>
         }
         }
 
-        const validSortBy = fields[sort_by] ? sort_by : "id";
+        const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
         if (
         sys_status !== null &&
