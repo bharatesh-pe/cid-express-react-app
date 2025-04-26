@@ -357,9 +357,6 @@ const UnderInvestigation = () => {
         });
     };
 
-    // const handleListApprovalSearch = async () => {
-
-    // }
     const handleUpdateApproval = async () => {
         setLoading(true);
 
@@ -8028,6 +8025,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
             search: listApprovalSearchValue || "",
         };
 
+        setListApprovalTotalRecord(0);
+        setListApprovalTotalPage(0);
+
         setLoading(true);
 
         try {
@@ -10107,7 +10107,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                             if (e.key === "Enter") {
                                                 e.preventDefault();
                                                 showApprovalListPage(listApprovalCaseData);
-                                                // handleListApprovalSearch();
                                             }
                                         }}
                                         
