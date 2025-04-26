@@ -207,6 +207,7 @@ const UnderInvestigation = () => {
         { field: "approval_date", headerName: "Approval Date", width: 150 },
         { field: "remarks", headerName: "Remarks", width: 120 },
     ]);
+    const [listApprovalCaseData, setListApprovalCaseData] = useState({});
   
     const listApprovalActionColumn = {
         field: "actions",
@@ -332,14 +333,21 @@ const UnderInvestigation = () => {
     const [listApprovalToDate,setListApprovalToDate] =  useState(null);
     const [listApprovalFiltersDropdown,setListApprovalFiltersDropdown] =  useState([]);
     const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
+    const [forceListApprovalTableLoad, setForceListApprovalTableLoad] = useState(false);
+
+    useEffect(() => {
+            setListApprovalSearchValue("");
+            showApprovalListPage(listApprovalCaseData);
+    }, [forceListApprovalTableLoad]);
 
     const handleListApprovalClear = ()=>{
-        setListApprovalSearchValue('');
+        setListApprovalSearchValue("");
         setListApprovalPaginationCount(1);
         setListApprovalFromDate(null);
         setListApprovalToDate(null);
         setListApprovalFiltersDropdown([]);
         setListApprovalFilterData({});
+        setForceListApprovalTableLoad((prev) => !prev);
     }
 
     const handleListApprovalSaveData = (name, value) => {
@@ -1606,10 +1614,16 @@ const UnderInvestigation = () => {
     const showNewApprovalPage = async (approvalItem)=>{
 
         setLoading(true);
+        // var payload = {
+        //     page:listApprovalPaginationCount,
+        //     limit: 10,
+        //     search: searchValue || "",
+        // }
+
 
         try {
 
-            const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
+            const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals" );
 
             setLoading(false);
 
@@ -7748,10 +7762,15 @@ const loadChildMergedCasesData = async (page, caseId) => {
   const showCaseApprovalPage = async (caseData, formData,isSave)=>{
     setIsApprovalSaveMode(isSave);
           setLoading(true);
+        //  var payload = {
+        //     page,
+        //     limit: 10,
+        //     search: searchValue || "",
+        // }
   
           try {
   
-              const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
+              const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals" );
   
               setLoading(false);
   
@@ -8173,14 +8192,29 @@ const loadChildMergedCasesData = async (page, caseId) => {
             return [...withoutActions, listApprovalActionColumn];
         });
 
+        setListApprovalCaseData(rowData);
+
         showApprovalListPage(rowData)
 
     }
 
     const showApprovalListPage = async (approveData) => {
+        if(!approveData  || Object.keys(approveData).length === 0){
+            setListAddApproveFlag(false);
+            setListApproveTableFlag(false);
+            return;
+        }
+
+
         var payloadObj = {
             case_id: approveData.id,
+            page: listApprovalPaginationCount,
+            limit: 10,
+            search: listApprovalSearchValue || "",
         };
+
+        setListApprovalTotalRecord(0);
+        setListApprovalTotalPage(0);
 
         setLoading(true);
 
@@ -10249,7 +10283,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                             // ),
                                         }}
 
-                                        onInput={(e) => setListApprovalSearchValue(e.target.value)}
+                                        // onInput={(e) => setListApprovalSearchValue(e.target.value)}
+                                        onChange={(e) => setListApprovalSearchValue(e.target.value)}
                                         value={listApprovalSearchValue}
                                         id="tableSearch"
                                         size="small"
@@ -10259,7 +10294,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter") {
                                                 e.preventDefault();
-                                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                                                showApprovalListPage(listApprovalCaseData);
                                             }
                                         }}
                                         
@@ -10276,7 +10311,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     />
                                     {(listApprovalSearchValue || listApprovalFromDate || listApprovalToDate || Object.keys(listApprovalFilterData).length > 0) && (
                                         <Typography
-                                            onClick={handleListApprovalClear}
+                                            onClick={() => {
+                                                setListApprovalSearchValue('');
+                                                handleListApprovalClear();
+                                            }}
                                             sx={{
                                                 fontSize: "13px",
                                                 fontWeight: "500",

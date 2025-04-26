@@ -64,8 +64,8 @@ exports.get_all_roles = async (req, res) => {
      const {
         page = 1,
         limit = 5,
-        sort_by = "id",
-        order = "ASC",
+        sort_by = "role_id",
+        order = "DESC",
         search = "",
         search_field = "",
     } = req.body;
@@ -73,15 +73,33 @@ exports.get_all_roles = async (req, res) => {
     const fields = {};
     const offset = (page - 1) * limit;
     const excluded_role_ids = [1];
-    const { rows: roles, count: totalItems }  = await Role.findAndCountAll({
-      where: {
-        role_id: {
-          [Op.notIn]: excluded_role_ids,
-        },
+
+    // Build base where clause
+    const whereClause = {
+      role_id: {
+        [Op.notIn]: excluded_role_ids,
       },
+      role_title: {
+        [Op.notILike]: 'Super Admin', // exclude Super Admin role
+      },
+    };
+
+    // Add search across role_title and role_description
+    if (search && search.trim()) {
+      const trimmedSearch = search.trim();
+      whereClause[Op.or] = [
+        { role_title: { [Op.iLike]: `%${trimmedSearch}%` } },
+        { role_description: { [Op.iLike]: `%${trimmedSearch}%` } },
+      ];
+    }
+
+    const { rows: roles, count: totalItems } = await Role.findAndCountAll({
+      where: whereClause,
       limit,
       offset,
+      order: [[sort_by, order.toUpperCase()]],
     });
+
 
     if (!roles.length) {
       return res.status(404).json({

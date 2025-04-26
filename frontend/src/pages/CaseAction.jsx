@@ -1,5 +1,5 @@
 import React from 'react';
-import { Autocomplete, Box, Button, Checkbox, CircularProgress, FormControl, IconButton, InputAdornment, Radio, Switch, TextField, Typography, Tabs, Tab } from "@mui/material"
+import { Autocomplete, Box, Button, Checkbox, CircularProgress, FormControl, IconButton, InputAdornment, Radio, Switch, TextField, Typography, Tabs, Tab, Tooltip } from "@mui/material"
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from 'react-router-dom';
 import TableView from "../components/table-view/TableView";
@@ -45,29 +45,34 @@ const CaseActions = () => {
 
     const [tableData, setTableData] = useState([]);
 
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+
     const [tableColumn, setTableColumn] = useState([
-        { field: 'sl_no', headerName: 'S.No',resizable: false},
+        { field: 'sl_no', headerName: 'S.No',resizable: false, width: 70, renderCell: (params) => tableCellRender(params, "sl_no")},
         { 
             field: 'name', 
             headerName: 'Action Name',
             resizable: true,
-            flex: 1
+            width: 200,
+            renderCell: (params) => tableCellRender(params, "name")
         },
         { 
             field: 'table', 
             headerName: 'Template',
             resizable: true,
-            flex: 1
+            width: 200,
+            renderCell: (params) => tableCellRender(params, "table")
         },
         { 
             field: 'module', 
             headerName: 'Module',
             resizable: true,
-            flex: 1,
+            width: 200,
             renderCell: (params) => {
                 return (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                        <span className='tableValueTextView Roboto' style={{fontSize:'15px',fontWeight:'400'}}>
                             {
                                 params && params.row && params.row.module ? changeHeaderNameModule(params.row.module) : ''
                             }
@@ -80,11 +85,11 @@ const CaseActions = () => {
             field: 'field', 
             headerName: 'Field',
             resizable: true,
-            flex: 1,
+            width: 200,
             renderCell: (params) => {
                 return (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                        <span className='tableValueTextView Roboto' style={{fontSize:'15px',fontWeight:'400'}}>
                             {
                                 params && params.row && params.row.field ?  params.row.field.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase()) : ''
                             }
@@ -97,11 +102,11 @@ const CaseActions = () => {
             field: 'is_pdf', 
             headerName: 'PDF',
             resizable: true,
-            flex: 1,
+            width: 100,
             renderCell: (params) => {
                 return (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                        <span className='tableValueTextView Roboto' style={{fontSize:'15px',fontWeight:'400'}}>
                             {
                                 params && params.row && params.row.is_pdf ? 'True' : ''
                             }
@@ -114,11 +119,11 @@ const CaseActions = () => {
             field: 'is_approval', 
             headerName: 'Approval',
             resizable: true,
-            flex: 1,
+            width: 100,
             renderCell: (params) => {
                 return (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                        <span className='tableValueTextView Roboto' style={{fontSize:'15px',fontWeight:'400'}}>
                             {
                                 params && params.row && params.row.is_approval ? 'True' : ''
                             }
@@ -131,11 +136,11 @@ const CaseActions = () => {
             field: 'is_view_action', 
             headerName: 'View Action',
             resizable: true,
-            flex: 1,
+            width: 100,
             renderCell: (params) => {
                 return (
                     <div style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
-                        <span style={{fontSize:'15px',fontWeight:'400'}}>
+                        <span className='tableValueTextView Roboto' style={{fontSize:'15px',fontWeight:'400'}}>
                             {
                                 params && params.row && params.row.is_view_action ? 'True' : ''
                             }
@@ -148,7 +153,7 @@ const CaseActions = () => {
             field: '',
             headerName: 'Action',
             resizable: false,
-            flex : 1.5,
+            width: 200,
             renderCell: (params) => {
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
@@ -163,6 +168,21 @@ const CaseActions = () => {
             }
         }
     ]);
+
+    const tableCellRender = (params, key) => {
+    
+        var value = params?.row?.[key]
+
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
+        );
+    };
 
     const changeHeaderNameModule = (module)=>{
         switch(module){
@@ -216,6 +236,10 @@ const CaseActions = () => {
 
     },[paginationCount, forceTableLoad]);
 
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
+
     const loadTableData = async (page) => {
 
         var getTemplatePayload = {
@@ -235,7 +259,20 @@ const CaseActions = () => {
             setLoading(false);
 
 
-            if (getOverallActionData.data && getOverallActionData.data) {
+            if (getOverallActionData.success && getOverallActionData.data) {
+
+                const { meta } = getOverallActionData;
+
+                const totalPages = meta?.totalPages;
+                const totalItems = meta?.totalItems;
+
+                if (totalPages !== null && totalPages !== undefined) {
+                    setTotalPage(totalPages);
+                }
+
+                if (totalItems !== null && totalItems !== undefined) {
+                    setTotalRecord(totalItems);
+                }
 
                 if(getOverallActionData.data.length > 0){
 
@@ -925,7 +962,6 @@ const CaseActions = () => {
     ];
     const handleClear = ()=>{
         setSearchValue('');
-        loadTableData(paginationCount);
         setForceTableLoad((prev) => !prev);
     }
     const searchTableData = ()=>{
@@ -963,7 +999,7 @@ const CaseActions = () => {
                             value={searchValue}
                             id="tableSearch"
                             size="small"
-                            placeholder='Search anything'
+                            placeholder='Search Action Name '
                             variant="outlined"
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
@@ -1009,7 +1045,14 @@ const CaseActions = () => {
             </Box>
 
             <Box py={2}>
-                <TableView rows={tableData} columns={tableColumn} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10}  handleBack={handlePrevPage} handleNext={handleNextPage} />
+                <TableView 
+                    rows={tableData} 
+                    columns={tableColumn} 
+                    totalPage={totalPage} 
+                    totalRecord={totalRecord} 
+                    paginationCount={paginationCount} 
+                    handlePagination={handlePagination} 
+                />
             </Box>
 
             <Dialog

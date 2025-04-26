@@ -802,7 +802,7 @@ exports.getTemplateData = async (req, res, next) => {
     page = 1,
     limit = 5,
     sort_by = "template_id",
-    order = "ASC",
+    order = "DESC",
     search = "",
     search_field = "",
     table_name,
@@ -1899,7 +1899,7 @@ exports.paginateTemplateData = async (req, res) => {
       page = 1,
       limit = 5,
       sort_by = "template_id",
-      order = "ASC",
+      order = "DESC",
       search = "",
       search_field = "",
       table_name,
@@ -2458,7 +2458,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       page = 1,
       limit = 5,
       sort_by,
-      order = "ASC",
+      order = "DESC",
       search = "",
       search_field = "",
       template_module = "",
@@ -2911,7 +2911,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     attributesArray.push("id", "created_by", "ui_case_id", "pt_case_id");
 
     // Ensure valid sort order
-    const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "ASC";
+    const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "DESC";
 
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the whereClause and attributesArray set  UV");
     console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
@@ -5640,7 +5640,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 					}
 				}
 
-				if(!recordId) {
+                 if(!recordId) {
 					await t.rollback();
 					return userSendResponse(res, 400, false, "Record ID is required.");
 				}
@@ -5991,7 +5991,7 @@ exports.getMergeParentData = async (req, res) =>
         page = 1,
         limit = 5,
         sort_by,
-        order = "ASC",
+        order = "DESC",
         search = "",
         search_field = "",
         template_module = "",
@@ -6414,7 +6414,7 @@ exports.getMergeParentData = async (req, res) =>
         attributesArray.push("id", "created_by", "ui_case_id", "pt_case_id");
 
         // Ensure valid sort order
-        const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "ASC";
+        const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "DESC";
 
         // Run Sequelize query
         const result = await DynamicTable.findAndCountAll({
@@ -6738,7 +6738,7 @@ exports.getMergeChildData = async (req, res) =>
         page = 1,
         limit = 5,
         sort_by,
-        order = "ASC",
+        order = "DESC",
         search = "",
         search_field = "",
         template_module = "",
@@ -7130,7 +7130,7 @@ exports.getMergeChildData = async (req, res) =>
         attributesArray.push("id", "created_by", "ui_case_id", "pt_case_id");
 
         // Ensure valid sort order
-        const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "ASC";
+        const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "DESC";
 
         // Run Sequelize query
         const result = await DynamicTable.findAndCountAll({

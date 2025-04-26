@@ -474,86 +474,223 @@ exports.get_users = async (req, res) => {
   const excluded_role_ids = [1, 10, 21];
   try {
     const {
-        page = 1,
-        limit = 10,
-        sort_by = "id",
-        order = "ASC",
-        search = "",
-        search_field = "",
-    } = req.body;
-     const { filter = {}, from_date = null, to_date = null } = req.body;
-    const fields = {};
+      page = 1,
+      limit = 10,
+      sort_by = "created_at",
+      order = "DESC",
+    } = req.query;
+
     const offset = (page - 1) * limit;
-    const  { rows: users, count: totalItems } = await Users.findAndCountAll({
-      include: [
-        {
-          model: Role,
-          as: "role",
-          attributes: ["role_id", "role_title"],
-          where: {
-            role_id: {
-              [Op.notIn]: excluded_role_ids,
-            },
+
+    // Build role WHERE clause manually to avoid boolean spreading
+    const roleWhere = {
+      role_id: { [Op.notIn]: excluded_role_ids },
+    };
+
+    const include = [
+      {
+        model: Role,
+        as: "role",
+        attributes: ["role_id", "role_title"],
+        required: true,
+        where: roleWhere,
+      },
+      {
+        model: KGID,
+        as: "kgidDetails",
+        attributes: ["kgid", "name", "mobile"],
+        required: false,
+      },
+      {
+        model: UserDesignation,
+        as: "users_designations",
+        attributes: ["designation_id"],
+        required: false,
+        include: [
+          {
+            model: Designation,
+            as: "designation",
+            attributes: ["designation_name"],
           },
-        },
-        {
-          model: KGID,
-          as: "kgidDetails",
-          attributes: ["kgid", "name", "mobile"],
-        },
-        {
-          model: UserDesignation,
-          as: "users_designations",
-          attributes: ["designation_id"],
-          include: [
-            {
-              model: Designation,
-              as: "designation",
-              attributes: ["designation_name"],
-            },
-          ],
-        },
-        {
-          model: UsersDepartment,
-          as: "users_departments",
-          attributes: ["department_id"],
-          include: [
-            {
-              model: Department,
-              as: "department",
-              attributes: ["department_name"],
-            },
-          ],
-        },
-        {
-          model: UsersDivision,
-          as: "users_division",
-          attributes: ["division_id"],
-          include: [
-            {
-              model: Division,
-              as: "division",
-              attributes: ["division_name"],
-            },
-          ],
-        },
-      ],
+        ],
+      },
+      {
+        model: UsersDepartment,
+        as: "users_departments",
+        attributes: ["department_id"],
+        required: false,
+        include: [
+          {
+            model: Department,
+            as: "department",
+            attributes: ["department_name"],
+          },
+        ],
+      },
+      {
+        model: UsersDivision,
+        as: "users_division",
+        attributes: ["division_id"],
+        required: false,
+        include: [
+          {
+            model: Division,
+            as: "division",
+            attributes: ["division_name"],
+          },
+        ],
+      },
+    ];
+
+    const { rows: users, count: totalItems } = await Users.findAndCountAll({
       attributes: ["user_id", "role_id", "dev_status"],
-      limit,
-      offset,
+      include,
+      order: [[sort_by, order]],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      distinct: true,
+      subQuery: false,
     });
 
-    // const totalItems = records.count;
     const totalPages = Math.ceil(totalItems / limit);
 
-    return res.status(200).json({ users , meta: { page, limit, totalItems,totalPages, order,} });
+    return res.status(200).json({
+      users,
+      meta: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalItems,
+        totalPages,
+        order,
+      },
+    });
   } catch (error) {
     console.error("Error fetching users:", error);
-    return res
-      .status(500)
-      .json({ message: "Failed to fetch users", error: error.message });
+    return res.status(500).json({
+      message: "Failed to fetch users",
+      error: error.message,
+    });
   }
 };
+
+
+// exports.filter_users = async (req, res) => {
+//   const {
+//     searchvalue,
+//     name,
+//     kgid,
+//     role_id,
+//     mobile,
+//     department_id,
+//     division_id,
+//     designation_id,
+//     dev_status,
+//   } = req.body;
+
+//   try {
+//     console.log("Received Filters:", req.body);
+
+//     const orConditions = [];
+
+//     if (searchvalue) {
+//       orConditions.push(
+//         { "$kgidDetails.name$": { [Op.iLike]: `%${searchvalue}%` } },
+//         { "$kgidDetails.kgid$": { [Op.iLike]: `%${searchvalue}%` } },
+//         { "$kgidDetails.mobile$": { [Op.iLike]: `%${searchvalue}%` } },
+//         { "$role.role_title$": { [Op.iLike]: `%${searchvalue}%` } },
+//         { "$users_designations.designation.designation_name$": { [Op.iLike]: `%${searchvalue}%` } },
+//         { "$users_departments.department.department_name$": { [Op.iLike]: `%${searchvalue}%` } },
+//         { "$users_division.division.division_name$": { [Op.iLike]: `%${searchvalue}%` } }
+//       );
+//     }
+
+//     // if (kgid) orConditions.push({ kgid: { [Op.iLike]: `%${kgid}%` } });
+//     if (role_id) orConditions.push({ role_id });
+//     if (department_id)
+//       orConditions.push({ "$users_departments.department_id$": department_id });
+//     if (division_id)
+//       orConditions.push({ "$users_division.division_id$": division_id });
+//     if (designation_id)
+//       orConditions.push({
+//         "$users_designations.designation_id$": designation_id,
+//       });
+//     if (dev_status !== undefined) orConditions.push({ dev_status });
+//     if (kgid) {
+//       orConditions.push({ "$kgidDetails.kgid$": kgid },
+//         { "$kgidDetails.name$": name },
+//         { "$kgidDetails.mobile$": mobile }
+
+//       );
+//     }
+//     const filters = orConditions.length > 0 ? { [Op.or]: orConditions } : {}; // Apply OR condition
+
+//     console.log("Final Filters:", filters);
+//     const excluded_role_ids = [1, 10, 21];
+
+//     const users = await Users.findAll({
+//       include: [
+//         {
+//           model: Role,
+//           as: "role",
+//           attributes: ["role_id", "role_title"],
+//           where: {
+//             role_id: {
+//               [Op.notIn]: excluded_role_ids,
+//             },
+//           },
+//         },
+//         {
+//           model: KGID,
+//           as: "kgidDetails",
+//           attributes: ["kgid", "name", "mobile"],
+//         },
+//         {
+//           model: UserDesignation,
+//           as: "users_designations",
+//           attributes: ["designation_id"],
+//           include: [
+//             {
+//               model: Designation,
+//               as: "designation",
+//               attributes: ["designation_name"],
+//             },
+//           ],
+//         },
+//         {
+//           model: UsersDepartment,
+//           as: "users_departments",
+//           attributes: ["department_id"],
+//           include: [
+//             {
+//               model: Department,
+//               as: "department",
+//               attributes: ["department_name"],
+//             },
+//           ],
+//         },
+//         {
+//           model: UsersDivision,
+//           as: "users_division",
+//           attributes: ["division_id"],
+//           include: [
+//             { model: Division, as: "division", attributes: ["division_name"] },
+//           ],
+//         },
+//       ],
+//       where: filters,
+//       attributes: ["user_id", "role_id", "dev_status"],
+//     });
+
+//     return res.status(200).json({ users });
+//   } catch (error) {
+//     console.error("Error filtering users:", error);
+//     return res
+//       .status(500)
+//       .json({ message: "Failed to filter users", error: error.message });
+//   }
+// };
+
+// Function to get user management logs
 
 exports.filter_users = async (req, res) => {
   const {
@@ -566,10 +703,15 @@ exports.filter_users = async (req, res) => {
     division_id,
     designation_id,
     dev_status,
+    page = 1,
+    limit = 10,
+    sort_by = "created_at",
+    order = "DESC",
   } = req.body;
 
   try {
-    console.log("Received Filters:", req.body);
+    const offset = (page - 1) * limit;
+    const excluded_role_ids = [1, 10, 21];
 
     const orConditions = [];
 
@@ -585,30 +727,21 @@ exports.filter_users = async (req, res) => {
       );
     }
 
-    // if (kgid) orConditions.push({ kgid: { [Op.iLike]: `%${kgid}%` } });
     if (role_id) orConditions.push({ role_id });
-    if (department_id)
-      orConditions.push({ "$users_departments.department_id$": department_id });
-    if (division_id)
-      orConditions.push({ "$users_division.division_id$": division_id });
-    if (designation_id)
-      orConditions.push({
-        "$users_designations.designation_id$": designation_id,
-      });
+    if (department_id) orConditions.push({ "$users_departments.department_id$": department_id });
+    if (division_id) orConditions.push({ "$users_division.division_id$": division_id });
+    if (designation_id) orConditions.push({ "$users_designations.designation_id$": designation_id });
     if (dev_status !== undefined) orConditions.push({ dev_status });
+
     if (kgid) {
-      orConditions.push({ "$kgidDetails.kgid$": kgid },
-        { "$kgidDetails.name$": name },
-        { "$kgidDetails.mobile$": mobile }
-
-      );
+      if (kgid) orConditions.push({ "$kgidDetails.kgid$": kgid });
+      if (name) orConditions.push({ "$kgidDetails.name$": name });
+      if (mobile) orConditions.push({ "$kgidDetails.mobile$": mobile });
     }
-    const filters = orConditions.length > 0 ? { [Op.or]: orConditions } : {}; // Apply OR condition
 
-    console.log("Final Filters:", filters);
-    const excluded_role_ids = [1, 10, 21];
+    const filters = orConditions.length > 0 ? { [Op.or]: orConditions } : {};
 
-    const users = await Users.findAll({
+    const { rows: users, count: totalItems } = await Users.findAndCountAll({
       include: [
         {
           model: Role,
@@ -660,9 +793,25 @@ exports.filter_users = async (req, res) => {
       ],
       where: filters,
       attributes: ["user_id", "role_id", "dev_status"],
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      order: [[sort_by, order]],
+      distinct: true,
+      subQuery: false,
     });
 
-    return res.status(200).json({ users });
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return res.status(200).json({
+      users,
+      meta: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalItems,
+        totalPages,
+        order,
+      },
+    });
   } catch (error) {
     console.error("Error filtering users:", error);
     return res
@@ -671,7 +820,7 @@ exports.filter_users = async (req, res) => {
   }
 };
 
-// Function to get user management logs
+
 exports.get_user_management_logs = async (req, res) => {
     const { field, user_id } = req.body; // Get field and userId from query parameters
 

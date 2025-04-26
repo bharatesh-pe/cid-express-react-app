@@ -2,7 +2,7 @@ import React,{ useEffect, useState,useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
-import { Typography, InputAdornment, IconButton } from '@mui/material';
+import { Typography, InputAdornment, IconButton, Tooltip } from '@mui/material';
 import { Box, Button, } from "@mui/material";
 import ASC from '@mui/icons-material/North';
 import DESC from '@mui/icons-material/South';
@@ -30,12 +30,13 @@ const MastersView = () => {
         }
     
     const columns: GridColDef[] = [
-        { field: 'sl_no', headerName: 'S.No', resizable: false },
+        { field: 'sl_no', headerName: 'S.No', resizable: false,width: 70, renderCell: (params) => tableCellRender(params, "sl_no") },
         { 
             field: 'template_name', 
             headerName: 'Masters List',
             resizable: false,
-            flex: 2,
+            width: 250,
+            renderCell: (params) => tableCellRender(params, "template_name"),
             renderHeader: () => (
                 <div onClick={() => ApplyTableSort('table_name')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
                     <span style={{ color:'#1D2939', fontSize:'15px', fontWeight:'500' }}>Masters List</span>
@@ -47,7 +48,7 @@ const MastersView = () => {
             field: '',
             headerName: 'Action',
             resizable: false,
-            flex: 3,
+            width: 100,
             renderCell: (params) => {
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
@@ -65,6 +66,22 @@ const MastersView = () => {
             }
         }
     ];
+
+    const tableCellRender = (params, key) => {
+    
+        var value = params?.row?.[key]
+
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
+        );
+    };
+
     const ApplyTableSort = (field)=>{
         settableSortOption((prevOption) => (prevOption === 'DESC' ? 'ASC' : 'DESC'));
     }

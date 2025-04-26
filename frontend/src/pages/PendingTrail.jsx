@@ -241,6 +241,7 @@ const UnderInvestigation = () => {
         { field: "approval_date", headerName: "Approval Date", width: 150 },
         { field: "remarks", headerName: "Remarks", width: 120 },
     ]);
+    const [listApprovalCaseData, setListApprovalCaseData] = useState({});
   
     const listApprovalActionColumn = {
         field: "actions",
@@ -362,14 +363,21 @@ const UnderInvestigation = () => {
     const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
     const [viewModeOnly,setViewModeOnly] = useState(false);
     const [isApprovalSaveMode, setIsApprovalSaveMode] = useState(true);
+    const [forceListApprovalTableLoad, setForceListApprovalTableLoad] = useState(false);
+
+     useEffect(() => {
+            setListApprovalSearchValue("");
+            showApprovalListPage(listApprovalCaseData);
+    }, [forceListApprovalTableLoad]);
 
     const handleListApprovalClear = ()=>{
-        setListApprovalSearchValue('');
+        setListApprovalSearchValue("");
         setListApprovalPaginationCount(1);
         setListApprovalFromDate(null);
         setListApprovalToDate(null);
         setListApprovalFiltersDropdown([]);
         setListApprovalFilterData({});
+        setForceListApprovalTableLoad((prev) => !prev);
     }
 
     const handleListApprovalSaveData = (name, value) => {
@@ -1801,139 +1809,154 @@ const UnderInvestigation = () => {
               const withoutActions = prev.filter((col) => col.field !== "actions");
               return [...withoutActions, listApprovalActionColumn];
           });
-  
+          
+           setListApprovalCaseData(rowData);
+
           showApprovalListPage(rowData)
   
       }
 
-      const showApprovalListPage = async (approveData) => {
-              var payloadObj = {
-                  case_id: approveData.id,
-              };
-      
-              setLoading(true);
-      
-              try {
-                  const getActionsDetails = await api.post(
-                      "/ui_approval/get_ui_case_approvals",
-                      payloadObj
-                  );
-          
-                  setLoading(false);
-          
-                  if (getActionsDetails && getActionsDetails.success) {
-                      var updatedOptions = [];
-          
-                      if (getActionsDetails.data["approvals"].length > 0) {
-                          updatedOptions = getActionsDetails.data["approvals"].map(
-                              (data, index) => {
-                              const formatDate = (fieldValue) => {
-                                  if (!fieldValue || typeof fieldValue !== "string")
-                                  return fieldValue;
-              
-                                  var dateValue = new Date(fieldValue);
-              
-                                  if (
-                                  isNaN(dateValue.getTime()) ||
-                                  (!fieldValue.includes("-") && !fieldValue.includes("/"))
-                                  ) {
-                                  return fieldValue;
-                                  }
-              
-                                  if (isNaN(dateValue.getTime())) return fieldValue;
-              
-                                  var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                                  var monthValue = String(dateValue.getMonth() + 1).padStart(
-                                  2,
-                                  "0"
-                                  );
-                                  var yearValue = dateValue.getFullYear();
-                                  return `${dayValue}/${monthValue}/${yearValue}`;
-                              };
-              
-                              const updatedField = {};
-              
-                              Object.keys(data).forEach((key) => {
-                                  if (
-                                  data[key] &&
-                                  key !== "id" &&
-                                  !isNaN(new Date(data[key]).getTime())
-                                  ) {
-                                  updatedField[key] = formatDate(data[key]);
-                                  } else {
-                                  updatedField[key] = data[key];
-                                  }
-                              });
-              
-                              return {
-                                  ...updatedField,
-                                  sl_no: index + 1,
-                                  id: data.approval_id,
-                              };
-                              }
-                          );
-      
-                          const approvalMetaData = getActionsDetails.data["meta"]
-      
-                          if(approvalMetaData && approvalMetaData.totalItems && approvalMetaData.totalItems > 0){
-                              setListApprovalTotalRecord(approvalMetaData.totalItems);
-                          }
-      
-                          if(approvalMetaData && approvalMetaData.totalPages && approvalMetaData.totalPages > 0 )
-                          {
-                              setListApprovalTotalPage(approvalMetaData.totalPages)
-                          }
-      
-                      }
-          
-                      setListApprovalsData(updatedOptions);
-                      setListApprovalItem(getActionsDetails.data["approval_item"]);
-                      setListDesignationData(getActionsDetails.data["designation"]);
-          
-                      setListAddApproveFlag(false);
-                      setListApproveTableFlag(true);
-                      setListApprovalCaseNo(approveData["field_cid_crime_no./enquiry_no"] || "")
-          
-                      const randomId = `approval_${Date.now()}_${Math.floor(
-                      Math.random() * 1000
-                      )}`;
-                      setListRandomApprovalId(randomId);
-                  } else {
-                      const errorMessage = getActionsDetails.message
-                      ? getActionsDetails.message
-                      : "Failed to create the template. Please try again.";
-                      toast.error(errorMessage, {
-                      position: "top-right",
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      className: "toast-error",
-                      });
-                  }
-              } catch (error) {
-                  setLoading(false);
-                  if (error && error.response && error.response["data"]) {
-                      toast.error(
-                      error.response["data"].message
-                          ? error.response["data"].message
-                          : "Please Try Again !",
-                      {
-                          position: "top-right",
-                          autoClose: 3000,
-                          hideProgressBar: false,
-                          closeOnClick: true,
-                          pauseOnHover: true,
-                          draggable: true,
-                          progress: undefined,
-                          className: "toast-error",
-                      }
-                      );
-                  }
-              }
-          };
+    const showApprovalListPage = async (approveData) => {
+        if(!approveData  || Object.keys(approveData).length === 0){
+            setListAddApproveFlag(false);
+            setListApproveTableFlag(false);
+            return;
+        }
+
+
+        var payloadObj = {
+            case_id: approveData.id,
+            page: listApprovalPaginationCount,
+            limit: 10,
+            search: listApprovalSearchValue || "",
+        };
+
+        setListApprovalTotalRecord(0);
+        setListApprovalTotalPage(0);
+
+        setLoading(true);
+
+        try {
+            const getActionsDetails = await api.post(
+                "/ui_approval/get_ui_case_approvals",
+                payloadObj
+            );
+    
+            setLoading(false);
+    
+            if (getActionsDetails && getActionsDetails.success) {
+                var updatedOptions = [];
+    
+                if (getActionsDetails.data["approvals"].length > 0) {
+                    updatedOptions = getActionsDetails.data["approvals"].map(
+                        (data, index) => {
+                        const formatDate = (fieldValue) => {
+                            if (!fieldValue || typeof fieldValue !== "string")
+                            return fieldValue;
+        
+                            var dateValue = new Date(fieldValue);
+        
+                            if (
+                            isNaN(dateValue.getTime()) ||
+                            (!fieldValue.includes("-") && !fieldValue.includes("/"))
+                            ) {
+                            return fieldValue;
+                            }
+        
+                            if (isNaN(dateValue.getTime())) return fieldValue;
+        
+                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
+                            var monthValue = String(dateValue.getMonth() + 1).padStart(
+                            2,
+                            "0"
+                            );
+                            var yearValue = dateValue.getFullYear();
+                            return `${dayValue}/${monthValue}/${yearValue}`;
+                        };
+        
+                        const updatedField = {};
+        
+                        Object.keys(data).forEach((key) => {
+                            if (
+                            data[key] &&
+                            key !== "id" &&
+                            !isNaN(new Date(data[key]).getTime())
+                            ) {
+                            updatedField[key] = formatDate(data[key]);
+                            } else {
+                            updatedField[key] = data[key];
+                            }
+                        });
+        
+                        return {
+                            ...updatedField,
+                            sl_no: index + 1,
+                            id: data.approval_id,
+                        };
+                        }
+                    );
+
+                    const approvalMetaData = getActionsDetails.data["meta"]
+
+                    if(approvalMetaData && approvalMetaData.totalItems && approvalMetaData.totalItems > 0){
+                        setListApprovalTotalRecord(approvalMetaData.totalItems);
+                    }
+
+                    if(approvalMetaData && approvalMetaData.totalPages && approvalMetaData.totalPages > 0 )
+                    {
+                        setListApprovalTotalPage(approvalMetaData.totalPages)
+                    }
+
+                }
+    
+                setListApprovalsData(updatedOptions);
+                setListApprovalItem(getActionsDetails.data["approval_item"]);
+                setListDesignationData(getActionsDetails.data["designation"]);
+    
+                setListAddApproveFlag(false);
+                setListApproveTableFlag(true);
+                setListApprovalCaseNo(approveData["field_cid_crime_no./enquiry_no"] || "")
+    
+                const randomId = `approval_${Date.now()}_${Math.floor(
+                Math.random() * 1000
+                )}`;
+                setListRandomApprovalId(randomId);
+            } else {
+                const errorMessage = getActionsDetails.message
+                ? getActionsDetails.message
+                : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(
+                error.response["data"].message
+                    ? error.response["data"].message
+                    : "Please Try Again !",
+                {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                }
+                );
+            }
+        }
+    };
       
   const getTemplate = async (table_name) => {
     if (!table_name || table_name === "") {
@@ -7897,7 +7920,8 @@ const UnderInvestigation = () => {
                                             // ),
                                         }}
 
-                                        onInput={(e) => setListApprovalSearchValue(e.target.value)}
+                                        // onInput={(e) => setListApprovalSearchValue(e.target.value)}
+                                        onChange={(e) => setListApprovalSearchValue(e.target.value)}
                                         value={listApprovalSearchValue}
                                         id="tableSearch"
                                         size="small"
@@ -7907,7 +7931,7 @@ const UnderInvestigation = () => {
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter") {
                                                 e.preventDefault();
-                                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
+                                                showApprovalListPage(listApprovalCaseData);
                                             }
                                         }}
                                         

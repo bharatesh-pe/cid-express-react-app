@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Modal from "../components/Modal/Modal.jsx";
 import PasswordInput from "../components/password_input/password_input";
-import { Box, Checkbox, Grid } from "@mui/material";
+import { Box, Checkbox, Grid, Tooltip } from "@mui/material";
 import {
   DialogTitle,
   Table,
@@ -56,10 +56,18 @@ const UserManagement = () => {
   const [openLogDialog, setOpenLogDialog] = useState(false);
   const [LogDialogTitle, SetLogDialogTitle] = useState("");
   const [searchValue, setSearchValue] = useState(null);
+
+    const [paginationCount, setPaginationCount] = useState(1);
+    const [forceTableLoad, setForceTableLoad] = useState(false);
+
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+
   const columns = [
     {
       field: "selection",
       headerName: "",
+      width: 70,
       renderCell: (params) => (
         <Checkbox
           checked={selectedUsers.includes(params.row.id)}
@@ -71,50 +79,56 @@ const UserManagement = () => {
     {
       field: "name",
       headerName: "Name",
-      flex: 1,
+      width: 180,
       sortable: true,
+      renderCell: (params) => tableCellRender(params, "name"),
     },
     {
       field: "role",
       headerName: "Role",
-      flex: 1,
+      width: 180,
       sortable: true,
       renderCell: (params) => roleBodyTemplate(params.row),
     },
     {
       field: "kgid",
       headerName: "KGID No",
-      flex: 0.8,
+      width: 130,
       sortable: true,
+      renderCell: (params) => tableCellRender(params, "kgid"),
     },
     {
       field: "mobile",
       headerName: "Mobile No",
-      flex: 0.8,
+      width: 130,
       sortable: true,
+      renderCell: (params) => tableCellRender(params, "mobile"),
     },
     {
       field: "designation",
       headerName: "Designation",
-      flex: 0.8,
+      width: 150,
       sortable: true,
+      renderCell: (params) => tableCellRender(params, "designation"),
     },
     {
       field: "department",
       headerName: "Department",
-      flex: 0.8,
+      width: 150,
       sortable: true,
+      renderCell: (params) => tableCellRender(params, "department"),
     },
     {
       field: "division",
       headerName: "Division",
-      flex: 0.8,
+      width: 150,
       sortable: true,
+      renderCell: (params) => tableCellRender(params, "division"),
     },
     {
       field: "status",
       headerName: "Status",
-      flex: 0.8,
+      width: 100,
       sortable: true,
       renderCell: (params) => statusBodyTemplate(params.row),
     },
@@ -126,13 +140,20 @@ const UserManagement = () => {
     (currentPage + 1) * pageSize
   );
 
-  const handleNext = () => {
-    if (currentPage < totalPages - 1) setCurrentPage(currentPage + 1);
-  };
+    const tableCellRender = (params, key) => {
+    
+        var value = params?.row?.[key]
 
-  const handleBack = () => {
-    if (currentPage > 0) setCurrentPage(currentPage - 1);
-  };
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
+        );
+    };
 
   const handleSelectUser = (userId) => {
     setSelectedUsers((prevSelected) => {
@@ -216,9 +237,25 @@ const UserManagement = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+    useEffect(() => {
+        fetchUsers(paginationCount);
+    }, [paginationCount, forceTableLoad]);
+
+    const handleClear = ()=>{
+        setSearchValue('');
+        setForceTableLoad((prev) => !prev);
+    }
+
+    const searchTableData = ()=>{
+        setPaginationCount(1);
+        // setForceTableLoad((prev) => !prev);
+        handleFilters();
+        setIsFilterApplied(true);
+    }
+
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
 
   const getUsermanagementFieldLog = async (field) => {
     console.log("selected users", selectedUsers);
@@ -264,11 +301,32 @@ const UserManagement = () => {
       setLoading(false);
     }
   };
-  const fetchUsers = async () => {
+  const fetchUsers = async (page) => {
+
+    var payload = {
+        page,
+        limit: 10,
+        search: searchValue || "",
+    }
+
     setLoading(true);
     try {
-      const response = await api.get("/user/get_users");
+      const response = await api.get("/user/get_users", payload);
       const users = response.users || response.data?.users;
+
+        const { meta } = response;
+
+        const totalPages = meta?.totalPages;
+        const totalItems = meta?.totalItems;
+
+        if (totalPages !== null && totalPages !== undefined) {
+            setTotalPage(totalPages);
+        }
+
+        if (totalItems !== null && totalItems !== undefined) {
+            setTotalRecord(totalItems);
+        }
+
       if (!users || !Array.isArray(users)) {
         throw new Error("Invalid API response format: 'users' is not an array");
       }
@@ -320,21 +378,37 @@ const UserManagement = () => {
   const handleFilters = async () => {
     setLoading(true);
     try {
-      const filters = {};
-      if (searchValue) filters.searchvalue = searchValue;
-      if (newUser.name) filters.name = newUser.name;
-      if (newUser.kgid) filters.kgid = newUser.kgid;
-      if (newUser.role) filters.role_id = newUser.role;
-      if (newUser.mobile) filters.mobile = newUser.mobile;
-      if (newUser.department) filters.department_id = newUser.department;
-      if (newUser.division) filters.division_id = newUser.division;
-      if (newUser.designation) filters.designation_id = newUser.designation;
-      if (newUser.dev_status !== undefined)
+
+        const filters = {};
+        if (searchValue) filters.searchvalue = searchValue || "";
+        if (newUser.name) filters.name = newUser.name;
+        if (newUser.kgid) filters.kgid = newUser.kgid;
+        if (newUser.role) filters.role_id = newUser.role;
+        if (newUser.mobile) filters.mobile = newUser.mobile;
+        if (newUser.department) filters.department_id = newUser.department;
+        if (newUser.division) filters.division_id = newUser.division;
+        if (newUser.designation) filters.designation_id = newUser.designation;
+        if (newUser.dev_status !== undefined)
         filters.dev_status = newUser.dev_status;
+        filters.page = paginationCount;
+        filters.limit = 10;
 
      
-      const response = await api.post("/user/filter_users", filters);
-      const users = response.users || response.data?.users;
+        const response = await api.post("/user/filter_users", filters);
+        const users = response.users || response.data?.users;
+
+        const { meta } = response;
+
+        const totalPages = meta?.totalPages;
+        const totalItems = meta?.totalItems;
+
+        if (totalPages !== null && totalPages !== undefined) {
+            setTotalPage(totalPages);
+        }
+
+        if (totalItems !== null && totalItems !== undefined) {
+            setTotalRecord(totalItems);
+        }
 
       if (!users || !Array.isArray(users)) {
         toast.error("Failed to fetch filtered users.", {
@@ -383,21 +457,21 @@ const UserManagement = () => {
 
       setUsers(formattedUsers);
       setCurrentPage(0);
-      if (searchValue || Object.keys(filters).length === 0) {
+      if (Object.keys(filters).length === 0) {
         setIsFilterApplied(false);
       } else {
         setIsFilterApplied(true);
       }
       setNewUser({});
-      toast.success("Filters applied successfully!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        className: "toast-success",
-      });
+    //   toast.success("Filters applied successfully!", {
+    //     position: "top-right",
+    //     autoClose: 3000,
+    //     hideProgressBar: false,
+    //     closeOnClick: true,
+    //     pauseOnHover: true,
+    //     draggable: true,
+    //     className: "toast-success",
+    //   });
 
       setIsModalOpen(false);
       setModalTitle("Add New User");
@@ -979,7 +1053,7 @@ const UserManagement = () => {
       className="text-sm font-normal p-tag p-tag-rounded"
       style={{
         backgroundColor: "#EAECF0",
-        color: "#344054",
+        color: "#000000",
         padding: "6px 8px",
         borderRadius: "16px",
         fontFamily: "Roboto",
@@ -1157,7 +1231,7 @@ const UserManagement = () => {
                   height: "auto",
                 }}
               >
-                {users.length} profiles
+                {totalRecord} profiles
               </p>
             </div>
           </div>
@@ -1182,11 +1256,7 @@ const UserManagement = () => {
                       searchValue && (
                         <IconButton
                           sx={{ padding: 0 }}
-                          onClick={() => {
-                            setSearchValue('');
-                            setCurrentPage(0);
-                            fetchUsers();
-                          }}
+                          onClick={() => {handleClear()}}
                           size="small"
                         >
                           <ClearIcon sx={{ color: '#475467' }} />
@@ -1203,7 +1273,7 @@ const UserManagement = () => {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      handleFilters();
+                      searchTableData();
                     }
                   }}
                   sx={{
@@ -1269,7 +1339,8 @@ const UserManagement = () => {
                     },
                   }}
                   onClick={() => {
-                    fetchUsers();
+                    handleClear();
+                    // fetchUsers();
                     setIsFilterApplied(false);
                   }}
                 >
@@ -1407,10 +1478,10 @@ const UserManagement = () => {
             columns={columns}
             getRowId={(row) => row.id}
             handleRowClick={handleRowClick}
-            handleNext={handleNext}
-            handleBack={handleBack}
-            backBtn={currentPage > 0}
-            nextBtn={currentPage < totalPages - 1}
+            totalPage={totalPage} 
+            totalRecord={totalRecord} 
+            paginationCount={paginationCount} 
+            handlePagination={handlePagination} 
           />
         </Box>
       </div>

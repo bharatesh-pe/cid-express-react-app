@@ -16,9 +16,9 @@ exports.fetch_masters_meta = async (req, res) => {
   try {
     const {
         page = 1,
-        limit = 5,
+        limit = 10,
         sort_by = "id",
-        order = "ASC",
+        order = "DESC",
         search = "",
         search_field = "",
     } = req.body;

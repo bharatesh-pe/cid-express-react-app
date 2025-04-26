@@ -35,7 +35,7 @@ exports.get_overall_actions = async (req, res) => {
       ? {
           [Op.or]: [
             { name: { [Op.iLike]: `%${search.trim()}%` } },
-            { module: { [Op.iLike]: `%${search.trim()}%` } },
+            { module: { [Op.iLike]: `%${search}%` } },
             { table: { [Op.iLike]: `%${search.trim()}%` } },
           ],
         }
