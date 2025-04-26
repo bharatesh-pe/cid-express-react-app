@@ -211,7 +211,7 @@ exports.create_master_data = async (req, res) => {
 
 
       // case "Hierarchy":
-      //   const newEntry = await UsersHierarchyNew.create({
+      //    newEntry = await UsersHierarchyNew.create({
       //     supervisor_designation_id: data.supervisor_designation_id,
       //     officer_designation_id: data.officer_designation_id,
       //     created_by: data.created_by,
@@ -372,47 +372,88 @@ exports.update_master_data = async (req, res) => {
       //       .status(400)
       //       .json({ message: "Hierarchy ID is required for update." });
       //   }
-
+      
       //   const existingHierarchy = await UsersHierarchyNew.findOne({
       //     where: { users_hierarchy_id: data.hierarchy_id },
       //   });
-
+      
       //   if (!existingHierarchy) {
       //     return res.status(404).json({ message: "Hierarchy record not found." });
       //   }
-
+      
       //   const officerId = existingHierarchy.officer_designation_id;
-
-      //   await UsersHierarchyNew.destroy({
-      //     where: { officer_designation_id: officerId },
+      
+      //   const dependentOfficers = await UsersHierarchyNew.findAll({
+      //     where: { supervisor_designation_id: officerId },
+      //     attributes: ["officer_designation_id"],
+      //     group: ["officer_designation_id"],
+      //     raw: true,
       //   });
-
+      
+      //   const officersToDelete = [officerId, ...dependentOfficers.map((o) => o.officer_designation_id)];
+      
+      //   await UsersHierarchyNew.destroy({
+      //     where: {
+      //       officer_designation_id: officersToDelete,
+      //     },
+      //   });
+      
       //   await UsersHierarchyNew.create({
       //     officer_designation_id: data.officer_designation_id,
       //     supervisor_designation_id: data.supervisor_designation_id,
       //     created_by: data.created_by,
       //     created_at: new Date(),
       //   });
-
+      
       //   let currentSupervisor = data.supervisor_designation_id;
-
+      
       //   while (currentSupervisor) {
       //     const parentRecord = await UsersHierarchyNew.findOne({
       //       where: { officer_designation_id: currentSupervisor },
       //     });
-
+      
       //     if (!parentRecord) break;
-
+      
       //     await UsersHierarchyNew.create({
       //       officer_designation_id: data.officer_designation_id,
       //       supervisor_designation_id: parentRecord.supervisor_designation_id,
       //       created_by: data.created_by,
       //       created_at: new Date(),
       //     });
-
+      
       //     currentSupervisor = parentRecord.supervisor_designation_id;
       //   }
+      
+      //   for (const officer of dependentOfficers) {
+      //     await UsersHierarchyNew.create({
+      //       officer_designation_id: officer.officer_designation_id,
+      //       supervisor_designation_id: data.officer_designation_id,
+      //       created_by: data.created_by,
+      //       created_at: new Date(),
+      //     });
+      
+      //     let nextSupervisor = data.officer_designation_id;
+      
+      //     while (nextSupervisor) {
+      //       const nextParent = await UsersHierarchyNew.findOne({
+      //         where: { officer_designation_id: nextSupervisor },
+      //       });
+      
+      //       if (!nextParent) break;
+      
+      //       await UsersHierarchyNew.create({
+      //         officer_designation_id: officer.officer_designation_id,
+      //         supervisor_designation_id: nextParent.supervisor_designation_id,
+      //         created_by: data.created_by,
+      //         created_at: new Date(),
+      //       });
+      
+      //       nextSupervisor = nextParent.supervisor_designation_id;
+      //     }
+      //   }
+      
       //   break;
+      
 
 
       default:
