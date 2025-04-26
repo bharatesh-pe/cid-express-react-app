@@ -2520,7 +2520,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
 
     if (allowedUserIds.length > 0) {
-        if (template_module === "ui_case") {
+        if (template_module === "ui_case" || template_module === "_case") {
             whereClause[Op.or] = [
             { created_by_id: { [Op.in]: allowedUserIds } },
             { field_io_name: { [Op.in]: allowedUserIds } },
@@ -2951,11 +2951,28 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         });
       }
 
-      if (searchConditions.length > 0) {
-        whereClause[Op.or] = searchConditions;
-      }
+      if (template_module === "ui_case" || template_module === "pt_case") {
+        whereClause[Op.and] = [
+            {
+            [Op.or]: [
+                { created_by_id: { [Op.in]: allowedUserIds } },
+                { field_io_name: { [Op.in]: allowedUserIds } },
+            ],
+            },
+        ];
+        } else {
+        whereClause[Op.and] = [
+            { created_by_id: { [Op.in]: allowedUserIds } },
+        ];
+        }
+
+        // Then add searchConditions if any
+        if (searchConditions.length > 0) {
+        whereClause[Op.and] = [...(whereClause[Op.and] || []), { [Op.or]: searchConditions }];
+        }
     }
 
+    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the search condition UV",whereClause);
     const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
