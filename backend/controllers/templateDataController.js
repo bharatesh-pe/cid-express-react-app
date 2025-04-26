@@ -9,6 +9,7 @@ const {
 	Template,
 	admin_user,
 	Users,
+    Role,
 	KGID,
 	ActivityLog,
 	Download,
@@ -28,6 +29,7 @@ const {
 	UiCaseApproval,
   UiMergedCases,
 } = require("../models");
+const excluded_role_ids = [1, 10, 21];
 const { userSendResponse } = require("../services/userSendResponse");
 const { PDFDocument, StandardFonts, rgb } = require("pdf-lib");
 
@@ -2605,22 +2607,57 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             attributes.push(forign_key); // Add the primary key to the attributes array
         }
         options = [];
-        //get the table primary key value of the table
-        var query = `SELECT ${attributes}  FROM ${table}`;
-        const [results, metadata] = await sequelize.query(query);
-        if(results.length > 0) {
-            results.forEach((result) => {
-                    if(result[forign_key]) {
-                        var code = result[forign_key];
-                        var name  = '';
-                        attributes.forEach((attribute) => {
-                            if(attribute !== forign_key) {
-                                name = result[attribute];
-                            }
-                        });
-                        options.push({ code, name });
-                    }
+        if(table ==="users") {
+            IOData = await Users.findAll({
+                where: {dev_status: true},
+                include: [
+                    {
+                        model: Role,
+                        as: "role",
+                        attributes: ["role_id", "role_title"],
+                        where: {
+                            role_id: {
+                                [Op.notIn]: excluded_role_ids,
+                            },
+                        },
+                    },
+                    {
+                        model: KGID,
+                        as: "kgidDetails",
+                        attributes: ["kgid", "name", "mobile"],
+                    },
+                ],
+                attributes: ["user_id"],
+                raw: true,
+                nest: true,
+            });
+            if(IOData.length > 0) {
+                IOData.forEach((result) => {
+                    var code = result["user_id"];
+                    var name = result["kgidDetails"]["name"] || '';
+                    options.push({ code, name });
                 });
+            }
+        }
+        else
+        {
+            //get the table primary key value of the table
+            var query = `SELECT ${attributes}  FROM ${table}`;
+            const [results, metadata] = await sequelize.query(query);
+            if(results.length > 0) {
+                results.forEach((result) => {
+                        if(result[forign_key]) {
+                            var code = result[forign_key];
+                            var name  = '';
+                            attributes.forEach((attribute) => {
+                                if(attribute !== forign_key) {
+                                    name = result[attribute];
+                                }
+                            });
+                            options.push({ code, name });
+                        }
+                    });
+            }
         }
       }
         
