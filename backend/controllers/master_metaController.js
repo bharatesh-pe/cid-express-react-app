@@ -7,6 +7,7 @@ const {
   Division,
   ApprovalItem,
   UsersHierarchy,
+  UsersHierarchyNew,
 } = require("../models");
 const { Op } = require("sequelize");
 const fs = require("fs");
@@ -208,6 +209,37 @@ exports.create_master_data = async (req, res) => {
         });
         break;
 
+
+      // case "Hierarchy":
+      //   const newEntry = await UsersHierarchyNew.create({
+      //     supervisor_designation_id: data.supervisor_designation_id,
+      //     officer_designation_id: data.officer_designation_id,
+      //     created_by: data.created_by,
+      //     created_at: new Date(),
+      //   });
+
+      //   let currentSupervisor = data.supervisor_designation_id;
+
+      //   while (currentSupervisor) {
+      //     const parentRecord = await UsersHierarchyNew.findOne({
+      //       where: { officer_designation_id: currentSupervisor },
+      //     });
+
+      //     if (!parentRecord) {
+      //       break;
+      //     }
+      //     await UsersHierarchyNew.create({
+      //       supervisor_designation_id: parentRecord.supervisor_designation_id,
+      //       officer_designation_id: data.officer_designation_id,
+      //       created_by: data.created_by,
+      //       created_at: new Date(),
+      //     });
+
+      //     currentSupervisor = parentRecord.supervisor_designation_id;
+      //   }
+
+      //   break;
+
       default:
         return res
           .status(400)
@@ -332,6 +364,56 @@ exports.update_master_data = async (req, res) => {
           { where: whereCondition }
         );
         break;
+
+
+      // case "Hierarchy":
+      //   if (!data.hierarchy_id) {
+      //     return res
+      //       .status(400)
+      //       .json({ message: "Hierarchy ID is required for update." });
+      //   }
+
+      //   const existingHierarchy = await UsersHierarchyNew.findOne({
+      //     where: { users_hierarchy_id: data.hierarchy_id },
+      //   });
+
+      //   if (!existingHierarchy) {
+      //     return res.status(404).json({ message: "Hierarchy record not found." });
+      //   }
+
+      //   const officerId = existingHierarchy.officer_designation_id;
+
+      //   await UsersHierarchyNew.destroy({
+      //     where: { officer_designation_id: officerId },
+      //   });
+
+      //   await UsersHierarchyNew.create({
+      //     officer_designation_id: data.officer_designation_id,
+      //     supervisor_designation_id: data.supervisor_designation_id,
+      //     created_by: data.created_by,
+      //     created_at: new Date(),
+      //   });
+
+      //   let currentSupervisor = data.supervisor_designation_id;
+
+      //   while (currentSupervisor) {
+      //     const parentRecord = await UsersHierarchyNew.findOne({
+      //       where: { officer_designation_id: currentSupervisor },
+      //     });
+
+      //     if (!parentRecord) break;
+
+      //     await UsersHierarchyNew.create({
+      //       officer_designation_id: data.officer_designation_id,
+      //       supervisor_designation_id: parentRecord.supervisor_designation_id,
+      //       created_by: data.created_by,
+      //       created_at: new Date(),
+      //     });
+
+      //     currentSupervisor = parentRecord.supervisor_designation_id;
+      //   }
+      //   break;
+
 
       default:
         return res

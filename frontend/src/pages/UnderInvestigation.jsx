@@ -9958,7 +9958,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         <SelectField
                                         key={field.id}
                                         field={field}
-                                        formData={filterValues}
+                                        formData={othersFilterData}
                                         onChange={(value) =>
                                             handleAutocomplete(field, value.target.value, true)
                                         }
@@ -9973,7 +9973,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     <MultiSelect
                                         key={field.id}
                                         field={field}
-                                        formData={filterValues}
+                                        formData={othersFilterData}
                                         onChange={(name, selectedCode) =>
                                             handleAutocomplete(field, selectedCode, true)
                                         }
@@ -9987,7 +9987,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     <AutocompleteField
                                         key={field.id}
                                         field={field}
-                                        formData={filterValues}
+                                        formData={othersFilterData}
                                         onChange={(name, selectedCode) =>
                                             handleAutocomplete(field, selectedCode, true)
                                         }
