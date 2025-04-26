@@ -1658,19 +1658,19 @@ const Formbuilder = () => {
                             selectedMasterOptions.dependent_table.includes(field.table)
                         );
 
-                        if(getTableField.length === 0 || selectedMasterOptions.dependent_table.length !== getTableField.length){
-                            toast.warning('Please Check the ' + selectedMasterOptions.dependent_table.join(',') + ' Data Before Getting ' + selectedMasterOptions.table, {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-warning",
-                            });
-                            return;
-                        }
+                        // if(getTableField.length === 0 || selectedMasterOptions.dependent_table.length !== getTableField.length){
+                        //     toast.warning('Please Check the ' + selectedMasterOptions.dependent_table.join(',') + ' Data Before Getting ' + selectedMasterOptions.table, {
+                        //         position: "top-right",
+                        //         autoClose: 3000,
+                        //         hideProgressBar: false,
+                        //         closeOnClick: true,
+                        //         pauseOnHover: true,
+                        //         draggable: true,
+                        //         progress: undefined,
+                        //         className: "toast-warning",
+                        //     });
+                        //     return;
+                        // }
 
                         var emptyValue = false;
 
