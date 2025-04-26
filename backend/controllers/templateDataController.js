@@ -4,13 +4,11 @@ const db = require("../models");
 const dbConfig = require("../config/dbConfig");
 const sequelize = db.sequelize;
 const {
-	UsersHierarchy,
-	UserDesignation,
 	Template,
-	admin_user,
 	Users,
     Role,
 	KGID,
+    Division,
 	ActivityLog,
 	Download,
 	ProfileAttachment,
@@ -1241,6 +1239,14 @@ exports.getTemplateData = async (req, res, next) => {
             } catch (error) {
               console.error("Error fetching user details:", error);
             }
+          }
+
+          if(data.field_division) {
+            const division = await Division.findOne({
+              where: { division_id: data.field_division },
+              attributes: ["division_name"],
+            });
+            filteredData.field_division = division ? division.division_name : "Unknown";
           }
         }else if (table_name === "cid_ui_case_trail_monitoring") {
           filteredData = { ...data };

@@ -818,6 +818,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         }
 
                         var payloadApi = field.api
+                        console.log(field,"fields");
 
                         if((field.table === "cid_ui_case_accused" || field.table === "cid_ui_case_witness") && selectedRow && field?.particular_case_options){
 
