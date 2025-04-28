@@ -70,9 +70,13 @@ const get_module = async (req, res) => {
     );
 
     const alertNotifications = await System_Alerts.findAll({
+        
       where: {
-        created_by_designation_id: { [Op.in]: officer_designation_ids },
-        // created_by_division_id: user_division_id,
+        [Op.or]: [
+          { created_by_designation_id: { [Op.in]: officer_designation_ids } },
+          { send_to: user_id },
+          // { created_by_division_id: user_division_id }, // uncomment if needed
+        ],
       },
       order: [["created_at", "DESC"]],
     });
