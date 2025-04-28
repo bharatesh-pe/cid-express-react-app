@@ -19,6 +19,7 @@ const {
   Division,
   UserManagementLog,
   UsersHierarchy,
+  UsersHierarchyNew,
 } = require("../models");
 const { Op } = require("sequelize");
 
