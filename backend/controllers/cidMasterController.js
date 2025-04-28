@@ -409,10 +409,16 @@ const getAllKGID = async (req, res) => {
 
         var kgids = {};
 
+        //avoid the kgid 123456,12345 
         kgids = await KGID.findAll({
             // include: [{ model: Department, as: "department" }],
             order: [["created_at", "DESC"]],
-            attributes: ["id","kgid"]
+            attributes: ["id","kgid"],
+            where: {
+                kgid: {
+                    [Op.notIn]: ["123456", "12345"],
+                },
+            },
         });
 
         kgids = kgids.map(kgid => ({
