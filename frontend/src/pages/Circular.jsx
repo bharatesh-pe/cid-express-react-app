@@ -861,20 +861,27 @@ const Circular = () => {
                                 resizable: false,
                                 width: 350,
                                 renderCell: (params) => {
+                                    const userPermissions = JSON.parse(localStorage.getItem("user_permissions"));
                                     return (
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                                    {userPermissions && userPermissions[0]?.view_circular && (
                                         <Button variant="outlined" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                >
                                             {/* <img src={eyes} alt="View" style={{ width: "20px", height: "20px" }}/> */}
                                             View
                                         </Button>
+                                    )}
+                                    {userPermissions && userPermissions[0]?.edit_circular && (
                                         <Button variant="contained" color="primary" onClick={(event) => { event.stopPropagation(); handleTemplateDataView(params.row, true, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                >
                                             {/* <img src={edit} alt="Edit" style={{ width: "20px", height: "20px" }}/> */}
                                             Edit
                                         </Button>
+                                    )}
+                                    {userPermissions && userPermissions[0]?.delete_circular && (
                                         <Button variant="contained" color="error" onClick={(event) => { event.stopPropagation(); handleDeleteTemplateData(params.row, getTemplateResponse.data['meta'].table_name ? getTemplateResponse.data['meta'].table_name : '' ); }}                                                                    >
                                             {/* <img src={trash} alt="Delete" style={{ width: "20px", height: "20px" }} /> */}
                                             Delete
                                         </Button>
+                                    )}
                                     </Box>
                                     );
                                 }
@@ -2621,7 +2628,8 @@ const defaultGovernmentOrderItem = approvalItem.find(
     (item) => (item.name || "").toLowerCase() === "circular"
   );
 
-  
+const userPermissions = JSON.parse(localStorage.getItem("user_permissions"))
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -2693,6 +2701,7 @@ const defaultGovernmentOrderItem = approvalItem.find(
                                 </Typography>
                             )}
                         </Box>
+                        {userPermissions && userPermissions[0]?.create_new_circular && (
                         <Button
                             onClick={() => getTemplate(table_name)}
                             className="blueButton"
@@ -2709,6 +2718,7 @@ const defaultGovernmentOrderItem = approvalItem.find(
                             >
                             Add New
                         </Button>
+                        )}
                         {
                             localStorage.getItem('authAdmin') === "false" &&
                             <Button onClick={downloadReportModal} variant="contained" sx={{ background: '#32D583', color: '#101828', textTransform: 'none', height: '38px' }}>
