@@ -58,7 +58,7 @@ const get_module = async (req, res) => {
     });
 
     // Get officer_designation_ids under the supervisor's designations
-    const subordinates = await UsersHierarchyNew.findAll({
+    const subordinates = await UsersHierarchy.findAll({
       where: {
         supervisor_designation_id: user_designation_id,
       },
@@ -238,7 +238,7 @@ const verify_OTP = async (req, res) => {
             const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
 
             // Fetch subordinates based on supervisor designations
-            const subordinates = await UsersHierarchyNew.findAll({
+            const subordinates = await UsersHierarchy.findAll({
             where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
             attributes: ["officer_designation_id"],
             });
@@ -674,7 +674,7 @@ const get_supervisor_id = async (req, res) => {
     const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
 
     // Fetch subordinates based on supervisor designations
-    const subordinates = await UsersHierarchyNew.findAll({
+    const subordinates = await UsersHierarchy.findAll({
     where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
     attributes: ["officer_designation_id"],
     });

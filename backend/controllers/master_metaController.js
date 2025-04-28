@@ -211,7 +211,7 @@ exports.create_master_data = async (req, res) => {
 
 
       // case "Hierarchy":
-         newEntry2 = await UsersHierarchyNew.create({
+         newEntry2 = await UsersHierarchy.create({
           supervisor_designation_id: data.supervisor_designation_id,
           officer_designation_id: data.officer_designation_id,
           users_hierarchy_id: newEntry.users_hierarchy_id,
@@ -224,7 +224,7 @@ exports.create_master_data = async (req, res) => {
 
             while (currentSupervisor) {
 
-                const parentRecord = await UsersHierarchyNew.findOne({
+                const parentRecord = await UsersHierarchy.findOne({
                     where: { officer_designation_id: currentSupervisor },
                 });
 
@@ -238,7 +238,7 @@ exports.create_master_data = async (req, res) => {
                     break;
                 }
             
-                await UsersHierarchyNew.create({
+                await UsersHierarchy.create({
                     supervisor_designation_id: parentRecord.supervisor_designation_id,
                     officer_designation_id: data.officer_designation_id,
                     created_by: data.created_by,
@@ -388,7 +388,7 @@ exports.update_master_data = async (req, res) => {
       //       .json({ message: "Hierarchy ID is required for update." });
       //   }
       
-        const existingHierarchy = await UsersHierarchyNew.findOne({
+        const existingHierarchy = await UsersHierarchy.findOne({
           where: { users_hierarchy_id: data.hierarchy_id },
         });
       
@@ -397,7 +397,7 @@ exports.update_master_data = async (req, res) => {
         //   return res.status(404).json({ message: "Hierarchy record not found." });
             const officerId = existingHierarchy.officer_designation_id;
         
-            const dependentOfficers = await UsersHierarchyNew.findAll({
+            const dependentOfficers = await UsersHierarchy.findAll({
             where: { supervisor_designation_id: officerId },
             attributes: ["officer_designation_id"],
             group: ["officer_designation_id"],
@@ -406,7 +406,7 @@ exports.update_master_data = async (req, res) => {
         
             const officersToDelete = [officerId, ...dependentOfficers.map((o) => o.officer_designation_id)];
         
-            await UsersHierarchyNew.destroy({
+            await UsersHierarchy.destroy({
             where: {
                 officer_designation_id: officersToDelete,
             },
@@ -414,7 +414,7 @@ exports.update_master_data = async (req, res) => {
         }
       
       
-        await UsersHierarchyNew.create({
+        await UsersHierarchy.create({
           officer_designation_id: data.officer_designation_id,
           supervisor_designation_id: data.supervisor_designation_id,
           created_by: data.created_by,
@@ -426,7 +426,7 @@ exports.update_master_data = async (req, res) => {
             let currentSupervisor = data.supervisor_designation_id;
         
             while (currentSupervisor) {
-                const parentRecord = await UsersHierarchyNew.findOne({
+                const parentRecord = await UsersHierarchy.findOne({
                     where: { officer_designation_id: currentSupervisor },
                 });
 
@@ -438,7 +438,7 @@ exports.update_master_data = async (req, res) => {
                 console.log("parentRecord", parentRecord)
                 if (!parentRecord) break;
             
-                await UsersHierarchyNew.create({
+                await UsersHierarchy.create({
                     officer_designation_id: data.officer_designation_id,
                     supervisor_designation_id: parentRecord.supervisor_designation_id,
                     created_by: data.created_by,
@@ -450,7 +450,7 @@ exports.update_master_data = async (req, res) => {
             
             if(dependentOfficers && dependentOfficers.length > 0){
                 for (const officer of dependentOfficers) {
-                    await UsersHierarchyNew.create({
+                    await UsersHierarchy.create({
                         officer_designation_id: officer.officer_designation_id,
                         supervisor_designation_id: data.officer_designation_id,
                         created_by: data.created_by,
@@ -460,13 +460,13 @@ exports.update_master_data = async (req, res) => {
                     let nextSupervisor = data.officer_designation_id;
                 
                     while (nextSupervisor) {
-                        const nextParent = await UsersHierarchyNew.findOne({
+                        const nextParent = await UsersHierarchy.findOne({
                         where: { officer_designation_id: nextSupervisor },
                         });
                 
                         if (!nextParent) break;
                 
-                        await UsersHierarchyNew.create({
+                        await UsersHierarchy.create({
                         officer_designation_id: officer.officer_designation_id,
                         supervisor_designation_id: nextParent.supervisor_designation_id,
                         created_by: data.created_by,
