@@ -128,6 +128,7 @@ exports.create_master_data = async (req, res) => {
 
   try {
     let newEntry;
+    let newEntry2;
 
     switch (master_name) {
       case "Department":
