@@ -211,9 +211,10 @@ exports.create_master_data = async (req, res) => {
 
 
       // case "Hierarchy":
-         newEntry = await UsersHierarchyNew.create({
+         newEntry2 = await UsersHierarchyNew.create({
           supervisor_designation_id: data.supervisor_designation_id,
           officer_designation_id: data.officer_designation_id,
+          users_hierarchy_id: newEntry.users_hierarchy_id,
           created_by: data.created_by,
           created_at: new Date(),
         });
@@ -226,6 +227,12 @@ exports.create_master_data = async (req, res) => {
                 const parentRecord = await UsersHierarchyNew.findOne({
                     where: { officer_designation_id: currentSupervisor },
                 });
+
+                if(currentSupervisor === parentRecord.supervisor_designation_id){
+                    continue;
+                }
+                console.log("currentSupervisor", currentSupervisor)
+                console.log("parentRecord.supervisor_designation_id", parentRecord.supervisor_designation_id)
                 console.log("parentRecord", parentRecord)
                 if (!parentRecord) {
                     break;
