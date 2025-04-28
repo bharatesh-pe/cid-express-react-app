@@ -1658,19 +1658,19 @@ const Formbuilder = () => {
                             selectedMasterOptions.dependent_table.includes(field.table)
                         );
 
-                        // if(getTableField.length === 0 || selectedMasterOptions.dependent_table.length !== getTableField.length){
-                        //     toast.warning('Please Check the ' + selectedMasterOptions.dependent_table.join(',') + ' Data Before Getting ' + selectedMasterOptions.table, {
-                        //         position: "top-right",
-                        //         autoClose: 3000,
-                        //         hideProgressBar: false,
-                        //         closeOnClick: true,
-                        //         pauseOnHover: true,
-                        //         draggable: true,
-                        //         progress: undefined,
-                        //         className: "toast-warning",
-                        //     });
-                        //     return;
-                        // }
+                        if(getTableField.length === 0 || selectedMasterOptions.dependent_table.length !== getTableField.length){
+                            toast.warning('Please Check the ' + selectedMasterOptions.dependent_table.join(',') + ' Data Before Getting ' + selectedMasterOptions.table, {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-warning",
+                            });
+                            return;
+                        }
 
                         var emptyValue = false;
 
@@ -1708,7 +1708,14 @@ const Formbuilder = () => {
                             var attributeKey = selectedMasterOptions.table === 'users' ? ['name'] : [selectedMasterOptions.table + '_name'];
                             if (getOptionsValue && getOptionsValue.data) {
     
+                                var firstValueId = false
+
                                 updatedOptions = getOptionsValue.data.map((field, i) => {
+
+                                    if (firstValueId === false) {
+                                        firstValueId = field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
+                                    }
+
                                     return {
                                         name: field[selectedMasterOptions.table === 'users' ? 'name' : selectedMasterOptions.table + '_name'],
                                         code: field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
@@ -1741,6 +1748,11 @@ const Formbuilder = () => {
                                     table: selectedMasterOptions.table,
                                     forign_key : forignKey,
                                     attributes : attributeKey
+                                }));
+
+                                setFormData(prevData => ({
+                                    ...prevData,
+                                    [selectedField.name]: firstValueId
                                 }));
     
                             }else{
@@ -1801,7 +1813,14 @@ const Formbuilder = () => {
                             var forignKey = selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id';
                             var attributeKey = selectedMasterOptions.table === 'users' ? ['name'] : [selectedMasterOptions.table + '_name'];
                             
+                            var firstValueId = false;
+
                             updatedOptions = getOptionsValue.data.map((field, i) => {
+
+                                if (firstValueId === false) {
+                                    firstValueId = field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
+                                }
+
                                 return {
                                     name: field[selectedMasterOptions.table === 'users' ? 'name' : selectedMasterOptions.table + '_name'],
                                     code: field[selectedMasterOptions.table === 'users' ? 'user_id' : selectedMasterOptions.table + '_id']
@@ -1832,6 +1851,11 @@ const Formbuilder = () => {
                                 table: selectedMasterOptions.table,
                                 forign_key : forignKey,
                                 attributes : attributeKey
+                            }));
+
+                            setFormData(prevData => ({
+                                ...prevData,
+                                [selectedField.name]: firstValueId
                             }));
 
                         }else{
