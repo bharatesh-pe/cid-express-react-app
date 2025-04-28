@@ -5820,7 +5820,7 @@ const UnderInvestigation = () => {
       : null,
     ...hoverTableOptions,
     {
-        name: "Further Investigation 173(8) Case",
+        name: "Preliminary Charge Sheet - 173 (8)",
         onclick: (selectedRow) =>
         changeSysStatus(
             selectedRow,
