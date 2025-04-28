@@ -5820,7 +5820,7 @@ const UnderInvestigation = () => {
       : null,
     ...hoverTableOptions,
     {
-        name: "Further Investigation 173(8) Case",
+        name: "Preliminary Charge Sheet - 173 (8)",
         onclick: (selectedRow) =>
         changeSysStatus(
             selectedRow,
@@ -6691,7 +6691,7 @@ const UnderInvestigation = () => {
                 sysStatus === "178_cases" ? "Active" : ""
               }`}
             >
-              Further Investigation 173(8) Case
+              Preliminary Charge Sheet - 173 (8)
             </Box>
             <Box
               onClick={() => {

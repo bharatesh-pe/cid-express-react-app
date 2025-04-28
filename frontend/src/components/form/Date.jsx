@@ -93,7 +93,6 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
                     name={field.name}
                     value={selectedDate}
                     onChange={(e) => {
-                        console.log('Selected Date:', e);
                         onChange(e ? e.$d : null); // Send the selected date or null
                     }}
                     // onFocus={onFocus}
@@ -102,7 +101,7 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
                     disabled={field.disabled === true}
                     fullWidth
                     minDate={minDate} // Pass minDate as dayjs object
-                    maxDate={maxDate} // Pass maxDate as dayjs object (end of today)
+                    maxDate={field?.maxValue ? dayjs(field.maxValue) : maxDate} // Pass maxDate as dayjs object (end of today)
                     format="DD-MM-YYYY"
                     sx={{
                         width: '100%',
