@@ -149,7 +149,7 @@ exports.get_ui_case_approvals = async (req, res) => {
     const officerDesignationIds = userDesignations.map((ud) => ud.designation_id);
 
     // Fetch subordinates based on officer designations
-    const supervisor = await UsersHierarchyNew.findAll({
+    const supervisor = await UsersHierarchy.findAll({
         where: { officer_designation_id : { [Op.in]: officerDesignationIds } },
         attributes: ["supervisor_designation_id"],
     });
@@ -308,7 +308,7 @@ exports.get_alert_notification = async (req, res) => {
     const { user_designation_id, user_division_id } = req.body;
 
     // Step 1: Get subordinate designation IDs
-    const subordinates = await UsersHierarchyNew.findAll({
+    const subordinates = await UsersHierarchy.findAll({
       where: { supervisor_designation_id: user_designation_id },
       attributes: ["officer_designation_id"],
       raw: true,
