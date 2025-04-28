@@ -795,15 +795,11 @@ const CaseActions = () => {
     const tabModuleObj = {
         "ui_case" : [
             {
-                name : 'All',
-                code : 'all'
-            },
-            {
                 name : 'UI Cases',
                 code : 'ui_case'
             },
             {
-                name : 'Further Investigation 173(8) Case',
+                name : 'Preliminary Charge Sheet - 173 (8)',
                 code : '178_cases'
             },
             {
@@ -821,15 +817,11 @@ const CaseActions = () => {
         ],
         "pt_case" : [
             {
-                name : 'All',
-                code : 'all'
-            },
-            {
                 name : 'PT Cases',
                 code : 'pt_case'
             },
             {
-                name : 'Further Investigation 173(8) Case',
+                name : 'Preliminary Charge Sheet - 173 (8)',
                 code : '178_cases'
             },
             {
@@ -838,10 +830,6 @@ const CaseActions = () => {
             }
         ],
         "eq_case" : [
-            {
-                name : 'All',
-                code : 'all'
-            },
             {
                 name : 'Enquiries',
                 code : 'eq_case'
