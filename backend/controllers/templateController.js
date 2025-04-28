@@ -954,6 +954,12 @@ exports.getMasterTemplates = async (req, res, next) => {
         is_dependent: "true",
         dependent_table: ["division"]
       },
+      {
+        table: "kgid",
+        is_master: "false",
+        api: "cidMaster/getAllKGID",
+        is_dependent: "false",
+      },
     ];
 
     // Combine master templates and additional entries

@@ -47,5 +47,6 @@ router.post('/getAllDesignations', cidMasterController.getAllDesignations)
 router.post('/getAllDivisions',  [validate_token],cidMasterController.getAllDivisions)
 router.post('/getIoUsers' , cidMasterController.getIoUsers)
 router.post('/getIoUsersBasedOnDivision' , cidMasterController.getIoUsersBasedOnDivision)
+router.post('/getAllKGID' , cidMasterController.getAllKGID)
 
 module.exports = router;
