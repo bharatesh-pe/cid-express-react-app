@@ -429,7 +429,12 @@ exports.update_master_data = async (req, res) => {
                 const parentRecord = await UsersHierarchyNew.findOne({
                     where: { officer_designation_id: currentSupervisor },
                 });
-                
+
+                if(currentSupervisor === parentRecord.supervisor_designation_id){
+                    continue;
+                }
+                console.log("currentSupervisor", currentSupervisor)
+                console.log("parentRecord.supervisor_designation_id", parentRecord.supervisor_designation_id)
                 console.log("parentRecord", parentRecord)
                 if (!parentRecord) break;
             
