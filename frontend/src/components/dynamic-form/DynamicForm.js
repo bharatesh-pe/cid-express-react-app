@@ -86,6 +86,8 @@ const DynamicForm = ({
     }
   }, [initialData]);
 
+  const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
+
 //   useEffect(() => {
 //     if (formData && Object.keys(formData).length !== 0 && !formData.id) {
 //       localStorage.setItem(
@@ -96,11 +98,83 @@ const DynamicForm = ({
 //   }, [formData]);
 
   const handleChangeDate = (name, newValues) => {
-    setFormData({
-      ...formData,
-      [name]: newValues,
-    });
+    // setFormData({
+    //   ...formData,
+    //   [name]: newValues,
+    // });
+    handleMaxDateChange(name,newValues);
   };
+
+    const handleMaxDateChange = (name, values)=>{
+
+        if(name && name === "field_date_of_registration_by_ps/range" && table_name === "cid_under_investigation"){
+            var formConfigData = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+        
+            var wantUpdateDateFields = [
+                "field_date_of_entrustment_to_cid",
+                "field_date_of_taking_over_by_cid",
+                "field_date_of_taking_over_by_present_io",
+                "field_date_of_submission_of_fr_to_court"
+            ]
+        
+            var updatedFormConfigData = formConfigData.map((field) => {
+                if (wantUpdateDateFields.includes(field?.name)) {
+                    return {
+                        ...field,
+                        maxValue: values
+                    };
+                }
+                return field;
+            });
+
+            const updatedFormData = { ...formData };
+
+            wantUpdateDateFields.forEach((name) => {
+                delete updatedFormData[name];
+            });
+
+            updatedFormData[name] = values
+
+            setFormData(updatedFormData);
+    
+            setNewFormConfig(updatedFormConfigData);
+        }else{
+            setFormData({
+                ...formData,
+                [name]: values,
+            });
+        }
+    }
+
+    useEffect(()=>{
+
+        if(formData?.["field_date_of_registration_by_ps/range"] && !dateUpdateFlag && table_name === "cid_under_investigation"){
+
+            var wantUpdateDateFields = [
+                "field_date_of_entrustment_to_cid",
+                "field_date_of_taking_over_by_cid",
+                "field_date_of_taking_over_by_present_io",
+                "field_date_of_submission_of_fr_to_court"
+            ]
+
+            var formConfigData = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+        
+            var updatedFormConfigData = formConfigData.map((field) => {
+                if (wantUpdateDateFields.includes(field?.name)) {
+                    return {
+                        ...field,
+                        maxValue: formData["field_date_of_registration_by_ps/range"]
+                    };
+                }
+                return field;
+            });
+
+            setNewFormConfig(updatedFormConfigData);
+            setDateUpdateFlag(true);
+
+        }
+
+    },[formData]);
 
   const handleChange = (e) => {
     // console.log(e.target)
