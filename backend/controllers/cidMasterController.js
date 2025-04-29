@@ -1,7 +1,7 @@
 const { adminSendResponse } = require("../services/adminSendResponse");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
-const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID , UsersHierarchy} = require("../models");
+const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID , UsersHierarchy,UsersHierarchyNew} = require("../models");
 const { Op, where } = require("sequelize");
 
 const getAllDepartments = async (req, res) => {
@@ -91,7 +91,7 @@ const getIoUsers = async (req, res) => {
         let userDesignations = "";
         let userIds = [];
         if(get_flag && get_flag === "upper" && designation_id){
-            const userHierarchy = await UsersHierarchy.findAll({
+            const userHierarchy = await UsersHierarchyNew.findAll({
                 where: {
                     officer_designation_id: designation_id,
                 },
@@ -146,7 +146,7 @@ const getIoUsers = async (req, res) => {
             });
         }
         else if(get_flag && get_flag === "lower" && designation_id){
-            const userHierarchy = await UsersHierarchy.findAll({
+            const userHierarchy = await UsersHierarchyNew.findAll({
                 where: {
                     supervisor_designation_id: designation_id,
                 },
