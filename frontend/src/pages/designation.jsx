@@ -1,4 +1,4 @@
-import { Box, Button, CircularProgress, FormControl, Grid, IconButton, InputAdornment, TextField, Typography } from "@mui/material"
+import { Autocomplete, Box, Button, CircularProgress, FormControl, Grid, IconButton, InputAdornment, TextField, Typography } from "@mui/material"
 import { useEffect, useState } from "react"
 import TableView from "../components/table-view/TableView";
 import TextFieldInput from '@mui/material/TextField';
@@ -45,6 +45,11 @@ const Designation = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const pageSize = 10;
 
+
+    const [overallDepartment, setOverallDepartment] = useState([]);
+    const [overallDivision, setOverallDivision] = useState([]);
+    const [departmentBasedDivision, setDepartmentBasedDivision] = useState([]);
+
     const showDeleteRoleDialoge = (id, name) => {
         setRoleToDelete(id);
         setRoleNameToDelete(name);
@@ -88,24 +93,49 @@ const Designation = () => {
     const handleViewRole = (role) => {
         setSelectedRole(role);
         setShowViewModal(true);
+
+        if(role?.department_id){
+
+            var updatedDivision = overallDivision.filter((division)=>{
+                if(division?.department_id){
+                    return division.department_id === role?.department_id
+                }
+            })
+    
+            setDepartmentBasedDivision(updatedDivision);
+        }
+
     };
 
     const handleEditRole = (role) => {
         setSelectedRole({
             id: role.id,
             designation_name: role.name,
-            description: role.description,
+            ...role
         });
         setShowEditModal(true);
+
+        if(role?.department_id){
+
+            var updatedDivision = overallDivision.filter((division)=>{
+                if(division?.department_id){
+                    return division.department_id === role?.department_id
+                }
+            })
+    
+            setDepartmentBasedDivision(updatedDivision);
+        }
     };
 
     const designationColumnData = [
+        { field: 'department_name', headerName: 'Department', width: 200 },
+        { field: 'division_name', headerName: 'Division', width: 200 },
         { field: 'name', headerName: 'Designation', width: 200 },
         { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
-            flex: 1,
+            width: 300,
             renderCell: (params) => {
                 return (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
@@ -249,10 +279,14 @@ const Designation = () => {
             });
 
             if (response) {
-                const updatedData = response.map(row => {
+                const updatedData = response.map((row, index) => {
                     return {
                         id: row.designation_id,
                         name: row.designation_name,
+                        department_id: row.department_id,
+                        division_id: row.division_id,
+                        division_name: row.division_name,
+                        department_name: row.department_name,
                         description: row.description || "N/A"
                     };
                 });
@@ -293,7 +327,7 @@ const Designation = () => {
     const handleAddSaveData = async () => {
         var error_flag = false;
 
-        if (addRoleData.designation_name.trim() === '') {
+        if (!addRoleData?.designation_name || addRoleData?.designation_name.trim() === '') {
             error_flag = true;
             setErrorRoleData((prevData) => ({
                 ...prevData,
@@ -301,11 +335,27 @@ const Designation = () => {
             }));
         }
 
-        if (addRoleData.description.trim() === '') {
+        if (!addRoleData?.description || addRoleData?.description.trim() === '') {
             error_flag = true;
             setErrorRoleData((prevData) => ({
                 ...prevData,
                 description: 'Description is required'
+            }));
+        }
+
+        if (!addRoleData?.department_id || addRoleData?.department_id === null || addRoleData?.department_id === undefined) {
+            error_flag = true;
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                department_id: 'Department is required'
+            }));
+        }
+
+        if (!addRoleData?.division_id || addRoleData?.division_id === null || addRoleData?.division_id === undefined) {
+            error_flag = true;
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                division_id: 'Division is required'
             }));
         }
 
@@ -397,7 +447,7 @@ const Designation = () => {
     const handleEditData = async () => {
         var error_flag = false;
 
-        if (selectedRole.designation_name.trim() === '') {
+        if (!selectedRole?.designation_name || selectedRole?.designation_name.trim() === '') {
             error_flag = true;
             setErrorRoleData((prevData) => ({
                 ...prevData,
@@ -405,11 +455,27 @@ const Designation = () => {
             }));
         }
 
-        if (selectedRole.description.trim() === '') {
+        if (!selectedRole?.description || selectedRole?.description.trim() === '') {
             error_flag = true;
             setErrorRoleData((prevData) => ({
                 ...prevData,
                 description: 'Description is required',
+            }));
+        }
+
+        if (!selectedRole?.department_id || selectedRole?.department_id === null || selectedRole?.department_id === undefined) {
+            error_flag = true;
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                department_id: 'Department is required'
+            }));
+        }
+
+        if (!selectedRole?.division_id || selectedRole?.division_id === null || selectedRole?.division_id === undefined) {
+            error_flag = true;
+            setErrorRoleData((prevData) => ({
+                ...prevData,
+                division_id: 'Division is required'
             }));
         }
 
@@ -433,6 +499,8 @@ const Designation = () => {
                 designation_id: selectedRole.id,
                 designation_name: selectedRole.designation_name,
                 description: selectedRole.description,
+                division_id: selectedRole.division_id,
+                department_id: selectedRole.department_id,
             }
         };
 
@@ -485,6 +553,165 @@ const Designation = () => {
         }
         setLoading(false);
     };
+
+    useEffect(()=>{
+        getAllMasters();
+    },[])
+
+    const getAllMasters = async ()=>{
+        setLoading(true);
+        try {
+
+            var payload = {
+                needed_masters : ["department", "division"]
+            }
+
+            const response = await api.post("/master/get_master_data", payload);
+
+            if(!response || !response?.department || !response?.division){
+                toast.error(response?.message || "Data Not Found" , {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+            }
+
+            if(response?.department && response.department.length > 0){
+                setOverallDepartment(response.department);
+            }
+
+            if(response?.division && response?.division.length > 0){
+                setOverallDivision(response.division);
+            }
+
+        } catch (err) {
+            let errorMessage = err.message || "Something went wrong. Please try again.";
+            if (err?.response?.data?.message) {
+                errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
+            }
+            toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+        }
+    }
+
+    const handleDepartmentValue = (data)=> {
+
+        if(data?.code){
+
+            var updatedDivision = overallDivision.filter((division)=>{
+                if(division?.department_id){
+                    return division.department_id === data.code
+                }
+            })
+
+            setDepartmentBasedDivision(updatedDivision);
+
+            if(!showRoleAddModal){
+
+                setSelectedRole(prevState => ({
+                    ...prevState,
+                    ['department_id']: data.code,
+                    ['division_id']: null
+                }));
+
+            }else{
+                
+                setAddRoleData((prevData) => ({
+                    ...prevData,
+                    ['department_id']: data.code,
+                    ['division_id']: null
+                }));
+
+            }
+
+        }else{
+
+            if(!showRoleAddModal){
+
+                setSelectedRole(prevState => ({
+                    ...prevState,
+                    ['department_id']: null,
+                    ['division_id']: null
+                }));
+
+            }else{
+                
+                setAddRoleData((prevData) => ({
+                    ...prevData,
+                    ['department_id']: null,
+                    ['division_id']: null
+                }));
+
+            }
+
+        }
+
+        if (errorRoleData['department_id']) {
+            setErrorRoleData((prevErrors) => {
+                const updatedErrors = { ...prevErrors };
+                if (updatedErrors['department_id']) {
+                    delete updatedErrors['department_id'];
+                }
+                return updatedErrors;
+            });
+        }
+
+    }
+
+    const handleDivisionChange = (data)=> {
+
+        if(data?.code){
+        
+            if(!showRoleAddModal){
+                setSelectedRole(prevState => ({
+                    ...prevState,
+                    ['division_id']: data.code
+                }));
+            }else{
+                setAddRoleData((prevData) => ({
+                    ...prevData,
+                    ['division_id']: data.code
+                }));
+            }
+
+        }else{
+            if(!showRoleAddModal){
+                setSelectedRole(prevState => ({
+                    ...prevState,
+                    ['division_id']: null
+                }));
+            }else{
+                setAddRoleData((prevData) => ({
+                    ...prevData,
+                    ['division_id']: null
+                }));
+            }
+        }
+
+        if (errorRoleData['division_id']) {
+            setErrorRoleData((prevErrors) => {
+                const updatedErrors = { ...prevErrors };
+                if (updatedErrors['division_id']) {
+                    delete updatedErrors['division_id'];
+                }
+                return updatedErrors;
+            });
+        }
+
+    }
 
     return (
         <Box inert={loading ? true : false}>
@@ -545,9 +772,6 @@ const Designation = () => {
                         />
                         <Button
                             onClick={() => {
-                                setAddRoleData(prevData => ({
-                                    ...prevData,
-                                }));
                                 setShowRoleAddModal(true);
                             }}
                             sx={{
@@ -594,7 +818,7 @@ const Designation = () => {
                     setErrorRoleData({ designation_name: '', description: '' });
                 }}
                 aria-labelledby="designation-dialog-title"
-                maxWidth="md"
+                maxWidth="lg"
                 fullWidth
             >
                 <DialogTitle id="designation-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -608,7 +832,7 @@ const Designation = () => {
                             setShowEditModal(false);
                             setShowRoleAddModal(false);
                             setErrorRoleData({ designation_name: '', description: '' });
-                            setAddRoleData({ department_name: '', description: '' });
+                            setAddRoleData({ designation_name: '', description: '' });
                             setSelectedRole(null);                    
                         }}
                         sx={{ color: (theme) => theme.palette.grey[500] }}
@@ -620,55 +844,129 @@ const Designation = () => {
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
-                            <Box sx={{ marginY: '18px' }}>
-                                <h4 className="form-field-heading" style={{ color: !!errorRoleData.designation_name && '#d32f2f' }}>
-                                    Name
-                                </h4>
-                                <TextField
-                                    fullWidth
-                                    label="Name"
-                                    name="designation_name"
-                                    autoComplete="off"
-                                    value={showRoleAddModal ? addRoleData.designation_name : selectedRole?.designation_name || selectedRole?.name}
-                                    onChange={(e) => {
-                                        if (showViewModal) return;
 
-                                        const regex = /^[a-zA-Z0-9\s\b]*$/;
-                                        if (regex.test(e.target.value)) {
-                                            if (showRoleAddModal) {
-                                                handleAddData(e);
-                                            } else {
-                                                handleInputChange(e);
-                                                setSelectedRole((prev) => ({ ...prev, name: e.target.value }));
+                            <Box sx={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+                                <Box>
+                                    <h4 className="form-field-heading" style={{ color: !!errorRoleData.department_id && '#d32f2f' }}>
+                                        Department
+                                    </h4>
+                                    <Autocomplete
+                                        id=""
+                                        required
+                                        options={overallDepartment}
+                                        getOptionLabel={(option) => option.name || ''}
+                                        value={overallDepartment.find((option) => option.code === (showRoleAddModal ? addRoleData.department_id : selectedRole?.department_id)) || null}
+                                        onChange={(event, newValue) => handleDepartmentValue(newValue)}
+                                        disabled={showViewModal}
+                                        renderInput={(params) =>
+                                            <TextField
+                                                {...params}
+                                                error={errorRoleData && errorRoleData['department_id'] && Boolean(errorRoleData['department_id'])}
+                                                className='selectHideHistory'
+                                                label={
+                                                        <>
+                                                            Department
+                                                            <span
+                                                                style={{
+                                                                    padding: '0px 0px 0px 5px', 
+                                                                    verticalAlign: 'middle'
+                                                                }} 
+                                                                className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
+                                                            >
+                                                                {'*'}
+                                                            </span>
+                                                        </>
+                                                    }
+                                            />
+                                        }
+                                    />
+                                </Box>
+
+                                <Box>
+                                    <h4 className="form-field-heading" style={{ color: !!errorRoleData.division_id && '#d32f2f' }}>
+                                        Division
+                                    </h4>
+                                    <Autocomplete
+                                        id=""
+                                        required
+                                        options={departmentBasedDivision}
+                                        getOptionLabel={(option) => option.name || ''}
+                                        value={departmentBasedDivision.find((option) => option.code === (showRoleAddModal ? addRoleData.division_id : selectedRole?.division_id)) || null}
+                                        onChange={(event, newValue) => handleDivisionChange(newValue)}
+                                        disabled={showViewModal}
+                                        renderInput={(params) =>
+                                            <TextField
+                                                {...params}
+                                                error={errorRoleData && errorRoleData['division_id'] && Boolean(errorRoleData['division_id'])}
+                                                className='selectHideHistory'
+                                                label={
+                                                        <>
+                                                            Division
+                                                            <span
+                                                                style={{
+                                                                    padding: '0px 0px 0px 5px', 
+                                                                    verticalAlign: 'middle'
+                                                                }} 
+                                                                className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
+                                                            >
+                                                                {'*'}
+                                                            </span>
+                                                        </>
+                                                    }
+                                            />
+                                        }
+                                    />
+                                </Box>
+
+                                <Box>
+                                    <h4 className="form-field-heading" style={{ color: !!errorRoleData.designation_name && '#d32f2f' }}>
+                                        Name
+                                    </h4>
+                                    <TextField
+                                        fullWidth
+                                        label="Name"
+                                        name="designation_name"
+                                        autoComplete="off"
+                                        value={showRoleAddModal ? addRoleData.designation_name : selectedRole?.designation_name || selectedRole?.name}
+                                        onChange={(e) => {
+                                            if (showViewModal) return;
+
+                                            const regex = /^[a-zA-Z0-9\s\b]*$/;
+                                            if (regex.test(e.target.value)) {
+                                                if (showRoleAddModal) {
+                                                    handleAddData(e);
+                                                } else {
+                                                    handleInputChange(e);
+                                                }
                                             }
-                                        }
-                                    }}
-                                    error={!!errorRoleData.designation_name}
-                                    required={showEditModal || showRoleAddModal}
-                                    disabled={showViewModal}
-                                />
-                            </Box>
+                                        }}
+                                        error={!!errorRoleData.designation_name}
+                                        required={showEditModal || showRoleAddModal}
+                                        disabled={showViewModal}
+                                    />
+                                </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
-                                <h4 className="form-field-heading" style={{ color: !!errorRoleData.description && '#d32f2f' }}>
-                                    Description
-                                </h4>
-                                <TextField
-                                    fullWidth
-                                    label="Description"
-                                    name="description"
-                                    autoComplete="off"
-                                    value={showRoleAddModal ? addRoleData.description : selectedRole?.description || ""}
-                                    onChange={(e) => {
-                                        const regex = /^[a-zA-Z0-9\s/,.\b]*$/;
-                                        if (regex.test(e.target.value)) {
-                                            showRoleAddModal ? handleAddData(e) : handleInputChange(e);
-                                        }
-                                    }}
-                                    error={!!errorRoleData.description}
-                                    required={showEditModal || showRoleAddModal}
-                                    disabled={showViewModal}
-                                />
+                                <Box>
+                                    <h4 className="form-field-heading" style={{ color: !!errorRoleData.description && '#d32f2f' }}>
+                                        Description
+                                    </h4>
+                                    <TextField
+                                        fullWidth
+                                        label="Description"
+                                        name="description"
+                                        autoComplete="off"
+                                        value={showRoleAddModal ? addRoleData.description : selectedRole?.description || ""}
+                                        onChange={(e) => {
+                                            const regex = /^[a-zA-Z0-9\s/,.\b]*$/;
+                                            if (regex.test(e.target.value)) {
+                                                showRoleAddModal ? handleAddData(e) : handleInputChange(e);
+                                            }
+                                        }}
+                                        error={!!errorRoleData.description}
+                                        required={showEditModal || showRoleAddModal}
+                                        disabled={showViewModal}
+                                    />
+                                </Box>
                             </Box>
                         </FormControl>
                     </DialogContentText>
