@@ -53,11 +53,11 @@ module.exports = (sequelize, DataTypes) => {
   Designation.associate = (models) => {
     Designation.belongsTo(models.Department, {
       foreignKey: "department_id",
-      as: "department",
+      as: "designation_department",
     });
     Designation.belongsTo(models.Division, {
       foreignKey: "division_id",
-      as: "division",
+      as: "designation_division",
     });
   };
 
