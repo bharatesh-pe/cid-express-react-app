@@ -22,7 +22,7 @@ const get_master_data = async (req, res) => {
         case 'designation':
           // Fetch designation data
           master_data.designation = await fetch_designation_data();
-          const supervisor_designation_data = await UsersHierarchy.findAll({
+          const supervisor_designation_data = await UsersHierarchyNew.findAll({
             attributes: ['supervisor_designation_id', 'officer_designation_id'],
           });
           master_data.supervisor_designation = supervisor_designation_data.reduce((acc, { supervisor_designation_id, officer_designation_id }) => {
