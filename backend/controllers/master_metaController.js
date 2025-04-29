@@ -182,168 +182,196 @@ exports.create_master_data = async (req, res) => {
     let newEntry2;
 
     switch (master_name) {
-      case "Department":
-        newEntry = await Department.create(data);
-        break;
+        case "Department":
+            const existingDepartment = await Department.findOne({
+            where: {
+                department_name: {
+                [Op.iLike]: `%${data.department_name}%`,
+                },
+            },
+            });
+            if (existingDepartment) {
+                 return res.status(409).json({success: false,message: "Similar department name already exists.",});
+            }
+            newEntry = await Department.create(data);
+            break;
 
-      case "Designation":
-        newEntry = await Designation.create(
-          {
-            designation_name: data.designation_name,
-            department_id: data.department_id,
-            division_id: data.division_id,
+        case "Designation":
+            const existingDesignation = await Designation.findOne({
+            where: {
+                designation_name: {
+                [Op.iLike]: `%${data.designation_name}%`,
+                },
+            },
+            });
+            if (existingDesignation) {
+                 return res.status(409).json({success: false,message: "Similar designation name already exists.",});
+            }
+            newEntry = await Designation.create(
+            {
+                designation_name: data.designation_name,
+                department_id: data.department_id,
+                division_id: data.division_id,
+                description: data.description,
+                created_by: data.created_by,
+                created_at: new Date(),
+            },
+            {
+                returning: [
+                "designation_id",
+                "department_id",
+                "division_id",
+                "designation_name",
+                "description",
+                "created_by",
+                "created_at",
+                ],
+            }
+            );
+            break;
+
+        case "Division":
+            const existingDivision = await Division.findOne({
+            where: {
+                division_name: {
+                [Op.iLike]: `%${data.division_name}%`,
+                },
+            },
+            });
+            if (existingDivision) {
+                 return res.status(409).json({success: false,message: "Similar division name already exists.",});
+            }
+            newEntry = await Division.create({
+            division_name: data.division_name,
             description: data.description,
+            department_id: data.department_id,
             created_by: data.created_by,
             created_at: new Date(),
-          },
-          {
-            returning: [
-              "designation_id",
-              "department_id",
-              "division_id",
-              "designation_name",
-              "description",
-              "created_by",
-              "created_at",
-            ],
-          }
-        );
-        break;
+            });
+            break;
 
-      case "Division":
-        newEntry = await Division.create({
-          division_name: data.division_name,
-          description: data.description,
-          department_id: data.department_id,
-          created_by: data.created_by,
-          created_at: new Date(),
-        });
-        break;
-      case "Approval Item":
-        newEntry = await ApprovalItem.create(data);
-        break;
+        case "Approval Item":
+            newEntry = await ApprovalItem.create(data);
+            break;
 
-      case "Kgid":
-        const existingKgid = await KGID.findOne({
-          where: { kgid: data.kgid },
-        });
+        case "Kgid":
+            const existingKgid = await KGID.findOne({
+            where: { kgid: data.kgid },
+            });
 
-        if (existingKgid) {
-          return res.status(400).json({
-            success: false,
-            message: "KGID already exists.",
-          });
-        }
+            if (existingKgid) {
+            return res.status(400).json({
+                success: false,
+                message: "KGID already exists.",
+            });
+            }
 
-        const existingMobile = await KGID.findOne({
-          where: { mobile: data.mobile },
-        });
+            const existingMobile = await KGID.findOne({
+            where: { mobile: data.mobile },
+            });
 
-        if (existingMobile) {
-          return res.status(400).json({
-            success: false,
-            message: "Mobile already exists.",
-          });
-        }
+            if (existingMobile) {
+            return res.status(400).json({
+                success: false,
+                message: "Mobile already exists.",
+            });
+            }
 
-        newEntry = await KGID.create({
-          kgid: data.kgid,
-          name: data.name,
-          mobile: data.mobile,
-          start_date: new Date(),
-          end_date: data.end_date || null,
-          created_by: data.created_by,
-        });
-        break;
+            newEntry = await KGID.create({
+            kgid: data.kgid,
+            name: data.name,
+            mobile: data.mobile,
+            start_date: new Date(),
+            end_date: data.end_date || null,
+            created_by: data.created_by,
+            });
+            break;
 
-      case "Hierarchy":
-        newEntry = await UsersHierarchy.create({
-          supervisor_designation_id: data.supervisor_designation_id,
-          officer_designation_id: data.officer_designation_id,
-          created_by: data.created_by,
-          created_at: new Date(),
-        });
-        // break;
+        case "Hierarchy":
+            newEntry = await UsersHierarchy.create({
+            supervisor_designation_id: data.supervisor_designation_id,
+            officer_designation_id: data.officer_designation_id,
+            created_by: data.created_by,
+            created_at: new Date(),
+            });
+            // break;
 
 
-      // case "Hierarchy":
-         newEntry2 = await UsersHierarchyNew.create({
-          supervisor_designation_id: data.supervisor_designation_id,
-          officer_designation_id: data.officer_designation_id,
-          users_hierarchy_id: newEntry.users_hierarchy_id,
-          created_by: data.created_by,
-          created_at: new Date(),
-        });
+        // case "Hierarchy":
+            newEntry2 = await UsersHierarchyNew.create({
+            supervisor_designation_id: data.supervisor_designation_id,
+            officer_designation_id: data.officer_designation_id,
+            users_hierarchy_id: newEntry.users_hierarchy_id,
+            created_by: data.created_by,
+            created_at: new Date(),
+            });
 
-        if( data.officer_designation_id !== data.supervisor_designation_id) {
-            let currentSupervisor = data.supervisor_designation_id;
-            let currentOfficer = data.officer_designation_id;
-            while (currentSupervisor) {
+            if( data.officer_designation_id !== data.supervisor_designation_id) {
+                let currentSupervisor = data.supervisor_designation_id;
+                let currentOfficer = data.officer_designation_id;
+                while (currentSupervisor) {
+
+                    const parentRecord = await UsersHierarchyNew.findOne({
+                        where: { officer_designation_id: currentSupervisor },
+                    });
+
+                    console.log("currentSupervisor", currentSupervisor)
+                    console.log("parentRecord", parentRecord)
+                    if (!parentRecord || !parentRecord.supervisor_designation_id) {
+                        console.log("No parent record found or supervisor_designation_id is null.");
+                        break;
+                    }
+                    
+                    console.log("parentRecord.supervisor_designation_id", parentRecord.supervisor_designation_id)
+                    
+                    if(currentSupervisor === parentRecord.supervisor_designation_id){
+                        break;
+                    }
+                    
+                    await UsersHierarchyNew.create({
+                        supervisor_designation_id: parentRecord.supervisor_designation_id,
+                        officer_designation_id: data.officer_designation_id,
+                        created_by: data.created_by,
+                        created_at: new Date(),
+                    });
+
+                currentSupervisor = parentRecord.supervisor_designation_id;
+                }
+
+
+                while (currentOfficer) {
 
                 const parentRecord = await UsersHierarchyNew.findOne({
-                    where: { officer_designation_id: currentSupervisor },
+                    where: { supervisor_designation_id: currentOfficer },
                 });
 
-                console.log("currentSupervisor", currentSupervisor)
+                console.log("currentOfficer", currentOfficer)
                 console.log("parentRecord", parentRecord)
-                if (!parentRecord || !parentRecord.supervisor_designation_id) {
+                if (!parentRecord || !parentRecord.officer_designation_id) {
                     console.log("No parent record found or supervisor_designation_id is null.");
                     break;
                 }
                 
-                console.log("parentRecord.supervisor_designation_id", parentRecord.supervisor_designation_id)
+                console.log("parentRecord.supervisor_designation_id", parentRecord.officer_designation_id)
                 
-                if(currentSupervisor === parentRecord.supervisor_designation_id){
+                if(currentOfficer === parentRecord.officer_designation_id){
                     break;
                 }
                 
                 await UsersHierarchyNew.create({
-                    supervisor_designation_id: parentRecord.supervisor_designation_id,
-                    officer_designation_id: data.officer_designation_id,
+                    supervisor_designation_id: data.supervisor_designation_id,
+                    officer_designation_id: parentRecord.officer_designation_id,
                     created_by: data.created_by,
                     created_at: new Date(),
                 });
 
-            currentSupervisor = parentRecord.supervisor_designation_id;
+                currentOfficer = parentRecord.officer_designation_id;
             }
 
-
-            while (currentOfficer) {
-
-              const parentRecord = await UsersHierarchyNew.findOne({
-                  where: { supervisor_designation_id: currentOfficer },
-              });
-
-              console.log("currentOfficer", currentOfficer)
-              console.log("parentRecord", parentRecord)
-              if (!parentRecord || !parentRecord.officer_designation_id) {
-                  console.log("No parent record found or supervisor_designation_id is null.");
-                  break;
-              }
-              
-              console.log("parentRecord.supervisor_designation_id", parentRecord.officer_designation_id)
-              
-              if(currentOfficer === parentRecord.officer_designation_id){
-                  break;
-              }
-              
-              await UsersHierarchyNew.create({
-                  supervisor_designation_id: data.supervisor_designation_id,
-                  officer_designation_id: parentRecord.officer_designation_id,
-                  created_by: data.created_by,
-                  created_at: new Date(),
-              });
-
-              currentOfficer = parentRecord.officer_designation_id;
-          }
-
-        }
-        break;
-
-      default:
-        return res
-          .status(400)
-          .json({ message: "Invalid master name provided." });
+            }
+            break;
+        default:
+            return res.status(400).json({ message: "Invalid master name provided." });
     }
 
     return res.status(201).json({
