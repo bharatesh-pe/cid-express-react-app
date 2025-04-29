@@ -212,7 +212,7 @@ exports.create_master_data = async (req, res) => {
 
 
       // case "Hierarchy":
-         newEntry2 = await UsersHierarchy.create({
+         newEntry2 = await UsersHierarchyNew.create({
           supervisor_designation_id: data.supervisor_designation_id,
           officer_designation_id: data.officer_designation_id,
           users_hierarchy_id: newEntry.users_hierarchy_id,
@@ -222,24 +222,27 @@ exports.create_master_data = async (req, res) => {
 
         if( data.officer_designation_id !== data.supervisor_designation_id) {
             let currentSupervisor = data.supervisor_designation_id;
-
+            let currentOfficer = data.officer_designation_id;
             while (currentSupervisor) {
 
-                const parentRecord = await UsersHierarchy.findOne({
+                const parentRecord = await UsersHierarchyNew.findOne({
                     where: { officer_designation_id: currentSupervisor },
                 });
 
-                if(currentSupervisor === parentRecord.supervisor_designation_id){
-                    continue;
-                }
                 console.log("currentSupervisor", currentSupervisor)
-                console.log("parentRecord.supervisor_designation_id", parentRecord.supervisor_designation_id)
                 console.log("parentRecord", parentRecord)
-                if (!parentRecord) {
+                if (!parentRecord || !parentRecord.supervisor_designation_id) {
+                    console.log("No parent record found or supervisor_designation_id is null.");
                     break;
                 }
-            
-                await UsersHierarchy.create({
+                
+                console.log("parentRecord.supervisor_designation_id", parentRecord.supervisor_designation_id)
+                
+                if(currentSupervisor === parentRecord.supervisor_designation_id){
+                    break;
+                }
+                
+                await UsersHierarchyNew.create({
                     supervisor_designation_id: parentRecord.supervisor_designation_id,
                     officer_designation_id: data.officer_designation_id,
                     created_by: data.created_by,
@@ -248,6 +251,36 @@ exports.create_master_data = async (req, res) => {
 
             currentSupervisor = parentRecord.supervisor_designation_id;
             }
+
+
+            while (currentOfficer) {
+
+              const parentRecord = await UsersHierarchyNew.findOne({
+                  where: { supervisor_designation_id: currentOfficer },
+              });
+
+              console.log("currentOfficer", currentOfficer)
+              console.log("parentRecord", parentRecord)
+              if (!parentRecord || !parentRecord.officer_designation_id) {
+                  console.log("No parent record found or supervisor_designation_id is null.");
+                  break;
+              }
+              
+              console.log("parentRecord.supervisor_designation_id", parentRecord.officer_designation_id)
+              
+              if(currentOfficer === parentRecord.officer_designation_id){
+                  break;
+              }
+              
+              await UsersHierarchyNew.create({
+                  supervisor_designation_id: data.supervisor_designation_id,
+                  officer_designation_id: parentRecord.officer_designation_id,
+                  created_by: data.created_by,
+                  created_at: new Date(),
+              });
+
+              currentOfficer = parentRecord.officer_designation_id;
+          }
 
         }
         break;
@@ -264,6 +297,7 @@ exports.create_master_data = async (req, res) => {
       data: newEntry,
     });
   } catch (error) {
+    console.log("Error creating master data:", error);
     return res.status(500).json({ message: "Internal server error" });
   } finally {
     if (fs.existsSync(dirPath))
@@ -425,6 +459,7 @@ exports.update_master_data = async (req, res) => {
         if( data.officer_designation_id !== data.supervisor_designation_id){
       
             let currentSupervisor = data.supervisor_designation_id;
+            let currentOfficer = data.officer_designation_id;
         
             while (currentSupervisor) {
                 const parentRecord = await UsersHierarchy.findOne({
