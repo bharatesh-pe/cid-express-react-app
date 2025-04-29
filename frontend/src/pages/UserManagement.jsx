@@ -765,6 +765,24 @@ const UserManagement = () => {
       (option) => String(option.name) === String(userToEdit.kgid)
     );
 
+    var division_id_value = null
+
+    if(designationArray.length > 0){
+        var filteredDepartment = masterData?.designation.filter((data) => {
+            return designationArray.includes(String(data?.code));
+        });
+
+        const divisionIds = filteredDepartment.map(item => item.division_id);
+
+        if(divisionIds.length === 0){
+            division_id_value = null;
+        }else{
+            division_id_value = divisionIds;
+        }
+
+    }
+
+
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
@@ -782,9 +800,7 @@ const UserManagement = () => {
         departmentOptions.find(
           (option) => String(option.code) === String(userToEdit.department_id)
         )?.code || "",
-      division: divisionOptions
-        .filter((option) => divisionArray.includes(String(option.code)))
-        .map((option) => option.code),
+      division: division_id_value,
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
 
@@ -815,8 +831,23 @@ const UserManagement = () => {
       (option) => String(option.name) === String(userToEdit.kgid)
     );
 
-    console.log("KGID Options:", kgidOptions);
-    console.log("User KGID:", userToEdit.kgid);
+    var division_id_value = null
+
+    if(designationArray.length > 0){
+        var filteredDepartment = masterData?.designation.filter((data) => {
+            return designationArray.includes(String(data?.code));
+        });
+
+        const divisionIds = filteredDepartment.map(item => item.division_id);
+
+        if(divisionIds.length === 0){
+            division_id_value = null;
+        }else{
+            division_id_value = divisionIds;
+        }
+
+    }
+
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
@@ -834,9 +865,7 @@ const UserManagement = () => {
         departmentOptions.find(
           (option) => String(option.code) === String(userToEdit.department_id)
         )?.code || "",
-      division: divisionOptions
-        .filter((option) => divisionArray.includes(String(option.code)))
-        .map((option) => option.code),
+      division: division_id_value,
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
 
@@ -1532,6 +1561,7 @@ const UserManagement = () => {
           visible={isModalOpen}
           onHide={handleCloseModal}
           onSave={handleSave}
+
           headerContent={
             <div className="modal-header-title p-3">{modalTitle}</div>
           }
@@ -1671,25 +1701,6 @@ const UserManagement = () => {
                     onHistory={() => getUsermanagementFieldLog("mobile")}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <AutocompleteField
-                    formData={newUser}
-                    errors={errors}
-                    field={{
-                      name: "role",
-                      label: "Select Role",
-                      options: roleOptions,
-                      required: modalTitle !== "Set Filters",
-                      history:
-                        modalTitle === "View User" || modalTitle === "Edit User"
-                          ? "role"
-                          : null,
-                    }}
-                    value={newUser?.role}
-                    onHistory={() => getUsermanagementFieldLog("role")}
-                    onChange={handleDropDownChange}
-                  />
-                </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <MultiSelect
@@ -1710,41 +1721,7 @@ const UserManagement = () => {
                     onChange={handleDropDownChange}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6B7280",
-                      marginTop: "8px",
-                    }}
-                  >
-                    Supervisor Designation: <br />
-                    {Array.isArray(newUser?.designation) && newUser?.designation.length > 0
-                      ? newUser?.designation
-                          .map((des) => {
-                            const supervisorKeys = Object.keys(
-                              masterData.supervisor_designation
-                            ).filter((key) =>
-                              masterData.supervisor_designation[key].includes(
-                                parseInt(des, 10)
-                              )
-                            );
 
-                            const supervisorNames = supervisorKeys
-                              .map((key) => {
-                                const designation = designationOptions.find(
-                                  (option) => String(option.code) === String(key)
-                                );
-                                return designation ? designation.name : "Unknown";
-                              })
-                              .join(", ");
-
-                            return supervisorNames || "None";
-                          })
-                          .join(" | ")
-                      : ""}
-                  </p>
-                </Grid>
 
                 <Grid item xs={12} sm={6}>
                   <AutocompleteField
@@ -1787,8 +1764,64 @@ const UserManagement = () => {
                   />
                 </Grid>
 
+                <Grid item xs={12} sm={6}>
+                  <p
+                    style={{
+                      fontSize: "14px",
+                      color: "#6B7280",
+                      marginTop: "8px",
+                    }}
+                  >
+                    Supervisor Designation: <br />
+                    {Array.isArray(newUser?.designation) && newUser?.designation.length > 0
+                      ? newUser?.designation
+                          .map((des) => {
+                            const supervisorKeys = Object.keys(
+                              masterData.supervisor_designation
+                            ).filter((key) =>
+                              masterData.supervisor_designation[key].includes(
+                                parseInt(des, 10)
+                              )
+                            );
+
+                            const supervisorNames = supervisorKeys
+                              .map((key) => {
+                                const designation = designationOptions.find(
+                                  (option) => String(option.code) === String(key)
+                                );
+                                return designation ? designation.name : "Unknown";
+                              })
+                              .join(", ");
+
+                            return supervisorNames || "None";
+                          })
+                          .join(" | ")
+                      : ""}
+                  </p>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                    <AutocompleteField
+                        formData={newUser}
+                        errors={errors}
+                        field={{
+                        name: "role",
+                        label: "Select Role",
+                        options: roleOptions,
+                        required: modalTitle !== "Set Filters",
+                        history:
+                            modalTitle === "View User" || modalTitle === "Edit User"
+                            ? "role"
+                            : null,
+                        }}
+                        value={newUser?.role}
+                        onHistory={() => getUsermanagementFieldLog("role")}
+                        onChange={handleDropDownChange}
+                    />
+                    </Grid>
                 </>
               )}
+
 
               {(modalTitle === "Reset Pin" || modalTitle === "Add New User") && (
                 <>
