@@ -238,7 +238,7 @@ const getIoUsers = async (req, res) => {
                         model: KGID,
                         as: "kgidDetails",
                         attributes: ["kgid", "name", "mobile"],
-                    },
+                    }
                 ],
                 attributes: ["user_id"],
                 raw: true,
@@ -439,6 +439,62 @@ const getAllKGID = async (req, res) => {
     }
 };
 
+const getUserParticularDetails = async (req, res) => {
+    try {
+       const { user_id } = req.body;
+
+        const userDetails = await Users.findOne({
+            where: { user_id, dev_status: true },
+            include: [
+                {
+                    model: KGID,
+                    as: "kgidDetails",
+                    attributes: ["id"],
+                },
+                {
+                    model: UserDesignation,
+                    as: "users_designations",
+                    attributes: ["designation_id"],
+                    include: [
+                        {
+                            model: Designation,
+                            as: "designation",
+                            attributes: ["designation_name"],
+                        },
+                    ],
+                }
+            ],
+            attributes: ["user_id"],
+        });
+
+        if (!userDetails) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Transform output
+        const userData = {
+            user_id: userDetails.user_id,
+            kgid_id: userDetails.kgidDetails?.id || "",
+        };
+
+        var designations = [];
+        if (userDetails.users_designations && userDetails.users_designations.length > 0) {
+           for (const designation of userDetails.users_designations) {
+                if(!designations.includes(designation.designation_id)){
+                    designations.push(designation.designation_id);
+                }
+            }   
+        }
+        userData.designations = designations;
+
+        return res.status(200).json({ data: userData });
+    }
+    catch (error) {
+        console.error("Error fetching user details:", error);
+        return res.status(500).json({ message: "Failed to fetch user details", error: error.message });
+    }
+}
+
 module.exports = {
     getAllDepartments,
     getAllDesignations,
@@ -446,4 +502,5 @@ module.exports = {
     getIoUsers,
     getIoUsersBasedOnDivision,
     getAllKGID,
+    getUserParticularDetails,
 };

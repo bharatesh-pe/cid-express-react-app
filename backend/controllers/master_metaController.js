@@ -59,6 +59,18 @@ exports.fetch_specific_master_data = async (req, res) => {
 
       case "designation":
         data = await Designation.findAll({
+            include: [
+              {
+                model: Department,
+                as: "designation_department",
+                attributes: ["department_id", "department_name"],
+                },
+                {
+                model: Division,
+                as: "designation_division",
+                attributes: ["division_id", "division_name"],
+                }
+            ],
           attributes: [
             "designation_id",
             "designation_name",
@@ -67,26 +79,65 @@ exports.fetch_specific_master_data = async (req, res) => {
             "created_at",
           ],
         });
-        break;
+
+        const formattedDesignations = data.map((designation) => {
+            const plain = designation.get({ plain: true });
+            return {
+                ...plain,
+                department_name: plain.designation_department?.department_name || "Unknown Department",
+                department_id: plain.designation_department?.department_id || "Unknown Department",
+                division_name: plain.designation_division?.division_name || "Unknown Division",
+                division_id: plain.designation_division?.division_id || "Unknown Division",
+            };
+        });
+        data = formattedDesignations;
+        break
 
       case "division":
-        data = await Division.findAll();
-        const departmentIds = data.map((division) => division.department_id);
-        const departments = await Department.findAll({
-          where: {
-            department_id: departmentIds,
-          },
-        });
-        const departmentMap = {};
-        departments.forEach((department) => {
-          departmentMap[department.department_id] = department.department_name;
-        });
+        // data = await Division.findAll();
+        // const departmentIds = data.map((division) => division.department_id);
+        // const departments = await Department.findAll({
+        //   where: {
+        //     department_id: departmentIds,
+        //   },
+        // });
+        // const departmentMap = {};
+        // departments.forEach((department) => {
+        //   departmentMap[department.department_id] = department.department_name;
+        // });
 
-        const formattedDivisions = data.map((division) => ({
-          ...division.dataValues,
-          department_name:
-            departmentMap[division.department_id] || "Unknown Department",
-        }));
+        // const formattedDivisions = data.map((division) => ({
+        //   ...division.dataValues,
+        //   department_name:
+        //     departmentMap[division.department_id] || "Unknown Department",
+        // }));
+        const divisions = await Division.findAll({
+            include: [
+                {
+                model: Department,
+                as: "department",
+                attributes: ["department_name"],
+                },
+            ],
+            attributes: [
+                "division_id",
+                "division_name",
+                "description",
+                "department_id",
+                "created_by",
+                "created_at",
+            ],
+            });
+
+            // Flatten the result to include department_name at root level
+            const formattedDivisions = divisions.map((division) => {
+            const plain = division.get({ plain: true });
+            return {
+                ...plain,
+                department_name: plain.department?.department_name || "Unknown Department",
+            };
+            });
+
 
         return res.status(200).json({ divisions: formattedDivisions });
       case "approval_item":
@@ -139,6 +190,8 @@ exports.create_master_data = async (req, res) => {
         newEntry = await Designation.create(
           {
             designation_name: data.designation_name,
+            department_id: data.department_id,
+            division_id: data.division_id,
             description: data.description,
             created_by: data.created_by,
             created_at: new Date(),
@@ -146,6 +199,8 @@ exports.create_master_data = async (req, res) => {
           {
             returning: [
               "designation_id",
+              "department_id",
+              "division_id",
               "designation_name",
               "description",
               "created_by",
@@ -304,6 +359,7 @@ exports.create_master_data = async (req, res) => {
       fs.rmSync(dirPath, { recursive: true, force: true });
   }
 };
+
 exports.update_master_data = async (req, res) => {
   const { master_name, data, transaction_id } = req.body;
 
@@ -346,6 +402,8 @@ exports.update_master_data = async (req, res) => {
         result = await Designation.update(
           {
             designation_name: data.designation_name,
+            department_id: data.department_id,
+            division_id: data.division_id,
             description: data.description,
             updated_by: data.updated_by,
           },
@@ -547,6 +605,7 @@ exports.update_master_data = async (req, res) => {
       fs.rmSync(dirPath, { recursive: true, force: true });
   }
 };
+
 exports.delete_master_data = async (req, res) => {
   const { master_name, id, transaction_id } = req.body;
 

@@ -23,6 +23,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      department_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+     },
+     division_id: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+     },
       created_by: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -40,6 +48,18 @@ module.exports = (sequelize, DataTypes) => {
       timestamps: false,
     }
   );
+
+  
+  Designation.associate = (models) => {
+    Designation.belongsTo(models.Department, {
+      foreignKey: "department_id",
+      as: "designation_department",
+    });
+    Designation.belongsTo(models.Division, {
+      foreignKey: "division_id",
+      as: "designation_division",
+    });
+  };
 
   return Designation;
 };

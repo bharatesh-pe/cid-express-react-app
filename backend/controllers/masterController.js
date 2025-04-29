@@ -93,6 +93,8 @@ const fetch_designation_data = async () => {
       attributes: [
         ['designation_id', 'code'], // Alias designation_id as code
         ['designation_name', 'name'], // Alias designation_name as name
+        'department_id',
+        'division_id', 
       ],
       where: {
         designation_id: {

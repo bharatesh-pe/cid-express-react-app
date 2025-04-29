@@ -77,10 +77,12 @@ exports.createTemplate = async (req, res, next) => {
       .replace(/[^a-z0-9\s]/g, "") // Remove special characters
       .replace(/\s+/g, "_"); // Replace spaces with underscores
 
+
     let table_name = link_module
       ? "cid_" + link_module.toLowerCase() + "_" + base_name
       : "cid_" + base_name;
 
+      console.log("table_name", table_name);
     // Check if table already exists
     const existingTable = await Template.findOne({ where: { table_name } });
     if (existingTable) {
