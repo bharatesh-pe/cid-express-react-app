@@ -84,10 +84,10 @@ exports.fetch_specific_master_data = async (req, res) => {
             const plain = designation.get({ plain: true });
             return {
                 ...plain,
-                department_name: plain.designation_department?.department_name || "Unknown Department",
-                department_id: plain.designation_department?.department_id || "Unknown Department",
-                division_name: plain.designation_division?.division_name || "Unknown Division",
-                division_id: plain.designation_division?.division_id || "Unknown Division",
+                department_name: plain.designation_department?.department_name || null,
+                department_id: plain.designation_department?.department_id || null,
+                division_name: plain.designation_division?.division_name || null,
+                division_id: plain.designation_division?.division_id || null,
             };
         });
         data = formattedDesignations;
