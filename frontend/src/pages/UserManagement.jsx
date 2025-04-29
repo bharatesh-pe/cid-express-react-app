@@ -1806,7 +1806,7 @@ const UserManagement = () => {
 
                 {(modalTitle === "Reset Pin" || modalTitle === "Add New User") && (
                     <>
-                    <Grid item xs={12} sm={4}>
+                    <Grid item xs={12} sm={modalTitle === "Reset Pin" ? 6 : 4}>
                         <div className="px-2">
                         <PasswordInput
                             id="pin"
@@ -1819,7 +1819,7 @@ const UserManagement = () => {
                         />
                         </div>
                     </Grid>
-                    <Grid item xs={12} sm={4}>
+                    <Grid item xs={12} sm={modalTitle === "Reset Pin" ? 6: 4}>
                         <div className="px-2">
                         <PasswordInput
                             id="confirmPin"
