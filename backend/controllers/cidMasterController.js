@@ -404,10 +404,46 @@ const getIoUsersBasedOnDivision = async (req, res) => {
     }
 };
 
+const getAllKGID = async (req, res) => {
+    try {
+
+        var kgids = {};
+
+        //avoid the kgid 123456,12345 
+        kgids = await KGID.findAll({
+            // include: [{ model: Department, as: "department" }],
+            order: [["created_at", "DESC"]],
+            attributes: ["id","kgid"],
+            where: {
+                kgid: {
+                    [Op.notIn]: ["123456", "12345"],
+                },
+            },
+        });
+
+        kgids = kgids.map(kgid => ({
+            ...kgid,
+            kgid_id: kgid.id,
+            kgid_name: kgid.kgid,
+        }));
+
+
+        if (!kgids || kgids.length === 0) {
+            return adminSendResponse(res, 200, true, "KGID retrieved successfully", []);
+        }
+
+        return adminSendResponse(res, 200, true, "KGID retrieved successfully", [ ...kgids ]);
+    } catch (error) {
+        console.error("Error fetching kgids:", error.message);
+        return adminSendResponse(res, 500, false, "Internal Server Error");
+    }
+};
+
 module.exports = {
     getAllDepartments,
     getAllDesignations,
     getAllDivisions,
     getIoUsers,
     getIoUsersBasedOnDivision,
+    getAllKGID,
 };
