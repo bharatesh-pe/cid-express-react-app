@@ -1063,32 +1063,71 @@ const UserManagement = () => {
     </span>
   );
 
-  const handleDropDownChange = (fieldName, value) => {
-    setNewUser((prev) => {
-      let updatedData = {
-        ...prev,
-        [fieldName]: Array.isArray(value) ? value : String(value),
-      };
+    const handleDropDownChange = (fieldName, value) => {
 
-      // Autofill name and mobile when KGID is selected
-      if (fieldName === "kgid") {
-        const selectedKgid = kgidOptions.find((item) => item.code === value);
-        console.log("Selected KGID Data:", selectedKgid); // Debugging
+        setNewUser((prev) => {
+            let updatedData = {
+                ...prev,
+                [fieldName]: Array.isArray(value) ? value : String(value),
+            };
 
-        if (selectedKgid) {
-          updatedData.name = selectedKgid.kgid;
-          updatedData.mobile = selectedKgid.mobile || ""; // Ensure mobile is set
-        }
-      }
+            // Autofill name and mobile when KGID is selected
+            if (fieldName === "kgid") {
+                const selectedKgid = kgidOptions.find((item) => item.code === value);
+                console.log("Selected KGID Data:", selectedKgid); // Debugging
 
-      // Reset division when department changes
-      if (fieldName === "department") {
-        updatedData.division = "";
-      }
+                if (selectedKgid) {
+                    updatedData.name = selectedKgid.kgid;
+                    updatedData.mobile = selectedKgid.mobile || ""; // Ensure mobile is set
+                }
+            }
 
-      return updatedData;
-    });
-  };
+            // Reset division when department changes
+            if (fieldName === "department") {
+                updatedData.division = "";
+            }
+
+            if(fieldName === "designation"){
+                var filteredDepartment = masterData?.designation.filter((data) => {
+                    return value.includes(String(data?.code));
+                });
+
+                const departmentIds = filteredDepartment.map(item => Number(item.department_id));
+                const divisionIds = filteredDepartment.map(item => item.division_id);
+                
+                const uniqueDepartments = [...new Set(departmentIds)];
+
+                if(uniqueDepartments.length === 0){
+                    updatedData.department = null;
+                    updatedData.division = null;
+                    return updatedData;
+                }
+                
+                if (uniqueDepartments.length === 1) {
+                    updatedData.department = uniqueDepartments[0];
+                } else {
+                    toast.error("Please select designations from the same department",{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    updatedData.department = null;
+                    updatedData.division = null;
+                    return updatedData;
+                }
+                
+                updatedData.division = divisionIds;
+            }
+            
+            return updatedData;
+
+        });
+    };
 
   const handleInputChange = (e) => {
     setNewUser((prev) => ({
@@ -1102,17 +1141,17 @@ const UserManagement = () => {
     department: [],
     division: [],
   });
-  const filteredDivisionOptions = newUser.department
-    ? masterData?.division
-        ?.filter(
-          (div) =>
-            div.department_id.toString() === newUser.department.toString()
-        )
-        ?.map((item) => ({
-          name: item.name,
-          code: item.code.toString(),
-        }))
-    : [];
+  const filteredDivisionOptions = masterData?.division || []
+    // ? masterData?.division
+    //     ?.filter(
+    //       (div) =>
+    //         div.department_id.toString() === newUser.department.toString()
+    //     )
+    //     ?.map((item) => ({
+    //       name: item.name,
+    //       code: item.code.toString(),
+    //     }))
+    // : [];
 
   useEffect(() => {
     if (Object.keys(masterData).length === 0 || masterData.role.length === 0) {
@@ -1584,7 +1623,7 @@ const UserManagement = () => {
                           : null,
                       disabled: modalTitle === "View User" || modalTitle === "Edit User"
                     }}
-                    value={newUser.kgid}
+                    value={newUser?.kgid}
                     onHistory={() => getUsermanagementFieldLog("kgid")}
                     onChange={handleDropDownChange}
                   />
@@ -1610,7 +1649,7 @@ const UserManagement = () => {
                         handleInputChange(e);
                       }
                     }}
-                    value={newUser.name}
+                    value={newUser?.name}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -1626,7 +1665,7 @@ const UserManagement = () => {
                           : null,
                       disabled: true,
                     }}
-                    value={newUser.mobile}
+                    value={newUser?.mobile}
                     formData={newUser}
                     errors={errors}
                     onHistory={() => getUsermanagementFieldLog("mobile")}
@@ -1646,7 +1685,7 @@ const UserManagement = () => {
                           ? "role"
                           : null,
                     }}
-                    value={newUser.role}
+                    value={newUser?.role}
                     onHistory={() => getUsermanagementFieldLog("role")}
                     onChange={handleDropDownChange}
                   />
@@ -1666,7 +1705,7 @@ const UserManagement = () => {
                           ? "designation"
                           : null,
                     }}
-                    value={newUser.designation}
+                    value={newUser?.designation}
                     onHistory={() => getUsermanagementFieldLog("designation")}
                     onChange={handleDropDownChange}
                   />
@@ -1680,8 +1719,8 @@ const UserManagement = () => {
                     }}
                   >
                     Supervisor Designation: <br />
-                    {Array.isArray(newUser.designation) && newUser.designation.length > 0
-                      ? newUser.designation
+                    {Array.isArray(newUser?.designation) && newUser?.designation.length > 0
+                      ? newUser?.designation
                           .map((des) => {
                             const supervisorKeys = Object.keys(
                               masterData.supervisor_designation
@@ -1720,8 +1759,9 @@ const UserManagement = () => {
                         modalTitle === "View User" || modalTitle === "Edit User"
                           ? "department"
                           : null,
+                        disabled:true
                     }}
-                    value={newUser.department}
+                    value={newUser?.department}
                     onHistory={() => getUsermanagementFieldLog("department")}
                     onChange={handleDropDownChange}
                   />
@@ -1739,8 +1779,9 @@ const UserManagement = () => {
                         modalTitle === "View User" || modalTitle === "Edit User"
                           ? "division"
                           : null,
+                        disabled:true
                     }}
-                    value={newUser.division}
+                    value={newUser?.division}
                     onHistory={() => getUsermanagementFieldLog("division")}
                     onChange={handleDropDownChange}
                   />
@@ -1758,7 +1799,7 @@ const UserManagement = () => {
                         label="Enter New Pin"
                         name="pin"
                         type="password"
-                        value={newUser.pin || ""}
+                        value={newUser?.pin || ""}
                         onChange={handleInputChange}
                         error={errors.pin}
                       />
@@ -1771,7 +1812,7 @@ const UserManagement = () => {
                         label="Re-enter New Pin"
                         name="confirmPin"
                         type="password"
-                        value={newUser.confirmPin || ""}
+                        value={newUser?.confirmPin || ""}
                         onChange={handleInputChange}
                         error={errors.confirmPin}
                       />
