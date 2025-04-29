@@ -38,6 +38,7 @@ import TextFieldInput from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import { InputAdornment } from "@mui/material"
 import AddIcon from '@mui/icons-material/Add';
+import SelectField from "../components/form/Select.jsx";
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
@@ -1638,7 +1639,7 @@ const UserManagement = () => {
               <Grid container spacing={2}>
               {(modalTitle !== "Reset Pin") && (
               <>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <AutocompleteField
                     formData={newUser}
                     errors={errors}
@@ -1658,7 +1659,7 @@ const UserManagement = () => {
                     onChange={handleDropDownChange}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <ShortText
                     field={{
                       name: "name",
@@ -1682,7 +1683,7 @@ const UserManagement = () => {
                     value={newUser?.name}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <NumberField
                     field={{
                       name: "mobile",
@@ -1702,7 +1703,7 @@ const UserManagement = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <MultiSelect
                     formData={newUser}
                     errors={errors}
@@ -1715,6 +1716,7 @@ const UserManagement = () => {
                         modalTitle === "View User" || modalTitle === "Edit User"
                           ? "designation"
                           : null,
+                      disabled: modalTitle === "View User"
                     }}
                     value={newUser?.designation}
                     onHistory={() => getUsermanagementFieldLog("designation")}
@@ -1723,7 +1725,7 @@ const UserManagement = () => {
                 </Grid>
 
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <AutocompleteField
                     formData={newUser}
                     errors={errors}
@@ -1743,7 +1745,7 @@ const UserManagement = () => {
                     onChange={handleDropDownChange}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <MultiSelect
                     formData={newUser}
                     errors={errors}
@@ -1764,7 +1766,7 @@ const UserManagement = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <p
                     style={{
                       fontSize: "14px",
@@ -1799,60 +1801,63 @@ const UserManagement = () => {
                       : ""}
                   </p>
                 </Grid>
+                </>
+                )}
 
-                <Grid item xs={12} sm={6}>
-                    <AutocompleteField
-                        formData={newUser}
-                        errors={errors}
-                        field={{
-                        name: "role",
-                        label: "Select Role",
-                        options: roleOptions,
-                        required: modalTitle !== "Set Filters",
-                        history:
-                            modalTitle === "View User" || modalTitle === "Edit User"
-                            ? "role"
-                            : null,
-                        }}
-                        value={newUser?.role}
-                        onHistory={() => getUsermanagementFieldLog("role")}
-                        onChange={handleDropDownChange}
-                    />
+                {(modalTitle === "Reset Pin" || modalTitle === "Add New User") && (
+                    <>
+                    <Grid item xs={12} sm={4}>
+                        <div className="px-2">
+                        <PasswordInput
+                            id="pin"
+                            label="Enter New Pin"
+                            name="pin"
+                            type="password"
+                            value={newUser?.pin || ""}
+                            onChange={handleInputChange}
+                            error={errors.pin}
+                        />
+                        </div>
                     </Grid>
-                </>
+                    <Grid item xs={12} sm={4}>
+                        <div className="px-2">
+                        <PasswordInput
+                            id="confirmPin"
+                            label="Re-enter New Pin"
+                            name="confirmPin"
+                            type="password"
+                            value={newUser?.confirmPin || ""}
+                            onChange={handleInputChange}
+                            error={errors.confirmPin}
+                        />
+                        </div>
+                    </Grid>
+                    </>
+                )}
+
+                {(modalTitle !== "Reset Pin") && (
+                    <Grid item xs={12} sm={12}>
+                        <SelectField
+                            formData={newUser}
+                            errors={errors}
+                            field={{
+                            name: "role",
+                            label: "Select Role",
+                            options: roleOptions,
+                            required: modalTitle !== "Set Filters",
+                            history:
+                                modalTitle === "View User" || modalTitle === "Edit User"
+                                ? "role"
+                                : null,
+                            disabled: modalTitle === "View User"
+                            }}
+                            value={newUser?.role}
+                            onHistory={() => getUsermanagementFieldLog("role")}
+                            onChange={handleDropDownChange}
+                        />
+                    </Grid>
               )}
 
-
-              {(modalTitle === "Reset Pin" || modalTitle === "Add New User") && (
-                <>
-                  <Grid item xs={12} sm={6}>
-                    <div className="px-2">
-                      <PasswordInput
-                        id="pin"
-                        label="Enter New Pin"
-                        name="pin"
-                        type="password"
-                        value={newUser?.pin || ""}
-                        onChange={handleInputChange}
-                        error={errors.pin}
-                      />
-                    </div>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <div className="px-2">
-                      <PasswordInput
-                        id="confirmPin"
-                        label="Re-enter New Pin"
-                        name="confirmPin"
-                        type="password"
-                        value={newUser?.confirmPin || ""}
-                        onChange={handleInputChange}
-                        error={errors.confirmPin}
-                      />
-                    </div>
-                  </Grid>
-                </>
-              )}
             </Grid>
           </form> 
         </Modal>
