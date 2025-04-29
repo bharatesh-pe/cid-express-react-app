@@ -61,6 +61,8 @@ exports.fetch_specific_master_data = async (req, res) => {
         data = await Designation.findAll({
           attributes: [
             "designation_id",
+            "department_id",
+            "division_id",
             "designation_name",
             "description",
             "created_by",
@@ -139,6 +141,8 @@ exports.create_master_data = async (req, res) => {
         newEntry = await Designation.create(
           {
             designation_name: data.designation_name,
+            department_id: data.department_id,
+            division_id: data.division_id,
             description: data.description,
             created_by: data.created_by,
             created_at: new Date(),
@@ -146,6 +150,8 @@ exports.create_master_data = async (req, res) => {
           {
             returning: [
               "designation_id",
+              "department_id",
+              "division_id",
               "designation_name",
               "description",
               "created_by",
@@ -346,6 +352,8 @@ exports.update_master_data = async (req, res) => {
         result = await Designation.update(
           {
             designation_name: data.designation_name,
+            department_id: data.department_id,
+            division_id: data.division_id,
             description: data.description,
             updated_by: data.updated_by,
           },
