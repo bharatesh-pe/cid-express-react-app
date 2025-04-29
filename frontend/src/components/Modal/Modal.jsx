@@ -24,9 +24,10 @@ const Modal = ({
     <Dialog
       open={visible}
       onClose={onHide}
-      fullScreen
+    //   fullScreen
       fullWidth
-      sx={{ marginLeft: '260px' }}
+      maxWidth={"lg"}
+    //   sx={{ marginLeft: '260px' }}
     >
       <DialogTitle
         sx={{
@@ -39,8 +40,26 @@ const Modal = ({
             <div style={{ flexGrow: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
                 {headerContent ? headerContent : title}
             </div>
+        </Box>
+{/* 
 
-            {footerContent || (
+        <Button
+          onClick={onHide}
+          sx={{ color: "black", minWidth: "auto", padding: "5px", }}
+        >
+        </Button> */}
+      </DialogTitle>
+
+      <DialogContent
+        sx={{
+          marginTop: "20px",
+        }}>
+        <div>{children}</div>
+      </DialogContent>
+
+      <DialogActions sx={{ justifyContent: "flex-end", padding: "10px 20px" }}>
+
+        {footerContent || (
                 <>
                     <Button
                         onClick={onHide}
@@ -71,25 +90,6 @@ const Modal = ({
                     </Button>
                 </>
             )}
-        </Box>
-{/* 
-
-        <Button
-          onClick={onHide}
-          sx={{ color: "black", minWidth: "auto", padding: "5px", }}
-        >
-        </Button> */}
-      </DialogTitle>
-
-      <DialogContent
-        sx={{
-          marginTop: "20px",
-        }}>
-        <div>{children}</div>
-      </DialogContent>
-
-      <DialogActions sx={{ justifyContent: "flex-end", padding: "10px 20px" }}>
-
       </DialogActions>
     </Dialog>
 
