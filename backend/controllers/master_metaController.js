@@ -595,20 +595,20 @@ exports.update_master_data = async (req, res) => {
 
         // 4. Update designation_department junction table
         if (departmentIds.length > 0) {
-        // Delete old mappings
-        await DesignationDepartment.destroy({
-            where: { designation_id },
-        });
+            // Delete old mappings
+            await DesignationDepartment.destroy({
+                where: { designation_id },
+            });
 
-        // Insert new mappings
-        const newMappings_departyment = deprtmentIds.map((divId) => ({
-            designation_id,
-            deprtment_id: divId,
-            created_by: updated_by,
-            created_at: new Date(),
-        }));
+            // Insert new mappings
+            const newMappings_departyment = departmentIds.map((depID) => ({
+                designation_id,
+                department_id: depID,
+                created_by: updated_by,
+                created_at: new Date(),
+            }));
 
-        await DesignationDepartment.bulkCreate(newMappings_departyment);
+            await DesignationDepartment.bulkCreate(newMappings_departyment);
         }
         break;
 
