@@ -270,7 +270,7 @@ exports.create_master_data = async (req, res) => {
             }
 
             // 2. Create new Designation
-            const newEntry = await Designation.create(
+            newEntry = await Designation.create(
             {
                 designation_name: data.designation_name,
                 department_id: data.department_id,
