@@ -244,7 +244,6 @@ const verify_OTP = async (req, res) => {
                 designation_name: ud.designation.designation_name
             }));
 
-            console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<supervisorDesignation", supervisorDesignation);
             let subordinateUserIds = [];
             let tempDesignation = [];
             if(supervisorDesignation.length > 0) {
@@ -258,7 +257,7 @@ const verify_OTP = async (req, res) => {
                 });  
             }
  
-            if(supervisorDesignationIds.length === 0) {
+            if(tempDesignation.length === 0) {
                 supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
 
                 // Fetch subordinates based on supervisor designations
@@ -277,20 +276,22 @@ const verify_OTP = async (req, res) => {
                 }
             } 
             else {
-                if(tempDesignation.length)
-                {
-                    const subordinates = await UsersHierarchyNew.findAll({
-                        where: { supervisor_designation_id: { [Op.in]: tempDesignation } },
-                        attributes: ["officer_designation_id"],
-                    });
-                    const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
-        
-                    if (officerDesignationIds.length) {
-                    const subordinateUsers = await UserDesignation.findAll({
-                        where: { designation_id: { [Op.in]: officerDesignationIds } },
-                        attributes: ["user_id"],
-                    });
-                    subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+                
+                const findDivision = await Designation.findAll({
+                    where :{ designation_id : { [Op.in] : tempDesignation } },
+                    attributes:["division_id"]
+                })
+
+                if(findDivision.length > 0) {
+                    const divisionIds = findDivision.map((ud) => ud.division_id);
+                    const usersBelongToDivisions = await UsersDivision.findAll({
+                        where : {division_id : { [Op.in] : divisionIds }},
+                        attributes : ["user_id"]
+                    })
+
+                    if(usersBelongToDivisions.length > 0) {
+                        const userIds = usersBelongToDivisions.map((ud) => ud.user_id);
+                        subordinateUserIds = [...subordinateUserIds, ...userIds];
                     }
                 }
             }

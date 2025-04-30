@@ -209,6 +209,22 @@ exports.create_user = async (req, res) => {
       { transaction: t }
     );
 
+     // Insert new department
+    for (const divId of divisionIds) {
+      await UsersDivision.create(
+        {
+          users_department_id: newUserDepartment.users_department_id,
+          division_id: divId,
+          created_by: created_by,
+          user_id: newUserDepartment.user_id,
+        },
+        { transaction: t }
+      );
+    }
+
+
+    const departmentIds = department_id.includes(",") ? department_id.split(",").map((id) => parseInt(id.trim(), 10)) : [parseInt(department_id, 10)];
+
     // // Create user division (Get user_id from department)
     // await UsersDivision.create({
     //     users_department_id: newUserDepartment.users_departmentS  _id,
