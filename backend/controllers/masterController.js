@@ -280,7 +280,7 @@ const fetch_designation_data = async () => {
 
         return {
           ...plain,
-          division_ids: division_ids || null,
+          division_id: division_ids || null,
         };
       })
     );
