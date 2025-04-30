@@ -197,6 +197,38 @@ exports.create_master_data = async (req, res) => {
             break;
 
         case "Designation":
+            // const existingDesignation = await Designation.findOne({
+            // where: {
+            //     designation_name: {
+            //     [Op.iLike]: `%${data.designation_name}%`,
+            //     },
+            // },
+            // });
+            // if (existingDesignation) {
+            //      return res.status(409).json({success: false,message: "Similar designation name already exists.",});
+            // }
+            // newEntry = await Designation.create(
+            // {
+            //     designation_name: data.designation_name,
+            //     department_id: data.department_id,
+            //     division_id: data.division_id,
+            //     description: data.description,
+            //     created_by: data.created_by,
+            //     created_at: new Date(),
+            // },
+            // {
+            //     returning: [
+            //     "designation_id",
+            //     "department_id",
+            //     "division_id",
+            //     "designation_name",
+            //     "description",
+            //     "created_by",
+            //     "created_at",
+            //     ],
+            // }
+            // );
+            // 1. Check for existing designation name (case-insensitive partial match)
             const existingDesignation = await Designation.findOne({
             where: {
                 designation_name: {
@@ -204,14 +236,19 @@ exports.create_master_data = async (req, res) => {
                 },
             },
             });
+
             if (existingDesignation) {
-                 return res.status(409).json({success: false,message: "Similar designation name already exists.",});
+            return res.status(409).json({
+                success: false,
+                message: "Similar designation name already exists.",
+            });
             }
-            newEntry = await Designation.create(
+
+            // 2. Create new Designation
+            const newEntry = await Designation.create(
             {
                 designation_name: data.designation_name,
                 department_id: data.department_id,
-                division_id: data.division_id,
                 description: data.description,
                 created_by: data.created_by,
                 created_at: new Date(),
@@ -220,7 +257,6 @@ exports.create_master_data = async (req, res) => {
                 returning: [
                 "designation_id",
                 "department_id",
-                "division_id",
                 "designation_name",
                 "description",
                 "created_by",
@@ -228,6 +264,26 @@ exports.create_master_data = async (req, res) => {
                 ],
             }
             );
+
+            // 3. Handle multiple division IDs (array or comma-separated string)
+            const divisionIds = Array.isArray(data.division_id)
+            ? data.division_id.map((id) => parseInt(id, 10))
+            : (data.division_id || "")
+                .split(",")
+                .map((id) => parseInt(id.trim(), 10))
+                .filter((id) => !isNaN(id));
+
+            // 4. Insert into designation_division table
+            if (divisionIds.length > 0) {
+            const bulkData = divisionIds.map((divId) => ({
+                designation_id: newEntry.designation_id,
+                division_id: divId,
+                created_by: data.created_by,
+                created_at: new Date(),
+            }));
+
+            await DesignationDivision.bulkCreate(bulkData);
+            }
             break;
 
         case "Division":
@@ -421,22 +477,65 @@ exports.update_master_data = async (req, res) => {
         break;
 
       case "Designation":
-        if (!data.designation_id) {
-          return res
-            .status(400)
-            .json({ message: "Designation ID is required for update." });
+        // if (!data.designation_id) {
+        //   return res
+        //     .status(400)
+        //     .json({ message: "Designation ID is required for update." });
+        // }
+        // whereCondition = { designation_id: data.designation_id };
+        // result = await Designation.update(
+        //   {
+        //     designation_name: data.designation_name,
+        //     department_id: data.department_id,
+        //     division_id: data.division_id,
+        //     description: data.description,
+        //     updated_by: data.updated_by,
+        //   },
+        //   { where: whereCondition }
+        // );
+        const { designation_id, designation_name, department_id, division_id, description, updated_by } = data;
+
+        if (!designation_id) {
+        return res.status(400).json({ message: "Designation ID is required for update." });
         }
-        whereCondition = { designation_id: data.designation_id };
-        result = await Designation.update(
-          {
-            designation_name: data.designation_name,
-            department_id: data.department_id,
-            division_id: data.division_id,
-            description: data.description,
-            updated_by: data.updated_by,
-          },
-          { where: whereCondition }
+
+        // 1. Update designation fields (excluding division_id)
+        await Designation.update(
+        {
+            designation_name,
+            department_id,
+            description,
+            updated_by,
+            updated_at: new Date(),
+        },
+        { where: { designation_id } }
         );
+
+        // 2. Parse multiple division IDs
+        const divisionIds = Array.isArray(division_id)
+        ? division_id.map((id) => parseInt(id, 10))
+        : (division_id || "")
+            .split(",")
+            .map((id) => parseInt(id.trim(), 10))
+            .filter((id) => !isNaN(id));
+
+        // 3. Update designation_division junction table
+        if (divisionIds.length > 0) {
+        // Delete old mappings
+        await DesignationDivision.destroy({
+            where: { designation_id },
+        });
+
+        // Insert new mappings
+        const newMappings = divisionIds.map((divId) => ({
+            designation_id,
+            division_id: divId,
+            created_by: updated_by,
+            created_at: new Date(),
+        }));
+
+        await DesignationDivision.bulkCreate(newMappings);
+        }
         break;
 
       case "Division":
@@ -660,13 +759,34 @@ exports.delete_master_data = async (req, res) => {
         break;
 
       case "Designation":
-        if (!id) {
-          return res
-            .status(400)
-            .json({ message: "Designation ID is required for deletion." });
-        }
-        whereCondition = { designation_id: id };
-        result = await Designation.destroy({ where: whereCondition });
+        // if (!id) {
+        //   return res
+        //     .status(400)
+        //     .json({ message: "Designation ID is required for deletion." });
+        // }
+        // whereCondition = { designation_id: id };
+        // result = await Designation.destroy({ where: whereCondition });
+            if (!id) {
+                return res
+                    .status(400)
+                    .json({ message: "Designation ID is required for deletion." });
+            }
+
+            const whereCondition = { designation_id: id };
+
+            // 1. Delete from junction table first
+            await DesignationDivision.destroy({
+                where: { designation_id: id },
+            });
+
+            // 2. Delete the designation
+            const result = await Designation.destroy({
+                where: whereCondition,
+            });
+
+            if (result === 0) {
+                return res.status(404).json({ success: false, message: "Designation not found." });
+            }
         break;
 
       case "Division":

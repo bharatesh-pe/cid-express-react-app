@@ -38,6 +38,16 @@ module.exports = {
           onUpdate: "CASCADE",
           onDelete: "SET NULL",
         },
+        department_id: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+          references: {
+            model: { schema: schema, tableName: "department" },
+            key: "department_id",
+          },
+          onUpdate: "CASCADE",
+          onDelete: "SET NULL",
+        },
         created_by: {
           type: Sequelize.INTEGER,
           allowNull: true,

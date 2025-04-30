@@ -4,7 +4,17 @@ const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Designation extends Model {
     static associate(models) {
-      
+      Designation.belongsTo(models.Department, {
+        foreignKey: "department_id",
+        as: "designation_department",
+      });
+
+      Designation.belongsToMany(models.Division, {
+        through: models.DesignationDivision,
+        foreignKey: "designation_id",
+        otherKey: "division_id",
+        as: "divisions", // Used in includes
+      });
     }
   }
 
@@ -26,11 +36,7 @@ module.exports = (sequelize, DataTypes) => {
       department_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-     },
-     division_id: {
-            type: DataTypes.INTEGER,
-            allowNull: false,
-     },
+      },
       created_by: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -49,18 +55,5 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  
-  Designation.associate = (models) => {
-    Designation.belongsTo(models.Department, {
-      foreignKey: "department_id",
-      as: "designation_department",
-    });
-    Designation.belongsTo(models.Division, {
-      foreignKey: "division_id",
-      as: "designation_division",
-    });
-  };
-
   return Designation;
 };
-
