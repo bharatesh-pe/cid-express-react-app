@@ -636,14 +636,33 @@ exports.get_users = async (req, res) => {
       },
     ];
 
-    const { rows: users, count: totalItems } = await Users.findAndCountAll({
-      attributes: ["user_id", "role_id", "dev_status"],
-      include,
+    const { rows: userRows, count: totalItems } = await Users.findAndCountAll({
+      attributes: ["user_id"],
+      include: [
+        {
+          model: Role,
+          as: "role",
+          required: true,
+          where: roleWhere,
+          attributes: [],
+        },
+      ],
       order: [[sort_by, order]],
       limit: parseInt(limit),
       offset: parseInt(offset),
       distinct: true,
       subQuery: false,
+    });
+
+    const userIds = userRows.map(u => u.user_id);
+
+    const users = await Users.findAll({
+      where: {
+        user_id: userIds,
+      },
+      attributes: ["user_id", "role_id", "dev_status"],
+      include,
+      order: [[sort_by, order]],
     });
 
     const totalPages = Math.ceil(totalItems / limit);
