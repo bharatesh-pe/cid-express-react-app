@@ -277,23 +277,23 @@ const verify_OTP = async (req, res) => {
             } 
             else {
                 
-                const findDivision = await Designation.findAll({
-                    where :{ designation_id : { [Op.in] : tempDesignation } },
-                    attributes:["division_id"]
-                })
+                // const findDivision = await Designation.findAll({
+                //     where :{ designation_id : { [Op.in] : tempDesignation } },
+                //     attributes:["division_id"]
+                // })
 
-                if(findDivision.length > 0) {
-                    const divisionIds = findDivision.map((ud) => ud.division_id);
-                    const usersBelongToDivisions = await UsersDivision.findAll({
-                        where : {division_id : { [Op.in] : divisionIds }},
-                        attributes : ["user_id"]
-                    })
+                // if(findDivision.length > 0) {
+                //     const divisionIds = findDivision.map((ud) => ud.division_id);
+                //     const usersBelongToDivisions = await UsersDivision.findAll({
+                //         where : {division_id : { [Op.in] : divisionIds }},
+                //         attributes : ["user_id"]
+                //     })
 
-                    if(usersBelongToDivisions.length > 0) {
-                        const userIds = usersBelongToDivisions.map((ud) => ud.user_id);
-                        subordinateUserIds = [...subordinateUserIds, ...userIds];
-                    }
-                }
+                //     if(usersBelongToDivisions.length > 0) {
+                //         const userIds = usersBelongToDivisions.map((ud) => ud.user_id);
+                //         subordinateUserIds = [...subordinateUserIds, ...userIds];
+                //     }
+                // }
             }
 
 
@@ -793,23 +793,23 @@ const get_supervisor_id = async (req, res) => {
     } 
     else {
         
-        const findDivision = await Designation.findAll({
-            where :{ designation_id : { [Op.in] : tempDesignation } },
-            attributes:["division_id"]
-        })
+        // const findDivision = await Designation.findAll({
+        //     where :{ designation_id : { [Op.in] : tempDesignation } },
+        //     attributes:["division_id"]
+        // })
 
-        if(findDivision.length > 0) {
-            const divisionIds = findDivision.map((ud) => ud.division_id);
-            const usersBelongToDivisions = await UsersDivision.findAll({
-                where : {division_id : { [Op.in] : divisionIds }},
-                attributes : ["user_id"]
-            })
+        // if(findDivision.length > 0) {
+        //     const divisionIds = findDivision.map((ud) => ud.division_id);
+        //     const usersBelongToDivisions = await UsersDivision.findAll({
+        //         where : {division_id : { [Op.in] : divisionIds }},
+        //         attributes : ["user_id"]
+        //     })
 
-            if(usersBelongToDivisions.length > 0) {
-                const userIds = usersBelongToDivisions.map((ud) => ud.user_id);
-                subordinateUserIds = [...subordinateUserIds, ...userIds];
-            }
-        }
+        //     if(usersBelongToDivisions.length > 0) {
+        //         const userIds = usersBelongToDivisions.map((ud) => ud.user_id);
+        //         subordinateUserIds = [...subordinateUserIds, ...userIds];
+        //     }
+        // }
     }
 
     // Combine userId with subordinates and remove duplicates
