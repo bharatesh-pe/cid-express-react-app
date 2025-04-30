@@ -88,6 +88,7 @@ const Hierarchy = () => {
     };
 
     const get_designation = async () => {
+        setLoading(true);
         try {
             const response = await api.post("/master_meta/fetch_specific_master_data", {
                 master_name: "designation"
@@ -106,6 +107,7 @@ const Hierarchy = () => {
         } catch (err) {
             let errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
             toast.error(errorMessage);
+            setLoading(false);
         }
     };
 
