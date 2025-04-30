@@ -381,10 +381,10 @@ exports.update_user = async (req, res) => {
     // }
 
     // const users_department_id = userDepartment ? userDepartment.users_department_id : null;
-    // const divisionIds = (division_id || "")
-    //   .split(",")
-    //   .map((id) => parseInt(id.trim(), 10))
-    //   .filter((id) => !isNaN(id));
+    const divisionIds = (division_id || "")
+      .split(",")
+      .map((id) => parseInt(id.trim(), 10))
+      .filter((id) => !isNaN(id));
 
     // const existingDivisions = users_department_id
     //   ? await UsersDivision.findAll({ where: { users_department_id } })
@@ -428,13 +428,10 @@ exports.update_user = async (req, res) => {
         { transaction: t }
     );
 
-    // Add divisions to new department (if needed)
-    for (const divId of divisionIds) {
-        await UsersDivision.create(
-        { users_department_id: newDep.users_department_id, division_id: divId, created_by, user_id },
-        { transaction: t }
-        );
-    }
+        // Add divisions to new department (if needed)
+        for (const divId of divisionIds) {
+            await UsersDivision.create({ users_department_id: newDep.users_department_id, division_id: divId, created_by, user_id },{ transaction: t });
+        }
     }
 
     // Remove deleted departments

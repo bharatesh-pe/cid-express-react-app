@@ -671,47 +671,41 @@ const Designation = () => {
 
     }
 
-    const handleDivisionChange = (data)=> {
-
-        if(data?.code){
-        
-            if(!showRoleAddModal){
-                setSelectedRole(prevState => ({
-                    ...prevState,
-                    ['division_id']: data.code
-                }));
-            }else{
-                setAddRoleData((prevData) => ({
-                    ...prevData,
-                    ['division_id']: data.code
-                }));
-            }
-
-        }else{
-            if(!showRoleAddModal){
-                setSelectedRole(prevState => ({
-                    ...prevState,
-                    ['division_id']: null
-                }));
-            }else{
-                setAddRoleData((prevData) => ({
-                    ...prevData,
-                    ['division_id']: null
-                }));
-            }
+    const handleDivisionChange = (data) => {
+        const divisionCodes = Array.isArray(data) ? data.map(item => Number(item.code)) : [];
+    
+        if (!showRoleAddModal) {
+            setSelectedRole(prevState => ({
+                ...prevState,
+                division_id: divisionCodes.join(",")
+            }));
+        } else {
+            setAddRoleData(prevData => ({
+                ...prevData,
+                division_id: divisionCodes.join(",")
+            }));
         }
-
-        if (errorRoleData['division_id']) {
-            setErrorRoleData((prevErrors) => {
+    
+        if (errorRoleData?.division_id) {
+            setErrorRoleData(prevErrors => {
                 const updatedErrors = { ...prevErrors };
-                if (updatedErrors['division_id']) {
-                    delete updatedErrors['division_id'];
-                }
+                delete updatedErrors.division_id;
                 return updatedErrors;
             });
         }
+    };
 
-    }
+    const parseMultipleCheckValues = (input) => {
+        if (Array.isArray(input)) {
+            return input.map(id => Number(id));
+        } else if (typeof input === 'string') {
+            return input.split(',').map(id => Number(id.trim()));
+        } else if (typeof input === 'number') {
+            return [input];
+        } else {
+            return [];
+        }
+    };
 
     return (
         <Box inert={loading ? true : false}>
@@ -887,34 +881,35 @@ const Designation = () => {
                                         Division
                                     </h4>
                                     <Autocomplete
-                                        id=""
-                                        required
+                                        multiple
+                                        id="division-multi-select"
                                         options={departmentBasedDivision}
                                         getOptionLabel={(option) => option.name || ''}
-                                        value={departmentBasedDivision.find((option) => option.code === (showRoleAddModal ? addRoleData.division_id : selectedRole?.division_id)) || null}
+                                        value={
+                                            showRoleAddModal
+                                              ? departmentBasedDivision.filter(opt => parseMultipleCheckValues(addRoleData.division_id).includes(opt.code))
+                                              : departmentBasedDivision.filter(opt => parseMultipleCheckValues(selectedRole?.division_id).includes(opt.code))
+                                        }
                                         onChange={(event, newValue) => handleDivisionChange(newValue)}
                                         disabled={showViewModal}
-                                        renderInput={(params) =>
+                                        renderInput={(params) => (
                                             <TextField
                                                 {...params}
-                                                error={errorRoleData && errorRoleData['division_id'] && Boolean(errorRoleData['division_id'])}
-                                                className='selectHideHistory'
+                                                error={errorRoleData?.division_id}
+                                                className="selectHideHistory"
                                                 label={
-                                                        <>
-                                                            Division
-                                                            <span
-                                                                style={{
-                                                                    padding: '0px 0px 0px 5px', 
-                                                                    verticalAlign: 'middle'
-                                                                }} 
-                                                                className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
-                                                            >
-                                                                {'*'}
-                                                            </span>
-                                                        </>
-                                                    }
+                                                    <>
+                                                        Division
+                                                        <span
+                                                            style={{ padding: '0px 0px 0px 5px', verticalAlign: 'middle' }}
+                                                            className="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
+                                                        >
+                                                            {'*'}
+                                                        </span>
+                                                    </>
+                                                }
                                             />
-                                        }
+                                        )}
                                     />
                                 </Box>
 
