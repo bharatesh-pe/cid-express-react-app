@@ -38,6 +38,7 @@ import TextFieldInput from '@mui/material/TextField';
 import SearchIcon from '@mui/icons-material/Search';
 import { InputAdornment } from "@mui/material"
 import AddIcon from '@mui/icons-material/Add';
+import SelectField from "../components/form/Select.jsx";
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
@@ -765,6 +766,24 @@ const UserManagement = () => {
       (option) => String(option.name) === String(userToEdit.kgid)
     );
 
+    var division_id_value = null
+
+    if(designationArray.length > 0){
+        var filteredDepartment = masterData?.designation.filter((data) => {
+            return designationArray.includes(String(data?.code));
+        });
+
+        const divisionIds = filteredDepartment.map(item => item.division_id);
+
+        if(divisionIds.length === 0){
+            division_id_value = null;
+        }else{
+            division_id_value = divisionIds;
+        }
+
+    }
+
+
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
@@ -782,9 +801,7 @@ const UserManagement = () => {
         departmentOptions.find(
           (option) => String(option.code) === String(userToEdit.department_id)
         )?.code || "",
-      division: divisionOptions
-        .filter((option) => divisionArray.includes(String(option.code)))
-        .map((option) => option.code),
+      division: division_id_value,
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
 
@@ -815,8 +832,23 @@ const UserManagement = () => {
       (option) => String(option.name) === String(userToEdit.kgid)
     );
 
-    console.log("KGID Options:", kgidOptions);
-    console.log("User KGID:", userToEdit.kgid);
+    var division_id_value = null
+
+    if(designationArray.length > 0){
+        var filteredDepartment = masterData?.designation.filter((data) => {
+            return designationArray.includes(String(data?.code));
+        });
+
+        const divisionIds = filteredDepartment.map(item => item.division_id);
+
+        if(divisionIds.length === 0){
+            division_id_value = null;
+        }else{
+            division_id_value = divisionIds;
+        }
+
+    }
+
     setNewUser((prevState) => ({
       ...prevState,
       id: userToEdit.id,
@@ -834,9 +866,7 @@ const UserManagement = () => {
         departmentOptions.find(
           (option) => String(option.code) === String(userToEdit.department_id)
         )?.code || "",
-      division: divisionOptions
-        .filter((option) => divisionArray.includes(String(option.code)))
-        .map((option) => option.code),
+      division: division_id_value,
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
 
@@ -1063,32 +1093,71 @@ const UserManagement = () => {
     </span>
   );
 
-  const handleDropDownChange = (fieldName, value) => {
-    setNewUser((prev) => {
-      let updatedData = {
-        ...prev,
-        [fieldName]: Array.isArray(value) ? value : String(value),
-      };
+    const handleDropDownChange = (fieldName, value) => {
 
-      // Autofill name and mobile when KGID is selected
-      if (fieldName === "kgid") {
-        const selectedKgid = kgidOptions.find((item) => item.code === value);
-        console.log("Selected KGID Data:", selectedKgid); // Debugging
+        setNewUser((prev) => {
+            let updatedData = {
+                ...prev,
+                [fieldName]: Array.isArray(value) ? value : String(value),
+            };
 
-        if (selectedKgid) {
-          updatedData.name = selectedKgid.kgid;
-          updatedData.mobile = selectedKgid.mobile || ""; // Ensure mobile is set
-        }
-      }
+            // Autofill name and mobile when KGID is selected
+            if (fieldName === "kgid") {
+                const selectedKgid = kgidOptions.find((item) => item.code === value);
+                console.log("Selected KGID Data:", selectedKgid); // Debugging
 
-      // Reset division when department changes
-      if (fieldName === "department") {
-        updatedData.division = "";
-      }
+                if (selectedKgid) {
+                    updatedData.name = selectedKgid.kgid;
+                    updatedData.mobile = selectedKgid.mobile || ""; // Ensure mobile is set
+                }
+            }
 
-      return updatedData;
-    });
-  };
+            // Reset division when department changes
+            if (fieldName === "department") {
+                updatedData.division = "";
+            }
+
+            if(fieldName === "designation"){
+                var filteredDepartment = masterData?.designation.filter((data) => {
+                    return value.includes(String(data?.code));
+                });
+
+                const departmentIds = filteredDepartment.map(item => Number(item.department_id));
+                const divisionIds = filteredDepartment.map(item => item.division_id);
+                
+                const uniqueDepartments = [...new Set(departmentIds)];
+
+                if(uniqueDepartments.length === 0){
+                    updatedData.department = null;
+                    updatedData.division = null;
+                    return updatedData;
+                }
+                
+                if (uniqueDepartments.length === 1) {
+                    updatedData.department = uniqueDepartments[0];
+                } else {
+                    toast.error("Please select designations from the same department",{
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    updatedData.department = null;
+                    updatedData.division = null;
+                    return updatedData;
+                }
+                
+                updatedData.division = divisionIds;
+            }
+            
+            return updatedData;
+
+        });
+    };
 
   const handleInputChange = (e) => {
     setNewUser((prev) => ({
@@ -1102,17 +1171,17 @@ const UserManagement = () => {
     department: [],
     division: [],
   });
-  const filteredDivisionOptions = newUser.department
-    ? masterData?.division
-        ?.filter(
-          (div) =>
-            div.department_id.toString() === newUser.department.toString()
-        )
-        ?.map((item) => ({
-          name: item.name,
-          code: item.code.toString(),
-        }))
-    : [];
+  const filteredDivisionOptions = masterData?.division || []
+    // ? masterData?.division
+    //     ?.filter(
+    //       (div) =>
+    //         div.department_id.toString() === newUser.department.toString()
+    //     )
+    //     ?.map((item) => ({
+    //       name: item.name,
+    //       code: item.code.toString(),
+    //     }))
+    // : [];
 
   useEffect(() => {
     if (Object.keys(masterData).length === 0 || masterData.role.length === 0) {
@@ -1493,6 +1562,7 @@ const UserManagement = () => {
           visible={isModalOpen}
           onHide={handleCloseModal}
           onSave={handleSave}
+
           headerContent={
             <div className="modal-header-title p-3">{modalTitle}</div>
           }
@@ -1569,7 +1639,7 @@ const UserManagement = () => {
               <Grid container spacing={2}>
               {(modalTitle !== "Reset Pin") && (
               <>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <AutocompleteField
                     formData={newUser}
                     errors={errors}
@@ -1584,12 +1654,12 @@ const UserManagement = () => {
                           : null,
                       disabled: modalTitle === "View User" || modalTitle === "Edit User"
                     }}
-                    value={newUser.kgid}
+                    value={newUser?.kgid}
                     onHistory={() => getUsermanagementFieldLog("kgid")}
                     onChange={handleDropDownChange}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <ShortText
                     field={{
                       name: "name",
@@ -1610,10 +1680,10 @@ const UserManagement = () => {
                         handleInputChange(e);
                       }
                     }}
-                    value={newUser.name}
+                    value={newUser?.name}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <NumberField
                     field={{
                       name: "mobile",
@@ -1626,33 +1696,14 @@ const UserManagement = () => {
                           : null,
                       disabled: true,
                     }}
-                    value={newUser.mobile}
+                    value={newUser?.mobile}
                     formData={newUser}
                     errors={errors}
                     onHistory={() => getUsermanagementFieldLog("mobile")}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <AutocompleteField
-                    formData={newUser}
-                    errors={errors}
-                    field={{
-                      name: "role",
-                      label: "Select Role",
-                      options: roleOptions,
-                      required: modalTitle !== "Set Filters",
-                      history:
-                        modalTitle === "View User" || modalTitle === "Edit User"
-                          ? "role"
-                          : null,
-                    }}
-                    value={newUser.role}
-                    onHistory={() => getUsermanagementFieldLog("role")}
-                    onChange={handleDropDownChange}
-                  />
-                </Grid>
 
-                <Grid item xs={12} sm={6}>
+                <Grid item xs={12} sm={4}>
                   <MultiSelect
                     formData={newUser}
                     errors={errors}
@@ -1665,13 +1716,57 @@ const UserManagement = () => {
                         modalTitle === "View User" || modalTitle === "Edit User"
                           ? "designation"
                           : null,
+                      disabled: modalTitle === "View User"
                     }}
-                    value={newUser.designation}
+                    value={newUser?.designation}
                     onHistory={() => getUsermanagementFieldLog("designation")}
                     onChange={handleDropDownChange}
                   />
                 </Grid>
-                <Grid item xs={12} sm={6}>
+
+
+                <Grid item xs={12} sm={4}>
+                  <AutocompleteField
+                    formData={newUser}
+                    errors={errors}
+                    field={{
+                      name: "department",
+                      label: "Department",
+                      options: departmentOptions,
+                      required: modalTitle !== "Set Filters",
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "department"
+                          : null,
+                        disabled:true
+                    }}
+                    value={newUser?.department}
+                    onHistory={() => getUsermanagementFieldLog("department")}
+                    onChange={handleDropDownChange}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <MultiSelect
+                    formData={newUser}
+                    errors={errors}
+                    field={{
+                      name: "division",
+                      label: "Division",
+                      options: filteredDivisionOptions,
+                      required: modalTitle !== "Set Filters",
+                      history:
+                        modalTitle === "View User" || modalTitle === "Edit User"
+                          ? "division"
+                          : null,
+                        disabled:true
+                    }}
+                    value={newUser?.division}
+                    onHistory={() => getUsermanagementFieldLog("division")}
+                    onChange={handleDropDownChange}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
                   <p
                     style={{
                       fontSize: "14px",
@@ -1680,8 +1775,8 @@ const UserManagement = () => {
                     }}
                   >
                     Supervisor Designation: <br />
-                    {Array.isArray(newUser.designation) && newUser.designation.length > 0
-                      ? newUser.designation
+                    {Array.isArray(newUser?.designation) && newUser?.designation.length > 0
+                      ? newUser?.designation
                           .map((des) => {
                             const supervisorKeys = Object.keys(
                               masterData.supervisor_designation
@@ -1706,79 +1801,63 @@ const UserManagement = () => {
                       : ""}
                   </p>
                 </Grid>
-
-                <Grid item xs={12} sm={6}>
-                  <AutocompleteField
-                    formData={newUser}
-                    errors={errors}
-                    field={{
-                      name: "department",
-                      label: "Department",
-                      options: departmentOptions,
-                      required: modalTitle !== "Set Filters",
-                      history:
-                        modalTitle === "View User" || modalTitle === "Edit User"
-                          ? "department"
-                          : null,
-                    }}
-                    value={newUser.department}
-                    onHistory={() => getUsermanagementFieldLog("department")}
-                    onChange={handleDropDownChange}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <MultiSelect
-                    formData={newUser}
-                    errors={errors}
-                    field={{
-                      name: "division",
-                      label: "Division",
-                      options: filteredDivisionOptions,
-                      required: modalTitle !== "Set Filters",
-                      history:
-                        modalTitle === "View User" || modalTitle === "Edit User"
-                          ? "division"
-                          : null,
-                    }}
-                    value={newUser.division}
-                    onHistory={() => getUsermanagementFieldLog("division")}
-                    onChange={handleDropDownChange}
-                  />
-                </Grid>
-
                 </>
+                )}
+
+                {(modalTitle === "Reset Pin" || modalTitle === "Add New User") && (
+                    <>
+                    <Grid item xs={12} sm={modalTitle === "Reset Pin" ? 6 : 4}>
+                        <div className="px-2">
+                        <PasswordInput
+                            id="pin"
+                            label="Enter New Pin"
+                            name="pin"
+                            type="password"
+                            value={newUser?.pin || ""}
+                            onChange={handleInputChange}
+                            error={errors.pin}
+                        />
+                        </div>
+                    </Grid>
+                    <Grid item xs={12} sm={modalTitle === "Reset Pin" ? 6: 4}>
+                        <div className="px-2">
+                        <PasswordInput
+                            id="confirmPin"
+                            label="Re-enter New Pin"
+                            name="confirmPin"
+                            type="password"
+                            value={newUser?.confirmPin || ""}
+                            onChange={handleInputChange}
+                            error={errors.confirmPin}
+                        />
+                        </div>
+                    </Grid>
+                    </>
+                )}
+
+                {(modalTitle !== "Reset Pin") && (
+                    <Grid item xs={12} sm={12}>
+                        <SelectField
+                            formData={newUser}
+                            errors={errors}
+                            field={{
+                            name: "role",
+                            label: "Select Role",
+                            options: roleOptions,
+                            required: modalTitle !== "Set Filters",
+                            history:
+                                modalTitle === "View User" || modalTitle === "Edit User"
+                                ? "role"
+                                : null,
+                            disabled: modalTitle === "View User"
+                            }}
+                            value={newUser?.role}
+                            onHistory={() => getUsermanagementFieldLog("role")}
+                            onChange={handleDropDownChange}
+                        />
+                    </Grid>
               )}
 
-              {(modalTitle === "Reset Pin" || modalTitle === "Add New User") && (
-                <>
-                  <Grid item xs={12} sm={6}>
-                    <div className="px-2">
-                      <PasswordInput
-                        id="pin"
-                        label="Enter New Pin"
-                        name="pin"
-                        type="password"
-                        value={newUser.pin || ""}
-                        onChange={handleInputChange}
-                        error={errors.pin}
-                      />
-                    </div>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <div className="px-2">
-                      <PasswordInput
-                        id="confirmPin"
-                        label="Re-enter New Pin"
-                        name="confirmPin"
-                        type="password"
-                        value={newUser.confirmPin || ""}
-                        onChange={handleInputChange}
-                        error={errors.confirmPin}
-                      />
-                    </div>
-                  </Grid>
-                </>
-              )}
             </Grid>
           </form> 
         </Modal>

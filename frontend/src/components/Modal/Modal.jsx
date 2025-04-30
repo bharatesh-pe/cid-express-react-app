@@ -6,6 +6,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Button from "@mui/material/Button";
 import CheckIcon from "@mui/icons-material/Check";
 import './Modal.css';
+import { Box } from '@mui/material';
 
 const Modal = ({
   title,
@@ -23,14 +24,10 @@ const Modal = ({
     <Dialog
       open={visible}
       onClose={onHide}
+    //   fullScreen
       fullWidth
-      maxWidth="md"
-      sx={{
-        "& .MuiDialog-paper": {
-          width: "50vw",
-          borderRadius: "12px",
-        },
-      }}
+      maxWidth={"lg"}
+    //   sx={{ marginLeft: '260px' }}
     >
       <DialogTitle
         sx={{
@@ -38,15 +35,19 @@ const Modal = ({
           backgroundColor: "#f1f1f1", padding: "10px", paddingBottom: "0px", whiteSpace: "nowrap"
         }}
       >
-        <div style={{ flexGrow: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
-          {headerContent ? headerContent : title}
-        </div>
+        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
+
+            <div style={{ flexGrow: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+                {headerContent ? headerContent : title}
+            </div>
+        </Box>
+{/* 
 
         <Button
           onClick={onHide}
           sx={{ color: "black", minWidth: "auto", padding: "5px", }}
         >
-        </Button>
+        </Button> */}
       </DialogTitle>
 
       <DialogContent
@@ -57,37 +58,38 @@ const Modal = ({
       </DialogContent>
 
       <DialogActions sx={{ justifyContent: "flex-end", padding: "10px 20px" }}>
+
         {footerContent || (
-          <>
-            <Button
-              onClick={onHide}
-              variant="outlined"
-              sx={{
-                color: "black",
-                borderColor: "#b7bbc2",
-                "&:hover": {
-                  backgroundColor: "#f1f5f9",
-                },
-              }}
-            >
-              {closeButtonLabel}
-            </Button>
-            <Button
-              onClick={onSave}
-              variant="contained"
-              startIcon={<CheckIcon />}
-              sx={{
-                color: "white",
-                backgroundColor: "#4caf50",
-                "&:hover": {
-                  backgroundColor: "#45a049",
-                },
-              }}
-            >
-              {saveButtonLabel}
-            </Button>
-          </>
-        )}
+                <>
+                    <Button
+                        onClick={onHide}
+                        variant="outlined"
+                        sx={{
+                            color: "black",
+                            borderColor: "#b7bbc2",
+                            "&:hover": {
+                            backgroundColor: "#f1f5f9",
+                            },
+                        }}
+                    >
+                        {closeButtonLabel}
+                    </Button>
+                    <Button
+                        onClick={onSave}
+                        variant="contained"
+                        startIcon={<CheckIcon />}
+                        sx={{
+                            color: "white",
+                            backgroundColor: "#4caf50",
+                            "&:hover": {
+                            backgroundColor: "#45a049",
+                            },
+                        }}
+                    >
+                        {saveButtonLabel}
+                    </Button>
+                </>
+            )}
       </DialogActions>
     </Dialog>
 
