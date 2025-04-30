@@ -101,12 +101,12 @@ exports.fetch_specific_master_data = async (req, res) => {
             .join(", ");
             const division_ids = designation_division
             .map((div) => div.division_id)
-            .join(", ");
+            .join(",");
 
             return {
             ...plain,
-            division_names: division_names || null,
-            division_ids: division_ids || null,
+            division_name: division_names || null,
+            division_id: division_ids || null,
             department_name: plain.designation_department?.department_name || null,
             department_id: plain.designation_department?.department_id || null,
             };
