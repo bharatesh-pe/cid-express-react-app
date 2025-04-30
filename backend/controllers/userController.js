@@ -371,42 +371,133 @@ exports.update_user = async (req, res) => {
       await UserDesignation.destroy({ where: { user_id, designation_id: removedDesignations }, transaction: t });
     }
 
-    const userDepartment = await UsersDepartment.findOne({ where: { user_id } });
-    if (userDepartment && userDepartment.department_id != department_id) {
-      await UsersDepartment.update({ department_id }, { where: { user_id }, transaction: t });
-      await UserManagementLog.create(
-        { user_id, field: "department", info: `${department_id}`, at: new Date(), by: created_by },
+    // const userDepartment = await UsersDepartment.findOne({ where: { user_id } });
+    // if (userDepartment && userDepartment.department_id != department_id) {
+    //   await UsersDepartment.update({ department_id }, { where: { user_id }, transaction: t });
+    //   await UserManagementLog.create(
+    //     { user_id, field: "department", info: `${department_id}`, at: new Date(), by: created_by },
+    //     { transaction: t }
+    //   );
+    // }
+
+    // const users_department_id = userDepartment ? userDepartment.users_department_id : null;
+    // const divisionIds = (division_id || "")
+    //   .split(",")
+    //   .map((id) => parseInt(id.trim(), 10))
+    //   .filter((id) => !isNaN(id));
+
+    // const existingDivisions = users_department_id
+    //   ? await UsersDivision.findAll({ where: { users_department_id } })
+    //   : [];
+    // const existingDivisionIds = existingDivisions.map((d) => d.division_id);
+
+    // const newDivisions = divisionIds.filter((id) => !existingDivisionIds.includes(id));
+    // const removedDivisions = existingDivisionIds.filter((id) => !divisionIds.includes(id));
+
+    // if (newDivisions.length > 0) {
+    //   await UsersDivision.bulkCreate(
+    //     newDivisions.map((divId) => ({ users_department_id, division_id: divId, created_by, user_id })),
+    //     { transaction: t }
+    //   );
+    //   await UserManagementLog.create(
+    //     { user_id, field: "division", info: `${divisionIds}`, at: new Date(), by: created_by },
+    //     { transaction: t }
+    //   );
+    // }
+    // if (removedDivisions.length > 0) {
+    //   await UsersDivision.destroy({ where: { users_department_id, division_id: removedDivisions }, transaction: t });
+    // }
+
+    const newDepartmentIds = (department_id || "").split(",").map((id) => parseInt(id.trim(), 10)).filter((id) => !isNaN(id));
+
+    const existingDepartments = await UsersDepartment.findAll({ where: { user_id } });
+    const existingDepartmentIds = existingDepartments.map((d) => d.department_id);
+
+    // Determine departments to add/remove
+    const departmentsToAdd = newDepartmentIds.filter((id) => !existingDepartmentIds.includes(id));
+    const departmentsToRemove = existingDepartmentIds.filter((id) => !newDepartmentIds.includes(id));
+
+    // Add new departments
+    for (const depId of departmentsToAdd) {
+    const newDep = await UsersDepartment.create(
+        { user_id, department_id: depId, created_by },
         { transaction: t }
-      );
+    );
+    await UserManagementLog.create(
+        { user_id, field: "department", info: `Added department ${depId}`, at: new Date(), by: created_by },
+        { transaction: t }
+    );
+
+    // Add divisions to new department (if needed)
+    for (const divId of divisionIds) {
+        await UsersDivision.create(
+        { users_department_id: newDep.users_department_id, division_id: divId, created_by, user_id },
+        { transaction: t }
+        );
+    }
     }
 
-    const users_department_id = userDepartment ? userDepartment.users_department_id : null;
-    const divisionIds = (division_id || "")
-      .split(",")
-      .map((id) => parseInt(id.trim(), 10))
-      .filter((id) => !isNaN(id));
+    // Remove deleted departments
+    if (departmentsToRemove.length > 0) {
+    const toRemoveRecords = existingDepartments.filter((d) => departmentsToRemove.includes(d.department_id));
+    for (const dep of toRemoveRecords) {
+        await UsersDivision.destroy({ where: { users_department_id: dep.users_department_id }, transaction: t });
+        await UsersDepartment.destroy({ where: { users_department_id: dep.users_department_id }, transaction: t });
+        await UserManagementLog.create(
+        { user_id, field: "department", info: `Removed department ${dep.department_id}`, at: new Date(), by: created_by },
+        { transaction: t }
+        );
+    }
+    }
 
-    const existingDivisions = users_department_id
-      ? await UsersDivision.findAll({ where: { users_department_id } })
-      : [];
+    // Update divisions for existing departments
+    for (const dep of existingDepartments) {
+    if (!newDepartmentIds.includes(dep.department_id)) continue; // skip removed
+
+    const users_department_id = dep.users_department_id;
+
+    const existingDivisions = await UsersDivision.findAll({ where: { users_department_id } });
     const existingDivisionIds = existingDivisions.map((d) => d.division_id);
 
     const newDivisions = divisionIds.filter((id) => !existingDivisionIds.includes(id));
     const removedDivisions = existingDivisionIds.filter((id) => !divisionIds.includes(id));
 
     if (newDivisions.length > 0) {
-      await UsersDivision.bulkCreate(
-        newDivisions.map((divId) => ({ users_department_id, division_id: divId, created_by, user_id })),
+        await UsersDivision.bulkCreate(
+        newDivisions.map((divId) => ({
+            users_department_id,
+            division_id: divId,
+            created_by,
+            user_id,
+        })),
         { transaction: t }
-      );
-      await UserManagementLog.create(
-        { user_id, field: "division", info: `${divisionIds}`, at: new Date(), by: created_by },
-        { transaction: t }
-      );
+        );
     }
+
     if (removedDivisions.length > 0) {
-      await UsersDivision.destroy({ where: { users_department_id, division_id: removedDivisions }, transaction: t });
+        await UsersDivision.destroy({
+        where: {
+            users_department_id,
+            division_id: removedDivisions,
+        },
+        transaction: t,
+        });
     }
+
+    if (newDivisions.length > 0 || removedDivisions.length > 0) {
+        await UserManagementLog.create(
+        {
+            user_id,
+            field: "division",
+            info: `Updated divisions for department ${dep.department_id}: added [${newDivisions}], removed [${removedDivisions}]`,
+            at: new Date(),
+            by: created_by,
+        },
+        { transaction: t }
+        );
+    }
+    }
+
 
     await t.commit();
     return res.status(201).json({ success: true, message: "User updated successfully" });
