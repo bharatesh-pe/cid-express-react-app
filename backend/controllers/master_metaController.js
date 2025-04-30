@@ -162,8 +162,6 @@ exports.fetch_specific_master_data = async (req, res) => {
                 department_name: plain.department?.department_name || "Unknown Department",
             };
             });
-
-
         return res.status(200).json({ divisions: formattedDivisions });
       case "approval_item":
         data = await ApprovalItem.findAll();
@@ -332,8 +330,23 @@ exports.create_master_data = async (req, res) => {
             break;
 
         case "Approval Item":
-            newEntry = await ApprovalItem.create(data);
-            break;
+          const existingApprovalItem = await ApprovalItem.findOne({
+              where: {
+                  name: {
+                      [Op.iLike]: `%${data.name}%`,
+                  },
+              },
+          });
+
+          if (existingApprovalItem) {
+              return res.status(409).json({
+                  success: false,
+                  message: "Similar approval item name already exists.",
+              });
+          }
+
+          newEntry = await ApprovalItem.create(data);
+          break;    
 
         case "Kgid":
             const existingKgid = await KGID.findOne({
@@ -369,25 +382,37 @@ exports.create_master_data = async (req, res) => {
             break;
 
         case "Hierarchy":
+
+            const existingHierarchy = await UsersHierarchy.findOne({
+                where: {
+                    supervisor_designation_id: data.supervisor_designation_id,
+                    officer_designation_id: data.officer_designation_id,
+                },
+            });
+
+            if (existingHierarchy) {
+                return res.status(409).json({
+                    success: false,
+                    message: "Hierarchy entry already exists.",
+                });
+            }
+
             newEntry = await UsersHierarchy.create({
-            supervisor_designation_id: data.supervisor_designation_id,
-            officer_designation_id: data.officer_designation_id,
-            created_by: data.created_by,
-            created_at: new Date(),
+                supervisor_designation_id: data.supervisor_designation_id,
+                officer_designation_id: data.officer_designation_id,
+                created_by: data.created_by,
+                created_at: new Date(),
             });
-            // break;
 
-
-        // case "Hierarchy":
             newEntry2 = await UsersHierarchyNew.create({
-            supervisor_designation_id: data.supervisor_designation_id,
-            officer_designation_id: data.officer_designation_id,
-            users_hierarchy_id: newEntry.users_hierarchy_id,
-            created_by: data.created_by,
-            created_at: new Date(),
+                supervisor_designation_id: data.supervisor_designation_id,
+                officer_designation_id: data.officer_designation_id,
+                users_hierarchy_id: newEntry.users_hierarchy_id,
+                created_by: data.created_by,
+                created_at: new Date(),
             });
 
-            if( data.officer_designation_id !== data.supervisor_designation_id) {
+            if (data.officer_designation_id !== data.supervisor_designation_id) {
                 let currentSupervisor = data.supervisor_designation_id;
                 let currentOfficer = data.officer_designation_id;
                 while (currentSupervisor) {
