@@ -101,7 +101,7 @@ exports.fetch_specific_master_data = async (req, res) => {
             .join(", ");
             const division_ids = designation_division
             .map((div) => div.division_id)
-            .join(", ");
+            .join(",");
 
             return {
             ...plain,

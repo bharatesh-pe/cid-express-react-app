@@ -1,4 +1,4 @@
-const { Role , UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , UsersHierarchy , UsersHierarchyNew , Designation , Department , Division , KGID} = require('../models');
+const { Role , UsersDepartment, UsersDivision, UserDesignation, Users, AuthSecure , UsersHierarchy , UsersHierarchyNew , Designation , Department , Division , KGID , DesignationDivision} = require('../models');
 const { Op } = require('sequelize');
 
 const get_master_data = async (req, res) => {
@@ -86,15 +86,163 @@ const fetch_role_data = async () => {
   }
 };
 
+// const fetch_designation_data = async () => {
+//   const excluded_designation_ids = [1, 10 ,21]; 
+//   try {
+//     // const designations = await Designation.findAll({
+//     //     attributes: [
+//     //         ['designation_id', 'code'], // Alias designation_id as code
+//     //         ['designation_name', 'name'], // Alias designation_name as name
+//     //         'department_id', 
+//     //     ],
+//     //     where: {
+//     //         designation_id: {
+//     //         [Op.notIn]: excluded_designation_ids
+//     //         }
+//     //     }
+//     // });
+//     //  // Fetch division info for each designation asynchronously
+//     //     data = await Promise.all(
+//     //     designations.map(async (designation) => {
+//     //         const plain = designation.get({ plain: true });
+
+//     //         // Fetch related divisions for the current designation
+//     //         const designation_division = await DesignationDivision.findAll({
+//     //         where: { designation_id: designation.designation_id },
+//     //         attributes: ["division_id"],
+//     //         });
+
+//     //         const division_ids = designation_division
+//     //         .map((div) => div.division_id)
+//     //         .join(",");
+
+//     //         return {
+//     //         ...plain,
+//     //         division_ids: division_ids || null,
+//     //         };
+//     //     })
+//     //     );
+
+//      // Fetching the designations with departments
+//         data = await Designation.findAll({
+//         include: [
+//             {
+//             model: Department,
+//             as: "designation_department",
+//             attributes: ["department_id"],
+//             },
+//         ],
+//         attributes: [
+//            ['designation_id', 'code'], // Alias designation_id as code
+//            ['designation_name', 'name'], // Alias designation_name as name
+//            'department_id', 
+//         ],
+//         });
+
+//         // Fetch division info for each designation asynchronously
+//         const formattedDesignations = await Promise.all(
+//         data.map(async (designation) => {
+//             const plain = designation.get({ plain: true });
+
+//             // Fetch related divisions for the current designation
+//             const designation_division = await DesignationDivision.findAll({
+//             where: { designation_id: designation.designation_id },
+//             attributes: ["division_id"],
+//             });
+
+//             const division_ids = designation_division
+//             .map((div) => div.division_id)
+//             .join(",");
+
+//             return {
+//             ...plain,
+//             division_ids: division_ids || null,
+//             };
+//         })
+//         );
+
+//         // The data is now formatted with divisions and department info
+//         data = formattedDesignations;
+//     return data;
+//   } catch (error) {
+//     console.error('Error fetching designations:', error);
+//     throw new Error('Failed to fetch designations');
+//   }
+
+// // const excluded_designation_ids = [1, 10, 21]; 
+// // try {
+// //   const designations = await Designation.findAll({
+// //     attributes: [
+// //       ['designation_id', 'code'], // Alias designation_id as code
+// //       ['designation_name', 'name'], // Alias designation_name as name
+// //       'department_id', 
+// //     ],
+// //     where: {
+// //       designation_id: {
+// //         [Op.notIn]: excluded_designation_ids
+// //       }
+// //     }
+// //   });
+
+// //   // Fetch division info for each designation asynchronously
+// //   const data = await Promise.all(
+// //     designations.map(async (designation) => {
+// //       const plain = designation.get({ plain: true });
+
+// //       // Validate the designation code
+// //       if (!designation.code) {
+// //         console.error("Invalid designation code:", designation.code);
+// //         return {}; // Or handle this case appropriately
+// //       }
+
+// //       // Fetch related divisions for the current designation
+// //       let designation_division = [];
+// //       try {
+// //         designation_division = await DesignationDivision.findAll({
+// //           where: { designation_id: designation.code },
+// //           attributes: ["division_id"],
+// //         });
+// //       } catch (err) {
+// //         console.error("Error fetching divisions for designation ID:", designation.code, err);
+// //       }
+
+// //       const division_ids = designation_division
+// //         .map((div) => div.division_id)
+// //         .join(","); // Join division IDs into a comma-separated string
+
+// //       return {
+// //         ...plain,
+// //         division_ids: division_ids || null,
+// //       };
+// //     })
+// //   );
+
+// //   return data;
+
+// // } catch (error) {
+// //   console.error("Error fetching designations:", error);
+// //   throw error; // Or handle the error as needed
+// // }
+
+
+// };
+
 const fetch_designation_data = async () => {
-  const excluded_designation_ids = [1, 10 ,21]; 
+  const excluded_designation_ids = [1, 10, 21]; 
   try {
-    const designations = await Designation.findAll({
+    // Fetch designations with departments
+    let data = await Designation.findAll({
+      include: [
+        {
+          model: Department,
+          as: "designation_department",
+          attributes: ["department_id"],
+        },
+      ],
       attributes: [
         ['designation_id', 'code'], // Alias designation_id as code
         ['designation_name', 'name'], // Alias designation_name as name
-        'department_id',
-        'division_id', 
+        'department_id', 
       ],
       where: {
         designation_id: {
@@ -102,12 +250,49 @@ const fetch_designation_data = async () => {
         }
       }
     });
-    return designations;
+
+    // Fetch division info for each designation asynchronously
+    const formattedDesignations = await Promise.all(
+      data.map(async (designation) => {
+        const plain = designation.get({ plain: true });
+
+        // Ensure designation_id is valid
+        if (!plain.code) {
+          console.warn(`Skipping designation with invalid or missing code: ${plain.designation_name}`);
+          return { ...plain, division_ids: null }; // Skip this designation if no code
+        }
+
+        // Fetch related divisions for the current designation
+        let designation_division = [];
+        try {
+          designation_division = await DesignationDivision.findAll({
+            where: { designation_id: plain.code }, // Use the 'code' alias here
+            attributes: ["division_id"],
+          });
+        } catch (err) {
+          console.error("Error fetching divisions for designation ID:", plain.code, err);
+        }
+
+        // Map division ids and join them into a string
+        const division_ids = designation_division
+          .map((div) => div.division_id)
+          .join(","); 
+
+        return {
+          ...plain,
+          division_ids: division_ids || null,
+        };
+      })
+    );
+
+    // Return the formatted data with divisions and department info
+    return formattedDesignations;
   } catch (error) {
     console.error('Error fetching designations:', error);
     throw new Error('Failed to fetch designations');
   }
 };
+
 
 const fetch_department_data = async () => {
   try {
