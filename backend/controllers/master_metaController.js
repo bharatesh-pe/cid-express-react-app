@@ -59,39 +59,63 @@ exports.fetch_specific_master_data = async (req, res) => {
         break;
 
       case "designation":
+        // Fetching the designations with departments
         data = await Designation.findAll({
-            include: [
-              {
-                model: Department,
-                as: "designation_department",
-                attributes: ["department_id", "department_name"],
-                },
-                {
-                model: Division,
-                as: "designation_division",
-                attributes: ["division_id", "division_name"],
-                }
-            ],
-          attributes: [
+        include: [
+            {
+            model: Department,
+            as: "designation_department",
+            attributes: ["department_id", "department_name"],
+            },
+        ],
+        attributes: [
             "designation_id",
             "designation_name",
             "description",
             "created_by",
             "created_at",
-          ],
+        ],
         });
 
-        const formattedDesignations = data.map((designation) => {
+        // Fetch division info for each designation asynchronously
+        const formattedDesignations = await Promise.all(
+        data.map(async (designation) => {
             const plain = designation.get({ plain: true });
+
+            // Fetch related divisions for the current designation
+            const designation_division = await DesignationDivision.findAll({
+            where: { designation_id: designation.designation_id },
+            attributes: ["division_id"],
+            include: [
+                {
+                model: Division,
+                as: "designation_division",  // ensure this is the correct alias
+                attributes: ["division_name"],
+                },
+            ],
+            });
+
+            // Map divisions and join them into a string
+            const division_names = designation_division
+            .map((div) => div.designation_division.division_name)
+            .join(", ");
+            const division_ids = designation_division
+            .map((div) => div.division_id)
+            .join(", ");
+
             return {
-                ...plain,
-                department_name: plain.designation_department?.department_name || null,
-                department_id: plain.designation_department?.department_id || null,
-                division_name: plain.designation_division?.division_name || null,
-                division_id: plain.designation_division?.division_id || null,
+            ...plain,
+            division_names: division_names || null,
+            division_ids: division_ids || null,
+            department_name: plain.designation_department?.department_name || null,
+            department_id: plain.designation_department?.department_id || null,
             };
-        });
+        })
+        );
+
+        // The data is now formatted with divisions and department info
         data = formattedDesignations;
+
         break
 
       case "division":
