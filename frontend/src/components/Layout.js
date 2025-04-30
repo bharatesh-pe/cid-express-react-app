@@ -1,5 +1,5 @@
 // Layout.js
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   Box,
   Paper,
@@ -12,6 +12,9 @@ import {
   Stack,
   ListItemIcon,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
 } from "@mui/material";
 
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
@@ -170,6 +173,7 @@ const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const userName = localStorage.getItem("username");
+  const designationName = localStorage.getItem("designation_name");
   const [sidebarMenusObj, setSidebarMenusObj] = useState([]);
 
   // for dropdowmn sidebars
@@ -177,6 +181,9 @@ const Layout = ({ children }) => {
   const [notificationCount, setNotificationCount] = useState(0);
 
   const [loading, setLoading] = useState(false); // State for loading indicator
+
+    const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
+    const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
 
   // for toggle sidebar dropdowns
   const handleDropdownToggle = (index) => {
@@ -576,30 +583,40 @@ const Layout = ({ children }) => {
                   background: "#FFFFFF",
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Box
-                    sx={{
-                      width: "32px",
-                      height: "32px",
-                      border: "1px solid #D0D5DD",
-                      borderRadius: "50%",
-                    }}
-                  >
-                    <img src={userImg} width="100%" height="100%" />
-                  </Box>
-                  <Box sx={{ display: "flex", flexDirection: "column" }}>
-                    <Typography
-                      align="left"
-                      sx={{
-                        fontWeight: "500",
-                        fontSize: "14px",
-                        lineHeight: "18px",
-                        color: "#1D2939",
-                      }}
-                    >
-                      {userName ? userName : "UserName"}
-                    </Typography>
-                  </Box>
+                <Box onClick={() => setOpenUserDesignationDropdown(true)}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: "6px", cursor: 'pointer' }}>
+                        <Box
+                            sx={{
+                                width: "32px",
+                                height: "32px",
+                                border: "1px solid #D0D5DD",
+                                borderRadius: "50%",
+                            }}
+                        >
+                            <img src={userImg} width="100%" height="100%" />
+                        </Box>
+                        <Box sx={{ display: "flex", flexDirection: "column" }}>
+                            <Typography
+                                align="left"
+                                sx={{
+                                    fontWeight: "500",
+                                    fontSize: "14px",
+                                    lineHeight: "18px",
+                                    color: "#1D2939",
+                                }}
+                            >
+                                {userName ? userName : "UserName"}<br />
+                                <span style={{
+                                    fontWeight: "400",
+                                    fontSize: "13px",
+                                    lineHeight: "16px",
+                                    color: "#98A2B3",
+                                }}>
+                                    {designationName ? designationName : ""}
+                                </span>
+                            </Typography>
+                        </Box>
+                    </Box>
                 </Box>
                 <Typography
                   align="left"
@@ -647,6 +664,122 @@ const Layout = ({ children }) => {
           <CircularProgress size={100} />
         </div>
       )}
+
+    {openUserDesignationDropdown && userOverallDesignation?.length > 0 && (
+        <Dialog
+            open={openUserDesignationDropdown}
+            keepMounted
+            onClose={() => setOpenUserDesignationDropdown(false)}
+            aria-describedby="alert-dialog-slide-description"
+            maxWidth="xs"
+            fullWidth
+        >
+            <DialogTitle>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                    }}
+                >
+                    <Box>
+                        <Typography
+                            variant="h5"
+                            style={{
+                                fontWeight: "600",
+                                fontSize: "24px",
+                                color: "#1D2939",
+                            }}
+                        >
+                            Choose Designation
+                        </Typography>
+                    </Box>
+                    <Box
+                        p={1}
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            cursor: "pointer",
+                            background: "#EAECF0",
+                            borderRadius: "50%",
+                        }}
+                    >
+                        <svg
+                            onClick={() => setOpenUserDesignationDropdown(false)}
+                            width="20"
+                            height="20"
+                            viewBox="0 0 20 20"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                        >
+                            <path
+                                d="M14.6666 5.33447L5.33325 14.6678M5.33325 5.33447L14.6666 14.6678"
+                                stroke="#667085"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </Box>
+                </Box>
+            </DialogTitle>
+            <DialogContent>
+                {userOverallDesignation.map((designation) => (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            padding: 2,
+                            border: "1px solid #EAECF0",
+                            borderRadius: "5px",
+                            marginBottom: 2,
+                            cursor: "pointer",
+                        }}
+
+                        className={`${designation?.designation_id == localStorage.getItem('designation_id') ? "activeDesignationRole" : ""}`}
+
+                        onClick={() => {
+                            if(designation?.division_id && designation?.designation_id){
+                                localStorage.setItem("designation_id", designation?.designation_id);
+                                localStorage.setItem("designation_name", designation?.designation?.designation_name);
+                                localStorage.setItem("division_id", designation?.division_id);
+                                localStorage.setItem("division_name", designation?.division?.division_name);
+                                setOpenUserDesignationDropdown(false);
+                                navigate("/dashboard");
+                            }
+                        }}
+                    >
+                        <Box>
+                            <Typography
+                                variant="h6"
+                                style={{
+                                    fontWeight: "600",
+                                    fontSize: "18px",
+                                    color: "#1D2939",
+                                }}
+                                className={`${designation?.designation_id == localStorage.getItem('designation_id') ? "activeDesignationRoleName" : ""}`}
+                            >
+                                {designation?.["designation"]?.designation_name}
+                            </Typography>
+                            <Typography
+                                variant="h6"
+                                style={{
+                                    fontWeight: "400",
+                                    fontSize: "14px",
+                                    color: "#667085",
+                                }}
+                                className={`${designation?.designation_id == localStorage.getItem('designation_id') ? "activeDesignationRoleDesc" : ""}`}
+                            >
+                                {designation?.["designation"]?.description}
+                            </Typography>
+                        </Box>
+                    </Box>
+                ))}
+            </DialogContent>
+        </Dialog>
+    )}
     </Box>
   );
 };

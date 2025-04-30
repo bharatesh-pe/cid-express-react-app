@@ -1128,3 +1128,15 @@ div::first-letter {
     .approvalModal{
         z-index: 100 !important;
     }
+
+    .activeDesignationRole{
+        border: 1px solid #009432 !important;
+    }
+
+    .activeDesignationRoleDesc{
+        color: #009432 !important;
+    }
+
+    .activeDesignationRoleName{
+        color: #009432 !important;
+    }

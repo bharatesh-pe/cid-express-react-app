@@ -96,9 +96,12 @@ const Designation = () => {
 
         if(role?.department_id){
 
+            var departmentIds = role.department_id.split(',')
+
             var updatedDivision = overallDivision.filter((division)=>{
                 if(division?.department_id){
-                    return division.department_id === role?.department_id
+                    console.log(division?.department_id,"division?.department_id")
+                    return departmentIds.includes(String(division.department_id))
                 }
             })
     
@@ -117,9 +120,11 @@ const Designation = () => {
 
         if(role?.department_id){
 
+            var departmentIds = role.department_id.split(',')
+
             var updatedDivision = overallDivision.filter((division)=>{
                 if(division?.department_id){
-                    return division.department_id === role?.department_id
+                    return departmentIds.includes(String(division.department_id))
                 }
             })
     
