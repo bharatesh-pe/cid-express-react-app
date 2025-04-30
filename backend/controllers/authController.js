@@ -244,7 +244,6 @@ const verify_OTP = async (req, res) => {
                 designation_name: ud.designation.designation_name
             }));
 
-            console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<supervisorDesignation", supervisorDesignation);
             let subordinateUserIds = [];
             let tempDesignation = [];
             if(supervisorDesignation.length > 0) {
@@ -258,7 +257,7 @@ const verify_OTP = async (req, res) => {
                 });  
             }
  
-            if(supervisorDesignationIds.length === 0) {
+            if(tempDesignation.length === 0) {
                 supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
 
                 // Fetch subordinates based on supervisor designations
@@ -277,20 +276,22 @@ const verify_OTP = async (req, res) => {
                 }
             } 
             else {
-                if(tempDesignation.length)
-                {
-                    const subordinates = await UsersHierarchyNew.findAll({
-                        where: { supervisor_designation_id: { [Op.in]: tempDesignation } },
-                        attributes: ["officer_designation_id"],
-                    });
-                    const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
-        
-                    if (officerDesignationIds.length) {
-                    const subordinateUsers = await UserDesignation.findAll({
-                        where: { designation_id: { [Op.in]: officerDesignationIds } },
-                        attributes: ["user_id"],
-                    });
-                    subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+                
+                const findDivision = await Designation.findAll({
+                    where :{ designation_id : { [Op.in] : tempDesignation } },
+                    attributes:["division_id"]
+                })
+
+                if(findDivision.length > 0) {
+                    const divisionIds = findDivision.map((ud) => ud.division_id);
+                    const usersBelongToDivisions = await UsersDivision.findAll({
+                        where : {division_id : { [Op.in] : divisionIds }},
+                        attributes : ["user_id"]
+                    })
+
+                    if(usersBelongToDivisions.length > 0) {
+                        const userIds = usersBelongToDivisions.map((ud) => ud.user_id);
+                        subordinateUserIds = [...subordinateUserIds, ...userIds];
                     }
                 }
             }
@@ -703,39 +704,112 @@ const get_supervisor_id = async (req, res) => {
     const userId = user_id;
     const { user_designation_id, user_division_id } = req.body;
 
-    // Fetch designations for the logged-in user
+    // // Fetch designations for the logged-in user
+    // const userDesignations = await UserDesignation.findAll({
+    // where: { user_id },
+    // attributes: ["designation_id"],
+    // include: {
+    //     model: Designation,
+    //     as: "designation",
+    //     attributes: ["designation_name"],
+    // },
+    // });
+    // if (!userDesignations.length) {
+    //     return res.status(404).json({ message: "User has no designations assigned" });
+    // }
+
+    // const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+    // const supervisorDesignationNames = userDesignations.map((ud) => ud.designation.designation_name);
+
+    // // Fetch subordinates based on supervisor designations
+    // const subordinates = await UsersHierarchyNew.findAll({
+    // where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+    // attributes: ["officer_designation_id"],
+    // });
+    // const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+
+    // // Fetch subordinate user IDs if any officer designations found
+    // let subordinateUserIds = [];
+    // if (officerDesignationIds.length) {
+    // const subordinateUsers = await UserDesignation.findAll({
+    //     where: { designation_id: { [Op.in]: officerDesignationIds } },
+    //     attributes: ["user_id"],
+    // });
+    // subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+    // }
+
     const userDesignations = await UserDesignation.findAll({
-    where: { user_id },
-    attributes: ["designation_id"],
-    include: {
-        model: Designation,
-        as: "designation",
-        attributes: ["designation_name"],
-    },
+        where: { user_id : userId },
+        attributes: ["designation_id"],
+        include: {
+            model: Designation,
+            as: "designation",
+            attributes: ["designation_id","designation_name"],
+        },
     });
+    
     if (!userDesignations.length) {
         return res.status(404).json({ message: "User has no designations assigned" });
     }
+        
+    let supervisorDesignationIds = [];
+    
+    const supervisorDesignation = userDesignations.map((ud) => ({
+        designation_id: ud.designation_id,
+        designation_name: ud.designation.designation_name
+    }));
 
-    const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
-    const supervisorDesignationNames = userDesignations.map((ud) => ud.designation.designation_name);
-    console.log("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<supervisorDesignationNames", supervisorDesignationNames);
-
-    // Fetch subordinates based on supervisor designations
-    const subordinates = await UsersHierarchyNew.findAll({
-    where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-    attributes: ["officer_designation_id"],
-    });
-    const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
-
-    // Fetch subordinate user IDs if any officer designations found
     let subordinateUserIds = [];
-    if (officerDesignationIds.length) {
-    const subordinateUsers = await UserDesignation.findAll({
-        where: { designation_id: { [Op.in]: officerDesignationIds } },
-        attributes: ["user_id"],
-    });
-    subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+    let tempDesignation = [];
+    
+    if(supervisorDesignation.length > 0) {
+        supervisorDesignation.forEach((designationObj) => {
+            const designationName = designationObj.designation_name;
+            const designationId = designationObj.designation_id;
+            if( designationName.toLowerCase().includes("admin")){
+                // supervisorDesignationIds.push(designationId);
+                tempDesignation.push(designationId);
+            }
+        });  
+    }
+
+    if(tempDesignation.length === 0) {
+        supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+
+        // Fetch subordinates based on supervisor designations
+        const subordinates = await UsersHierarchyNew.findAll({
+            where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+            attributes: ["officer_designation_id"],
+        });
+        const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+
+        if (officerDesignationIds.length) {
+        const subordinateUsers = await UserDesignation.findAll({
+            where: { designation_id: { [Op.in]: officerDesignationIds } },
+            attributes: ["user_id"],
+        });
+        subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+        }
+    } 
+    else {
+        
+        const findDivision = await Designation.findAll({
+            where :{ designation_id : { [Op.in] : tempDesignation } },
+            attributes:["division_id"]
+        })
+
+        if(findDivision.length > 0) {
+            const divisionIds = findDivision.map((ud) => ud.division_id);
+            const usersBelongToDivisions = await UsersDivision.findAll({
+                where : {division_id : { [Op.in] : divisionIds }},
+                attributes : ["user_id"]
+            })
+
+            if(usersBelongToDivisions.length > 0) {
+                const userIds = usersBelongToDivisions.map((ud) => ud.user_id);
+                subordinateUserIds = [...subordinateUserIds, ...userIds];
+            }
+        }
     }
 
     // Combine userId with subordinates and remove duplicates

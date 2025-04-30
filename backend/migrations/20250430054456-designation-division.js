@@ -10,23 +10,13 @@ module.exports = {
     await queryInterface.sequelize.query(`CREATE SCHEMA IF NOT EXISTS ${schema};`);
 
     await queryInterface.createTable(
-      { schema: schema, tableName: "users_designation" },
+      { schema: schema, tableName: "designation_division" },
       {
-        users_designation_id: {
+        id: {
           type: Sequelize.INTEGER,
           primaryKey: true,
           autoIncrement: true,
           allowNull: false,
-        },
-        user_id: {
-          type: Sequelize.INTEGER,
-          allowNull: true,
-          references: {
-            model: { schema: schema, tableName: "users" },
-            key: "user_id",
-          },
-          onUpdate: "CASCADE",
-          onDelete: "SET NULL",
         },
         designation_id: {
           type: Sequelize.INTEGER,
@@ -38,12 +28,12 @@ module.exports = {
           onUpdate: "CASCADE",
           onDelete: "SET NULL",
         },
-        department_id: {
+        division_id: {
           type: Sequelize.INTEGER,
           allowNull: true,
           references: {
-            model: { schema: schema, tableName: "department" },
-            key: "department_id",
+            model: { schema: schema, tableName: "division" },
+            key: "division_id",
           },
           onUpdate: "CASCADE",
           onDelete: "SET NULL",
