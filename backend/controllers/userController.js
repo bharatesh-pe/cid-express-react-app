@@ -200,6 +200,7 @@ exports.create_user = async (req, res) => {
     }
 
     const departmentIds = department_id.includes(",") ? department_id.split(",").map((id) => parseInt(id.trim(), 10)) : [parseInt(department_id, 10)];
+    // const departmentIds = [department_id];
 
     const divisionIds = division_id.includes(",") ? division_id.split(",").map((id) => parseInt(id.trim(), 10)) : [parseInt(division_id, 10)];
 
