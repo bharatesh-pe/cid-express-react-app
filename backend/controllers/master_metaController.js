@@ -9,6 +9,7 @@ const {
   UsersHierarchy,
   UsersHierarchyNew,
   DesignationDivision,
+  DesignationDepartment,
 } = require("../models");
 const { Op } = require("sequelize");
 const fs = require("fs");
@@ -61,13 +62,6 @@ exports.fetch_specific_master_data = async (req, res) => {
       case "designation":
         // Fetching the designations with departments
         data = await Designation.findAll({
-        include: [
-            {
-            model: Department,
-            as: "designation_department",
-            attributes: ["department_id", "department_name"],
-            },
-        ],
         attributes: [
             "designation_id",
             "designation_name",
@@ -84,15 +78,15 @@ exports.fetch_specific_master_data = async (req, res) => {
 
             // Fetch related divisions for the current designation
             const designation_division = await DesignationDivision.findAll({
-            where: { designation_id: designation.designation_id },
-            attributes: ["division_id"],
-            include: [
-                {
-                model: Division,
-                as: "designation_division",  // ensure this is the correct alias
-                attributes: ["division_name"],
-                },
-            ],
+                where: { designation_id: designation.designation_id },
+                attributes: ["division_id"],
+                include: [
+                    {
+                    model: Division,
+                    as: "designation_division",  // ensure this is the correct alias
+                    attributes: ["division_name"],
+                    },
+                ],
             });
 
             // Map divisions and join them into a string
@@ -103,12 +97,33 @@ exports.fetch_specific_master_data = async (req, res) => {
             .map((div) => div.division_id)
             .join(",");
 
+            const designation_department = await DesignationDepartment.findAll({
+                where: { designation_id: designation.designation_id },
+                attributes: ["department_id"],
+                include: [
+                    {
+                    model: Department,
+                    as: "designation_department",  // ensure this is the correct alias
+                    attributes: ["department_name"],
+                    },
+                ],
+            });
+             // Map divisions and join them into a string
+            const department_names = designation_department
+            .map((div) => div.designation_department.department_name)
+            .join(", ");
+            const department_ids = designation_department
+            .map((div) => div.department_id)
+            .join(",");
+
+
+
             return {
             ...plain,
             division_name: division_names || null,
             division_id: division_ids || null,
-            department_name: plain.designation_department?.department_name || null,
-            department_id: plain.designation_department?.department_id || null,
+            department_name: department_names || null,
+            department_id: department_ids || null,
             };
         })
         );
@@ -119,23 +134,6 @@ exports.fetch_specific_master_data = async (req, res) => {
         break
 
       case "division":
-        // data = await Division.findAll();
-        // const departmentIds = data.map((division) => division.department_id);
-        // const departments = await Department.findAll({
-        //   where: {
-        //     department_id: departmentIds,
-        //   },
-        // });
-        // const departmentMap = {};
-        // departments.forEach((department) => {
-        //   departmentMap[department.department_id] = department.department_name;
-        // });
-
-        // const formattedDivisions = data.map((division) => ({
-        //   ...division.dataValues,
-        //   department_name:
-        //     departmentMap[division.department_id] || "Unknown Department",
-        // }));
         const divisions = await Division.findAll({
             include: [
                 {
@@ -220,37 +218,6 @@ exports.create_master_data = async (req, res) => {
             break;
 
         case "Designation":
-            // const existingDesignation = await Designation.findOne({
-            // where: {
-            //     designation_name: {
-            //     [Op.iLike]: `%${data.designation_name}%`,
-            //     },
-            // },
-            // });
-            // if (existingDesignation) {
-            //      return res.status(409).json({success: false,message: "Similar designation name already exists.",});
-            // }
-            // newEntry = await Designation.create(
-            // {
-            //     designation_name: data.designation_name,
-            //     department_id: data.department_id,
-            //     division_id: data.division_id,
-            //     description: data.description,
-            //     created_by: data.created_by,
-            //     created_at: new Date(),
-            // },
-            // {
-            //     returning: [
-            //     "designation_id",
-            //     "department_id",
-            //     "division_id",
-            //     "designation_name",
-            //     "description",
-            //     "created_by",
-            //     "created_at",
-            //     ],
-            // }
-            // );
             // 1. Check for existing designation name (case-insensitive partial match)
             const existingDesignation = await Designation.findOne({
             where: {
@@ -271,7 +238,6 @@ exports.create_master_data = async (req, res) => {
             newEntry = await Designation.create(
             {
                 designation_name: data.designation_name,
-                department_id: data.department_id,
                 description: data.description,
                 created_by: data.created_by,
                 created_at: new Date(),
@@ -279,7 +245,6 @@ exports.create_master_data = async (req, res) => {
             {
                 returning: [
                 "designation_id",
-                "department_id",
                 "designation_name",
                 "description",
                 "created_by",
@@ -298,14 +263,34 @@ exports.create_master_data = async (req, res) => {
 
             // 4. Insert into designation_division table
             if (divisionIds.length > 0) {
-            const bulkData = divisionIds.map((divId) => ({
-                designation_id: newEntry.designation_id,
-                division_id: divId,
-                created_by: data.created_by,
-                created_at: new Date(),
-            }));
+                const bulkData = divisionIds.map((divId) => ({
+                    designation_id: newEntry.designation_id,
+                    division_id: divId,
+                    created_by: data.created_by,
+                    created_at: new Date(),
+                }));
 
-            await DesignationDivision.bulkCreate(bulkData);
+                await DesignationDivision.bulkCreate(bulkData);
+            }
+
+             // 5. Handle multiple department IDs (array or comma-separated string)
+            const departmentIds = Array.isArray(data.department_id)
+            ? data.department_id.map((id) => parseInt(id, 10))
+            : (data.department_id || "")
+                .split(",")
+                .map((id) => parseInt(id.trim(), 10))
+                .filter((id) => !isNaN(id));
+
+            // 6. Insert into designation_department table
+            if (departmentIds.length > 0) {
+                const bulkData = departmentIds.map((divId) => ({
+                    designation_id: newEntry.designation_id,
+                    department_id: divId,
+                    created_by: data.created_by,
+                    created_at: new Date(),
+                }));
+
+                await DesignationDepartment.bulkCreate(bulkData);
             }
             break;
 
@@ -567,7 +552,6 @@ exports.update_master_data = async (req, res) => {
         await Designation.update(
         {
             designation_name,
-            department_id,
             description,
             updated_by,
             updated_at: new Date(),
@@ -591,14 +575,40 @@ exports.update_master_data = async (req, res) => {
         });
 
         // Insert new mappings
-        const newMappings = divisionIds.map((divId) => ({
+        const newMappings_division = divisionIds.map((divId) => ({
             designation_id,
             division_id: divId,
             created_by: updated_by,
             created_at: new Date(),
         }));
 
-        await DesignationDivision.bulkCreate(newMappings);
+        await DesignationDivision.bulkCreate(newMappings_division);
+        }
+
+        // 3. Parse multiple department IDs
+        const departmentIds = Array.isArray(department_id)
+        ? department_id.map((id) => parseInt(id, 10))
+        : (department_id || "")
+            .split(",")
+            .map((id) => parseInt(id.trim(), 10))
+            .filter((id) => !isNaN(id));
+
+        // 4. Update designation_department junction table
+        if (departmentIds.length > 0) {
+        // Delete old mappings
+        await DesignationDepartment.destroy({
+            where: { designation_id },
+        });
+
+        // Insert new mappings
+        const newMappings_departyment = deprtmentIds.map((divId) => ({
+            designation_id,
+            deprtment_id: divId,
+            created_by: updated_by,
+            created_at: new Date(),
+        }));
+
+        await DesignationDepartment.bulkCreate(newMappings_departyment);
         }
         break;
 
@@ -839,11 +849,16 @@ exports.delete_master_data = async (req, res) => {
             const whereCondition = { designation_id: id };
 
             // 1. Delete from junction table first
+            await DesignationDepartment.destroy({
+                where: { designation_id: id },
+            });
+
+            // 2. Delete from junction table first
             await DesignationDivision.destroy({
                 where: { designation_id: id },
             });
 
-            // 2. Delete the designation
+            // 3. Delete the designation
             const result = await Designation.destroy({
                 where: whereCondition,
             });

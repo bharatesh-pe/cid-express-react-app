@@ -42,7 +42,7 @@ module.exports = (sequelize, DataTypes) => {
   );
 
     DesignationDivision.associate = (models) => {
-        DesignationDivision.belongsTo(models.Department, {
+        DesignationDivision.belongsTo(models.Designation, {
         foreignKey: "designation_id",
         as: "designation_id_reference",
         });
