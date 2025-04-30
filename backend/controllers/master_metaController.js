@@ -8,6 +8,7 @@ const {
   ApprovalItem,
   UsersHierarchy,
   UsersHierarchyNew,
+  DesignationDivision,
 } = require("../models");
 const { Op } = require("sequelize");
 const fs = require("fs");
