@@ -778,8 +778,6 @@ const UserManagement = () => {
             return designationArray.includes(String(data?.code));
         });
 
-        console.log(filteredDepartment,"filteredDepartment")
-
         const divisionIds = [
             ...new Set(
               filteredDepartment
@@ -858,8 +856,6 @@ const UserManagement = () => {
         var filteredDepartment = masterData?.designation.filter((data) => {
             return designationArray.includes(String(data?.code));
         });
-
-        console.log(filteredDepartment,"filteredDepartment")
 
         const divisionIds = [
             ...new Set(
