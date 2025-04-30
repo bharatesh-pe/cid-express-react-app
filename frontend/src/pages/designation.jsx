@@ -609,62 +609,38 @@ const Designation = () => {
 
     const handleDepartmentValue = (data)=> {
 
-        if(data?.code){
+        const departmentCodes = Array.isArray(data) ? data.map(item => Number(item.code)) : [];
 
-            var updatedDivision = overallDivision.filter((division)=>{
-                if(division?.department_id){
-                    return division.department_id === data.code
-                }
-            })
-
-            setDepartmentBasedDivision(updatedDivision);
-
-            if(!showRoleAddModal){
-
-                setSelectedRole(prevState => ({
-                    ...prevState,
-                    ['department_id']: data.code,
-                    ['division_id']: null
-                }));
-
-            }else{
-                
-                setAddRoleData((prevData) => ({
-                    ...prevData,
-                    ['department_id']: data.code,
-                    ['division_id']: null
-                }));
-
+        var updatedDivision = overallDivision.filter((division)=>{
+            if(division?.department_id){
+                return departmentCodes.includes(division.department_id)
             }
+        })
+
+        setDepartmentBasedDivision(updatedDivision);
+
+        if(!showRoleAddModal){
+
+            setSelectedRole(prevState => ({
+                ...prevState,
+                ['department_id']: departmentCodes.join(','),
+                ['division_id']: null
+            }));
 
         }else{
-
-            if(!showRoleAddModal){
-
-                setSelectedRole(prevState => ({
-                    ...prevState,
-                    ['department_id']: null,
-                    ['division_id']: null
-                }));
-
-            }else{
-                
-                setAddRoleData((prevData) => ({
-                    ...prevData,
-                    ['department_id']: null,
-                    ['division_id']: null
-                }));
-
-            }
+            
+            setAddRoleData((prevData) => ({
+                ...prevData,
+                ['department_id']: departmentCodes.join(','),
+                ['division_id']: null
+            }));
 
         }
 
-        if (errorRoleData['department_id']) {
-            setErrorRoleData((prevErrors) => {
+        if (errorRoleData?.department_id) {
+            setErrorRoleData(prevErrors => {
                 const updatedErrors = { ...prevErrors };
-                if (updatedErrors['department_id']) {
-                    delete updatedErrors['department_id'];
-                }
+                delete updatedErrors.department_id;
                 return updatedErrors;
             });
         }
@@ -847,9 +823,14 @@ const Designation = () => {
                                     <Autocomplete
                                         id=""
                                         required
+                                        multiple
                                         options={overallDepartment}
                                         getOptionLabel={(option) => option.name || ''}
-                                        value={overallDepartment.find((option) => option.code === (showRoleAddModal ? addRoleData.department_id : selectedRole?.department_id)) || null}
+                                        value={
+                                            showRoleAddModal
+                                              ? overallDepartment.filter(opt => parseMultipleCheckValues(addRoleData.department_id).includes(opt.code))
+                                              : overallDepartment.filter(opt => parseMultipleCheckValues(selectedRole?.department_id).includes(opt.code))
+                                        }
                                         onChange={(event, newValue) => handleDepartmentValue(newValue)}
                                         disabled={showViewModal}
                                         renderInput={(params) =>
