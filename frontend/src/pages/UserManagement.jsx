@@ -1853,7 +1853,9 @@ const UserManagement = () => {
                             }}
                             value={newUser?.role}
                             onHistory={() => getUsermanagementFieldLog("role")}
-                            onChange={handleDropDownChange}
+                            onChange={(value) =>
+                                handleDropDownChange('role', value.target.value)
+                            }
                         />
                     </Grid>
               )}
