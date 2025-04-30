@@ -199,31 +199,37 @@ exports.create_user = async (req, res) => {
       );
     }
 
-    // Create user department
-    const newUserDepartment = await UsersDepartment.create(
-      {
-        user_id: newUser.user_id,
-        department_id: department_id,
-        created_by: created_by,
-      },
-      { transaction: t }
-    );
+    const departmentIds = department_id.includes(",") ? department_id.split(",").map((id) => parseInt(id.trim(), 10)) : [parseInt(department_id, 10)];
 
-     // Insert new department
-    for (const divId of divisionIds) {
-      await UsersDivision.create(
-        {
-          users_department_id: newUserDepartment.users_department_id,
-          division_id: divId,
-          created_by: created_by,
-          user_id: newUserDepartment.user_id,
-        },
-        { transaction: t }
-      );
+    const divisionIds = division_id.includes(",") ? division_id.split(",").map((id) => parseInt(id.trim(), 10)) : [parseInt(division_id, 10)];
+
+    if (departmentIds.length > 0) {
+        for (const depId of departmentIds) {
+            // Create a new UsersDepartment for each department ID
+            const newUserDepartment = await UsersDepartment.create(
+            {
+                department_id: depId,
+                created_by: created_by,
+                user_id: newUser.user_id,
+            },
+            { transaction: t }
+            );
+
+            // Insert all division IDs under each UsersDepartment
+            for (const divId of divisionIds) {
+            await UsersDivision.create(
+                {
+                users_department_id: newUserDepartment.users_department_id,
+                division_id: divId,
+                created_by: created_by,
+                user_id: newUser.user_id,
+                },
+                { transaction: t }
+            );
+            }
+        }
     }
 
-
-    const departmentIds = department_id.includes(",") ? department_id.split(",").map((id) => parseInt(id.trim(), 10)) : [parseInt(department_id, 10)];
 
     // // Create user division (Get user_id from department)
     // await UsersDivision.create({
@@ -232,24 +238,6 @@ exports.create_user = async (req, res) => {
     //     created_by: created_by,
     //     user_id: newUserDepartment.user_id
     // }, { transaction: t });
-
-    // Convert division_id to an array (similar to designation handling)
-    const divisionIds = division_id.includes(",")
-      ? division_id.split(",").map((id) => parseInt(id.trim(), 10))
-      : [parseInt(division_id, 10)];
-
-    // Insert new divisions
-    for (const divId of divisionIds) {
-      await UsersDivision.create(
-        {
-          users_department_id: newUserDepartment.users_department_id,
-          division_id: divId,
-          created_by: created_by,
-          user_id: newUserDepartment.user_id,
-        },
-        { transaction: t }
-      );
-    }
 
     // Prepare logs for user management log
     const logs = [
