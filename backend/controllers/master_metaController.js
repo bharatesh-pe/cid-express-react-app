@@ -397,6 +397,20 @@ exports.create_master_data = async (req, res) => {
                 });
             }
 
+            const existingSupervisor = await UsersHierarchy.findOne({
+              where: {
+                  officer_designation_id: data.officer_designation_id,
+              },
+          });
+
+          if (existingSupervisor) {
+              return res.status(409).json({
+                  success: false,
+                  message: "The officer already has a supervisor assigned.",
+              });
+          }
+
+
             newEntry = await UsersHierarchy.create({
                 supervisor_designation_id: data.supervisor_designation_id,
                 officer_designation_id: data.officer_designation_id,

@@ -88,6 +88,7 @@ const Hierarchy = () => {
     };
 
     const get_designation = async () => {
+        setLoading(true);
         try {
             const response = await api.post("/master_meta/fetch_specific_master_data", {
                 master_name: "designation"
@@ -106,6 +107,7 @@ const Hierarchy = () => {
         } catch (err) {
             let errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
             toast.error(errorMessage);
+            setLoading(false);
         }
     };
 
@@ -250,7 +252,7 @@ const Hierarchy = () => {
                             />
                             <span>Edit</span>
                         </Button>
-                        <Button
+                        {/* <Button
                             style={{
                                 background: "transparent",
                                 border: "none",
@@ -272,7 +274,7 @@ const Hierarchy = () => {
                                 style={{ width: "20px", height: "20px" }}
                             />
                             <span>Delete</span>
-                        </Button>
+                        </Button> */}
                     </Box>
                 );
             }
@@ -659,6 +661,10 @@ const Hierarchy = () => {
                             setShowEditModal(false);
                             setShowRoleAddModal(false);
                             setErrorRoleData({ officer_designation_id: '', supervisor_designation_id: '' });
+                            setSelectedDesignation(null);
+                            setSelectedSupervisorDesignation(null);
+                            setAddRoleData({ officer_designation_id: '', supervisor_designation_id: '' });
+                            setSelectedRole(null);
                         }}
                         sx={{ color: (theme) => theme.palette.grey[500] }}
                     >
@@ -680,6 +686,7 @@ const Hierarchy = () => {
                                         setSelectedRole((prev) => ({ ...prev, officer_designation_id: designationId }));
                                         setAddRoleData((prev) => ({ ...prev, officer_designation_id: designationId }));
                                     }}
+                                    disabled={showViewModal || showEditModal}
                                     renderInput={(params) => <TextField {...params} label="Select Designation" variant="outlined" />}
                                 />
                             </Box>
