@@ -778,7 +778,15 @@ const UserManagement = () => {
             return designationArray.includes(String(data?.code));
         });
 
-        const divisionIds = filteredDepartment.map(item => item.division_id);
+        const divisionIds = [
+            ...new Set(
+              filteredDepartment
+                .map(item => item.division_id)
+                .filter(id => typeof id === 'string' && id.trim() !== '')
+                .flatMap(id => id.split(',').map(num => Number(num.trim())))
+            )
+        ];
+
         const departmentIds = filteredDepartment.map(item => String(item.department_id));
 
         if(divisionIds.length === 0){
@@ -842,18 +850,34 @@ const UserManagement = () => {
     );
 
     var division_id_value = null
+    var department_id_value = null
 
     if(designationArray.length > 0){
         var filteredDepartment = masterData?.designation.filter((data) => {
             return designationArray.includes(String(data?.code));
         });
 
-        const divisionIds = filteredDepartment.map(item => item.division_id);
+        const divisionIds = [
+            ...new Set(
+              filteredDepartment
+                .map(item => item.division_id)
+                .filter(id => typeof id === 'string' && id.trim() !== '')
+                .flatMap(id => id.split(',').map(num => Number(num.trim())))
+            )
+        ];
+
+        const departmentIds = filteredDepartment.map(item => String(item.department_id));
 
         if(divisionIds.length === 0){
             division_id_value = null;
         }else{
             division_id_value = divisionIds;
+        }
+
+        if(departmentIds.length === 0){
+            department_id_value = null;
+        }else{
+            department_id_value = departmentIds;
         }
 
     }
@@ -871,10 +895,7 @@ const UserManagement = () => {
       designation: designationOptions
         .filter((option) => designationArray.includes(String(option.code)))
         .map((option) => option.code),
-      department:
-        departmentOptions.find(
-          (option) => String(option.code) === String(userToEdit.department_id)
-        )?.code || "",
+      department: department_id_value,
       division: division_id_value,
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
@@ -1137,11 +1158,14 @@ const UserManagement = () => {
                         .filter(id => id !== null && id !== undefined)
                 )].map(String);
 
-                const divisionIds = [...new Set(
-                    filteredDepartment
+                const divisionIds = [
+                    ...new Set(
+                      filteredDepartment
                         .map(item => item.division_id)
-                        .filter(id => id !== null && id !== undefined)
-                )];
+                        .filter(id => typeof id === 'string' && id.trim() !== '')
+                        .flatMap(id => id.split(',').map(num => Number(num.trim())))
+                    )
+                ];
 
                 updatedData.department = departmentIds;
                 updatedData.division = divisionIds;
@@ -1254,8 +1278,6 @@ const UserManagement = () => {
     { name: "Active", code: "active" },
     { name: "Inactive", code: "inactive" },
   ];
-
-    console.log(newUser,"newUser");
 
   return (
     <Box p={2}>
