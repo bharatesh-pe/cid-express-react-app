@@ -642,7 +642,9 @@ const UserManagement = () => {
             designation_id: Array.isArray(newUser.designation)
               ? newUser.designation.join(",")
               : newUser.designation,
-            department_id: newUser.department,
+            department_id:  Array.isArray(newUser.department)
+            ? newUser.department.join(",")
+            : newUser.department,
             division_id: Array.isArray(newUser.division)
               ? newUser.division.join(",")
               : newUser.division,
@@ -659,7 +661,9 @@ const UserManagement = () => {
             designation_id: Array.isArray(newUser.designation)
               ? newUser.designation.join(",")
               : newUser.designation,
-            department_id: newUser.department,
+            department_id:  Array.isArray(newUser.department)
+            ? newUser.department.join(",")
+            : newUser.department,
             division_id: Array.isArray(newUser.division)
               ? newUser.division.join(",")
               : newUser.division,
@@ -767,6 +771,7 @@ const UserManagement = () => {
     );
 
     var division_id_value = null
+    var department_id_value = null
 
     if(designationArray.length > 0){
         var filteredDepartment = masterData?.designation.filter((data) => {
@@ -774,11 +779,18 @@ const UserManagement = () => {
         });
 
         const divisionIds = filteredDepartment.map(item => item.division_id);
+        const departmentIds = filteredDepartment.map(item => String(item.department_id));
 
         if(divisionIds.length === 0){
             division_id_value = null;
         }else{
             division_id_value = divisionIds;
+        }
+
+        if(departmentIds.length === 0){
+            department_id_value = null;
+        }else{
+            department_id_value = departmentIds;
         }
 
     }
@@ -797,10 +809,7 @@ const UserManagement = () => {
       designation: designationOptions
         .filter((option) => designationArray.includes(String(option.code)))
         .map((option) => option.code),
-      department:
-        departmentOptions.find(
-          (option) => String(option.code) === String(userToEdit.department_id)
-        )?.code || "",
+      department: department_id_value,
       division: division_id_value,
       transaction_id: `edit_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
     }));
@@ -1122,35 +1131,19 @@ const UserManagement = () => {
                     return value.includes(String(data?.code));
                 });
 
-                const departmentIds = filteredDepartment.map(item => Number(item.department_id));
-                const divisionIds = filteredDepartment.map(item => item.division_id);
-                
-                const uniqueDepartments = [...new Set(departmentIds)];
+                const departmentIds = [...new Set(
+                    filteredDepartment
+                        .map(item => item.department_id)
+                        .filter(id => id !== null && id !== undefined)
+                )].map(String);
 
-                if(uniqueDepartments.length === 0){
-                    updatedData.department = null;
-                    updatedData.division = null;
-                    return updatedData;
-                }
-                
-                if (uniqueDepartments.length === 1) {
-                    updatedData.department = uniqueDepartments[0];
-                } else {
-                    toast.error("Please select designations from the same department",{
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                    updatedData.department = null;
-                    updatedData.division = null;
-                    return updatedData;
-                }
-                
+                const divisionIds = [...new Set(
+                    filteredDepartment
+                        .map(item => item.division_id)
+                        .filter(id => id !== null && id !== undefined)
+                )];
+
+                updatedData.department = departmentIds;
                 updatedData.division = divisionIds;
             }
             
@@ -1261,6 +1254,8 @@ const UserManagement = () => {
     { name: "Active", code: "active" },
     { name: "Inactive", code: "inactive" },
   ];
+
+    console.log(newUser,"newUser");
 
   return (
     <Box p={2}>
@@ -1726,7 +1721,7 @@ const UserManagement = () => {
 
 
                 <Grid item xs={12} sm={4}>
-                  <AutocompleteField
+                  <MultiSelect
                     formData={newUser}
                     errors={errors}
                     field={{
