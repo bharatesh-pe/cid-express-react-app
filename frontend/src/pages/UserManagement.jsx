@@ -787,7 +787,14 @@ const UserManagement = () => {
             )
         ];
 
-        const departmentIds = filteredDepartment.map(item => String(item.department_id));
+        const departmentIds = [
+            ...new Set(
+              filteredDepartment
+                .map(item => item.department_id)
+                .filter(id => typeof id === 'string' && id.trim() !== '')
+                .flatMap(id => id.split(',').map(num => String(num.trim())))
+            )
+        ];
 
         if(divisionIds.length === 0){
             division_id_value = null;
@@ -866,7 +873,16 @@ const UserManagement = () => {
             )
         ];
 
-        const departmentIds = filteredDepartment.map(item => String(item.department_id));
+        const departmentIds = [
+            ...new Set(
+              filteredDepartment
+                .map(item => item.department_id)
+                .filter(id => typeof id === 'string' && id.trim() !== '')
+                .flatMap(id => id.split(',').map(num => String(num.trim())))
+            )
+        ];
+
+        console.log(departmentIds,"departmentIds")
 
         if(divisionIds.length === 0){
             division_id_value = null;
@@ -1152,11 +1168,14 @@ const UserManagement = () => {
                     return value.includes(String(data?.code));
                 });
 
-                const departmentIds = [...new Set(
-                    filteredDepartment
+                const departmentIds = [
+                    ...new Set(
+                      filteredDepartment
                         .map(item => item.department_id)
-                        .filter(id => id !== null && id !== undefined)
-                )].map(String);
+                        .filter(id => typeof id === 'string' && id.trim() !== '')
+                        .flatMap(id => id.split(',').map(num => String(num.trim())))
+                    )
+                ];
 
                 const divisionIds = [
                     ...new Set(
