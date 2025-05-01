@@ -953,7 +953,6 @@ exports.get_approval_activity_log = async (req, res) => {
       activityLogs.map(async (log) => {
         const updatedLog = { ...log };
 
-        // Format date
         if (log.created_at) {
           const date = new Date(log.created_at);
           updatedLog.created_at = isNaN(date.getTime())
@@ -961,7 +960,6 @@ exports.get_approval_activity_log = async (req, res) => {
             : date.toISOString().split("T")[0];
         }
 
-        // Get created_by name from KGID
         if (log.created_by) {
           const user = await Users.findOne({
             where: { user_id: log.created_by },
@@ -982,7 +980,6 @@ exports.get_approval_activity_log = async (req, res) => {
           }
         }
 
-        // Get designation name for approved_by
         if (log.approved_by) {
           const designation = await Designation.findOne({
             where: { designation_id: log.approved_by },
@@ -995,7 +992,6 @@ exports.get_approval_activity_log = async (req, res) => {
           }
         }
 
-        // Get approval_item name
         if (log.approval_item_id) {
           const item = await ApprovalItem.findOne({
             where: { approval_item_id: log.approval_item_id },
@@ -1008,7 +1004,6 @@ exports.get_approval_activity_log = async (req, res) => {
           }
         }
 
-        // Format approved_date
         if (log.approved_date) {
           const approvedDate = new Date(log.approved_date);
           updatedLog.approved_date = isNaN(approvedDate.getTime())
@@ -1017,7 +1012,7 @@ exports.get_approval_activity_log = async (req, res) => {
         }
 
 
-        return updatedLog; // Moved this outside the approval_item block
+        return updatedLog;
       })
     );
 
