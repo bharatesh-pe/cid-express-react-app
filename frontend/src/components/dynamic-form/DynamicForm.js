@@ -370,9 +370,9 @@ const DynamicForm = ({
           data.dependent_table.length > 0 &&
           data.dependent_table.includes(field.table)
         ) {
-          if (updatedFormData[data.name]) {
-            updatedFormData[data.name] = "";
-          }
+            if (updatedFormData[data.name] && !data?.disabled) {
+                updatedFormData[data.name] = '';
+            }
 
           if (data.options) {
             return { ...data, options: [] };
@@ -444,8 +444,6 @@ const DynamicForm = ({
 
     useEffect(() => {
 
-        console.log(selectedField,"selectedField selectedField")
-
         if (selectedField?.table && selectedField?.api) {
 
             var dependent_field = newFormConfig.filter((element) => {
@@ -454,8 +452,6 @@ const DynamicForm = ({
 
             var apiPayload = {};
             var apiUrl = selectedField.api
-
-            console.log(dependent_field,"dependent_field dependent_field")
 
             if (dependent_field.length > 0) {
 
@@ -503,16 +499,26 @@ const DynamicForm = ({
 
                         setNewFormConfig((prevFormConfig) => {
                             const updatedFormConfig = prevFormConfig.map((data) => {
-                                if (data?.id === dependent_field[0]?.id) {
-                                    return { ...data, options: updatedOptions };
+                                if(dependent_field?.[0].table === "users"){
+                                    var findingUsersField = dependent_field.filter((element)=>element.id === data?.id);
+                                    if (findingUsersField?.[0]) {
+                                        return { ...data, options: updatedOptions };
+                                    }
+                                    return data;
+                                }else{
+                                    if (data?.id === dependent_field[0]?.id) {
+                                        return { ...data, options: updatedOptions };
+                                    }
+                                    return data;
                                 }
-                                return data;
                             });
                             return updatedFormConfig;
                         });
 
                         dependent_field.map((data) => {
-                            delete formData[data.name];
+                            if(!data.disabled){
+                                delete formData[data.name];
+                            }
                         });
 
                     } catch (error) {
@@ -754,11 +760,11 @@ const DynamicForm = ({
                     }
 
                 } else {
-                    if (field && field.is_dependent === "true") {
-                        return { ...field, options: [] };
-                    }
                     if ( field && field.defaultValue && field.defaultValue !== "" && field.defaultValue !== false && field.defaultValue !== "false") {
                         defaultValueObj[field.name] = field.defaultValue;
+                    }
+                    if (field && field.is_dependent === "true") {
+                        return { ...field, options: [] };
                     }
                 }
 
@@ -942,6 +948,7 @@ const DynamicForm = ({
                 const apiCalls = newFormConfig
                 .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
                 .map(async (field) => {
+                    setLoading(true);
                     try {
 
                         var apiPayload = {};
@@ -958,6 +965,8 @@ const DynamicForm = ({
                         }
 
                         const response = await api.post(field.api, apiPayload);
+
+                        setLoading(false);
 
                         if (!response.data) return { id: field.id, options: [] };
 
@@ -985,18 +994,37 @@ const DynamicForm = ({
                         return { id: field.id, options: updatedOptions };
 
                     } catch (error) {
+                        setLoading(false);
                         return { id: field.id, options: [] };
                     }
                 });
 
                 const results = await Promise.all(apiCalls);
 
-                setNewFormConfig((prevFormConfig) =>
-                    prevFormConfig.map((field) => {
+                var optionUpdateFields = []
+
+                setNewFormConfig((prevFormConfig) => {
+                    const updatedFormConfig = prevFormConfig.map((field) => {
                         const updatedField = results.find((res) => res.id === field.id);
-                        return updatedField ? { ...field, options: updatedField.options } : field;
-                    })
-                );
+                        if (updatedField) {
+                            if (updatedField?.options.length === 1) {
+                                const onlyOption = updatedField.options[0];
+                                setFormData((prevData) => ({
+                                    ...prevData,
+                                    [field.name]: onlyOption.code
+                                }));
+
+                                optionUpdateFields.push(field);
+                            }
+                            return { ...field, options: updatedField.options };
+                        }
+                        return field;
+                    });
+                    return updatedFormConfig;
+                });
+
+                gettingDependentedOptions(optionUpdateFields);
+
             } catch (error) {
                 console.error("Error fetching template data:", error);
             }
@@ -1006,6 +1034,114 @@ const DynamicForm = ({
             fetchTemplateData();
         }
     }, []);
+
+    const gettingDependentedOptions = (fields)=>{
+
+        if(!fields || fields.length === 0){
+            return;
+        }
+
+        fields.map((selectedField)=>{
+
+            if (selectedField?.table && selectedField?.api) {
+
+                var dependent_field = newFormConfig.filter((element) => {
+                    return ( element.dependent_table && element.dependent_table.length > 0 && element.dependent_table.includes(selectedField.table));
+                });
+    
+                var apiPayload = {};
+                var apiUrl = selectedField.api
+    
+                if (dependent_field.length > 0) {
+    
+                    if (dependent_field?.[0]?.api) {
+                        if (dependent_field[0].dependent_table.length === 1) {
+                            const key = selectedField.table === "users" ? "user_id" : `${selectedField.table}_id`;
+                            apiPayload = { [key]: formData[selectedField.name] };
+                        } else {
+                            var dependentFields = newFormConfig.filter((data) => {
+                                return dependent_field[0].dependent_table.includes(data.table);
+                            });
+                            apiPayload = dependentFields.reduce((payload, data) => {
+                            if (formData && formData[data.name]) {
+                                const key = data.table === "users" ? "user_id" : `${data.table}_id`;
+                                payload[key] = formData[data.name];
+                            }
+                            return payload;
+                            }, {});
+                        }
+                    }
+                    apiUrl = dependent_field[0].api;
+    
+                    if(dependent_field?.[0]?.table === "users"){
+                        apiPayload = {
+                            ...apiPayload,
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : dependent_field?.[0]?.user_hierarchy || null
+                        }
+                    }
+    
+                    const callApi = async () => {
+                        try {
+                            var getOptionsValue = await api.post( apiUrl ,apiPayload);
+    
+                            var updatedOptions = [];
+    
+                            if (getOptionsValue && getOptionsValue.data) {
+                                updatedOptions = getOptionsValue.data.map((data, i) => {
+                                    return {
+                                        name: data[ dependent_field[0].table === "users" ? "name" : dependent_field[0].table + "_name" ],
+                                        code: data[ dependent_field[0].table === "users" ? "user_id" : dependent_field[0].table + "_id"],
+                                    };
+                                });
+                            }
+    
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if(dependent_field?.[0].table === "users"){
+                                        var findingUsersField = dependent_field.filter((element)=>element.id === data?.id);
+                                        if (findingUsersField?.[0]) {
+                                            return { ...data, options: updatedOptions };
+                                        }
+                                        return data;
+                                    }else{
+                                        if (data?.id === dependent_field[0]?.id) {
+                                            return { ...data, options: updatedOptions };
+                                        }
+                                        return data;
+                                    }
+                                });
+                                return updatedFormConfig;
+                            });
+    
+                            dependent_field.map((data) => {
+                                if(!data.disabled){
+                                    delete formData[data.name];
+                                }
+                            });
+    
+                        } catch (error) {
+                            if (error && error.response && error.response.data) {
+                                toast.error( error.response?.data?.message || "Need dependent Fields", {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                });
+                                return;
+                            }
+                        }
+                    };
+
+                    callApi();
+                }
+            }
+        });
+    };
 
   //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
   //   console.log(stepperData, "stepperData stepperData")
