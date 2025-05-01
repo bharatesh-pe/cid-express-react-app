@@ -33,5 +33,10 @@ router.post(
   [validate_token],
   uiCaseApprovalController.delete_ui_case_approval
 );
+router.post(
+  "/get_approval_activity_log",
+  [validate_token],
+  uiCaseApprovalController.get_approval_activity_log
+);
 
 module.exports = router;
