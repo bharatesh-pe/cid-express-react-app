@@ -9,6 +9,7 @@ const {
   UserDesignation,
   KGID,
   Users,
+  ApprovalActivityLog
 } = require("../models");
 const fs = require("fs");
 const path = require("path");
@@ -529,6 +530,7 @@ exports.update_ui_case_approval = async (req, res) => {
     transaction_id,
     created_by_designation_id,
     created_by_division_id,
+    case_id,
   } = req.body;
 
   if (!transaction_id || transaction_id === "") {
@@ -577,6 +579,59 @@ exports.update_ui_case_approval = async (req, res) => {
         transaction: t,
       }
     );
+
+
+    const changedFields = [];
+
+    if (approval_item !== approval.approval_item) {
+      changedFields.push({
+        approval_id,
+        case_id,
+        field_name: "approval_item",
+        old_value: approval.approval_item,
+        updated_value: approval_item,
+        created_by: user_id,
+      });
+    }
+
+    if (approved_by !== approval.approved_by) {
+      changedFields.push({
+        approval_id,
+        case_id,
+        field_name: "approval_designation",
+        old_value: approval.approved_by,
+        updated_value: approved_by,
+        created_by: user_id,
+      });
+    }
+
+    const newDate = approval_date ? new Date(approval_date).toISOString() : null;
+    const oldDate = approval.approval_date ? new Date(approval.approval_date).toISOString() : null;
+    if (newDate !== oldDate) {
+      changedFields.push({
+        approval_id,
+        case_id,
+        field_name: "approval_date",
+        old_value: approval.approval_date,
+        updated_value: approval_date,
+        created_by: user_id,
+      });
+    }
+
+    if (remarks !== approval.remarks) {
+      changedFields.push({
+        approval_id,
+        case_id,
+        field_name: "remarks",
+        old_value: approval.remarks,
+        updated_value: remarks,
+        created_by: user_id,
+      });
+    }
+
+    if (changedFields.length > 0) {
+      await ApprovalActivityLog.bulkCreate(changedFields, { transaction: t });
+    }
 
     // Create system alert
     const systemAlert = await System_Alerts.create(
@@ -707,5 +762,131 @@ exports.delete_ui_case_approval = async (req, res) => {
     if (fs.existsSync(dirPath)) {
       fs.rmdirSync(dirPath, { recursive: true });
     }
+  }
+};
+
+exports.get_approval_activity_log = async (req, res) => {
+  try {
+    const { approval_id } = req.body;
+
+    if (!approval_id) {
+      return res.status(400).json({
+        success: false,
+        message: "approval_id is required",
+      });
+    }
+
+    let activityLogs = await ApprovalActivityLog.findAll({
+      where: { approval_id },
+      order: [["created_at", "DESC"]],
+      attributes: [
+        "log_id",
+        "approval_id",
+        "case_id",
+        "field_name",
+        "old_value",
+        "updated_value",
+        "created_at",
+        "created_by",
+      ],
+      raw: true,
+    });
+
+    if (!activityLogs.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No activity logs found for the given approval_id",
+      });
+    }
+
+    activityLogs = await Promise.all(
+      activityLogs.map(async (log) => {
+        const updatedLog = { ...log };
+
+        const parseDate = (value) => {
+          const date = new Date(value);
+          return isNaN(date.getTime()) ? value : date.toISOString().split("T")[0];
+        };
+
+        if (log.created_by) {
+          const user = await Users.findOne({
+            where: { user_id: log.created_by },
+            attributes: ["kgid_id"],
+            raw: true,
+          });
+    
+          if (user && user.kgid_id) {
+            const kgid = await KGID.findOne({
+              where: { id: user.kgid_id },
+              attributes: ["name"],
+              raw: true,
+            });
+    
+            if (kgid) {
+              updatedLog.created_by = kgid.name;
+            }
+          }
+        }
+    
+        if (log.field_name === "approval_item") {
+          if (!isNaN(Number(log.old_value))) {
+            const itemOld = await ApprovalItem.findOne({
+              where: { approval_item_id: Number(log.old_value) },
+              attributes: ["name"],
+              raw: true,
+            });
+            if (itemOld) updatedLog.old_value = itemOld.name;
+          }
+
+          if (!isNaN(Number(log.updated_value))) {
+            const itemNew = await ApprovalItem.findOne({
+              where: { approval_item_id: Number(log.updated_value) },
+              attributes: ["name"],
+              raw: true,
+            });
+            if (itemNew) updatedLog.updated_value = itemNew.name;
+          }
+        }
+
+        if (log.field_name === "approval_designation") {
+          if (!isNaN(Number(log.old_value))) {
+            const designationOld = await Designation.findOne({
+              where: { designation_id: Number(log.old_value) },
+              attributes: ["designation_name"],
+              raw: true,
+            });
+            if (designationOld) updatedLog.old_value = designationOld.designation_name;
+          }
+
+          if (!isNaN(Number(log.updated_value))) {
+            const designationNew = await Designation.findOne({
+              where: { designation_id: Number(log.updated_value) },
+              attributes: ["designation_name"],
+              raw: true,
+            });
+            if (designationNew) updatedLog.updated_value = designationNew.designation_name;
+          }
+        }
+
+        if (log.field_name === "approval_date") {
+          if (log.old_value) updatedLog.old_value = parseDate(log.old_value);
+          if (log.updated_value) updatedLog.updated_value = parseDate(log.updated_value);
+        }
+
+        return updatedLog;
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: activityLogs,
+    });
+  } catch (error) {
+    console.error("Error in get_approval_activity_log:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
   }
 };
