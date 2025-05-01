@@ -1212,9 +1212,9 @@ exports.getTemplateData = async (req, res, next) => {
                     attributes: ["name"],
                   });
           
-                  filteredData.field_assigned_to = kgidRecord ? kgidRecord.name : "Unknown";
+                  filteredData.field_assigned_to = kgidRecord ? kgidRecord.name : " ";
                 } else {
-                  filteredData.field_assigned_to = "Unknown";
+                  filteredData.field_assigned_to = " ";
                 }
               }
           

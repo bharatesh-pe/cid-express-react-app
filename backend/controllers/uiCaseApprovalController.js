@@ -333,22 +333,55 @@ exports.get_alert_notification = async (req, res) => {
 
     // Step 3: Enrich alerts with read status
     let complete_data = await Promise.all(
-      alertNotifications.map(async (notification) => {
-        const alertViewStatus = await AlertViewStatus.findOne({
-          where: {
-            system_alert_id: notification.system_alert_id,
-            viewed_by: user_id,
-            viewed_by_designation_id: user_designation_id,
-            // viewed_by_division_id: user_division_id,
-          },
-        });
+        alertNotifications.map(async (notification) => {
+            const alertViewStatus = await AlertViewStatus.findOne({
+            where: {
+                system_alert_id: notification.system_alert_id,
+                viewed_by: user_id,
+                viewed_by_designation_id: user_designation_id,
+            },
+            });
 
-        return {
-          ...notification.toJSON(),
-          read_status: alertViewStatus ? alertViewStatus.view_status : false,
-        };
-      })
+            const read_status = alertViewStatus ? alertViewStatus.view_status : false;
+
+            const approvalDetails = await UiCaseApproval.findOne({
+            where: { approval_id: notification.approval_id }, // Removed status filter (optional)
+            include: [
+                {
+                model: ApprovalItem,
+                as: "approvalItem",
+                attributes: ["name"],
+                },
+                {
+                model: Designation,
+                as: "approvedBy",
+                attributes: ["designation_name"],
+                },
+            ],
+            raw: true,
+            nest: true,
+            });
+
+            return {
+            ...(typeof notification.toJSON === "function"
+                ? notification.toJSON()
+                : notification),
+            read_status,
+            approvalDetails: approvalDetails
+                ? {
+                    approval_id: approvalDetails.approval_id,
+                    approval_item: approvalDetails.approval_item,
+                    approved_by: approvalDetails.approved_by,
+                    approval_date: approvalDetails.approval_date,
+                    remarks: approvalDetails.remarks,
+                    approvalItem: approvalDetails.approvalItem?.name || null,
+                    approvedBy: approvalDetails.approvedBy?.designation_name || null,
+                }
+                : null,
+            };
+        })
     );
+
 
     // Step 4: Fetch names via created_by → Users → KGID
     const userIds = [...new Set(complete_data.map((n) => n.created_by))];
