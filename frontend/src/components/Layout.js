@@ -606,14 +606,21 @@ const Layout = ({ children }) => {
                                 }}
                             >
                                 {userName ? userName : "UserName"}<br />
-                                <span style={{
-                                    fontWeight: "400",
-                                    fontSize: "13px",
-                                    lineHeight: "16px",
-                                    color: "#98A2B3",
-                                }}>
+                                <Typography
+                                    noWrap
+                                    sx={{
+                                        fontWeight: 400,
+                                        fontSize: "13px",
+                                        lineHeight: "16px",
+                                        color: "#98A2B3",
+                                        maxWidth: "160px",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                    }}
+                                >
                                     {designationName ? designationName : ""}
-                                </span>
+                                </Typography>
                             </Typography>
                         </Box>
                     </Box>
