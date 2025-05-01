@@ -1390,7 +1390,7 @@ const DynamicForm = ({
           </Box>
 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }}>
-            <Grid container sx={{ alignItems: "center" }}>
+            <Grid container sx={{ alignItems: "start" }}>
               {(stepperData && stepperData.length > 0
                 ? stepperConfigData
                 : newFormConfig
