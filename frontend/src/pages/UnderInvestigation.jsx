@@ -218,8 +218,60 @@ const UnderInvestigation = () => {
     const [logs, setLogs] = useState([]);
     const [openLogDialog, setOpenLogDialog] = useState(false);
     const [LogDialogTitle, SetLogDialogTitle] = useState("");
+    const [activityLogs,setActivityLogs] = useState([]);
+    const [openActivityLogDialog, setOpenActivityLogDialog] = useState(false);
     const [listApprovalCaseId, setListApprovalCaseId] = useState(null);
+    const approvalFieldHistoryHeader = [
+      { field: "sno", headerName: "S.No", width: 70 },
+      { field: "old_value", headerName: "Old Value", width: 150 },
+      { field: "updated_value", headerName: "New Value", width: 150 },
+      { field: "created_by", headerName: "Created By", width: 150 },
+      { field: "created_at", headerName: "Updated At", width: 200 }
+    ];
+    
+    const approvalFieldHistory = logs.map((log, index) => ({
+      id: index,
+      sno: index + 1,
+      old_value: log.old_value,
+      updated_value: log.updated_value,
+      created_by: log.created_by,
+      created_at: new Date(log.created_at).toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).replace(",", "").replace(":", ".")
+    }));
+    
 
+    const approvalActivityHistoryHeader = [
+      { field: "sno", headerName: "S.No", width: 70 },
+      { field: "approval_item_id", headerName: "Approval Item", width: 150 },
+      { field: "approved_by", headerName: "Approved By", width: 150 },
+      { field: "approved_date", headerName: "Approved Date", width: 150 },
+      { field: "created_by", headerName: "Created By", width: 150 },
+      { field: "created_at", headerName: "Created At", width: 200 }
+    ];
+    
+    const approvalActivityHistory = activityLogs.map((log, index) => ({
+      id: index,
+      sno: index + 1,
+      approval_item_id: log.approval_item_id,
+      approved_by: log.approved_by,
+      approved_date: log.approved_date,
+      created_by: log.created_by,
+      created_at: new Date(log.created_at).toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).replace(",", "").replace(":", ".")
+    }));
+    
     const listApprovalActionColumn = {
         field: "actions",
         headerName: "Actions",
@@ -8229,7 +8281,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
         showApprovalListPage(rowData)
 
-        // showApprovalLog(rowData)
 
 
     }
@@ -8254,7 +8305,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       const payload = { approval_id: row };
     
       try {
-        const getActionsDetails = await api.post("/ui_approval/get_approval_activity_log", payload);
+        const getActionsDetails = await api.post("/ui_approval/get_approval_field_log", payload);
         setLoading(false);
     
         if (getActionsDetails && getActionsDetails.success) {
@@ -8321,66 +8372,98 @@ const loadChildMergedCasesData = async (page, caseId) => {
     };
     
     
-    // const showApprovalLog = async (rowData) => {
-    //   if (!rowData.id) {
-    //     toast.error("Please check the case", {
-    //       position: "top-right",
-    //       autoClose: 3000,
-    //       hideProgressBar: false,
-    //       closeOnClick: true,
-    //       pauseOnHover: true,
-    //       draggable: true,
-    //       progress: undefined,
-    //       className: "toast-error",
-    //     });
-    //     return;
-    //   }
+    const showApprovalLog = async (row) => {
+      if (!row) {
+        toast.error("Please check the case", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+        return;
+      }
     
-    //   setLoading(true);
-    //   const payload = { case_id: rowData.id };
+      setLoading(true);
+      const payload = { case_id: row , approval_type: 'ui_case' };
     
-    //   try {
-    //     const getActionsDetails = await api.post("/ui_approval/get_approval_activity_log", payload);
-    //     setLoading(false);
+      try {
+        const getActionsDetails = await api.post("/ui_approval/get_approval_activity_log", payload);
+        setLoading(false);
     
-    //     if (getActionsDetails && getActionsDetails.success) {
-    //       toast.success(getActionsDetails.message || "Approval Log Fetched Successfully", {
-    //         position: "top-right",
-    //         autoClose: 3000,
-    //         hideProgressBar: false,
-    //         closeOnClick: true,
-    //         pauseOnHover: true,
-    //         draggable: true,
-    //         progress: undefined,
-    //         className: "toast-success",
-    //       });
-    //     } else {
-    //       toast.error(getActionsDetails.message || "Failed to fetch approval log. Please try again.", {
-    //         position: "top-right",
-    //         autoClose: 3000,
-    //         hideProgressBar: false,
-    //         closeOnClick: true,
-    //         pauseOnHover: true,
-    //         draggable: true,
-    //         progress: undefined,
-    //         className: "toast-error",
-    //       });
-    //     }
-    //   } catch (err) {
-    //     setLoading(false);
-    //     toast.error("An error occurred while fetching the approval log.", {
-    //       position: "top-right",
-    //       autoClose: 3000,
-    //       hideProgressBar: false,
-    //       closeOnClick: true,
-    //       pauseOnHover: true,
-    //       draggable: true,
-    //       progress: undefined,
-    //       className: "toast-error",
-    //     });
-    //     console.error("showApprovalLog error:", err);
-    //   }
-    // };
+        if (getActionsDetails && getActionsDetails.success) {
+
+          const allLogs = getActionsDetails.data || [];
+    
+          const fieldLogs = allLogs
+            .map(activityLogs => ({
+              approval_item_id: activityLogs.approval_item_id || '-',
+              approved_by: activityLogs.approved_by || '-',
+              approved_date: activityLogs.approved_date || '-',
+              created_at: activityLogs.created_at || '-',
+              created_by: activityLogs.created_by || '-',
+            }));
+    
+          if (fieldLogs.length === 0) {
+            toast.info("No logs found for this field.", {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-info",
+            });
+            return;
+          }
+    
+          setActivityLogs(fieldLogs);
+          setOpenActivityLogDialog(true);
+          toast.success(getActionsDetails.message || "Approval Log Fetched Successfully", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+          });
+        } else {
+          toast.error(getActionsDetails.message || "Failed to fetch approval log. Please try again.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          });
+        }
+      } catch (err) {
+        setLoading(false);
+        const errorMessage =
+        err.response?.data?.message === "No activity logs found for the given case_id and approval_type"
+          ? "No activity logs found"
+          : err.response?.data?.message || "An error occurred while fetching the approval log.";
+
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    };
     
 
 
@@ -10463,6 +10546,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                    <Button
                                       variant="outlined"
                                       sx={{marginLeft: "10px", height: '40px'}}
+                                      onClick = {() => {showApprovalLog(listApprovalCaseId)}}
                                     >
                                       Approval Log
                                   </Button>
@@ -11089,67 +11173,71 @@ const loadChildMergedCasesData = async (page, caseId) => {
         )}
 
       {/* Dialog for displaying logs */}
- <Dialog
-      open={openLogDialog}
-      onClose={() => setOpenLogDialog(false)}
-      fullWidth
-      maxWidth="md"
-      scroll="paper" // Enable scroll within content
+      <Dialog
+  open={openLogDialog}
+  onClose={() => setOpenLogDialog(false)}
+  fullWidth
+  maxWidth="md"
+  scroll="paper"
+>
+  <DialogTitle>
+    {LogDialogTitle} Logs
+    <IconButton
+      edge="end"
+      color="inherit"
+      onClick={() => setOpenLogDialog(false)}
+      aria-label="close"
+      sx={{ position: "absolute", right: 20, top: 12 }}
     >
-      <DialogTitle >
-        {LogDialogTitle} Logs
-        <IconButton
-          edge="end"
-          color="inherit"
-          onClick={() => setOpenLogDialog(false)}
-          aria-label="close"
-          sx={{ position: "absolute", right: 20, top: 12 }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
 
-      <DialogContent
-        dividers
-        sx={{
-          maxHeight: "60vh", // Control vertical height
-          overflowY: "auto", // Enable scrolling
-        }}
+  <DialogContent
+    // dividers
+    sx={{
+      maxHeight: "60vh",
+      overflowY: "auto",
+    }}
+  >
+    <Box py={2}>
+      <TableView rows={approvalFieldHistory} columns={approvalFieldHistoryHeader} />
+    </Box>
+  </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={openActivityLogDialog}
+        onClose={() => setOpenActivityLogDialog(false)}
+        fullWidth
+        maxWidth="md"
+        scroll="paper"
       >
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell>S.No</TableCell>
-              <TableCell>Old Value</TableCell>
-              <TableCell>New Value</TableCell>
-              <TableCell>Created By</TableCell>
-              <TableCell>Updated At</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {logs.map((log, index) => (
-              <TableRow key={index}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{log.old_value}</TableCell>
-                <TableCell>{log.updated_value}</TableCell>
-                <TableCell>{log.created_by}</TableCell>
-                <TableCell>
-                  {new Date(log.created_at).toLocaleString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: true,
-                  }).replace(",", "").replace(":", ".")}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        
-      </DialogContent>
-    </Dialog>
+        <DialogTitle>
+          Approval Logs
+          <IconButton
+            edge="end"
+            color="inherit"
+            onClick={() => setOpenActivityLogDialog(false)}
+            aria-label="close"
+            sx={{ position: "absolute", right: 20, top: 12 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent
+          // dividers
+          sx={{
+            maxHeight: "60vh",
+            overflowY: "auto",
+          }}
+        >
+          <Box py={2}>
+            <TableView rows={approvalActivityHistory} columns={approvalActivityHistoryHeader} />
+          </Box>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };

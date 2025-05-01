@@ -2,9 +2,9 @@
 const { Model, DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
-  class ApprovalActivityLog extends Model {}
+  class ApprovalFieldLog extends Model {}
 
-  ApprovalActivityLog.init(
+  ApprovalFieldLog.init(
     {
       log_id: {
         type: DataTypes.INTEGER,
@@ -14,28 +14,20 @@ module.exports = (sequelize) => {
       approval_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
-    },
-      approval_item_id:{
-        type: DataTypes.INTEGER,
-        allowNull: true,
       },
       case_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
       },
-      approved_by: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
+      field_name: {
+        type: DataTypes.STRING,
+        allowNull: false,
       },
-      approved_date: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-      approval_type: {
+      old_value: {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      module: {
+      updated_value: {
         type: DataTypes.STRING,
         allowNull: true,
       },
@@ -50,11 +42,11 @@ module.exports = (sequelize) => {
     },
     {
       sequelize,
-      modelName: "ApprovalActivityLog",
-      tableName: "approval_activity_logs",
+      modelName: "ApprovalFieldLog",
+      tableName: "approval_field_logs",
       timestamps: false,
     }
   );
 
-  return ApprovalActivityLog;
+  return ApprovalFieldLog;
 };
