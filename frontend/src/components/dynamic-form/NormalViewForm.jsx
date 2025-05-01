@@ -1168,7 +1168,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </Box>
 
           <form onSubmit={handleSubmit} noValidate style={{ margin: 0 }} >
-            <Grid container sx={{ alignItems: 'center' }}>
+            <Grid container sx={{ alignItems: 'start' }}>
               {(stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).map((field, index) => {
 
                 if(field?.hide_from_ux){

@@ -99,6 +99,11 @@ code {
     stroke: #000000;
 }
 
+.sidebarMenus .MuiListItemIcon-root .outsideSvg, .subMenuSidebarMenus .MuiListItemIcon-root .outsideSvg {
+    stroke: #000000;
+    fill: #000000;
+}
+
 .sidebarMenus .MuiListItemText-root span, .subMenuSidebarMenus .MuiListItemText-root span {
     font-size: 14px !important;
     font-weight: 400 !important;
@@ -128,8 +133,18 @@ code {
     stroke: #FFFFFF;
 }
 
+.sidebarMenus:hover .MuiListItemIcon-root .outsideSvg {
+    stroke: #FFFFFF;
+    fill: #FFFFFF;
+}
+
 .sidebarMenus.active .MuiListItemIcon-root svg {
     stroke: #FFFFFF;
+}
+
+.sidebarMenus.active .MuiListItemIcon-root .outsideSvg {
+    stroke: #FFFFFF;
+    fill: #FFFFFF;
 }
 
 .subMenuSidebarMenus.active .MuiListItemText-root span {
