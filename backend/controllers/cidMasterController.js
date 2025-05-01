@@ -5,11 +5,43 @@ const { Department, Designation, Division, UsersDepartment,  UsersDivision,  Use
 const { Op, where } = require("sequelize");
 
 const getAllDepartments = async (req, res) => {
+
+    const  { get_flag } = req.body;
     try {
-        const departments = await Department.findAll({
-            // include: [{ model: db.Designation, as: 'designations' }],
-            order: [['department_name', 'ASC']]
-        });
+
+        const userId = req.user?.user_id || null;
+        var departments = {};
+        if( get_flag && get_flag === "All" ){
+            departments = await Department.findAll({
+                // include: [{ model: db.Designation, as: 'designations' }],
+                order: [['department_name', 'ASC']]
+            });
+        }
+        else{
+            if (userId !== 1) {
+                // Fetch department for the logged-in user
+                const userDepartment = await UsersDepartment.findAll({
+                    where: { user_id : userId },
+                    attributes: ["department_id"],
+                });
+                
+                if (!userDepartment.length) {
+                    return res.status(404).json({ message: "User has no designations assigned" });
+                }
+                const userDepartments = userDepartment.map((ud) => ud.department_id);
+
+                departments = await Department.findAll({
+                    where: { department_id : { [Op.in]: userDepartments } },
+                    order: [['department_name', 'ASC']]
+                });
+            }
+            else
+            {
+                departments = await Department.findAll({
+                    order: [['department_name', 'ASC']]
+                });
+            }
+        }
 
         if (!departments || departments.length === 0) {
             return adminSendResponse(res, 200, true, "Departments retrieved successfully", []);
@@ -90,7 +122,7 @@ const getIoUsers = async (req, res) => {
         let usersData  = [];
         let userDesignations = "";
         let userIds = [];
-        if(get_flag && get_flag === "upper" && designation_id){
+        if(get_flag && get_flag === "upper" && designation_id && division_id){
             const userHierarchy = await UsersHierarchyNew.findAll({
                 where: {
                     officer_designation_id: designation_id,
@@ -145,7 +177,7 @@ const getIoUsers = async (req, res) => {
                 nest: true, // Keeps relations grouped
             });
         }
-        else if(get_flag && get_flag === "lower" && designation_id){
+        else if(get_flag && get_flag === "lower" && designation_id && division_id){
             const userHierarchy = await UsersHierarchyNew.findAll({
                 where: {
                     supervisor_designation_id: designation_id,
@@ -200,7 +232,7 @@ const getIoUsers = async (req, res) => {
                 nest: true, // Keeps relations grouped
             });
         }
-        else if(get_flag && get_flag === "All" && division_id)
+        else if(get_flag && get_flag === "All" && division_id )
         {
             const usersDivisionData = await UsersDivision.findAll({
                 where: {
@@ -254,7 +286,72 @@ const getIoUsers = async (req, res) => {
             //     kgidDetails: undefined, // remove nested object if not needed
             // }));
         }
-        else{
+        else if(division_id )
+        {
+            usersData = await Users.findAll({
+                include: [
+                    {
+                        model: Role,
+                        as: "role",
+                        attributes: ["role_id", "role_title"],
+                        where: {
+                            role_id: {
+                                [Op.notIn]: excluded_role_ids,
+                            },
+                        },
+                    },
+                    {
+                        model: KGID,
+                        as: "kgidDetails",
+                        attributes: ["kgid", "name", "mobile"], // Fetch name here
+                    },
+                    // {
+                    //     model: UserDesignation,
+                    //     as: "users_designations",
+                    //     attributes: ["designation_id"],
+                    //     include: [
+                    //         {
+                    //             model: Designation,
+                    //             as: "designation",
+                    //             attributes: ["designation_name"],
+                    //         },
+                    //     ],
+                    // },
+                    // {
+                    //     model: UsersDepartment,
+                    //     as: "users_departments",
+                    //     attributes: ["department_id"],
+                    //     include: [
+                    //         {
+                    //             model: Department,
+                    //             as: "department",
+                    //             attributes: ["department_name"],
+                    //         },
+                    //     ],
+                    // },
+                    // {
+                    //     model: UsersDivision,
+                    //     as: "users_division",
+                    //     attributes: ["division_id"],
+                    //     include: [
+                    //         {
+                    //             model: Division,
+                    //             as: "division",
+                    //             attributes: ["division_name"],
+                    //         },
+                    //     ],
+                    // },
+                ],
+                attributes: ["user_id"],
+                where: {
+                    dev_status: true,
+                },
+                raw: true, // Flatten the result
+                nest: true, // Keeps relations grouped
+            });
+        }
+        else 
+        {
             usersData = await Users.findAll({
                 include: [
                     {
