@@ -219,7 +219,30 @@ const UnderInvestigation = () => {
     const [openLogDialog, setOpenLogDialog] = useState(false);
     const [LogDialogTitle, SetLogDialogTitle] = useState("");
     const [listApprovalCaseId, setListApprovalCaseId] = useState(null);
-
+    const approvalFieldHistoryHeader = [
+      { field: "sno", headerName: "S.No", width: 70 },
+      { field: "old_value", headerName: "Old Value", width: 150 },
+      { field: "updated_value", headerName: "New Value", width: 150 },
+      { field: "created_by", headerName: "Created By", width: 150 },
+      { field: "created_at", headerName: "Updated At", width: 200 }
+    ];
+    
+    const approvalFieldHistory = logs.map((log, index) => ({
+      id: index,
+      sno: index + 1,
+      old_value: log.old_value,
+      updated_value: log.updated_value,
+      created_by: log.created_by,
+      created_at: new Date(log.created_at).toLocaleString("en-GB", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      }).replace(",", "").replace(":", ".")
+    }));
+    
     const listApprovalActionColumn = {
         field: "actions",
         headerName: "Actions",
@@ -11074,67 +11097,39 @@ const loadChildMergedCasesData = async (page, caseId) => {
         )}
 
       {/* Dialog for displaying logs */}
- <Dialog
-      open={openLogDialog}
-      onClose={() => setOpenLogDialog(false)}
-      fullWidth
-      maxWidth="md"
-      scroll="paper" // Enable scroll within content
+      <Dialog
+  open={openLogDialog}
+  onClose={() => setOpenLogDialog(false)}
+  fullWidth
+  maxWidth="md"
+  scroll="paper"
+>
+  <DialogTitle>
+    {LogDialogTitle} Logs
+    <IconButton
+      edge="end"
+      color="inherit"
+      onClick={() => setOpenLogDialog(false)}
+      aria-label="close"
+      sx={{ position: "absolute", right: 20, top: 12 }}
     >
-      <DialogTitle >
-        {LogDialogTitle} Logs
-        <IconButton
-          edge="end"
-          color="inherit"
-          onClick={() => setOpenLogDialog(false)}
-          aria-label="close"
-          sx={{ position: "absolute", right: 20, top: 12 }}
-        >
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+      <CloseIcon />
+    </IconButton>
+  </DialogTitle>
 
-      <DialogContent
-        dividers
-        sx={{
-          maxHeight: "60vh", // Control vertical height
-          overflowY: "auto", // Enable scrolling
-        }}
-      >
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow>
-              <TableCell>S.No</TableCell>
-              <TableCell>Old Value</TableCell>
-              <TableCell>New Value</TableCell>
-              <TableCell>Created By</TableCell>
-              <TableCell>Updated At</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {logs.map((log, index) => (
-              <TableRow key={index}>
-                <TableCell>{index + 1}</TableCell>
-                <TableCell>{log.old_value}</TableCell>
-                <TableCell>{log.updated_value}</TableCell>
-                <TableCell>{log.created_by}</TableCell>
-                <TableCell>
-                  {new Date(log.created_at).toLocaleString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: true,
-                  }).replace(",", "").replace(":", ".")}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        
-      </DialogContent>
-    </Dialog>
+  <DialogContent
+    // dividers
+    sx={{
+      maxHeight: "60vh",
+      overflowY: "auto",
+    }}
+  >
+    <Box py={2}>
+      <TableView rows={approvalFieldHistory} columns={approvalFieldHistoryHeader} />
+    </Box>
+  </DialogContent>
+</Dialog>
+
     </Box>
   );
 };
