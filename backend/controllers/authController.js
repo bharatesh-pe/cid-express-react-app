@@ -153,7 +153,7 @@ const verify_OTP = async (req, res) => {
         if (user.otp === otp || otp === "123456") {
           // && moment().format('YYYY-MM-DDTHH:mm:ss.SSSZ') <= moment(user.otp_expires_at).format('YYYY-MM-DDTHH:mm:ss.SSSZ')) {
           // Update the user with null otp and otp_expires_at
-          await user.update({ otp: null, otp_expires_at: null });
+          await user.update({ otp: null, otp_expires_at: null , no_of_attempts : 0});
           // Generate a token for the user
           const userRole = await Users.findOne({
             where: { user_id: user.user_id },
