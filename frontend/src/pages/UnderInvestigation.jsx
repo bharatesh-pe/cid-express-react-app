@@ -11,7 +11,14 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HistoryIcon from '@mui/icons-material/History';
-
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+} from "@mui/material";
 
 import api from "../services/api";
 import { Badge, Chip, Tooltip } from "@mui/material";
@@ -208,7 +215,11 @@ const UnderInvestigation = () => {
         { field: "remarks", headerName: "Remarks", width: 120 },
     ]);
     const [listApprovalCaseData, setListApprovalCaseData] = useState({});
-  
+    const [logs, setLogs] = useState([]);
+    const [openLogDialog, setOpenLogDialog] = useState(false);
+    const [LogDialogTitle, SetLogDialogTitle] = useState("");
+    const [listApprovalCaseId, setListApprovalCaseId] = useState(null);
+
     const listApprovalActionColumn = {
         field: "actions",
         headerName: "Actions",
@@ -360,6 +371,7 @@ const UnderInvestigation = () => {
     const handleUpdateApproval = async () => {
         setLoading(true);
 
+        console.log("listApprovalSaveData", listApprovalSaveData);
         try {
             const { approval_item, approved_by, approval_date, remarks, approval_id } = listApprovalSaveData;
             
@@ -393,6 +405,7 @@ const UnderInvestigation = () => {
             transaction_id:  `approval_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
             created_by_designation_id: localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : "",
             created_by_division_id: localStorage.getItem("division_id") ? localStorage.getItem("division_id") : "",
+            case_id : listApprovalCaseId,
             };
 
             const response = await api.post(
@@ -3428,6 +3441,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
+  const getIoUsers = async () => {
+    const res = await api.post("cidMaster/getIoUsers");
+    return res?.data || [];
+  };
+  
   const showOptionTemplate = async (tableName, approved) => {
 
     if(selectedOtherTemplate.is_approval && !approved){
@@ -3460,22 +3478,28 @@ const loadChildMergedCasesData = async (page, caseId) => {
         "/templates/viewTemplate",
         viewTableData
       );
+      const ioUsers = await getIoUsers();
+      const userId = localStorage.getItem("user_id");
+      const userName = localStorage.getItem("username");
 
       setLoading(false);
       if (viewTemplateResponse && viewTemplateResponse.success) {
         var caseFields = [];
-        const userId = localStorage.getItem("user_id");
-        const userName = localStorage.getItem("username");
         var getCaseIdFields = viewTemplateResponse.data["fields"].map(
           (field) => {
 
-            if (field.name === "field_assigned_by" && field.formType === "Dropdown" && Array.isArray(field.options)) {
-              let matchedOption = field.options.find(opt => String(opt.code) === String(userId));
-              
+            if (field.name === "field_assigned_by" && field.formType === "Dropdown") {
+
+              field.options = ioUsers.map(user => ({
+                code: user.user_id,
+                name: user.name
+              }));
+    
+              const matchedOption = field.options.find(opt => String(opt.code) === String(userId));
               if (!matchedOption) {
                 field.options.push({ code: userId, name: userName || `User ${userId}` });
               }
-          
+    
               field.defaultValue = userId;
               field.disabled = true;
             }
@@ -8190,9 +8214,164 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
         showApprovalListPage(rowData)
 
+        // showApprovalLog(rowData)
+
+
     }
 
+    const getApprovalFieldLog = async (fieldName, row) => {
+      console.log("row", row)
+      if (!row) {
+        toast.error("Please check the case", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+        return;
+      }
+    
+      setLoading(true);
+      const payload = { approval_id: row };
+    
+      try {
+        const getActionsDetails = await api.post("/ui_approval/get_approval_activity_log", payload);
+        setLoading(false);
+    
+        if (getActionsDetails && getActionsDetails.success) {
+          const allLogs = getActionsDetails.data || [];
+    
+          const fieldLogs = allLogs
+            .filter(log => log.field_name === fieldName)
+            .map(log => ({
+              old_value: log.old_value || '-',
+              updated_value: log.updated_value || '-',
+              created_at: log.created_at || '-',
+              created_by: log.created_by || '-',
+            }));
+    
+          if (fieldLogs.length === 0) {
+            toast.info("No logs found for this field.", {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-info",
+            });
+            return;
+          }
+    
+          setLogs(fieldLogs);
+          SetLogDialogTitle(fieldName.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase()));
+          setOpenLogDialog(true);
+    
+        } else {
+          toast.error(getActionsDetails.message || "Failed to fetch approval log. Please try again.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+            });
+        }
+      } catch (err) {
+        setLoading(false);
+        const errorMessage =
+          err.response?.data?.message === "No activity logs found for the given approval_id"
+            ? "No activity logs found"
+            : err.response?.data?.message || "An error occurred while fetching the approval log.";
+
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+
+      }
+    };
+    
+    
+    // const showApprovalLog = async (rowData) => {
+    //   if (!rowData.id) {
+    //     toast.error("Please check the case", {
+    //       position: "top-right",
+    //       autoClose: 3000,
+    //       hideProgressBar: false,
+    //       closeOnClick: true,
+    //       pauseOnHover: true,
+    //       draggable: true,
+    //       progress: undefined,
+    //       className: "toast-error",
+    //     });
+    //     return;
+    //   }
+    
+    //   setLoading(true);
+    //   const payload = { case_id: rowData.id };
+    
+    //   try {
+    //     const getActionsDetails = await api.post("/ui_approval/get_approval_activity_log", payload);
+    //     setLoading(false);
+    
+    //     if (getActionsDetails && getActionsDetails.success) {
+    //       toast.success(getActionsDetails.message || "Approval Log Fetched Successfully", {
+    //         position: "top-right",
+    //         autoClose: 3000,
+    //         hideProgressBar: false,
+    //         closeOnClick: true,
+    //         pauseOnHover: true,
+    //         draggable: true,
+    //         progress: undefined,
+    //         className: "toast-success",
+    //       });
+    //     } else {
+    //       toast.error(getActionsDetails.message || "Failed to fetch approval log. Please try again.", {
+    //         position: "top-right",
+    //         autoClose: 3000,
+    //         hideProgressBar: false,
+    //         closeOnClick: true,
+    //         pauseOnHover: true,
+    //         draggable: true,
+    //         progress: undefined,
+    //         className: "toast-error",
+    //       });
+    //     }
+    //   } catch (err) {
+    //     setLoading(false);
+    //     toast.error("An error occurred while fetching the approval log.", {
+    //       position: "top-right",
+    //       autoClose: 3000,
+    //       hideProgressBar: false,
+    //       closeOnClick: true,
+    //       pauseOnHover: true,
+    //       draggable: true,
+    //       progress: undefined,
+    //       className: "toast-error",
+    //     });
+    //     console.error("showApprovalLog error:", err);
+    //   }
+    // };
+    
+
+
     const showApprovalListPage = async (approveData) => {
+      console.log("approvedataa", approveData)
+      setListApprovalCaseId(approveData.id);
         if(!approveData  || Object.keys(approveData).length === 0){
             setListAddApproveFlag(false);
             setListApproveTableFlag(false);
@@ -9108,7 +9287,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     {!isChildMergedLoading && (
                       <Button
                         variant="outlined"
-                        sx={{marginLeft: "10px", height: '40px'}}
+                        sx={{
+                          marginLeft: "10px",
+                          height: '40px',
+                          borderColor: '#1976d2',
+                          color: '#1976d2',
+                        }}
                         onClick={() => {
                           showOptionTemplate(selectedOtherTemplate?.table);
                         }}
@@ -9127,12 +9311,25 @@ const loadChildMergedCasesData = async (page, caseId) => {
                           prUpdatePdf,
                         })
                       }
-                      style={{ marginLeft: "10px", height: '40px' }}
+                      sx={{
+                        marginLeft: "10px",
+                        height: '40px',
+                        borderColor: '#2e7d32',
+                        color: '#2e7d32',
+                      }}
                     >
                       Update PDF
                     </Button>
                     {showReplacePdfButton && (
-                      <Button variant="outlined" component="label" style={{ marginLeft: "10px", height: '40px' }}>
+                      <Button variant="outlined" 
+                      component="label"
+                      sx={{
+                        marginLeft: "10px",
+                        height: '40px',
+                        borderColor: '#d32f2f',
+                        color: '#d32f2f',
+                      }}
+                  >
                       Replace PDF
                       <input
                         type="file"
@@ -10377,6 +10574,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       required: true ,
                                       history: true
                                   }}
+                                  onHistory={() => getApprovalFieldLog("approval_item", listApprovalSaveData?.approval_id)}
                                   value={listApprovalSaveData?.approval_item}
                                   onChange={(fieldName, newValue) => {
                                       handleListApprovalSaveData(fieldName, newValue);
@@ -10401,6 +10599,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         required: true,
                                         history: true
                                     }}
+                                    onHistory={() => getApprovalFieldLog("approval_designation",listApprovalSaveData?.approval_id)}
                                     value={listApprovalSaveData?.approved_by}
                                     onChange={(fieldName, newValue) => {
                                         handleListApprovalSaveData(fieldName, newValue);
@@ -10463,8 +10662,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         onClick={(e) => {
                                           e.preventDefault();
                                           e.stopPropagation();
-                                          console.log('Approval Date history clicked');
-                                          // You can replace this with your actual onHistory callback
+                                          getApprovalFieldLog("approval_date", listApprovalSaveData?.approval_id);
                                         }}
                                         className='historyIcon'
                                         sx={{
@@ -10512,7 +10710,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                   }}
                                   formData={listApprovalSaveData}
                                   onChange={(e) => handleListApprovalSaveData("remarks", e.target.value)}
-                                  
+                                  onHistory={() => getApprovalFieldLog("remarks", listApprovalSaveData?.approval_id)}
                                   onFocus={() => {}}
                                   isFocused={false}
                               />
@@ -10875,6 +11073,68 @@ const loadChildMergedCasesData = async (page, caseId) => {
             </Dialog>
         )}
 
+      {/* Dialog for displaying logs */}
+ <Dialog
+      open={openLogDialog}
+      onClose={() => setOpenLogDialog(false)}
+      fullWidth
+      maxWidth="md"
+      scroll="paper" // Enable scroll within content
+    >
+      <DialogTitle >
+        {LogDialogTitle} Logs
+        <IconButton
+          edge="end"
+          color="inherit"
+          onClick={() => setOpenLogDialog(false)}
+          aria-label="close"
+          sx={{ position: "absolute", right: 20, top: 12 }}
+        >
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent
+        dividers
+        sx={{
+          maxHeight: "60vh", // Control vertical height
+          overflowY: "auto", // Enable scrolling
+        }}
+      >
+        <Table stickyHeader>
+          <TableHead>
+            <TableRow>
+              <TableCell>S.No</TableCell>
+              <TableCell>Old Value</TableCell>
+              <TableCell>New Value</TableCell>
+              <TableCell>Created By</TableCell>
+              <TableCell>Updated At</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {logs.map((log, index) => (
+              <TableRow key={index}>
+                <TableCell>{index + 1}</TableCell>
+                <TableCell>{log.old_value}</TableCell>
+                <TableCell>{log.updated_value}</TableCell>
+                <TableCell>{log.created_by}</TableCell>
+                <TableCell>
+                  {new Date(log.created_at).toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: true,
+                  }).replace(",", "").replace(":", ".")}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        
+      </DialogContent>
+    </Dialog>
     </Box>
   );
 };
