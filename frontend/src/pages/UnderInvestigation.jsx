@@ -6212,7 +6212,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 //   setSelectedRow(selectedRow);
                 //   setselectedOtherTemplate(options);
                   setOtherTransferField(updatedOptions);
-                  if (options.name === "Tranfer to other division") {
+                  if (options.name.toLowerCase() === "transfer to other division".toLowerCase()) {
                     setShowMassiveTransferModal(true);
                     setSelectedRowIds([selectedRow.id])
                   } else {
@@ -6241,7 +6241,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               const preSelectedDivision = matchedOption || null;
               setSelectedOtherFields(preSelectedDivision);
               
-              if (options.name === "Tranfer to other division" && preSelectedDivision?.code) {
+              if (options.name.toLowerCase() === "transfer to other division".toLowerCase() && preSelectedDivision?.code) {
                 api
                   .post("cidMaster/getIoUsersBasedOnDivision", {
                     division_ids: [preSelectedDivision.code],
@@ -6260,7 +6260,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             //   setSelectedRow(selectedRow);
             //   setselectedOtherTemplate(options);
               setOtherTransferField(staticOptions);
-              if (options.name === "Tranfer to other division") {
+              if (options.name.toLowerCase() === "transfer to other division".toLowerCase()) {
                 setShowMassiveTransferModal(true);
               } else {
                 setShowOtherTransferModal(true);

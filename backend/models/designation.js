@@ -33,10 +33,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      department_id: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-      },
       created_by: {
         type: DataTypes.INTEGER,
         allowNull: true,

@@ -2,13 +2,13 @@
 const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  class DesignationDivision extends Model {
+  class DesignationDepartment extends Model {
     static associate(models) {
       // No need to define associations here if used as a junction table
     }
   }
 
-  DesignationDivision.init(
+  DesignationDepartment.init(
     {
       id: {
         type: DataTypes.INTEGER,
@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      division_id: {
+      department_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
@@ -34,23 +34,23 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: "DesignationDivision",
-      tableName: "designation_division",
+      modelName: "DesignationDepartment",
+      tableName: "designation_department",
       schema: process.env.DB_SCHEMA || "public",
       timestamps: false,
     }
   );
 
-    DesignationDivision.associate = (models) => {
-        DesignationDivision.belongsTo(models.Designation, {
+    DesignationDepartment.associate = (models) => {
+        DesignationDepartment.belongsTo(models.Designation, {
         foreignKey: "designation_id",
         as: "designation_id_reference",
         });
-        DesignationDivision.belongsTo(models.Division, {
-        foreignKey: "division_id",
-        as: "designation_division",
+        DesignationDepartment.belongsTo(models.Department, {
+        foreignKey: "department_id",
+        as: "designation_department",
         });
     };
 
-  return DesignationDivision;
+  return DesignationDepartment;
 };
