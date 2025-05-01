@@ -57,8 +57,10 @@ const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSav
         const element = document.getElementById('content-to-pdf');
 
         // Options for html2pdf
+        const unique_id = Date.now();
+
         const options = {
-            filename: template_name ? template_name+'.pdf' : 'profile.pdf',
+            filename: template_name && unique_id ? `${template_name}_${unique_id}.pdf` : 'profile.pdf',
             html2canvas: {
                 scale: 4, // Scale the content to make it sharper
                 letterRendering: true,
@@ -89,6 +91,9 @@ const GenerateProfilePdf = ({ templateData, templateFields, template_name, onSav
                             </tr>
                         </thead> */}
                         <tr>
+                            <td style={{ color: '#3E4784', fontSize: '22px', fontWeight: '500', textAlign: 'center', width: '100%', display: 'inline-block', marginBottom: '20px' }}>
+                                {template_name || "Case"}
+                            </td>
                             {data.map((el, rowIndex) => {
                                 return (
                                         <td key={rowIndex} style={{ width: el.col === '6' ? '48%' : '100%', display: 'inline-block' }}>

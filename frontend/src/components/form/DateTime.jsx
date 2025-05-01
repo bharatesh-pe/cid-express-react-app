@@ -18,7 +18,6 @@ export default function DateTimeField({ field, formData, errors, onChange, onFoc
     const minDate = field?.minDate ? dayjs(field.minDate) : null; // Ensure minDate is valid dayjs
     const maxDate = field?.maxDate ? dayjs(field.maxDate) : null; // Ensure minDate is valid dayjs
     // const maxDate = dayjs().endOf('day'); // Use current date as the max date, setting the end of the day
-    console.log('isFocused', isFocused);
     
     return (
         <div style={{ width: '100%' }}>
