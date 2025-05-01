@@ -42,7 +42,7 @@ const eitherAuthMiddleware = async (req, res, next) => {
 
 
 
-router.post('/getAllDepartment', cidMasterController.getAllDepartments)
+router.post('/getAllDepartment',  [validate_token], cidMasterController.getAllDepartments)
 router.post('/getAllDesignations', cidMasterController.getAllDesignations)
 router.post('/getAllDivisions',  [validate_token],cidMasterController.getAllDivisions)
 router.post('/getIoUsers' , cidMasterController.getIoUsers)
