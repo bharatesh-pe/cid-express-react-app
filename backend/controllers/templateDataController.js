@@ -27,6 +27,7 @@ const {
 	UiCaseApproval,
   UiMergedCases,
   ApprovalFieldLog,
+  ApprovalActivityLog,
 } = require("../models");
 const excluded_role_ids = [1, 10, 21];
 const { userSendResponse } = require("../services/userSendResponse");
@@ -5365,23 +5366,22 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                     return userSendResponse(res, 400, false, "Reference ID is required.");
                 }
 
-                // const fieldsToLog = {
-                //   "approval_item": newApproval.approval_item,
-                //   "approval_designation": newApproval.approved_by,
-                //   "approval_date": newApproval.approval_date,
-                //   "remarks": newApproval.remarks,
-                // };
+
                 
-                // const approvalLogEntries = Object.entries(fieldsToLog).map(([field_name, value]) => ({
-                //   approval_id: newApproval.approval_id,
-                //   case_id: approvalDetails.id || recordId,
-                //   field_name,
-                //   value,
-                //   created_by: userId,
-                // }));
-                
-                // await ApprovalFieldLog.bulkCreate(approvalLogEntries, { transaction: t });
-                
+                await ApprovalActivityLog.create(
+                {
+                  approval_id: newApproval.approval_id,
+                  approval_item_id: approval.approval_item,
+                  case_id: approvalDetails.id || recordId,
+                  approved_by: approval.approved_by,
+                  approved_date: approval.approval_date,
+                  approval_type: default_status,
+                  module: approvalDetails.module_name,
+                  created_by: userId,
+              },
+                { transaction: t }
+              );
+                              
 
                 await System_Alerts.create(
                     {
@@ -5788,22 +5788,19 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                     return userSendResponse(res, 400, false, "Reference ID is required.");
                 }
 
-                // const fieldsToLog = {
-                //   "approval_item": newApproval.approval_item,
-                //   "approval_designation": newApproval.approved_by,
-                //   "approval_date": newApproval.approval_date,
-                //   "remarks": newApproval.remarks,
-                // };
-                
-                // const approvalLogEntries = Object.entries(fieldsToLog).map(([field_name, value]) => ({
-                //   approval_id: newApproval.approval_id,
-                //   case_id: approvalDetails.id || recordId,
-                //   field_name,
-                //   value,
-                //   created_by: userId,
-                // }));
-                
-                // await ApprovalFieldLog.bulkCreate(approvalLogEntries, { transaction: t });
+                await ApprovalActivityLog.create(
+                  {
+                    approval_id: newApproval.approval_id,
+                    approval_item_id: approval.approval_item,
+                    case_id: approvalDetails.id ,
+                    approved_by: approval.approved_by,
+                    approved_date: approval.approval_date,
+                    approval_type: approvalDetails.type,
+                    module: approvalDetails.module_name,
+                    created_by: userId,
+                },
+                  { transaction: t }
+                );
 
 
                 await System_Alerts.create(

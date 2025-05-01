@@ -9,7 +9,8 @@ const {
   UserDesignation,
   KGID,
   Users,
-  ApprovalFieldLog
+  ApprovalFieldLog,
+  ApprovalActivityLog
 } = require("../models");
 const fs = require("fs");
 const path = require("path");
@@ -798,7 +799,7 @@ exports.delete_ui_case_approval = async (req, res) => {
   }
 };
 
-exports.get_approval_activity_log = async (req, res) => {
+exports.get_approval_field_log = async (req, res) => {
   try {
     const { approval_id } = req.body;
 
@@ -915,6 +916,116 @@ exports.get_approval_activity_log = async (req, res) => {
       data: activityLogs,
     });
   } catch (error) {
+    console.error("Error in get_approval_field_log:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal Server Error",
+      error: error.message,
+    });
+  }
+};
+
+exports.get_approval_activity_log = async (req, res) => {
+  try {
+    const { case_id, approval_type } = req.body;
+
+    if (!case_id || !approval_type) {
+      return res.status(400).json({
+        success: false,
+        message: "case_id and approval_type are required",
+      });
+    }
+
+    let activityLogs = await ApprovalActivityLog.findAll({
+      where: { case_id, approval_type },
+      order: [["created_at", "DESC"]],
+      raw: true,
+    });
+
+    if (!activityLogs.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No activity logs found for the given case_id and approval_type",
+      });
+    }
+
+    activityLogs = await Promise.all(
+      activityLogs.map(async (log) => {
+        const updatedLog = { ...log };
+
+        // Format date
+        if (log.created_at) {
+          const date = new Date(log.created_at);
+          updatedLog.created_at = isNaN(date.getTime())
+            ? log.created_at
+            : date.toISOString().split("T")[0];
+        }
+
+        // Get created_by name from KGID
+        if (log.created_by) {
+          const user = await Users.findOne({
+            where: { user_id: log.created_by },
+            attributes: ["kgid_id"],
+            raw: true,
+          });
+
+          if (user?.kgid_id) {
+            const kgid = await KGID.findOne({
+              where: { id: user.kgid_id },
+              attributes: ["name"],
+              raw: true,
+            });
+
+            if (kgid?.name) {
+              updatedLog.created_by = kgid.name;
+            }
+          }
+        }
+
+        // Get designation name for approved_by
+        if (log.approved_by) {
+          const designation = await Designation.findOne({
+            where: { designation_id: log.approved_by },
+            attributes: ["designation_name"],
+            raw: true,
+          });
+
+          if (designation?.designation_name) {
+            updatedLog.approved_by = designation.designation_name;
+          }
+        }
+
+        // Get approval_item name
+        if (log.approval_item_id) {
+          const item = await ApprovalItem.findOne({
+            where: { approval_item_id: log.approval_item_id },
+            attributes: ["name"],
+            raw: true,
+          });
+
+          if (item?.name) {
+            updatedLog.approval_item_id = item.name;
+          }
+        }
+
+        // Format approved_date
+        if (log.approved_date) {
+          const approvedDate = new Date(log.approved_date);
+          updatedLog.approved_date = isNaN(approvedDate.getTime())
+            ? log.approved_date
+            : approvedDate.toISOString().split("T")[0];
+        }
+
+
+        return updatedLog; // Moved this outside the approval_item block
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: activityLogs,
+    });
+  } catch (error) {
     console.error("Error in get_approval_activity_log:", error);
     return res.status(500).json({
       success: false,
@@ -923,3 +1034,4 @@ exports.get_approval_activity_log = async (req, res) => {
     });
   }
 };
+

@@ -34,6 +34,11 @@ router.post(
   uiCaseApprovalController.delete_ui_case_approval
 );
 router.post(
+  "/get_approval_field_log",
+  [validate_token],
+  uiCaseApprovalController.get_approval_field_log
+);
+router.post(
   "/get_approval_activity_log",
   [validate_token],
   uiCaseApprovalController.get_approval_activity_log
