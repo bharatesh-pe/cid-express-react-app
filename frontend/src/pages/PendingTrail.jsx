@@ -4070,7 +4070,7 @@ const UnderInvestigation = () => {
                 excludedKeys.push("created_at");
                 excludedKeys.push("hasFieldPrStatus");
               }
-              if (options.table === "cid_ui_case_trail_monitoring") {
+              if (options.table === "cid_pt_case_trail_monitoring") {
                 excludedKeys.push("field_witness");
                 excludedKeys.push("field_accused");
                 excludedKeys.push("field_accused/witness");
@@ -4224,7 +4224,7 @@ const UnderInvestigation = () => {
                     ]
                   : []),
                   ,
-                ...(options.table === "cid_ui_case_trail_monitoring"
+                ...(options.table === "cid_pt_case_trail_monitoring"
                   ? [
                     {
                       field: "field_served_or_unserved",
@@ -4298,7 +4298,7 @@ const UnderInvestigation = () => {
                     }
                   ]
                   : []),,
-                  ...(options.table === "cid_ui_case_trail_monitoring"
+                  ...(options.table === "cid_pt_case_trail_monitoring"
                     ? [
                       {
                         field: "field_reappear",
@@ -4432,16 +4432,16 @@ const UnderInvestigation = () => {
                       const canEdit = userPermissions[0]?.action_edit;
                       const canDelete = userPermissions[0]?.action_delete;
                       const checkserved =
-                        options.table === "cid_ui_case_trail_monitoring" &&
+                        options.table === "cid_pt_case_trail_monitoring" &&
                         params.row.field_served_or_unserved === "Yes";
   
                       const checkUnServed = 
-                        options.table === "cid_ui_case_trail_monitoring" &&
+                        options.table === "cid_pt_case_trail_monitoring" &&
                         params.row.field_served_or_unserved === "No";
   
   
                       const checkreappear =
-                        options.table === "cid_ui_case_trail_monitoring" &&
+                        options.table === "cid_pt_case_trail_monitoring" &&
                         params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
   
                         const isViewAction = options.is_view_action === true
@@ -4501,7 +4501,7 @@ const UnderInvestigation = () => {
                                 </Button>
                             ))
                           )}
-                          {options.table === "cid_ui_case_trail_monitoring" && (
+                          {options.table === "cid_pt_case_trail_monitoring" && (
                             <>
                               {!checkserved && !checkUnServed &&(
                                 <Button

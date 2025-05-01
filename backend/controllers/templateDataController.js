@@ -831,7 +831,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_ui_case_trail_monitoring"
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring"
       ? schema
       : schema.filter((field) => field.is_primary_field === true);
   
@@ -1213,9 +1213,9 @@ exports.getTemplateData = async (req, res, next) => {
                     attributes: ["name"],
                   });
           
-                  filteredData.field_assigned_to = kgidRecord ? kgidRecord.name : "Unknown";
+                  filteredData.field_assigned_to = kgidRecord ? kgidRecord.name : " ";
                 } else {
-                  filteredData.field_assigned_to = "Unknown";
+                  filteredData.field_assigned_to = " ";
                 }
               }
           
@@ -1250,7 +1250,7 @@ exports.getTemplateData = async (req, res, next) => {
             });
             filteredData.field_division = division ? division.division_name : "Unknown";
           }
-        }else if (table_name === "cid_ui_case_trail_monitoring") {
+        }else if (table_name === "cid_pt_case_trail_monitoring") {
           filteredData = { ...data };
           console.log("filteredData", filteredData);
           console.log("table_name",table_name)
@@ -6051,7 +6051,7 @@ exports.getAccusedWitness = async (req, res) => {
 			attributes = ["id", "field_name"];
 		}
 		else if(table_name === "cid_ui_case_witness"){
-			attributes = ["id", "field_witness_name"];
+			attributes = ["id", "field_name"];
 		}
 
 		const Usersdata = await Model.findAll({
@@ -6063,7 +6063,7 @@ exports.getAccusedWitness = async (req, res) => {
 			if (table_name === "cid_ui_case_accused") {
 				return { id: item.id, name: item.field_name };
 			} else if (table_name === "cid_ui_case_witness") {
-				return { id: item.id, name: item.field_witness_name };
+				return { id: item.id, name: item.field_name };
 			}
 			return item;
 		});
