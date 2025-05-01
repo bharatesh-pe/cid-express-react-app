@@ -26,7 +26,7 @@ const {
 	System_Alerts,
 	UiCaseApproval,
   UiMergedCases,
-  ApprovalActivityLog,
+  ApprovalFieldLog,
 } = require("../models");
 const excluded_role_ids = [1, 10, 21];
 const { userSendResponse } = require("../services/userSendResponse");
@@ -5380,7 +5380,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 //   created_by: userId,
                 // }));
                 
-                // await ApprovalActivityLog.bulkCreate(approvalLogEntries, { transaction: t });
+                // await ApprovalFieldLog.bulkCreate(approvalLogEntries, { transaction: t });
                 
 
                 await System_Alerts.create(
@@ -5803,7 +5803,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                 //   created_by: userId,
                 // }));
                 
-                // await ApprovalActivityLog.bulkCreate(approvalLogEntries, { transaction: t });
+                // await ApprovalFieldLog.bulkCreate(approvalLogEntries, { transaction: t });
 
 
                 await System_Alerts.create(

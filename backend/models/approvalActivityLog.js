@@ -2,9 +2,9 @@
 const { Model, DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
-  class ApprovalActivityLog extends Model {}
+  class ApprovalFieldLog extends Model {}
 
-  ApprovalActivityLog.init(
+  ApprovalFieldLog.init(
     {
       log_id: {
         type: DataTypes.INTEGER,
@@ -42,11 +42,11 @@ module.exports = (sequelize) => {
     },
     {
       sequelize,
-      modelName: "ApprovalActivityLog",
-      tableName: "approval_activity_logs",
+      modelName: "ApprovalFieldLog",
+      tableName: "approval_field_logs",
       timestamps: false,
     }
   );
 
-  return ApprovalActivityLog;
+  return ApprovalFieldLog;
 };

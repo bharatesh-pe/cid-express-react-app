@@ -9,7 +9,7 @@ const {
   UserDesignation,
   KGID,
   Users,
-  ApprovalActivityLog
+  ApprovalFieldLog
 } = require("../models");
 const fs = require("fs");
 const path = require("path");
@@ -630,7 +630,7 @@ exports.update_ui_case_approval = async (req, res) => {
     }
 
     if (changedFields.length > 0) {
-      await ApprovalActivityLog.bulkCreate(changedFields, { transaction: t });
+      await ApprovalFieldLog.bulkCreate(changedFields, { transaction: t });
     }
 
     // Create system alert
@@ -776,7 +776,7 @@ exports.get_approval_activity_log = async (req, res) => {
       });
     }
 
-    let activityLogs = await ApprovalActivityLog.findAll({
+    let activityLogs = await ApprovalFieldLog.findAll({
       where: { approval_id },
       order: [["created_at", "DESC"]],
       attributes: [
