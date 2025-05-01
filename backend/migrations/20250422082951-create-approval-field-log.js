@@ -2,7 +2,7 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable("approval_activity_logs", {
+    await queryInterface.createTable("approval_field_logs", {
       log_id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
@@ -40,6 +40,6 @@ module.exports = {
   },
 
   down: async (queryInterface) => {
-    await queryInterface.dropTable("approval_activity_logs");
+    await queryInterface.dropTable("approval_field_logs");
   },
 };
