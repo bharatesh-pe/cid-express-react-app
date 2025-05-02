@@ -612,7 +612,7 @@ exports.fetch_specific_master_data = async (req, res) => {
           }],
           limit,
           offset,
-          order: [[sort_by, order]],
+          order: [["department_id", order]],
           attributes: ["division_id", "division_name", "description", "department_id", "created_by", "created_at"],
         });
 
