@@ -5340,8 +5340,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
     setSelectedRowData(selectedRow);
     setselectedOtherTemplate(options);
-    setApprovalSaveData({});
-
+    if(options?.table !== "cid_ui_case_progress_report"){
+        setApprovalSaveData({});
+    }
 
     if (options.table && options.field) {
         const selectedFieldValue = options.field;
@@ -6420,6 +6421,19 @@ const loadChildMergedCasesData = async (page, caseId) => {
               };
             }
           );
+        }
+
+        if(Options.table === "cid_ui_case_progress_report" && !Options?.approval_items){
+
+            var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
+                if((data.name).toLowerCase() === "progress report approval"){
+                    return data;
+                }
+            });
+
+            if(getFurtherInvestigationItems?.[0]){
+                Options['approval_items'] = getFurtherInvestigationItems?.[0].approval_item_id
+            }
         }
 
         showApprovalAddPage(Options);
@@ -8227,7 +8241,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
             name : "Progress Report",
             module : "ui_case",
             table : "cid_ui_case_progress_report",
-            is_pdf: true
+            is_pdf: true,
+            is_approval: true
         }
 
         handleOtherTemplateActions(options, rowData);
