@@ -1,7 +1,7 @@
 const { adminSendResponse } = require("../services/adminSendResponse");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
-const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID , UsersHierarchy,UsersHierarchyNew} = require("../models");
+const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID , UsersHierarchy,UsersHierarchyNew,DesignationDivision} = require("../models");
 const { Op, where } = require("sequelize");
 
 const getAllDepartments = async (req, res) => {
@@ -133,7 +133,28 @@ const getIoUsers = async (req, res) => {
             if (!userHierarchy || userHierarchy.length === 0) {
                 return res.status(200).json({ data: [] });
             }
-            const superivisors = userHierarchy.map(user => user.supervisor_designation_id);
+            const superivisors = [];
+
+             if(division_id)
+            {
+                const designation_division = await DesignationDivision.findAll({
+                    where: {
+                        designation_id: designation_id,
+                        division_id:  division_id,
+                    },
+                    attributes: ["designation_id"],
+                    raw: true,
+                });
+
+                if (!designation_division || designation_division.length === 0) {
+                    return res.status(200).json({ data: [] });
+                }
+                const designationIds = designation_division.map(user => user.designation_id);
+                superivisors.push(...designationIds);
+            }
+            else{
+                 superivisors = userHierarchy.map(user => user.supervisor_designation_id);
+            }
             // Fetch users based on the userIds from the userDesignations table
             userDesignations = await UserDesignation.findAll({
                 where: {
@@ -177,7 +198,7 @@ const getIoUsers = async (req, res) => {
                 nest: true, // Keeps relations grouped
             });
         }
-        else if(get_flag && get_flag === "lower" && designation_id && division_id){
+        else if(get_flag && get_flag === "lower" && designation_id ){
             const userHierarchy = await UsersHierarchyNew.findAll({
                 where: {
                     supervisor_designation_id: designation_id,
@@ -188,7 +209,30 @@ const getIoUsers = async (req, res) => {
             if (!userHierarchy || userHierarchy.length === 0) {
                 return res.status(200).json({ data: [] });
             }
-            const officersIds = userHierarchy.map(user => user.officer_designation_id);
+
+            var officersIds = [];
+
+            if(division_id)
+            {
+                const designation_division = await DesignationDivision.findAll({
+                    where: {
+                        designation_id: designation_id,
+                        division_id:  division_id,
+                    },
+                    attributes: ["designation_id"],
+                    raw: true,
+                });
+
+                if (!designation_division || designation_division.length === 0) {
+                    return res.status(200).json({ data: [] });
+                }
+                const designationIds = designation_division.map(user => user.designation_id);
+                officersIds.push(...designationIds);
+            }
+            else{
+                 officersIds = userHierarchy.map(user => user.officer_designation_id);
+            }
+
             userDesignations = await UserDesignation.findAll({
                 where: {
                     designation_id: {
@@ -232,26 +276,32 @@ const getIoUsers = async (req, res) => {
                 nest: true, // Keeps relations grouped
             });
         }
-        else if(get_flag && get_flag === "All" && division_id )
+        else if(get_flag && get_flag === "All")
         {
+           // Build the query filter for Users.
+            const whereClause = {
+            dev_status: true,
+            };
+
+            if (division_id) {
             const usersDivisionData = await UsersDivision.findAll({
                 where: {
-                    // division_id: { [Op.in]: division_ids },
-                    division_id,
+                division_id,
                 },
                 attributes: ["user_id"],
                 raw: true,
             });
+
             if (!usersDivisionData || usersDivisionData.length === 0) {
                 return res.status(200).json({ data: [] });
             }
-            const userIds = usersDivisionData.map(ud => ud.user_id).filter(uid => uid != null);
-            
-            // Build the query filter for Users.
-            const whereClause = {
-                user_id: { [Op.in]: userIds },
-                dev_status: true,
-            };
+
+            const userIds = usersDivisionData
+                .map((ud) => ud.user_id)
+                .filter((uid) => uid != null);
+
+            whereClause.user_id = { [Op.in]: userIds }; // mutate existing object
+            }
 
             usersData = await Users.findAll({
                 where: whereClause,
@@ -285,70 +335,6 @@ const getIoUsers = async (req, res) => {
             //     mobile: user.kgidDetails?.mobile || "Unknown",
             //     kgidDetails: undefined, // remove nested object if not needed
             // }));
-        }
-        else if(division_id )
-        {
-            usersData = await Users.findAll({
-                include: [
-                    {
-                        model: Role,
-                        as: "role",
-                        attributes: ["role_id", "role_title"],
-                        where: {
-                            role_id: {
-                                [Op.notIn]: excluded_role_ids,
-                            },
-                        },
-                    },
-                    {
-                        model: KGID,
-                        as: "kgidDetails",
-                        attributes: ["kgid", "name", "mobile"], // Fetch name here
-                    },
-                    // {
-                    //     model: UserDesignation,
-                    //     as: "users_designations",
-                    //     attributes: ["designation_id"],
-                    //     include: [
-                    //         {
-                    //             model: Designation,
-                    //             as: "designation",
-                    //             attributes: ["designation_name"],
-                    //         },
-                    //     ],
-                    // },
-                    // {
-                    //     model: UsersDepartment,
-                    //     as: "users_departments",
-                    //     attributes: ["department_id"],
-                    //     include: [
-                    //         {
-                    //             model: Department,
-                    //             as: "department",
-                    //             attributes: ["department_name"],
-                    //         },
-                    //     ],
-                    // },
-                    // {
-                    //     model: UsersDivision,
-                    //     as: "users_division",
-                    //     attributes: ["division_id"],
-                    //     include: [
-                    //         {
-                    //             model: Division,
-                    //             as: "division",
-                    //             attributes: ["division_name"],
-                    //         },
-                    //     ],
-                    // },
-                ],
-                attributes: ["user_id"],
-                where: {
-                    dev_status: true,
-                },
-                raw: true, // Flatten the result
-                nest: true, // Keeps relations grouped
-            });
         }
         else 
         {
