@@ -298,7 +298,12 @@ const Login = () => {
               );
             }
 
-            navigate("/dashboard");
+            if(data.userRole.user_id === 1){
+                navigate("/dashboard");
+            }else{
+                navigate("/case/ui_case");
+            }
+
           }
         } else if (user_position.length > 1) {
           if (data && data.token) {
@@ -400,7 +405,13 @@ const Login = () => {
         );
       }
     }
-    navigate("/dashboard");
+    
+    if(JSON.parse(localStorage.getItem("user_id")) === 1){
+        navigate("/dashboard");
+    }else{
+        navigate("/case/ui_case");
+    }
+
   };
 
   return (

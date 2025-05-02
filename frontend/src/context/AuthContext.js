@@ -17,7 +17,11 @@ export const AuthProvider = ({ children }) => {
       if (token && window.location.pathname === "/") {
         console.log("Token found. Redirecting to dashboard.");
         setAuthenticated(true);
-        navigate("/dashboard");
+        if(JSON.parse(localStorage.getItem("user_id")) === 1){
+            navigate("/dashboard");
+        }else{
+            navigate("/case/ui_case");
+        }
         return;
       }
 
