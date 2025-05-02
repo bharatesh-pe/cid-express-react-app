@@ -117,7 +117,6 @@ const Hierarchy = () => {
         const getTemplatePayload = {
             page,
             limit: 10,
-            search: searchValue || "",
             from_date: fromDateValue,
             to_date: toDateValue,
             filter: filterValues,
