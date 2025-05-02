@@ -137,9 +137,10 @@ const getIoUsers = async (req, res) => {
 
              if(division_id)
             {
+                const divisionSupervisorsIds = userHierarchy.map(user => user.supervisor_designation_id);
                 const designation_division = await DesignationDivision.findAll({
                     where: {
-                        designation_id: designation_id,
+                        designation_id: { [Op.in]: divisionSupervisorsIds },
                         division_id:  division_id,
                     },
                     attributes: ["designation_id"],
@@ -214,9 +215,10 @@ const getIoUsers = async (req, res) => {
 
             if(division_id)
             {
+                const divisionOfficersIds = userHierarchy.map(user => user.officer_designation_id);
                 const designation_division = await DesignationDivision.findAll({
                     where: {
-                        designation_id: designation_id,
+                        designation_id:{ [Op.in]: divisionOfficersIds },
                         division_id:  division_id,
                     },
                     attributes: ["designation_id"],
