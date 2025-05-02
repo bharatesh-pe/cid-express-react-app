@@ -48,140 +48,358 @@ exports.fetch_masters_meta = async (req, res) => {
   }
 };
 
+// exports.fetch_specific_master_data = async (req, res) => {
+//   const { master_name } = req.body;
+
+//   try {
+//     let data;
+
+//     switch (master_name) {
+//       case "department":
+//         data = await Department.findAll();
+//         break;
+
+//       case "designation":
+//         // Fetching the designations with departments
+//         data = await Designation.findAll({
+//         attributes: [
+//             "designation_id",
+//             "designation_name",
+//             "description",
+//             "created_by",
+//             "created_at",
+//         ],
+//         });
+
+//         // Fetch division info for each designation asynchronously
+//         const formattedDesignations = await Promise.all(
+//         data.map(async (designation) => {
+//             const plain = designation.get({ plain: true });
+
+//             // Fetch related divisions for the current designation
+//             const designation_division = await DesignationDivision.findAll({
+//                 where: { designation_id: designation.designation_id },
+//                 attributes: ["division_id"],
+//                 include: [
+//                     {
+//                     model: Division,
+//                     as: "designation_division",  // ensure this is the correct alias
+//                     attributes: ["division_name"],
+//                     },
+//                 ],
+//             });
+
+//             // Map divisions and join them into a string
+//             const division_names = designation_division
+//             .map((div) => div.designation_division.division_name)
+//             .join(", ");
+//             const division_ids = designation_division
+//             .map((div) => div.division_id)
+//             .join(",");
+
+//             const designation_department = await DesignationDepartment.findAll({
+//                 where: { designation_id: designation.designation_id },
+//                 attributes: ["department_id"],
+//                 include: [
+//                     {
+//                     model: Department,
+//                     as: "designation_department",  // ensure this is the correct alias
+//                     attributes: ["department_name"],
+//                     },
+//                 ],
+//             });
+//              // Map divisions and join them into a string
+//             const department_names = designation_department
+//             .map((div) => div.designation_department.department_name)
+//             .join(", ");
+//             const department_ids = designation_department
+//             .map((div) => div.department_id)
+//             .join(",");
+
+
+
+//             return {
+//             ...plain,
+//             division_name: division_names || null,
+//             division_id: division_ids || null,
+//             department_name: department_names || null,
+//             department_id: department_ids || null,
+//             };
+//         })
+//         );
+
+//         // The data is now formatted with divisions and department info
+//         data = formattedDesignations;
+
+//         break
+
+//       case "division":
+//         const divisions = await Division.findAll({
+//             include: [
+//                 {
+//                 model: Department,
+//                 as: "department",
+//                 attributes: ["department_name"],
+//                 },
+//             ],
+//             attributes: [
+//                 "division_id",
+//                 "division_name",
+//                 "description",
+//                 "department_id",
+//                 "created_by",
+//                 "created_at",
+//             ],
+//             });
+
+//             // Flatten the result to include department_name at root level
+//             const formattedDivisions = divisions.map((division) => {
+//             const plain = division.get({ plain: true });
+//             return {
+//                 ...plain,
+//                 department_name: plain.department?.department_name || "Unknown Department",
+//             };
+//             });
+//         return res.status(200).json({ divisions: formattedDivisions });
+//       case "approval_item":
+//         data = await ApprovalItem.findAll();
+//         break;
+//       case "kgid":
+//         data = await KGID.findAll();
+//         break;
+//       case "hierarchy":
+//         data = await UsersHierarchy.findAll();
+//         break;
+
+//       default:
+//         return res
+//           .status(400)
+//           .json({ message: "Invalid master name provided." });
+//     }
+
+//     return res.status(200).json(data);
+//   } catch (error) {
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 exports.fetch_specific_master_data = async (req, res) => {
-  const { master_name } = req.body;
+  const {
+    master_name,
+    page = 1,
+    limit = 10,
+    sort_by = "created_at",
+    order = "DESC",
+    search = "",
+    search_field = "",
+    filter = {},
+    from_date = null,
+    to_date = null,
+  } = req.body;
+
+  const offset = (page - 1) * limit;
 
   try {
-    let data;
+    let data = [];
+    let totalItems = 0;
+
+    // Common where clause for filtering, search, and date range
+    const buildWhereClause = () => {
+      const whereClause = {};
+
+      // Filter fields
+      for (const [key, value] of Object.entries(filter)) {
+        if (value !== undefined && value !== null && value !== "") {
+          whereClause[key] = value;
+        }
+      }
+
+      // Search
+      if (search && search_field) {
+        whereClause[search_field] = { [Op.iLike]: `%${search}%` };
+      }
+
+      // Date filter on created_at
+      if (from_date || to_date) {
+        whereClause.created_at = {};
+        if (from_date) {
+          whereClause.created_at[Op.gte] = new Date(from_date);
+        }
+        if (to_date) {
+          whereClause.created_at[Op.lte] = new Date(to_date);
+        }
+      }
+
+      return whereClause;
+    };
 
     switch (master_name) {
-      case "department":
-        data = await Department.findAll();
-        break;
-
       case "designation":
-        // Fetching the designations with departments
-        data = await Designation.findAll({
-        attributes: [
+        const designationWhere = buildWhereClause();
+
+        const { rows: designationRows, count: designationCount } = await Designation.findAndCountAll({
+          where: designationWhere,
+          limit,
+          offset,
+          order: [[sort_by, order]],
+          attributes: [
             "designation_id",
             "designation_name",
             "description",
             "created_by",
             "created_at",
-        ],
+          ],
         });
 
-        // Fetch division info for each designation asynchronously
+        // Add related division and department info
         const formattedDesignations = await Promise.all(
-        data.map(async (designation) => {
+          designationRows.map(async (designation) => {
             const plain = designation.get({ plain: true });
 
-            // Fetch related divisions for the current designation
             const designation_division = await DesignationDivision.findAll({
-                where: { designation_id: designation.designation_id },
-                attributes: ["division_id"],
-                include: [
-                    {
-                    model: Division,
-                    as: "designation_division",  // ensure this is the correct alias
-                    attributes: ["division_name"],
-                    },
-                ],
+              where: { designation_id: plain.designation_id },
+              attributes: ["division_id"],
+              include: [
+                {
+                  model: Division,
+                  as: "designation_division",
+                  attributes: ["division_name"],
+                },
+              ],
             });
 
-            // Map divisions and join them into a string
             const division_names = designation_division
-            .map((div) => div.designation_division.division_name)
-            .join(", ");
+              .map((div) => div.designation_division?.division_name)
+              .join(", ");
             const division_ids = designation_division
-            .map((div) => div.division_id)
-            .join(",");
+              .map((div) => div.division_id)
+              .join(",");
 
             const designation_department = await DesignationDepartment.findAll({
-                where: { designation_id: designation.designation_id },
-                attributes: ["department_id"],
-                include: [
-                    {
-                    model: Department,
-                    as: "designation_department",  // ensure this is the correct alias
-                    attributes: ["department_name"],
-                    },
-                ],
+              where: { designation_id: plain.designation_id },
+              attributes: ["department_id"],
+              include: [
+                {
+                  model: Department,
+                  as: "designation_department",
+                  attributes: ["department_name"],
+                },
+              ],
             });
-             // Map divisions and join them into a string
+
             const department_names = designation_department
-            .map((div) => div.designation_department.department_name)
-            .join(", ");
+              .map((dep) => dep.designation_department?.department_name)
+              .join(", ");
             const department_ids = designation_department
-            .map((div) => div.department_id)
-            .join(",");
-
-
+              .map((dep) => dep.department_id)
+              .join(",");
 
             return {
-            ...plain,
-            division_name: division_names || null,
-            division_id: division_ids || null,
-            department_name: department_names || null,
-            department_id: department_ids || null,
+              ...plain,
+              division_name: division_names || null,
+              division_id: division_ids || null,
+              department_name: department_names || null,
+              department_id: department_ids || null,
             };
-        })
+          })
         );
 
-        // The data is now formatted with divisions and department info
         data = formattedDesignations;
+        totalItems = designationCount;
+        break;
 
-        break
+      case "department":
+        const departmentWhere = buildWhereClause();
+
+        const departments = await Department.findAndCountAll({
+          where: departmentWhere,
+          limit,
+          offset,
+          order: [[sort_by, order]],
+        });
+
+        data = departments.rows;
+        totalItems = departments.count;
+        break;
 
       case "division":
-        const divisions = await Division.findAll({
-            include: [
-                {
-                model: Department,
-                as: "department",
-                attributes: ["department_name"],
-                },
-            ],
-            attributes: [
-                "division_id",
-                "division_name",
-                "description",
-                "department_id",
-                "created_by",
-                "created_at",
-            ],
-            });
+        const divisionWhere = buildWhereClause();
 
-            // Flatten the result to include department_name at root level
-            const formattedDivisions = divisions.map((division) => {
-            const plain = division.get({ plain: true });
-            return {
-                ...plain,
-                department_name: plain.department?.department_name || "Unknown Department",
-            };
-            });
-        return res.status(200).json({ divisions: formattedDivisions });
+        const divisions = await Division.findAndCountAll({
+          where: divisionWhere,
+          include: [
+            {
+              model: Department,
+              as: "department",
+              attributes: ["department_name"],
+            },
+          ],
+          limit,
+          offset,
+          order: [[sort_by, order]],
+          attributes: [
+            "division_id",
+            "division_name",
+            "description",
+            "department_id",
+            "created_by",
+            "created_at",
+          ],
+        });
+
+        data = divisions.rows.map((division) => {
+          const plain = division.get({ plain: true });
+          return {
+            ...plain,
+            department_name: plain.department?.department_name || "Unknown Department",
+          };
+        });
+
+        totalItems = divisions.count;
+        break;
+
       case "approval_item":
         data = await ApprovalItem.findAll();
+        totalItems = data.length;
         break;
+
       case "kgid":
         data = await KGID.findAll();
+        totalItems = data.length;
         break;
+
       case "hierarchy":
         data = await UsersHierarchy.findAll();
+        totalItems = data.length;
         break;
 
       default:
-        return res
-          .status(400)
-          .json({ message: "Invalid master name provided." });
+        return res.status(400).json({ message: "Invalid master name provided." });
     }
 
-    return res.status(200).json(data);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    const returndata = {};
+    returndata.data = data;
+    returndata.meta = {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      sort_by,
+      order,
+    };
+
+    return res.status(200).json({
+      success: true,
+      data:returndata
+    });
   } catch (error) {
+    console.error("Error fetching master data:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 exports.create_master_data = async (req, res) => {
   const { master_name, data, transaction_id } = req.body;
