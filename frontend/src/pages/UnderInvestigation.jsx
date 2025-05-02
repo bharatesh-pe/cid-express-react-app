@@ -8722,7 +8722,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     )
                   }
                 >
-                  Massive Division
+                  Mass Change Of Division
                 </Button>
               </>
             )}

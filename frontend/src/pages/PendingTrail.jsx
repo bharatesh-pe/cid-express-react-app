@@ -6847,7 +6847,7 @@ const UnderInvestigation = () => {
                     )
                   }
                 >
-                  Massive Division
+                  Mass Change Of Division
                 </Button>
               </>
             )}
