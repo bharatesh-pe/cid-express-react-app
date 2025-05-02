@@ -38,6 +38,9 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import dayjs from "dayjs";
 
 const ProfileData = () => {
     const location = useLocation();
@@ -77,6 +80,20 @@ const ProfileData = () => {
     const [readFlag, setReadFlag] = useState(null);
 
     const [loading, setLoading] = useState(false); // State for loading indicator
+
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filterDropdownObj, setfilterDropdownObj] = useState([]);
+    const [filterValues, setFilterValues] = useState({});
+    const [fromDateValue, setFromDateValue] = useState(null);
+    const [toDateValue, setToDateValue] = useState(null);
+    const [forceTableLoad, setForceTableLoad] = useState(false);
+
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+    
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
 
     const searchParams = new URLSearchParams(location.search);
 
@@ -355,7 +372,7 @@ const ProfileData = () => {
         // }
         loadTableData(paginationCount);
 
-    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag])
+    }, [paginationCount, tableSortKey, tableSortOption, starFlag, readFlag, forceTableLoad])
 
     const toggleStarIcon = async (row) => {
 
@@ -416,7 +433,7 @@ const ProfileData = () => {
 
     }
 
-    const loadTableData = async (page, searchValue) => {
+    const loadTableData = async (page) => {
 
         if (!table_name || table_name === '') {
             // navigate('/Profile', { state: { pagination: pagination } });
@@ -428,10 +445,13 @@ const ProfileData = () => {
             "limit": 10,
             "sort_by": tableSortKey,
             "order": tableSortOption,
-            "search": searchValue ? searchValue : '',
+            "search": searchValue || '',
             "table_name": table_name,
             "is_starred": starFlag,
-            "is_read": readFlag
+            "is_read": readFlag,
+            "from_date": fromDateValue,
+            "to_date": toDateValue,
+            "filter": filterValues,
         }
         setLoading(true);
 
@@ -441,6 +461,19 @@ const ProfileData = () => {
 
             if (getTemplateResponse && getTemplateResponse.success) {
                 if (getTemplateResponse.data && getTemplateResponse.data['data']) {
+
+                    const { meta } = getTemplateResponse.data;
+
+                    const totalPages = meta?.totalPages || 1;
+                    const totalItems = meta?.totalItems || 0;
+                    
+                    if (totalPages !== null && totalPages !== undefined) {
+                        setTotalPage(totalPages);
+                    }
+                    
+                    if (totalItems !== null && totalItems !== undefined) {
+                        setTotalRecord(totalItems);
+                    }
 
                     if (getTemplateResponse.data['data'][0]) {
                         var excludedKeys = ["created_at", "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus", "linked_profile_info","created_by"];
@@ -1287,11 +1320,6 @@ const ProfileData = () => {
         setPaginationCount((prev) => prev - 1)
     }
 
-    const handleClear = () => {
-        setSearchValue('');
-        loadTableData(paginationCount);
-    }
-
     const showIndivitualAttachment = async (attachmentName) => {
         if (showAttachmentKey['attachments'] && showAttachmentKey['attachments'].length > 0) {
             var payloadFile = showAttachmentKey['attachments'].filter((attachment) => attachment.attachment_name === attachmentName);
@@ -1435,9 +1463,23 @@ const ProfileData = () => {
 
     // Advance filter functions
 
-    const handleFilter = ()=> {
-        console.log("hello calling func")
-    }
+
+    const setFilterData = () => {
+        setPaginationCount(1);
+        setShowFilterModal(false);
+        setForceTableLoad((prev) => !prev);
+    };
+
+    const handleFilter = async () => {            
+        setShowFilterModal(true);
+    };
+
+    const handleClear = () => {
+        setSearchValue("");
+        setFromDateValue(null);
+        setToDateValue(null);
+        setForceTableLoad((prev) => !prev);
+    };
 
 
     return (
@@ -1452,60 +1494,77 @@ const ProfileData = () => {
                             </Typography>
                         </Box>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-
-                        {            
-                            localStorage.getItem('authAdmin') === "true" &&
-
-                            <TextFieldInput 
-                            
+                    <Box sx={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "end",
+                            }}
+                        >
+                            <TextFieldInput
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <SearchIcon sx={{ color: '#475467' }} />
+                                            <SearchIcon sx={{ color: "#475467" }} />
                                         </InputAdornment>
                                     ),
                                     endAdornment: (
                                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                            {searchValue && (
-                                                <IconButton sx={{ padding: 0 }} onClick={handleClear} size="small">
-                                                    <ClearIcon sx={{ color: '#475467' }} />
-                                                </IconButton>
-                                            )}
-                                            <IconButton sx={{ padding: 0, border:'1px solid #D0D5DD', borderRadius: '0' }} onClick={handleFilter}>
-                                                <FilterListIcon sx={{ color: '#475467' }} />
+                                            <IconButton
+                                                sx={{ padding: "0 5px", borderRadius: "0" }}
+                                                onClick={handleFilter}
+                                            >
+                                                <FilterListIcon sx={{ color: "#475467" }} />
                                             </IconButton>
                                         </Box>
-                                    )
+                                    ),
                                 }}
-
                                 onInput={(e) => setSearchValue(e.target.value)}
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder='Search anything'
+                                placeholder="Search anything"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         e.preventDefault();
-                                        loadTableData(paginationCount, e.target.value);
+                                        setFilterData()
                                     }
                                 }}
-                                
                                 sx={{
-                                    width: '400px', borderRadius: '6px', outline: 'none',
-                                    '& .MuiInputBase-input::placeholder': {
-                                        color: '#475467',
-                                        opacity: '1',
-                                        fontSize: '14px',
-                                        fontWeight: '400',
-                                        fontFamily: 'Roboto'
+                                    width: "350px",
+                                    borderRadius: "6px",
+                                    outline: "none",
+                                    "& .MuiInputBase-input::placeholder": {
+                                        color: "#475467",
+                                        opacity: "1",
+                                        fontSize: "14px",
+                                        fontWeight: "400",
+                                        fontFamily: "Roboto",
                                     },
                                 }}
                             />
+                            {(  searchValue ||
+                                fromDateValue ||
+                                toDateValue ||
+                                Object.keys(filterValues).length > 0) && (
+                                <Typography
+                                onClick={handleClear}
+                                sx={{
+                                    fontSize: "13px",
+                                    fontWeight: "500",
+                                    textDecoration: "underline",
+                                    cursor: "pointer",
+                                }}
+                                mt={1}
+                                >
+                                Clear Filter
+                                </Typography>
+                            )}
+                        </Box>
 
-                        }
                         <Button
                             onClick={() => getTemplate(table_name)}
                             className="blueButton"
@@ -1592,7 +1651,14 @@ const ProfileData = () => {
                 </Box>
                 }
                 <Box py={2}>
-                    <TableView rows={tableData} columns={viewTemplateTableColumns} backBtn={paginationCount !== 1} nextBtn={tableData.length === 10} handleBack={handlePrevPage} handleNext={handleNextPage} />
+                    <TableView 
+                        rows={tableData} 
+                        columns={viewTemplateTableColumns} 
+                        totalPage={totalPage} 
+                        totalRecord={totalRecord} 
+                        paginationCount={paginationCount} 
+                        handlePagination={handlePagination} 
+                    />
                 </Box>
             </>
             {formOpen &&
@@ -1733,6 +1799,82 @@ const ProfileData = () => {
                     <CircularProgress size={100} />
                 </div>
             }
+
+            {showFilterModal && (
+                <Dialog
+                    open={showFilterModal}
+                    onClose={() => setShowFilterModal(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    }}
+                    >
+                    Filter
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setShowFilterModal(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ minWidth: "400px" }}>
+                    <DialogContentText id="alert-dialog-description">
+                        <Grid container sx={{ alignItems: "center" }}>
+                        <Grid item xs={12} md={6} p={2}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                format="DD-MM-YYYY"
+                                sx={{
+                                width: "100%",
+                                }}
+                                label="From Date"
+                                value={fromDateValue ? dayjs(fromDateValue) : null}
+                                onChange={(e) =>
+                                setFromDateValue(e ? e.format("YYYY-MM-DD") : null)
+                                }
+                            />
+                            </LocalizationProvider>
+                        </Grid>
+        
+                        <Grid item xs={12} md={6} p={2}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                format="DD-MM-YYYY"
+                                sx={{
+                                width: "100%",
+                                }}
+                                label="To Date"
+                                value={toDateValue ? dayjs(toDateValue) : null}
+                                onChange={(e) =>
+                                setToDateValue(e ? e.format("YYYY-MM-DD") : null)
+                                }
+                            />
+                            </LocalizationProvider>
+                        </Grid>
+                        </Grid>
+                    </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={() => setShowFilterModal(false)}>Close</Button>
+                    <Button
+                        className="fillPrimaryBtn"
+                        sx={{ minWidth: "100px" }}
+                        onClick={() => setFilterData()}
+                    >
+                        Apply
+                    </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
 
         </Box>
     )
