@@ -8423,16 +8423,16 @@ const loadChildMergedCasesData = async (page, caseId) => {
     
           setActivityLogs(fieldLogs);
           setOpenActivityLogDialog(true);
-          toast.success(getActionsDetails.message || "Approval Log Fetched Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-          });
+          // toast.success(getActionsDetails.message || "Approval Log Fetched Successfully", {
+          //   position: "top-right",
+          //   autoClose: 3000,
+          //   hideProgressBar: false,
+          //   closeOnClick: true,
+          //   pauseOnHover: true,
+          //   draggable: true,
+          //   progress: undefined,
+          //   className: "toast-success",
+          // });
         } else {
           toast.error(getActionsDetails.message || "Failed to fetch approval log. Please try again.", {
             position: "top-right",
