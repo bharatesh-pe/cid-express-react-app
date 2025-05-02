@@ -646,7 +646,7 @@ const Division = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search anything"
+                                placeholder="Search Division"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {

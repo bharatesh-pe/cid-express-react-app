@@ -569,7 +569,7 @@ const Approval = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search anything"
+                                placeholder="Search Approval Item"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {
