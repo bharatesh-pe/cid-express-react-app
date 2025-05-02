@@ -21,6 +21,11 @@ import ErrorIcon from "../Images/erroricon.png";
 import { useNavigate } from "react-router-dom";
 import Autocomplete from '@mui/material/Autocomplete';
 import { ArrowBack } from "@mui/icons-material";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
+import dayjs from "dayjs";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+
 
 const Division = () => {
     const navigate = useNavigate();
@@ -50,6 +55,21 @@ const Division = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const pageSize = 10;
 
+    const [showFilterModal, setShowFilterModal] = useState(false);
+    const [filterDropdownObj, setfilterDropdownObj] = useState([]);
+    const [filterValues, setFilterValues] = useState({});
+    const [fromDateValue, setFromDateValue] = useState(null);
+    const [toDateValue, setToDateValue] = useState(null);
+    const [forceTableLoad, setForceTableLoad] = useState(false);
+    const [paginationCount, setPaginationCount] = useState(1);
+
+    const [totalPage, setTotalPage] = useState(0);
+    const [totalRecord, setTotalRecord] = useState(0);
+    
+    const handlePagination = (page) => {
+        setPaginationCount(page)
+    }
+
     const showDeleteRoleDialoge = (id, name) => {
         setRoleToDelete(id);
         setRoleNameToDelete(name);
@@ -61,34 +81,6 @@ const Division = () => {
             deleteRole(roleToDelete);
             setDeleteRoleConf(false);
             setRoleToDelete(null);
-        }
-    };
-
-    const getFilteredRows = () => {
-        if (!searchValue) {
-            return DivisionRowData;
-        }
-    
-        return DivisionRowData.filter((row) =>
-            row.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-            row.description.toLowerCase().includes(searchValue.toLowerCase()) ||
-            row.department.toLowerCase().includes(searchValue.toLowerCase())
-        );
-    };
-    
-    const filteredRows = getFilteredRows();
-    const totalPages = Math.ceil(filteredRows.length / pageSize);
-    const currentPageRows = filteredRows.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-        
-    const handleNext = () => {
-        if (currentPage < totalPages - 1) {
-            setCurrentPage((prev) => prev + 1);
-        }
-    };
-
-    const handleBack = () => {
-        if (currentPage > 0) {
-            setCurrentPage((prev) => prev - 1);
         }
     };
 
@@ -115,19 +107,42 @@ const Division = () => {
     };
 
 
-    const get_division_details = async () => {
+    const get_division_details = async (page) => {
         if (departments.length === 0) {
             console.warn("Departments not loaded yet. Waiting...");
             return;
         }
 
+        const getTemplatePayload = {
+            page,
+            limit: 10,
+            search: searchValue || "",
+            from_date: fromDateValue,
+            to_date: toDateValue,
+            filter: filterValues,
+            master_name: "division"
+        };
+
         setLoading(true);
         try {
-            const response = await api.post("/master_meta/fetch_specific_master_data", {
-                master_name: "division"
-            });
+            const response = await api.post("/master_meta/fetch_specific_master_data", getTemplatePayload);
+            setLoading(false);
 
             if (response && response.divisions) {
+
+                const { meta } = response;
+
+                const totalPages = meta?.totalPages || 1;
+                const totalItems = meta?.totalItems || 0;
+                
+                if (totalPages !== null && totalPages !== undefined) {
+                    setTotalPage(totalPages);
+                }
+                
+                if (totalItems !== null && totalItems !== undefined) {
+                    setTotalRecord(totalItems);
+                }
+
                 const updatedData = response.divisions.map(row => {
                     const departmentInfo = departments.find(dept => dept.id === row.department_id);
                     return {
@@ -144,10 +159,10 @@ const Division = () => {
                 toast.error("Failed to fetch divisions");
             }
         } catch (err) {
+            setLoading(false);
             let errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
             toast.error(errorMessage);
         }
-        setLoading(false);
     };
     useEffect(() => {
         get_departments();
@@ -155,9 +170,9 @@ const Division = () => {
 
     useEffect(() => {
         if (departments.length > 0) {
-            get_division_details();
+            get_division_details(paginationCount);
         }
-    }, [departments]);
+    }, [departments, paginationCount, forceTableLoad]);
 
 
     const handleViewRole = (role) => {
@@ -305,7 +320,7 @@ const Division = () => {
                 className: "toast-success",
             });
 
-            get_division_details();
+            get_division_details(paginationCount);
 
         } catch (err) {
             let errorMessage = err.response?.message || "Something went wrong. Please try again.";
@@ -420,7 +435,7 @@ const Division = () => {
                 className: "toast-success"
             });
 
-            get_division_details();
+            get_division_details(paginationCount);
 
             setAddRoleData({
                 division_name: '',
@@ -539,7 +554,7 @@ const Division = () => {
                 className: "toast-success",
             });
 
-            get_division_details();
+            get_division_details(paginationCount);
             setShowEditModal(false);
         } catch (err) {
             let errorMessage = err.message || "Something went wrong. Please try again.";
@@ -568,6 +583,23 @@ const Division = () => {
         }
     }, [selectedRole, departments]);
 
+    const setFilterData = () => {
+        setPaginationCount(1);
+        setShowFilterModal(false);
+        setForceTableLoad((prev) => !prev);
+    };
+
+    const handleFilter = async () => {            
+        setShowFilterModal(true);
+    };
+
+    const handleClear = () => {
+        setSearchValue("");
+        setFromDateValue(null);
+        setToDateValue(null);
+        setForceTableLoad((prev) => !prev);
+    };
+
 
     return (
         <Box inert={loading ? true : false}>
@@ -582,47 +614,76 @@ const Division = () => {
                             Division
                         </Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <TextFieldInput InputProps={{
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon sx={{ color: '#475467' }} />
-                                </InputAdornment>
-                            ),
-                            endAdornment: (
-                                searchValue && (
-                                    <IconButton sx={{ padding: 0 }} onClick={() => {
-                                        setSearchValue('');
-                                        setCurrentPage(0);
-                                    }} 
-                                    size="small">
-                                        <ClearIcon sx={{ color: '#475467' }} />
-                                    </IconButton>
-                                )
-                            )
-                        }}
-                            onInput={(e) => setSearchValue(e.target.value)}
-                            value={searchValue}
-                            id="tableSearch"
-                            size="small"
-                            placeholder='Search anything'
-                            variant="outlined"
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.preventDefault();
-                                }
-                            }}
+                    <Box sx={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
+                        <Box
                             sx={{
-                                width: '400px', borderRadius: '6px', outline: 'none',
-                                '& .MuiInputBase-input::placeholder': {
-                                    color: '#475467',
-                                    opacity: '1',
-                                    fontSize: '14px',
-                                    fontWeight: '400',
-                                    fontFamily: 'Roboto'
-                                },
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "end",
                             }}
-                        />
+                        >
+                            <TextFieldInput
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <SearchIcon sx={{ color: "#475467" }} />
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            <IconButton
+                                                sx={{ padding: "0 5px", borderRadius: "0" }}
+                                                onClick={handleFilter}
+                                            >
+                                                <FilterListIcon sx={{ color: "#475467" }} />
+                                            </IconButton>
+                                        </Box>
+                                    ),
+                                }}
+                                onInput={(e) => setSearchValue(e.target.value)}
+                                value={searchValue}
+                                id="tableSearch"
+                                size="small"
+                                placeholder="Search anything"
+                                variant="outlined"
+                                className="profileSearchClass"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        setFilterData()
+                                    }
+                                }}
+                                sx={{
+                                    width: "350px",
+                                    borderRadius: "6px",
+                                    outline: "none",
+                                    "& .MuiInputBase-input::placeholder": {
+                                        color: "#475467",
+                                        opacity: "1",
+                                        fontSize: "14px",
+                                        fontWeight: "400",
+                                        fontFamily: "Roboto",
+                                    },
+                                }}
+                            />
+                            {(  searchValue ||
+                                fromDateValue ||
+                                toDateValue ||
+                                Object.keys(filterValues).length > 0) && (
+                                <Typography
+                                onClick={handleClear}
+                                sx={{
+                                    fontSize: "13px",
+                                    fontWeight: "500",
+                                    textDecoration: "underline",
+                                    cursor: "pointer",
+                                }}
+                                mt={1}
+                                >
+                                Clear Filter
+                                </Typography>
+                            )}
+                        </Box>
                         <Button
                             onClick={() => {
                                 setAddRoleData(prevData => ({
@@ -651,12 +712,12 @@ const Division = () => {
                 </Box>
                 <Box py={2}>
                     <TableView
-                        rows={currentPageRows}
+                        rows={DivisionRowData}
                         columns={divisionColumnData}
-                        handleNext={handleNext}
-                        handleBack={handleBack}
-                        backBtn={currentPage > 0}
-                        nextBtn={currentPage < totalPages - 1}
+                        totalPage={totalPage} 
+                        totalRecord={totalRecord} 
+                        paginationCount={paginationCount} 
+                        handlePagination={handlePagination} 
                         getRowId={(row) => row.id}
                     />
 
@@ -882,6 +943,84 @@ const Division = () => {
                     <CircularProgress size={100} />
                 </div>
             }
+
+
+            {showFilterModal && (
+                <Dialog
+                    open={showFilterModal}
+                    onClose={() => setShowFilterModal(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="md"
+                    fullWidth
+                >
+                    <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                    }}
+                    >
+                    Filter
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setShowFilterModal(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                    </DialogTitle>
+                    <DialogContent sx={{ minWidth: "400px" }}>
+                    <DialogContentText id="alert-dialog-description">
+                        <Grid container sx={{ alignItems: "center" }}>
+                        <Grid item xs={12} md={6} p={2}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                format="DD-MM-YYYY"
+                                sx={{
+                                width: "100%",
+                                }}
+                                label="From Date"
+                                value={fromDateValue ? dayjs(fromDateValue) : null}
+                                onChange={(e) =>
+                                setFromDateValue(e ? e.format("YYYY-MM-DD") : null)
+                                }
+                            />
+                            </LocalizationProvider>
+                        </Grid>
+        
+                        <Grid item xs={12} md={6} p={2}>
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DatePicker
+                                format="DD-MM-YYYY"
+                                sx={{
+                                width: "100%",
+                                }}
+                                label="To Date"
+                                value={toDateValue ? dayjs(toDateValue) : null}
+                                onChange={(e) =>
+                                setToDateValue(e ? e.format("YYYY-MM-DD") : null)
+                                }
+                            />
+                            </LocalizationProvider>
+                        </Grid>
+                        </Grid>
+                    </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={() => setShowFilterModal(false)}>Close</Button>
+                    <Button
+                        className="fillPrimaryBtn"
+                        sx={{ minWidth: "100px" }}
+                        onClick={() => setFilterData()}
+                    >
+                        Apply
+                    </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
+
         </Box>
     )
 }
