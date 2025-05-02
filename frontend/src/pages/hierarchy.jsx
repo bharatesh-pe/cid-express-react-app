@@ -611,7 +611,7 @@ const Hierarchy = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search anything"
+                                placeholder="Search Hierarchy"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {

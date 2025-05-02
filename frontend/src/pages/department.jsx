@@ -568,7 +568,7 @@ const Department = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search anything"
+                                placeholder="Search Department"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {

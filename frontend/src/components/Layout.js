@@ -754,7 +754,12 @@ const Layout = ({ children }) => {
                                 localStorage.setItem("division_id", designation?.division_id);
                                 localStorage.setItem("division_name", designation?.division?.division_name);
                                 setOpenUserDesignationDropdown(false);
-                                navigate("/dashboard");
+
+                                if(JSON.parse(localStorage.getItem("user_id")) === 1){
+                                    navigate("/dashboard");
+                                }else{
+                                    navigate("/case/ui_case");
+                                }
                             }
                         }}
                     >

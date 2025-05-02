@@ -767,7 +767,7 @@ const Designation = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search anything"
+                                placeholder="Search Designation"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {
