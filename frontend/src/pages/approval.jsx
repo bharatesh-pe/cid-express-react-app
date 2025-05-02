@@ -256,7 +256,7 @@ const Approval = () => {
             setLoading(false);
             if (response) {
 
-                const { meta } = response;
+                const { data, meta } = response;
 
                 const totalPages = meta?.totalPages || 1;
                 const totalItems = meta?.totalItems || 0;
@@ -269,7 +269,7 @@ const Approval = () => {
                     setTotalRecord(totalItems);
                 }
 
-                const updatedData = response.map(row => {
+                const updatedData = data.map(row => {
                     return {
                         id: row.approval_item_id,
                         name: row.name,

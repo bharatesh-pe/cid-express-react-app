@@ -288,7 +288,7 @@ const Designation = () => {
             setLoading(false);
             if (response) {
 
-                const { meta } = response;
+                const { data, meta } = response;
 
                 const totalPages = meta?.totalPages || 1;
                 const totalItems = meta?.totalItems || 0;
@@ -301,7 +301,7 @@ const Designation = () => {
                     setTotalRecord(totalItems);
                 }
 
-                const updatedData = response.map((row, index) => {
+                const updatedData = data.map((row, index) => {
                     return {
                         id: row.designation_id,
                         name: row.designation_name,

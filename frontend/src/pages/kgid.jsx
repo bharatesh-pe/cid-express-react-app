@@ -266,8 +266,7 @@ const KGID = () => {
             setLoading(false);
             if (response) {
 
-                const { meta } = response;
-
+                const { data, meta } = response;
                 const totalPages = meta?.totalPages || 1;
                 const totalItems = meta?.totalItems || 0;
                 
@@ -279,7 +278,7 @@ const KGID = () => {
                     setTotalRecord(totalItems);
                 }
 
-                const updatedData = response.map(row => {
+                const updatedData = data.map(row => {
                     return {
                         id: row.id,
                         kgid: row.kgid,

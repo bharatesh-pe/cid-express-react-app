@@ -85,11 +85,14 @@ const Hierarchy = () => {
         setLoading(true);
         try {
             const response = await api.post("/master_meta/fetch_specific_master_data", {
-                master_name: "designation"
+                master_name: "designation",
+                get_all: true,
             });
 
-            if (Array.isArray(response)) {
-                const departmentList = response.map(dept => ({
+             const { data, meta } = response;
+
+            if (Array.isArray(data)) {
+                const departmentList = data.map(dept => ({
                     id: dept.designation_id,
                     name: dept.designation_name
                 }));
@@ -127,8 +130,7 @@ const Hierarchy = () => {
             setLoading(false);
             if (response) {
 
-                const { meta } = response;
-
+                const { data, meta } = response;
                 const totalPages = meta?.totalPages || 1;
                 const totalItems = meta?.totalItems || 0;
                 
@@ -140,7 +142,7 @@ const Hierarchy = () => {
                     setTotalRecord(totalItems);
                 }
 
-                const updatedData = response.map(row => {
+                const updatedData = data.map(row => {
                     const officerDesignation = designation.find(desgn => desgn.id === row.officer_designation_id);
                     const supervisorDesignation = designation.find(desgn => desgn.id === row.supervisor_designation_id);
 
