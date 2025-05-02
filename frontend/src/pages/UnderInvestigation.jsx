@@ -6245,8 +6245,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   console.log("Pre-selected value:", matchedOption);
                   const preSelectedDivision = matchedOption || null;
                   setSelectedOtherFields(preSelectedDivision);
+
                   
-                  if (options.name.toLowerCase() === "transfer to other division".toLowerCase() && preSelectedDivision?.code) {
+                  if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
                     api
                       .post("cidMaster/getIoUsersBasedOnDivision", {
                         division_ids: [preSelectedDivision.code],
@@ -6265,7 +6266,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 //   setSelectedRow(selectedRow);
                 //   setselectedOtherTemplate(options);
                   setOtherTransferField(updatedOptions);
-                  if (options.name.toLowerCase() === "transfer to other division".toLowerCase()) {
+                  if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io") {
                     setShowMassiveTransferModal(true);
                     setSelectedRowIds([selectedRow.id])
                   } else {
@@ -6294,7 +6295,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               const preSelectedDivision = matchedOption || null;
               setSelectedOtherFields(preSelectedDivision);
               
-              if (options.name.toLowerCase() === "transfer to other division".toLowerCase() && preSelectedDivision?.code) {
+              if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
                 api
                   .post("cidMaster/getIoUsersBasedOnDivision", {
                     division_ids: [preSelectedDivision.code],
@@ -6313,7 +6314,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             //   setSelectedRow(selectedRow);
             //   setselectedOtherTemplate(options);
               setOtherTransferField(staticOptions);
-              if (options.name.toLowerCase() === "transfer to other division".toLowerCase()) {
+              if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase() || options.name.trim().toLowerCase() == "reassign io") {
                 setShowMassiveTransferModal(true);
               } else {
                 setShowOtherTransferModal(true);
@@ -8423,16 +8424,16 @@ const loadChildMergedCasesData = async (page, caseId) => {
     
           setActivityLogs(fieldLogs);
           setOpenActivityLogDialog(true);
-          toast.success(getActionsDetails.message || "Approval Log Fetched Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-          });
+          // toast.success(getActionsDetails.message || "Approval Log Fetched Successfully", {
+          //   position: "top-right",
+          //   autoClose: 3000,
+          //   hideProgressBar: false,
+          //   closeOnClick: true,
+          //   pauseOnHover: true,
+          //   draggable: true,
+          //   progress: undefined,
+          //   className: "toast-success",
+          // });
         } else {
           toast.error(getActionsDetails.message || "Failed to fetch approval log. Please try again.", {
             position: "top-right",
@@ -8722,7 +8723,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     )
                   }
                 >
-                  Massive Division
+                  Mass Change Of Division
                 </Button>
               </>
             )}
@@ -9966,7 +9967,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             <FormControl fullWidth>
               <Autocomplete
                 options={otherTransferField}
-                getOptionLabel={(option) => option.name || ""}
+                getOptionLabel={(option) => option.name || ""}             
                 value={selectedOtherFields || null}
                 onChange={(event, newValue) => {
                   setSelectedOtherFields(newValue);
@@ -9990,8 +9991,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   <TextField
                     {...params}
                     className="selectHideHistory"
-                    label={selectKey?.title}
-                  />
+                    label={selectKey?.title.trim() == "Reassign IO" ? "Division" : selectKey?.title}
+                    />
                 )}
               />
             </FormControl>
