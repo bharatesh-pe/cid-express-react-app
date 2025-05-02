@@ -3500,7 +3500,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
   
   const showOptionTemplate = async (tableName, approved) => {
 
-    if(selectedOtherTemplate.is_approval && !approved && selectedOtherTemplate.table != 'cid_ui_case_progress_report'){
+    if(selectedOtherTemplate.is_approval && !approved ){
         setApprovalSaveData({});
         showApprovalPage(selectedRowData, selectedOtherTemplate);
         return;
@@ -8243,7 +8243,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             module : "ui_case",
             table : "cid_ui_case_progress_report",
             is_pdf: true,
-            is_approval: true
+            // is_approval: true
         }
 
         handleOtherTemplateActions(options, rowData);
