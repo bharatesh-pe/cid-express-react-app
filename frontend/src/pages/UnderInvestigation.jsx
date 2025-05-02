@@ -5740,7 +5740,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 {
                   field: "",
                   headerName: "Action",
-                  flex: 1,
+                  width: 300,
                   cellClassName: (params) => getCellClassName("sl_no", params, options.table),
                   renderCell: (params) => {
                     const isPdfUpdated =
