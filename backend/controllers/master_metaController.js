@@ -183,6 +183,231 @@ exports.fetch_masters_meta = async (req, res) => {
 //   }
 // };
 
+// exports.fetch_specific_master_data = async (req, res) => {
+//   const {
+//     master_name,
+//     page = 1,
+//     limit = 10,
+//     sort_by = "created_at",
+//     order = "DESC",
+//     search = "",
+//     search_field = "",
+//     filter = {},
+//     from_date = null,
+//     to_date = null,
+//   } = req.body;
+
+//   const offset = (page - 1) * limit;
+
+//   try {
+//     let data = [];
+//     let totalItems = 0;
+
+//     // Common where clause for filtering, search, and date range
+//     const buildWhereClause = () => {
+//       const whereClause = {};
+
+//       // Filter fields
+//       for (const [key, value] of Object.entries(filter)) {
+//         if (value !== undefined && value !== null && value !== "") {
+//           whereClause[key] = value;
+//         }
+//       }
+
+//       // Search
+//       if (search && search_field) {
+//         whereClause[search_field] = { [Op.iLike]: `%${search}%` };
+//       }
+
+//       // Date filter on created_at
+//       if (from_date || to_date) {
+//         whereClause.created_at = {};
+//         if (from_date) {
+//           whereClause.created_at[Op.gte] = new Date(from_date);
+//         }
+//         if (to_date) {
+//           whereClause.created_at[Op.lte] = new Date(to_date);
+//         }
+//       }
+
+//       return whereClause;
+//     };
+
+//     switch (master_name) {
+//       case "designation":
+//         const designationWhere = buildWhereClause();
+
+//         const { rows: designationRows, count: designationCount } = await Designation.findAndCountAll({
+//           where: designationWhere,
+//           limit,
+//           offset,
+//           order: [[sort_by, order]],
+//           attributes: [
+//             "designation_id",
+//             "designation_name",
+//             "description",
+//             "created_by",
+//             "created_at",
+//           ],
+//         });
+
+//         // Add related division and department info
+//         const formattedDesignations = await Promise.all(
+//           designationRows.map(async (designation) => {
+//             const plain = designation.get({ plain: true });
+
+//             const designation_division = await DesignationDivision.findAll({
+//               where: { designation_id: plain.designation_id },
+//               attributes: ["division_id"],
+//               include: [
+//                 {
+//                   model: Division,
+//                   as: "designation_division",
+//                   attributes: ["division_name"],
+//                 },
+//               ],
+//             });
+
+//             const division_names = designation_division
+//               .map((div) => div.designation_division?.division_name)
+//               .join(", ");
+//             const division_ids = designation_division
+//               .map((div) => div.division_id)
+//               .join(",");
+
+//             const designation_department = await DesignationDepartment.findAll({
+//               where: { designation_id: plain.designation_id },
+//               attributes: ["department_id"],
+//               include: [
+//                 {
+//                   model: Department,
+//                   as: "designation_department",
+//                   attributes: ["department_name"],
+//                 },
+//               ],
+//             });
+
+//             const department_names = designation_department
+//               .map((dep) => dep.designation_department?.department_name)
+//               .join(", ");
+//             const department_ids = designation_department
+//               .map((dep) => dep.department_id)
+//               .join(",");
+
+//             return {
+//               ...plain,
+//               division_name: division_names || null,
+//               division_id: division_ids || null,
+//               department_name: department_names || null,
+//               department_id: department_ids || null,
+//             };
+//           })
+//         );
+
+//         data = formattedDesignations;
+//         totalItems = designationCount;
+//         break;
+
+//       case "department":
+//         const departmentWhere = buildWhereClause();
+
+//         const departments = await Department.findAndCountAll({
+//           where: departmentWhere,
+//           limit,
+//           offset,
+//           order: [[sort_by, order]],
+//         });
+
+//         data = departments.rows;
+//         totalItems = departments.count;
+//         break;
+
+//       case "division":
+//         const divisionWhere = buildWhereClause();
+
+//         const divisions = await Division.findAndCountAll({
+//           where: divisionWhere,
+//           include: [
+//             {
+//               model: Department,
+//               as: "department",
+//               attributes: ["department_name"],
+//             },
+//           ],
+//           limit,
+//           offset,
+//           order: [[sort_by, order]],
+//           attributes: [
+//             "division_id",
+//             "division_name",
+//             "description",
+//             "department_id",
+//             "created_by",
+//             "created_at",
+//           ],
+//         });
+
+//         data = divisions.rows.map((division) => {
+//           const plain = division.get({ plain: true });
+//           return {
+//             ...plain,
+//             department_name: plain.department?.department_name || "Unknown Department",
+//           };
+//         });
+
+//         totalItems = divisions.count;
+//         break;
+
+//       case "approval_item":
+//         data = await ApprovalItem.findAll();
+//         totalItems = data.length;
+//         break;
+
+//       case "kgid":
+//         data = await KGID.findAll();
+//         totalItems = data.length;
+//         break;
+
+//       case "hierarchy":
+//         data = await UsersHierarchy.findAll();
+//         totalItems = data.length;
+//         break;
+
+//       default:
+//         return res.status(400).json({ message: "Invalid master name provided." });
+//     }
+
+//     const totalPages = Math.ceil(totalItems / limit);
+
+//     // const returndata = {};
+//     // returndata.data = data;
+//     // returndata.meta = {
+//     //   page,
+//     //   limit,
+//     //   totalItems,
+//     //   totalPages,
+//     //   sort_by,
+//     //   order,
+//     // };
+
+//     return res.status(200).json({
+//       success: true,
+//       data,
+//       meta: {
+//         page,
+//         limit,
+//         totalItems,
+//         totalPages,
+//         sort_by,
+//         order,
+//       },
+//     });
+//   } catch (error) {
+//     console.error("Error fetching master data:", error);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// };
+
 exports.fetch_specific_master_data = async (req, res) => {
   const {
     master_name,
@@ -195,6 +420,7 @@ exports.fetch_specific_master_data = async (req, res) => {
     filter = {},
     from_date = null,
     to_date = null,
+    get_all = false,
   } = req.body;
 
   const offset = (page - 1) * limit;
@@ -203,55 +429,98 @@ exports.fetch_specific_master_data = async (req, res) => {
     let data = [];
     let totalItems = 0;
 
-    // Common where clause for filtering, search, and date range
     const buildWhereClause = () => {
-      const whereClause = {};
+        const whereClause = {};
 
-      // Filter fields
-      for (const [key, value] of Object.entries(filter)) {
-        if (value !== undefined && value !== null && value !== "") {
-          whereClause[key] = value;
+        // Apply filters
+        for (const [key, value] of Object.entries(filter)) {
+            if (value !== undefined && value !== null && value !== "") {
+            whereClause[key] = value;
+            }
         }
-      }
 
-      // Search
-      if (search && search_field) {
-        whereClause[search_field] = { [Op.iLike]: `%${search}%` };
-      }
-
-      // Date filter on created_at
-      if (from_date || to_date) {
-        whereClause.created_at = {};
-        if (from_date) {
-          whereClause.created_at[Op.gte] = new Date(from_date);
+        // Apply search condition
+        if (search) {
+            switch (master_name) {
+            case "designation":
+                whereClause["designation_name"] = { [Op.iLike]: `%${search}%` };
+                break;
+            case "department":
+                whereClause["department_name"] = { [Op.iLike]: `%${search}%` };
+                break;
+            case "division":
+                whereClause["division_name"] = { [Op.iLike]: `%${search}%` };
+                break;
+            case "approval_item":
+                whereClause["name"] = { [Op.iLike]: `%${search}%` };
+                break;
+            case "kgid":
+                whereClause[Op.or] = [
+                { kgid: { [Op.iLike]: `%${search}%` } },
+                { name: { [Op.iLike]: `%${search}%` } },
+                { mobile: { [Op.iLike]: `%${search}%` } },
+                ];
+                break;
+            case "hierarchy":
+                whereClause[Op.or] = [
+                { supervisor_designation_id: { [Op.iLike]: `%${search}%` } },
+                { officer_designation_id: { [Op.iLike]: `%${search}%` } },
+                ];
+                break;
+            default:
+                if (search_field) {
+                whereClause[search_field] = { [Op.iLike]: `%${search}%` };
+                }
+            }
         }
-        if (to_date) {
-          whereClause.created_at[Op.lte] = new Date(to_date);
-        }
-      }
 
-      return whereClause;
+        // Date filter on created_at
+        if (from_date || to_date) {
+            whereClause.created_at = {};
+            if (from_date) {
+            whereClause.created_at[Op.gte] = new Date(from_date);
+            }
+            if (to_date) {
+            whereClause.created_at[Op.lte] = new Date(to_date);
+            }
+        }
+
+        return whereClause;
     };
 
     switch (master_name) {
       case "designation":
         const designationWhere = buildWhereClause();
 
-        const { rows: designationRows, count: designationCount } = await Designation.findAndCountAll({
-          where: designationWhere,
-          limit,
-          offset,
-          order: [[sort_by, order]],
-          attributes: [
-            "designation_id",
-            "designation_name",
-            "description",
-            "created_by",
-            "created_at",
-          ],
-        });
+        // if (search) {
+        //     whereClause["designation_name"] = { [Op.iLike]: `%${search}%` };
+        // }
 
-        // Add related division and department info
+        var designationRows = {};
+        var designationCount = 0;
+        if (!get_all) {
+            const { rows: Rows, count: Count } = await Designation.findAndCountAll({
+            where: designationWhere,
+            limit,
+            offset,
+            order: [[sort_by, order]],
+            attributes: ["designation_id", "designation_name", "description", "created_by", "created_at"],
+            });
+
+            designationRows = Rows;
+            designationCount = Count;
+        }
+        else {
+            const Rows = await Designation.findAll({
+            where: designationWhere,
+            order: [[sort_by, order]],
+            attributes: ["designation_id", "designation_name", "description", "created_by", "created_at"],
+            });
+
+            designationRows = Rows;
+            designationCount = Rows.length;
+        }
+
         const formattedDesignations = await Promise.all(
           designationRows.map(async (designation) => {
             const plain = designation.get({ plain: true });
@@ -259,40 +528,28 @@ exports.fetch_specific_master_data = async (req, res) => {
             const designation_division = await DesignationDivision.findAll({
               where: { designation_id: plain.designation_id },
               attributes: ["division_id"],
-              include: [
-                {
-                  model: Division,
-                  as: "designation_division",
-                  attributes: ["division_name"],
-                },
-              ],
+              include: [{
+                model: Division,
+                as: "designation_division",
+                attributes: ["division_name"],
+              }],
             });
 
-            const division_names = designation_division
-              .map((div) => div.designation_division?.division_name)
-              .join(", ");
-            const division_ids = designation_division
-              .map((div) => div.division_id)
-              .join(",");
+            const division_names = designation_division.map(div => div.designation_division?.division_name).join(", ");
+            const division_ids = designation_division.map(div => div.division_id).join(",");
 
             const designation_department = await DesignationDepartment.findAll({
               where: { designation_id: plain.designation_id },
               attributes: ["department_id"],
-              include: [
-                {
-                  model: Department,
-                  as: "designation_department",
-                  attributes: ["department_name"],
-                },
-              ],
+              include: [{
+                model: Department,
+                as: "designation_department",
+                attributes: ["department_name"],
+              }],
             });
 
-            const department_names = designation_department
-              .map((dep) => dep.designation_department?.department_name)
-              .join(", ");
-            const department_ids = designation_department
-              .map((dep) => dep.department_id)
-              .join(",");
+            const department_names = designation_department.map(dep => dep.designation_department?.department_name).join(", ");
+            const department_ids = designation_department.map(dep => dep.department_id).join(",");
 
             return {
               ...plain,
@@ -311,40 +568,52 @@ exports.fetch_specific_master_data = async (req, res) => {
       case "department":
         const departmentWhere = buildWhereClause();
 
-        const departments = await Department.findAndCountAll({
-          where: departmentWhere,
-          limit,
-          offset,
-          order: [[sort_by, order]],
-        });
+        // if (search) {
+        //     whereClause["department_name"] = { [Op.iLike]: `%${search}%` };
+        // }
 
-        data = departments.rows;
-        totalItems = departments.count;
-        break;
+        if (get_all) {
+            const Rows = await Department.findAll({
+                where: departmentWhere,
+                order: [[sort_by, order]],
+                attributes: ["department_id", "department_name", "description", "created_by", "created_at"],
+            });
+    
+            data = Rows;
+            totalItems = Rows.length;
+            break;
+        }
+        else {
+                const { rows: Rows, count: Count } = await Department.findAndCountAll({
+                where: departmentWhere,
+                limit,
+                offset,
+                order: [[sort_by, order]],
+                attributes: ["department_id", "department_name", "description", "created_by", "created_at"],
+            });
+            data = Rows;
+            totalItems = Rows.length;
+            break;
+        }
 
       case "division":
         const divisionWhere = buildWhereClause();
 
+        // if (search) {
+        //     whereClause["division_name"] = { [Op.iLike]: `%${search}%` };
+        // }
+
         const divisions = await Division.findAndCountAll({
           where: divisionWhere,
-          include: [
-            {
-              model: Department,
-              as: "department",
-              attributes: ["department_name"],
-            },
-          ],
+          include: [{
+            model: Department,
+            as: "department",
+            attributes: ["department_name"],
+          }],
           limit,
           offset,
           order: [[sort_by, order]],
-          attributes: [
-            "division_id",
-            "division_name",
-            "description",
-            "department_id",
-            "created_by",
-            "created_at",
-          ],
+          attributes: ["division_id", "division_name", "description", "department_id", "created_by", "created_at"],
         });
 
         data = divisions.rows.map((division) => {
@@ -359,18 +628,66 @@ exports.fetch_specific_master_data = async (req, res) => {
         break;
 
       case "approval_item":
-        data = await ApprovalItem.findAll();
-        totalItems = data.length;
+        const approvalWhere = buildWhereClause();
+
+        // if (search) {
+        //     whereClause["name"] = { [Op.iLike]: `%${search}%` };
+        // }
+
+        const approvalItems = await ApprovalItem.findAndCountAll({
+          where: approvalWhere,
+          limit,
+          offset,
+          order: [[sort_by, order]],
+          attributes: ["approval_item_id", "name", "description", "created_at"],
+        });
+
+        data = approvalItems.rows;
+        totalItems = approvalItems.count;
         break;
 
       case "kgid":
-        data = await KGID.findAll();
-        totalItems = data.length;
+        const kgidWhere = buildWhereClause();
+
+        // if (search) {
+        //     whereClause[Op.or] = [
+        //         { kgid: { [Op.iLike]: `%${search}%` } },
+        //         { name: { [Op.iLike]: `%${search}%` } },
+        //         { mobile: { [Op.iLike]: `%${search}%` } },
+        //     ];
+        // }
+
+
+        const kgids = await KGID.findAndCountAll({
+          where: kgidWhere,
+          limit,
+          offset,
+          order: [[sort_by, order]],
+          attributes: ["id", "kgid", "name", "mobile", "created_at"],
+        });
+
+        data = kgids.rows;
+        totalItems = kgids.count;
         break;
 
       case "hierarchy":
-        data = await UsersHierarchy.findAll();
-        totalItems = data.length;
+        const hierarchyWhere = buildWhereClause();
+
+        const hierarchies = await UsersHierarchy.findAndCountAll({
+          where: hierarchyWhere,
+          limit,
+          offset,
+          order: [[sort_by, order]],
+          attributes: [
+            "users_hierarchy_id",
+            "supervisor_designation_id",
+            "officer_designation_id",
+            "created_at",
+          ],
+        });
+
+        data = hierarchies.rows;
+        totalItems = hierarchies.count;
         break;
 
       default:
@@ -379,26 +696,24 @@ exports.fetch_specific_master_data = async (req, res) => {
 
     const totalPages = Math.ceil(totalItems / limit);
 
-    const returndata = {};
-    returndata.data = data;
-    returndata.meta = {
-      page,
-      limit,
-      totalItems,
-      totalPages,
-      sort_by,
-      order,
-    };
-
     return res.status(200).json({
       success: true,
-      data:returndata
+      data,
+      meta: {
+        page,
+        limit,
+        totalItems,
+        totalPages,
+        sort_by,
+        order,
+      },
     });
   } catch (error) {
     console.error("Error fetching master data:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 
 exports.create_master_data = async (req, res) => {

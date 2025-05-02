@@ -87,11 +87,13 @@ const Division = () => {
     const get_departments = async () => {
         try {
             const response = await api.post("/master_meta/fetch_specific_master_data", {
-                master_name: "department"
+                master_name: "department",
+                get_all: true,
             });
 
-            if (Array.isArray(response)) {
-                const departmentList = response.map(dept => ({
+             const { data, meta } = response;
+            if (Array.isArray(data)) {
+                const departmentList = data.map(dept => ({
                     id: dept.department_id,
                     name: dept.department_name
                 }));
@@ -128,9 +130,9 @@ const Division = () => {
             const response = await api.post("/master_meta/fetch_specific_master_data", getTemplatePayload);
             setLoading(false);
 
-            if (response && response.divisions) {
+            if (response) {
 
-                const { meta } = response;
+                const { data, meta } = response;
 
                 const totalPages = meta?.totalPages || 1;
                 const totalItems = meta?.totalItems || 0;
@@ -143,7 +145,7 @@ const Division = () => {
                     setTotalRecord(totalItems);
                 }
 
-                const updatedData = response.divisions.map(row => {
+                const updatedData = data.map(row => {
                     const departmentInfo = departments.find(dept => dept.id === row.department_id);
                     return {
                         id: row.division_id,

@@ -256,7 +256,7 @@ const Department = () => {
             setLoading(false);
             if (response) {
 
-                const { meta } = response;
+                 const { data, meta } = response;
 
                 const totalPages = meta?.totalPages || 1;
                 const totalItems = meta?.totalItems || 0;
@@ -269,7 +269,7 @@ const Department = () => {
                     setTotalRecord(totalItems);
                 }
 
-                const updatedData = response.map(row => {
+                const updatedData = data.map(row => {
                     return {
                         id: row.department_id,
                         name: row.department_name,
