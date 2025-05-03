@@ -1325,7 +1325,7 @@ const UserManagement = () => {
     var countNumber = 0
 
     const tableRows = masterData?.designation?.map((item) => {
-        if (newUser.designation.includes(String(item.code))) {
+        if (newUser?.designation?.includes(String(item.code))) {
             const departmentIds = String(item.department_id).split(",");
             const divisionIds = String(item.division_id).split(",");
     
