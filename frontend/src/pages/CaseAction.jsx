@@ -1316,7 +1316,7 @@ const CaseActions = () => {
                 </DialogContent>
                 <DialogActions sx={{ padding: '12px 24px' }}>
                     <Button onClick={() => setActionAddModal(false)}>Cancel</Button>
-                    <Button variant="contained" sx={{padding: '6px 32px'}} onClick={() => addNewActionData()}>Add</Button>
+                    <Button variant="contained" className='blueButton' sx={{padding: '6px 32px'}} onClick={() => addNewActionData()}>Add</Button>
                 </DialogActions>
             </Dialog>
             

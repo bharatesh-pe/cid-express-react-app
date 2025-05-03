@@ -2142,7 +2142,7 @@ const Formbuilder = () => {
                                     color: "#FFFFFF",
                                     padding: "6px 16px",
                                 }}
-                                className="Roboto"
+                                className="Roboto blueButton"
                                 onClick={handleTemplateUpdate}>Update template</Button>
                                 :
                                 <Button variant="outlined"   
@@ -2154,7 +2154,7 @@ const Formbuilder = () => {
                                     color: "#FFFFFF",
                                     padding: "6px 16px",
                                 }}
-                                className="Roboto"
+                                className="Roboto blueButton"
                                 onClick={handleSave}>Save template</Button>
                             }
                         </Grid>
