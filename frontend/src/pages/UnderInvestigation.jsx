@@ -9943,19 +9943,19 @@ const loadChildMergedCasesData = async (page, caseId) => {
         onClose={() => {
           setShowMassiveTransferModal(false);
           setSelectKey(null);
-          setSelectedRow([]);
+          // setSelectedRow([]);
           setOtherTransferField([]);
-          setSelectedOtherFields(null);
-          setselectedOtherTemplate(null);
+          // setSelectedOtherFields(null);
+          // setselectedOtherTemplate(null);
           setUsersBasedOnDivision([]);
-          setSelectedUser(null);
-          setSelectedRowIds([]);
+          // setSelectedUser(null);
+          // setSelectedRowIds([]);
           setSelectedMergeRowData([]); 
           setSelectedParentId(null);
           setTableData((prevData) =>
             prevData.map((item) => ({ ...item, isSelected: false }))
           );
-          setHasApproval(false);
+          // setHasApproval(false);
         }}
           aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
@@ -10024,17 +10024,17 @@ const loadChildMergedCasesData = async (page, caseId) => {
               setSelectKey(null);
               setSelectedRow([]);
               setOtherTransferField([]);
-              setSelectedOtherFields(null);
-              setselectedOtherTemplate(null);
+              // setSelectedOtherFields(null);
+              // setselectedOtherTemplate(null);
               setUsersBasedOnDivision([]);
-              setSelectedUser(null);
-              setSelectedRowIds([]);
+              // setSelectedUser(null);
+              // setSelectedRowIds([]);
               setSelectedMergeRowData([]); 
               setSelectedParentId(null);
               setTableData((prevData) =>
                 prevData.map((item) => ({ ...item, isSelected: false }))
               );
-              setHasApproval(false);
+              // setHasApproval(false);
             }}
             >Cancel
           </Button>

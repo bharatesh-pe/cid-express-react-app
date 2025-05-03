@@ -24,6 +24,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import WestIcon from '@mui/icons-material/West';
 
 const Approval = () => {
     const navigate = useNavigate();
@@ -349,7 +350,8 @@ const Approval = () => {
         try {
             const requestData = {
                 master_name: "Approval Item",
-                data: addRoleData
+                data: addRoleData,
+                transaction_id:  `approvalItem_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
             };
             const response = await api.post("/master_meta/create_master_data", requestData);
 
@@ -662,28 +664,43 @@ const Approval = () => {
                     setAddRoleData({ name: '', description: '' });
                     setSelectedRole(null);            
                 }}
-                aria-labelledby="approval-item-dialog-title"
-                maxWidth="md"
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                fullScreen
                 fullWidth
+                sx={{ marginLeft: '50px' }}        
             >
-                <DialogTitle id="approval-item-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    {showViewModal && "View Approval Items"}
-                    {showEditModal && "Edit Approval Items"}
-                    {showRoleAddModal && "Add New Item"}
-                    <IconButton
-                        aria-label="close"
+                <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                         onClick={() => {
                             setShowViewModal(false);
                             setShowEditModal(false);
                             setShowRoleAddModal(false);
                             setErrorRoleData({ name: '', description: '' });
+                            setAddRoleData({ name: '', description: '' });
+                            setSelectedRole(null);            
                         }}
-                        sx={{ color: (theme) => theme.palette.grey[500] }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
+                        >
+                        <WestIcon sx={{ color: 'black' }}/>
+                        <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
+                        {showViewModal && "View Approval Items"}
+                        {showEditModal && "Edit Approval Items"}
+                        {showRoleAddModal && "Add New Item"}
+                        </Typography>
+                    </Box>
 
+                    {showEditModal && (
+                        <Button variant="outlined" onClick={handleEditData}>
+                            Update Approval Items
+                        </Button>
+                    )}
+                    {showRoleAddModal && (
+                        <Button variant="outlined" onClick={handleAddSaveData}>
+                            Add Item
+                        </Button>
+                    )}
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
@@ -740,31 +757,6 @@ const Approval = () => {
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
-
-                <DialogActions sx={{ padding: '12px 24px' }}>
-                    <Button
-                        onClick={() => {
-                            setShowViewModal(false);
-                            setShowEditModal(false);
-                            setShowRoleAddModal(false);
-                            setErrorRoleData({ name: '', description: '' });
-                            setAddRoleData({ name: '', description: '' });
-                            setSelectedRole(null);            
-                        }}
-                    >
-                        Close
-                    </Button>
-                    {showEditModal && (
-                        <Button variant="outlined" onClick={handleEditData}>
-                            Update Approval Items
-                        </Button>
-                    )}
-                    {showRoleAddModal && (
-                        <Button variant="outlined" onClick={handleAddSaveData}>
-                            Add Item
-                        </Button>
-                    )}
-                </DialogActions>
             </Dialog>
 
 

@@ -24,6 +24,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import WestIcon from '@mui/icons-material/West';
 
 const KGID = () => {
     const navigate = useNavigate();
@@ -403,7 +404,8 @@ const KGID = () => {
         try {
             const requestData = {
                 master_name: "Kgid",
-                data: addRoleData
+                data: addRoleData,
+                transaction_id:  `kgid_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
             };
             const response = await api.post("/master_meta/create_master_data", requestData);
 
@@ -758,28 +760,41 @@ const KGID = () => {
                     setAddRoleData({ kgid: '', name: '', mobile: ''});
                     setSelectedRole(null);            
                 }}
-                aria-labelledby="department-dialog-title"
-                maxWidth="md"
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                fullScreen
                 fullWidth
+                sx={{ marginLeft: '50px' }}        
             >
-                <DialogTitle id="department-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    {showViewModal && "View KGID"}
-                    {showEditModal && "Edit KGID"}
-                    {showRoleAddModal && "Add New KGID"}
-                    <IconButton
-                        aria-label="close"
+                <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                         onClick={() => {
                             setShowViewModal(false);
                             setShowEditModal(false);
                             setShowRoleAddModal(false);
                             setErrorRoleData({ kgid: '', name: '', mobile: ''});
                         }}
-                        sx={{ color: (theme) => theme.palette.grey[500] }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
-                </DialogTitle>
+                        >
+                        <WestIcon sx={{ color: 'black' }}/>
+                        <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
+                        {showViewModal && "View KGID"}
+                        {showEditModal && "Edit KGID"}
+                        {showRoleAddModal && "Add New KGID"}
+                        </Typography>
+                    </Box>
 
+                    {showEditModal && (
+                        <Button variant="outlined" onClick={handleEditData}>
+                            Update KGID
+                        </Button>
+                    )}
+                    {showRoleAddModal && (
+                        <Button variant="outlined" onClick={handleAddSaveData}>
+                            Add KGID
+                        </Button>
+                    )}
+                </DialogTitle>
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
@@ -895,31 +910,6 @@ const KGID = () => {
                     </FormControl>
                     </DialogContentText>
                 </DialogContent>
-
-                <DialogActions sx={{ padding: '12px 24px' }}>
-                    <Button
-                        onClick={() => {
-                            setShowViewModal(false);
-                            setShowEditModal(false);
-                            setShowRoleAddModal(false);
-                            setErrorRoleData({ kgid: '', name: '', mobile: ''});
-                            setAddRoleData({ kgid: '', name: '', mobile: ''});
-                            setSelectedRole(null);            
-                        }}
-                    >
-                        Close
-                    </Button>
-                    {showEditModal && (
-                        <Button variant="outlined" onClick={handleEditData}>
-                            Update KGID
-                        </Button>
-                    )}
-                    {showRoleAddModal && (
-                        <Button variant="outlined" onClick={handleAddSaveData}>
-                            Add KGID
-                        </Button>
-                    )}
-                </DialogActions>
             </Dialog>
 
 

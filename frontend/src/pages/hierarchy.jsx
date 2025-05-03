@@ -25,6 +25,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import WestIcon from '@mui/icons-material/West';
 
 const Hierarchy = () => {
     const navigate = useNavigate();
@@ -62,7 +63,9 @@ const Hierarchy = () => {
 
     const [totalPage, setTotalPage] = useState(0);
     const [totalRecord, setTotalRecord] = useState(0);
-    
+    const [rawDesignationData, setRawDesignationData] = useState([]);
+    const [designationDetails, setDesignationDetails] = useState(null);
+
     const handlePagination = (page) => {
         setPaginationCount(page)
     }
@@ -89,14 +92,14 @@ const Hierarchy = () => {
                 get_all: true,
             });
 
-             const { data, meta } = response;
+            const { data } = response;
 
             if (Array.isArray(data)) {
+                setRawDesignationData(data); // ← Store full data
                 const departmentList = data.map(dept => ({
                     id: dept.designation_id,
                     name: dept.designation_name
                 }));
-
                 setDesignation(departmentList);
             } else {
                 toast.error("Failed to fetch Designation");
@@ -104,10 +107,9 @@ const Hierarchy = () => {
         } catch (err) {
             let errorMessage = err?.response?.data?.message || "Something went wrong. Please try again.";
             toast.error(errorMessage);
-            setLoading(false);
         }
+        setLoading(false);
     };
-
 
     const get_hierarchy_details = async (page) => {
         if (designation.length === 0) {
@@ -188,7 +190,8 @@ const Hierarchy = () => {
 
         setSelectedDesignation(selectedDept ? { code: selectedDept.id, name: selectedDept.name } : null);
         setSelectedSupervisorDesignation(selectedSuperDept ? { code: selectedSuperDept.id, name: selectedSuperDept.name } : null);
-
+        const selectedDetail = rawDesignationData.find(item => item.designation_id === role.officer_designation_id);
+        setDesignationDetails(selectedDetail || null);
         setShowViewModal(true);
     };
 
@@ -206,7 +209,8 @@ const Hierarchy = () => {
 
         setSelectedDesignation(selectedDept ? { code: selectedDept.id, name: selectedDept.name } : null);
         setSelectedSupervisorDesignation(selectedSuperDept ? { code: selectedSuperDept.id, name: selectedSuperDept.name } : null);
-
+        const selectedDetail = rawDesignationData.find(item => item.designation_id === role.officer_designation_id);
+        setDesignationDetails(selectedDetail || null);
         setShowEditModal(true);
     };
 
@@ -389,7 +393,8 @@ const Hierarchy = () => {
         try {
             const requestData = {
                 master_name: "Hierarchy",
-                data: addRoleData
+                data: addRoleData,
+                transaction_id:  `hierarchy_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
             };
 
             const response = await api.post("/master_meta/create_master_data", requestData);
@@ -427,6 +432,7 @@ const Hierarchy = () => {
             });
             setSelectedDesignation(null);
             setSelectedSupervisorDesignation(null)
+            setDesignationDetails(null);
             setShowRoleAddModal(false);
 
         } catch (err) {
@@ -522,6 +528,7 @@ const Hierarchy = () => {
 
             get_hierarchy_details(paginationCount);
             setSelectedDesignation(null);
+            setDesignationDetails(null);
             setSelectedSupervisorDesignation(null)
             setShowEditModal(false);
         } catch (err) {
@@ -707,17 +714,15 @@ const Hierarchy = () => {
                     setAddRoleData({ officer_designation_id: '', supervisor_designation_id: '' });
                     setSelectedRole(prev => prev ? { ...prev, officer_designation_id: '', supervisor_designation_id: '' } : prev);
                 }}
-
-                aria-labelledby="hierarchy-dialog-title"
-                maxWidth="md"
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                fullScreen
                 fullWidth
+                sx={{ marginLeft: '50px' }} 
             >
                 <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    {showViewModal && "View Hierarchy"}
-                    {showEditModal && "Edit Hierarchy"}
-                    {showRoleAddModal && "Add New Hierarchy"}
-                    <IconButton
-                        aria-label="close"
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                         onClick={() => {
                             setShowViewModal(false);
                             setShowEditModal(false);
@@ -727,17 +732,36 @@ const Hierarchy = () => {
                             setSelectedSupervisorDesignation(null);
                             setAddRoleData({ officer_designation_id: '', supervisor_designation_id: '' });
                             setSelectedRole(null);
+                            setDesignationDetails(null);
                         }}
-                        sx={{ color: (theme) => theme.palette.grey[500] }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
+                        >
+                        <WestIcon sx={{ color: 'black' }}/>
+                        <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
+                        {showViewModal && "View Hierarchy"}
+                        {showEditModal && "Edit Hierarchy"}
+                        {showRoleAddModal && "Add New Hierarchy"}
+                        </Typography>
+                    </Box>
+
+                    {showEditModal && (
+                        <Button variant="outlined" onClick={handleEditData}>
+                            Update Hierarchy
+                        </Button>
+                    )}
+                    {showRoleAddModal && (
+                        <Button variant="outlined" onClick={handleAddSaveData}>
+                            Add Hierarchy
+                        </Button>
+                    )}
                 </DialogTitle>
 
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
                             <Box sx={{ marginBottom: "18px" }}>
+                            <h4 className="form-field-heading" style={{ color: !!errorRoleData.officer_designation_id && '#d32f2f' }}>
+                                    Officer Designation
+                                </h4>
                                 <Autocomplete
                                     options={designation}
                                     getOptionLabel={(option) => option.name}
@@ -747,12 +771,18 @@ const Hierarchy = () => {
                                         const designationId = newValue ? newValue.id : null;
                                         setSelectedRole((prev) => ({ ...prev, officer_designation_id: designationId }));
                                         setAddRoleData((prev) => ({ ...prev, officer_designation_id: designationId }));
+                                    
+                                        const selectedDetail = rawDesignationData.find(item => item.designation_id === designationId);
+                                        setDesignationDetails(selectedDetail || null);
                                     }}
+                                    
                                     disabled={showViewModal || showEditModal}
                                     renderInput={(params) => <TextField {...params} label="Select Designation" variant="outlined" />}
                                 />
                             </Box>
-
+                            <h4 className="form-field-heading" style={{ color: !!errorRoleData.supervisor_designation_id && '#d32f2f' }}>
+                            Supervisor Designation
+                            </h4>
                             <Box sx={{ marginBottom: "18px" }}>
                                 <Autocomplete
                                     options={designation}
@@ -767,36 +797,29 @@ const Hierarchy = () => {
                                     renderInput={(params) => <TextField {...params} label="Select Supervisor Designation" variant="outlined" />}
                                 />
                             </Box>
+
+                            {(showViewModal || showEditModal || (showRoleAddModal && designationDetails)) && (
+                                <Box sx={{ mt: 3 }}>
+                                    <h4 className="form-field-heading">Designation Details</h4>
+                                    <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #ccc" }}>
+                                        <thead>
+                                            <tr style={{ background: "#f0f0f0" }}>
+                                                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left"  }}>Department</th>
+                                                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Division</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>{designationDetails.department_name || '-'}</td>
+                                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>{designationDetails.division_name || '-'}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </Box>
+                            )}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
-
-                <DialogActions sx={{ padding: '12px 24px' }}>
-                    <Button
-                        onClick={() => {
-                            setShowViewModal(false);
-                            setShowEditModal(false);
-                            setShowRoleAddModal(false);
-                            setErrorRoleData({ officer_designation_id: '', supervisor_designation_id: '' });
-                            setSelectedDesignation(null);
-                            setSelectedSupervisorDesignation(null);
-                            setAddRoleData({ officer_designation_id: '', supervisor_designation_id: '' });
-                            setSelectedRole(null);
-                        }}
-                    >
-                        Close
-                    </Button>
-                    {showEditModal && (
-                        <Button variant="outlined" onClick={handleEditData}>
-                            Update Hierarchy
-                        </Button>
-                    )}
-                    {showRoleAddModal && (
-                        <Button variant="outlined" onClick={handleAddSaveData}>
-                            Add Hierarchy
-                        </Button>
-                    )}
-                </DialogActions>
             </Dialog>
             {/* Delete Role conformation Popup */}
             <div>
