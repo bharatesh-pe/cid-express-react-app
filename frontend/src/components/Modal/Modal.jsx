@@ -24,10 +24,9 @@ const Modal = ({
     <Dialog
       open={visible}
       onClose={onHide}
-    //   fullScreen
+      fullScreen
       fullWidth
-      maxWidth={"lg"}
-    //   sx={{ marginLeft: '260px' }}
+      sx={{ marginLeft: '50px' }}
     >
       <DialogTitle
         sx={{
@@ -35,12 +34,44 @@ const Modal = ({
           backgroundColor: "#f1f1f1", padding: "10px", paddingBottom: "0px", whiteSpace: "nowrap"
         }}
       >
-        <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%'}}>
+        <Box sx={{display: 'inline-flex', justifyContent: 'space-between', alignItems: 'center'}}>
 
-            <div style={{ flexGrow: 1, overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                 {headerContent ? headerContent : title}
             </div>
         </Box>
+
+        {footerContent || (
+            <Box>
+                <Button
+                    onClick={onHide}
+                    variant="outlined"
+                    sx={{
+                        color: "black",
+                        borderColor: "#b7bbc2",
+                        "&:hover": {
+                        backgroundColor: "#f1f5f9",
+                        },
+                    }}
+                >
+                    {closeButtonLabel}
+                </Button>
+                <Button
+                    onClick={onSave}
+                    variant="contained"
+                    startIcon={<CheckIcon />}
+                    sx={{
+                        color: "white",
+                        backgroundColor: "#4caf50",
+                        "&:hover": {
+                        backgroundColor: "#45a049",
+                        },
+                    }}
+                >
+                    {saveButtonLabel}
+                </Button>
+            </Box>
+        )}
 {/* 
 
         <Button
@@ -59,37 +90,6 @@ const Modal = ({
 
       <DialogActions sx={{ justifyContent: "flex-end", padding: "10px 20px" }}>
 
-        {footerContent || (
-                <>
-                    <Button
-                        onClick={onHide}
-                        variant="outlined"
-                        sx={{
-                            color: "black",
-                            borderColor: "#b7bbc2",
-                            "&:hover": {
-                            backgroundColor: "#f1f5f9",
-                            },
-                        }}
-                    >
-                        {closeButtonLabel}
-                    </Button>
-                    <Button
-                        onClick={onSave}
-                        variant="contained"
-                        startIcon={<CheckIcon />}
-                        sx={{
-                            color: "white",
-                            backgroundColor: "#4caf50",
-                            "&:hover": {
-                            backgroundColor: "#45a049",
-                            },
-                        }}
-                    >
-                        {saveButtonLabel}
-                    </Button>
-                </>
-            )}
       </DialogActions>
     </Dialog>
 
