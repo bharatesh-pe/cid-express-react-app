@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Modal from "../components/Modal/Modal.jsx";
 import PasswordInput from "../components/password_input/password_input";
-import { Box, Checkbox, Grid, Tooltip } from "@mui/material";
+import { Box, Checkbox, Grid, Paper, Tooltip } from "@mui/material";
 import {
   DialogTitle,
   Table,
@@ -39,6 +39,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { InputAdornment } from "@mui/material"
 import AddIcon from '@mui/icons-material/Add';
 import SelectField from "../components/form/Select.jsx";
+import WestIcon from '@mui/icons-material/West';
 
 const UserManagement = () => {
   const [usergetupdated, setUserUpdatedFlag] = useState(false);
@@ -48,7 +49,7 @@ const UserManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeactivationDialogVisible, setDeactivationDialogVisible] =
     useState(false);
-  const [modalTitle, setModalTitle] = useState("Add New User");
+  const [modalTitle, setModalTitle] = useState("Add User");
   const [loading, setLoading] = useState(false);
   const [isFilterApplied, setIsFilterApplied] = useState(false);
   const [users, setUsers] = useState([]);
@@ -220,12 +221,6 @@ const UserManagement = () => {
     // if (!newUser.supervisor_designation || newUser.supervisor_designation.length === 0) {
     //   newErrors.supervisor_designation = "Supervisor Designation is required";
     // }
-    if (!newUser.division || newUser.division.length === 0) {
-      newErrors.division = "Division is required";
-    }
-    if (!newUser.department) {
-      newErrors.department = "Department is required";
-    }
     if (modalTitle !== "Edit User") {
       if (!newUser.pin) {
         newErrors.pin = "Pin is required";
@@ -475,7 +470,7 @@ const UserManagement = () => {
     //   });
 
       setIsModalOpen(false);
-      setModalTitle("Add New User");
+      setModalTitle("Add User");
     } catch (err) {
       let errorMessage =
         err.message || "Error applying filters. Please try again.";
@@ -516,6 +511,35 @@ const UserManagement = () => {
       setLoading(false);
       return;
     }
+
+    if (!newUser.department || newUser.department.length === 0) {
+        toast.error("Please Check The Department", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "toast-error",
+          });
+        setLoading(false);
+        return;
+    }
+
+    if (!newUser.division || newUser.division.length === 0) {
+        toast.error("Please Check The Division", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            className: "toast-error",
+          });
+        setLoading(false);
+        return;
+    }
+
     if (modalTitle === "Reset Pin") {
       setErrors({});
       if (!newUser.pin) {
@@ -563,7 +587,7 @@ const UserManagement = () => {
         });
         setSelectedUsers([]);
         fetchUsers();
-        setModalTitle("Add New User");
+        setModalTitle("Add User");
         setIsModalOpen(false);
         setNewUser({
           name: "",
@@ -723,7 +747,7 @@ const UserManagement = () => {
       setSelectedUsers([]);
       fetchUsers();
       setIsModalOpen(false);
-      setModalTitle("Add New User");
+      setModalTitle("Add User");
     } catch (err) {
       let errorMessage =
         err.message || "Something went wrong. Please try again.";
@@ -1080,7 +1104,7 @@ const UserManagement = () => {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    setModalTitle("Add New User");
+    setModalTitle("Add User");
     setErrors({});
     setNewUser({
       id: "",
@@ -1297,6 +1321,39 @@ const UserManagement = () => {
     { name: "Active", code: "active" },
     { name: "Inactive", code: "inactive" },
   ];
+
+    var countNumber = 0
+
+    const tableRows = masterData?.designation?.map((item) => {
+        if (newUser?.designation?.includes(String(item.code))) {
+            const departmentIds = String(item.department_id).split(",");
+            const divisionIds = String(item.division_id).split(",");
+    
+            const departmentNames = departmentOptions.filter(d => departmentIds.includes(String(d.code))).map(d => d.name).join(", ");
+            const divisionNames = divisionOptions.filter(div => divisionIds.includes(String(div.code))).map(div => div.name).join(", ");
+
+            const supervisorKeys = Object.keys(masterData.supervisor_designation || {}).filter(key =>
+                masterData.supervisor_designation[key].includes(item.code)
+            );
+    
+            const supervisorNames = supervisorKeys.map(key => {
+                const designation = designationOptions.find(
+                    option => String(option.code) === key
+                );
+                return designation ? designation.name : "-";
+            }).join(", ");
+
+            countNumber++
+            return {
+                ...item,
+                id: countNumber,
+                departmentName: departmentNames || "-",
+                divisionName: divisionNames || "-",
+                supervisorName: supervisorNames || "-"
+            };
+        }
+        return null;
+    }).filter(Boolean);
 
   return (
     <Box p={2}>
@@ -1600,45 +1657,34 @@ const UserManagement = () => {
           onSave={handleSave}
 
           headerContent={
-            <div className="modal-header-title p-3">{modalTitle}</div>
+            <Box 
+                className="modal-header-title p-3" 
+                sx={{display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer'}}
+                onClick={() => {
+                    setIsModalOpen(false);
+                    setModalTitle("Add User");
+                    setNewUser({
+                        id: null,
+                        name: "",
+                        mobile: "",
+                        role: "",
+                        kgid: "",
+                        designation: "",
+                        supervisor_designation: "",
+                        pin: "",
+                        confirmPin: "",
+                        division: "",
+                        department: "",
+                    });
+                    setErrors({});
+                }}
+            >
+                <WestIcon />
+                {modalTitle}
+            </Box>
           }
           footerContent={
             <div className="space-x-2 w-full custom-footer mt-2">
-              <Button
-                variant="outlined"
-                sx={{
-                  color: "#000000",
-                  width: "10vw",
-                  borderColor: "#6B7280",
-                  backgroundColor: "#F3F4F6",
-                  borderWidth: "2px",
-                  fontWeight: "600",
-                  textTransform: "none",
-                  "&:hover": {
-                    backgroundColor: "#E5E7EB",
-                  },
-                }}
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setModalTitle("Add New User");
-                  setNewUser({
-                    id: null,
-                    name: "",
-                    mobile: "",
-                    role: "",
-                    kgid: "",
-                    designation: "",
-                    supervisor_designation: "",
-                    pin: "",
-                    confirmPin: "",
-                    division: "",
-                    department: "",
-                  });
-                  setErrors({});
-                }}
-              >
-                {modalTitle === "View User" ? "Close" : "Discard"}
-              </Button>
 
               {modalTitle !== "View User" && (
                 <Button
@@ -1665,7 +1711,7 @@ const UserManagement = () => {
                     ? "Reset Pin"
                     : modalTitle === "Set Filters"
                     ? "Set Filters"
-                    : "Save & Close"}
+                    : "Save User"}
                                 </Button>
                               )}
                             </div>
@@ -1739,7 +1785,7 @@ const UserManagement = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                <Grid item xs={12}>
                   <MultiSelect
                     formData={newUser}
                     errors={errors}
@@ -1761,7 +1807,7 @@ const UserManagement = () => {
                 </Grid>
 
 
-                <Grid item xs={12} sm={4}>
+                {/* <Grid item xs={12} sm={4}>
                   <MultiSelect
                     formData={newUser}
                     errors={errors}
@@ -1800,9 +1846,62 @@ const UserManagement = () => {
                     onHistory={() => getUsermanagementFieldLog("division")}
                     onChange={handleDropDownChange}
                   />
+                </Grid> */}
+
+                <Grid item xs={12}>
+                        <TableContainer elevation={3} sx={{ borderRadius: 2, mt: 2 }}>
+                        <Table size="small" sx={{ minWidth: 650, borderCollapse: 'separate', borderSpacing: 0 }}>
+                            <TableHead>
+                                <TableRow sx={{ backgroundColor: '#F3F4F6' }}>
+                                    {['S.No', 'Designation', 'Departments', 'Divisions', 'Supervisor Designation'].map((header) => (
+                                        <TableCell
+                                            key={header}
+                                            sx={{
+                                                padding: '10px',
+                                                fontWeight: 'bold',
+                                                borderBottom: '1px solid #E0E0E0',
+                                                color: '#374151',
+                                                backgroundColor: '#F9FAFB',
+                                                borderTop: '1px solid #E0E0E0',
+                                                borderLeft: '1px solid #E0E0E0',
+                                                '&:last-child': { borderRight: '1px solid #E0E0E0' },
+                                            }}
+                                        >
+                                            {header}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {tableRows.map((row, idx) => (
+                                    <TableRow
+                                        key={row.id}
+                                        sx={{
+                                            backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
+                                            '&:hover': { backgroundColor: '#F3F4F6' },
+                                        }}
+                                    >
+                                        {[row.id, row.name, row.departmentName, row.divisionName, row.supervisorName].map((val, i) => (
+                                            <TableCell
+                                                key={i}
+                                                sx={{
+                                                    padding: '10px',
+                                                    borderBottom: '1px solid #E0E0E0',
+                                                    borderLeft: '1px solid #E0E0E0',
+                                                    '&:last-child': { borderRight: '1px solid #E0E0E0' },
+                                                }}
+                                            >
+                                                {val}
+                                            </TableCell>
+                                        ))}
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 </Grid>
 
-                <Grid item xs={12} sm={4}>
+                {/* <Grid item xs={12} sm={4}>
                   <p
                     style={{
                       fontSize: "14px",
@@ -1836,13 +1935,13 @@ const UserManagement = () => {
                           .join(" | ")
                       : ""}
                   </p>
-                </Grid>
+                </Grid> */}
                 </>
                 )}
 
-                {(modalTitle === "Reset Pin" || modalTitle === "Add New User") && (
+                {(modalTitle === "Reset Pin" || modalTitle === "Add User") && (
                     <>
-                    <Grid item xs={12} sm={modalTitle === "Reset Pin" ? 6 : 4}>
+                    <Grid item xs={12} sm={6} mt={3}>
                         <div className="px-2">
                         <PasswordInput
                             id="pin"
@@ -1855,7 +1954,7 @@ const UserManagement = () => {
                         />
                         </div>
                     </Grid>
-                    <Grid item xs={12} sm={modalTitle === "Reset Pin" ? 6: 4}>
+                    <Grid item xs={12} sm={6} mt={3}>
                         <div className="px-2">
                         <PasswordInput
                             id="confirmPin"
