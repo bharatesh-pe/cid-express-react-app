@@ -111,29 +111,35 @@ const MastersView = () => {
         setSelectedMaster(selectedName);
         setShowMasters(false);
     
-        if (selectedName === "Designation") {
-            navigate("/master/designation");
-            return;
+       switch (selectedName) {
+            case "Designation":
+                navigate("/master/designation");
+                break;
+            case "Department":
+                navigate("/master/department");
+                break;
+            case "Division":
+                navigate("/master/division");
+                break;
+            case "Approval Items":
+                navigate("/master/approval");
+                break;
+            case "KGID":
+                navigate("/master/kgid");
+                break;
+            case "Hierarchy":
+                navigate("/master/hierarchy");
+                break;
+            case "Act":
+                navigate("/master/act");
+                break;
+            case "Section":
+                navigate("/master/section");
+                break;
+            default:
+                break;
         }
-        if (selectedName === "Department") {
-            navigate("/master/department");
-            return;
-        }
-        if (selectedName === "Division") {
-            navigate("/master/division");
-            return;
-        }
-        if (selectedName === "Approval Items") {
-            navigate("/master/approval");
-            return;
-        }
-        if (selectedName === "KGID") {
-            navigate("/master/kgid");
-            return;
-        }if (selectedName === "Hierarchy") {
-            navigate("/master/hierarchy");
-            return;
-        }
+
     
         const selectedMasterObj = masters.find(master => master.name === selectedName);
         if (selectedMasterObj) {

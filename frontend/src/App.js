@@ -41,6 +41,8 @@ import Department from './pages/department';
 import Division from './pages/division';
 import Approval from './pages/approval';
 import Hierarchy from './pages/hierarchy';
+import Act from './pages/act';
+import Section from './pages/section';
 import CaseActions from './pages/CaseAction';
 import TemplateMastersView from './pages/templateMasters';
 import { ToastContainer } from 'react-toastify';
@@ -327,6 +329,26 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <Hierarchy />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+             <Route
+                path="/master/act"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Act />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/master/section"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <Section />
                         </Layout>
                     </ProtectedRoute>
                 }
