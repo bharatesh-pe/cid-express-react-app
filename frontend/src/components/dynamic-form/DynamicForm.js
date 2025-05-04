@@ -1279,7 +1279,7 @@ const DynamicForm = ({
                   color: "#FFFFFF",
                   padding: "6px 16px",
                 }}
-                className="Roboto"
+                className="Roboto blueButton"
               >
                 Update
               </Button>
@@ -1300,7 +1300,7 @@ const DynamicForm = ({
                     color: "#FFFFFF",
                     padding: "6px 16px",
                   }}
-                  className="Roboto"
+                  className="Roboto blueButton"
                 >
                   Save
                 </Button>
