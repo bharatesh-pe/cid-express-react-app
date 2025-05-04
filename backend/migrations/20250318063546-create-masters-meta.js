@@ -1,5 +1,7 @@
 'use strict';
 
+const { or } = require('sequelize');
+
 require('dotenv').config();
 
 module.exports = {
@@ -28,7 +30,11 @@ module.exports = {
           type: Sequelize.DATE,
           defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
           allowNull: false
-        }
+        },
+        order: {
+          type: Sequelize.INTEGER,
+          allowNull: true
+        },
       }
     );
   },

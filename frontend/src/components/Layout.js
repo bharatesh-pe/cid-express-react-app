@@ -336,6 +336,8 @@ const Layout = ({ children }) => {
 
   const handleLogout = async () => {
     const token = localStorage.getItem("auth_token");
+    setLoading(true);
+
     try {
       const serverURL = process.env.REACT_APP_SERVER_URL;
       const response = await fetch(`${serverURL}/auth/logout`, {
@@ -350,7 +352,7 @@ const Layout = ({ children }) => {
       if (!response.ok) {
         throw new Error(data.message);
       }
-
+        setLoading(false);
         localStorage.removeItem("auth_token");
         localStorage.removeItem("username");
         localStorage.removeItem("authAdmin");
@@ -401,6 +403,9 @@ const Layout = ({ children }) => {
         className: "toast-warning",
       });
       return;
+    }
+    finally {
+        setLoading(false);
     }
   };
 

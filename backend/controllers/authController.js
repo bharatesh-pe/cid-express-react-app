@@ -441,44 +441,46 @@ const generate_OTP = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-  try {
-    //In validate_token helper method we are storing the user details in req.user
-    const kgid = req.user.kgid;
+    try {
+        //In validate_token helper method we are storing the user details in req.user
+        const kgid = req.user.kgid;
 
-    console.log(kgid);
+        console.log(kgid);
 
-    const user_detail = await KGID.findOne({ where: { kgid } });
+        const user_detail = await KGID.findOne({ where: { kgid } });
 
-    if (user_detail) {
-      const kgid_id = user_detail.id;
+        if (user_detail) {
+        const kgid_id = user_detail.id;
 
-      //update the authsecure table with null otp and otp_expires_at and also det the dev_status to false
-      const user = await AuthSecure.findOne({ where: { kgid_id } });
-      if (user) {
-        await user.update({
-          otp: null,
-          otp_expires_at: null,
-          dev_status: false,
-        });
+        //update the authsecure table with null otp and otp_expires_at and also det the dev_status to false
+        const user = await AuthSecure.findOne({ where: { kgid_id } });
+        if (user) {
+            await user.update({
+            otp: null,
+            otp_expires_at: null,
+            dev_status: false,
+            });
+            return res
+            .status(200)
+            .json({ success: true, message: "Logged out successfully." });
+        } else {
+            return res
+            .status(404)
+            .json({ success: false, message: "User not found" });
+        }
+        } else {
         return res
-          .status(200)
-          .json({ success: true, message: "Logged out successfully." });
-      } else {
+            .status(404)
+            .json({ success: false, message: "User not found" });
+        }
+    } catch (error) {
+
+        console.error("Error logging out:", error.message);
         return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
-      }
-    } else {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
     }
-  } catch (error) {
-    console.error("Error logging out:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
-  }
+    
 };
 
 const generate_OTP_without_pin = async (req, res) => {

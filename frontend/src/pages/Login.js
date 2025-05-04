@@ -303,7 +303,9 @@ const Login = () => {
             // }else{
             //     navigate("/case/ui_case");
             // }
+            setLoading(true);
             setUserHierarachy();
+            setLoading(false);
 
           }
         } else if (user_position.length > 1) {
