@@ -198,6 +198,9 @@ const Layout = ({ children }) => {
     try {
         var user_designation_id = localStorage.getItem("designation_id") || "";
         var user_division_id = localStorage.getItem("division_id") || "0";
+        var user_designation_id =localStorage.getItem("designation_id") || "0";
+        var user_designation_name = localStorage.getItem("designation_name") || "";
+        var user_id = localStorage.getItem("user_id") || "0";
         const token = localStorage.getItem("auth_token");
         const serverURL = process.env.REACT_APP_SERVER_URL;
 
@@ -208,8 +211,11 @@ const Layout = ({ children }) => {
             token: token,
           },
           body: JSON.stringify({
-            user_designation_id: user_designation_id,
-            user_division_id: user_division_id,
+            designation_id: user_designation_id,
+            designation_name: user_designation_name,
+            division_id: user_division_id,
+            user_id: user_id,
+
           }),
         });
         setLoading(false);
@@ -219,12 +225,17 @@ const Layout = ({ children }) => {
           throw new Error(data.message);
         }
 
-        if (data && data.success && data.supervisor_id) {
-            localStorage.setItem(
-            "allowedUserIds",
-            JSON.stringify(data.supervisor_id)
-            );
-        }   
+        if (data && data.success && data.getDataBasesOnUsers) {
+            localStorage.setItem("allowedUserIds",JSON.stringify(data.allowedUserIds));
+            localStorage.setItem("allowedDepartmentIds",JSON.stringify(data.allowedDepartmentIds));
+            localStorage.setItem("allowedDivisionIds",JSON.stringify(data.allowedDivisionIds));
+            localStorage.setItem("getDataBasesOnUsers",JSON.stringify(data.getDataBasesOnUsers));
+        }  
+        else
+        {
+            localStorage.setItem("allowedUserIds",JSON.stringify(data.allowedUserIds));
+            localStorage.setItem("getDataBasesOnUsers",JSON.stringify(data.getDataBasesOnUsers));
+        } 
 
       } catch (err) {
         setLoading(false);
@@ -301,6 +312,9 @@ const Layout = ({ children }) => {
             localStorage.removeItem("designation_id");
             localStorage.removeItem("designation_name");
             localStorage.removeItem("allowedUserIds");
+            localStorage.removeItem("getDataBasesOnUsers");
+            localStorage.removeItem("allowedDepartmentIds");
+            localStorage.removeItem("allowedDivisionIds");
             navigate("/");
           }
         }
@@ -322,6 +336,8 @@ const Layout = ({ children }) => {
 
   const handleLogout = async () => {
     const token = localStorage.getItem("auth_token");
+    setLoading(true);
+
     try {
       const serverURL = process.env.REACT_APP_SERVER_URL;
       const response = await fetch(`${serverURL}/auth/logout`, {
@@ -336,18 +352,21 @@ const Layout = ({ children }) => {
       if (!response.ok) {
         throw new Error(data.message);
       }
-
-      localStorage.removeItem("auth_token");
-      localStorage.removeItem("username");
-      localStorage.removeItem("authAdmin");
-      localStorage.removeItem("kgid");
-      localStorage.removeItem("user_permissions");
-      localStorage.removeItem("designation_id");
-      localStorage.removeItem("designation_name");
-      localStorage.removeItem("user_id");
-      localStorage.removeItem("division_id");
-      localStorage.removeItem("division_name");
-      localStorage.removeItem("allowedUserIds");
+        setLoading(false);
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("username");
+        localStorage.removeItem("authAdmin");
+        localStorage.removeItem("kgid");
+        localStorage.removeItem("user_permissions");
+        localStorage.removeItem("designation_id");
+        localStorage.removeItem("designation_name");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("division_id");
+        localStorage.removeItem("division_name");
+        localStorage.removeItem("allowedUserIds");
+        localStorage.removeItem("getDataBasesOnUsers");
+        localStorage.removeItem("allowedDepartmentIds");
+        localStorage.removeItem("allowedDivisionIds");
       navigate("/");
     } catch (err) {
       var errMessage = "Something went wrong. Please try again.";
@@ -358,14 +377,17 @@ const Layout = ({ children }) => {
       if (errMessage) {
         // errMessage = await errMessage.json();
         if (errMessage && errMessage.includes("Authorization_error")) {
-          localStorage.removeItem("auth_token");
-          localStorage.removeItem("username");
-          localStorage.removeItem("authAdmin");
-          localStorage.removeItem("kgid");
-          localStorage.removeItem("user_permissions");
-          localStorage.removeItem("designation_id");
-          localStorage.removeItem("designation_name");
-          localStorage.removeItem("allowedUserIds");
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("username");
+            localStorage.removeItem("authAdmin");
+            localStorage.removeItem("kgid");
+            localStorage.removeItem("user_permissions");
+            localStorage.removeItem("designation_id");
+            localStorage.removeItem("designation_name");
+            localStorage.removeItem("allowedUserIds");
+            localStorage.removeItem("getDataBasesOnUsers");
+            localStorage.removeItem("allowedDepartmentIds");
+            localStorage.removeItem("allowedDivisionIds");
           navigate("/");
         }
       }
@@ -381,6 +403,9 @@ const Layout = ({ children }) => {
         className: "toast-warning",
       });
       return;
+    }
+    finally {
+        setLoading(false);
     }
   };
 

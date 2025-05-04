@@ -69,15 +69,21 @@ api.interceptors.request.use(
 
         // Inject allowedUserIds into body if applicable
         const allowedUserIds = JSON.parse(localStorage.getItem('allowedUserIds') || '[]');
+        const getDataBasesOnUsers = JSON.parse(localStorage.getItem('getDataBasesOnUsers') || '[]');
+        const allowedDepartmentIds = JSON.parse(localStorage.getItem('allowedDepartmentIds') || '[]');
+        const allowedDivisionIds = JSON.parse(localStorage.getItem('allowedDivisionIds') || '[]');
 
         const method = config.method?.toLowerCase();
         if (['post', 'put', 'patch'].includes(method)) {
             if (config.data instanceof FormData) {
-                config.data.append('allowedUserIds', JSON.stringify(allowedUserIds));
+                config.data.append('allowedUserIds', JSON.stringify(allowedUserIds) , JSON.stringify(getDataBasesOnUsers), JSON.stringify(allowedDepartmentIds), JSON.stringify(allowedDivisionIds));
             } else {
                 config.data = {
                     ...(config.data || {}),
                     allowedUserIds,
+                    getDataBasesOnUsers,
+                    allowedDepartmentIds,
+                    allowedDivisionIds,
                 };
             }
         }

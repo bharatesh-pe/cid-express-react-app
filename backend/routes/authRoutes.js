@@ -8,6 +8,7 @@ const {
   verify_OTP_without_pin,
   update_pin,
   get_supervisor_id,
+  set_user_hierarchy,
 } = require("../controllers/authController");
 const { validate_token } = require("../helper/validations");
 
@@ -22,5 +23,6 @@ router.post("/generate_OTP_without_pin", generate_OTP_without_pin);
 router.post("/verify_OTP_without_pin", verify_OTP_without_pin);
 router.post("/update_pin", update_pin);
 router.post("/get_supervisor_id", [validate_token], get_supervisor_id);
+router.post("/set_user_hierarchy", set_user_hierarchy);
 
 module.exports = router;
