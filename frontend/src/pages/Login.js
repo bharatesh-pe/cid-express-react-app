@@ -298,11 +298,12 @@ const Login = () => {
               );
             }
 
-            if(data.userRole.user_id === 1){
-                navigate("/dashboard");
-            }else{
-                navigate("/case/ui_case");
-            }
+            // if(data.userRole.user_id === 1){
+            //     navigate("/dashboard");
+            // }else{
+            //     navigate("/case/ui_case");
+            // }
+            setUserHierarachy();
 
           }
         } else if (user_position.length > 1) {
@@ -366,53 +367,99 @@ const Login = () => {
     }
   };
 
-  const designationClick = (item) => {
-    console.log("Clicked Item:", item); // Check if item is received correctly
-    localStorage.setItem("auth_token", tempToken);
-    localStorage.setItem("kgid", kgid);
+    const designationClick = (item) => {
+        console.log("Clicked Item:", item); // Check if item is received correctly
+        localStorage.setItem("auth_token", tempToken);
+        localStorage.setItem("kgid", kgid);
 
-    for (let i = 0; i < usersDesignations.length; i++) {
-      if (
-        usersDesignations[i] &&
-        usersDesignations[i].designation &&
-        usersDesignations[i].designation_id &&
-        usersDesignations[i].designation.designation_name &&
-        usersDesignations[i].designation.designation_name == item.designation
-      ) {
-        localStorage.setItem(
-          "designation_id",
-          usersDesignations[i].designation_id
-        );
-        localStorage.setItem(
-          "designation_name",
-          usersDesignations[i].designation.designation_name
-        );
-      }
-    }
+        for (let i = 0; i < usersDesignations.length; i++) {
+        if (
+            usersDesignations[i] &&
+            usersDesignations[i].designation &&
+            usersDesignations[i].designation_id &&
+            usersDesignations[i].designation.designation_name &&
+            usersDesignations[i].designation.designation_name == item.designation
+        ) {
+            localStorage.setItem(
+            "designation_id",
+            usersDesignations[i].designation_id
+            );
+            localStorage.setItem(
+            "designation_name",
+            usersDesignations[i].designation.designation_name
+            );
+        }
+        }
 
-    for (let i = 0; i < usersDivision.length; i++) {
-      if (
-        usersDivision[i] &&
-        usersDivision[i].division &&
-        usersDivision[i].division_id &&
-        usersDivision[i].division.division_name &&
-        usersDivision[i].division.division_name == item.divisions
-      ) {
-        localStorage.setItem("division_id", usersDivision[i].division_id);
-        localStorage.setItem(
-          "division_name",
-          usersDivision[i].division.division_name
-        );
-      }
-    }
-    
-    if(JSON.parse(localStorage.getItem("user_id")) === 1){
-        navigate("/dashboard");
-    }else{
-        navigate("/case/ui_case");
-    }
+        for (let i = 0; i < usersDivision.length; i++) {
+            if (
+                usersDivision[i] &&
+                usersDivision[i].division &&
+                usersDivision[i].division_id &&
+                usersDivision[i].division.division_name &&
+                usersDivision[i].division.division_name == item.divisions
+            ) {
+                localStorage.setItem("division_id", usersDivision[i].division_id);
+                localStorage.setItem(
+                "division_name",
+                usersDivision[i].division.division_name
+                );
+            }
+        }
+        setUserHierarachy();
+    };
 
-  };
+    const setUserHierarachy = async () => {
+        var selected_designation_id =localStorage.getItem("designation_id") || "0";
+        var selected_designation_name = localStorage.getItem("designation_name") || "";
+        var login_user_id = localStorage.getItem("user_id") || "0";
+        setLoading(true);
+        try {
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(`${serverURL}/auth/set_user_hierarchy`, {
+                method: "POST",
+                headers: {
+                "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ user_id: login_user_id, designation_id: selected_designation_id , designation_name: selected_designation_name }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            const responseData = data.data;        
+            if (data && data.success && !responseData.getDataBasesOnUsers) {
+                localStorage.setItem("allowedUserIds",JSON.stringify(responseData.allowedUserIds));
+                localStorage.setItem("allowedDepartmentIds",JSON.stringify(responseData.allowedDepartmentIds));
+                localStorage.setItem("allowedDivisionIds",JSON.stringify(responseData.allowedDivisionIds));
+                localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
+            }  
+            else
+            {
+                localStorage.setItem("allowedUserIds",JSON.stringify(responseData.allowedUserIds));
+                localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
+            } 
+
+            if(JSON.parse(localStorage.getItem("user_id")) === 1){
+                navigate("/dashboard");
+            }else{
+                navigate("/case/ui_case");
+            }
+
+        } catch (err) {
+            //in err Error: You have exceeded the maximum number of attempts
+            var errMessage = "Something went wrong. Please try again.";
+            if (err && err.message) {
+                errMessage = err.message;
+            }
+            setValidationError(errMessage);
+        }
+        
+        setShowDesignation(false);
+        setLoading(false);
+    }
 
   return (
     <Box
