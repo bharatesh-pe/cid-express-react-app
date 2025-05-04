@@ -136,6 +136,44 @@ const UserManagement = () => {
     },
   ];
 
+    var userModalColumn = [
+        {
+            field: "id",
+            headerName: "S.No",
+            width: 70,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "id"),
+        },
+        {
+            field: "name",
+            headerName: "Designation",
+            width: 300,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "name"),
+        },
+        {
+            field: "departmentName",
+            headerName: "Departments",
+            width: 300,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "departmentName"),
+        },
+        {
+            field: "divisionName",
+            headerName: "Divisions",
+            width: 300,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "divisionName"),
+        },
+        {
+            field: "supervisorName",
+            headerName: "Supervisor Designation",
+            width: 300,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "supervisorName"),
+        }
+    ]
+
   const totalPages = Math.ceil(users.length / pageSize);
   const currentPageRows = users.slice(
     currentPage * pageSize,
@@ -1849,7 +1887,7 @@ const UserManagement = () => {
                 </Grid> */}
 
                 <Grid item xs={12}>
-                        <TableContainer elevation={3} sx={{ borderRadius: 2, mt: 2 }}>
+                        {/* <TableContainer elevation={3} sx={{ borderRadius: 2, mt: 2 }}>
                         <Table size="small" sx={{ minWidth: 650, borderCollapse: 'separate', borderSpacing: 0 }}>
                             <TableHead>
                                 <TableRow sx={{ backgroundColor: '#F3F4F6' }}>
@@ -1898,7 +1936,11 @@ const UserManagement = () => {
                                 ))}
                             </TableBody>
                         </Table>
-                    </TableContainer>
+                    </TableContainer> */}
+                    <TableView
+                        rows={tableRows}
+                        columns={userModalColumn}
+                    />
                 </Grid>
 
                 {/* <Grid item xs={12} sm={4}>
