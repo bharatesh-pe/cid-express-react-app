@@ -65,7 +65,10 @@ const Hierarchy = () => {
     const [totalRecord, setTotalRecord] = useState(0);
     const [rawDesignationData, setRawDesignationData] = useState([]);
     const [designationDetails, setDesignationDetails] = useState(null);
-
+    const [allDepartments, setAllDepartments] = useState([]);
+    const [allDivisions, setAllDivisions] = useState([]);
+    const [structuredDesignation, setStructuredDesignation] = useState([]);
+    
     const handlePagination = (page) => {
         setPaginationCount(page)
     }
@@ -83,7 +86,54 @@ const Hierarchy = () => {
             setRoleToDelete(null);
         }
     };
+    const fetchMasterData = async () => {
+        try {
+            setLoading(true);
+            const payload = { needed_masters: ["department", "division"] };
+            const response = await api.post("/master/get_master_data", payload);
+            setLoading(false);
 
+            let deptData = allDepartments;
+            let divData = allDivisions;
+    
+            if (Array.isArray(response.department)) {
+                deptData = response.department;
+                setAllDepartments(deptData);
+            }
+    
+            if (Array.isArray(response.division)) {
+                divData = response.division;
+                setAllDivisions(divData);
+            }
+    
+            return { deptData, divData };
+        } catch (err) {
+            setLoading(false);    
+            toast.error("Failed to load master data");
+            throw err;
+        }
+    };
+    
+    const processDesignationData = (selectedDetail, deptData, divData) => {
+        const deptIds = selectedDetail?.department_id?.split(',') || [];
+        const divIds = selectedDetail?.division_id?.split(',') || [];
+    
+        const departments = deptIds
+            .map(id => deptData.find(d => String(d.code) === String(id)))
+            .filter(Boolean);
+    
+        const divisions = divIds
+            .map(id => divData.find(d => String(d.code) === String(id)))
+            .filter(Boolean);
+    
+        return departments.map(dept => {
+            const relatedDivs = divisions.filter(div => String(div.department_id) === String(dept.code));
+            return { ...dept, divisions: relatedDivs };
+        });
+    };
+    
+    
+        
     const get_designation = async () => {
         setLoading(true);
         try {
@@ -95,7 +145,7 @@ const Hierarchy = () => {
             const { data } = response;
 
             if (Array.isArray(data)) {
-                setRawDesignationData(data); // ← Store full data
+                setRawDesignationData(data);
                 const departmentList = data.map(dept => ({
                     id: dept.designation_id,
                     name: dept.designation_name
@@ -176,26 +226,51 @@ const Hierarchy = () => {
     }, [designation, paginationCount, forceTableLoad]);
 
 
-    const handleViewRole = (role) => {
+    const handleViewRole = async (role) => {
         if (!role) return;
-
+    
         setSelectedRole({
             users_hierarchy_id: role.users_hierarchy_id ?? "",
             officer_designation_id: role.officer_designation_id ?? "",
             supervisor_designation_id: role.supervisor_designation_id ?? "",
         });
-
-        const selectedDept = designation.find(dept => dept.id === role.officer_designation_id);
-        const selectedSuperDept = designation.find(dept => dept.id === role.supervisor_designation_id);
-
+    
+        const selectedDept = designation.find(dept => String(dept.id) === String(role.officer_designation_id));
+        const selectedSuperDept = designation.find(dept => String(dept.id) === String(role.supervisor_designation_id));
+    
         setSelectedDesignation(selectedDept ? { code: selectedDept.id, name: selectedDept.name } : null);
         setSelectedSupervisorDesignation(selectedSuperDept ? { code: selectedSuperDept.id, name: selectedSuperDept.name } : null);
-        const selectedDetail = rawDesignationData.find(item => item.designation_id === role.officer_designation_id);
+    
+        const selectedDetail = rawDesignationData.find(item => 
+            String(item.designation_id) === String(role.officer_designation_id)
+        );
+    
         setDesignationDetails(selectedDetail || null);
-        setShowViewModal(true);
+    
+        try {
+            const { deptData, divData } = await fetchMasterData();
+        
+            if (selectedDetail) {
+                const result = processDesignationData(selectedDetail, deptData, divData);
+    
+                const structured = Array.isArray(result) ? result : [];
+                setStructuredDesignation(structured);
+            } else {
+                setStructuredDesignation([]);
+            }
+    
+            setShowViewModal(true);
+        } catch (err) {
+            console.error("Failed in handleViewRole:", err);
+            toast.error("Failed to load master data");
+            setStructuredDesignation([]);
+        }
     };
+    
+    
+    
 
-    const handleEditRole = (role) => {
+    const handleEditRole = async(role) => {
         if (!role) return;
 
         setSelectedRole({
@@ -209,9 +284,32 @@ const Hierarchy = () => {
 
         setSelectedDesignation(selectedDept ? { code: selectedDept.id, name: selectedDept.name } : null);
         setSelectedSupervisorDesignation(selectedSuperDept ? { code: selectedSuperDept.id, name: selectedSuperDept.name } : null);
-        const selectedDetail = rawDesignationData.find(item => item.designation_id === role.officer_designation_id);
+
+        const selectedDetail = rawDesignationData.find(item => 
+            String(item.designation_id) === String(role.officer_designation_id)
+        );
+    
         setDesignationDetails(selectedDetail || null);
-        setShowEditModal(true);
+    
+        try {
+            const { deptData, divData } = await fetchMasterData();
+        
+            if (selectedDetail) {
+                const result = processDesignationData(selectedDetail, deptData, divData);
+    
+                const structured = Array.isArray(result) ? result : [];
+                setStructuredDesignation(structured);
+            } else {
+                setStructuredDesignation([]);
+            }
+    
+            setShowEditModal(true);
+        } catch (err) {
+            console.error("Failed in handleeditRole:", err);
+            toast.error("Failed to load master data");
+            setStructuredDesignation([]);
+        }
+
     };
 
     const hierarchyColumnData = [
@@ -433,6 +531,7 @@ const Hierarchy = () => {
             setSelectedDesignation(null);
             setSelectedSupervisorDesignation(null)
             setDesignationDetails(null);
+            setStructuredDesignation([]);
             setShowRoleAddModal(false);
 
         } catch (err) {
@@ -529,6 +628,7 @@ const Hierarchy = () => {
             get_hierarchy_details(paginationCount);
             setSelectedDesignation(null);
             setDesignationDetails(null);
+            setStructuredDesignation([]);
             setSelectedSupervisorDesignation(null)
             setShowEditModal(false);
         } catch (err) {
@@ -733,6 +833,7 @@ const Hierarchy = () => {
                             setAddRoleData({ officer_designation_id: '', supervisor_designation_id: '' });
                             setSelectedRole(null);
                             setDesignationDetails(null);
+                            setStructuredDesignation([]);
                         }}
                         >
                         <WestIcon sx={{ color: 'black' }}/>
@@ -756,29 +857,44 @@ const Hierarchy = () => {
                 </DialogTitle>
 
                 <DialogContent>
-                    <DialogContentText>
+                    <Box>
                         <FormControl fullWidth>
                             <Box sx={{ marginBottom: "18px" }}>
                             <h4 className="form-field-heading" style={{ color: !!errorRoleData.officer_designation_id && '#d32f2f' }}>
                                     Officer Designation
                                 </h4>
+
                                 <Autocomplete
-                                    options={designation}
-                                    getOptionLabel={(option) => option.name}
-                                    value={selectedDesignation}
-                                    onChange={(event, newValue) => {
-                                        setSelectedDesignation(newValue);
-                                        const designationId = newValue ? newValue.id : null;
-                                        setSelectedRole((prev) => ({ ...prev, officer_designation_id: designationId }));
-                                        setAddRoleData((prev) => ({ ...prev, officer_designation_id: designationId }));
-                                    
-                                        const selectedDetail = rawDesignationData.find(item => item.designation_id === designationId);
-                                        setDesignationDetails(selectedDetail || null);
-                                    }}
-                                    
-                                    disabled={showViewModal || showEditModal}
-                                    renderInput={(params) => <TextField {...params} label="Select Designation" variant="outlined" />}
+                                options={designation}
+                                getOptionLabel={(option) => option.name}
+                                value={selectedDesignation}
+                                onChange={async (event, newValue) => {
+                                    setSelectedDesignation(newValue);
+                                    const designationId = newValue ? newValue.id : null;
+                            
+                                    setSelectedRole((prev) => ({ ...prev, officer_designation_id: designationId }));
+                                    setAddRoleData((prev) => ({ ...prev, officer_designation_id: designationId }));
+                            
+                                    const selectedDetail = rawDesignationData.find(item => item.designation_id === designationId);
+                                    setDesignationDetails(selectedDetail || null);
+                            
+                                    if (!selectedDetail) return;
+                            
+                                    try {
+                                        const { deptData, divData } = await fetchMasterData();
+                            
+                                        const structured = processDesignationData(selectedDetail, deptData, divData);
+                                        setStructuredDesignation(structured);
+                                    } catch (err) {
+                                        // Error handling is already in fetchMasterData
+                                    }
+                                }}                                
+                                disabled={showViewModal || showEditModal}
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Select Designation" variant="outlined" />
+                                )}
                                 />
+
                             </Box>
                             <h4 className="form-field-heading" style={{ color: !!errorRoleData.supervisor_designation_id && '#d32f2f' }}>
                             Supervisor Designation
@@ -794,6 +910,7 @@ const Hierarchy = () => {
                                         setSelectedRole((prev) => ({ ...prev, supervisor_designation_id: designationId }));
                                         setAddRoleData((prev) => ({ ...prev, supervisor_designation_id: designationId }));
                                     }}
+                                    disabled={showViewModal}
                                     renderInput={(params) => <TextField {...params} label="Select Supervisor Designation" variant="outlined" />}
                                 />
                             </Box>
@@ -804,21 +921,50 @@ const Hierarchy = () => {
                                     <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #ccc" }}>
                                         <thead>
                                             <tr style={{ background: "#f0f0f0" }}>
-                                                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left"  }}>Department</th>
-                                                <th style={{ border: "1px solid #ccc", padding: "8px", textAlign: "left" }}>Division</th>
+                                                <th style={{ border: "1px solid #ccc", padding: "8px" }}>Department</th>
+                                                <th style={{ border: "1px solid #ccc", padding: "8px" }}>Division</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr>
-                                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>{designationDetails.department_name || '-'}</td>
-                                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>{designationDetails.division_name || '-'}</td>
-                                            </tr>
+                                            {structuredDesignation.length > 0 ? (
+                                                structuredDesignation.map((dept) => {
+                                                    if (dept.divisions.length > 0) {
+                                                        return dept.divisions.map((div, index) => (
+                                                            <tr key={div.code}>
+                                                                {index === 0 && (
+                                                                    <td
+                                                                        rowSpan={dept.divisions.length}
+                                                                        style={{ border: "1px solid #ccc", padding: "8px", verticalAlign: "top" }}
+                                                                    >
+                                                                        {dept.name || "-"}
+                                                                    </td>
+                                                                )}
+                                                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>{div.name || "-"}</td>
+                                                            </tr>
+                                                        ));
+                                                    } else {
+                                                        return (
+                                                            <tr key={dept.code}>
+                                                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>{dept.name || "-"}</td>
+                                                                <td style={{ border: "1px solid #ccc", padding: "8px" }}>-</td>
+                                                            </tr>
+                                                        );
+                                                    }
+                                                })
+                                            ) : (
+                                                <tr>
+                                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>-</td>
+                                                    <td style={{ border: "1px solid #ccc", padding: "8px" }}>-</td>
+                                                </tr>
+                                            )}
                                         </tbody>
                                     </table>
                                 </Box>
                             )}
+
+
                         </FormControl>
-                    </DialogContentText>
+                    </Box>
                 </DialogContent>
             </Dialog>
             {/* Delete Role conformation Popup */}
