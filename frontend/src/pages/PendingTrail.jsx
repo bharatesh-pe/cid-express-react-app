@@ -7678,210 +7678,126 @@ const UnderInvestigation = () => {
         )}
 
       {approveTableFlag && (
-        <Dialog
-          open={approveTableFlag}
-          onClose={() => {setApprovalSaveData({});setApproveTableFlag(false)}}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-          maxWidth="lg"
-          fullWidth
-          sx={{ zIndex: "1" }}
-        >
-          <DialogTitle
-            id="alert-dialog-title"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
+          <Dialog
+              open={approveTableFlag}
+              onClose={() => { setApprovalSaveData({}); setApproveTableFlag(false); }}
+              aria-labelledby="alert-dialog-title"
+              aria-describedby="alert-dialog-description"
+              maxWidth="sm"
+              fullWidth
+              sx={{ zIndex: "1" }}
           >
-            Approval
-            <Box>
-
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    saveApprovalData(selectedOtherTemplate.table);
-                  }}
-                >
-                  Save
-                </Button>
-              <IconButton
-                aria-label="close"
-                onClick={() => {setApprovalSaveData({}); setApproveTableFlag(false)}}
-                sx={{ color: (theme) => theme.palette.grey[500] }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              <Box py={2}>
-
-                  <Box
-                    sx={{
+              <DialogTitle
+                  id="alert-dialog-title"
+                  sx={{
                       display: "flex",
-                      flexDirection: "column",
-                      gap: "18px",
-                    }}
-                  >
-                      <label
-                        htmlFor="approval-item"
-                        style={{
-                            margin: "0",
-                            padding: 0, 
-                            fontSize: "16px",
-                            fontWeight: 500,
-                            color: "#475467",
-                            textTransform: "capitalize",
-                        }}
-                    >
-                        Approval Item
-                    </label>
-                    <Autocomplete
-                      id=""
-                      options={approvalItem}
-                      getOptionLabel={(option) => option.name || ""}
-                      name={"approval_item"}
-                      disabled={approvalItemDisabled}
-                      value={
-                        approvalItem.find(
-                          (option) =>
-                            option.approval_item_id ===
-                            (approvalSaveData &&
-                              approvalSaveData["approval_item"])
-                        ) || null
-                      }
-                      onChange={(e, value) =>
-                        handleApprovalSaveData(
-                          "approval_item",
-                          value?.approval_item_id
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          className="selectHideHistory"
-                          label={"Approval Item"}
-                        />
-                      )}
-                    />
-                    <label
-                        htmlFor="designation"
-                        style={{
-                            margin: "0",
-                            padding: 0, 
-                            fontSize: "16px",
-                            fontWeight: 500,
-                            color: "#475467",
-                            textTransform: "capitalize",
-                        }}
-                    >
-                        Designation
-                    </label>
-                    <Autocomplete
-                      id=""
-                      options={designationData}
-                      getOptionLabel={(option) => option.designation_name || ""}
-                      name={"approved_by"}
-                      value={
-                        designationData.find(
-                          (option) =>
-                            option.designation_id ===
-                            (approvalSaveData &&
-                              approvalSaveData["approved_by"])
-                        ) || null
-                      }
-                      onChange={(e, value) =>
-                        handleApprovalSaveData(
-                          "approved_by",
-                          value?.designation_id
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          className="selectHideHistory"
-                          label={"Designation"}
-                        />
-                      )}
-                    />
-
-                      <label
-                        htmlFor="approval-date"
-                        style={{
-                            margin: "0",
-                            padding: 0, 
-                            fontSize: "16px",
-                            fontWeight: 500,
-                            color: "#475467",
-                            textTransform: "capitalize",
-                        }}
-                    >
-                        Approval Date
-                    </label>
-                    <LocalizationProvider
-                      dateAdapter={AdapterDayjs}
-                      sx={{ width: "100%" }}
-                    >
-                      <DemoContainer
-                        components={["DatePicker"]}
-                        sx={{ width: "100%" }}
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                  }}
+              >
+                  Approval
+                  <Box>
+                      <Button
+                          variant="outlined"
+                          onClick={() => saveApprovalData(selectedOtherTemplate.table)}
                       >
-                        <DatePicker
-                          label="Approval Date"
-                          value={
-                            approvalSaveData["approval_date"]
-                              ? dayjs(approvalSaveData["approval_date"])
-                              : null
-                          }
-                          name="approval_date"
-                          format="DD/MM/YYYY"
-                          sx={{ width: "100%" }}
-                          maxDate={dayjs()}
-                          onChange={(newValue) => {
-                            if (newValue && dayjs.isDayjs(newValue)) {
-                              handleApprovalSaveData(
-                                "approval_date",
-                                newValue.toISOString()
-                              );
-                            } else {
-                              handleApprovalSaveData("approval_date", null);
-                            }
-                          }}
-                        />
-                      </DemoContainer>
-                    </LocalizationProvider>
-
-                    <label
-                        htmlFor="remarks"
-                        style={{
-                            margin: "0",
-                            padding: 0, 
-                            fontSize: "16px",
-                            fontWeight: 500,
-                            color: "#475467",
-                            textTransform: "capitalize",
-                        }}
-                    >
-                        Remarks
-                    </label>
-                    <TextField
-                      rows={8}
-                      label={"Comments"}
-                      sx={{ width: "100%" }}
-                      name="remarks"
-                      value={approvalSaveData["remarks"]}
-                      onChange={(e) =>
-                        handleApprovalSaveData("remarks", e.target.value)
-                      }
-                    />
+                          Save
+                      </Button>
+                      <IconButton
+                          aria-label="close"
+                          onClick={() => { setApprovalSaveData({}); setApproveTableFlag(false); }}
+                          sx={{ color: (theme) => theme.palette.grey[500] }}
+                      >
+                          <CloseIcon />
+                      </IconButton>
                   </Box>
-              </Box>
-            </DialogContentText>
-          </DialogContent>
-        </Dialog>
+              </DialogTitle>
+              <DialogContent>
+                  <DialogContentText id="alert-dialog-description">
+                      <Box py={2}>
+                          <Box
+                              sx={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "18px",
+                              }}
+                          >
+                              <Box sx={{ fontWeight: "bold", fontSize: "16px" }}>
+                                  Approval needed to proceed with: 
+                                  <span style={{ color: "#1976d2", fontWeight: "bold" }}>
+                                      {approvalItem.find(option => option.approval_item_id === approvalSaveData?.approval_item)?.name || "Approval Item"}
+                                  </span>
+                              </Box>
+
+                              <Box sx={{ display: 'none' }}>
+                                  <Autocomplete
+                                      options={approvalItem}
+                                      getOptionLabel={(option) => option.name || ""}
+                                      name={"approval_item"}
+                                      disabled={approvalItemDisabled}
+                                      value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData && approvalSaveData["approval_item"])) || null}
+                                      onChange={(e, value) =>
+                                          handleApprovalSaveData("approval_item", value?.approval_item_id)
+                                      }
+                                      renderInput={(params) => (
+                                          <TextField {...params} label={"Approval Item"} />
+                                      )}
+                                  />
+                              </Box>
+
+                              <AutocompleteField
+                                formData={approvalSaveData}
+                                options={designationData}
+                                field={{
+                                  heading: 'Officer Approved',
+                                  label: 'Officer Approved',
+                                  name: 'approved_by',
+                                  options: designationData.map(item => ({
+                                    ...item,
+                                    code: item.designation_id,
+                                    name: item.designation_name
+                                })),
+                                  required: true,
+                                  info: 'Select the Officer Designation approving this item.',
+                                  supportingText: 'Select the Officer Designation approving this item.',
+                                }}
+                                onChange={(name, value) => handleApprovalSaveData(name, value)}
+                                value={designationData.find((option) => option.designation_id === approvalSaveData?.approved_by) || null}
+                            />
+
+                              <DateField
+                                  field={{
+                                      heading: 'Date of Approval',
+                                      name: 'approval_date',
+                                      label: 'Date of Approval',
+                                      required: true,
+                                      disableFutureDate: 'true',
+                                      info: 'Pick the date on which the approval is being granted',
+                                      supportingText: 'Pick the date on which the approval is being granted',
+                                  }}
+                                  formData={approvalSaveData}
+                                  value={approvalSaveData["approval_date"] ? dayjs(approvalSaveData["approval_date"]) : null}
+                                  onChange={(value) => handleApprovalSaveData('approval_date', value)}
+                              />
+
+                              <LongText
+                                  field={{
+                                      heading: 'Remarks of Approval Officer',
+                                      name: 'remarks',
+                                      label: 'Remarks of Approval Officer',
+                                      required: true,
+                                      info: 'Provide any comments or reasoning related to this approval.',
+                                      supportingText: 'Provide any comments or reasoning related to this approval.',
+                                  }}
+                                  value={approvalSaveData["remarks"]}
+                                  formData={approvalSaveData}
+                                  onChange={(e) => handleApprovalSaveData("remarks", e.target.value)}
+                              />
+                          </Box>
+                      </Box>
+                  </DialogContentText>
+              </DialogContent>
+          </Dialog>
       )}
 
       <Dialog

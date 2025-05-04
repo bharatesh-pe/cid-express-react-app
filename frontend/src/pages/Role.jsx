@@ -26,6 +26,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import WestIcon from '@mui/icons-material/West';
 
 
 const RolePage = () => {
@@ -697,16 +698,21 @@ const RolePage = () => {
                 aria-labelledby="view-role-title"
                 maxWidth="md"
                 fullWidth
+                aria-describedby="alert-dialog-description"
+                fullScreen
+                sx={{ marginLeft: '50px' }}        
+
             >
-                <DialogTitle id="view-role-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    View Role
-                    <IconButton
-                        aria-label="close"
+            <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                         onClick={() => setShowViewModal(false)}
-                        sx={{ color: (theme) => theme.palette.grey[500] }}
-                    >
-                        <CloseIcon />
-                    </IconButton>
+                        >
+                        <WestIcon sx={{ color: 'black' }}/>
+                        <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
+                            View Role
+                        </Typography>
+                    </Box>
                 </DialogTitle>
 
                 <DialogContent>
@@ -831,10 +837,6 @@ const RolePage = () => {
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
-
-                <DialogActions sx={{ padding: '12px 24px' }}>
-                    <Button onClick={() => setShowViewModal(false)}>Close</Button>
-                </DialogActions>
             </Dialog>
 
             <Box>
@@ -843,18 +845,24 @@ const RolePage = () => {
                     onClose={() => setShowEditModal(false)}
                     aria-labelledby="view-role-title"
                     maxWidth="md"
+                    aria-describedby="alert-dialog-description"
+                    fullScreen
                     fullWidth
+                    sx={{ marginLeft: '50px' }}        
+    
                 >
-                    <DialogTitle id="view-role-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        Edit Role
-                        <IconButton
-                            aria-label="close"
-                            onClick={() => setShowEditModal(false)}
-                            sx={{ color: (theme) => theme.palette.grey[500] }}
+                <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        onClick={() => setShowEditModal(false)}
                         >
-                            <CloseIcon />
-                        </IconButton>
-                    </DialogTitle>
+                        <WestIcon sx={{ color: 'black' }}/>
+                        <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
+                            Edit Role
+                        </Typography>
+                    </Box>
+                    <Button variant="outlined" onClick={handleEditData}>Update Role</Button>
+                </DialogTitle>
 
                     <DialogContent>
                         <DialogContentText>
@@ -987,13 +995,6 @@ const RolePage = () => {
                             </FormControl>
                         </DialogContentText>
                     </DialogContent>
-                    <DialogActions sx={{ padding: '12px 24px' }}>
-                        <Button onClick={() => {
-                            setShowEditModal(false);
-                            setErrorRoleData({ role_title: '', role_description: '' });
-                        }}>Close</Button>
-                        <Button variant="outlined" onClick={handleEditData}>Update Role</Button>
-                    </DialogActions>
                 </Dialog>
 
             </Box>
@@ -1107,18 +1108,26 @@ const RolePage = () => {
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
                     maxWidth="md"
+                    fullScreen
                     fullWidth
+                    sx={{ marginLeft: '50px' }}        
+    
                 >
-                    <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                        Add Role
-                        <IconButton
-                            aria-label="close"
-                            onClick={() => setShowRoleAddModal(false)}
-                            sx={{ color: (theme) => theme.palette.grey[500] }}
+
+                <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        onClick={() => setShowRoleAddModal(false)}
                         >
-                            <CloseIcon />
-                        </IconButton>
-                    </DialogTitle>
+                        <WestIcon sx={{ color: 'black' }}/>
+                        <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
+                            Add Role
+                        </Typography>
+                    </Box>
+
+                    <Button variant="outlined" onClick={handleAddSaveData}>Add Role</Button>
+
+                </DialogTitle>
                     <DialogContent>
                         <DialogContentText id="alert-dialog-description">
                             <FormControl fullWidth>
@@ -1276,13 +1285,6 @@ const RolePage = () => {
                             </FormControl>
                         </DialogContentText>
                     </DialogContent>
-                    <DialogActions sx={{ padding: '12px 24px' }}>
-                        <Button onClick={() => {
-                            setShowRoleAddModal(false);
-                            setErrorRoleData({ role_title: '', role_description: '' });
-                        }}>Close</Button>
-                        <Button variant="outlined" onClick={handleAddSaveData}>Add Role</Button>
-                    </DialogActions>
                 </Dialog>
             }
                 {/* Delete Role conformation Popup */}
