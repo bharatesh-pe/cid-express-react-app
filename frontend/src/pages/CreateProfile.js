@@ -664,7 +664,7 @@ const CreateProfile = () => {
         <Box sx={{ padding: 2 }} inert={loading ? true : false}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between',alignItems:'center' }}>
                 <Box>
-                    <Typography className='Roboto' sx={{fontSize:'20px',fontWeight:'600',color:'#1D2939'}}>Templates</Typography>
+                    <Typography className='Roboto' sx={{fontSize:'20px',fontWeight:'600',color:'#1D2939'}}>Screen Templates</Typography>
                     {/* <Typography className='Roboto' sx={{fontSize:'16px',fontWeight:'400',color:'#667085'}}>Overview view of all dossier profile details</Typography> */}
                 </Box>
                 <Box sx={{ display: 'flex',alignItems:'center',gap:'8px' }}>
@@ -722,7 +722,7 @@ const CreateProfile = () => {
                     }
                     variant="contained"
                     >
-                        Create New Profile
+                        Create Template
                   </Button>
                                 
             </Box>

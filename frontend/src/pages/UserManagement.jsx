@@ -1393,7 +1393,7 @@ const UserManagement = () => {
                   height: "auto",
                 }}
               >
-                {totalRecord} profiles
+                {totalRecord} Users
               </p>
             </div>
           </div>
@@ -1535,7 +1535,7 @@ const UserManagement = () => {
                   }
                   variant="contained"
                   >
-                    Create New Profile
+                    Add User
                 </Button>
                 
               </>
