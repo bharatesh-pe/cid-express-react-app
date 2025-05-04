@@ -20,13 +20,9 @@ exports.fetch_masters_meta = async (req, res) => {
     const {
         page = 1,
         limit = 10,
-        sort_by = "id",
-        order = "DESC",
-        search = "",
-        search_field = "",
+        sort_by = "order",
+        order = "ASC",
     } = req.body;
-    const { filter = {}, from_date = null, to_date = null } = req.body;
-    const fields = {};
     const offset = (page - 1) * limit;
 
     const excluded_masters_ids = [];
@@ -37,6 +33,7 @@ exports.fetch_masters_meta = async (req, res) => {
           [Op.notIn]: excluded_masters_ids,
         },
       },
+      order: [[sort_by, order]],
       limit,
       offset,
     });
