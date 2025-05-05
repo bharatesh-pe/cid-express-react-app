@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Modal from "../components/Modal/Modal.jsx";
 import PasswordInput from "../components/password_input/password_input";
-import { Box, Checkbox, Grid, Paper, Tooltip } from "@mui/material";
+import { Box, Checkbox, Grid, Paper, Tooltip, Typography, Divider } from "@mui/material";
 import {
   DialogTitle,
   Table,
@@ -97,7 +97,20 @@ const UserManagement = () => {
       headerName: "KGID No",
       width: 130,
       sortable: true,
-      renderCell: (params) => tableCellRender(params, "kgid"),
+      renderCell: (params) => (
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleView([params.row.id]);
+          }}
+    
+          style={{ color: "#1976d2", textDecoration: "underline", cursor: "pointer" }}
+        >
+          {params.row.kgid}
+        </a>
+      ),
     },
     {
       field: "mobile",
@@ -136,11 +149,11 @@ const UserManagement = () => {
     },
   ];
 
-  const totalPages = Math.ceil(users.length / pageSize);
   const currentPageRows = users.slice(
     currentPage * pageSize,
     (currentPage + 1) * pageSize
   );
+  const totalPages = Math.ceil(users.length / pageSize);
 
     const tableCellRender = (params, key) => {
     
@@ -254,7 +267,6 @@ const UserManagement = () => {
     }
 
   const getUsermanagementFieldLog = async (field) => {
-    console.log("selected users", selectedUsers);
     var user_id = "";
     if (selectedUsers && selectedUsers[0]) user_id = selectedUsers[0];
     else {
@@ -1405,109 +1417,146 @@ const UserManagement = () => {
               justifyContent: "end",
             }}
           >
-            {selectedUsers.length === 0 ? (
               <>
-                <TextFieldInput
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon sx={{ color: '#475467' }} />
-                      </InputAdornment>
-                    ),
-                    endAdornment: (
-                      searchValue && (
-                        <IconButton
-                          sx={{ padding: 0 }}
-                          onClick={() => {handleClear()}}
-                          size="small"
-                        >
-                          <ClearIcon sx={{ color: '#475467' }} />
-                        </IconButton>
-                      )
-                    ),
-                  }}
-                  onInput={(e) => setSearchValue(e.target.value)}
-                  value={searchValue}
-                  id="tableSearch"
-                  size="small"
-                  placeholder="Search anything"
-                  variant="outlined"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      searchTableData();
-                    }
-                  }}
+                <Box
                   sx={{
-                    width: '300px',
-                    borderRadius: '6px',
-                    outline: 'none',
-                    '& .MuiInputBase-input::placeholder': {
-                      color: '#475467',
-                      opacity: '1',
-                      fontSize: '14px',
-                      fontWeight: '400',
-                      fontFamily: 'Roboto',
-                    },
-                  }}
-                />
-                <Button
-                  variant="outlined"
-                  startIcon={<FilterListIcon />}
-                  sx={{
-                    height: "38px",
-                    border: "1px solid #D0D5DD",
-                    borderRadius: "6px",
-                    gap: "8px",
-                    color: "#1D2939",
-                    fontWeight: "600",
-                    textTransform: "none",
-                    display: isFilterApplied ? "none" : "inline-flex",
-                    "&:hover": {
-                      backgroundColor: "transparent",
-                    },
-                  }}
-                  onClick={() => {
-                    setIsModalOpen(true);
-                    setModalTitle("Set Filters");
-                    setNewUser({
-                      id: null,
-                      name: "",
-                      mobile: "",
-                      role: "",
-                      kgid: "",
-                      designation: "",
-                      supervisor_designation: "",
-                      division: "",
-                      department: "",
-                    });
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-end",
                   }}
                 >
-                  Filter
-                </Button>
-                <Button
-                  variant="outlined"
-                  sx={{
-                    height: "38px",
-                    border: "1px solid #D0D5DD",
-                    borderRadius: "6px",
-                    gap: "8px",
-                    color: "#D32F2F",
-                    fontWeight: "600",
-                    textTransform: "none",
-                    display: isFilterApplied ? "inline-flex" : "none",
-                    "&:hover": {
-                      backgroundColor: "transparent",
-                    },
-                  }}
+              <TextFieldInput
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <SearchIcon sx={{ color: "#475467" }} />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <IconButton
+                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                        onClick={() => {
+                          setIsModalOpen(true);
+                          setModalTitle("Set Filters");
+                          setNewUser({
+                            id: null,
+                            name: "",
+                            mobile: "",
+                            role: "",
+                            kgid: "",
+                            designation: "",
+                            supervisor_designation: "",
+                            division: "",
+                            department: "",
+                          });
+                        }}
+            
+                      >
+                        <FilterListIcon sx={{ color: "#475467" }} />
+                      </IconButton>
+                    </Box>
+                  ),
+                }}
+                onInput={(e) => setSearchValue(e.target.value)}
+                value={searchValue}
+                id="tableSearch"
+                size="small"
+                placeholder="Search anything"
+                variant="outlined"
+                className="profileSearchClass"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    searchTableData();
+                  }
+                }}
+                sx={{
+                  width: "350px",
+                  borderRadius: "6px",
+                  outline: "none",
+                  "& .MuiInputBase-input::placeholder": {
+                    color: "#475467",
+                    opacity: "1",
+                    fontSize: "14px",
+                    fontWeight: "400",
+                    fontFamily: "Roboto",
+                  },
+                }}
+              />
+              {(searchValue || isFilterApplied) && (
+                <Typography
                   onClick={() => {
                     handleClear();
-                    // fetchUsers();
                     setIsFilterApplied(false);
                   }}
+                  sx={{
+                    fontSize: "13px",
+                    fontWeight: "500",
+                    textDecoration: "underline",
+                    cursor: "pointer",
+                  }}
+                  mt={1}
                 >
                   Clear Filter
-                </Button>
+                </Typography>
+              )}
+            </Box>
+              <>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  border: "2px solid #b7bbc2",
+                  borderRadius: "4px",
+                  backgroundColor: "#f9fafb",
+                  height: "38px",
+                  overflow: "hidden",
+                }}
+              >
+                <Tooltip title="Edit User" arrow>
+                  <span>
+                    <IconButton
+                      onClick={() => handleEdit(selectedUsers)}
+                      disabled={selectedUsers.length === 0}
+                      sx={{ color: "black" }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+
+                <Divider orientation="vertical" flexItem />
+
+                <Tooltip title="Reset Pin" arrow>
+                  <span>
+                    <IconButton
+                      onClick={() => handleResetPin(selectedUsers)}
+                      disabled={selectedUsers.length === 0}
+                      sx={{ color: "black" }}
+                    >
+                      <VpnKeyIcon />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+
+                <Divider orientation="vertical" flexItem />
+
+                <Tooltip title={allUsersInactive ? "Activate Users" : "Deactivate Users"} arrow>
+                  <span>
+                    <IconButton
+                      onClick={handleToggleActivation}
+                      disabled={selectedUsers.length === 0}
+                      sx={{ color: actionColor }}
+                    >
+                      {allUsersInactive ? <CheckCircleIcon /> : <DoNotDisturbOnIcon />}
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
+
+
+              </>
 
                 <Button
                    onClick={() => {
@@ -1539,95 +1588,6 @@ const UserManagement = () => {
                 </Button>
                 
               </>
-            ) : (
-              <>
-                <Button
-                  variant="outlined"
-                  startIcon={<VisibilityIcon />}
-                  sx={{
-                    height: "38px",
-                    color: "black",
-                    borderColor: "#b7bbc2",
-                    backgroundColor: "#f9fafb",
-                    borderWidth: "2px",
-                    fontWeight: "600",
-                    textTransform: "none",
-                    "&:hover": {
-                      backgroundColor: "#f1f5f9",
-                    },
-                  }}
-                  onClick={() => handleView(selectedUsers)}
-                >
-                  View User
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<EditIcon />}
-                  sx={{
-                    height: "38px",
-                    color: "black",
-                    borderColor: "#b7bbc2",
-                    backgroundColor: "#f9fafb",
-                    borderWidth: "2px",
-                    fontWeight: "600",
-                    textTransform: "none",
-                    "&:hover": {
-                      backgroundColor: "#f1f5f9",
-                    },
-                  }}
-                  onClick={() => handleEdit(selectedUsers)}
-                >
-                  Edit User
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  startIcon={<VpnKeyIcon />}
-                  sx={{
-                    height: "38px",
-                    color: "black",
-                    borderColor: "#b7bbc2",
-                    backgroundColor: "#f9fafb",
-                    borderWidth: "2px",
-                    fontWeight: "600",
-                    textTransform: "none",
-                    "&:hover": {
-                      backgroundColor: "#f1f5f9",
-                    },
-                  }}
-                  onClick={() => handleResetPin(selectedUsers)}
-                >
-                  Reset Pin
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  startIcon={
-                    allUsersInactive ? (
-                      <CheckCircleIcon />
-                    ) : (
-                      <DoNotDisturbOnIcon />
-                    )
-                  }
-                  sx={{
-                    height: "38px",
-                    color: actionColor,
-                    borderColor: actionColor,
-                    backgroundColor: allUsersInactive ? "#dcfce7" : "#fef2f2",
-                    borderWidth: "2px",
-                    fontWeight: "600",
-                    textTransform: "none",
-                    "&:hover": {
-                      backgroundColor: allUsersInactive ? "#bbf7d0" : "#fee2e2",
-                    },
-                  }}
-                  onClick={handleToggleActivation}
-                >
-                  {actionText} Selected User
-                  {selectedUsers.length > 1 ? "s" : ""}
-                </Button>
-              </>
-            )}
           </div>
         </div>
       </div>
