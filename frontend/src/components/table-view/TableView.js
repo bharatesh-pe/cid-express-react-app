@@ -10,7 +10,7 @@ import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 
-export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord }) {
+export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord,getRowClassName }) {
 
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [selectedRow, setSelectedRow] = React.useState(null);
@@ -95,6 +95,9 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         sx={{ border: 0 }}
         stickyHeader
         onRowClick={(params) => handleRowClick && handleRowClick(params.row)}
+        getRowClassName={(params) =>
+            params.row["field_io_name"] == null ? 'row-red-background' : ''
+          }
         />
     </Paper>
 
@@ -102,7 +105,9 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
     {hoverTable &&   
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
             {hoverTableOptions.map((option, index) => (
-                <MenuItem key={index} className='actionHoverOnTable' onClick={() => handleHoverOptionClick(option)} sx={{display: 'flex', alignItems: 'start', height: '40px'}}>
+                <MenuItem key={index} className='actionHoverOnTable' onClick={() => handleHoverOptionClick(option)} sx={{display: 'flex', alignItems: 'start', height: '40px'}}
+                disabled={selectedRow?.field_io_name == null && option?.name !== 'Edit'}
+                >
                     {option?.icon ? (
                         typeof option.icon === 'function' ? (
                             option.icon()
