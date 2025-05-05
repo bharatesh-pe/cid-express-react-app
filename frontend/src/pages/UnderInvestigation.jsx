@@ -8954,7 +8954,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             handlePagination={handlePagination} 
             getRowClassName={(params) => {
               return !params.row["field_io_name"]
-                  ? "row-with-missing-dept"
+                  ? "row-red-background"
                   : "";
           }}
         />

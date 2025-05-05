@@ -95,9 +95,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         sx={{ border: 0 }}
         stickyHeader
         onRowClick={(params) => handleRowClick && handleRowClick(params.row)}
-        getRowClassName={(params) =>
-            params.row["field_io_name"] == null ? 'row-red-background' : ''
-          }
+        getRowClassName = {getRowClassName}
         />
     </Paper>
 
