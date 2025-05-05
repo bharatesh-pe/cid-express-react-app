@@ -917,7 +917,7 @@ const Hierarchy = () => {
 
                             {(showViewModal || showEditModal || (showRoleAddModal && designationDetails)) && (
                                 <Box sx={{ mt: 3 }}>
-                                    <h4 className="form-field-heading">Designation Details</h4>
+                                    <h4 className="form-field-heading">Officer Designation Details</h4>
                                     <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #ccc" }}>
                                         <thead>
                                             <tr style={{ background: "#f0f0f0" }}>

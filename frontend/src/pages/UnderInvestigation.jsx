@@ -3410,7 +3410,32 @@ const loadChildMergedCasesData = async (page, caseId) => {
     );
     setTableSortKey(key);
   };
-
+  const [aoFields, setAoFields] = useState([]);
+  const loadAOFields = async () => {
+    try {
+      const response = await api.post("/templates/viewTemplate", {
+        table_name: "cid_under_investigation",
+      });
+  
+      if (response.success && response.data?.fields) {
+        const aoOnlyFields = response.data.fields.filter(field => field.ao_field === true);
+        setAoFields(aoOnlyFields);
+      }
+    } catch (error) {
+      toast.error("Failed to load AO fields", {
+        position: "top-right",
+        autoClose: 3000,
+        className: "toast-error",
+      });
+    }
+  };
+  useEffect(() => {
+    if (selectedOtherTemplate?.table === "cid_ui_case_action_plan") {
+      loadAOFields();
+    }
+  }, [selectedOtherTemplate]);
+  
+  
   const getTemplate = async (table_name) => {
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
@@ -3438,6 +3463,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       );
       setLoading(false);
       if (viewTemplateResponse && viewTemplateResponse.success) {
+        console.log("viewtemplaterespose", viewTemplateResponse)
         setFormOpen(true);
         setInitialData({});
         setviewReadonly(false);
@@ -9580,7 +9606,52 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     </Box>
                   )
                 ) : (
-                    <Box>                    
+                    <Box>  
+                      {selectedOtherTemplate?.table === "cid_ui_case_action_plan" && (
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px' }}>
+                          <Typography variant="body1" fontWeight={500}>
+                            Action Plan
+                          </Typography>
+                          {aoFields.length > 0 ? (
+  aoFields.map((field, index) => (
+    <div key={index} style={{ marginBottom: '1rem' }}>
+      <Typography variant="body2">
+        {field.label || field.field_name}
+      </Typography>
+
+      {field.formType === 'Short Text' && (
+        <input type="text" style={{ width: '100%' }} />
+      )}
+
+      {field.formType === 'Integer' && (
+        <input type="number" style={{ width: '100%' }} />
+      )}
+
+      {field.formType === 'Multiple Dropdown' && (
+        <select multiple style={{ width: '100%' }}>
+          {(field.options || []).map((option, i) => (
+            <option key={i} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {field.formType === 'Auto Complete' && (
+        // You may replace this with an actual Autocomplete component from a UI library like MUI
+        <input type="text" placeholder="Start typing..." style={{ width: '100%' }} />
+      )}
+    </div>
+  ))
+) : (
+  <Typography variant="body2" color="text.secondary">
+    No AO Fields Available
+  </Typography>
+)}
+
+                        </Box>
+                      )}
+                 
                         <TableView
                             rows={otherTemplateData}
                             columns={otherTemplateColumn}
