@@ -795,7 +795,7 @@ const Section = () => {
                                         setSelectedSection((prev) => ({ ...prev, act_id: actId }));
                                         setAddSectionData((prev) => ({ ...prev, act_id: actId }));
                                     }}
-                                    renderInput={(params) => <TextField {...params} label="Select act" variant="outlined" />}
+                                    renderInput={(params) => <TextField {...params} label="Select Act" variant="outlined" />}
                                 />                </Box>
 
                             <Box sx={{ marginY: '18px' }}>
