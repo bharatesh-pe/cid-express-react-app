@@ -804,7 +804,7 @@ const Section = () => {
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Name"
+                                    label="Law"
                                     name="section_name"
                                     autoComplete="off"
                                     value={showSectionAddModal ? addSectionData.section_name : selectedSection?.section_name || selectedSection?.name}

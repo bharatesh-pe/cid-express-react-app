@@ -708,7 +708,7 @@ const Act = () => {
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Name"
+                                    label="Act"
                                     name="act_name"
                                     autoComplete="off"
                                     value={showActAddModal ? addActData.act_name : selectedAct?.act_name || selectedAct?.name}
