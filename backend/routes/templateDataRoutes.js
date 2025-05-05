@@ -340,6 +340,8 @@ router.post('/getMergeChildData',[validate_token],
 
 router.post('/deMergeCaseData',[validate_token],
     templateDataController.deMergeCaseData)
+router.post('/saveActionPlanAndProgressReport',[validate_token],
+    templateDataController.saveActionPlanAndProgressReport)
     
         
 module.exports = router;

@@ -75,8 +75,11 @@ api.interceptors.request.use(
 
         const method = config.method?.toLowerCase();
         if (['post', 'put', 'patch'].includes(method)) {
-            if (config.data instanceof FormData) {
-                config.data.append('allowedUserIds', JSON.stringify(allowedUserIds) , JSON.stringify(getDataBasesOnUsers), JSON.stringify(allowedDepartmentIds), JSON.stringify(allowedDivisionIds));
+           if (config.data instanceof FormData) {
+                config.data.append('allowedUserIds', JSON.stringify(allowedUserIds));
+                config.data.append('getDataBasesOnUsers', JSON.stringify(getDataBasesOnUsers));
+                config.data.append('allowedDepartmentIds', JSON.stringify(allowedDepartmentIds));
+                config.data.append('allowedDivisionIds', JSON.stringify(allowedDivisionIds));
             } else {
                 config.data = {
                     ...(config.data || {}),

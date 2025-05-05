@@ -5117,8 +5117,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             }
         }
 
-
-
         if(second_table_name && second_table_name != "")
 		{
 			const secondTableData = await Template.findOne({ where: { table_name:second_table_name } });
@@ -7819,3 +7817,302 @@ exports.deMergeCaseData = async (req, res) => {
             fs.rmSync(dirPath, { recursive: true, force: true });
     }
 };
+
+
+exports.saveActionPlanAndProgressReport = async (req, res) => {
+
+    const { data, others_data, transaction_id} = req.body;
+
+	// if (user_designation_id === undefined || user_designation_id === null) {
+	// 	return userSendResponse(res, 400, false, "user_designation_id is required.", null);
+	// }
+
+	if (transaction_id === undefined || transaction_id === null) {
+		return userSendResponse(res, 400, false, "transaction_id is required.", null);
+	}
+
+	const t = await dbConfig.sequelize.transaction();
+	let dirPath = "";
+
+	try {
+		const userId = req.user?.user_id || null;
+		if (!userId) {
+			return userSendResponse(res, 403, false, "Unauthorized access.", null);
+		}
+
+		dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+		if (fs.existsSync(dirPath)) {
+			return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath });
+		}
+		fs.mkdirSync(dirPath, { recursive: true });
+
+		const userData = await Users.findOne({
+			include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
+			where: { user_id: userId },
+		});
+
+		let userName = userData?.kgidDetails?.name || null;
+
+        let insertedData = null ;
+        let insertedDataPR = null ;
+        let insertedIO = null;
+        let tableData = null;
+
+        if(data)
+        {
+            //insert Action plan data into the table cid_ui_case_action_plan
+            tableData = await Template.findOne({ where: { table_name : "cid_ui_case_action_plan" } });
+            if (!tableData) {
+                return userSendResponse(res, 400, false, `Table cid_ui_case_action_plan does not exist.`, null);
+            }
+    
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+    
+            let parsedData;
+            try {
+                parsedData = JSON.parse(data);
+            } catch (err) {
+                return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+            }
+    
+            const validData = {};
+            for (const field of schema) {
+                const { name, not_null, default_value } = field;
+                if (parsedData.hasOwnProperty(name)) {
+                    validData[name] = parsedData[name];
+                } else if (not_null && default_value === undefined) {
+                    return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
+                } else if (default_value !== undefined) {
+                    validData[name] = default_value;
+                }
+            }
+            
+            if(validData.field_status)
+            {
+                validData.field_status = "submit";
+            }
+            if(validData.sys_status)
+            {
+                validData.sys_status = "AP";
+            }
+
+            validData.created_by = userName;
+            validData.created_by_id = userId;
+    
+            const completeSchema = [
+                { name: "created_by", data_type: "TEXT", not_null: false },
+                { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                ...schema
+            ];
+    
+            ["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
+                if (parsedData[field]) {
+                    completeSchema.unshift({
+                        name: field,
+                        data_type: typeof parsedData[field] === "number" ? "INTEGER" : "TEXT",
+                        not_null: false
+                    });
+                    validData[field] = parsedData[field];
+                }
+            });
+    
+            const modelAttributes = {};
+            for (const field of completeSchema) {
+                const { name, data_type, not_null, default_value } = field;
+                const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+            }
+    
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+    
+            await Model.sync();
+    
+            insertedData = await Model.create(validData, { transaction: t });
+            if (!insertedData) {
+                await t.rollback();
+                return userSendResponse(res, 400, false, "Failed to insert data.", null);
+            }
+            
+            //insert Action plan data into the table cid_ui_case_progress_report
+            const tableDataPR = await Template.findOne({ where: { table_name : "cid_ui_case_progress_report" } });
+            if (!tableData) {
+                return userSendResponse(res, 400, false, `Table cid_ui_case_progress_report does not exist.`, null);
+            }
+    
+            const schemaPR = typeof tableDataPR.fields === "string" ? JSON.parse(tableDataPR.fields) : tableDataPR.fields;
+    
+            let parsedDataPR;
+            try {
+                parsedDataPR = JSON.parse(data);
+            } catch (err) {
+                return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+            }
+    
+            const validDataPR = {};
+            for (const field of schemaPR) {
+                const { name, not_null, default_value } = field;
+                if (parsedData.hasOwnProperty(name)) {
+                    validDataPR[name] = parsedData[name];
+                } else if (not_null && default_value === undefined) {
+                    return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
+                } else if (default_value !== undefined) {
+                    validDataPR[name] = default_value;
+                }
+            }
+            
+            if(validDataPR.sys_status)
+            {
+                validDataPR.sys_status = "PR";
+            }
+
+            validDataPR.created_by = userName;
+            validDataPR.created_by_id = userId;
+    
+            const completeSchemaPR = [
+                { name: "created_by", data_type: "TEXT", not_null: false },
+                { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                ...schema
+            ];
+    
+            ["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
+                if (parsedDataPR[field]) {
+                    completeSchemaPR.unshift({
+                        name: field,
+                        data_type: typeof parsedDataPR[field] === "number" ? "INTEGER" : "TEXT",
+                        not_null: false
+                    });
+                    validData[field] = parsedDataPR[field];
+                }
+            });
+    
+            const modelAttributesPR = {};
+            for (const field of completeSchemaPR) {
+                const { name, data_type, not_null, default_value } = field;
+                const sequelizeTypePR = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributesPR[name] = {
+                    type: sequelizeTypePR,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+            }
+    
+            const PRModel = sequelize.define(table_name, modelAttributesPR, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+    
+            await PRModel.sync();
+    
+            insertedDataPR = await PRModel.create(validDataPR, { transaction: t });
+            if (!insertedDataPR) {
+                await t.rollback();
+                return userSendResponse(res, 400, false, "Failed to insert data.", null);
+            }
+
+        }
+
+		let otherParsedData  = {};
+		try {
+			otherParsedData = JSON.parse(others_data);
+		} catch (err) {
+            otherParsedData = others_data;
+			// return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+		}
+
+        if (typeof otherParsedData !== 'object' || otherParsedData === null) {
+            return userSendResponse(res, 400, false, "Invalid data format in others_data.", null);
+        }
+
+		// Handle others_data
+		if (otherParsedData && typeof otherParsedData === "object") {
+            // Handle approval logic
+            if (otherParsedData.approval_details && otherParsedData.approval) {
+                const approval = otherParsedData.approval;
+                const approvalDetails = otherParsedData.approval_details;
+
+                const existingApprovalItem = await ApprovalItem.findByPk(approval?.approval_item);
+                if (!existingApprovalItem) {
+                    await t.rollback();
+                    return userSendResponse(res, 400, false, "Invalid approval item ID.");
+                }
+                
+                const newApproval = await UiCaseApproval.create(
+                    {
+                        approval_item: approval.approval_item,
+                        approved_by: approval.approved_by,
+                        approval_date: approval.approval_date || new Date(),
+                        remarks: approval.remarks,
+                        reference_id: approvalDetails.id || recordId,
+                        approval_type: default_status,
+                        module: approvalDetails.module_name,
+                        action: approvalDetails.action,
+                        created_by: userId,
+                    },
+                    { transaction: t }
+                );
+                
+                if (!recordId) {
+                    await t.rollback();
+                    return userSendResponse(res, 400, false, "Reference ID is required.");
+                }
+
+
+                
+                await ApprovalActivityLog.create(
+                {
+                  approval_id: newApproval.approval_id,
+                  approval_item_id: approval.approval_item,
+                  case_id: approvalDetails.id || recordId,
+                  approved_by: approval.approved_by,
+                  approved_date: approval.approval_date,
+                  approval_type: default_status,
+                  module: approvalDetails.module_name,
+                  created_by: userId,
+              },
+                { transaction: t }
+              );
+                              
+
+                await System_Alerts.create(
+                    {
+                        approval_id: newApproval.approval_id,
+                        reference_id : recordId,
+                        alert_type: "Approval",
+                        alert_message: newApproval.remarks,
+                        created_by: userId,
+                        created_by_designation_id: user_designation_id,
+                        created_by_division_id: null,
+                        send_to :insertedIO || null,
+                    },
+                    { transaction: t }
+                );
+            }
+
+		}
+
+		await t.commit();
+		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
+
+	} catch (error) {
+		console.error("Error saving data to templates:", error);
+		if (t) await t.rollback();
+		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+		return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
+	} finally {
+		if (fs.existsSync(dirPath)) {
+			fs.rmSync(dirPath, { recursive: true, force: true });
+		}
+	}
+};
+
