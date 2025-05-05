@@ -1281,7 +1281,7 @@ const DynamicForm = ({
                 }}
                 className="Roboto blueButton"
               >
-                Update
+                Update Case
               </Button>
             ) : (
               !readOnly &&
@@ -1302,7 +1302,7 @@ const DynamicForm = ({
                   }}
                   className="Roboto blueButton"
                 >
-                  Save
+                  Register Case
                 </Button>
               )
             )}
