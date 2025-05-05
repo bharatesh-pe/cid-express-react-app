@@ -7821,12 +7821,13 @@ exports.deMergeCaseData = async (req, res) => {
 
 exports.saveActionPlanAndProgressReport = async (req, res) => {
 
-    const { data, others_data, transaction_id} = req.body;
+    const { data, others_data , transaction_id } = req.body;
 
 	// if (user_designation_id === undefined || user_designation_id === null) {
 	// 	return userSendResponse(res, 400, false, "user_designation_id is required.", null);
 	// }
 
+    // const transaction_id = "random_1746428232577_842";
 	if (transaction_id === undefined || transaction_id === null) {
 		return userSendResponse(res, 400, false, "transaction_id is required.", null);
 	}
@@ -7858,23 +7859,24 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
         let insertedIO = null;
         let tableData = null;
 
-        if(data)
-        {
-            //insert Action plan data into the table cid_ui_case_action_plan
-            tableData = await Template.findOne({ where: { table_name : "cid_ui_case_action_plan" } });
+        console.log(data)
+
+        if (data) {
+            // Insert into cid_ui_case_action_plan
+            const tableData = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
             if (!tableData) {
                 return userSendResponse(res, 400, false, `Table cid_ui_case_action_plan does not exist.`, null);
             }
-    
+
             const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
-    
+
             let parsedData;
             try {
                 parsedData = JSON.parse(data);
             } catch (err) {
                 return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
             }
-    
+
             const validData = {};
             for (const field of schema) {
                 const { name, not_null, default_value } = field;
@@ -7886,25 +7888,18 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                     validData[name] = default_value;
                 }
             }
-            
-            if(validData.field_status)
-            {
-                validData.field_status = "submit";
-            }
-            if(validData.sys_status)
-            {
-                validData.sys_status = "AP";
-            }
 
+            validData.field_status = "submit";
+            validData.sys_status = "AP";
             validData.created_by = userName;
             validData.created_by_id = userId;
-    
+
             const completeSchema = [
                 { name: "created_by", data_type: "TEXT", not_null: false },
                 { name: "created_by_id", data_type: "INTEGER", not_null: false },
-                ...schema
+                ...schema,
             ];
-    
+
             ["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
                 if (parsedData[field]) {
                     completeSchema.unshift({
@@ -7915,7 +7910,7 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                     validData[field] = parsedData[field];
                 }
             });
-    
+
             const modelAttributes = {};
             for (const field of completeSchema) {
                 const { name, data_type, not_null, default_value } = field;
@@ -7926,63 +7921,59 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                     defaultValue: default_value || null,
                 };
             }
-    
-            const Model = sequelize.define(table_name, modelAttributes, {
+
+            const Model = sequelize.define('cid_ui_case_action_plan', modelAttributes, {
                 freezeTableName: true,
                 timestamps: true,
                 createdAt: "created_at",
                 updatedAt: "updated_at",
             });
-    
+
             await Model.sync();
-    
-            insertedData = await Model.create(validData, { transaction: t });
+
+            const insertedData = await Model.create(validData, { transaction: t });
             if (!insertedData) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
             }
-            
-            //insert Action plan data into the table cid_ui_case_progress_report
-            const tableDataPR = await Template.findOne({ where: { table_name : "cid_ui_case_progress_report" } });
-            if (!tableData) {
+
+            // Insert into cid_ui_case_progress_report
+            const tableDataPR = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
+            if (!tableDataPR) {
                 return userSendResponse(res, 400, false, `Table cid_ui_case_progress_report does not exist.`, null);
             }
-    
+
             const schemaPR = typeof tableDataPR.fields === "string" ? JSON.parse(tableDataPR.fields) : tableDataPR.fields;
-    
+
             let parsedDataPR;
             try {
                 parsedDataPR = JSON.parse(data);
             } catch (err) {
                 return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
             }
-    
+
             const validDataPR = {};
             for (const field of schemaPR) {
                 const { name, not_null, default_value } = field;
-                if (parsedData.hasOwnProperty(name)) {
-                    validDataPR[name] = parsedData[name];
+                if (parsedDataPR.hasOwnProperty(name)) {
+                    validDataPR[name] = parsedDataPR[name];
                 } else if (not_null && default_value === undefined) {
                     return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
                 } else if (default_value !== undefined) {
                     validDataPR[name] = default_value;
                 }
             }
-            
-            if(validDataPR.sys_status)
-            {
-                validDataPR.sys_status = "PR";
-            }
 
+            validDataPR.sys_status = "PR";
             validDataPR.created_by = userName;
             validDataPR.created_by_id = userId;
-    
+
             const completeSchemaPR = [
                 { name: "created_by", data_type: "TEXT", not_null: false },
                 { name: "created_by_id", data_type: "INTEGER", not_null: false },
-                ...schema
+                ...schemaPR
             ];
-    
+
             ["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
                 if (parsedDataPR[field]) {
                     completeSchemaPR.unshift({
@@ -7990,10 +7981,10 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                         data_type: typeof parsedDataPR[field] === "number" ? "INTEGER" : "TEXT",
                         not_null: false
                     });
-                    validData[field] = parsedDataPR[field];
+                    validDataPR[field] = parsedDataPR[field];
                 }
             });
-    
+
             const modelAttributesPR = {};
             for (const field of completeSchemaPR) {
                 const { name, data_type, not_null, default_value } = field;
@@ -8004,23 +7995,23 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                     defaultValue: default_value || null,
                 };
             }
-    
-            const PRModel = sequelize.define(table_name, modelAttributesPR, {
+
+            const PRModel = sequelize.define('cid_ui_case_progress_report', modelAttributesPR, {
                 freezeTableName: true,
                 timestamps: true,
                 createdAt: "created_at",
                 updatedAt: "updated_at",
             });
-    
+
             await PRModel.sync();
-    
-            insertedDataPR = await PRModel.create(validDataPR, { transaction: t });
+
+            const insertedDataPR = await PRModel.create(validDataPR, { transaction: t });
             if (!insertedDataPR) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
             }
-
         }
+
 
 		let otherParsedData  = {};
 		try {
