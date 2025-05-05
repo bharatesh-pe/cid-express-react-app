@@ -79,20 +79,6 @@ const UserManagement = () => {
       ),
     },
     {
-      field: "name",
-      headerName: "Name",
-      width: 180,
-      sortable: true,
-      renderCell: (params) => tableCellRender(params, "name"),
-    },
-    {
-      field: "role",
-      headerName: "Role",
-      width: 180,
-      sortable: true,
-      renderCell: (params) => roleBodyTemplate(params.row),
-    },
-    {
       field: "kgid",
       headerName: "KGID No",
       width: 130,
@@ -111,6 +97,20 @@ const UserManagement = () => {
           {params.row.kgid}
         </a>
       ),
+    },
+    {
+      field: "name",
+      headerName: "Name",
+      width: 180,
+      sortable: true,
+      renderCell: (params) => tableCellRender(params, "name"),
+    },
+    {
+      field: "role",
+      headerName: "Role",
+      width: 180,
+      sortable: true,
+      renderCell: (params) => roleBodyTemplate(params.row),
     },
     {
       field: "mobile",

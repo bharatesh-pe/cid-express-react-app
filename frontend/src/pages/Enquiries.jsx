@@ -4204,6 +4204,11 @@ const Enquiries = () => {
                 totalRecord={totalRecord} 
                 paginationCount={paginationCount} 
                 handlePagination={handlePagination} 
+                getRowClassName={(params) => {
+                  return !params.row["field_io_name"]
+                      ? "row-red-background"
+                      : "";
+              }}
             />
 
         </Box>
