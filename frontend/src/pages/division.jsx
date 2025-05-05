@@ -200,9 +200,9 @@ const Division = () => {
     };
 
     const divisionColumnData = [
-        { field: 'name', headerName: 'Division', width: 200 },
         { field: 'department', headerName: 'Department', width: 300 },
-        { field: 'description', headerName: 'Description', width: 300 },
+        { field: 'name', headerName: 'Division', width: 200 },
+        // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
@@ -372,13 +372,13 @@ const Division = () => {
             }));
         }
 
-        if (addRoleData.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addRoleData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (!addRoleData.department_id) {
             error_flag = true;
@@ -488,13 +488,13 @@ const Division = () => {
             }));
         }
 
-        if (selectedRole.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedRole.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (!selectedRole.department_id) {
             error_flag = true;
@@ -827,7 +827,7 @@ const Division = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
+                            {/* <Box sx={{ marginBottom: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.description && '#d32f2f' }}>
                                     Description
                                 </h4>
@@ -847,7 +847,7 @@ const Division = () => {
                                     required={showEditModal || showRoleAddModal}
                                     disabled={showViewModal}
                                 />
-                            </Box>
+                            </Box> */}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>

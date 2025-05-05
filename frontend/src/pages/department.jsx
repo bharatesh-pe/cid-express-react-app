@@ -98,7 +98,7 @@ const Department = () => {
 
     const departmentColumnData = [
         { field: 'name', headerName: 'Department', width: 200 },
-        { field: 'description', headerName: 'Description', width: 300 },
+        // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
@@ -322,13 +322,13 @@ const Department = () => {
             }));
         }
 
-        if (addRoleData.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addRoleData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please Check Title and Description", {
@@ -428,13 +428,13 @@ const Department = () => {
             }));
         }
 
-        if (selectedRole.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedRole.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please check Name and Description", {
@@ -684,7 +684,7 @@ const Department = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View Department"}
                         {showEditModal && "Edit Department"}
-                        {showRoleAddModal && "Add New Department"}
+                        {showRoleAddModal && "Add Department"}
                         </Typography>
                     </Box>
 
@@ -704,11 +704,11 @@ const Department = () => {
                         <FormControl fullWidth>
                             <Box sx={{ marginY: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.department_name && '#d32f2f' }}>
-                                    Name
+                                    Department
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Name"
+                                    label="Department"
                                     name="department_name"
                                     autoComplete="off"
                                     value={showRoleAddModal ? addRoleData.department_name : selectedRole?.department_name || selectedRole?.name}
@@ -731,7 +731,7 @@ const Department = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
+                            {/* <Box sx={{ marginBottom: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.description && '#d32f2f' }}>
                                     Description
                                 </h4>
@@ -751,7 +751,7 @@ const Department = () => {
                                     required={showEditModal || showRoleAddModal}
                                     disabled={showViewModal}
                                 />
-                            </Box>
+                            </Box> */}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>

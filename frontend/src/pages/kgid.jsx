@@ -780,7 +780,7 @@ const KGID = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View KGID"}
                         {showEditModal && "Edit KGID"}
-                        {showRoleAddModal && "Add New KGID"}
+                        {showRoleAddModal && "Add KGID"}
                         </Typography>
                     </Box>
 
