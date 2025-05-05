@@ -7,12 +7,14 @@ const {
   Designation,
   Division,
   UsersDivision,
+  UsersDepartment,
   KGID,
   UsersHierarchy,
   UsersHierarchyNew,
   System_Alerts,
   AlertViewStatus,
   DesignationDivision,
+  DesignationDepartment,
 } = require("../models");
 const crypto = require("crypto");
 const moment = require("moment");
@@ -169,7 +171,7 @@ const verify_OTP = async (req, res) => {
             user_detail.kgid,
             userRole.role_id,
             user.user_id,
-            userRole.role_id
+            userRole.role_title
           );
           // Return success response with token
           // console.log(token,"token")
@@ -439,44 +441,46 @@ const generate_OTP = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-  try {
-    //In validate_token helper method we are storing the user details in req.user
-    const kgid = req.user.kgid;
+    try {
+        //In validate_token helper method we are storing the user details in req.user
+        const kgid = req.user.kgid;
 
-    console.log(kgid);
+        console.log(kgid);
 
-    const user_detail = await KGID.findOne({ where: { kgid } });
+        const user_detail = await KGID.findOne({ where: { kgid } });
 
-    if (user_detail) {
-      const kgid_id = user_detail.id;
+        if (user_detail) {
+        const kgid_id = user_detail.id;
 
-      //update the authsecure table with null otp and otp_expires_at and also det the dev_status to false
-      const user = await AuthSecure.findOne({ where: { kgid_id } });
-      if (user) {
-        await user.update({
-          otp: null,
-          otp_expires_at: null,
-          dev_status: false,
-        });
+        //update the authsecure table with null otp and otp_expires_at and also det the dev_status to false
+        const user = await AuthSecure.findOne({ where: { kgid_id } });
+        if (user) {
+            await user.update({
+            otp: null,
+            otp_expires_at: null,
+            dev_status: false,
+            });
+            return res
+            .status(200)
+            .json({ success: true, message: "Logged out successfully." });
+        } else {
+            return res
+            .status(404)
+            .json({ success: false, message: "User not found" });
+        }
+        } else {
         return res
-          .status(200)
-          .json({ success: true, message: "Logged out successfully." });
-      } else {
+            .status(404)
+            .json({ success: false, message: "User not found" });
+        }
+    } catch (error) {
+
+        console.error("Error logging out:", error.message);
         return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
-      }
-    } else {
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
     }
-  } catch (error) {
-    console.error("Error logging out:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
-  }
+    
 };
 
 const generate_OTP_without_pin = async (req, res) => {
@@ -706,40 +710,6 @@ const get_supervisor_id = async (req, res) => {
     const userId = user_id;
     const { user_designation_id, user_division_id } = req.body;
 
-    // // Fetch designations for the logged-in user
-    // const userDesignations = await UserDesignation.findAll({
-    // where: { user_id },
-    // attributes: ["designation_id"],
-    // include: {
-    //     model: Designation,
-    //     as: "designation",
-    //     attributes: ["designation_name"],
-    // },
-    // });
-    // if (!userDesignations.length) {
-    //     return res.status(404).json({ message: "User has no designations assigned" });
-    // }
-
-    // const supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
-    // const supervisorDesignationNames = userDesignations.map((ud) => ud.designation.designation_name);
-
-    // // Fetch subordinates based on supervisor designations
-    // const subordinates = await UsersHierarchyNew.findAll({
-    // where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
-    // attributes: ["officer_designation_id"],
-    // });
-    // const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
-
-    // // Fetch subordinate user IDs if any officer designations found
-    // let subordinateUserIds = [];
-    // if (officerDesignationIds.length) {
-    // const subordinateUsers = await UserDesignation.findAll({
-    //     where: { designation_id: { [Op.in]: officerDesignationIds } },
-    //     attributes: ["user_id"],
-    // });
-    // subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
-    // }
-
     const userDesignations = await UserDesignation.findAll({
         where: { user_id : userId },
         attributes: ["designation_id"],
@@ -837,6 +807,131 @@ const get_supervisor_id = async (req, res) => {
   }
 };
 
+const set_user_hierarchy = async (req, res) => {
+    try {
+        const { user_id, designation_id , designation_name } = req.body;
+
+        if (!user_id || !designation_id) {
+            return res.status(400).json({
+                success: false,
+                message: "user_id and designation_id are required",
+            });
+        } 
+        
+        const findUserRole = await Users.findOne({
+            where: { user_id: user_id },
+            include: {
+                model: Role,
+                as: "role",
+                attributes: ["role_id", "role_title"],
+            },
+        });
+
+        const userRoleName = findUserRole.role.role_title;
+
+        var data = {}
+        if( (userRoleName.trim()).toLowerCase().includes("admin")){
+            const userDepartment = await DesignationDepartment.findAll({
+                where: { designation_id },
+            });
+            if (!userDepartment) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Department not found for the given designation_id",
+                });
+            }
+    
+            const userDivision = await DesignationDivision.findAll({
+                where: { designation_id },
+            });
+            if (!userDivision) {
+                return res.status(404).json({
+                    success: false,
+                    message: "Division not found for the given designation_id",
+                });
+            }
+    
+            const departmentIds = userDepartment.map((ud) => ud.department_id);
+            const divisionIds = userDivision.map((ud) => ud.division_id);
+    
+            const findDivisionUsers = await UsersDivision.findAll({
+                where:{division_id : { [Op.in] : divisionIds }},
+                attributes: ["user_id"],
+            });
+    
+    
+            const findDepartmentUsers = await UsersDepartment.findAll({
+                where:{department_id : { [Op.in] : departmentIds }},
+                attributes: ["user_id"],
+            });
+    
+            //avoid the repeated user_ids
+            const uniqueUserIds = new Set([user_id, ...findDivisionUsers.map((ud) => ud.user_id), ...findDepartmentUsers.map((ud) => ud.user_id)]);
+            const uniqueUserIdsArray = Array.from(uniqueUserIds);
+            
+            data ={
+                allowedDepartmentIds : departmentIds,
+                allowedDivisionIds : divisionIds,
+                allowedUserIds : uniqueUserIdsArray,
+                getDataBasesOnUsers: false,
+            }
+        }
+        else{
+            const userDesignations = await UserDesignation.findAll({
+                where: { user_id : user_id },
+                attributes: ["designation_id"],
+                include: {
+                    model: Designation,
+                    as: "designation",
+                    attributes: ["designation_id","designation_name"],
+                },
+            });
+            
+            if (!userDesignations.length) {
+                return res.status(404).json({ message: "User has no designations assigned" });
+            }
+
+            var supervisorDesignationIds = userDesignations.map((ud) => ud.designation_id);
+            let subordinateUserIds = [];
+
+            // Fetch subordinates based on supervisor designations
+            const subordinates = await UsersHierarchyNew.findAll({
+                where: { supervisor_designation_id: { [Op.in]: supervisorDesignationIds } },
+                attributes: ["officer_designation_id"],
+            });
+            const officerDesignationIds = subordinates.map((sub) => sub.officer_designation_id);
+
+            if (officerDesignationIds.length) {
+                const subordinateUsers = await UserDesignation.findAll({
+                    where: { designation_id: { [Op.in]: officerDesignationIds } },
+                    attributes: ["user_id"],
+                });
+                
+                subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+            }
+            // Combine userId with subordinates and remove duplicates
+            var allowedUserIds = Array.from(new Set([user_id, ...subordinateUserIds]));
+            data ={
+                allowedUserIds : allowedUserIds,
+                getDataBasesOnUsers: true,
+            }
+        }
+
+
+        return res.status(200).json({
+            success: true,
+            message: "Fetched the allowed department and division ids successfully.",
+            data: data,
+            userRoleName
+        });
+    } catch (error) {
+        console.error("Error setting user hierarchy:", error.message);
+        return res
+        .status(500)
+        .json({ success: false, message: "Internal Server Error" });
+    }
+};
+
 module.exports = {
   generate_OTP,
   verify_OTP,
@@ -846,4 +941,5 @@ module.exports = {
   verify_OTP_without_pin,
   update_pin,
   get_supervisor_id,
+  set_user_hierarchy,
 };

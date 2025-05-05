@@ -149,11 +149,49 @@ const UserManagement = () => {
     },
   ];
 
+    var userModalColumn = [
+        {
+            field: "id",
+            headerName: "S.No",
+            width: 70,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "id"),
+        },
+        {
+            field: "name",
+            headerName: "Designation",
+            width: 300,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "name"),
+        },
+        {
+            field: "departmentName",
+            headerName: "Departments",
+            width: 300,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "departmentName"),
+        },
+        {
+            field: "divisionName",
+            headerName: "Divisions",
+            width: 300,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "divisionName"),
+        },
+        {
+            field: "supervisorName",
+            headerName: "Supervisor Designation",
+            width: 300,
+            sortable: true,
+            renderCell: (params) => tableCellRender(params, "supervisorName"),
+        }
+    ]
+
+  const totalPages = Math.ceil(users.length / pageSize);
   const currentPageRows = users.slice(
     currentPage * pageSize,
     (currentPage + 1) * pageSize
   );
-  const totalPages = Math.ceil(users.length / pageSize);
 
     const tableCellRender = (params, key) => {
     
@@ -1766,142 +1804,21 @@ const UserManagement = () => {
                   />
                 </Grid>
 
-
-                {/* <Grid item xs={12} sm={4}>
-                  <MultiSelect
-                    formData={newUser}
-                    errors={errors}
-                    field={{
-                      name: "department",
-                      label: "Department",
-                      options: departmentOptions,
-                      required: modalTitle !== "Set Filters",
-                      history:
-                        modalTitle === "View User" || modalTitle === "Edit User"
-                          ? "department"
-                          : null,
-                        disabled:true
-                    }}
-                    value={newUser?.department}
-                    onHistory={() => getUsermanagementFieldLog("department")}
-                    onChange={handleDropDownChange}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <MultiSelect
-                    formData={newUser}
-                    errors={errors}
-                    field={{
-                      name: "division",
-                      label: "Division",
-                      options: filteredDivisionOptions,
-                      required: modalTitle !== "Set Filters",
-                      history:
-                        modalTitle === "View User" || modalTitle === "Edit User"
-                          ? "division"
-                          : null,
-                        disabled:true
-                    }}
-                    value={newUser?.division}
-                    onHistory={() => getUsermanagementFieldLog("division")}
-                    onChange={handleDropDownChange}
-                  />
-                </Grid> */}
-
                 <Grid item xs={12}>
-                        <TableContainer elevation={3} sx={{ borderRadius: 2, mt: 2 }}>
-                        <Table size="small" sx={{ minWidth: 650, borderCollapse: 'separate', borderSpacing: 0 }}>
-                            <TableHead>
-                                <TableRow sx={{ backgroundColor: '#F3F4F6' }}>
-                                    {['S.No', 'Designation', 'Departments', 'Divisions', 'Supervisor Designation'].map((header) => (
-                                        <TableCell
-                                            key={header}
-                                            sx={{
-                                                padding: '10px',
-                                                fontWeight: 'bold',
-                                                borderBottom: '1px solid #E0E0E0',
-                                                color: '#374151',
-                                                backgroundColor: '#F9FAFB',
-                                                borderTop: '1px solid #E0E0E0',
-                                                borderLeft: '1px solid #E0E0E0',
-                                                '&:last-child': { borderRight: '1px solid #E0E0E0' },
-                                            }}
-                                        >
-                                            {header}
-                                        </TableCell>
-                                    ))}
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {tableRows.map((row, idx) => (
-                                    <TableRow
-                                        key={row.id}
-                                        sx={{
-                                            backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#F9FAFB',
-                                            '&:hover': { backgroundColor: '#F3F4F6' },
-                                        }}
-                                    >
-                                        {[row.id, row.name, row.departmentName, row.divisionName, row.supervisorName].map((val, i) => (
-                                            <TableCell
-                                                key={i}
-                                                sx={{
-                                                    padding: '10px',
-                                                    borderBottom: '1px solid #E0E0E0',
-                                                    borderLeft: '1px solid #E0E0E0',
-                                                    '&:last-child': { borderRight: '1px solid #E0E0E0' },
-                                                }}
-                                            >
-                                                {val}
-                                            </TableCell>
-                                        ))}
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                    {
+                        tableRows.length > 0 &&
+                        <TableView
+                            rows={tableRows}
+                            columns={userModalColumn}
+                        />
+                    }
                 </Grid>
-
-                {/* <Grid item xs={12} sm={4}>
-                  <p
-                    style={{
-                      fontSize: "14px",
-                      color: "#6B7280",
-                      marginTop: "8px",
-                    }}
-                  >
-                    Supervisor Designation: <br />
-                    {Array.isArray(newUser?.designation) && newUser?.designation.length > 0
-                      ? newUser?.designation
-                          .map((des) => {
-                            const supervisorKeys = Object.keys(
-                              masterData.supervisor_designation
-                            ).filter((key) =>
-                              masterData.supervisor_designation[key].includes(
-                                parseInt(des, 10)
-                              )
-                            );
-
-                            const supervisorNames = supervisorKeys
-                              .map((key) => {
-                                const designation = designationOptions.find(
-                                  (option) => String(option.code) === String(key)
-                                );
-                                return designation ? designation.name : "Unknown";
-                              })
-                              .join(", ");
-
-                            return supervisorNames || "None";
-                          })
-                          .join(" | ")
-                      : ""}
-                  </p>
-                </Grid> */}
                 </>
                 )}
 
                 {(modalTitle === "Reset Pin" || modalTitle === "Add User") && (
                     <>
-                    <Grid item xs={12} sm={6} mt={3}>
+                    <Grid item xs={12} sm={6}>
                         <div className="px-2">
                         <PasswordInput
                             id="pin"
@@ -1914,7 +1831,7 @@ const UserManagement = () => {
                         />
                         </div>
                     </Grid>
-                    <Grid item xs={12} sm={6} mt={3}>
+                    <Grid item xs={12} sm={6}>
                         <div className="px-2">
                         <PasswordInput
                             id="confirmPin"

@@ -10,6 +10,8 @@ const {
   UsersHierarchyNew,
   DesignationDivision,
   DesignationDepartment,
+  Act,
+  Section,
 } = require("../models");
 const { Op } = require("sequelize");
 const fs = require("fs");
@@ -20,13 +22,9 @@ exports.fetch_masters_meta = async (req, res) => {
     const {
         page = 1,
         limit = 10,
-        sort_by = "id",
-        order = "DESC",
-        search = "",
-        search_field = "",
+        sort_by = "order",
+        order = "ASC",
     } = req.body;
-    const { filter = {}, from_date = null, to_date = null } = req.body;
-    const fields = {};
     const offset = (page - 1) * limit;
 
     const excluded_masters_ids = [];
@@ -37,6 +35,7 @@ exports.fetch_masters_meta = async (req, res) => {
           [Op.notIn]: excluded_masters_ids,
         },
       },
+      order: [[sort_by, order]],
       limit,
       offset,
     });
@@ -467,6 +466,12 @@ exports.fetch_specific_master_data = async (req, res) => {
                 { officer_designation_id: { [Op.iLike]: `%${search}%` } },
                 ];
                 break;
+             case "act":
+                whereClause["act_name"] = { [Op.iLike]: `%${search}%` };
+                break;
+            case "section":
+                whereClause["section_name"] = { [Op.iLike]: `%${search}%` };
+                break;
             default:
                 if (search_field) {
                 whereClause[search_field] = { [Op.iLike]: `%${search}%` };
@@ -688,6 +693,67 @@ exports.fetch_specific_master_data = async (req, res) => {
 
         data = hierarchies.rows;
         totalItems = hierarchies.count;
+        break;
+        case "act":
+        const actWhere = buildWhereClause();
+
+        // if (search) {
+        //     whereClause["act_name"] = { [Op.iLike]: `%${search}%` };
+        // }
+
+        if (get_all) {
+            const Rows = await Act.findAll({
+                where: actWhere,
+                order: [[sort_by, order]],
+                attributes: ["act_id", "act_name", "description", "created_by", "created_at"],
+            });
+    
+            data = Rows;
+            totalItems = Rows.length;
+            break;
+        }
+        else {
+                const { rows: Rows, count: Count } = await Act.findAndCountAll({
+                where: actWhere,
+                limit,
+                offset,
+                order: [[sort_by, order]],
+                attributes: ["act_id", "act_name", "description", "created_by", "created_at"],
+            });
+            data = Rows;
+            totalItems = Count;
+            break;
+        }
+
+      case "section":
+        const sectionWhere = buildWhereClause();
+
+        // if (search) {
+        //     whereClause["section_name"] = { [Op.iLike]: `%${search}%` };
+        // }
+
+        const sections = await Section.findAndCountAll({
+          where: sectionWhere,
+          include: [{
+            model: Act,
+            as: "act",
+            attributes: ["act_name"],
+          }],
+          limit,
+          offset,
+          order: [["act_id", order]],
+          attributes: ["section_id", "section_name", "description", "act_id", "created_by", "created_at"],
+        });
+
+        data = sections.rows.map((section) => {
+          const plain = section.get({ plain: true });
+          return {
+            ...plain,
+            act_name: plain.act?.act_name || "Unknown Act",
+          };
+        });
+
+        totalItems = sections.count;
         break;
 
       default:
@@ -1008,6 +1074,38 @@ exports.create_master_data = async (req, res) => {
 
             }
             break;
+         case "Act":
+            const existingAct = await Act.findOne({
+            where: {
+                act_name: {
+                [Op.iLike]: `%${data.act_name}%`,
+                },
+            },
+            });
+            if (existingAct) {
+                 return res.status(409).json({success: false,message: "Similar act name already exists.",});
+            }
+            newEntry = await Act.create(data);
+            break;
+        case "Section":
+            const existingSection = await Section.findOne({
+            where: {
+                section_name: {
+                [Op.iLike]: `%${data.section_name}%`,
+                },
+            },
+            });
+            if (existingSection) {
+                 return res.status(409).json({success: false,message: "Similar section name already exists.",});
+            }
+            newEntry = await Section.create({
+            section_name: data.section_name,
+            description: data.description,
+            act_id: data.act_id,
+            created_by: data.created_by,
+            created_at: new Date(),
+            });
+            break;
         default:
             return res.status(400).json({ message: "Invalid master name provided." });
     }
@@ -1317,6 +1415,32 @@ exports.update_master_data = async (req, res) => {
         await buildHierarchy(data.officer_designation_id, data.supervisor_designation_id);
       
         break;
+        
+        case "Act":
+            if (!data.act_id) {
+            return res
+                .status(400)
+                .json({ message: "Act ID is required for update." });
+            }
+            whereCondition = { act_id: data.act_id };
+            result = await Act.update(data, { where: whereCondition });
+        break;
+        case "Section":
+            if (!data.section_id) {
+            return res
+                .status(400)
+                .json({ message: "Section ID is required for update." });
+            }
+            whereCondition = { section_id: data.section_id };
+            result = await Section.update(
+            {
+                section_name: data.section_name,
+                act_id: data.act_id,
+                updated_by: data.updated_by,
+            },
+            { where: whereCondition }
+            );
+        break;
       
 
 
@@ -1379,7 +1503,7 @@ exports.delete_master_data = async (req, res) => {
                     .json({ message: "Designation ID is required for deletion." });
             }
 
-            const whereCondition = { designation_id: id };
+            whereCondition = { designation_id: id };
 
             // 1. Delete from junction table first
             await DesignationDepartment.destroy({
@@ -1392,7 +1516,7 @@ exports.delete_master_data = async (req, res) => {
             });
 
             // 3. Delete the designation
-            const result = await Designation.destroy({
+            result = await Designation.destroy({
                 where: whereCondition,
             });
 
@@ -1436,6 +1560,24 @@ exports.delete_master_data = async (req, res) => {
         }
         whereCondition = { users_hierarchy_id: id };
         result = await UsersHierarchy.destroy({ where: whereCondition });
+        break;
+        case "Act":
+            if (!id) {
+            return res
+                .status(400)
+                .json({ message: "Act ID is required for deletion." });
+            }
+            whereCondition = { act_id: id };
+            result = await Act.destroy({ where: whereCondition });
+        break;
+        case "Section":
+            if (!id) {
+            return res
+                .status(400)
+                .json({ message: "Section ID is required for deletion." });
+            }
+            whereCondition = { section_id: id };
+            result = await Section.destroy({ where: whereCondition });
         break;
       default:
         return res

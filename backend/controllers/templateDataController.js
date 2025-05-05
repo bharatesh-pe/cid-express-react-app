@@ -2519,16 +2519,28 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     // // Combine userId with subordinates and remove duplicates
     // const allowedUserIds = Array.from(new Set([userId, ...subordinateUserIds]));
 
-    const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
+    const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
 
-    if (allowedUserIds.length > 0) {
-        if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
-            whereClause[Op.or] = [
-            { created_by_id: { [Op.in]: allowedUserIds } },
-            { field_io_name: { [Op.in]: allowedUserIds } },
-            ];
-        } else {
-            whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+    if(!getDataBasesOnUsers) {
+         if (allowedDivisionIds.length > 0) {
+            if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+                whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+            } else {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
+        }
+    }
+    else
+    {
+        if (allowedUserIds.length > 0) {
+            if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+                whereClause[Op.or] = [
+                { created_by_id: { [Op.in]: allowedUserIds } },
+                { field_io_name: { [Op.in]: allowedUserIds } },
+                ];
+            } else {
+                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            }
         }
     }
 
@@ -6131,16 +6143,41 @@ exports.getMergeParentData = async (req, res) =>
             return userSendResponse(res, 400, false, "Template module is required", null );
         }
 
-        const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
+        // const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
 
-        if (allowedUserIds.length > 0) {
-            if (template_module === "ui_case") {
-                whereClause[Op.or] = [
-                { created_by_id: { [Op.in]: allowedUserIds } },
-                { field_io_name: { [Op.in]: allowedUserIds } },
-                ];
-            } else {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+        // if (allowedUserIds.length > 0) {
+        //     if (template_module === "ui_case") {
+        //         whereClause[Op.or] = [
+        //         { created_by_id: { [Op.in]: allowedUserIds } },
+        //         { field_io_name: { [Op.in]: allowedUserIds } },
+        //         ];
+        //     } else {
+        //         whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+        //     }
+        // }
+
+        const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
+
+        if(!getDataBasesOnUsers) {
+            if (allowedDivisionIds.length > 0) {
+                if (template_module === "ui_case") {
+                    whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+                } else {
+                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                }
+            }
+        }
+        else
+        {
+            if (allowedUserIds.length > 0) {
+                if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+                    whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: allowedUserIds } },
+                    { field_io_name: { [Op.in]: allowedUserIds } },
+                    ];
+                } else {
+                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                }
             }
         }
 
@@ -6879,16 +6916,41 @@ exports.getMergeChildData = async (req, res) =>
             return userSendResponse(res, 400, false, "Template module is required", null );
         }
 
-        const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
+        // const { allowedUserIds = [] } = req.body; // Default to empty array if not provided
 
-        if (allowedUserIds.length > 0) {
-            if (template_module === "ui_case") {
-                whereClause[Op.or] = [
-                { created_by_id: { [Op.in]: allowedUserIds } },
-                { field_io_name: { [Op.in]: allowedUserIds } },
-                ];
-            } else {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+        // if (allowedUserIds.length > 0) {
+        //     if (template_module === "ui_case") {
+        //         whereClause[Op.or] = [
+        //         { created_by_id: { [Op.in]: allowedUserIds } },
+        //         { field_io_name: { [Op.in]: allowedUserIds } },
+        //         ];
+        //     } else {
+        //         whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+        //     }
+        // }
+
+        const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
+
+        if(!getDataBasesOnUsers) {
+            if (allowedDivisionIds.length > 0) {
+                if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+                    whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+                } else {
+                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                }
+            }
+        }
+        else
+        {
+            if (allowedUserIds.length > 0) {
+                if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+                    whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: allowedUserIds } },
+                    { field_io_name: { [Op.in]: allowedUserIds } },
+                    ];
+                } else {
+                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                }
             }
         }
         const childCases = await UiMergedCases.findAll({

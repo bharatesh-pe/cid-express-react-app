@@ -1,5 +1,7 @@
 'use strict';
 
+const { or } = require("sequelize");
+
 module.exports = (sequelize, DataTypes) => {
   const MastersMeta = sequelize.define('MastersMeta', {
     masters_meta_id: {
@@ -21,7 +23,11 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW,
       allowNull: false
-    }
+    },
+    order : {
+      type: DataTypes.INTEGER,
+      allowNull: true
+    },
   }, {
     tableName: 'masters_meta',
     timestamps: false,
