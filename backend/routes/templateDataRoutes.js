@@ -340,7 +340,22 @@ router.post('/getMergeChildData',[validate_token],
 
 router.post('/deMergeCaseData',[validate_token],
     templateDataController.deMergeCaseData)
-router.post('/saveActionPlanAndProgressReport',[validate_token],
+router.post('/saveActionPlanAndProgressReport', (req, res, next) => {
+        if (req.is('multipart/form-data')) {
+            upload.any()(req, res, (err) => {
+                if (err) {
+                    console.error('Error during file upload:', err);
+                    return res.status(400).json(
+                        userSendResponse(false, req, 'File upload failed', err)
+                    );
+                }
+                next();
+            });
+        } else {
+            next();
+        }
+    },
+    [validate_token],
     templateDataController.saveActionPlanAndProgressReport)
     
         
