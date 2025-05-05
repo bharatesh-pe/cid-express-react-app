@@ -1155,3 +1155,15 @@ div::first-letter {
     .activeDesignationRoleName{
         color: #009432 !important;
     }
+
+
+    .row-with-missing-dept {
+        background-color: #ffcccc !important; 
+    }
+
+    .row-red-background {
+        background-color: #faacb0 !important;
+        color: white;
+      }
+      
+    

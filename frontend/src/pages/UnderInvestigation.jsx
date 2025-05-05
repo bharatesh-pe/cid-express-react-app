@@ -2791,7 +2791,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
     
         try {
             const getTemplateResponse = await api.post( "/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
-    
             setLoading(false);
 
             if (getTemplateResponse?.success) {
@@ -2827,8 +2826,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             .toLowerCase()
                             .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
     
+        
                     const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
-    
+
                     const updatedHeader = [
                         
                         {
@@ -3082,6 +3082,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
         </Tooltip>
     );
   };
+  
 
     const tableHeaderRender = (params, key)=>{
         return (
@@ -7394,36 +7395,16 @@ const loadChildMergedCasesData = async (page, caseId) => {
   var userPermissions =
     JSON.parse(localStorage.getItem("user_permissions")) || [];
   var hoverExtraOptions = [
-    userPermissions[0]?.view_case
-      ? {
-          name: "View",
-          onclick: (selectedRow) =>
-            handleTemplateDataView(selectedRow, false, table_name),
-          icon: () => (
-            <span
-              className="tableActionViewIcon"
-            >
-              <svg
-                width="50"
-                height="50"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path d="M12 4.5C7.305 4.5 3.125 7.498 1 12c2.125 4.502 6.305 7.5 11 7.5s8.875-2.998 11-7.5c-2.125-4.502-6.305-7.5-11-7.5zm0 13c-3.038 0-5.5-2.462-5.5-5.5s2.462-5.5 5.5-5.5 5.5 2.462 5.5 5.5-2.462 5.5-5.5 5.5zm0-9c-1.932 0-3.5 1.568-3.5 3.5s1.568 3.5 3.5 3.5 3.5-1.568 3.5-3.5-1.568-3.5-3.5-3.5z" />
-              </svg>
-            </span>
-          ),
-        }
-      : null,
       
     userPermissions[0]?.edit_case
       ?  isChildMergedLoading
       ? null
       : {
           name: "Edit",
-          onclick: (selectedRow) =>
-            handleTemplateDataView(selectedRow, true, table_name),
+          onclick: (selectedRow) => {
+            handleTemplateDataView(selectedRow, true, table_name);
+          },
+        
           icon: () => (
             <span className="tableActionIcon">
               <svg
@@ -8971,6 +8952,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
             totalRecord={totalRecord} 
             paginationCount={paginationCount} 
             handlePagination={handlePagination} 
+            getRowClassName={(params) => {
+              return !params.row["field_io_name"]
+                  ? "row-with-missing-dept"
+                  : "";
+          }}
         />
 
         </Box>
