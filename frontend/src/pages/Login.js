@@ -250,6 +250,11 @@ const Login = () => {
         );
       }
 
+       if (data && data.user_role_permissions) {
+        localStorage.setItem("role_id",JSON.stringify(data.user_role_permissions[0].role_id));
+        localStorage.setItem("role_title",JSON.stringify(data.user_role_permissions[0].role_title));
+      }
+
       if (data && data.users_designation) {
         setUsersDesignations(data.users_designation);
       }

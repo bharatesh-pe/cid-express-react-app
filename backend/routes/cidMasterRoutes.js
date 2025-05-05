@@ -49,5 +49,7 @@ router.post('/getIoUsers' , cidMasterController.getIoUsers)
 router.post('/getIoUsersBasedOnDivision' , cidMasterController.getIoUsersBasedOnDivision)
 router.post('/getAllKGID' , cidMasterController.getAllKGID)
 router.post('/getUserParticularDetails' , cidMasterController.getUserParticularDetails)
+router.post('/getAllAct' , cidMasterController.getAllAct)
+router.post('/getAllSectionAndActBasedSection' , cidMasterController.getAllSectionAndActBasedSection)
 
 module.exports = router;

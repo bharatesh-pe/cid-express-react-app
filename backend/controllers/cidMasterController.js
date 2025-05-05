@@ -1,8 +1,9 @@
 const { adminSendResponse } = require("../services/adminSendResponse");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
-const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID , UsersHierarchy,UsersHierarchyNew,DesignationDivision} = require("../models");
+const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID ,UsersHierarchyNew,DesignationDivision , Act , Section} = require("../models");
 const { Op, where } = require("sequelize");
+const e = require("express");
 
 const getAllDepartments = async (req, res) => {
 
@@ -580,6 +581,64 @@ const getUserParticularDetails = async (req, res) => {
     }
 }
 
+const getAllAct = async (req, res) => {
+
+    try {
+        var acts = {};
+        
+        acts = await Act.findAll({
+            // include: [{ model: db.Designation, as: 'designations' }],
+            order: [['act_name', 'ASC']]
+        });
+
+
+        if (!acts || acts.length === 0) {
+            return adminSendResponse(res, 200, true, "Act retrieved successfully", []);
+        }
+
+        return adminSendResponse(res, 200, true, "Act retrieved successfully", [ ...acts ]);
+    } catch (error) {
+        console.error("Error fetching act's:", error.message);
+        return adminSendResponse(res, 500, false, "Internal Server Error");
+    }
+};
+
+const getAllSectionAndActBasedSection = async (req, res) => {
+    try {
+
+        const userId = req.user?.user_id || null;
+        const  { get_flag , act_id } = req.body;
+        var sections = {};
+
+        if (!act_id || act_id === "" ) {
+           sections = await Section.findAll({
+                // include: [{ model: Department, as: "department" }],
+                order: [["section_name", "ASC"]]
+            });
+        }
+        else
+        {
+            // if(!act_id || act_id === ""){
+            //     return res.status(400).json({ message: "Act ID is required." });
+            // }
+           
+            sections = await Section.findAll({
+                where: { act_id : act_id },
+                order: [["section_name", "ASC"]]
+            });
+            
+        }
+
+        if (!sections || sections.length === 0) {
+            return adminSendResponse(res, 200, true, "Please create sections and try to fetch.", []);
+        }
+
+        return adminSendResponse(res, 200, true, "Section's retrieved successfully", [ ...sections ]);
+    } catch (error) {
+        console.error("Error fetching section's:", error.message);
+        return adminSendResponse(res, 500, false, "Internal Server Error");
+    }
+};
 module.exports = {
     getAllDepartments,
     getAllDesignations,
@@ -588,4 +647,6 @@ module.exports = {
     getIoUsersBasedOnDivision,
     getAllKGID,
     getUserParticularDetails,
+    getAllAct,
+    getAllSectionAndActBasedSection,
 };

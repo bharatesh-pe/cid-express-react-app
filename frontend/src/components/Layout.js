@@ -315,6 +315,8 @@ const Layout = ({ children }) => {
             localStorage.removeItem("getDataBasesOnUsers");
             localStorage.removeItem("allowedDepartmentIds");
             localStorage.removeItem("allowedDivisionIds");
+            localStorage.removeItem("role_id");
+            localStorage.removeItem("role_title");
             navigate("/");
           }
         }
@@ -367,6 +369,8 @@ const Layout = ({ children }) => {
         localStorage.removeItem("getDataBasesOnUsers");
         localStorage.removeItem("allowedDepartmentIds");
         localStorage.removeItem("allowedDivisionIds");
+        localStorage.removeItem("role_id");
+        localStorage.removeItem("role_title");
       navigate("/");
     } catch (err) {
       var errMessage = "Something went wrong. Please try again.";
@@ -388,6 +392,8 @@ const Layout = ({ children }) => {
             localStorage.removeItem("getDataBasesOnUsers");
             localStorage.removeItem("allowedDepartmentIds");
             localStorage.removeItem("allowedDivisionIds");
+            localStorage.removeItem("role_id");
+            localStorage.removeItem("role_title");
           navigate("/");
         }
       }

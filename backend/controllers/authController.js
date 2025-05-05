@@ -171,7 +171,7 @@ const verify_OTP = async (req, res) => {
             user_detail.kgid,
             userRole.role_id,
             user.user_id,
-            userRole.role_id
+            userRole.role_title
           );
           // Return success response with token
           // console.log(token,"token")
