@@ -763,7 +763,7 @@ const Section = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View section"}
                         {showEditModal && "Edit section"}
-                        {showSectionAddModal && "Add New section"}
+                        {showSectionAddModal && "Add New Section"}
                         </Typography>
                     </Box>
 
