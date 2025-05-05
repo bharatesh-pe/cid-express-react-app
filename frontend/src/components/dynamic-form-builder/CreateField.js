@@ -39,7 +39,7 @@ const CreateField = ({ selectedField, selectedDropdwonField, formFields, handleF
         ))}
       </Select>
     </FormControl>
-    <Box sx={{display:'none',alignItems:'center',justifyContent:'center'}}>
+    <Box sx={{display:'flex',alignItems:'center',justifyContent:'center'}}>
         <Typography mt={2} className='flexCenter' sx={{ color: '#1570EF', fontWeight: '400', fontSize: '16px',cursor:'pointer' }} onClick={onAddDivider}>
             Add divider
         </Typography>
