@@ -340,6 +340,7 @@
         "formType": "Attachments",
         "multiple": true,
         "disabled": "",
+        "hide_from_ux": false,
         "table_display_content": true
     },
     {
