@@ -253,6 +253,10 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
         let tempErrors = {};
         newFormConfig.forEach((field) => {
 
+            if(field?.hide_from_ux){
+                return null
+            }
+
             const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
             if (roleTitle === "admin organization") {
