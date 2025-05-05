@@ -704,7 +704,7 @@ const Act = () => {
                         <FormControl fullWidth>
                             <Box sx={{ marginY: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorActData.act_name && '#d32f2f' }}>
-                                    Name
+                                    Act
                                 </h4>
                                 <TextField
                                     fullWidth
