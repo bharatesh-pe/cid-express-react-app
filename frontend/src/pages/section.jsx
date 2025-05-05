@@ -800,7 +800,7 @@ const Section = () => {
 
                             <Box sx={{ marginY: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorSectionData.section_name && '#d32f2f' }}>
-                                    Name
+                                    Law
                                 </h4>
                                 <TextField
                                     fullWidth
