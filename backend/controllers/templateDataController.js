@@ -7964,7 +7964,7 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                 }
             }
 
-            validDataPR.sys_status = "PR";
+            validDataPR.sys_status = "AP";
             validDataPR.created_by = userName;
             validDataPR.created_by_id = userId;
 
