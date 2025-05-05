@@ -684,7 +684,7 @@ const Act = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View act"}
                         {showEditModal && "Edit act"}
-                        {showActAddModal && "Add New act"}
+                        {showActAddModal && "Add New Act"}
                         </Typography>
                     </Box>
 

@@ -2523,7 +2523,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
     if(!getDataBasesOnUsers) {
          if (allowedDivisionIds.length > 0) {
-            if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+            if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
                 whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
             } else {
                 whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
@@ -2533,7 +2533,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     else
     {
         if (allowedUserIds.length > 0) {
-            if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+            if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
                 whereClause[Op.or] = [
                 { created_by_id: { [Op.in]: allowedUserIds } },
                 { field_io_name: { [Op.in]: allowedUserIds } },
@@ -6168,7 +6168,7 @@ exports.getMergeParentData = async (req, res) =>
         else
         {
             if (allowedUserIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
                     whereClause[Op.or] = [
                     { created_by_id: { [Op.in]: allowedUserIds } },
                     { field_io_name: { [Op.in]: allowedUserIds } },
@@ -6931,7 +6931,7 @@ exports.getMergeChildData = async (req, res) =>
 
         if(!getDataBasesOnUsers) {
             if (allowedDivisionIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
                     whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
                 } else {
                     whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
@@ -6941,7 +6941,7 @@ exports.getMergeChildData = async (req, res) =>
         else
         {
             if (allowedUserIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "_case" || template_module === "eq_case") {
+                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
                     whereClause[Op.or] = [
                     { created_by_id: { [Op.in]: allowedUserIds } },
                     { field_io_name: { [Op.in]: allowedUserIds } },

@@ -763,7 +763,7 @@ const Section = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View section"}
                         {showEditModal && "Edit section"}
-                        {showSectionAddModal && "Add New section"}
+                        {showSectionAddModal && "Add New Section"}
                         </Typography>
                     </Box>
 
@@ -795,7 +795,7 @@ const Section = () => {
                                         setSelectedSection((prev) => ({ ...prev, act_id: actId }));
                                         setAddSectionData((prev) => ({ ...prev, act_id: actId }));
                                     }}
-                                    renderInput={(params) => <TextField {...params} label="Select act" variant="outlined" />}
+                                    renderInput={(params) => <TextField {...params} label="Select Act" variant="outlined" />}
                                 />                </Box>
 
                             <Box sx={{ marginY: '18px' }}>
