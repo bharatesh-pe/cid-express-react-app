@@ -1424,6 +1424,25 @@ const DynamicForm = ({
                 if (!field.disabled) {
                   field.disabled = readOnly ? true : "";
                 }
+
+                const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase());
+                
+                if (roleTitle === "admin organization") {
+                    if (!field.ao_field) {
+                        field.disabled = true;
+                        if (field.required) {
+                            field.required = false;
+                        }
+                    }
+                } else {
+                    if (field.ao_field) {
+                        field.disabled = true;
+                        if (field.required) {
+                            field.required = false;
+                        }
+                    }
+                }
+
                 switch (field.type) {
                   case "text":
                     return (

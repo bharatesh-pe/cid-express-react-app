@@ -110,7 +110,8 @@ const Formbuilder = () => {
                 var updatedFields = Createdfields.map((element)=>{
                     return{
                         ...element,
-                        is_primary_field : element.is_primary_field ? element.is_primary_field : false
+                        is_primary_field : element.is_primary_field ? element.is_primary_field : false,
+                        ao_field : element.ao_field ? element.ao_field : false
                     }
                 })
                 
