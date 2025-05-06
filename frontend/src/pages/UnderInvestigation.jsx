@@ -4313,7 +4313,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   if (sysStatus === "merge_cases") {
                     loadMergedCasesData(paginationCount);
                   } else {
-                    loadTableData(paginationCount);
+                    if(!selectedOtherTemplate?.field){
+                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
+                    }else{
+                        loadTableData(paginationCount);
+                    }
                   }
                 },
             });
@@ -4321,7 +4325,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setOtherFormOpen(false);
             setAddApproveFlag(false);
             setApproveTableFlag(false);
-            setOtherTemplateModalOpen(false);
           //   if (Object.keys(othersData).length > 0) {
           //     setOtherTemplateModalOpen(false);
           //   }
@@ -4347,6 +4350,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 setShowOtherTransferModal(false);
                 setSelectedOtherFields(null);
                 setselectedOtherTemplate(null);
+                setOtherTemplateModalOpen(false);
+            }else{
+                return;
             }
 
         } else {
@@ -6338,33 +6344,20 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setOtherTemplateColumn([]);
           }
 
-        var updatedTableData = getTemplateResponse.data.map((field, index) => {
-            const formatDate = (fieldValue) => {
+        const formatDate = (value) => {
+            const parsed = Date.parse(value);
+            if (isNaN(parsed)) return value;
+            return new Date(parsed).toLocaleDateString("en-GB");
+        };
 
-                if (!fieldValue || typeof fieldValue !== "string")
-                    return fieldValue;
-
-                var dateValue = new Date(fieldValue);
-
-                if (isNaN(dateValue.getTime()) || (!fieldValue.includes("-") && !fieldValue.includes("/"))) {
-                    return fieldValue;
-                }
-
-                if (isNaN(dateValue.getTime())) return fieldValue;
-
-                var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                var monthValue = String(dateValue.getMonth() + 1).padStart(2,"0");
-                var yearValue = dateValue.getFullYear();
-                return `${dayValue}/${monthValue}/${yearValue}`;
-            };
-
+        const updatedTableData = getTemplateResponse.data.map((field, index) => {
             const updatedField = {};
 
             Object.keys(field).forEach((key) => {
-                if (field[key] && key !== "id" && !isNaN(new Date(field[key]).getTime())) {
-                    updatedField[key] = formatDate(field[key]);
+                if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                  updatedField[key] = formatDate(field[key]);
                 } else {
-                    updatedField[key] = field[key];
+                  updatedField[key] = field[key];
                 }
             });
 
