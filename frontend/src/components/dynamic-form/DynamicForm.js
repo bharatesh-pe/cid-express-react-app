@@ -208,17 +208,17 @@ const DynamicForm = ({
     
     const makeOrderCopyShow = (value) => {
 
-        const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
-
-        var updatedFormConfig = allFields.map((element) => {
-            if (element.name === "field_order_copy_(_17a_done_)") {
-                element.hide_from_ux = value; // true = hide, false = show
-            }
-            return element;
+        setNewFormConfig((prevFormConfig) => {
+            const updatedFormConfig = prevFormConfig.map((data) => {
+                if(data.name === "field_order_copy_(_17a_done_)"){
+                    return {...data, hide_from_ux : value }
+                }else{
+                    return data;
+                }
+            });
+            return updatedFormConfig;
         });
 
-        setNewFormConfig(updatedFormConfig);
-    
         if (value) {
             delete formData["field_order_copy_(_17a_done_)"];
         }
@@ -1242,7 +1242,7 @@ const DynamicForm = ({
     };
 
   //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
-  //   console.log(stepperData, "stepperData stepperData")
+  //   console.log(stepperData, "stepperData stepperData")  
   return (
     <>
       <Box
