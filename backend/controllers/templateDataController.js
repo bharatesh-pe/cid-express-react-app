@@ -2521,25 +2521,26 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
     const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
 
-    if(!getDataBasesOnUsers) {
-         if (allowedDivisionIds.length > 0) {
-            if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+    const normalizedDivisionIds = normalizeValues(allowedDivisionIds, 'string');
+    const normalizedUserIds = normalizeValues(allowedUserIds, 'string');
+
+    if (!getDataBasesOnUsers) {
+        if (allowedDivisionIds.length > 0) {
+            if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+            whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
             } else {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
-    }
-    else
-    {
+    } else {
         if (allowedUserIds.length > 0) {
-            if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                whereClause[Op.or] = [
-                { created_by_id: { [Op.in]: allowedUserIds } },
-                { field_io_name: { [Op.in]: allowedUserIds } },
-                ];
+            if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+            whereClause[Op.or] = [
+                { created_by_id: { [Op.in]: normalizedUserIds } },
+                { field_io_name: { [Op.in]: normalizedUserIds } },
+            ];
             } else {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
     }
@@ -3812,96 +3813,87 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
   }
 
   try {
-    // Fetch the table template
     const tableData = await Template.findOne({ where: { table_name } });
 
     if (!tableData) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        `Table ${table_name} does not exist.`,
-        null
-      );
+      return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
     }
 
-    // Parse schema and request data
-    const schema =
-      typeof tableData.fields === "string"
-        ? JSON.parse(tableData.fields)
-        : tableData.fields;
+    const schema = typeof tableData.fields === "string"
+      ? JSON.parse(tableData.fields)
+      : tableData.fields;
+
     const validData = {};
+    const invalidFields = {};
 
-    const parsedData = data;
-    const invalidFields = [];
-
-    // Loop through the parsedData to check if the requested data is correct
-    for (const key in parsedData) {
-      if (parsedData.hasOwnProperty(key)) {
-        // Check if the key exists in the schema
-        const field = schema.find((field) => field.name === key); // Find the field in the schema
-
+    // Validate and collect valid fields
+    for (const key in data) {
+      if (
+        data.hasOwnProperty(key) &&
+        key.trim() !== "" &&
+        data[key] !== null &&
+        data[key] !== "" &&
+        !(typeof data[key] === "string" && data[key].trim() === "")
+      ) {
+        const field = schema.find((f) => f.name === key);
         if (field) {
-          // If the field is found in the schema, validate it
           const { not_null } = field;
-
-          // Check for not null constraint
-          if (
-            not_null &&
-            (parsedData[key] === null || parsedData[key] === "")
-          ) {
-            invalidFields.push(key);
+          if (not_null && data[key] === "") {
+            invalidFields[key] = "This field is required.";
           } else {
-            validData[key] = parsedData[key];
+            validData[key] = data[key];
           }
         } else {
-          invalidFields.push(key);
+          invalidFields[key] = "Field not defined in schema.";
         }
       }
     }
 
-    if (invalidFields.length > 0) {
+    if (Object.keys(invalidFields).length > 0) {
       return userSendResponse(
         res,
         400,
         false,
-        `Invalid fields: ${invalidFields.join(", ")}`,
-        parsedData
+        `Invalid fields: ${Object.keys(invalidFields).join(", ")}`,
+        { errors: invalidFields }
       );
     }
 
-    // Define Sequelize model dynamically
     const modelAttributes = {};
     for (const field of schema) {
-      const { name, data_type, not_null, default_value } = field;
-      const sequelizeType =
-        typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-      modelAttributes[name] = {
+    const { name, data_type, not_null, default_value } = field;
+    const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+    modelAttributes[name] = {
         type: sequelizeType,
         allowNull: !not_null,
         defaultValue: default_value || null,
-      };
+    };
     }
 
     const Model = sequelize.define(table_name, modelAttributes, {
-      freezeTableName: true,
-      timestamps: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    });
+        freezeTableName: true,
+        timestamps: true,
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+      });
 
-    // Check for duplicates
+    modelCache[table_name] = Model;
+
+    // Build where condition for duplicate check
     const conditions = {};
     for (const [key, value] of Object.entries(validData)) {
-        if(value && value !== "") {
-            // conditions[key] = typeof value === 'string' ? { [Op.iLike]: `%${value}%` } : value;
-            conditions[key] = typeof value === "string" ? { [Op.like]: `%${value}%` } : value;
-        }
+      if (value !== null && value !== undefined && value !== "") {
+        conditions[key] =
+          typeof value === "string" ? { [Op.like]: `%${value}%` } : value;
+      }
     }
 
-    const existingRecords = await Model.findAll({
-      where: conditions,
-    });
+    const existingRecords =
+      conditions && Object.keys(conditions).length > 0
+        ? await Model.findAll({
+            where: conditions,
+          })
+        : [];
 
     if (existingRecords.length > 0) {
       return userSendResponse(res, 200, false, "Duplicate values found.");
@@ -3910,9 +3902,10 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
     return userSendResponse(res, 200, true, "No duplicates found.", null);
   } catch (error) {
     console.error("Error checking duplicate values in fields:", error);
-    return userSendResponse(res, 500, false, "Internal Server error.", error);
+    return userSendResponse(res, 500, false, "Internal Server Error.", error);
   }
 };
+
 
 exports.checkPdfEntry = async (req, res) => {
   const { is_pdf, ui_case_id } = req.body;
@@ -5191,8 +5184,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
-      
-
         let recordId = insertedId;
         let sys_status = insertedType;
         let default_status = insertedType;
@@ -5343,9 +5334,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 					await t.rollback();
 					return userSendResponse(res, 400, false, "Default status is required.");
 				}
-
-              
-				
 			}
             // Handle approval logic
             if (otherParsedData.approval_details && otherParsedData.approval) {
@@ -6158,25 +6146,26 @@ exports.getMergeParentData = async (req, res) =>
 
         const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
 
-        if(!getDataBasesOnUsers) {
+        const normalizedDivisionIds = normalizeValues(allowedDivisionIds, 'string');
+        const normalizedUserIds = normalizeValues(allowedUserIds, 'string');
+
+        if (!getDataBasesOnUsers) {
             if (allowedDivisionIds.length > 0) {
-                if (template_module === "ui_case") {
-                    whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 } else {
-                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
                 }
             }
-        }
-        else
-        {
+        } else {
             if (allowedUserIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                    whereClause[Op.or] = [
-                    { created_by_id: { [Op.in]: allowedUserIds } },
-                    { field_io_name: { [Op.in]: allowedUserIds } },
-                    ];
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: normalizedUserIds } },
+                    { field_io_name: { [Op.in]: normalizedUserIds } },
+                ];
                 } else {
-                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
                 }
             }
         }
@@ -6931,28 +6920,30 @@ exports.getMergeChildData = async (req, res) =>
 
         const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
 
-        if(!getDataBasesOnUsers) {
+        const normalizedDivisionIds = normalizeValues(allowedDivisionIds, 'string');
+        const normalizedUserIds = normalizeValues(allowedUserIds, 'string');
+
+        if (!getDataBasesOnUsers) {
             if (allowedDivisionIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                    whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 } else {
-                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
                 }
             }
-        }
-        else
-        {
+        } else {
             if (allowedUserIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                    whereClause[Op.or] = [
-                    { created_by_id: { [Op.in]: allowedUserIds } },
-                    { field_io_name: { [Op.in]: allowedUserIds } },
-                    ];
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: normalizedUserIds } },
+                    { field_io_name: { [Op.in]: normalizedUserIds } },
+                ];
                 } else {
-                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
                 }
             }
         }
+
         const childCases = await UiMergedCases.findAll({
             where: { merged_status: 'child', parent_case_id: case_id }, // corrected here
             attributes: ['case_id'],
@@ -8108,4 +8099,15 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
 		}
 	}
 };
+
+function normalizeValues(values, expectedType) {
+  return values
+    .filter((v) => v !== null && v !== undefined)
+    .map((v) => {
+      if (expectedType === 'string') return String(v);
+      if (expectedType === 'int') return Number(v);
+      return v;
+    });
+}
+
 
