@@ -4086,7 +4086,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       };
   
       try {
-        const response = await api.post('templateData/submitActionPlanPR', payload);
+        const response = await api.post('/templateData/submitActionPlanPR', payload);
   
         if (response.data?.success) {
           Swal.fire('Submitted!', 'The Action Plan has been submitted.', 'success');
