@@ -73,6 +73,54 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
   const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
 
+    const [tableActRow, setTableActRow] = useState([{ act: "", section: "" }]);
+
+    const UpdateTableRowApi = (rows)=>{
+
+        const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+
+        const actField = allFields.find((f) => f.table === "act");
+        const sectionField = allFields.find((f) => f.table === "section");
+
+        if(actField && sectionField){
+
+            const acts = tableActRow.map((row) => row.act).filter((val) => val);
+    
+            const sections = tableActRow.flatMap((row) => row.section || []).filter((val) => val);
+    
+    
+            var savingObj = {
+                [actField.name] : acts,
+                [sectionField.name] : sections
+            }
+    
+            setFormData({
+                ...formData,
+                ...savingObj,
+            });
+        }
+
+        setTableActRow(rows);
+    };
+    
+    const makeOrderCopyShow = (value) => {
+
+        setNewFormConfig((prevFormConfig) => {
+            const updatedFormConfig = prevFormConfig.map((data) => {
+                if(data.name === "field_order_copy_(_17a_done_)"){
+                    return {...data, hide_from_ux : value }
+                }else{
+                    return data;
+                }
+            });
+            return updatedFormConfig;
+        });
+
+        if (value) {
+            delete formData["field_order_copy_(_17a_done_)"];
+        }
+    };
+
 //   useEffect(() => {
 //     if (formData && Object.keys(formData).length !== 0 && !formData.id) {
 //       localStorage.setItem(template_name + '-formData', JSON.stringify(formData));
@@ -1228,10 +1276,27 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 Update
               </Button>
 
-              : !readOnly && onSubmit &&
-              <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
-                Save
-              </Button>
+              :!readOnly && onSubmit && (
+                <>
+                  <Button
+                    onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()}
+                    sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
+                    className="Roboto blueButton"
+                  >
+                    Save
+                  </Button>
+            
+                  {table_name === 'cid_ui_case_action_plan' && (
+                    <Button
+                    onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()}
+                      sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }}
+                      className="Roboto blueButton"
+                    >
+                      Save & New
+                    </Button>
+                  )}
+                </>
+              )
             }
 
           </Box>
@@ -1263,7 +1328,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             <Grid container sx={{ alignItems: 'start' }}>
               {(stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).map((field, index) => {
 
-                if(field?.hide_from_ux || field?.table?.toLowerCase() === "section"){
+                if (field?.hide_from_ux || (field?.table?.toLowerCase() === "section" && table_name === "cid_under_investigation")) {
                     return null
                 }
 
@@ -1311,8 +1376,19 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 }
 
 
-                if(field?.table?.toLowerCase() === "act"){
-                    return <ActTable />;
+                if(field?.table?.toLowerCase() === "act" && table_name === "cid_under_investigation"){
+                    return (
+                        <Grid item xs={12} p={2}>
+                            <ActTable 
+                                formConfig={allFields}
+                                formData={formData}
+                                tableRow={tableActRow}
+                                tableFunc={UpdateTableRowApi}
+                                readOnly={readOnly}
+                                showOrderCopy={makeOrderCopyShow}
+                            />
+                        </Grid>
+                    );
                 }
 
 

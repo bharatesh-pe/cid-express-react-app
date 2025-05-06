@@ -4753,6 +4753,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       if (data.field_date_created) data.field_date_created = formatDate(data.field_date_created);
       if (data.field_last_updated) data.field_last_updated = formatDate(data.field_last_updated);
       if (data.created_at) data.created_at = formatDate(data.created_at);
+      if (data.field_due_date) data.field_due_date = formatDate(data.field_due_date)
 
       delete data.field_ui_case_id;
       delete data.ui_case_id;
@@ -8011,84 +8012,84 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
         }
 
 
-		let otherParsedData  = {};
-		try {
-			otherParsedData = JSON.parse(others_data);
-		} catch (err) {
-            otherParsedData = others_data;
-			// return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
-		}
+		// let otherParsedData  = {};
+		// try {
+		// 	otherParsedData = JSON.parse(others_data);
+		// } catch (err) {
+    //         otherParsedData = others_data;
+		// 	// return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+		// }
 
-        if (typeof otherParsedData !== 'object' || otherParsedData === null) {
-            return userSendResponse(res, 400, false, "Invalid data format in others_data.", null);
-        }
+    //     if (typeof otherParsedData !== 'object' || otherParsedData === null) {
+    //         return userSendResponse(res, 400, false, "Invalid data format in others_data.", null);
+    //     }
 
-		// Handle others_data
-		if (otherParsedData && typeof otherParsedData === "object") {
-            // Handle approval logic
-            if (otherParsedData.approval_details && otherParsedData.approval) {
-                const approval = otherParsedData.approval;
-                const approvalDetails = otherParsedData.approval_details;
+		// // Handle others_data
+		// if (otherParsedData && typeof otherParsedData === "object") {
+    //         // Handle approval logic
+    //         if (otherParsedData.approval_details && otherParsedData.approval) {
+    //             const approval = otherParsedData.approval;
+    //             const approvalDetails = otherParsedData.approval_details;
 
-                const existingApprovalItem = await ApprovalItem.findByPk(approval?.approval_item);
-                if (!existingApprovalItem) {
-                    await t.rollback();
-                    return userSendResponse(res, 400, false, "Invalid approval item ID.");
-                }
+    //             const existingApprovalItem = await ApprovalItem.findByPk(approval?.approval_item);
+    //             if (!existingApprovalItem) {
+    //                 await t.rollback();
+    //                 return userSendResponse(res, 400, false, "Invalid approval item ID.");
+    //             }
                 
-                const newApproval = await UiCaseApproval.create(
-                    {
-                        approval_item: approval.approval_item,
-                        approved_by: approval.approved_by,
-                        approval_date: approval.approval_date || new Date(),
-                        remarks: approval.remarks,
-                        reference_id: approvalDetails.id || recordId,
-                        approval_type: default_status,
-                        module: approvalDetails.module_name,
-                        action: approvalDetails.action,
-                        created_by: userId,
-                    },
-                    { transaction: t }
-                );
+    //             const newApproval = await UiCaseApproval.create(
+    //                 {
+    //                     approval_item: approval.approval_item,
+    //                     approved_by: approval.approved_by,
+    //                     approval_date: approval.approval_date || new Date(),
+    //                     remarks: approval.remarks,
+    //                     reference_id: approvalDetails.id || recordId,
+    //                     approval_type: default_status,
+    //                     module: approvalDetails.module_name,
+    //                     action: approvalDetails.action,
+    //                     created_by: userId,
+    //                 },
+    //                 { transaction: t }
+    //             );
                 
-                if (!recordId) {
-                    await t.rollback();
-                    return userSendResponse(res, 400, false, "Reference ID is required.");
-                }
+    //             if (!recordId) {
+    //                 await t.rollback();
+    //                 return userSendResponse(res, 400, false, "Reference ID is required.");
+    //             }
 
 
                 
-                await ApprovalActivityLog.create(
-                {
-                  approval_id: newApproval.approval_id,
-                  approval_item_id: approval.approval_item,
-                  case_id: approvalDetails.id || recordId,
-                  approved_by: approval.approved_by,
-                  approved_date: approval.approval_date,
-                  approval_type: default_status,
-                  module: approvalDetails.module_name,
-                  created_by: userId,
-              },
-                { transaction: t }
-              );
+    //             await ApprovalActivityLog.create(
+    //             {
+    //               approval_id: newApproval.approval_id,
+    //               approval_item_id: approval.approval_item,
+    //               case_id: approvalDetails.id || recordId,
+    //               approved_by: approval.approved_by,
+    //               approved_date: approval.approval_date,
+    //               approval_type: default_status,
+    //               module: approvalDetails.module_name,
+    //               created_by: userId,
+    //           },
+    //             { transaction: t }
+    //           );
                               
 
-                await System_Alerts.create(
-                    {
-                        approval_id: newApproval.approval_id,
-                        reference_id : recordId,
-                        alert_type: "Approval",
-                        alert_message: newApproval.remarks,
-                        created_by: userId,
-                        created_by_designation_id: user_designation_id,
-                        created_by_division_id: null,
-                        send_to :insertedIO || null,
-                    },
-                    { transaction: t }
-                );
-            }
+    //             await System_Alerts.create(
+    //                 {
+    //                     approval_id: newApproval.approval_id,
+    //                     reference_id : recordId,
+    //                     alert_type: "Approval",
+    //                     alert_message: newApproval.remarks,
+    //                     created_by: userId,
+    //                     created_by_designation_id: user_designation_id,
+    //                     created_by_division_id: null,
+    //                     send_to :insertedIO || null,
+    //                 },
+    //                 { transaction: t }
+    //             );
+    //         }
 
-		}
+		// }
 
 		await t.commit();
 		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
