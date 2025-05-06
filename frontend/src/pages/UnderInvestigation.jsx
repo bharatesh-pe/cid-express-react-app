@@ -5932,7 +5932,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   return {
                     field: key,
                     headerName: updatedKeyName ? updatedKeyName : "",
-                    width: updatedKeyName.length < 15 ? 100 : 180,
+                    width: options.table === 'cid_ui_case_action_plan'
+                      ? 250
+                      : (updatedKeyName.length < 15 ? 100 : 180),
                     resizable: true,
                     cellClassName: (params) => getCellClassName(key, params, options.table),
                     renderHeader: () => (
