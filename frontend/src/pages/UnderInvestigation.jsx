@@ -3577,7 +3577,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
   useEffect(() => {
-    if (selectedOtherTemplate?.table === "cid_ui_case_action_plan") {
+    if (selectedOtherTemplate?.table === "cid_ui_case_action_plan" || selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
       loadAOFields();
     }
   }, [selectedOtherTemplate]);
@@ -5755,7 +5755,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           let showReplacePdf = false;
 
           if (selectedOtherTemplate?.table || options.table === "cid_ui_case_progress_report") {
-            const anyHasPRStatus = records.some(record => record.hasFieldPrStatus === true);
+            const anyHasPRStatus = records.some(record => record.field_pr_status === "Yes");
           
             // Show button only if no one has PR status true
             if (!anyHasPRStatus) {
@@ -9895,6 +9895,85 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     uploadedFiles.length > 0 ? (
                       <>
                         <Box >
+                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px' }}>
+                          {aoFields.length > 0 ? (
+                            <Grid container spacing={2}>
+                              {aoFields.slice(0, 6).map((field, index) => (
+                                <Grid item xs={12} md={4} key={index}>
+                                  {field.type === 'text' && (
+                                    <ShortText
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      disabled={true}
+                                    />
+                                  )}
+                                  {field.type === 'multidropdown' && (
+                                    <MultiSelect
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      disabled={true}
+                                    />
+                                  )}
+                                  {field.type === 'autocomplete' && (
+                                    <AutocompleteField
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      disabled={true}
+                                    />
+                                  )}
+                                </Grid>
+                              ))}
+                              <Grid container item xs={12} spacing={2} alignItems="flex-start">
+                                {aoFields.slice(4).filter(f => f.type === 'textarea').map((field, index) => (
+                                  <Grid item xs={5} key={index}>
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                      <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
+                                        {field.label}
+                                      </label>
+                                    </div>
+                                    <TextField
+                                      fullWidth
+                                      multiline
+                                      minRows={8}
+                                      variant="outlined"
+                                      value={filterAoValues[field.name] || ""}
+                                      onChange={(e) =>
+                                        setFilterAoValues((prev) => ({
+                                          ...prev,
+                                          [field.name]: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </Grid>
+                                ))}
+
+                                <Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
+                                  <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    onClick={() =>
+                                      onActionPlanUpdate(
+                                        "cid_under_investigation",
+                                        filterAoValues,
+                                      )
+                                    }
+                                  >
+                                    Update
+                                  </Button>
+                                </Grid>
+                              </Grid>
+                            </Grid>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              No AO Fields Available
+                            </Typography>
+                          )}
+                        </Box>
                             <TableView
                                 rows={otherTemplateData}
                                 columns={otherTemplateColumn}
