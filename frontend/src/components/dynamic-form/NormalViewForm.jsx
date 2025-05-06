@@ -1228,10 +1228,27 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 Update
               </Button>
 
-              : !readOnly && onSubmit &&
-              <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
-                Save
-              </Button>
+              :!readOnly && onSubmit && (
+                <>
+                  <Button
+                    onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()}
+                    sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
+                    className="Roboto blueButton"
+                  >
+                    Save
+                  </Button>
+            
+                  {table_name === 'cid_ui_case_action_plan' && (
+                    <Button
+                    onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()}
+                      sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }}
+                      className="Roboto blueButton"
+                    >
+                      Save & New
+                    </Button>
+                  )}
+                </>
+              )
             }
 
           </Box>

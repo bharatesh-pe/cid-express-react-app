@@ -7,7 +7,7 @@ import { FormHelperText, Tooltip } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-export default function AutocompleteField({ formData, errors, field, onFocus, isFocused, onChange, onHistory, value }) {
+export default function AutocompleteField({ formData, errors, field, onFocus, isFocused, onChange, onHistory, value, disabled }) {
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
@@ -15,7 +15,7 @@ export default function AutocompleteField({ formData, errors, field, onFocus, is
             <Autocomplete
                 disablePortal
                 options={field.options}
-                disabled={field.disabled === true}
+                disabled={disabled ||field.disabled === true}
                 getOptionLabel={(option) => option.name || ''}
                 value={field.options.find((option) => String(option.code) === String(formData?.[field.name])) || null} // FIX HERE
                 onChange={(event, newValue) => {
