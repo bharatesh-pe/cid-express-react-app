@@ -966,7 +966,7 @@ const UnderInvestigation = () => {
             default_status : "ui_case"
         }
 
-        if(natureOfDisposalValue?.code === "disposal"){
+        if(natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases"){
             if (Array.isArray(natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'])) {
                 const hasFileInstance = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].some(file => file.filename instanceof File);
                 var filteredArray = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].filter(file => file.filename instanceof File);
@@ -11605,7 +11605,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 )}
                             />
                             {
-                                natureOfDisposalValue?.code === "disposal" &&
+                               ( natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases") &&
                                 <Box pt={2}>
                                     <FileInput
                                         field={{
