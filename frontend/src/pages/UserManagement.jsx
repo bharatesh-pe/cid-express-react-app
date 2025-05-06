@@ -590,7 +590,7 @@ const UserManagement = () => {
         return;
     }
 
-    if (modalTitle === "Reset Pin") {
+    if (modalTitle === "Reset PIN") {
       setErrors({});
       if (!newUser.pin) {
         toast.error("Pin is required.", {
@@ -1017,7 +1017,7 @@ const UserManagement = () => {
       confirmPin: "",
     }));
   
-    setModalTitle("Reset Pin");
+    setModalTitle("Reset PIN");
     setIsModalOpen(true);
   };
 
@@ -1566,7 +1566,7 @@ const UserManagement = () => {
 
                 <Divider orientation="vertical" flexItem />
 
-                <Tooltip title="Reset Pin" arrow>
+                <Tooltip title="Reset PIN" arrow>
                   <span>
                     <IconButton
                       onClick={() => handleResetPin(selectedUsers)}
@@ -1705,8 +1705,8 @@ const UserManagement = () => {
                 >
                 {modalTitle === "Edit User"
                     ? "Update User"
-                    : modalTitle === "Reset Pin"
-                    ? "Reset Pin"
+                    : modalTitle === "Reset PIN"
+                    ? "Reset PIN"
                     : modalTitle === "Set Filters"
                     ? "Set Filters"
                     : "Save User"}
@@ -1717,7 +1717,7 @@ const UserManagement = () => {
                         >
             <form className="py-4 px-4">
               <Grid container spacing={2}>
-              {(modalTitle !== "Reset Pin") && (
+              {(modalTitle !== "Reset PIN") && (
               <>
                 <Grid item xs={12} sm={4}>
                   <AutocompleteField
@@ -1816,13 +1816,13 @@ const UserManagement = () => {
                 </>
                 )}
 
-                {(modalTitle === "Reset Pin" || modalTitle === "Add User") && (
+                {(modalTitle === "Reset PIN" || modalTitle === "Add User") && (
                     <>
                     <Grid item xs={12} sm={6}>
                         <div className="px-2">
                         <PasswordInput
                             id="pin"
-                            label="Enter New Pin"
+                            label="Enter New PIN"
                             name="pin"
                             type="password"
                             value={newUser?.pin || ""}
@@ -1835,7 +1835,7 @@ const UserManagement = () => {
                         <div className="px-2">
                         <PasswordInput
                             id="confirmPin"
-                            label="Re-enter New Pin"
+                            label="Re-enter New PIN"
                             name="confirmPin"
                             type="password"
                             value={newUser?.confirmPin || ""}
@@ -1847,7 +1847,7 @@ const UserManagement = () => {
                     </>
                 )}
 
-                {(modalTitle !== "Reset Pin") && (
+                {(modalTitle !== "Reset PIN") && (
                     <Grid item xs={12} sm={12}>
                         <SelectField
                             formData={newUser}

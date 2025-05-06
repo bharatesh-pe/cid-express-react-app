@@ -4,7 +4,7 @@ import Autocomplete from "@mui/material/Autocomplete";
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, disabled }) => {
     return (
         <Box sx={{ width: '100%' }}>
             {field.heading && (
@@ -18,7 +18,7 @@ const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, on
                 id={field.id}
                 error={Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
                 options={field.options}
-                disabled={field.disabled === true}
+                disabled={disabled ||field.disabled === true}
                 getOptionLabel={(option) => option.name}
                 value={field.options.filter(option => 
                     [].concat(formData?.[field?.name] || []).includes(option.code)

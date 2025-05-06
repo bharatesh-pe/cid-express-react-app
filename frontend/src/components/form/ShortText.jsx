@@ -78,7 +78,7 @@ const ShortText = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
           readOnly: readOnly,
         }}
         // required={field.required === true}
-        disabled={field.disabled === true}
+        disabled={disabled ||field.disabled === true}
         onChange={(e) => {
               onChange(e);
           }}

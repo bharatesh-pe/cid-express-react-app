@@ -75,6 +75,8 @@ import dayjs from "dayjs";
 import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
+import NumberField from "../components/form/NumberField";
+import ShortText from "../components/form/ShortText";
 import LongText from "../components/form/LongText";
 import DateField from "../components/form/Date";
 import GenerateProfilePdf from "./GenerateProfilePdf";
@@ -712,7 +714,10 @@ const UnderInvestigation = () => {
     const [isApprovalSaveMode, setIsApprovalSaveMode] = useState(true);
     const [isFromEdit, setIsFromEdit] = useState(false);
     const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
-
+    const [aoFields, setAoFields] = useState([]);
+    const [aoFieldId,setAoFieldId] = useState([]);
+    const [filterAoValues, setFilterAoValues] = useState({});
+    
     const showNatureOfDisposal = (selectedRow) => {
         setSelectedRowData(selectedRow);
         setNatureOfDisposalValue(null);
@@ -2836,14 +2841,17 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
                             width: 50,
                             resizable: false,
-                            renderCell: (params) => (
+                            renderCell: (params) => {
+                                const isDisabled = !params?.row?.["field_io_name"];
+                                return (
                                 <Box display="flex" justifyContent="center" alignItems="center" width="100%">
                                     <Checkbox
                                         checked={params.row.isSelected || false}
                                         onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                        disabled={isDisabled}
                                     />
                                 </Box>
-                            ),
+                            )},
                         },
                         {
                             field: "task",
@@ -2853,16 +2861,18 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             renderHeader: (params) => (
                                 <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
                             ),
-                            renderCell: (params) => (
+                            renderCell: (params) => {
+                              const isDisabled = !params?.row?.["field_io_name"];
+                              return (
                                 <Badge
                                     badgeContent={params?.row?.['task_unread_count']}
                                     color="primary"
                                     sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
                                 >
-                                    <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                                    <Tooltip title="Add Task"><AddTaskIcon onClick={isDisabled ? undefined : () => handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
                                 </Badge>
-                            ),
-                        },
+                            )},
+                          },
                         {
                             field: "approval",
                             headerName: "Approval",
@@ -2872,7 +2882,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             renderHeader: (params) => (
                                 <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
                             ),                            
-                            renderCell: (params) => (
+                            renderCell: (params) => {
+                              const isDisabled = !params?.row?.["field_io_name"];
+                              return(
                                 <Button
                                     variant="contained"
                                     color="transparent"
@@ -2887,9 +2899,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         }
                                     }}
                                 >
-                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
+                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={isDisabled ? undefined : ()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
                                 </Button>
-                            )
+                            )}
                         },
                         {
                             field: "field_cid_crime_no./enquiry_no",
@@ -3410,17 +3422,152 @@ const loadChildMergedCasesData = async (page, caseId) => {
     );
     setTableSortKey(key);
   };
-  const [aoFields, setAoFields] = useState([]);
+  const loadValueField = async (rowData, editData, table_name) => {
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check Table Name", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-warning",
+      });
+      return;
+    }
+
+    var viewTemplatePayload = {
+      table_name: table_name,
+      id: rowData.id,
+    };
+    setLoading(true);
+    try {
+      const viewTemplateData = await api.post(
+        "/templateData/viewTemplateData",
+        viewTemplatePayload
+      );
+      setLoading(false);
+
+      if (viewTemplateData && viewTemplateData.success) {
+        const formValues = viewTemplateData.data ? viewTemplateData.data : {};
+
+        setInitialData(formValues);
+        setFilterAoValues(formValues); 
+        setviewReadonly(!editData);
+        setEditTemplateData(editData);
+
+        const viewTableData = {
+          table_name: table_name,
+        };
+
+        setLoading(true);
+        try {
+          const viewTemplateResponse = await api.post(
+            "/templates/viewTemplate",
+            viewTableData
+          );
+          setLoading(false);
+
+          if (viewTemplateResponse && viewTemplateResponse.success) {
+
+            console.log("viewtemplaterespose", viewTemplateResponse)
+          } else {
+            const errorMessage = viewTemplateResponse.message
+              ? viewTemplateResponse.message
+              : "Failed to delete the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              }
+            );
+          }
+        }
+      } else {
+        const errorMessage = viewTemplateData.message
+          ? viewTemplateData.message
+          : "Failed to create the template. Please try again.";
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(
+          error.response["data"].message
+            ? error.response["data"].message
+            : "Please Try Again !",
+          {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+          }
+        );
+      }
+    }
+  };
   const loadAOFields = async () => {
+    setLoading(true);
     try {
       const response = await api.post("/templates/viewTemplate", {
         table_name: "cid_under_investigation",
       });
-  
       if (response.success && response.data?.fields) {
-        const aoOnlyFields = response.data.fields.filter(field => field.ao_field === true);
+        let aoOnlyFields = response.data.fields.filter(field => field.ao_field === true && field.hide_from_ux === false);
+        
+        const briefFactField = response.data.fields.find(field => field.name === 'field_breif_fact');
+        const policeStationField = response.data.fields.find(field => field.name === 'field_investigation_carried_out_by_the_police_station');
+        
+        if (briefFactField && !aoOnlyFields.includes(briefFactField)) {
+            aoOnlyFields.push(briefFactField);
+        }
+        
+        if (policeStationField && !aoOnlyFields.includes(policeStationField)) {
+            aoOnlyFields.push(policeStationField);
+        }
+            
         setAoFields(aoOnlyFields);
-      }
+        loadValueField(aoFieldId, false, "cid_under_investigation");
+        setLoading(false);
+    }
+    
     } catch (error) {
       toast.error("Failed to load AO fields", {
         position: "top-right",
@@ -3434,6 +3581,75 @@ const loadChildMergedCasesData = async (page, caseId) => {
       loadAOFields();
     }
   }, [selectedOtherTemplate]);
+  
+  const onActionPlanUpdate = async (table_name, data) => {
+    
+    if (!table_name || table_name === "") {
+      toast.warning("Please Check The Template");
+      return;
+    }
+  
+    if (!data || Object.keys(data).length === 0) {
+      toast.warning("Data Is Empty Please Check Once");
+      return;
+    }
+  
+    const formData = new FormData();
+    formData.append("table_name", table_name);
+  
+    let normalData = {};
+  
+    const allowedFields = [
+      "field_breif_fact",
+      "field_investigation_carried_out_by_the_police_station"
+    ];
+  
+    allowedFields.forEach((key) => {
+      const value = data[key];
+      if (value !== undefined && value !== null && value !== "") {
+        normalData[key] = value;
+      }
+    });
+    
+    formData.append("id", data.id);
+    formData.append("data", JSON.stringify(normalData));
+  
+    try {
+      setLoading(true);
+      const saveTemplateData = await api.post(
+        "/templateData/updateTemplateData",
+        formData
+      );
+      setLoading(false);
+  
+      if (saveTemplateData && saveTemplateData.success) {
+        toast.success(saveTemplateData.message || "Data Updated Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () => {
+            if (sysStatus === "merge_cases") {
+              loadMergedCasesData(paginationCount);
+            } else {
+              handleOtherTemplateActions("cid_ui_case_action_plan");
+            }
+          },
+        });
+      } else {
+        toast.error(saveTemplateData.message || "Failed to update the data.");
+      }
+    } catch (error) {
+      setLoading(false);
+      toast.error(
+        error?.response?.data?.message || "Update failed. Please try again."
+      );
+    }
+  };
   
   
   const getTemplate = async (table_name) => {
@@ -3805,6 +4021,119 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
+  const otherAPPRTemplateSaveFunc = async (data) => {
+    if ((!natureOfDisposalModal && !showOrderCopy) &&
+        (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
+      toast.warning("Please Check The Template", {
+        position: "top-right",
+        autoClose: 3000,
+        className: "toast-warning",
+      });
+      return;
+    }
+  
+    if (Object.keys(data).length === 0) {
+      toast.warning("Data Is Empty Please Check Once", {
+        position: "top-right",
+        autoClose: 3000,
+        className: "toast-warning",
+      });
+      return;
+    }
+  
+    if (natureOfDisposalModal) {
+      natureOfDisposalFinalReport(data);
+      return;
+    }
+  
+    if (showOrderCopy) {
+      natureOfDisposalOrderCopy(data);
+      return;
+    }
+  
+    const formData = new FormData();
+    const normalData = {};
+  
+    optionFormTemplateData.forEach((field) => {
+      const val = data[field.name];
+      if (val !== undefined && val !== null && val !== "") {
+        if (field.type === "file" || field.type === "profilepicture") {
+          if (field.type === "file") {
+            if (Array.isArray(val)) {
+              const validFiles = val.filter(f => f.filename instanceof File);
+              validFiles.forEach(file => formData.append(field.name, file.filename));
+              const filteredMeta = validFiles.map(f => ({
+                ...f,
+                filename: f.filename.name,
+              }));
+              formData.append("folder_attachment_ids", JSON.stringify(filteredMeta));
+            }
+          } else {
+            formData.append(field.name, val);
+          }
+        } else {
+          normalData[field.name] =
+            field.type === "checkbox" || field.type === "multidropdown"
+              ? Array.isArray(val) ? val.join(",") : val
+              : val;
+        }
+      }
+    });
+  
+    if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+      normalData["field_pr_status"] = "No";
+    }
+  
+    normalData.sys_status = "AP";
+    normalData.field_status = "submit";
+    normalData["ui_case_id"] = selectedRowData.id;
+  
+    formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
+    formData.append("data", JSON.stringify(normalData));
+    formData.append("transaction_id", randomApprovalId);
+    formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
+  
+    setLoading(true);
+  
+    try {
+      const response = await api.post("/templateData/saveActionPlanAndProgressReport", formData);
+      setLoading(false);
+  
+      if (response?.success) {
+        toast.success(response.message || "Case Updated Successfully", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-success",
+        });
+  
+        setOtherFormOpen(false);
+  
+        if (selectedOtherTemplate?.field) {
+          const combinedData = {
+            id: selectedRowData.id,
+            [selectKey.name]: selectedOtherFields.code,
+          };
+          onUpdateTemplateData(combinedData);
+        }
+        showOptionTemplate(selectedOtherTemplate.table);
+  
+      } else {
+        toast.error(response.message || "Failed to change the status. Please try again.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      toast.error(error?.response?.data?.message || "Please Try Again!", {
+        position: "top-right",
+        autoClose: 3000,
+        className: "toast-error",
+      });
+    }
+  };
+
   const otherTemplateSaveFunc = async (data) => {
 
     if ((!natureOfDisposalModal && !showOrderCopy) && (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
@@ -4087,6 +4416,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
         }
       }
     });
+
+    if(selectedOtherTemplate.table === "cid_ui_case_progress_report"){
+        normalData["field_pr_status"] = "No";
+    }
   
     formData.append("table_name", selectedOtherTemplate.table);
     formData.append("id", data.id);
@@ -4771,6 +5104,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
   };
   const onUpdateTemplateData = async (data) => {
 
+    console.log("dataaa", data)
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -5352,6 +5686,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
   
   
   const handleOtherTemplateActions = async (options, selectedRow, searchFlag,fromUploadedFiles) => {
+    setAoFieldId(selectedRow);
     fromUploadedFiles = fromUploadedFiles ?? false;
 
     if(!selectedRow || Object.keys(selectedRow).length === 0 || !options || Object.keys(options).length === 0){
@@ -5486,6 +5821,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     cellClassName: (params) => getCellClassName("sl_no", params, options.table),
                     renderCell: (params) => {
                       const isPdfUpdated = params.row.field_pr_status === "Yes";
+                      const isPdfUpdating = params.row.field_status === "Completed";
                       // const isAssignedUser = String(params.row.field_assigned_to_id);
                       // const isAssignedUserId = String(localStorage.getItem("user_id"));
                     
@@ -5497,7 +5833,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     
                       // const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
                     
-                      return isPdfUpdated ? null : (
+                      return isPdfUpdated || !isPdfUpdating ? null : (
                         <div onClick={(e) => e.stopPropagation()}>
                         <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
                       </div>
@@ -5852,6 +6188,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
 
                     const isViewAction = options.is_view_action === true
+                    const isActionPlan = options.table === "cid_ui_case_action_plan"
                     return (
                       <Box
                         sx={{
@@ -5872,6 +6209,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         </Button>
                 
                         {canEdit&& (
+                          !isActionPlan && (
                           !isViewAction && (
                             !isPdfUpdated && (
                                !isChildMergedLoading && (
@@ -5893,9 +6231,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 Edit
                               </Button>
                             )
-                            ))
+                            )))
                           )}
                         {canDelete&& (
+                          !isActionPlan && (
                           !isViewAction && (
                             !isPdfUpdated && (
                               !isChildMergedLoading && (
@@ -5910,7 +6249,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 Delete
                               </Button>
                            )
-                          ))
+                          )))
                         )}
                         {options.table === "cid_ui_case_trail_monitoring" && (
                           <>
@@ -8622,7 +8961,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     const closeOtherForm = ()=>{
         setOtherFormOpen(false)
         setShowPtCaseModal(false);
-        if(selectedOtherTemplate?.table === "cid_ui_case_progress_report"){
+        if(selectedOtherTemplate?.table === "cid_ui_case_action_plan"){
             handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
         }
     }
@@ -9094,7 +9433,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   initialData={otherInitialTemplateData}
                   formConfig={optionFormTemplateData}
                   stepperData={optionStepperData}
-                  onSubmit={otherTemplateSaveFunc}
+                  onSubmit={
+                    selectedOtherTemplate?.table === "cid_ui_case_action_plan"
+                      ? otherAPPRTemplateSaveFunc
+                      : otherTemplateSaveFunc 
+                  }
                   onUpdate={otherTemplateUpdateFunc}
                   onError={onSaveTemplateError}
                   closeForm={closeOtherForm}
@@ -9283,7 +9626,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
         //   maxWidth="2xl"
           fullScreen
           fullWidth
-          sx={{ zIndex: "1", marginLeft: '260px' }}
+          sx={{ zIndex: "1", marginLeft: '50px' }}
         >
           <DialogTitle
             id="alert-dialog-title"
@@ -9609,49 +9952,96 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     <Box>  
                       {selectedOtherTemplate?.table === "cid_ui_case_action_plan" && (
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px' }}>
-                          <Typography variant="body1" fontWeight={500}>
-                            Action Plan
-                          </Typography>
                           {aoFields.length > 0 ? (
-  aoFields.map((field, index) => (
-    <div key={index} style={{ marginBottom: '1rem' }}>
-      <Typography variant="body2">
-        {field.label || field.field_name}
-      </Typography>
+                            <Grid container spacing={2}>
+                              {aoFields.slice(0, 6).map((field, index) => (
+                                <Grid item xs={12} md={4} key={index}>
+                                  {field.type === 'text' && (
+                                    <ShortText
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      disabled={true}
+                                    />
+                                  )}
+                                  {field.type === 'multidropdown' && (
+                                    <MultiSelect
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      disabled={true}
+                                    />
+                                  )}
+                                  {field.type === 'autocomplete' && (
+                                    <AutocompleteField
+                                      key={field.id}
+                                      field={field}
+                                      formData={filterAoValues}
+                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      disabled={true}
+                                    />
+                                  )}
+                                </Grid>
+                              ))}
+                              <Grid container item xs={12} spacing={2} alignItems="flex-start">
+                                {aoFields.slice(4).filter(f => f.type === 'textarea').map((field, index) => (
+                                  <Grid item xs={5} key={index}>
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                      <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
+                                        {field.label}
+                                      </label>
+                                    </div>
+                                    <TextField
+                                      fullWidth
+                                      multiline
+                                      minRows={8}
+                                      variant="outlined"
+                                      value={filterAoValues[field.name] || ""}
+                                      onChange={(e) =>
+                                        setFilterAoValues((prev) => ({
+                                          ...prev,
+                                          [field.name]: e.target.value,
+                                        }))
+                                      }
+                                    />
+                                  </Grid>
+                                ))}
 
-      {field.formType === 'Short Text' && (
-        <input type="text" style={{ width: '100%' }} />
-      )}
-
-      {field.formType === 'Integer' && (
-        <input type="number" style={{ width: '100%' }} />
-      )}
-
-      {field.formType === 'Multiple Dropdown' && (
-        <select multiple style={{ width: '100%' }}>
-          {(field.options || []).map((option, i) => (
-            <option key={i} value={option}>
-              {option}
-            </option>
-          ))}
-        </select>
-      )}
-
-      {field.formType === 'Auto Complete' && (
-        // You may replace this with an actual Autocomplete component from a UI library like MUI
-        <input type="text" placeholder="Start typing..." style={{ width: '100%' }} />
-      )}
-    </div>
-  ))
-) : (
-  <Typography variant="body2" color="text.secondary">
-    No AO Fields Available
-  </Typography>
-)}
-
+                                <Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
+                                  <Button
+                                    variant="outlined"
+                                    color="primary"
+                                    onClick={() =>
+                                      onActionPlanUpdate(
+                                        "cid_under_investigation",
+                                        filterAoValues,
+                                      )
+                                    }
+                                  >
+                                    Update
+                                  </Button>
+                                </Grid>
+                              </Grid>
+                            </Grid>
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              No AO Fields Available
+                            </Typography>
+                          )}
                         </Box>
                       )}
-                 
+                      {/* <Box sx={{ display: 'flex', alignItems: 'end', justifyContent: 'end', marginBottom: '10px' }}>
+                        <Button
+                            variant="outlined"
+                            sx={{height: '40px'}}
+                            onClick={() =>
+                                showOptionTemplate(selectedOtherTemplate?.table)
+                            }
+                        >
+                            Add
+                        </Button>
+                      </Box> */}
                         <TableView
                             rows={otherTemplateData}
                             columns={otherTemplateColumn}
@@ -9808,7 +10198,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                   gap: "18px",
                               }}
                           >
-                              <Box sx={{ fontWeight: "bold", fontSize: "16px" }}>
+                              <Box sx={{ fontWeight: "bold", fontSize: "16px" , margin: '0'}}>
                                   Approval needed to proceed with: 
                                   <span style={{ color: "#1976d2", fontWeight: "bold" }}>
                                       {approvalItem.find(option => option.approval_item_id === approvalSaveData?.approval_item)?.name || "Approval Item"}
