@@ -1804,15 +1804,15 @@ const UserManagement = () => {
                   />
                 </Grid>
 
-                <Grid item xs={12}>
                     {
                         tableRows.length > 0 &&
-                        <TableView
-                            rows={tableRows}
-                            columns={userModalColumn}
-                        />
+                        <Grid item xs={12}>
+                            <TableView
+                                rows={tableRows}
+                                columns={userModalColumn}
+                            />
+                        </Grid>
                     }
-                </Grid>
                 </>
                 )}
 

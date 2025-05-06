@@ -154,6 +154,73 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
         }
 
+        const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+
+        if(formData?.['field_section']){
+
+            var actFields = allFields.filter((element)=>{
+                return element.name === 'field_section';
+            });
+
+            if(actFields?.[0]?.options){
+
+                var getOptionName = actFields[0].options.filter((element)=>{
+                    if(formData?.['field_section']?.includes(element.code)){
+                        return element;
+                    }
+                });
+
+                if(getOptionName.length > 0){
+                    var showSectionNames = ['17a', '17b', '19']
+
+                    var getSectionValues = getOptionName.filter((element)=> showSectionNames.includes((element.name).toLowerCase()));
+
+                    var hide_from_ux = true;
+
+                    if(getSectionValues.length > 0){
+                        hide_from_ux = false;
+                    }
+
+                    var updatedFormConfig = allFields.map((element)=>{
+                        if(element.name === "field_order_copy_(_17a_done_)"){
+                            element.hide_from_ux = hide_from_ux;
+                        }
+
+                        return element
+                    });
+
+                    setNewFormConfig(updatedFormConfig);
+                    delete formData["field_order_copy_(_17a_done_)"];
+
+                }else{
+
+                    var updatedFormConfig = allFields.map((element)=>{
+                        if(element.name === "field_order_copy_(_17a_done_)"){
+                            element.hide_from_ux = true;
+                        }
+        
+                        return element
+                    });
+        
+                    setNewFormConfig(updatedFormConfig);
+                    delete formData["field_order_copy_(_17a_done_)"];
+                }
+            }
+
+        }else{
+
+            var updatedFormConfig = allFields.map((element)=>{
+                if(element.name === "field_order_copy_(_17a_done_)"){
+                    element.hide_from_ux = true;
+                }
+
+                return element
+            });
+
+            setNewFormConfig(updatedFormConfig);
+            delete formData["field_order_copy_(_17a_done_)"];
+        }
+
     },[formData]);
 
 
@@ -182,20 +249,43 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
   };
 
-  const validate = () => {
-    let tempErrors = {};
-    newFormConfig.forEach((field) => {
-      if (Boolean(field.required) && !formData[field.name]) {
-        tempErrors[field.name] = `${field.label} is required`;
-      } else if (field.minLength && formData[field.name] !== '' && formData[field.name]?.length < field.minLength) {
-        tempErrors[field.name] = `${field.label} must be at least ${field.minLength} characters long`;
-      } else if (field.maxLength && formData[field.name] !== '' && formData[field.name]?.length > field.maxLength) {
-        tempErrors[field.name] = `${field.label} must be less than ${field.maxLength} characters long`;
-      }
-    });
-    setErrors(tempErrors);
-    return Object.keys(tempErrors).length === 0;
-  };
+    const validate = () => {
+        let tempErrors = {};
+        newFormConfig.forEach((field) => {
+
+            if(field?.hide_from_ux){
+                return null
+            }
+
+            const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+
+            if (roleTitle === "admin organization") {
+                if (!field.ao_field) {
+                    field.disabled = true;
+                    if (field.required) {
+                        field.required = false;
+                    }
+                }
+            } else {
+                if (field.ao_field) {
+                    field.disabled = true;
+                    if (field.required) {
+                        field.required = false;
+                    }
+                }
+            }
+
+            if (Boolean(field.required) && !formData[field.name]) {
+                tempErrors[field.name] = `${field.label} is required`;
+            } else if (field.minLength && formData[field.name] !== "" && formData[field.name]?.length < field.minLength) {
+                tempErrors[field.name] = `${field.label} must be at least ${field.minLength} characters long`;
+            } else if (field.maxLength && formData[field.name] !== "" && formData[field.name]?.length > field.maxLength) {
+                tempErrors[field.name] = `${field.label} must be less than ${field.maxLength} characters long`;   
+            }
+        });
+        setErrors(tempErrors);
+        return Object.keys(tempErrors).length === 0;
+    };
 
   const handleSubmit = async (e) => {
 
@@ -1199,6 +1289,25 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 if(!field.disabled){
                     field.disabled = readOnly ? true : '';
                 }
+
+                const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+
+                if (roleTitle === "admin organization") {
+                    if (!field.ao_field) {
+                        field.disabled = true;
+                        if (field.required) {
+                            field.required = false;
+                        }
+                    }
+                } else {
+                    if (field.ao_field) {
+                        field.disabled = true;
+                        if (field.required) {
+                            field.required = false;
+                        }
+                    }
+                }
+
                 switch (field.type) {
                   case 'text':
                     return (
