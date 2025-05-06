@@ -83,6 +83,7 @@ import GenerateProfilePdf from "./GenerateProfilePdf";
 
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import WestIcon from '@mui/icons-material/West';
+import FileInput from "../components/form/FileInput";
 
 const UnderInvestigation = () => {
   const location = useLocation();
@@ -714,6 +715,18 @@ const UnderInvestigation = () => {
     const [isApprovalSaveMode, setIsApprovalSaveMode] = useState(true);
     const [isFromEdit, setIsFromEdit] = useState(false);
     const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
+
+    const [natureOfDisposalFileUpload, setNatureOfDisposalFileUpload] = useState({});
+
+    const handleFileUploadChange = (fieldName, files) => {
+        setNatureOfDisposalFileUpload((prevData) => {
+            return {
+                ...prevData,
+                [fieldName]: files,
+            };
+        });
+    };
+
     const [aoFields, setAoFields] = useState([]);
     const [aoFieldId,setAoFieldId] = useState([]);
     const [filterAoValues, setFilterAoValues] = useState({});
@@ -952,7 +965,30 @@ const UnderInvestigation = () => {
             sys_status : natureOfDisposalValue.code,
             default_status : "ui_case"
         }
-        
+
+        if(natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases"){
+            if (Array.isArray(natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'])) {
+                const hasFileInstance = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].some(file => file.filename instanceof File);
+                var filteredArray = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].filter(file => file.filename instanceof File);
+                if (hasFileInstance) {
+                    natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].forEach((file) => {
+                        if (file.filename instanceof File) {
+                            formData.append('field_19_prosecution_sanction_done', file.filename);
+                        }
+                    });
+
+                    filteredArray = filteredArray.map((obj) => {
+                        return {
+                            ...obj,
+                            filename: obj.filename['name']
+                        }
+                    });
+
+                    formData.append('others_folder_attachment_ids', JSON.stringify(filteredArray));
+                }
+            }
+        }
+
         var othersData = { 
             "sys_status" : othersUpdateData,
             "others_table_name" : table_name
@@ -1005,6 +1041,7 @@ const UnderInvestigation = () => {
                 setMoreThenTemplate(false);
                 setOtherFormOpen(false);
                 setNatureOfDisposalValue(null);
+                setNatureOfDisposalFileUpload({});
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -11567,6 +11604,20 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     />
                                 )}
                             />
+                            {
+                               ( natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases") &&
+                                <Box pt={2}>
+                                    <FileInput
+                                        field={{
+                                            name : 'field_19_prosecution_sanction_done',
+                                            required: true,
+                                            label : '19 Prosecution sanction Done',
+                                        }}
+                                        formData={natureOfDisposalFileUpload}
+                                        onChange={handleFileUploadChange}
+                                    />
+                                </Box>
+                            }
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
@@ -11587,6 +11638,21 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     className: "toast-error",
                                 });
                                 return;
+                            }
+                            if (natureOfDisposalValue?.code === "disposal") {
+                                if(!natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'] || natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].length === 0){
+                                    toast.error("Please Fill 19 Prosecution Sanction Field ",{
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                    return;
+                                }
                             }
                             showNewApprovalPage();
                         }}
