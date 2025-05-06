@@ -84,6 +84,7 @@ import GenerateProfilePdf from "./GenerateProfilePdf";
 
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import WestIcon from '@mui/icons-material/West';
+import FileInput from "../components/form/FileInput";
 
 const UnderInvestigation = () => {
   const location = useLocation();
@@ -715,6 +716,18 @@ const UnderInvestigation = () => {
     const [isApprovalSaveMode, setIsApprovalSaveMode] = useState(true);
     const [isFromEdit, setIsFromEdit] = useState(false);
     const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
+
+    const [natureOfDisposalFileUpload, setNatureOfDisposalFileUpload] = useState({});
+
+    const handleFileUploadChange = (fieldName, files) => {
+        setNatureOfDisposalFileUpload((prevData) => {
+            return {
+                ...prevData,
+                [fieldName]: files,
+            };
+        });
+    };
+
     const [aoFields, setAoFields] = useState([]);
     const [aoFieldId,setAoFieldId] = useState([]);
     const [filterAoValues, setFilterAoValues] = useState({});
@@ -953,7 +966,30 @@ const UnderInvestigation = () => {
             sys_status : natureOfDisposalValue.code,
             default_status : "ui_case"
         }
-        
+
+        if(natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases"){
+            if (Array.isArray(natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'])) {
+                const hasFileInstance = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].some(file => file.filename instanceof File);
+                var filteredArray = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].filter(file => file.filename instanceof File);
+                if (hasFileInstance) {
+                    natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].forEach((file) => {
+                        if (file.filename instanceof File) {
+                            formData.append('field_19_prosecution_sanction_done', file.filename);
+                        }
+                    });
+
+                    filteredArray = filteredArray.map((obj) => {
+                        return {
+                            ...obj,
+                            filename: obj.filename['name']
+                        }
+                    });
+
+                    formData.append('others_folder_attachment_ids', JSON.stringify(filteredArray));
+                }
+            }
+        }
+
         var othersData = { 
             "sys_status" : othersUpdateData,
             "others_table_name" : table_name
@@ -1006,6 +1042,7 @@ const UnderInvestigation = () => {
                 setMoreThenTemplate(false);
                 setOtherFormOpen(false);
                 setNatureOfDisposalValue(null);
+                setNatureOfDisposalFileUpload({});
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -2408,6 +2445,25 @@ const loadChildMergedCasesData = async (page, caseId) => {
       const renderCellFunc = (key, count) => (params) =>
         tableCellRender(key, params, params.value, count, meta.table_name);
 
+    //   {
+    //     field: "task_child",
+    //     headerName: "",
+    //     width: 50,
+    //     resizable: true,
+    //     renderHeader: (params) => (
+    //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+    //     ),
+    //     renderCell: (params) => (
+    //         <Badge
+    //             badgeContent={params?.row?.['task_unread_count']}
+    //             color="primary"
+    //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+    //         >
+    //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+    //         </Badge>
+    //     ),
+    // },
+
       const updatedHeader = [
         {
           field: "select_child",
@@ -2429,24 +2485,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
           ),
         }
         ,
-      {
-          field: "task_child",
-          headerName: "",
-          width: 50,
-          resizable: true,
-          renderHeader: (params) => (
-              <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-          ),
-          renderCell: (params) => (
-              <Badge
-                  badgeContent={params?.row?.['task_unread_count']}
-                  color="primary"
-                  sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-              >
-                  <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-              </Badge>
-          ),
-      },
       {
           field: "approval_child",
           headerName: "Approval",
@@ -2582,6 +2620,25 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                 const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
 
+                // {
+                //     field: "task",
+                //     headerName: "",
+                //     width: 50,
+                //     resizable: true,
+                //     renderHeader: (params) => (
+                //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+                //     ),
+                //     renderCell: (params) => (
+                //         <Badge
+                //             badgeContent={params?.row?.['task_unread_count']}
+                //             color="primary"
+                //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+                //         >
+                //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                //         </Badge>
+                //     ),
+                // },
+
                 const updatedHeader = [
                     
                     {
@@ -2596,24 +2653,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     onChange={(event) => handleCheckboxChangeField(event, params.row)}
                                 />
                             </Box>
-                        ),
-                    },
-                    {
-                        field: "task",
-                        headerName: "",
-                        width: 50,
-                        resizable: true,
-                        renderHeader: (params) => (
-                            <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-                        ),
-                        renderCell: (params) => (
-                            <Badge
-                                badgeContent={params?.row?.['task_unread_count']}
-                                color="primary"
-                                sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-                            >
-                                <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-                            </Badge>
                         ),
                     },
                     {
@@ -2835,6 +2874,27 @@ const loadChildMergedCasesData = async (page, caseId) => {
         
                     const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
 
+                    // {
+                    //     field: "task",
+                    //     headerName: "",
+                    //     width: 50,
+                    //     resizable: true,
+                    //     renderHeader: (params) => (
+                    //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+                    //     ),
+                    //     renderCell: (params) => {
+                    //       const isDisabled = !params?.row?.["field_io_name"];
+                    //       return (
+                    //         <Badge
+                    //             badgeContent={params?.row?.['task_unread_count']}
+                    //             color="primary"
+                    //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+                    //         >
+                    //             <Tooltip title="Add Task"><AddTaskIcon onClick={isDisabled ? undefined : () => handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                    //         </Badge>
+                    //     )},
+                    //   },
+
                     const updatedHeader = [
                         
                         {
@@ -2854,26 +2914,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 </Box>
                             )},
                         },
-                        {
-                            field: "task",
-                            headerName: "",
-                            width: 50,
-                            resizable: true,
-                            renderHeader: (params) => (
-                                <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-                            ),
-                            renderCell: (params) => {
-                              const isDisabled = !params?.row?.["field_io_name"];
-                              return (
-                                <Badge
-                                    badgeContent={params?.row?.['task_unread_count']}
-                                    color="primary"
-                                    sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-                                >
-                                    <Tooltip title="Add Task"><AddTaskIcon onClick={isDisabled ? undefined : () => handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-                                </Badge>
-                            )},
-                          },
                         {
                             field: "approval",
                             headerName: "Approval",
@@ -4286,7 +4326,11 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   if (sysStatus === "merge_cases") {
                     loadMergedCasesData(paginationCount);
                   } else {
-                    loadTableData(paginationCount);
+                    if(!selectedOtherTemplate?.field){
+                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
+                    }else{
+                        loadTableData(paginationCount);
+                    }
                   }
                 },
             });
@@ -4294,7 +4338,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setOtherFormOpen(false);
             setAddApproveFlag(false);
             setApproveTableFlag(false);
-            setOtherTemplateModalOpen(false);
           //   if (Object.keys(othersData).length > 0) {
           //     setOtherTemplateModalOpen(false);
           //   }
@@ -4320,6 +4363,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 setShowOtherTransferModal(false);
                 setSelectedOtherFields(null);
                 setselectedOtherTemplate(null);
+                setOtherTemplateModalOpen(false);
+            }else{
+                return;
             }
 
         } else {
@@ -6311,33 +6357,20 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setOtherTemplateColumn([]);
           }
 
-        var updatedTableData = getTemplateResponse.data.map((field, index) => {
-            const formatDate = (fieldValue) => {
+        const formatDate = (value) => {
+            const parsed = Date.parse(value);
+            if (isNaN(parsed)) return value;
+            return new Date(parsed).toLocaleDateString("en-GB");
+        };
 
-                if (!fieldValue || typeof fieldValue !== "string")
-                    return fieldValue;
-
-                var dateValue = new Date(fieldValue);
-
-                if (isNaN(dateValue.getTime()) || (!fieldValue.includes("-") && !fieldValue.includes("/"))) {
-                    return fieldValue;
-                }
-
-                if (isNaN(dateValue.getTime())) return fieldValue;
-
-                var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                var monthValue = String(dateValue.getMonth() + 1).padStart(2,"0");
-                var yearValue = dateValue.getFullYear();
-                return `${dayValue}/${monthValue}/${yearValue}`;
-            };
-
+        const updatedTableData = getTemplateResponse.data.map((field, index) => {
             const updatedField = {};
 
             Object.keys(field).forEach((key) => {
-                if (field[key] && key !== "id" && !isNaN(new Date(field[key]).getTime())) {
-                    updatedField[key] = formatDate(field[key]);
+                if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                  updatedField[key] = formatDate(field[key]);
                 } else {
-                    updatedField[key] = field[key];
+                  updatedField[key] = field[key];
                 }
             });
 
@@ -10015,6 +10048,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 paginationCount={otherTemplatesPaginationCount} 
                                 handlePagination={handleOtherPagination} 
                                 handleRowClick={(row) => handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)}
+                                tableName={selectedOtherTemplate?.table}
                                 />
                         </Box>
                         <Box
@@ -10171,6 +10205,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             totalRecord={otherTemplatesTotalRecord} 
                             paginationCount={otherTemplatesPaginationCount} 
                             handlePagination={handleOtherPagination} 
+                            tableName={selectedOtherTemplate?.table}
                         />
                     </Box>
                 )}
@@ -11612,6 +11647,20 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     />
                                 )}
                             />
+                            {
+                               ( natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases") &&
+                                <Box pt={2}>
+                                    <FileInput
+                                        field={{
+                                            name : 'field_19_prosecution_sanction_done',
+                                            required: true,
+                                            label : '19 Prosecution sanction Done',
+                                        }}
+                                        formData={natureOfDisposalFileUpload}
+                                        onChange={handleFileUploadChange}
+                                    />
+                                </Box>
+                            }
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
@@ -11632,6 +11681,21 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     className: "toast-error",
                                 });
                                 return;
+                            }
+                            if (natureOfDisposalValue?.code === "disposal") {
+                                if(!natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'] || natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].length === 0){
+                                    toast.error("Please Fill 19 Prosecution Sanction Field ",{
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                    return;
+                                }
                             }
                             showNewApprovalPage();
                         }}

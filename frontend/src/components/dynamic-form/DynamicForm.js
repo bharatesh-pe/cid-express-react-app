@@ -191,6 +191,10 @@ const DynamicForm = ({
     
             const sections = tableActRow.flatMap((row) => row.section || []).filter((val) => val);
     
+            if(acts.length === 0 || acts === ""){
+                setTableActRow(rows);
+                return;
+            }
     
             var savingObj = {
                 [actField.name] : acts,
@@ -208,17 +212,17 @@ const DynamicForm = ({
     
     const makeOrderCopyShow = (value) => {
 
-        const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
-
-        var updatedFormConfig = allFields.map((element) => {
-            if (element.name === "field_order_copy_(_17a_done_)") {
-                element.hide_from_ux = value; // true = hide, false = show
-            }
-            return element;
+        setNewFormConfig((prevFormConfig) => {
+            const updatedFormConfig = prevFormConfig.map((data) => {
+                if(data.name === "field_order_copy_(_17a_done_)"){
+                    return {...data, hide_from_ux : value }
+                }else{
+                    return data;
+                }
+            });
+            return updatedFormConfig;
         });
 
-        setNewFormConfig(updatedFormConfig);
-    
         if (value) {
             delete formData["field_order_copy_(_17a_done_)"];
         }
@@ -296,26 +300,28 @@ const DynamicForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    var errorActFlag = false;
-
-    tableActRow.map((element)=>{
-        if(!element.act || element.act === "" || !element.section || element.section === "" || element.section.length === 0){
-            errorActFlag = true;
-        }
-    });
-
-    if(errorActFlag){
-        toast.error("Please Fill All Act & Section Data",{
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
+    if(table_name === "cid_under_investigation"){
+        var errorActFlag = false;
+    
+        tableActRow.map((element)=>{
+            if(!element.act || element.act === "" || !element.section || element.section === "" || element.section.length === 0){
+                errorActFlag = true;
+            }
         });
-        return
+    
+        if(errorActFlag){
+            toast.error("Please Fill All Act & Section Data",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return
+        }
     }
 
     if (validate()) {
@@ -717,7 +723,7 @@ const DynamicForm = ({
 
                                 setNewFormConfig((prevFormConfig) => {
                                     const updatedFormConfig = prevFormConfig.map((data) => {
-                                        if (data?.id === dependent_field[0]?.id) {
+                                        if (data?.id === dependent_field[0]?.id) {                                            
                                             return { ...data, options: updatedOptions };
                                         }
                                         return data;
@@ -1242,7 +1248,7 @@ const DynamicForm = ({
     };
 
   //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
-  //   console.log(stepperData, "stepperData stepperData")
+  //   console.log(stepperData, "stepperData stepperData")  
   return (
     <>
       <Box
@@ -1494,7 +1500,7 @@ const DynamicForm = ({
                 : newFormConfig
               ).map((field, index) => {
 
-                if (field?.hide_from_ux || field?.table?.toLowerCase() === "section") {
+                if (field?.hide_from_ux || (field?.table?.toLowerCase() === "section" && table_name === "cid_under_investigation")) {
                   return null;
                 }
 
@@ -1542,7 +1548,7 @@ const DynamicForm = ({
                     }
                 }
 
-                if(field?.table?.toLowerCase() === "act"){
+                if(field?.table?.toLowerCase() === "act" && table_name === "cid_under_investigation"){
                     return (
                         <Grid item xs={12} p={2}>
                             <ActTable 

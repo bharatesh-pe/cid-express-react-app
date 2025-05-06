@@ -2711,18 +2711,10 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       }
     }
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the fields Mapping UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
     const DynamicTable = sequelize.define(table_name, fields, {
       freezeTableName: true,
       timestamps: true,
     });
-
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the sequelize inti UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
 
     const include = [];
     for (const association of associations) {
@@ -2742,9 +2734,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         });
       }
     }
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the including the association UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     // // Add TemplateStar association
     // DynamicTable.hasOne(db.TemplateStar, {
@@ -2986,7 +2975,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     }
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the search condition UV",whereClause);
     const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
@@ -3013,12 +3001,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     // Ensure valid sort order
     const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "DESC";
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the whereClause and attributesArray set  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before fetch the data from table  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
     // Run Sequelize query
     const result = await DynamicTable.findAndCountAll({
     where: whereClause,
@@ -3029,9 +3011,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     include,
     logging: console.log,
     });
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After fetch the data from table  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const totalItems = result.count;
     const totalPages = Math.ceil(totalItems / limit);
@@ -3155,12 +3134,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         await progressReportModel.sync();
     }
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After progress report Sync to DB  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before transformedRows  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
     const transformedRows = await Promise.all(
       result.rows.map(async (record) => {
         const data = record.toJSON();
@@ -3214,19 +3187,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         if(table_name == "cid_under_investigation")
         {
 
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_all_records of progress report from DB  UV");
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-            
             const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
                 where: {
                     ui_case_id: case_id,
                 },
             });
-
-
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_readed_records of progress report from DB  UV");
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-            
 
             const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
                 where: {
@@ -3244,9 +3209,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 },
             });
 
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_read_count of progress report from DB  UV");
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
             if (task_readed_records && task_readed_records.length > 0) {
                 task_readed_records.forEach((record) => {
                     const readStatus = record.ReadStatus;
@@ -3262,9 +3224,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 task_unread_count = task_count;
         }
 
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After task_unread_count of progress report from DB  UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
         data.task_unread_count = task_unread_count || 0;
 
         // Handle alias mappings before processing associations
@@ -3277,9 +3236,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 delete data[alias]; // Remove unnecessary alias object from response
             }
         }
-
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After Handle alias mappings before processing associations  UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         // Fetch linked profile info manually
         const linkedProfileInfo = [];
@@ -3320,8 +3276,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 }
             }
         }
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fetch associated table metadata from the Template model UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         // Add linked profile info to the response
         data.linked_profile_info = linkedProfileInfo.length ? linkedProfileInfo : null;
@@ -3329,9 +3283,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         return data;
       })
     );
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After transformedRows  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const responseData = {
       // data: transformedRows,
@@ -5344,6 +5295,53 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 					await t.rollback();
 					return userSendResponse(res, 400, false, "Default status is required.");
 				}
+
+                if(otherParsedData.others_folder_attachment_ids && otherParsedData.others_folder_attachment_ids) {
+                    
+                    var otherFileUpdates = {};
+                    if (req.files && req.files.length > 0) {
+                        const otherFolderAttachments = otherParsedData.others_folder_attachment_ids ? JSON.parse(otherParsedData.others_folder_attachment_ids): []; // Parse if provided, else empty array
+
+                        for (const file of req.files) {
+                            const { originalname, size, key, fieldname } = file;
+                            const fileExtension = path.extname(originalname);
+
+                            // Find matching folder_id from the payload (if any)
+                            const othersFileMatchingFolder = otherFolderAttachments.find(
+                            (attachment) =>
+                                attachment.filename === originalname &&
+                                attachment.field_name === fieldname
+                            );
+
+                            const folderId = othersFileMatchingFolder ? othersFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
+
+                            await ProfileAttachment.create({
+                                template_id: otherTableData.template_id,
+                                table_row_id: recordId,
+                                attachment_name: originalname,
+                                attachment_extension: fileExtension,
+                                attachment_size: size,
+                                s3_key: key,
+                                field_name: fieldname,
+                                folder_id: folderId, // Store NULL if no folder_id provided
+                            });
+
+                            if (!otherFileUpdates[fieldname]) {
+                                otherFileUpdates[fieldname] = originalname;
+                            } else {
+                                otherFileUpdates[fieldname] += `,${originalname}`;
+                            }
+                        }
+
+                        
+                        for (const [fieldname, filenames] of Object.entries(otherFileUpdates)) {
+                            await OtherModel.update(
+                            { [fieldname]: filenames },
+                            { where: { id: recordId }, transaction: t }
+                            );
+                        }
+                    }
+                }
 				
 			}
             // Handle approval logic
