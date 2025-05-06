@@ -827,7 +827,7 @@ const Section = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
+                            {/* <Box sx={{ marginBottom: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorSectionData.description && '#d32f2f' }}>
                                     Description
                                 </h4>
@@ -847,7 +847,7 @@ const Section = () => {
                                     required={showEditModal || showSectionAddModal}
                                     disabled={showViewModal}
                                 />
-                            </Box>
+                            </Box> */}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>

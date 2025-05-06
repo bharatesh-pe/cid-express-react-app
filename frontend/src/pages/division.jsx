@@ -763,7 +763,7 @@ const Division = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View Division"}
                         {showEditModal && "Edit Division"}
-                        {showRoleAddModal && "Add New Division"}
+                        {showRoleAddModal && "Add Division"}
                         </Typography>
                     </Box>
 
@@ -800,11 +800,11 @@ const Division = () => {
 
                             <Box sx={{ marginY: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.division_name && '#d32f2f' }}>
-                                    Name
+                                    Division
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Name"
+                                    label="Division"
                                     name="division_name"
                                     autoComplete="off"
                                     value={showRoleAddModal ? addRoleData.division_name : selectedRole?.division_name || selectedRole?.name}
