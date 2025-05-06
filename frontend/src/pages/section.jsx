@@ -177,7 +177,7 @@ const Section = () => {
     }, [acts, paginationCount, forceTableLoad]);
 
 
-    const handleViewRole = (role) => {
+    const handleViewSection = (role) => {
         const selectedDept = acts.find(dept => dept.id === role.act_id);
 
         setSelectedSection(role);
@@ -202,85 +202,102 @@ const Section = () => {
     const sectionColumnData = [
         { field: 'name', headerName: 'Section', width: 200 },
         { field: 'act', headerName: 'Act', width: 300 },
-        { field: 'description', headerName: 'Description', width: 300 },
+        // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
             flex: 1,
             renderCell: (params) => {
                 return (
+                    // <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => handleViewSection(params.row)}
+                    //     >
+                    //         <img
+                    //             src={eyes}
+                    //             alt="View"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>View</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => {
+
+                    //             handleEditSection(params.row)
+                    //         }}
+                    //     >
+                    //         <img
+                    //             src={edit}
+                    //             alt="Edit"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Edit</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "Red",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => showDeleteSectionDialoge(params.row.id, params.row.name)}
+                    //     >
+                    //         <img
+                    //             src={trash}
+                    //             alt="Delete"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Delete</span>
+                    //     </Button>
+                    // </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => handleViewRole(params.row)}
-                        >
-                            <img
-                                src={eyes}
-                                alt="View"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>View</span>
+                        <Button variant="outlined"  onClick={() => {
+
+                                handleViewSection(params.row)
+                            }}>
+                            View
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => {
+                        <Button variant="contained" color="primary"  onClick={() => {
 
                                 handleEditSection(params.row)
-                            }}
-                        >
-                            <img
-                                src={edit}
-                                alt="Edit"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Edit</span>
+                            }}>
+                            Edit
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "Red",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => showDeleteSectionDialoge(params.row.id, params.row.name)}
-                        >
-                            <img
-                                src={trash}
-                                alt="Delete"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Delete</span>
+                        <Button variant="contained" color="error"  onClick={() => showDeleteSectionDialoge(params.row.id, params.row.name)}>
+                            Delete
                         </Button>
                     </Box>
                 );
@@ -742,9 +759,10 @@ const Section = () => {
                 }}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                fullScreen
+                maxWidth="xs"
+                // fullScreen
                 fullWidth
-                sx={{ marginLeft: '50px' }}
+                // sx={{ marginLeft: '250px' }}  
             >
                 <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box
@@ -781,7 +799,7 @@ const Section = () => {
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
-                            <Box sx={{ marginY: "18px" }}>
+                            <Box sx={{ marginY: "8px" }}>
                             <h4 className="form-field-heading" style={{ color: !!errorSectionData.act_id && '#d32f2f' }}>
                                     Act
                                 </h4>
