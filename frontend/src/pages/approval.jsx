@@ -666,9 +666,10 @@ const Approval = () => {
                 }}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                fullScreen
+                 maxWidth="xs"
+                // fullScreen
                 fullWidth
-                sx={{ marginLeft: '50px' }}        
+                // sx={{ marginLeft: '250px' }}        
             >
                 <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box
@@ -704,7 +705,7 @@ const Approval = () => {
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
-                            <Box sx={{ marginY: '18px' }}>
+                            <Box sx={{ marginY: '8px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.name && '#d32f2f' }}>
                                     Item Name
                                 </h4>
