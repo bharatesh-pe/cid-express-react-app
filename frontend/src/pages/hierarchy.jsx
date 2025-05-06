@@ -833,10 +833,9 @@ const Hierarchy = () => {
                 }}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                 maxWidth="xs"
-                // fullScreen
+                fullScreen
                 fullWidth
-                // sx={{ marginLeft: '250px' }}  
+                sx={{ marginLeft: '50px' }} 
             >
                 <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box
@@ -877,7 +876,7 @@ const Hierarchy = () => {
                 <DialogContent>
                     <Box>
                         <FormControl fullWidth>
-                            <Box sx={{ marginBottom: "8px" }}>
+                            <Box sx={{ marginBottom: "18px" }}>
                             <h4 className="form-field-heading" style={{ color: !!errorRoleData.officer_designation_id && '#d32f2f' }}>
                                     Officer Designation
                                 </h4>
