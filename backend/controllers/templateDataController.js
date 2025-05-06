@@ -2711,18 +2711,10 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       }
     }
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the fields Mapping UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
     const DynamicTable = sequelize.define(table_name, fields, {
       freezeTableName: true,
       timestamps: true,
     });
-
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the sequelize inti UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
 
     const include = [];
     for (const association of associations) {
@@ -2742,9 +2734,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         });
       }
     }
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the including the association UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     // // Add TemplateStar association
     // DynamicTable.hasOne(db.TemplateStar, {
@@ -2986,7 +2975,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     }
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the search condition UV",whereClause);
     const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
@@ -3023,9 +3011,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     include,
     logging: console.log,
     });
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After fetch the data from table  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const totalItems = result.count;
     const totalPages = Math.ceil(totalItems / limit);
@@ -3148,12 +3133,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         // Sync the model
         await progressReportModel.sync();
     }
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After progress report Sync to DB  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before transformedRows  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const transformedRows = await Promise.all(
       result.rows.map(async (record) => {
@@ -5315,6 +5294,53 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 					await t.rollback();
 					return userSendResponse(res, 400, false, "Default status is required.");
 				}
+
+                if(otherParsedData.others_folder_attachment_ids && otherParsedData.others_folder_attachment_ids) {
+                    
+                    var otherFileUpdates = {};
+                    if (req.files && req.files.length > 0) {
+                        const otherFolderAttachments = otherParsedData.others_folder_attachment_ids ? JSON.parse(otherParsedData.others_folder_attachment_ids): []; // Parse if provided, else empty array
+
+                        for (const file of req.files) {
+                            const { originalname, size, key, fieldname } = file;
+                            const fileExtension = path.extname(originalname);
+
+                            // Find matching folder_id from the payload (if any)
+                            const othersFileMatchingFolder = otherFolderAttachments.find(
+                            (attachment) =>
+                                attachment.filename === originalname &&
+                                attachment.field_name === fieldname
+                            );
+
+                            const folderId = othersFileMatchingFolder ? othersFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
+
+                            await ProfileAttachment.create({
+                                template_id: otherTableData.template_id,
+                                table_row_id: recordId,
+                                attachment_name: originalname,
+                                attachment_extension: fileExtension,
+                                attachment_size: size,
+                                s3_key: key,
+                                field_name: fieldname,
+                                folder_id: folderId, // Store NULL if no folder_id provided
+                            });
+
+                            if (!otherFileUpdates[fieldname]) {
+                                otherFileUpdates[fieldname] = originalname;
+                            } else {
+                                otherFileUpdates[fieldname] += `,${originalname}`;
+                            }
+                        }
+
+                        
+                        for (const [fieldname, filenames] of Object.entries(otherFileUpdates)) {
+                            await OtherModel.update(
+                            { [fieldname]: filenames },
+                            { where: { id: recordId }, transaction: t }
+                            );
+                        }
+                    }
+                }
 				
 			}
             // Handle approval logic
