@@ -265,7 +265,6 @@ router.post('/getEventsByLeader',
     
 router.post('/templateDataFieldDuplicateCheck',
     // userAuthMiddleware,
-
     templateDataController.templateDataFieldDuplicateCheck)
 router.post('/checkPdfEntry',
     // userAuthMiddleware,
@@ -340,7 +339,7 @@ router.post('/getMergeChildData',[validate_token],
 
 router.post('/deMergeCaseData',[validate_token],
     templateDataController.deMergeCaseData)
-router.post('/saveActionPlanAndProgressReport', (req, res, next) => {
+router.post('/saveActionPlan', (req, res, next) => {
         if (req.is('multipart/form-data')) {
             upload.any()(req, res, (err) => {
                 if (err) {
@@ -356,7 +355,10 @@ router.post('/saveActionPlanAndProgressReport', (req, res, next) => {
         }
     },
     [validate_token],
-    templateDataController.saveActionPlanAndProgressReport)
+    templateDataController.saveActionPlan)
+
+router.post('/submitActionPlanPR',[validate_token],
+    templateDataController.submitActionPlanPR)
     
         
 module.exports = router;

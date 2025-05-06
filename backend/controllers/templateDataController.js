@@ -7812,7 +7812,7 @@ exports.deMergeCaseData = async (req, res) => {
 };
 
 
-exports.saveActionPlanAndProgressReport = async (req, res) => {
+exports.saveActionPlan = async (req, res) => {
 
     const { data, others_data , transaction_id } = req.body;
 
@@ -7930,79 +7930,6 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
             }
 
-            // Insert into cid_ui_case_progress_report
-            const tableDataPR = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
-            if (!tableDataPR) {
-                return userSendResponse(res, 400, false, `Table cid_ui_case_progress_report does not exist.`, null);
-            }
-
-            const schemaPR = typeof tableDataPR.fields === "string" ? JSON.parse(tableDataPR.fields) : tableDataPR.fields;
-
-            let parsedDataPR;
-            try {
-                parsedDataPR = JSON.parse(data);
-            } catch (err) {
-                return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
-            }
-
-            const validDataPR = {};
-            for (const field of schemaPR) {
-                const { name, not_null, default_value } = field;
-                if (parsedDataPR.hasOwnProperty(name)) {
-                    validDataPR[name] = parsedDataPR[name];
-                } else if (not_null && default_value === undefined) {
-                    return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
-                } else if (default_value !== undefined) {
-                    validDataPR[name] = default_value;
-                }
-            }
-
-            validDataPR.sys_status = "AP";
-            validDataPR.created_by = userName;
-            validDataPR.created_by_id = userId;
-
-            const completeSchemaPR = [
-                { name: "created_by", data_type: "TEXT", not_null: false },
-                { name: "created_by_id", data_type: "INTEGER", not_null: false },
-                ...schemaPR
-            ];
-
-            ["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
-                if (parsedDataPR[field]) {
-                    completeSchemaPR.unshift({
-                        name: field,
-                        data_type: typeof parsedDataPR[field] === "number" ? "INTEGER" : "TEXT",
-                        not_null: false
-                    });
-                    validDataPR[field] = parsedDataPR[field];
-                }
-            });
-
-            const modelAttributesPR = {};
-            for (const field of completeSchemaPR) {
-                const { name, data_type, not_null, default_value } = field;
-                const sequelizeTypePR = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-                modelAttributesPR[name] = {
-                    type: sequelizeTypePR,
-                    allowNull: !not_null,
-                    defaultValue: default_value || null,
-                };
-            }
-
-            const PRModel = sequelize.define('cid_ui_case_progress_report', modelAttributesPR, {
-                freezeTableName: true,
-                timestamps: true,
-                createdAt: "created_at",
-                updatedAt: "updated_at",
-            });
-
-            await PRModel.sync();
-
-            const insertedDataPR = await PRModel.create(validDataPR, { transaction: t });
-            if (!insertedDataPR) {
-                await t.rollback();
-                return userSendResponse(res, 400, false, "Failed to insert data.", null);
-            }
         }
 
 
@@ -8099,6 +8026,155 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
 		}
 	}
 };
+
+
+exports.submitActionPlanPR = async (req, res) => {
+	const { transaction_id, ui_case_id } = req.body;
+	const { user_id: userId } = req.user;
+
+	if (!transaction_id || !ui_case_id) {
+		return userSendResponse(res, 400, false, "transaction_id and ui_case_id are required.", null);
+	}
+
+	let t = await dbConfig.sequelize.transaction();
+	const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+	try {
+		// Duplicate transaction check
+		if (fs.existsSync(dirPath)) {
+			return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath });
+		}
+		fs.mkdirSync(dirPath, { recursive: true });
+
+		// Get user info
+		const userData = await Users.findOne({
+			include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
+			where: { user_id: userId },
+		});
+		const userName = userData?.kgidDetails?.name || null;
+
+		// Validate action plan template
+		const apTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
+		if (!apTemplate) {
+			return userSendResponse(res, 400, false, "Action Plan template not found.", null);
+		}
+
+		// Fetch Action Plan records
+		const actionPlanData = await sequelize.query(
+			`SELECT * FROM cid_ui_case_action_plan WHERE ui_case_id = :ui_case_id`,
+			{
+				replacements: { ui_case_id },
+				type: Sequelize.QueryTypes.SELECT,
+				transaction: t,
+			}
+		);
+		if (!actionPlanData?.length) {
+			return userSendResponse(res, 400, false, "No Action Plan data found.", null);
+		}
+
+		// Update field_status in Action Plan
+		await sequelize.query(
+			`UPDATE cid_ui_case_action_plan SET field_status = 'submit' WHERE ui_case_id = :ui_case_id`,
+			{
+				replacements: { ui_case_id },
+				type: Sequelize.QueryTypes.UPDATE,
+				transaction: t,
+			}
+		);
+
+		// Load Progress Report template
+		const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
+		if (!prTemplate) {
+			await t.rollback();
+			return userSendResponse(res, 400, false, "Progress Report template not found.", null);
+		}
+
+		const progressSchema = typeof prTemplate.fields === "string" ? JSON.parse(prTemplate.fields) : prTemplate.fields;
+
+		// Build Sequelize model from template schema
+		const buildModelAttributes = (schema, sampleData) => {
+			const completeSchema = [
+				{ name: "created_by", data_type: "TEXT", not_null: false },
+				{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+				...schema,
+			];
+
+			["sys_status", "ui_case_id", "pt_case_id"].forEach((field) => {
+				if (sampleData[field]) {
+					completeSchema.unshift({
+						name: field,
+						data_type: typeof sampleData[field] === "number" ? "INTEGER" : "TEXT",
+						not_null: false,
+					});
+				}
+			});
+
+			const modelAttributes = {};
+			for (const field of completeSchema) {
+				const { name, data_type, not_null, default_value } = field;
+				const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+				modelAttributes[name] = {
+					type: sequelizeType,
+					allowNull: !not_null,
+					defaultValue: default_value ?? null,
+				};
+			}
+			return modelAttributes;
+		};
+
+		const sampleData = actionPlanData[0];
+		const modelAttributes = buildModelAttributes(progressSchema, sampleData);
+
+		const ProgressReportModel = sequelize.define("cid_ui_case_progress_report", modelAttributes, {
+			freezeTableName: true,
+			timestamps: true,
+			createdAt: "created_at",
+			updatedAt: "updated_at",
+		});
+
+		await ProgressReportModel.sync();
+
+		// Prepare data to insert into PR
+		const actionPlanDataToInsert = actionPlanData.map(item => {
+			const newItem = {
+				...item,
+				sys_status: "AP",
+				field_pr_status: "NO",
+				created_by: userName,
+				created_by_id: userId,
+				ui_case_id: item.ui_case_id,
+				pt_case_id: item.pt_case_id,
+			};
+			delete newItem.id;
+			delete newItem.created_at;
+			delete newItem.updated_at;
+			return newItem;
+		});
+
+		// Insert into Progress Report
+		await ProgressReportModel.bulkCreate(actionPlanDataToInsert, { transaction: t });
+
+		await t.commit();
+		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
+
+	} catch (error) {
+		console.error("Error submitting Action Plan:", error);
+		if (t) await t.rollback();
+		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+		return userSendResponse(
+			res,
+			isDuplicate ? 400 : 500,
+			false,
+			isDuplicate ? "Duplicate entry detected." : "Internal Server Error.",
+			error
+		);
+	} finally {
+		if (fs.existsSync(dirPath)) {
+			fs.rmSync(dirPath, { recursive: true, force: true });
+		}
+	}
+};
+
 
 function normalizeValues(values, expectedType) {
   return values
