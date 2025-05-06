@@ -3893,9 +3893,10 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
     // Check for duplicates
     const conditions = {};
     for (const [key, value] of Object.entries(validData)) {
-      // conditions[key] = typeof value === 'string' ? { [Op.iLike]: `%${value}%` } : value;
-      conditions[key] =
-        typeof value === "string" ? { [Op.like]: `%${value}%` } : value;
+        if(value && value !== "") {
+            // conditions[key] = typeof value === 'string' ? { [Op.iLike]: `%${value}%` } : value;
+            conditions[key] = typeof value === "string" ? { [Op.like]: `%${value}%` } : value;
+        }
     }
 
     const existingRecords = await Model.findAll({
@@ -4905,7 +4906,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
-	const { table_name  , data, others_data, transaction_id, user_designation_id , folder_attachment_ids , second_table_name, second_data , second_folder_attachment_ids } = req.body;
+	const { table_name  , data, others_data, transaction_id, user_designation_id , folder_attachment_ids , second_table_name, second_data , second_folder_attachment_ids, others_folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -5284,6 +5285,53 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "No changes detected or update failed.");
 					}
+
+                    if(others_folder_attachment_ids) {
+                    
+                        var otherFileUpdates = {};
+                        if (req.files && req.files.length > 0) {
+                            const otherFolderAttachments = others_folder_attachment_ids ? JSON.parse(others_folder_attachment_ids): []; // Parse if provided, else empty array
+
+                            for (const file of req.files) {
+                                const { originalname, size, key, fieldname } = file;
+                                const fileExtension = path.extname(originalname);
+
+                                // Find matching folder_id from the payload (if any)
+                                const othersFileMatchingFolder = otherFolderAttachments.find(
+                                (attachment) =>
+                                    attachment.filename === originalname &&
+                                    attachment.field_name === fieldname
+                                );
+
+                                const folderId = othersFileMatchingFolder ? othersFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
+
+                                await ProfileAttachment.create({
+                                    template_id: otherTableData.template_id,
+                                    table_row_id: recordId,
+                                    attachment_name: originalname,
+                                    attachment_extension: fileExtension,
+                                    attachment_size: size,
+                                    s3_key: key,
+                                    field_name: fieldname,
+                                    folder_id: folderId, // Store NULL if no folder_id provided
+                                });
+
+                                if (!otherFileUpdates[fieldname]) {
+                                    otherFileUpdates[fieldname] = originalname;
+                                } else {
+                                    otherFileUpdates[fieldname] += `,${originalname}`;
+                                }
+                            }
+
+                            
+                            for (const [fieldname, filenames] of Object.entries(otherFileUpdates)) {
+                                await OtherModel.update(
+                                { [fieldname]: filenames },
+                                { where: { id: recordId }, transaction: t }
+                                );
+                            }
+                        }
+                    }
 				}
 
 				if(!recordId) {
@@ -5296,52 +5344,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 					return userSendResponse(res, 400, false, "Default status is required.");
 				}
 
-                if(otherParsedData.others_folder_attachment_ids && otherParsedData.others_folder_attachment_ids) {
-                    
-                    var otherFileUpdates = {};
-                    if (req.files && req.files.length > 0) {
-                        const otherFolderAttachments = otherParsedData.others_folder_attachment_ids ? JSON.parse(otherParsedData.others_folder_attachment_ids): []; // Parse if provided, else empty array
-
-                        for (const file of req.files) {
-                            const { originalname, size, key, fieldname } = file;
-                            const fileExtension = path.extname(originalname);
-
-                            // Find matching folder_id from the payload (if any)
-                            const othersFileMatchingFolder = otherFolderAttachments.find(
-                            (attachment) =>
-                                attachment.filename === originalname &&
-                                attachment.field_name === fieldname
-                            );
-
-                            const folderId = othersFileMatchingFolder ? othersFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
-
-                            await ProfileAttachment.create({
-                                template_id: otherTableData.template_id,
-                                table_row_id: recordId,
-                                attachment_name: originalname,
-                                attachment_extension: fileExtension,
-                                attachment_size: size,
-                                s3_key: key,
-                                field_name: fieldname,
-                                folder_id: folderId, // Store NULL if no folder_id provided
-                            });
-
-                            if (!otherFileUpdates[fieldname]) {
-                                otherFileUpdates[fieldname] = originalname;
-                            } else {
-                                otherFileUpdates[fieldname] += `,${originalname}`;
-                            }
-                        }
-
-                        
-                        for (const [fieldname, filenames] of Object.entries(otherFileUpdates)) {
-                            await OtherModel.update(
-                            { [fieldname]: filenames },
-                            { where: { id: recordId }, transaction: t }
-                            );
-                        }
-                    }
-                }
+              
 				
 			}
             // Handle approval logic
