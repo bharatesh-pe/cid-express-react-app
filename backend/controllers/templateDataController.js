@@ -3013,12 +3013,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     // Ensure valid sort order
     const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "DESC";
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After the whereClause and attributesArray set  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before fetch the data from table  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
     // Run Sequelize query
     const result = await DynamicTable.findAndCountAll({
     where: whereClause,
@@ -3214,19 +3208,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         if(table_name == "cid_under_investigation")
         {
 
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_all_records of progress report from DB  UV");
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-            
             const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
                 where: {
                     ui_case_id: case_id,
                 },
             });
-
-
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_readed_records of progress report from DB  UV");
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-            
 
             const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
                 where: {
@@ -3244,9 +3230,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 },
             });
 
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before task_read_count of progress report from DB  UV");
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
             if (task_readed_records && task_readed_records.length > 0) {
                 task_readed_records.forEach((record) => {
                     const readStatus = record.ReadStatus;
@@ -3262,9 +3245,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 task_unread_count = task_count;
         }
 
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After task_unread_count of progress report from DB  UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
         data.task_unread_count = task_unread_count || 0;
 
         // Handle alias mappings before processing associations
@@ -3277,9 +3257,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 delete data[alias]; // Remove unnecessary alias object from response
             }
         }
-
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After Handle alias mappings before processing associations  UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         // Fetch linked profile info manually
         const linkedProfileInfo = [];
@@ -3320,8 +3297,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 }
             }
         }
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Fetch associated table metadata from the Template model UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
         // Add linked profile info to the response
         data.linked_profile_info = linkedProfileInfo.length ? linkedProfileInfo : null;
@@ -3329,9 +3304,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         return data;
       })
     );
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After transformedRows  UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const responseData = {
       // data: transformedRows,
