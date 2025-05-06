@@ -1166,4 +1166,17 @@ div::first-letter {
         color: white;
       }
       
-    
+    .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-columnHeader{
+        background-color: #FFFFFF !important;
+        border: 1px solid #ccc;
+    }
+
+    .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-filler, .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-scrollbarFiller--header{
+        background-color: #FFFFFF !important;
+        border: 1px solid #ccc;
+    }
+
+    .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-virtualScrollerContent .MuiDataGrid-row .MuiDataGrid-cell{
+        background-color: #FFFFFF !important;
+        border: 1px solid #ccc;
+    }

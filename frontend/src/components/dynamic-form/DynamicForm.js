@@ -717,7 +717,7 @@ const DynamicForm = ({
 
                                 setNewFormConfig((prevFormConfig) => {
                                     const updatedFormConfig = prevFormConfig.map((data) => {
-                                        if (data?.id === dependent_field[0]?.id) {
+                                        if (data?.id === dependent_field[0]?.id) {                                            
                                             return { ...data, options: updatedOptions };
                                         }
                                         return data;
@@ -1494,7 +1494,7 @@ const DynamicForm = ({
                 : newFormConfig
               ).map((field, index) => {
 
-                if (field?.hide_from_ux || field?.table?.toLowerCase() === "section") {
+                if (field?.hide_from_ux || (field?.table?.toLowerCase() === "section" && table_name === "cid_under_investigation")) {
                   return null;
                 }
 
@@ -1542,7 +1542,7 @@ const DynamicForm = ({
                     }
                 }
 
-                if(field?.table?.toLowerCase() === "act"){
+                if(field?.table?.toLowerCase() === "act" && table_name === "cid_under_investigation"){
                     return (
                         <Grid item xs={12} p={2}>
                             <ActTable 
