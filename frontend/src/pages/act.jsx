@@ -98,7 +98,7 @@ const Act = () => {
 
     const actColumnData = [
         { field: 'name', headerName: 'Act', width: 200 },
-        { field: 'description', headerName: 'Description', width: 300 },
+        // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
@@ -322,13 +322,13 @@ const Act = () => {
             }));
         }
 
-        if (addActData.description.trim() === '') {
-            error_flag = true;
-            setErrorActData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addActData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorActData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please Check Title and Description", {
@@ -428,13 +428,13 @@ const Act = () => {
             }));
         }
 
-        if (selectedAct.description.trim() === '') {
-            error_flag = true;
-            setErrorActData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedAct.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorActData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please check Name and Description", {
@@ -684,7 +684,7 @@ const Act = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View act"}
                         {showEditModal && "Edit act"}
-                        {showActAddModal && "Add New Act"}
+                        {showActAddModal && "Add Act"}
                         </Typography>
                     </Box>
 
@@ -731,7 +731,7 @@ const Act = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
+                            {/* <Box sx={{ marginBottom: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorActData.description && '#d32f2f' }}>
                                     Description
                                 </h4>
@@ -751,7 +751,7 @@ const Act = () => {
                                     required={showEditModal || showActAddModal}
                                     disabled={showViewModal}
                                 />
-                            </Box>
+                            </Box> */}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>

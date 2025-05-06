@@ -323,13 +323,13 @@ const Approval = () => {
             }));
         }
 
-        if (addRoleData.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addRoleData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please Check Title and Description", {
@@ -429,13 +429,13 @@ const Approval = () => {
             }));
         }
 
-        if (selectedRole.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedRole.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please check Name and Description", {
@@ -686,7 +686,7 @@ const Approval = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View Approval Items"}
                         {showEditModal && "Edit Approval Items"}
-                        {showRoleAddModal && "Add New Item"}
+                        {showRoleAddModal && "Add Item"}
                         </Typography>
                     </Box>
 

@@ -840,7 +840,7 @@ const Hierarchy = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View Hierarchy"}
                         {showEditModal && "Edit Hierarchy"}
-                        {showRoleAddModal && "Add New Hierarchy"}
+                        {showRoleAddModal && "Add Hierarchy"}
                         </Typography>
                     </Box>
 
