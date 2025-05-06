@@ -38,6 +38,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import CloseIcon from "@mui/icons-material/Close";
+import ActTable from './actSection';
 
 const DynamicForm = ({
   formConfig,
@@ -88,6 +89,7 @@ const DynamicForm = ({
 
   const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
 
+    const [tableActRow, setTableActRow] = useState([{ act: "", section: "" }]);
 //   useEffect(() => {
 //     if (formData && Object.keys(formData).length !== 0 && !formData.id) {
 //       localStorage.setItem(
@@ -174,74 +176,53 @@ const DynamicForm = ({
 
         }
 
+    },[formData]);
+
+    const UpdateTableRowApi = (rows)=>{
+
         const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
 
-        if(formData?.['field_section']){
+        const actField = allFields.find((f) => f.table === "act");
+        const sectionField = allFields.find((f) => f.table === "section");
 
-            var actFields = allFields.filter((element)=>{
-                return element.name === 'field_section';
-            });
+        if(actField && sectionField){
 
-            if(actFields?.[0]?.options){
-
-                var getOptionName = actFields[0].options.filter((element)=>{
-                    if(formData?.['field_section']?.includes(element.code)){
-                        return element;
-                    }
-                });
-
-                if(getOptionName.length > 0){
-                    var showSectionNames = ['17a', '17b', '19']
-
-                    var getSectionValues = getOptionName.filter((element)=> showSectionNames.includes((element.name).toLowerCase()));
-
-                    var hide_from_ux = true;
-
-                    if(getSectionValues.length > 0){
-                        hide_from_ux = false;
-                    }
-
-                    var updatedFormConfig = allFields.map((element)=>{
-                        if(element.name === "field_order_copy_(_17a_done_)"){
-                            element.hide_from_ux = hide_from_ux;
-                        }
-
-                        return element
-                    });
-
-                    setNewFormConfig(updatedFormConfig);
-                    delete formData["field_order_copy_(_17a_done_)"];
-
-                }else{
-
-                    var updatedFormConfig = allFields.map((element)=>{
-                        if(element.name === "field_order_copy_(_17a_done_)"){
-                            element.hide_from_ux = true;
-                        }
-        
-                        return element
-                    });
-        
-                    setNewFormConfig(updatedFormConfig);
-                    delete formData["field_order_copy_(_17a_done_)"];
-                }
+            const acts = tableActRow.map((row) => row.act).filter((val) => val);
+    
+            const sections = tableActRow.flatMap((row) => row.section || []).filter((val) => val);
+    
+    
+            var savingObj = {
+                [actField.name] : acts,
+                [sectionField.name] : sections
             }
-
-        }else{
-
-            var updatedFormConfig = allFields.map((element)=>{
-                if(element.name === "field_order_copy_(_17a_done_)"){
-                    element.hide_from_ux = true;
-                }
-
-                return element
+    
+            setFormData({
+                ...formData,
+                ...savingObj,
             });
-
-            setNewFormConfig(updatedFormConfig);
-            delete formData["field_order_copy_(_17a_done_)"];
         }
 
-    },[formData]);
+        setTableActRow(rows);
+    };
+    
+    const makeOrderCopyShow = (value) => {
+
+        const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+
+        var updatedFormConfig = allFields.map((element) => {
+            if (element.name === "field_order_copy_(_17a_done_)") {
+                element.hide_from_ux = value; // true = hide, false = show
+            }
+            return element;
+        });
+
+        setNewFormConfig(updatedFormConfig);
+    
+        if (value) {
+            delete formData["field_order_copy_(_17a_done_)"];
+        }
+    };
 
   const handleChange = (e) => {
     // console.log(e.target)
@@ -314,6 +295,29 @@ const DynamicForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    var errorActFlag = false;
+
+    tableActRow.map((element)=>{
+        if(!element.act || element.act === "" || !element.section || element.section === "" || element.section.length === 0){
+            errorActFlag = true;
+        }
+    });
+
+    if(errorActFlag){
+        toast.error("Please Fill All Act & Section Data",{
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+        return
+    }
+
     if (validate()) {
     var errorMsg = {};
 
@@ -528,6 +532,10 @@ const DynamicForm = ({
                 return ( element.dependent_table && element.dependent_table.length > 0 && element.dependent_table.includes(selectedField.table));
             });
 
+            if(dependent_field?.[0]?.table === "section" && table_name === "cid_under_investigation"){
+                return;
+            }
+
             var apiPayload = {};
             var apiUrl = selectedField.api
 
@@ -637,6 +645,10 @@ const DynamicForm = ({
                     var apiPayload = {};
                     var apiUrl = field.api;
 
+                    if(dependent_field?.[0]?.table === "section" && table_name === "cid_under_investigation"){
+                        return field;
+                    }
+
                     if (dependent_field?.length > 0) {
                         if (dependent_field?.[0]?.api ) {
 
@@ -738,6 +750,10 @@ const DynamicForm = ({
                     
                     var apiPayload = {};
                     var apiUrl = field.api;
+
+                    if(dependent_field?.[0]?.table === "section" && table_name === "cid_under_investigation"){
+                        return field;
+                    }
 
                     if (dependent_field?.length > 0) {
                         if (dependent_field?.[0]?.api ) {
@@ -1129,6 +1145,10 @@ const DynamicForm = ({
     
                 var apiPayload = {};
                 var apiUrl = selectedField.api
+
+                if(dependent_field?.[0]?.table === "section" && table_name === "cid_under_investigation"){
+                    return selectedField;
+                }
     
                 if (dependent_field.length > 0) {
     
@@ -1473,7 +1493,8 @@ const DynamicForm = ({
                 ? stepperConfigData
                 : newFormConfig
               ).map((field, index) => {
-                if (field?.hide_from_ux) {
+
+                if (field?.hide_from_ux || field?.table?.toLowerCase() === "section") {
                   return null;
                 }
 
@@ -1519,6 +1540,21 @@ const DynamicForm = ({
                             field.required = false;
                         }
                     }
+                }
+
+                if(field?.table?.toLowerCase() === "act"){
+                    return (
+                        <Grid item xs={12} p={2}>
+                            <ActTable 
+                                formConfig={allFields}
+                                formData={formData}
+                                tableRow={tableActRow}
+                                tableFunc={UpdateTableRowApi}
+                                readOnly={readOnly}
+                                showOrderCopy={makeOrderCopyShow}
+                            />
+                        </Grid>
+                    );
                 }
 
                 switch (field.type) {

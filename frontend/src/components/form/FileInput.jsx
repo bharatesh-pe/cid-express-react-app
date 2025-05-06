@@ -253,8 +253,8 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                 if(payloadFile && payloadFile[0] && payloadFile[0].profile_attachment_id){
                     setLoading(true);
                     try {
-                        setLoading(false);
                         var response = await api.post("/templateData/downloadDocumentAttachments/"+payloadFile[0].profile_attachment_id);
+                        setLoading(false);
                         if (response && response instanceof Blob) {
                             let fileUrl = URL.createObjectURL(response);
                             let newTab = window.open();
@@ -265,6 +265,16 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                     } catch (error) {
                         setLoading(false);
                         console.log(error,"error");
+                        toast.error('Please Try Again !', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
                     }
                 }else{
                     console.log("cant get the file");
@@ -379,7 +389,7 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                         <Typography onClick={()=>openFileInNewTab(file.filename)} variant="body2" sx={{ wordBreak: 'break-word', cursor:'pointer' }}>
                             {file.filename instanceof File ? file.filename['name'] : file.filename}
                         </Typography>
-                        <button type="button" onClick={()=>removeAttachment(index)} style={{border:'none',background:'transparent',display:'flex',alignItems:'center',padding:'0',cursor:'pointer'}}>
+                        <button type="button" disabled={field.disabled === true} onClick={()=>removeAttachment(index)} style={{border:'none',background:'transparent',display:'flex',alignItems:'center',padding:'0',cursor:field.disabled === true ? 'not-allowed' : 'pointer'}}>
                             <img src={attachmentCancel} alt="remove" />
                         </button>
                     </Box>
