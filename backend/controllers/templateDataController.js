@@ -4802,6 +4802,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       if (data.field_date_created) data.field_date_created = formatDate(data.field_date_created);
       if (data.field_last_updated) data.field_last_updated = formatDate(data.field_last_updated);
       if (data.created_at) data.created_at = formatDate(data.created_at);
+      if (data.field_due_date) data.field_due_date = formatDate(data.field_due_date)
 
       delete data.field_ui_case_id;
       delete data.ui_case_id;
