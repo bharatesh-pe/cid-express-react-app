@@ -111,78 +111,96 @@ const KGID = () => {
             flex: 1,
             renderCell: (params) => {
                 return (
+                    // <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => handleViewRole(params.row)}
+                    //     >
+                    //         <img
+                    //             src={eyes}
+                    //             alt="View"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>View</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => {
+
+                    //             handleEditRole(params.row)
+                    //         }}
+                    //     >
+                    //         <img
+                    //             src={edit}
+                    //             alt="Edit"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Edit</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "Red",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}
+                    //     >
+                    //         <img
+                    //             src={trash}
+                    //             alt="Delete"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Delete</span>
+                    //     </Button>
+                    // </Box>
+
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => handleViewRole(params.row)}
-                        >
-                            <img
-                                src={eyes}
-                                alt="View"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>View</span>
+                        <Button variant="outlined"  onClick={() => {
+
+                                handleViewRole(params.row)
+                            }}>
+                            View
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => {
+                        <Button variant="contained" color="primary"  onClick={() => {
 
                                 handleEditRole(params.row)
-                            }}
-                        >
-                            <img
-                                src={edit}
-                                alt="Edit"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Edit</span>
+                            }}>
+                            Edit
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "Red",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}
-                        >
-                            <img
-                                src={trash}
-                                alt="Delete"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Delete</span>
+                        <Button variant="contained" color="error"  onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}>
+                            Delete
                         </Button>
                     </Box>
                 );
@@ -780,7 +798,7 @@ const KGID = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View KGID"}
                         {showEditModal && "Edit KGID"}
-                        {showRoleAddModal && "Add New KGID"}
+                        {showRoleAddModal && "Add KGID"}
                         </Typography>
                     </Box>
 

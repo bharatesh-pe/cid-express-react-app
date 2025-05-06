@@ -323,13 +323,13 @@ const Approval = () => {
             }));
         }
 
-        if (addRoleData.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addRoleData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please Check Title and Description", {
@@ -429,13 +429,13 @@ const Approval = () => {
             }));
         }
 
-        if (selectedRole.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedRole.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please check Name and Description", {
@@ -666,9 +666,10 @@ const Approval = () => {
                 }}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                fullScreen
+                 maxWidth="xs"
+                // fullScreen
                 fullWidth
-                sx={{ marginLeft: '50px' }}        
+                // sx={{ marginLeft: '250px' }}        
             >
                 <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box
@@ -686,7 +687,7 @@ const Approval = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View Approval Items"}
                         {showEditModal && "Edit Approval Items"}
-                        {showRoleAddModal && "Add New Item"}
+                        {showRoleAddModal && "Add Item"}
                         </Typography>
                     </Box>
 
@@ -704,7 +705,7 @@ const Approval = () => {
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
-                            <Box sx={{ marginY: '18px' }}>
+                            <Box sx={{ marginY: '8px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.name && '#d32f2f' }}>
                                     Item Name
                                 </h4>

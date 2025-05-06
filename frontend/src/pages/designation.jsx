@@ -131,7 +131,7 @@ const Designation = () => {
         { field: 'department_name', headerName: 'Department', width: 200 },
         { field: 'division_name', headerName: 'Division', width: 200 },
         { field: 'name', headerName: 'Designation', width: 200 },
-        { field: 'description', headerName: 'Description', width: 300 },
+        // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
@@ -878,7 +878,7 @@ const Designation = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View Designation"}
                         {showEditModal && "Edit Designation"}
-                        {showRoleAddModal && "Add New Designation"}
+                        {showRoleAddModal && "Add Designation"}
                         </Typography>
                     </Box>
 
@@ -901,11 +901,11 @@ const Designation = () => {
 
                                 <Box>
                                     <h4 className="form-field-heading" style={{ color: !!errorRoleData.designation_name && '#d32f2f' }}>
-                                        Designation Name
+                                        Designation
                                     </h4>
                                     <TextField
                                         fullWidth
-                                        label="Designation Name"
+                                        label="Designation"
                                         name="designation_name"
                                         autoComplete="off"
                                         value={showRoleAddModal ? addRoleData.designation_name : selectedRole?.designation_name || selectedRole?.name}

@@ -200,87 +200,104 @@ const Division = () => {
     };
 
     const divisionColumnData = [
-        { field: 'name', headerName: 'Division', width: 200 },
         { field: 'department', headerName: 'Department', width: 300 },
-        { field: 'description', headerName: 'Description', width: 300 },
+        { field: 'name', headerName: 'Division', width: 200 },
+        // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
             flex: 1,
             renderCell: (params) => {
                 return (
+                    // <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => handleViewRole(params.row)}
+                    //     >
+                    //         <img
+                    //             src={eyes}
+                    //             alt="View"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>View</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => {
+
+                    //             handleEditRole(params.row)
+                    //         }}
+                    //     >
+                    //         <img
+                    //             src={edit}
+                    //             alt="Edit"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Edit</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "Red",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}
+                    //     >
+                    //         <img
+                    //             src={trash}
+                    //             alt="Delete"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Delete</span>
+                    //     </Button>
+                    // </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => handleViewRole(params.row)}
-                        >
-                            <img
-                                src={eyes}
-                                alt="View"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>View</span>
+                        <Button variant="outlined"  onClick={() => {
+
+                                handleViewRole(params.row)
+                            }}>
+                            View
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => {
+                        <Button variant="contained" color="primary"  onClick={() => {
 
                                 handleEditRole(params.row)
-                            }}
-                        >
-                            <img
-                                src={edit}
-                                alt="Edit"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Edit</span>
+                            }}>
+                            Edit
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "Red",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}
-                        >
-                            <img
-                                src={trash}
-                                alt="Delete"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Delete</span>
+                        <Button variant="contained" color="error"  onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}>
+                            Delete
                         </Button>
                     </Box>
                 );
@@ -372,13 +389,13 @@ const Division = () => {
             }));
         }
 
-        if (addRoleData.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addRoleData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (!addRoleData.department_id) {
             error_flag = true;
@@ -488,13 +505,13 @@ const Division = () => {
             }));
         }
 
-        if (selectedRole.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedRole.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (!selectedRole.department_id) {
             error_flag = true;
@@ -742,9 +759,10 @@ const Division = () => {
                 }}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                fullScreen
+                 maxWidth="xs"
+                // fullScreen
                 fullWidth
-                sx={{ marginLeft: '50px' }}
+                // sx={{ marginLeft: '250px' }}  
             >
                 <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box
@@ -763,7 +781,7 @@ const Division = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View Division"}
                         {showEditModal && "Edit Division"}
-                        {showRoleAddModal && "Add New Division"}
+                        {showRoleAddModal && "Add Division"}
                         </Typography>
                     </Box>
 
@@ -781,7 +799,7 @@ const Division = () => {
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
-                            <Box sx={{ marginY: "18px" }}>
+                            <Box sx={{ marginY: "8px" }}>
                             <h4 className="form-field-heading" style={{ color: !!errorRoleData.department_id && '#d32f2f' }}>
                                     Department
                                 </h4>
@@ -800,11 +818,11 @@ const Division = () => {
 
                             <Box sx={{ marginY: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.division_name && '#d32f2f' }}>
-                                    Name
+                                    Division
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Name"
+                                    label="Division"
                                     name="division_name"
                                     autoComplete="off"
                                     value={showRoleAddModal ? addRoleData.division_name : selectedRole?.division_name || selectedRole?.name}
@@ -827,7 +845,7 @@ const Division = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
+                            {/* <Box sx={{ marginBottom: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.description && '#d32f2f' }}>
                                     Description
                                 </h4>
@@ -847,7 +865,7 @@ const Division = () => {
                                     required={showEditModal || showRoleAddModal}
                                     disabled={showViewModal}
                                 />
-                            </Box>
+                            </Box> */}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>

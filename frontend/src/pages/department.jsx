@@ -98,85 +98,102 @@ const Department = () => {
 
     const departmentColumnData = [
         { field: 'name', headerName: 'Department', width: 200 },
-        { field: 'description', headerName: 'Description', width: 300 },
+        // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
             flex: 1,
             renderCell: (params) => {
                 return (
+                    // <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => handleViewRole(params.row)}
+                    //     >
+                    //         <img
+                    //             src={eyes}
+                    //             alt="View"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>View</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => {
+
+                    //             handleEditRole(params.row)
+                    //         }}
+                    //     >
+                    //         <img
+                    //             src={edit}
+                    //             alt="Edit"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Edit</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "Red",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}
+                    //     >
+                    //         <img
+                    //             src={trash}
+                    //             alt="Delete"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Delete</span>
+                    //     </Button>
+                    // </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => handleViewRole(params.row)}
-                        >
-                            <img
-                                src={eyes}
-                                alt="View"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>View</span>
+                        <Button variant="outlined"  onClick={() => {
+
+                                handleViewRole(params.row)
+                            }}>
+                            View
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => {
+                        <Button variant="contained" color="primary"  onClick={() => {
 
                                 handleEditRole(params.row)
-                            }}
-                        >
-                            <img
-                                src={edit}
-                                alt="Edit"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Edit</span>
+                            }}>
+                            Edit
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "Red",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}
-                        >
-                            <img
-                                src={trash}
-                                alt="Delete"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Delete</span>
+                        <Button variant="contained" color="error"  onClick={() => showDeleteRoleDialoge(params.row.id, params.row.name)}>
+                            Delete
                         </Button>
                     </Box>
                 );
@@ -322,13 +339,13 @@ const Department = () => {
             }));
         }
 
-        if (addRoleData.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addRoleData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please Check Title and Description", {
@@ -428,13 +445,13 @@ const Department = () => {
             }));
         }
 
-        if (selectedRole.description.trim() === '') {
-            error_flag = true;
-            setErrorRoleData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedRole.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorRoleData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please check Name and Description", {
@@ -664,9 +681,10 @@ const Department = () => {
                 }}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                fullScreen
+                 maxWidth="xs"
+                // fullScreen
                 fullWidth
-                sx={{ marginLeft: '50px' }}        
+                // sx={{ marginLeft: '250px' }}         
             >
                 <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box
@@ -684,7 +702,7 @@ const Department = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View Department"}
                         {showEditModal && "Edit Department"}
-                        {showRoleAddModal && "Add New Department"}
+                        {showRoleAddModal && "Add Department"}
                         </Typography>
                     </Box>
 
@@ -702,13 +720,13 @@ const Department = () => {
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
-                            <Box sx={{ marginY: '18px' }}>
+                            <Box sx={{ marginY: '8px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.department_name && '#d32f2f' }}>
-                                    Name
+                                    Department
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Name"
+                                    label="Department"
                                     name="department_name"
                                     autoComplete="off"
                                     value={showRoleAddModal ? addRoleData.department_name : selectedRole?.department_name || selectedRole?.name}
@@ -731,7 +749,7 @@ const Department = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
+                            {/* <Box sx={{ marginBottom: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.description && '#d32f2f' }}>
                                     Description
                                 </h4>
@@ -751,7 +769,7 @@ const Department = () => {
                                     required={showEditModal || showRoleAddModal}
                                     disabled={showViewModal}
                                 />
-                            </Box>
+                            </Box> */}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>

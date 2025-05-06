@@ -41,6 +41,8 @@ import CloseIcon from '@mui/icons-material/Close';
 
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
+import ActTable from './actSection';
+
 const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
   const [formData, setFormData] = useState({});
@@ -154,72 +156,72 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
         }
 
-        const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+        // const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
 
-        if(formData?.['field_section']){
+        // if(formData?.['field_section']){
 
-            var actFields = allFields.filter((element)=>{
-                return element.name === 'field_section';
-            });
+        //     var actFields = allFields.filter((element)=>{
+        //         return element.name === 'field_section';
+        //     });
 
-            if(actFields?.[0]?.options){
+        //     if(actFields?.[0]?.options){
 
-                var getOptionName = actFields[0].options.filter((element)=>{
-                    if(formData?.['field_section']?.includes(element.code)){
-                        return element;
-                    }
-                });
+        //         var getOptionName = actFields[0].options.filter((element)=>{
+        //             if(formData?.['field_section']?.includes(element.code)){
+        //                 return element;
+        //             }
+        //         });
 
-                if(getOptionName.length > 0){
-                    var showSectionNames = ['17a', '17b', '19']
+        //         if(getOptionName.length > 0){
+        //             var showSectionNames = ['17a', '17b', '19']
 
-                    var getSectionValues = getOptionName.filter((element)=> showSectionNames.includes((element.name).toLowerCase()));
+        //             var getSectionValues = getOptionName.filter((element)=> showSectionNames.includes((element.name).toLowerCase()));
 
-                    var hide_from_ux = true;
+        //             var hide_from_ux = true;
 
-                    if(getSectionValues.length > 0){
-                        hide_from_ux = false;
-                    }
+        //             if(getSectionValues.length > 0){
+        //                 hide_from_ux = false;
+        //             }
 
-                    var updatedFormConfig = allFields.map((element)=>{
-                        if(element.name === "field_order_copy_(_17a_done_)"){
-                            element.hide_from_ux = hide_from_ux;
-                        }
+        //             var updatedFormConfig = allFields.map((element)=>{
+        //                 if(element.name === "field_order_copy_(_17a_done_)"){
+        //                     element.hide_from_ux = hide_from_ux;
+        //                 }
 
-                        return element
-                    });
+        //                 return element
+        //             });
 
-                    setNewFormConfig(updatedFormConfig);
-                    delete formData["field_order_copy_(_17a_done_)"];
+        //             setNewFormConfig(updatedFormConfig);
+        //             delete formData["field_order_copy_(_17a_done_)"];
 
-                }else{
+        //         }else{
 
-                    var updatedFormConfig = allFields.map((element)=>{
-                        if(element.name === "field_order_copy_(_17a_done_)"){
-                            element.hide_from_ux = true;
-                        }
+        //             var updatedFormConfig = allFields.map((element)=>{
+        //                 if(element.name === "field_order_copy_(_17a_done_)"){
+        //                     element.hide_from_ux = true;
+        //                 }
         
-                        return element
-                    });
+        //                 return element
+        //             });
         
-                    setNewFormConfig(updatedFormConfig);
-                    delete formData["field_order_copy_(_17a_done_)"];
-                }
-            }
+        //             setNewFormConfig(updatedFormConfig);
+        //             delete formData["field_order_copy_(_17a_done_)"];
+        //         }
+        //     }
 
-        }else{
+        // }else{
 
-            var updatedFormConfig = allFields.map((element)=>{
-                if(element.name === "field_order_copy_(_17a_done_)"){
-                    element.hide_from_ux = true;
-                }
+        //     var updatedFormConfig = allFields.map((element)=>{
+        //         if(element.name === "field_order_copy_(_17a_done_)"){
+        //             element.hide_from_ux = true;
+        //         }
 
-                return element
-            });
+        //         return element
+        //     });
 
-            setNewFormConfig(updatedFormConfig);
-            delete formData["field_order_copy_(_17a_done_)"];
-        }
+        //     setNewFormConfig(updatedFormConfig);
+        //     delete formData["field_order_copy_(_17a_done_)"];
+        // }
 
     },[formData]);
 
@@ -1278,7 +1280,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             <Grid container sx={{ alignItems: 'start' }}>
               {(stepperData && stepperData.length > 0 ? stepperConfigData : newFormConfig).map((field, index) => {
 
-                if(field?.hide_from_ux){
+                if(field?.hide_from_ux || field?.table?.toLowerCase() === "section"){
                     return null
                 }
 
@@ -1324,6 +1326,12 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         }
                     }
                 }
+
+
+                if(field?.table?.toLowerCase() === "act"){
+                    return <ActTable />;
+                }
+
 
                 switch (field.type) {
                   case 'text':

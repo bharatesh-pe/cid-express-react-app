@@ -98,85 +98,102 @@ const Act = () => {
 
     const actColumnData = [
         { field: 'name', headerName: 'Act', width: 200 },
-        { field: 'description', headerName: 'Description', width: 300 },
+        // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
             headerName: 'Action',
             flex: 1,
             renderCell: (params) => {
                 return (
+                    // <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => handleViewAct(params.row)}
+                    //     >
+                    //         <img
+                    //             src={eyes}
+                    //             alt="View"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>View</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "black",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => {
+
+                    //             handleEditAct(params.row)
+                    //         }}
+                    //     >
+                    //         <img
+                    //             src={edit}
+                    //             alt="Edit"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Edit</span>
+                    //     </Button>
+                    //     <Button
+                    //         style={{
+                    //             background: "transparent",
+                    //             border: "none",
+                    //             padding: "0",
+                    //             boxShadow: "none",
+                    //             display: "flex",
+                    //             alignItems: "center",
+                    //             gap: "6px",
+                    //             color: "Red",
+                    //             fontSize: "14px",
+                    //             textAlign: "center",
+                    //             textTransform: "none",
+                    //         }}
+                    //         onClick={() => showDeleteActDialoge(params.row.id, params.row.name)}
+                    //     >
+                    //         <img
+                    //             src={trash}
+                    //             alt="Delete"
+                    //             style={{ width: "20px", height: "20px" }}
+                    //         />
+                    //         <span>Delete</span>
+                    //     </Button>
+                    // </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: '10px', height: '100%' }}>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => handleViewAct(params.row)}
-                        >
-                            <img
-                                src={eyes}
-                                alt="View"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>View</span>
+                        <Button variant="outlined"  onClick={() => {
+
+                                handleViewAct(params.row)
+                            }}>
+                            View
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "black",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => {
+                        <Button variant="contained" color="primary"  onClick={() => {
 
                                 handleEditAct(params.row)
-                            }}
-                        >
-                            <img
-                                src={edit}
-                                alt="Edit"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Edit</span>
+                            }}>
+                            Edit
                         </Button>
-                        <Button
-                            style={{
-                                background: "transparent",
-                                border: "none",
-                                padding: "0",
-                                boxShadow: "none",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                color: "Red",
-                                fontSize: "14px",
-                                textAlign: "center",
-                                textTransform: "none",
-                            }}
-                            onClick={() => showDeleteActDialoge(params.row.id, params.row.name)}
-                        >
-                            <img
-                                src={trash}
-                                alt="Delete"
-                                style={{ width: "20px", height: "20px" }}
-                            />
-                            <span>Delete</span>
+                        <Button variant="contained" color="error"  onClick={() => showDeleteActDialoge(params.row.id, params.row.name)}>
+                            Delete
                         </Button>
                     </Box>
                 );
@@ -322,13 +339,13 @@ const Act = () => {
             }));
         }
 
-        if (addActData.description.trim() === '') {
-            error_flag = true;
-            setErrorActData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addActData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorActData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please Check Title and Description", {
@@ -428,13 +445,13 @@ const Act = () => {
             }));
         }
 
-        if (selectedAct.description.trim() === '') {
-            error_flag = true;
-            setErrorActData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedAct.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorActData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (error_flag) {
             toast.error("Please check Name and Description", {
@@ -664,9 +681,10 @@ const Act = () => {
                 }}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                fullScreen
+                maxWidth="xs"
+                // fullScreen
                 fullWidth
-                sx={{ marginLeft: '50px' }}        
+                // sx={{ marginLeft: '250px' }}        
             >
                 <DialogTitle id="hierarchy-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <Box
@@ -684,7 +702,7 @@ const Act = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View act"}
                         {showEditModal && "Edit act"}
-                        {showActAddModal && "Add New act"}
+                        {showActAddModal && "Add Act"}
                         </Typography>
                     </Box>
 
@@ -702,13 +720,13 @@ const Act = () => {
                 <DialogContent>
                     <DialogContentText>
                         <FormControl fullWidth>
-                            <Box sx={{ marginY: '18px' }}>
+                            <Box sx={{ marginY: '8px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorActData.act_name && '#d32f2f' }}>
-                                    Name
+                                    Act
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Name"
+                                    label="Act"
                                     name="act_name"
                                     autoComplete="off"
                                     value={showActAddModal ? addActData.act_name : selectedAct?.act_name || selectedAct?.name}
@@ -731,7 +749,7 @@ const Act = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
+                            {/* <Box sx={{ marginBottom: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorActData.description && '#d32f2f' }}>
                                     Description
                                 </h4>
@@ -751,7 +769,7 @@ const Act = () => {
                                     required={showEditModal || showActAddModal}
                                     disabled={showViewModal}
                                 />
-                            </Box>
+                            </Box> */}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
