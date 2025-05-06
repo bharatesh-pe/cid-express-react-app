@@ -10,7 +10,7 @@ import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 
-export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord,getRowClassName }) {
+export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord,getRowClassName, tableName }) {
 
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [selectedRow, setSelectedRow] = React.useState(null);
@@ -84,7 +84,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         columns={updatedColumns}
         getRowId={getRowId} 
         rowHeight={45}
-        className={`FigmaTableView`}
+        className={`FigmaTableView ${tableName && (tableName === "cid_ui_case_accused" || tableName === "cid_pt_case_witness") ? 'excelViewTable' : ''}`}
         disableColumnMenu
         disableColumnSorting
         hideFooter

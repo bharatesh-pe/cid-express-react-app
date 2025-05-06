@@ -2444,6 +2444,25 @@ const loadChildMergedCasesData = async (page, caseId) => {
       const renderCellFunc = (key, count) => (params) =>
         tableCellRender(key, params, params.value, count, meta.table_name);
 
+    //   {
+    //     field: "task_child",
+    //     headerName: "",
+    //     width: 50,
+    //     resizable: true,
+    //     renderHeader: (params) => (
+    //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+    //     ),
+    //     renderCell: (params) => (
+    //         <Badge
+    //             badgeContent={params?.row?.['task_unread_count']}
+    //             color="primary"
+    //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+    //         >
+    //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+    //         </Badge>
+    //     ),
+    // },
+
       const updatedHeader = [
         {
           field: "select_child",
@@ -2465,24 +2484,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
           ),
         }
         ,
-      {
-          field: "task_child",
-          headerName: "",
-          width: 50,
-          resizable: true,
-          renderHeader: (params) => (
-              <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-          ),
-          renderCell: (params) => (
-              <Badge
-                  badgeContent={params?.row?.['task_unread_count']}
-                  color="primary"
-                  sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-              >
-                  <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-              </Badge>
-          ),
-      },
       {
           field: "approval_child",
           headerName: "Approval",
@@ -2618,6 +2619,25 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                 const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
 
+                // {
+                //     field: "task",
+                //     headerName: "",
+                //     width: 50,
+                //     resizable: true,
+                //     renderHeader: (params) => (
+                //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+                //     ),
+                //     renderCell: (params) => (
+                //         <Badge
+                //             badgeContent={params?.row?.['task_unread_count']}
+                //             color="primary"
+                //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+                //         >
+                //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                //         </Badge>
+                //     ),
+                // },
+
                 const updatedHeader = [
                     
                     {
@@ -2632,24 +2652,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     onChange={(event) => handleCheckboxChangeField(event, params.row)}
                                 />
                             </Box>
-                        ),
-                    },
-                    {
-                        field: "task",
-                        headerName: "",
-                        width: 50,
-                        resizable: true,
-                        renderHeader: (params) => (
-                            <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-                        ),
-                        renderCell: (params) => (
-                            <Badge
-                                badgeContent={params?.row?.['task_unread_count']}
-                                color="primary"
-                                sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-                            >
-                                <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-                            </Badge>
                         ),
                     },
                     {
@@ -2871,6 +2873,27 @@ const loadChildMergedCasesData = async (page, caseId) => {
         
                     const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
 
+                    // {
+                    //     field: "task",
+                    //     headerName: "",
+                    //     width: 50,
+                    //     resizable: true,
+                    //     renderHeader: (params) => (
+                    //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+                    //     ),
+                    //     renderCell: (params) => {
+                    //       const isDisabled = !params?.row?.["field_io_name"];
+                    //       return (
+                    //         <Badge
+                    //             badgeContent={params?.row?.['task_unread_count']}
+                    //             color="primary"
+                    //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+                    //         >
+                    //             <Tooltip title="Add Task"><AddTaskIcon onClick={isDisabled ? undefined : () => handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                    //         </Badge>
+                    //     )},
+                    //   },
+
                     const updatedHeader = [
                         
                         {
@@ -2890,26 +2913,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 </Box>
                             )},
                         },
-                        {
-                            field: "task",
-                            headerName: "",
-                            width: 50,
-                            resizable: true,
-                            renderHeader: (params) => (
-                                <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-                            ),
-                            renderCell: (params) => {
-                              const isDisabled = !params?.row?.["field_io_name"];
-                              return (
-                                <Badge
-                                    badgeContent={params?.row?.['task_unread_count']}
-                                    color="primary"
-                                    sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-                                >
-                                    <Tooltip title="Add Task"><AddTaskIcon onClick={isDisabled ? undefined : () => handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-                                </Badge>
-                            )},
-                          },
                         {
                             field: "approval",
                             headerName: "Approval",
@@ -10014,6 +10017,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 paginationCount={otherTemplatesPaginationCount} 
                                 handlePagination={handleOtherPagination} 
                                 handleRowClick={(row) => handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)}
+                                tableName={selectedOtherTemplate?.table}
                                 />
                         </Box>
                         <Box
@@ -10160,6 +10164,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             totalRecord={otherTemplatesTotalRecord} 
                             paginationCount={otherTemplatesPaginationCount} 
                             handlePagination={handleOtherPagination} 
+                            tableName={selectedOtherTemplate?.table}
                         />
                     </Box>
                 )}
