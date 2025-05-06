@@ -328,7 +328,7 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                     )}
                 </div>
             </h4>
-            <Box pb={3} sx={{display:'flex',alignItems:'center',gap:'8px'}}>
+            {/* <Box pb={3} sx={{display:'flex',alignItems:'center',gap:'8px'}}>
                 {attachmentFolder && attachmentFolder.length > 0 && attachmentFolder.map((element)=>(
                     element.is_active && (
                         <Box onClick={()=>setSelectedFolder(element.folder_id)} className={` folderCategoryBox ${selectedFolder === element.folder_id ? 'active' : ''}`}>
@@ -336,7 +336,7 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                         </Box>
                     )
                 ))}
-            </Box>
+            </Box> */}
 
             <Button
                 component="label"
