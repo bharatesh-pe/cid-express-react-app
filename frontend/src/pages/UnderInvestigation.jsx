@@ -7437,45 +7437,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
           ),
         }
       : null,
-    userPermissions[0]?.delete_case
-      ?  isChildMergedLoading
-      ? null
-      : {
-          name: "Delete",
-          onclick: (selectedRow) =>
-            handleDeleteTemplateData(selectedRow, table_name),
-          icon: () => (
-            <span className="tableActionIcon">
-              <svg
-                width="50"
-                height="50"
-                viewBox="0 0 34 34"
-                fill=""
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="12" cy="12" r="12" fill="" />
-                <mask
-                  id="mask0_1120_40636"
-                  style={{ maskType: "alpha" }}
-                  maskUnits="userSpaceOnUse"
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                >
-                  <rect x="4" y="4" width="16" height="16" fill="" />
-                </mask>
-                <g mask="url(#mask0_1120_40636)">
-                  <path
-                    d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z"
-                    fill=""
-                  />
-                </g>
-              </svg>
-            </span>
-          ),
-        }
-      : null,
     ...(sysStatus !== "b_Report" ? hoverTableOptions : []),
     // sysStatus === "ui_case" || sysStatus === "all"
     //   ? {
@@ -7526,6 +7487,45 @@ const loadChildMergedCasesData = async (page, caseId) => {
           name: "Print",
           onclick: (selectedRow) =>
             getPdfContentData(selectedRow, true, table_name),
+        }
+      : null,
+      userPermissions[0]?.delete_case
+      ?  isChildMergedLoading
+      ? null
+      : {
+          name: "Delete",
+          onclick: (selectedRow) =>
+            handleDeleteTemplateData(selectedRow, table_name),
+          icon: () => (
+            <span className="tableActionIcon">
+              <svg
+                width="50"
+                height="50"
+                viewBox="0 0 34 34"
+                fill=""
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="12" cy="12" r="12" fill="" />
+                <mask
+                  id="mask0_1120_40636"
+                  style={{ maskType: "alpha" }}
+                  maskUnits="userSpaceOnUse"
+                  x="4"
+                  y="4"
+                  width="16"
+                  height="16"
+                >
+                  <rect x="4" y="4" width="16" height="16" fill="" />
+                </mask>
+                <g mask="url(#mask0_1120_40636)">
+                  <path
+                    d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z"
+                    fill=""
+                  />
+                </g>
+              </svg>
+            </span>
+          ),
         }
       : null,
   ].filter(Boolean);

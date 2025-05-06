@@ -372,13 +372,13 @@ const Section = () => {
             }));
         }
 
-        if (addSectionData.description.trim() === '') {
-            error_flag = true;
-            setErrorSectionData((prevData) => ({
-                ...prevData,
-                description: 'Description is required'
-            }));
-        }
+        // if (addSectionData.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorSectionData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required'
+        //     }));
+        // }
 
         if (!addSectionData.act_id) {
             error_flag = true;
@@ -488,13 +488,13 @@ const Section = () => {
             }));
         }
 
-        if (selectedSection.description.trim() === '') {
-            error_flag = true;
-            setErrorSectionData((prevData) => ({
-                ...prevData,
-                description: 'Description is required',
-            }));
-        }
+        // if (selectedSection.description.trim() === '') {
+        //     error_flag = true;
+        //     setErrorSectionData((prevData) => ({
+        //         ...prevData,
+        //         description: 'Description is required',
+        //     }));
+        // }
 
         if (!selectedSection.act_id) {
             error_flag = true;
@@ -763,7 +763,7 @@ const Section = () => {
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
                         {showViewModal && "View section"}
                         {showEditModal && "Edit section"}
-                        {showSectionAddModal && "Add New section"}
+                        {showSectionAddModal && "Add Section"}
                         </Typography>
                     </Box>
 
@@ -795,16 +795,16 @@ const Section = () => {
                                         setSelectedSection((prev) => ({ ...prev, act_id: actId }));
                                         setAddSectionData((prev) => ({ ...prev, act_id: actId }));
                                     }}
-                                    renderInput={(params) => <TextField {...params} label="Select act" variant="outlined" />}
+                                    renderInput={(params) => <TextField {...params} label="Select Act" variant="outlined" />}
                                 />                </Box>
 
                             <Box sx={{ marginY: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorSectionData.section_name && '#d32f2f' }}>
-                                    Name
+                                    Law
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Name"
+                                    label="Law"
                                     name="section_name"
                                     autoComplete="off"
                                     value={showSectionAddModal ? addSectionData.section_name : selectedSection?.section_name || selectedSection?.name}
@@ -827,7 +827,7 @@ const Section = () => {
                                 />
                             </Box>
 
-                            <Box sx={{ marginBottom: '18px' }}>
+                            {/* <Box sx={{ marginBottom: '18px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorSectionData.description && '#d32f2f' }}>
                                     Description
                                 </h4>
@@ -847,7 +847,7 @@ const Section = () => {
                                     required={showEditModal || showSectionAddModal}
                                     disabled={showViewModal}
                                 />
-                            </Box>
+                            </Box> */}
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
