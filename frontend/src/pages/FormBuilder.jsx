@@ -1138,7 +1138,7 @@ const Formbuilder = () => {
                 ...field, // Keep all other properties of the field
                 name: transformedName, // Update the 'name' key with the transformed value
                 searchable: true, // for searching fields from the table
-                data_type: (field.api && field.api !== '') || (field.forignKey && field.forignKey !== '') || (Array.isArray(field.attributes) && field.attributes.length > 0) ? 'integer' : field.type === 'textarea' ? 'text' : field.formType, // Update the 'data_type' key with the formType value
+                data_type: field.type === 'textarea' ? 'text' : field.formType, // Update the 'data_type' key with the formType value
             };
         });
 
@@ -1302,7 +1302,7 @@ const Formbuilder = () => {
                     ...field, // Keep all other properties of the field
                     name: transformedName, // Update the 'name' key with the transformed value
                     searchable: true, // for searching fields from the table
-                    data_type: (field.api && field.api !== '') || (field.forignKey && field.forignKey !== '') || (Array.isArray(field.attributes) && field.attributes.length > 0) ? 'integer' : field.type === 'textarea' ? 'text' : field.formType, // Update the 'data_type' key with the formType value
+                    data_type: field.type === 'textarea' ? 'text' : field.formType, // Update the 'data_type' key with the formType value
                 };
             });
 

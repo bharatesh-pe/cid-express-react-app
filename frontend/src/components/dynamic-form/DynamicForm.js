@@ -191,6 +191,10 @@ const DynamicForm = ({
     
             const sections = tableActRow.flatMap((row) => row.section || []).filter((val) => val);
     
+            if(acts.length === 0 || acts === ""){
+                setTableActRow(rows);
+                return;
+            }
     
             var savingObj = {
                 [actField.name] : acts,
@@ -296,26 +300,28 @@ const DynamicForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    var errorActFlag = false;
-
-    tableActRow.map((element)=>{
-        if(!element.act || element.act === "" || !element.section || element.section === "" || element.section.length === 0){
-            errorActFlag = true;
-        }
-    });
-
-    if(errorActFlag){
-        toast.error("Please Fill All Act & Section Data",{
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
+    if(table_name === "cid_under_investigation"){
+        var errorActFlag = false;
+    
+        tableActRow.map((element)=>{
+            if(!element.act || element.act === "" || !element.section || element.section === "" || element.section.length === 0){
+                errorActFlag = true;
+            }
         });
-        return
+    
+        if(errorActFlag){
+            toast.error("Please Fill All Act & Section Data",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return
+        }
     }
 
     if (validate()) {
