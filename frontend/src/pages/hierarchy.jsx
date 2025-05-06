@@ -937,7 +937,7 @@ const Hierarchy = () => {
                                     <h4 className="form-field-heading">Officer Designation Details</h4>
                                     <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #ccc" }}>
                                         <thead>
-                                            <tr style={{ background: "#f0f0f0" }}>
+                                            <tr style={{ background: "#d89a1d4d" }}>
                                                 <th style={{ border: "1px solid #ccc", padding: "8px" }}>Department</th>
                                                 <th style={{ border: "1px solid #ccc", padding: "8px" }}>Division</th>
                                             </tr>
