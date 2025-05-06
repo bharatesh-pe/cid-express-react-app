@@ -87,7 +87,11 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             const acts = tableActRow.map((row) => row.act).filter((val) => val);
     
             const sections = tableActRow.flatMap((row) => row.section || []).filter((val) => val);
-    
+
+            if(acts.length === 0 || acts === ""){
+                setTableActRow(rows);
+                return;
+            }
     
             var savingObj = {
                 [actField.name] : acts,
