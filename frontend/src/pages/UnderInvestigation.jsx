@@ -75,6 +75,7 @@ import dayjs from "dayjs";
 import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
+import { InputLabel, Select, MenuItem } from '@mui/material';
 import NumberField from "../components/form/NumberField";
 import ShortText from "../components/form/ShortText";
 import LongText from "../components/form/LongText";
@@ -3550,7 +3551,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
         table_name: "cid_under_investigation",
       });
       if (response.success && response.data?.fields) {
-        let aoOnlyFields = response.data.fields.filter(field => field.ao_field === true && field.hide_from_ux === false);
+        let aoOnlyFields = response.data.fields.filter(field =>
+          field.ao_field === true &&
+          field.hide_from_ux === false 
+          // field.name !== 'field_act' &&
+          // field.name !== 'field_section'
+        );
+        
+        console.log("aoonlyfieldsss", aoOnlyFields);
         
         const briefFactField = response.data.fields.find(field => field.name === 'field_breif_fact');
         const policeStationField = response.data.fields.find(field => field.name === 'field_investigation_carried_out_by_the_police_station');
@@ -3562,8 +3570,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
         if (policeStationField && !aoOnlyFields.includes(policeStationField)) {
             aoOnlyFields.push(policeStationField);
         }
-            
+        
+        console.log("total ao and long text fieldsss", aoOnlyFields);
         setAoFields(aoOnlyFields);
+        
         loadValueField(aoFieldId, false, "cid_under_investigation");
         setLoading(false);
     }
@@ -3577,7 +3587,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
   useEffect(() => {
-    if (selectedOtherTemplate?.table === "cid_ui_case_action_plan" || selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
+    if (selectedOtherTemplate?.table === "cid_ui_case_action_plan" ) {
       loadAOFields();
     }
   }, [selectedOtherTemplate]);
@@ -4085,7 +4095,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   
     normalData.sys_status = "AP";
-    normalData.field_status = "submit";
+    normalData.field_status = "";
     normalData["ui_case_id"] = selectedRowData.id;
   
     formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
@@ -9877,6 +9887,27 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         </Button>
                     ))}
                     {/* )} */}
+                    {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' && (
+                        <Button
+                        variant="outlined"
+                        // onClick={() =>
+                        //   handleUpdatePdfClick({
+                        //     selectedOtherTemplate,
+                        //     selectedRowData,
+                        //     selectedIds,
+                        //     prUpdatePdf,
+                        //   })
+                        // }
+                        sx={{
+                          marginLeft: "10px",
+                          height: '40px',
+                          borderColor: '#2e7d32',
+                          color: '#2e7d32',
+                        }}
+                      >
+                        Submit
+                      </Button>
+                    )}
                 </Box>
               )}
               {/* <IconButton
@@ -9898,83 +9929,83 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       <>
                         <Box >
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px' }}>
-                          {aoFields.length > 0 ? (
-                            <Grid container spacing={2}>
-                              {aoFields.slice(0, 6).map((field, index) => (
-                                <Grid item xs={12} md={4} key={index}>
-                                  {field.type === 'text' && (
-                                    <ShortText
-                                      key={field.id}
-                                      field={field}
-                                      formData={filterAoValues}
-                                      disabled={true}
-                                    />
-                                  )}
-                                  {field.type === 'multidropdown' && (
-                                    <MultiSelect
-                                      key={field.id}
-                                      field={field}
-                                      formData={filterAoValues}
-                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                      disabled={true}
-                                    />
-                                  )}
-                                  {field.type === 'autocomplete' && (
-                                    <AutocompleteField
-                                      key={field.id}
-                                      field={field}
-                                      formData={filterAoValues}
-                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                      disabled={true}
-                                    />
-                                  )}
-                                </Grid>
-                              ))}
-                              <Grid container item xs={12} spacing={2} alignItems="flex-start">
-                                {aoFields.slice(4).filter(f => f.type === 'textarea').map((field, index) => (
-                                  <Grid item xs={5} key={index}>
-                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                                      <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
-                                        {field.label}
-                                      </label>
-                                    </div>
-                                    <TextField
-                                      fullWidth
-                                      multiline
-                                      minRows={8}
-                                      variant="outlined"
-                                      value={filterAoValues[field.name] || ""}
-                                      onChange={(e) =>
-                                        setFilterAoValues((prev) => ({
-                                          ...prev,
-                                          [field.name]: e.target.value,
-                                        }))
-                                      }
-                                    />
-                                  </Grid>
-                                ))}
+                        {aoFields.length > 0 && (
+  <Grid container spacing={2} alignItems="flex-start">
+    {aoFields.slice(0, 6).map((field, index) => (
+      <Grid item xs={12} md={4} key={index}>
+        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', height: '100%' }}>
+          {field.type === 'text' && (
+            <ShortText
+              key={field.id}
+              field={field}
+              formData={filterAoValues}
+              disabled={true}
+            />
+          )}
+          {field.type === 'multidropdown' && (
+            <MultiSelect
+              key={field.id}
+              label ={field.label}
+              field={field}
+              formData={filterAoValues}
+              onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+              disabled={true}
+            />
+          )}
+          
+          {(field.type === 'dropdown' || field.type === 'autocomplete') && (
+            <AutocompleteField
+              key={field.id}
+              label ={field.label}
+              field={field}
+              formData={filterAoValues}
+              onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+              disabled={true}
+            />
+          )}
+        </div>
+      </Grid>
+    ))}
 
-                                <Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
-                                  <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={() =>
-                                      onActionPlanUpdate(
-                                        "cid_under_investigation",
-                                        filterAoValues,
-                                      )
-                                    }
-                                  >
-                                    Update
-                                  </Button>
-                                </Grid>
-                              </Grid>
-                            </Grid>
-                          ) : (
-                            <Typography variant="body2" color="text.secondary">
-                              No AO Fields Available
-                            </Typography>
-                          )}
+    <Grid container item xs={12} spacing={2} alignItems="flex-start">
+      {aoFields.slice(4).filter(f => f.type === 'textarea').map((field, index) => (
+        <Grid item xs={5} key={index}>
+          <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
+            <label style={{ fontWeight: 'bold', color: 'black', marginBottom: '8px' }}>
+              {field.label}
+            </label>
+            <TextField
+              fullWidth
+              multiline
+              minRows={8}
+              variant="outlined"
+              value={filterAoValues[field.name] || ""}
+              onChange={(e) =>
+                setFilterAoValues((prev) => ({
+                  ...prev,
+                  [field.name]: e.target.value,
+                }))
+              }
+            />
+          </div>
+        </Grid>
+      ))}
+
+      <Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() =>
+            onActionPlanUpdate("cid_under_investigation", filterAoValues)
+          }
+        >
+          Update
+        </Button>
+      </Grid>
+    </Grid>
+  </Grid>
+)}
+ 
                         </Box>
                             <TableView
                                 rows={otherTemplateData}
@@ -10054,15 +10085,35 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       disabled={true}
                                     />
                                   )}
-                                  {field.type === 'autocomplete' && (
-                                    <AutocompleteField
-                                      key={field.id}
-                                      field={field}
-                                      formData={filterAoValues}
-                                      onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                      disabled={true}
-                                    />
-                                  )}
+{(field.type === 'dropdown' || field.type === 'autocomplete') && (
+  <AutocompleteField
+    key={field.id}
+    field={field}
+    formData={filterAoValues}
+    onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+    value={(() => {
+      // Log field and filterAoValues to inspect their values
+      console.log('field', field);
+      console.log('field.options:', field.options);  // Inspect the available options
+      console.log('filterAoValues:', filterAoValues);  // Log the entire form data
+      
+      // Extract the value from filterAoValues using field.name (e.g., field_dept_unit)
+      const fieldValue = filterAoValues?.[field.name];  // This should be '7' in your case
+      console.log('fieldValue (from filterAoValues):', fieldValue);  // Log the extracted value
+
+      // Find the corresponding option based on the fieldValue (code)
+      const selectedOption = field.options.find(
+        (option) => String(option.code) === String(fieldValue)  // Match based on code
+      );
+      console.log('selectedOption:', selectedOption);  // Log the selected option (if found)
+
+      return selectedOption || null;  // Return the selected option or null if no match
+    })()}
+    disabled={true}  // Or set dynamically based on your condition
+  />
+)}
+
+
                                 </Grid>
                               ))}
                               <Grid container item xs={12} spacing={2} alignItems="flex-start">
@@ -10112,17 +10163,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                           )}
                         </Box>
                       )}
-                      {/* <Box sx={{ display: 'flex', alignItems: 'end', justifyContent: 'end', marginBottom: '10px' }}>
-                        <Button
-                            variant="outlined"
-                            sx={{height: '40px'}}
-                            onClick={() =>
-                                showOptionTemplate(selectedOtherTemplate?.table)
-                            }
-                        >
-                            Add
-                        </Button>
-                      </Box> */}
+
                         <TableView
                             rows={otherTemplateData}
                             columns={otherTemplateColumn}
@@ -10280,7 +10321,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                               }}
                           >
                               <Box sx={{ fontWeight: "bold", fontSize: "16px" , margin: '0'}}>
-                                  Approval needed to proceed with: 
+                                  <span style={{color: 'red'}}>Approval needed to proceed with:</span> 
                                   <span style={{ color: "#1976d2", fontWeight: "bold" }}>
                                       {approvalItem.find(option => option.approval_item_id === approvalSaveData?.approval_item)?.name || "Approval Item"}
                                   </span>
@@ -10312,7 +10353,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                   options: designationData.map(item => ({
                                     ...item,
                                     code: item.designation_id,
-                                    name: item.designation_name
+                                    name: item.designation_name,
+                                    supportingTextColor: 'green' 
                                 })),
                                   required: true,
                                   info: 'Select the Officer Designation approving this item.',
@@ -10331,6 +10373,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       disableFutureDate: 'true',
                                       info: 'Pick the date on which the approval is being granted',
                                       supportingText: 'Pick the date on which the approval is being granted',
+                                      supportingTextColor: 'green' 
                                   }}
                                   formData={approvalSaveData}
                                   value={approvalSaveData["approval_date"] ? dayjs(approvalSaveData["approval_date"]) : null}

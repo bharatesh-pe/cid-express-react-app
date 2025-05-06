@@ -7890,7 +7890,7 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                 }
             }
 
-            validData.field_status = "submit";
+            // validData.field_status = "submit";
             validData.sys_status = "AP";
             validData.created_by = userName;
             validData.created_by_id = userId;
