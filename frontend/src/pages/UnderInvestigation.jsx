@@ -8335,6 +8335,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     }
                   });
 
+                  console.log(getFurtherInvestigationItems,"dataaa")
                   if(getFurtherInvestigationItems?.[0]){
                     caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
                     setReadonlyApprovalItems(true);
@@ -8393,7 +8394,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
   
       const handleApprovalWithSave = async ()=>{
-  
+  console.log("approvalformdataa", approvalFormData)
           if (!approvalFormData || !approvalFormData["approval_item"]) {
               toast.error("Please Select Approval Item !", {
                   position: "top-right",
@@ -11090,7 +11091,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 aria-describedby="alert-dialog-description"
                 fullScreen
                 fullWidth
-                sx={{ zIndex: "1", marginLeft: '260px' }}
+                sx={{ zIndex: "1", marginLeft: '50px' }}
 
               >
                 <DialogTitle
