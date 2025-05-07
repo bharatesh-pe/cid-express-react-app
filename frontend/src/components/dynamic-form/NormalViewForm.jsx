@@ -1411,9 +1411,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     }
                 }
 
-
-                console.log(field.disabled,"field.disabled");
-
                 if(field?.table?.toLowerCase() === "act" && table_name === "cid_under_investigation"){
                     return (
                         <Grid item xs={12} p={2}>
