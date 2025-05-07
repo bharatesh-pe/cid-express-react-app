@@ -7938,7 +7938,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             ),
         }
       : null,
-        sysStatus !== "b_Report" && sysStatus !== 'merge_cases' ?{
+        sysStatus !== "b_Report" && sysStatus !== 'merge_cases' && sysStatus !== 'disposal' ?{
             name: "Nature of Disposal",
             onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
         } : null,
