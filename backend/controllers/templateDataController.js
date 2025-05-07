@@ -2521,25 +2521,26 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
     const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
 
-    if(!getDataBasesOnUsers) {
-         if (allowedDivisionIds.length > 0) {
-            if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+    const normalizedDivisionIds = normalizeValues(allowedDivisionIds, 'string');
+    const normalizedUserIds = normalizeValues(allowedUserIds, 'string');
+
+    if (!getDataBasesOnUsers) {
+        if (allowedDivisionIds.length > 0) {
+            if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+            whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
             } else {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
-    }
-    else
-    {
+    } else {
         if (allowedUserIds.length > 0) {
-            if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                whereClause[Op.or] = [
-                { created_by_id: { [Op.in]: allowedUserIds } },
-                { field_io_name: { [Op.in]: allowedUserIds } },
-                ];
+            if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+            whereClause[Op.or] = [
+                { created_by_id: { [Op.in]: normalizedUserIds } },
+                { field_io_name: { [Op.in]: normalizedUserIds } },
+            ];
             } else {
-                whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+            whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
     }
@@ -3812,95 +3813,87 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
   }
 
   try {
-    // Fetch the table template
     const tableData = await Template.findOne({ where: { table_name } });
 
     if (!tableData) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        `Table ${table_name} does not exist.`,
-        null
-      );
+      return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
     }
 
-    // Parse schema and request data
-    const schema =
-      typeof tableData.fields === "string"
-        ? JSON.parse(tableData.fields)
-        : tableData.fields;
+    const schema = typeof tableData.fields === "string"
+      ? JSON.parse(tableData.fields)
+      : tableData.fields;
+
     const validData = {};
+    const invalidFields = {};
 
-    const parsedData = data;
-    const invalidFields = [];
-
-    // Loop through the parsedData to check if the requested data is correct
-    for (const key in parsedData) {
-      if (parsedData.hasOwnProperty(key)) {
-        // Check if the key exists in the schema
-        const field = schema.find((field) => field.name === key); // Find the field in the schema
-
+    // Validate and collect valid fields
+    for (const key in data) {
+      if (
+        data.hasOwnProperty(key) &&
+        key.trim() !== "" &&
+        data[key] !== null &&
+        data[key] !== "" &&
+        !(typeof data[key] === "string" && data[key].trim() === "")
+      ) {
+        const field = schema.find((f) => f.name === key);
         if (field) {
-          // If the field is found in the schema, validate it
           const { not_null } = field;
-
-          // Check for not null constraint
-          if (
-            not_null &&
-            (parsedData[key] === null || parsedData[key] === "")
-          ) {
-            invalidFields.push(key);
+          if (not_null && data[key] === "") {
+            invalidFields[key] = "This field is required.";
           } else {
-            validData[key] = parsedData[key];
+            validData[key] = data[key];
           }
         } else {
-          invalidFields.push(key);
+          invalidFields[key] = "Field not defined in schema.";
         }
       }
     }
 
-    if (invalidFields.length > 0) {
+    if (Object.keys(invalidFields).length > 0) {
       return userSendResponse(
         res,
         400,
         false,
-        `Invalid fields: ${invalidFields.join(", ")}`,
-        parsedData
+        `Invalid fields: ${Object.keys(invalidFields).join(", ")}`,
+        { errors: invalidFields }
       );
     }
 
-    // Define Sequelize model dynamically
     const modelAttributes = {};
     for (const field of schema) {
-      const { name, data_type, not_null, default_value } = field;
-      const sequelizeType =
-        typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-      modelAttributes[name] = {
+    const { name, data_type, not_null, default_value } = field;
+    const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+    modelAttributes[name] = {
         type: sequelizeType,
         allowNull: !not_null,
         defaultValue: default_value || null,
-      };
+    };
     }
 
     const Model = sequelize.define(table_name, modelAttributes, {
-      freezeTableName: true,
-      timestamps: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    });
+        freezeTableName: true,
+        timestamps: true,
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+      });
 
-    // Check for duplicates
+    modelCache[table_name] = Model;
+
+    // Build where condition for duplicate check
     const conditions = {};
     for (const [key, value] of Object.entries(validData)) {
-      // conditions[key] = typeof value === 'string' ? { [Op.iLike]: `%${value}%` } : value;
-      conditions[key] =
-        typeof value === "string" ? { [Op.like]: `%${value}%` } : value;
+      if (value !== null && value !== undefined && value !== "") {
+        conditions[key] =
+          typeof value === "string" ? { [Op.like]: `%${value}%` } : value;
+      }
     }
 
-    const existingRecords = await Model.findAll({
-      where: conditions,
-    });
+    const existingRecords =
+      conditions && Object.keys(conditions).length > 0
+        ? await Model.findAll({
+            where: conditions,
+          })
+        : [];
 
     if (existingRecords.length > 0) {
       return userSendResponse(res, 200, false, "Duplicate values found.");
@@ -3909,9 +3902,10 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
     return userSendResponse(res, 200, true, "No duplicates found.", null);
   } catch (error) {
     console.error("Error checking duplicate values in fields:", error);
-    return userSendResponse(res, 500, false, "Internal Server error.", error);
+    return userSendResponse(res, 500, false, "Internal Server Error.", error);
   }
 };
+
 
 exports.checkPdfEntry = async (req, res) => {
   const { is_pdf, ui_case_id } = req.body;
@@ -4905,7 +4899,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
 
 exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
-	const { table_name  , data, others_data, transaction_id, user_designation_id , folder_attachment_ids , second_table_name, second_data , second_folder_attachment_ids } = req.body;
+	const { table_name  , data, others_data, transaction_id, user_designation_id , folder_attachment_ids , second_table_name, second_data , second_folder_attachment_ids, others_folder_attachment_ids } = req.body;
 
 	if (user_designation_id === undefined || user_designation_id === null) {
 		return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -5190,8 +5184,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 			}
 		}
 
-      
-
         let recordId = insertedId;
         let sys_status = insertedType;
         let default_status = insertedType;
@@ -5284,6 +5276,53 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "No changes detected or update failed.");
 					}
+
+                    if(others_folder_attachment_ids) {
+                    
+                        var otherFileUpdates = {};
+                        if (req.files && req.files.length > 0) {
+                            const otherFolderAttachments = others_folder_attachment_ids ? JSON.parse(others_folder_attachment_ids): []; // Parse if provided, else empty array
+
+                            for (const file of req.files) {
+                                const { originalname, size, key, fieldname } = file;
+                                const fileExtension = path.extname(originalname);
+
+                                // Find matching folder_id from the payload (if any)
+                                const othersFileMatchingFolder = otherFolderAttachments.find(
+                                (attachment) =>
+                                    attachment.filename === originalname &&
+                                    attachment.field_name === fieldname
+                                );
+
+                                const folderId = othersFileMatchingFolder ? othersFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
+
+                                await ProfileAttachment.create({
+                                    template_id: otherTableData.template_id,
+                                    table_row_id: recordId,
+                                    attachment_name: originalname,
+                                    attachment_extension: fileExtension,
+                                    attachment_size: size,
+                                    s3_key: key,
+                                    field_name: fieldname,
+                                    folder_id: folderId, // Store NULL if no folder_id provided
+                                });
+
+                                if (!otherFileUpdates[fieldname]) {
+                                    otherFileUpdates[fieldname] = originalname;
+                                } else {
+                                    otherFileUpdates[fieldname] += `,${originalname}`;
+                                }
+                            }
+
+                            
+                            for (const [fieldname, filenames] of Object.entries(otherFileUpdates)) {
+                                await OtherModel.update(
+                                { [fieldname]: filenames },
+                                { where: { id: recordId }, transaction: t }
+                                );
+                            }
+                        }
+                    }
 				}
 
 				if(!recordId) {
@@ -5295,54 +5334,6 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 					await t.rollback();
 					return userSendResponse(res, 400, false, "Default status is required.");
 				}
-
-                if(otherParsedData.others_folder_attachment_ids && otherParsedData.others_folder_attachment_ids) {
-                    
-                    var otherFileUpdates = {};
-                    if (req.files && req.files.length > 0) {
-                        const otherFolderAttachments = otherParsedData.others_folder_attachment_ids ? JSON.parse(otherParsedData.others_folder_attachment_ids): []; // Parse if provided, else empty array
-
-                        for (const file of req.files) {
-                            const { originalname, size, key, fieldname } = file;
-                            const fileExtension = path.extname(originalname);
-
-                            // Find matching folder_id from the payload (if any)
-                            const othersFileMatchingFolder = otherFolderAttachments.find(
-                            (attachment) =>
-                                attachment.filename === originalname &&
-                                attachment.field_name === fieldname
-                            );
-
-                            const folderId = othersFileMatchingFolder ? othersFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
-
-                            await ProfileAttachment.create({
-                                template_id: otherTableData.template_id,
-                                table_row_id: recordId,
-                                attachment_name: originalname,
-                                attachment_extension: fileExtension,
-                                attachment_size: size,
-                                s3_key: key,
-                                field_name: fieldname,
-                                folder_id: folderId, // Store NULL if no folder_id provided
-                            });
-
-                            if (!otherFileUpdates[fieldname]) {
-                                otherFileUpdates[fieldname] = originalname;
-                            } else {
-                                otherFileUpdates[fieldname] += `,${originalname}`;
-                            }
-                        }
-
-                        
-                        for (const [fieldname, filenames] of Object.entries(otherFileUpdates)) {
-                            await OtherModel.update(
-                            { [fieldname]: filenames },
-                            { where: { id: recordId }, transaction: t }
-                            );
-                        }
-                    }
-                }
-				
 			}
             // Handle approval logic
             if (otherParsedData.approval_details && otherParsedData.approval) {
@@ -6155,25 +6146,26 @@ exports.getMergeParentData = async (req, res) =>
 
         const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
 
-        if(!getDataBasesOnUsers) {
+        const normalizedDivisionIds = normalizeValues(allowedDivisionIds, 'string');
+        const normalizedUserIds = normalizeValues(allowedUserIds, 'string');
+
+        if (!getDataBasesOnUsers) {
             if (allowedDivisionIds.length > 0) {
-                if (template_module === "ui_case") {
-                    whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 } else {
-                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
                 }
             }
-        }
-        else
-        {
+        } else {
             if (allowedUserIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                    whereClause[Op.or] = [
-                    { created_by_id: { [Op.in]: allowedUserIds } },
-                    { field_io_name: { [Op.in]: allowedUserIds } },
-                    ];
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: normalizedUserIds } },
+                    { field_io_name: { [Op.in]: normalizedUserIds } },
+                ];
                 } else {
-                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
                 }
             }
         }
@@ -6928,28 +6920,30 @@ exports.getMergeChildData = async (req, res) =>
 
         const { allowedUserIds = [] , getDataBasesOnUsers = false , allowedDivisionIds = [] , allowedDepartmentIds = []} = req.body; // Default to empty array if not provided
 
-        if(!getDataBasesOnUsers) {
+        const normalizedDivisionIds = normalizeValues(allowedDivisionIds, 'string');
+        const normalizedUserIds = normalizeValues(allowedUserIds, 'string');
+
+        if (!getDataBasesOnUsers) {
             if (allowedDivisionIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                    whereClause["field_division"] = { [Op.in]: allowedDivisionIds };
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 } else {
-                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
                 }
             }
-        }
-        else
-        {
+        } else {
             if (allowedUserIds.length > 0) {
-                if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
-                    whereClause[Op.or] = [
-                    { created_by_id: { [Op.in]: allowedUserIds } },
-                    { field_io_name: { [Op.in]: allowedUserIds } },
-                    ];
+                if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
+                whereClause[Op.or] = [
+                    { created_by_id: { [Op.in]: normalizedUserIds } },
+                    { field_io_name: { [Op.in]: normalizedUserIds } },
+                ];
                 } else {
-                    whereClause["created_by_id"] = { [Op.in]: allowedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
                 }
             }
         }
+
         const childCases = await UiMergedCases.findAll({
             where: { merged_status: 'child', parent_case_id: case_id }, // corrected here
             attributes: ['case_id'],
@@ -7818,7 +7812,7 @@ exports.deMergeCaseData = async (req, res) => {
 };
 
 
-exports.saveActionPlanAndProgressReport = async (req, res) => {
+exports.saveActionPlan = async (req, res) => {
 
     const { data, others_data , transaction_id } = req.body;
 
@@ -7888,7 +7882,7 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                 }
             }
 
-            validData.field_status = "submit";
+            // validData.field_status = "submit";
             validData.sys_status = "AP";
             validData.created_by = userName;
             validData.created_by_id = userId;
@@ -7936,79 +7930,6 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
                 return userSendResponse(res, 400, false, "Failed to insert data.", null);
             }
 
-            // Insert into cid_ui_case_progress_report
-            const tableDataPR = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
-            if (!tableDataPR) {
-                return userSendResponse(res, 400, false, `Table cid_ui_case_progress_report does not exist.`, null);
-            }
-
-            const schemaPR = typeof tableDataPR.fields === "string" ? JSON.parse(tableDataPR.fields) : tableDataPR.fields;
-
-            let parsedDataPR;
-            try {
-                parsedDataPR = JSON.parse(data);
-            } catch (err) {
-                return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
-            }
-
-            const validDataPR = {};
-            for (const field of schemaPR) {
-                const { name, not_null, default_value } = field;
-                if (parsedDataPR.hasOwnProperty(name)) {
-                    validDataPR[name] = parsedDataPR[name];
-                } else if (not_null && default_value === undefined) {
-                    return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
-                } else if (default_value !== undefined) {
-                    validDataPR[name] = default_value;
-                }
-            }
-
-            validDataPR.sys_status = "AP";
-            validDataPR.created_by = userName;
-            validDataPR.created_by_id = userId;
-
-            const completeSchemaPR = [
-                { name: "created_by", data_type: "TEXT", not_null: false },
-                { name: "created_by_id", data_type: "INTEGER", not_null: false },
-                ...schemaPR
-            ];
-
-            ["sys_status", "ui_case_id", "pt_case_id"].forEach(field => {
-                if (parsedDataPR[field]) {
-                    completeSchemaPR.unshift({
-                        name: field,
-                        data_type: typeof parsedDataPR[field] === "number" ? "INTEGER" : "TEXT",
-                        not_null: false
-                    });
-                    validDataPR[field] = parsedDataPR[field];
-                }
-            });
-
-            const modelAttributesPR = {};
-            for (const field of completeSchemaPR) {
-                const { name, data_type, not_null, default_value } = field;
-                const sequelizeTypePR = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-                modelAttributesPR[name] = {
-                    type: sequelizeTypePR,
-                    allowNull: !not_null,
-                    defaultValue: default_value || null,
-                };
-            }
-
-            const PRModel = sequelize.define('cid_ui_case_progress_report', modelAttributesPR, {
-                freezeTableName: true,
-                timestamps: true,
-                createdAt: "created_at",
-                updatedAt: "updated_at",
-            });
-
-            await PRModel.sync();
-
-            const insertedDataPR = await PRModel.create(validDataPR, { transaction: t });
-            if (!insertedDataPR) {
-                await t.rollback();
-                return userSendResponse(res, 400, false, "Failed to insert data.", null);
-            }
         }
 
 
@@ -8105,4 +8026,164 @@ exports.saveActionPlanAndProgressReport = async (req, res) => {
 		}
 	}
 };
+
+
+exports.submitActionPlanPR = async (req, res) => {
+	const { transaction_id, ui_case_id } = req.body;
+	const { user_id: userId } = req.user;
+
+	if (!transaction_id || !ui_case_id) {
+		return userSendResponse(res, 400, false, "transaction_id and ui_case_id are required.", null);
+	}
+
+	let t = await dbConfig.sequelize.transaction();
+	const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+	try {
+		// Duplicate transaction check
+		if (fs.existsSync(dirPath)) {
+			return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath });
+		}
+		fs.mkdirSync(dirPath, { recursive: true });
+
+		// Get user info
+		const userData = await Users.findOne({
+			include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
+			where: { user_id: userId },
+		});
+		const userName = userData?.kgidDetails?.name || null;
+
+		// Validate action plan template
+		const apTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
+		if (!apTemplate) {
+			return userSendResponse(res, 400, false, "Action Plan template not found.", null);
+		}
+
+		// Fetch Action Plan records
+		const actionPlanData = await sequelize.query(
+			`SELECT * FROM cid_ui_case_action_plan WHERE ui_case_id = :ui_case_id`,
+			{
+				replacements: { ui_case_id },
+				type: Sequelize.QueryTypes.SELECT,
+				transaction: t,
+			}
+		);
+		if (!actionPlanData?.length) {
+			return userSendResponse(res, 400, false, "No Action Plan data found.", null);
+		}
+
+		// Update field_status in Action Plan
+		await sequelize.query(
+			`UPDATE cid_ui_case_action_plan SET field_status = 'submit' WHERE ui_case_id = :ui_case_id`,
+			{
+				replacements: { ui_case_id },
+				type: Sequelize.QueryTypes.UPDATE,
+				transaction: t,
+			}
+		);
+
+		// Load Progress Report template
+		const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
+		if (!prTemplate) {
+			await t.rollback();
+			return userSendResponse(res, 400, false, "Progress Report template not found.", null);
+		}
+
+		const progressSchema = typeof prTemplate.fields === "string" ? JSON.parse(prTemplate.fields) : prTemplate.fields;
+
+		// Build Sequelize model from template schema
+		const buildModelAttributes = (schema, sampleData) => {
+			const completeSchema = [
+				{ name: "created_by", data_type: "TEXT", not_null: false },
+				{ name: "created_by_id", data_type: "INTEGER", not_null: false },
+				...schema,
+			];
+
+			["sys_status", "ui_case_id", "pt_case_id"].forEach((field) => {
+				if (sampleData[field]) {
+					completeSchema.unshift({
+						name: field,
+						data_type: typeof sampleData[field] === "number" ? "INTEGER" : "TEXT",
+						not_null: false,
+					});
+				}
+			});
+
+			const modelAttributes = {};
+			for (const field of completeSchema) {
+				const { name, data_type, not_null, default_value } = field;
+				const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+				modelAttributes[name] = {
+					type: sequelizeType,
+					allowNull: !not_null,
+					defaultValue: default_value ?? null,
+				};
+			}
+			return modelAttributes;
+		};
+
+		const sampleData = actionPlanData[0];
+		const modelAttributes = buildModelAttributes(progressSchema, sampleData);
+
+		const ProgressReportModel = sequelize.define("cid_ui_case_progress_report", modelAttributes, {
+			freezeTableName: true,
+			timestamps: true,
+			createdAt: "created_at",
+			updatedAt: "updated_at",
+		});
+
+		await ProgressReportModel.sync();
+
+		// Prepare data to insert into PR
+		const actionPlanDataToInsert = actionPlanData.map(item => {
+			const newItem = {
+				...item,
+				sys_status: "AP",
+				field_pr_status: "NO",
+				created_by: userName,
+				created_by_id: userId,
+				ui_case_id: item.ui_case_id,
+				pt_case_id: item.pt_case_id,
+			};
+			delete newItem.id;
+			delete newItem.created_at;
+			delete newItem.updated_at;
+			return newItem;
+		});
+
+		// Insert into Progress Report
+		await ProgressReportModel.bulkCreate(actionPlanDataToInsert, { transaction: t });
+
+		await t.commit();
+		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
+
+	} catch (error) {
+		console.error("Error submitting Action Plan:", error);
+		if (t) await t.rollback();
+		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+		return userSendResponse(
+			res,
+			isDuplicate ? 400 : 500,
+			false,
+			isDuplicate ? "Duplicate entry detected." : "Internal Server Error.",
+			error
+		);
+	} finally {
+		if (fs.existsSync(dirPath)) {
+			fs.rmSync(dirPath, { recursive: true, force: true });
+		}
+	}
+};
+
+
+function normalizeValues(values, expectedType) {
+  return values
+    .filter((v) => v !== null && v !== undefined)
+    .map((v) => {
+      if (expectedType === 'string') return String(v);
+      if (expectedType === 'int') return Number(v);
+      return v;
+    });
+}
+
 
