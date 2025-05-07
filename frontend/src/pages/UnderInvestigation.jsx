@@ -4087,7 +4087,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: "Do you want to submit this Action Item? Once submitted, you won't be able to add, edit, or delete the record. It will be copied to the Progress Report.",
+      text: "Do you want to submit this Action Item? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Yes, submit it!',
@@ -4101,6 +4101,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       };
   
       try {
+        setLoading(true);
         const response = await api.post('/templateData/submitActionPlanPR', payload);
   
         if (response.success) {
@@ -4148,6 +4149,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
           progress: undefined,
           className: "toast-error",
       });
+      }finally{
+        setLoading(false);
       }
     }
   };
@@ -5877,8 +5880,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           
           let anySubmitAP = false;
 
-          if ((selectedOtherTemplate?.table || options.table) === "cid_ui_case_action_plan") {
-            
+          if (options.table === "cid_ui_case_action_plan") {
             anySubmitAP = records.some(record => record.field_status === "submit");
           }
 
@@ -8333,6 +8335,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     }
                   });
 
+                  setApprovalFormData({})
+
                   if(getFurtherInvestigationItems?.[0]){
                     caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
                     setReadonlyApprovalItems(true);
@@ -8341,7 +8345,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     setReadonlyApprovalItems(false);
                   } 
   
-                  setApprovalFormData({})
                   setShowApprovalModal(true);
                   setApprovalSaveCaseData({
                       caseData : caseData,
@@ -10063,13 +10066,30 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 </Grid>
                               ))}
                               <Grid container item xs={12} spacing={2} alignItems="flex-start">
-                                {aoFields.slice(4).filter(f => f.type === 'textarea').map((field, index) => (
-                                  <Grid item xs={5.5} key={index}>
+                              {aoFields
+                                .slice(4)
+                                .filter(f => f.type === 'textarea')
+                                .map((field, index, array) => (
+                                  <Grid item xs={6} key={index}>
                                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
                                       <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
                                         {field.label}
                                       </label>
+                                      {index === array.length - 1 && (
+                                        <Button
+                                          variant="outlined"
+                                          color="primary"
+                                          size="small"
+                                          onClick={() =>
+                                            onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                          }
+                                          style={{ marginLeft: 'auto' }}
+                                        >
+                                          Update
+                                        </Button>
+                                      )}
                                     </div>
+
                                     <TextField
                                       fullWidth
                                       multiline
@@ -10085,21 +10105,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     />
                                   </Grid>
                                 ))}
-
-                                <Grid item xs={1} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
-                                  <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={() =>
-                                      onActionPlanUpdate(
-                                        "cid_under_investigation",
-                                        filterAoValues,
-                                      )
-                                    }
-                                  >
-                                    Update
-                                  </Button>
-                                </Grid>
                               </Grid>
                             </Grid>
                           ) : (
@@ -10208,14 +10213,31 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                   )}
                                 </Grid>
                               ))}
-                              <Grid container item xs={12} spacing={2} alignItems="flex-start">
-                                {aoFields.slice(4).filter(f => f.type === 'textarea').map((field, index) => (
-                                  <Grid item xs={5.7} key={index}>
+                            <Grid container item xs={12} spacing={2} alignItems="flex-start">
+                              {aoFields
+                                .slice(4)
+                                .filter(f => f.type === 'textarea')
+                                .map((field, index, array) => (
+                                  <Grid item xs={6} key={index}>
                                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
                                       <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
                                         {field.label}
                                       </label>
+                                      {index === array.length - 1 && (
+                                        <Button
+                                          variant="outlined"
+                                          color="primary"
+                                          size="small"
+                                          onClick={() =>
+                                            onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                          }
+                                          style={{ marginLeft: 'auto' }}
+                                        >
+                                          Update
+                                        </Button>
+                                      )}
                                     </div>
+
                                     <TextField
                                       fullWidth
                                       multiline
@@ -10231,22 +10253,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     />
                                   </Grid>
                                 ))}
-
-                                <Grid item xs={0.6} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
-                                  <Button
-                                    variant="outlined"
-                                    color="primary"
-                                    onClick={() =>
-                                      onActionPlanUpdate(
-                                        "cid_under_investigation",
-                                        filterAoValues,
-                                      )
-                                    }
-                                  >
-                                    Update
-                                  </Button>
-                                </Grid>
-                              </Grid>
+                            </Grid>
                             </Grid>
                           ) : (
                             <Typography variant="body2" color="text.secondary">
