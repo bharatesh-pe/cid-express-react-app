@@ -831,7 +831,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring"
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan'
       ? schema
       : schema.filter((field) => field.is_primary_field === true);
   
@@ -1250,7 +1250,7 @@ exports.getTemplateData = async (req, res, next) => {
             });
             filteredData.field_division = division ? division.division_name : "Unknown";
           }
-        }else if (table_name === "cid_pt_case_trail_monitoring") {
+        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan') {
           filteredData = { ...data };
           console.log("filteredData", filteredData);
           console.log("table_name",table_name)
@@ -8139,7 +8139,7 @@ exports.submitActionPlanPR = async (req, res) => {
 			const newItem = {
 				...item,
 				sys_status: "AP",
-				field_pr_status: "NO",
+				field_pr_status: "No",
 				created_by: userName,
 				created_by_id: userId,
 				ui_case_id: item.ui_case_id,

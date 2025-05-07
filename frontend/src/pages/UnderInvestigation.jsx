@@ -75,6 +75,7 @@ import dayjs from "dayjs";
 import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
+import { InputLabel, Select, MenuItem } from '@mui/material';
 import NumberField from "../components/form/NumberField";
 import ShortText from "../components/form/ShortText";
 import LongText from "../components/form/LongText";
@@ -552,6 +553,7 @@ const UnderInvestigation = () => {
     setFurtherInvestigationSelectedValue,
   ] = useState(null);
   const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
+  const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
 
   // for pdf download
   const [isDownloadPdf, setIsDownloadPdf] = useState(false);
@@ -3590,8 +3592,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
         table_name: "cid_under_investigation",
       });
       if (response.success && response.data?.fields) {
-        let aoOnlyFields = response.data.fields.filter(field => field.ao_field === true && field.hide_from_ux === false);
-        
+        let aoOnlyFields = response.data.fields.filter(field =>
+          field.ao_field === true &&
+          field.hide_from_ux === false &&
+          field.name !== 'field_act' &&
+          field.name !== 'field_section'
+        );
+                
         const briefFactField = response.data.fields.find(field => field.name === 'field_breif_fact');
         const policeStationField = response.data.fields.find(field => field.name === 'field_investigation_carried_out_by_the_police_station');
         
@@ -3602,8 +3609,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
         if (policeStationField && !aoOnlyFields.includes(policeStationField)) {
             aoOnlyFields.push(policeStationField);
         }
-            
+        
         setAoFields(aoOnlyFields);
+        
         loadValueField(aoFieldId, false, "cid_under_investigation");
         setLoading(false);
     }
@@ -3617,7 +3625,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
   useEffect(() => {
-    if (selectedOtherTemplate?.table === "cid_ui_case_action_plan" || selectedOtherTemplate?.table === "cid_ui_case_progress_report") {
+    if (selectedOtherTemplate?.table === "cid_ui_case_action_plan" || selectedOtherTemplate?.table === 'cid_ui_case_progress_report' ) {
       loadAOFields();
     }
   }, [selectedOtherTemplate]);
@@ -4061,6 +4069,89 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   };
 
+
+  const handleSubmitAp = async ({ id }) => {
+
+    if (!id || id.length === 0) {
+      toast.error("Please select at least one record to submit.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "Do you want to submit this Action Item? Once submitted, you won't be able to add, edit, or delete the record. It will be copied to the Progress Report.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, submit it!',
+      cancelButtonText: 'Cancel',
+    });
+  
+    if (result.isConfirmed) {
+      const payload = {
+        transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
+        ui_case_id: id,
+      };
+  
+      try {
+        const response = await api.post('/templateData/submitActionPlanPR', payload);
+  
+        if (response.success) {
+          toast.success("The Action Plan has been submitted", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+            onOpen: () => {
+              if (sysStatus === "merge_cases") {
+                loadMergedCasesData(paginationCount);
+              } else {
+                if(!selectedOtherTemplate?.field){
+                    handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
+                }else{
+                    loadTableData(paginationCount);
+                }
+              }
+            },
+        });
+        } else {
+          toast.error(response.message || 'Something went wrong.', {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+        }
+      } catch (error) {
+        toast.error(error.message || 'Submission failed.', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+      });
+      }
+    }
+  };
+
   const otherAPPRTemplateSaveFunc = async (data) => {
     if ((!natureOfDisposalModal && !showOrderCopy) &&
         (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
@@ -4125,7 +4216,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
   
     normalData.sys_status = "AP";
-    normalData.field_status = "submit";
+    normalData.field_status = "";
     normalData["ui_case_id"] = selectedRowData.id;
   
     formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
@@ -4136,7 +4227,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     setLoading(true);
   
     try {
-      const response = await api.post("/templateData/saveActionPlanAndProgressReport", formData);
+      const response = await api.post("/templateData/saveActionPlan", formData);
       setLoading(false);
   
       if (response?.success) {
@@ -4155,8 +4246,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
           };
           onUpdateTemplateData(combinedData);
         }
+        await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+
         showOptionTemplate(selectedOtherTemplate.table);
-  
       } else {
         toast.error(response.message || "Failed to change the status. Please try again.", {
           position: "top-right",
@@ -5811,8 +5903,15 @@ const loadChildMergedCasesData = async (page, caseId) => {
           
           setShowReplacePdfButton(showReplacePdf);
           
-        
-          
+          let anySubmitAP = false;
+
+          if ((selectedOtherTemplate?.table || options.table) === "cid_ui_case_action_plan") {
+            
+            anySubmitAP = records.some(record => record.field_status === "submit");
+          }
+
+          setShowSubmitAPButton(anySubmitAP);
+
           if (getTemplateResponse.data[0]) {
             var excludedKeys = [
               "updated_at",
@@ -5827,6 +5926,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
             if (options.table !== "cid_ui_case_progress_report") {
               excludedKeys.push("created_at");
               excludedKeys.push("hasFieldPrStatus");
+            }
+            if (options.table === "cid_ui_case_action_plan") {
+              excludedKeys.push("field_status");
             }
             if (options.table === "cid_ui_case_trail_monitoring") {
               excludedKeys.push("field_witness");
@@ -6236,7 +6338,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
 
                     const isViewAction = options.is_view_action === true
-                    const isActionPlan = options.table === "cid_ui_case_action_plan"
+                    
+                    const isActionPlan = options.table === "cid_ui_case_action_plan" && params.row.field_status === 'submit';
                     return (
                       <Box
                         sx={{
@@ -9899,6 +10002,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     {/* {isIoAuthorized && ( */}
                     {!viewModeOnly && (
                     !isChildMergedLoading && (
+                      !showSubmitAPButton && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -9908,8 +10012,21 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         >
                             Add
                         </Button>
-                    ))}
+                    )))}
                     {/* )} */}
+                    {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' && (
+                      ! showSubmitAPButton&& (
+                      <Button
+                      variant="contained"
+                      sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                      onClick={() => {
+                          console.log('selectedRowData:', selectedRowData);
+                          handleSubmitAp({ id: selectedRowData?.id });
+                        }}
+                      >
+                        Submit
+                      </Button>
+                    ))}
                 </Box>
               )}
               {/* <IconButton
@@ -9929,9 +10046,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                   hasPdfEntry ? (
                     uploadedFiles.length > 0 ? (
                       <>
-                        <Box >
+                        <Box>
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px' }}>
-                          {aoFields.length > 0 ? (
+                        {aoFields.length > 0 ? (
                             <Grid container spacing={2}>
                               {aoFields.slice(0, 6).map((field, index) => (
                                 <Grid item xs={12} md={4} key={index}>
@@ -9952,12 +10069,21 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       disabled={true}
                                     />
                                   )}
-                                  {field.type === 'autocomplete' && (
+                                  {(field.type === 'dropdown' || field.type === 'autocomplete') && (
                                     <AutocompleteField
                                       key={field.id}
                                       field={field}
                                       formData={filterAoValues}
                                       onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      value={(() => {
+                                        const fieldValue = filterAoValues?.[field.name];
+
+                                        const selectedOption = field.options.find(
+                                          (option) => String(option.code) === String(fieldValue)
+                                        );
+
+                                        return selectedOption || null;
+                                      })()}
                                       disabled={true}
                                     />
                                   )}
@@ -9965,7 +10091,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                               ))}
                               <Grid container item xs={12} spacing={2} alignItems="flex-start">
                                 {aoFields.slice(4).filter(f => f.type === 'textarea').map((field, index) => (
-                                  <Grid item xs={5} key={index}>
+                                  <Grid item xs={5.5} key={index}>
                                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
                                       <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
                                         {field.label}
@@ -9987,7 +10113,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                   </Grid>
                                 ))}
 
-                                <Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
+                                <Grid item xs={1} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
                                   <Button
                                     variant="outlined"
                                     color="primary"
@@ -10008,6 +10134,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                               No AO Fields Available
                             </Typography>
                           )}
+ 
                         </Box>
                             <TableView
                                 rows={otherTemplateData}
@@ -10088,12 +10215,21 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       disabled={true}
                                     />
                                   )}
-                                  {field.type === 'autocomplete' && (
+                                  {(field.type === 'dropdown' || field.type === 'autocomplete') && (
                                     <AutocompleteField
                                       key={field.id}
                                       field={field}
                                       formData={filterAoValues}
                                       onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                      value={(() => {
+                                        const fieldValue = filterAoValues?.[field.name];
+
+                                        const selectedOption = field.options.find(
+                                          (option) => String(option.code) === String(fieldValue)
+                                        );
+
+                                        return selectedOption || null;
+                                      })()}
                                       disabled={true}
                                     />
                                   )}
@@ -10101,7 +10237,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                               ))}
                               <Grid container item xs={12} spacing={2} alignItems="flex-start">
                                 {aoFields.slice(4).filter(f => f.type === 'textarea').map((field, index) => (
-                                  <Grid item xs={5} key={index}>
+                                  <Grid item xs={5.7} key={index}>
                                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
                                       <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
                                         {field.label}
@@ -10123,7 +10259,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                   </Grid>
                                 ))}
 
-                                <Grid item xs={2} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
+                                <Grid item xs={0.6} style={{ display: 'flex', alignItems: 'flex-start', marginTop: '32px' }}>
                                   <Button
                                     variant="outlined"
                                     color="primary"
@@ -10146,17 +10282,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                           )}
                         </Box>
                       )}
-                      {/* <Box sx={{ display: 'flex', alignItems: 'end', justifyContent: 'end', marginBottom: '10px' }}>
-                        <Button
-                            variant="outlined"
-                            sx={{height: '40px'}}
-                            onClick={() =>
-                                showOptionTemplate(selectedOtherTemplate?.table)
-                            }
-                        >
-                            Add
-                        </Button>
-                      </Box> */}
+
                         <TableView
                             rows={otherTemplateData}
                             columns={otherTemplateColumn}
@@ -10270,126 +10396,137 @@ const loadChildMergedCasesData = async (page, caseId) => {
       </Dialog>
 
       {approveTableFlag && (
-          <Dialog
-              open={approveTableFlag}
-              onClose={() => { setApprovalSaveData({}); setApproveTableFlag(false); }}
-              aria-labelledby="alert-dialog-title"
-              aria-describedby="alert-dialog-description"
-              maxWidth="sm"
-              fullWidth
-              sx={{ zIndex: "1" }}
-          >
-              <DialogTitle
-                  id="alert-dialog-title"
-                  sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
+      <Dialog
+        open={approveTableFlag}
+        onClose={() => { setApprovalSaveData({}); setApproveTableFlag(false); }}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        maxWidth="md"
+        fullWidth
+        PaperProps={{
+          sx: {
+            zIndex: 1,
+            borderRadius: 2,
+            borderLeft: '8px solid #12B76A',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+            overflow: 'hidden',
+          }
+        }}
+      >
+        <DialogTitle
+          id="alert-dialog-title"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: 'linear-gradient(to right, #E6F4EA, #F6FFFB)',
+            fontWeight: 'bold',
+            fontSize: '20px',
+            color: 'black',
+          }}
+        >
+          Approval
+          <Box>
+            <Button
+              variant="contained"
+              sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+              onClick={() => saveApprovalData(selectedOtherTemplate.table)}
+            >
+              Submit
+            </Button>
+            <IconButton
+              aria-label="close"
+              onClick={() => { setApprovalSaveData({}); setApproveTableFlag(false); }}
+              sx={{ color: '#344054' }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ backgroundColor: '#FAFEF9', padding: 3 }}>
+          <DialogContentText id="alert-dialog-description" component="div">
+            <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
+              <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
+              <span style={{ color: '#1570EF' }}>
+                {approvalItem.find(option => option.approval_item_id === approvalSaveData?.approval_item)?.name || "Approval Item"}
+              </span>
+            </Box>
+
+            <Box sx={{ display: 'none' }}>
+              <Autocomplete
+                options={approvalItem}
+                getOptionLabel={(option) => option.name || ""}
+                name={"approval_item"}
+                disabled={approvalItemDisabled}
+                value={approvalItem.find((option) => option.approval_item_id === approvalSaveData?.approval_item) || null}
+                onChange={(e, value) => handleApprovalSaveData("approval_item", value?.approval_item_id)}
+                renderInput={(params) => (
+                  <TextField {...params} label={"Approval Item"} />
+                )}
+              />
+            </Box>
+
+            <Box sx={{ display: 'flex', gap: '16px', flexWrap: 'wrap', mb: 3 }}>
+              <Box sx={{ flex: 1, minWidth: '200px' }}>
+                <AutocompleteField
+                  formData={approvalSaveData}
+                  options={designationData}
+                  field={{
+                    heading: 'Officer Approved',
+                    label: 'Officer Approved',
+                    name: 'approved_by',
+                    options: designationData.map(item => ({
+                      ...item,
+                      code: item.designation_id,
+                      name: item.designation_name,
+                    })),
+                    required: true,
+                    info: 'Select the Officer Designation approving this item.',
+                    supportingText: 'Select the Officer Designation approving this item.',      
+                    supportingTextColor: 'green'
                   }}
-              >
-                  Approval
-                  <Box>
-                      <Button
-                          variant="outlined"
-                          onClick={() => saveApprovalData(selectedOtherTemplate.table)}
-                      >
-                          Save
-                      </Button>
-                      <IconButton
-                          aria-label="close"
-                          onClick={() => { setApprovalSaveData({}); setApproveTableFlag(false); }}
-                          sx={{ color: (theme) => theme.palette.grey[500] }}
-                      >
-                          <CloseIcon />
-                      </IconButton>
-                  </Box>
-              </DialogTitle>
-              <DialogContent>
-                  <DialogContentText id="alert-dialog-description">
-                      <Box py={2}>
-                          <Box
-                              sx={{
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "18px",
-                              }}
-                          >
-                              <Box sx={{ fontWeight: "bold", fontSize: "16px" , margin: '0'}}>
-                                  Approval needed to proceed with: 
-                                  <span style={{ color: "#1976d2", fontWeight: "bold" }}>
-                                      {approvalItem.find(option => option.approval_item_id === approvalSaveData?.approval_item)?.name || "Approval Item"}
-                                  </span>
-                              </Box>
+                  onChange={(name, value) => handleApprovalSaveData(name, value)}
+                  value={designationData.find(option => option.designation_id === approvalSaveData?.approved_by) || null}
+                />
+              </Box>
 
-                              <Box sx={{ display: 'none' }}>
-                                  <Autocomplete
-                                      options={approvalItem}
-                                      getOptionLabel={(option) => option.name || ""}
-                                      name={"approval_item"}
-                                      disabled={approvalItemDisabled}
-                                      value={approvalItem.find((option) => option.approval_item_id === (approvalSaveData && approvalSaveData["approval_item"])) || null}
-                                      onChange={(e, value) =>
-                                          handleApprovalSaveData("approval_item", value?.approval_item_id)
-                                      }
-                                      renderInput={(params) => (
-                                          <TextField {...params} label={"Approval Item"} />
-                                      )}
-                                  />
-                              </Box>
+              <Box sx={{ flex: 1, minWidth: '200px' }}>
+                <DateField
+                  field={{
+                    heading: 'Date of Approval',
+                    name: 'approval_date',
+                    label: 'Date of Approval',
+                    required: true,
+                    disableFutureDate: 'true',
+                    info: 'Pick the date on which the approval is being granted.',
+                    supportingText: 'Pick the date on which the approval is being granted.',
+                    supportingTextColor: 'green'
+                  }}
+                  formData={approvalSaveData}
+                  value={approvalSaveData["approval_date"] ? dayjs(approvalSaveData["approval_date"]) : null}
+                  onChange={(value) => handleApprovalSaveData('approval_date', value)}
+                />
+              </Box>
+            </Box>
 
-                              <AutocompleteField
-                                formData={approvalSaveData}
-                                options={designationData}
-                                field={{
-                                  heading: 'Officer Approved',
-                                  label: 'Officer Approved',
-                                  name: 'approved_by',
-                                  options: designationData.map(item => ({
-                                    ...item,
-                                    code: item.designation_id,
-                                    name: item.designation_name
-                                })),
-                                  required: true,
-                                  info: 'Select the Officer Designation approving this item.',
-                                  supportingText: 'Select the Officer Designation approving this item.',
-                                }}
-                                onChange={(name, value) => handleApprovalSaveData(name, value)}
-                                value={designationData.find((option) => option.designation_id === approvalSaveData?.approved_by) || null}
-                            />
-
-                              <DateField
-                                  field={{
-                                      heading: 'Date of Approval',
-                                      name: 'approval_date',
-                                      label: 'Date of Approval',
-                                      required: true,
-                                      disableFutureDate: 'true',
-                                      info: 'Pick the date on which the approval is being granted',
-                                      supportingText: 'Pick the date on which the approval is being granted',
-                                  }}
-                                  formData={approvalSaveData}
-                                  value={approvalSaveData["approval_date"] ? dayjs(approvalSaveData["approval_date"]) : null}
-                                  onChange={(value) => handleApprovalSaveData('approval_date', value)}
-                              />
-
-                              <LongText
-                                  field={{
-                                      heading: 'Remarks of Approval Officer',
-                                      name: 'remarks',
-                                      label: 'Remarks of Approval Officer',
-                                      required: true,
-                                      info: 'Provide any comments or reasoning related to this approval.',
-                                      supportingText: 'Provide any comments or reasoning related to this approval.',
-                                  }}
-                                  value={approvalSaveData["remarks"]}
-                                  formData={approvalSaveData}
-                                  onChange={(e) => handleApprovalSaveData("remarks", e.target.value)}
-                              />
-                          </Box>
-                      </Box>
-                  </DialogContentText>
-              </DialogContent>
-          </Dialog>
+            <LongText
+              field={{
+                heading: 'Remarks of Approval Officer',
+                name: 'remarks',
+                label: 'Remarks of Approval Officer',
+                required: true,
+                info:'Provide any comments or reasoning related to this approval.',
+                supportingText: 'Provide any comments or reasoning related to this approval.',
+                supportingTextColor: 'green'
+              }}
+              value={approvalSaveData["remarks"]}
+              formData={approvalSaveData}
+              onChange={(e) => handleApprovalSaveData("remarks", e.target.value)}
+            />
+          </DialogContentText>
+        </DialogContent>
+      </Dialog>
       )}
 
       <Dialog
