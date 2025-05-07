@@ -15,6 +15,9 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
 import CloseIcon from "@mui/icons-material/Close";
 import dayjs from "dayjs";
+import AutocompleteField from "../form/AutoComplete";
+import DateField from "../form/Date";
+import LongText from "../form/LongText";
 
 export default function ApprovalModal({
     open,
@@ -31,36 +34,60 @@ export default function ApprovalModal({
             open={open}
             onClose={onClose}
             aria-labelledby="approval-dialog-title"
-            maxWidth="lg"
+            maxWidth="md"
+            PaperProps={{
+            sx: {
+                zIndex: 1,
+                borderRadius: 2,
+                borderLeft: '8px solid #12B76A',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                overflow: 'hidden',
+            }
+            }}
             fullWidth
             className="approvalModal"
             sx={{ zIndex: "100" }}
         >
+
             <DialogTitle
-                id="approval-dialog-title"
+                id="alert-dialog-title"
                 sx={{
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
+                    background: 'linear-gradient(to right, #E6F4EA, #F6FFFB)',
+                    fontWeight: 'bold',
+                    fontSize: '20px',
+                    color: 'black',
                 }}
-            >
+                >
                 Approval
                 <Box>
-                    <Button variant="outlined" onClick={onSave}>
-                        Save
+                    <Button
+                    variant="contained"
+                    sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                    onClick={onSave}
+                    >
+                    Submit
                     </Button>
                     <IconButton
-                        aria-label="close"
-                        onClick={onClose}
-                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    aria-label="close"
+                    onClick={onClose}
+                    sx={{ color: '#344054' }}
                     >
-                        <CloseIcon />
+                    <CloseIcon />
                     </IconButton>
                 </Box>
             </DialogTitle>
 
-            <DialogContent>
-                <DialogContentText>
+            <DialogContent sx={{ backgroundColor: '#FAFEF9', padding: 3 }}>
+                <DialogContentText id="alert-dialog-description" component="div">
+                    <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
+                    <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
+                    <span style={{ color: '#1570EF' }}>                        
+                        {approvalItem.find(opt => opt.approval_item_id === formData?.approval_item)?.name || "Approval Item"}
+                    </span>
+                    </Box>
                     <Box
                         py={2}
                         sx={{
@@ -70,9 +97,8 @@ export default function ApprovalModal({
                         }}
                     >
 
-                        <Box>
-                            <label
-                            htmlFor="approval-item"
+                        <Box sx={{ display: 'none' }}>
+                            <label htmlFor="approval-item" 
                             style={{
                                 margin: "0",
                                 padding: 0, 
@@ -105,103 +131,72 @@ export default function ApprovalModal({
                                 )}
                             />
                         </Box>
-                        <Box>
-                            <label
-                                htmlFor="designation"
-                                style={{
-                                    margin: "0",
-                                    padding: 0, 
-                                    fontSize: "16px",
-                                    fontWeight: 500,
-                                    color: "#475467",
-                                    textTransform: "capitalize",
-                                }}
-                            >
-                                Designation
-                            </label>
-                            <Autocomplete
-                                options={designationData}
-                                getOptionLabel={(option) =>
-                                    option.designation_name || ""
-                                }
-                                sx={{marginTop: '10px'}}
-                                name="approved_by"
-                                value={
-                                    designationData.find((opt) => opt.designation_id === formData?.approved_by) || null
-                                }
-                                onChange={(e, value) =>
-                                    onChange( "approved_by", value?.designation_id)
-                                }
-                                renderInput={(params) => (
-                                    <TextField
-                                        {...params}
-                                        className="selectHideHistory"
-                                        label="Designation"
-                                    />
-                                )}
+
+                    <Box sx={{ display: 'flex', gap: '16px', flexWrap: 'wrap', mb: 3 }}>
+                        <Box sx={{ flex: 1, minWidth: '200px' }}>
+                            <AutocompleteField
+                            formData={formData}
+                            options={designationData}
+                            field={{
+                                heading: 'Officer Approved',
+                                label: 'Officer Approved',
+                                name: 'approved_by',
+                                options: designationData.map(item => ({
+                                ...item,
+                                code: item.designation_id,
+                                name: item.designation_name,
+                                })),
+                                required: true,
+                                info: 'Select the Officer Designation approving this item.',
+                                supportingText: 'Select the Officer Designation approving this item.',
+                                supportingTextColor: 'green'
+                            }}
+                            onChange={(name, value) => onChange(name, value)}
+                            value={designationData.find(option => option.designation_id === formData?.approved_by) || null}
                             />
                         </Box>
-                        <Box>
-                            <label
-                                htmlFor="approval-date"
-                                style={{
-                                    margin: "0",
-                                    padding: 0, 
-                                    fontSize: "16px",
-                                    fontWeight: 500,
-                                    color: "#475467",
-                                    textTransform: "capitalize",
-                                }}
-                            >
-                                Approval Date
-                            </label>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DemoContainer components={["DatePicker"]}>
-                                    <DatePicker
-                                        label="Approval Date"
-                                        format="DD/MM/YYYY"
-                                        sx={{width: '100%', marginTop: '10px'}}
-                                        value={
-                                            formData?.approval?.approval_date ? dayjs(formData?.approval_date) : null
-                                        }
-                                        onChange={(newVal) =>
-                                            onChange(
-                                            "approval_date",
-                                            dayjs.isDayjs(newVal) ? newVal.toISOString() : null
-                                            )
-                                        }
-                                        maxDate={dayjs()}
-                                    />
-                                </DemoContainer>
-                            </LocalizationProvider>
-                        </Box>
-                        <Box>
-                            <label
-                                htmlFor="comments"
-                                style={{
-                                    margin: "0",
-                                    padding: 0, 
-                                    fontSize: "16px",
-                                    fontWeight: 500,
-                                    color: "#475467",
-                                    textTransform: "capitalize",
-                                }}
-                            >
-                                Comments
-                            </label>
-                            <TextField
-                                rows={8}
-                                multiline
-                                label="Comments"
-                                fullWidth
-                                name="remarks"
-                                value={formData?.remarks}
-                                sx={{marginTop: '10px'}}
-                                onChange={(e) =>
-                                    onChange("remarks", e.target.value)
-                                }
+
+                        <Box sx={{ flex: 1, minWidth: '200px' }}>
+                        <DateField
+                            field={{
+                                heading: 'Date of Approval',
+                                name: 'approval_date',
+                                label: 'Date of Approval',
+                                required: true,
+                                disableFutureDate: 'true',
+                                info: 'Pick the date on which the approval is being granted.',
+                                supportingText: 'Pick the date on which the approval is being granted.',
+                                supportingTextColor: 'green'
+                            }}
+                            formData={formData}
+                            value={
+                                formData?.approval_date && dayjs(formData.approval_date).isValid()
+                                ? dayjs(formData.approval_date)
+                                : undefined
+                            }
+                            onChange={(newVal) => {
+                                const isoDate = newVal ? dayjs(newVal).toISOString() : null;
+                                onChange("approval_date", isoDate);
+                            }}
+                            
                             />
                         </Box>
+                    </Box>
+                        <LongText
+                            field={{
+                            heading: 'Remarks of Approval Officer',
+                            name: 'remarks',
+                            label: 'Remarks of Approval Officer',
+                            required: true,
+                            info: 'Provide any comments or reasoning related to this approval.',
+                            supportingText: 'Provide any comments or reasoning related to this approval.',
+                            supportingTextColor: 'green'
+                            }}
+                            value={formData?.remarks}
+                            formData={formData}
+                            onChange={(e) => onChange("remarks", e.target.value)}
+                        />
+
                     </Box>
                 </DialogContentText>
             </DialogContent>
