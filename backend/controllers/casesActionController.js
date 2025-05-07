@@ -122,7 +122,7 @@ exports.get_actions = async (req, res) => {
         "tab",
         "icon",
       ],
-      sort : ('created_at', 'ASC')
+        order: [["created_at", "DESC"]],
     });
 
     return res.status(200).json({
