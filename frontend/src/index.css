@@ -1167,16 +1167,21 @@ div::first-letter {
       }
       
     .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-columnHeader{
-        background-color: #FFFFFF !important;
+        border: 1px solid #ccc;
+    }
+    .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-filler{
+        border: 1px solid #ccc;
+    }
+    .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-scrollbarFiller{
         border: 1px solid #ccc;
     }
 
-    .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-filler, .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-scrollbarFiller--header{
-        background-color: #FFFFFF !important;
-        border: 1px solid #ccc;
+    .excelViewTable .MuiDataGrid-row:nth-of-type(even) .MuiDataGrid-cell {
+        background-color: #0000000d !important;
     }
-
-    .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-virtualScrollerContent .MuiDataGrid-row .MuiDataGrid-cell{
+    .excelViewTable .MuiDataGrid-row:nth-of-type(odd) .MuiDataGrid-cell {
         background-color: #FFFFFF !important;
+    }
+    .excelViewTable .MuiDataGrid-cell {
         border: 1px solid #ccc;
     }
