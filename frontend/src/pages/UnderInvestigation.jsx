@@ -8335,7 +8335,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     }
                   });
 
-                  console.log(getFurtherInvestigationItems,"dataaa")
+                  setApprovalFormData({})
+
                   if(getFurtherInvestigationItems?.[0]){
                     caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
                     setReadonlyApprovalItems(true);
@@ -8344,7 +8345,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     setReadonlyApprovalItems(false);
                   } 
   
-                  setApprovalFormData({})
                   setShowApprovalModal(true);
                   setApprovalSaveCaseData({
                       caseData : caseData,
