@@ -8,7 +8,7 @@ import HistoryIcon from '@mui/icons-material/History';
 const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
   return (
     <>
-      {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
+      {field.heading && <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-helper-label" className='hideHistoy'>
             <div style={{ display: 'flex', alignItems: 'center',color: Boolean(errors?.[field?.name]) ? '#F04438' : '' }}>

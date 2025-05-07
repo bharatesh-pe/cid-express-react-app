@@ -8,7 +8,7 @@ import { Tooltip } from '@mui/material';
 const ShortText = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly, disabled}) => {
   return (
     <div style={{ width: '100%' }}>
-      {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
+      {field.heading && <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
       <TextField
         error={errors && Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
         fullWidth

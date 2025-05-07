@@ -7,7 +7,7 @@ const RadioBtn = ({ field, formData, errors, onChange, onFocus, isFocused, onHis
     return (
         <Box sx={{display: 'block '}}>
             {(field.label || field.kannada) && (
-                <h4 className="form-field-heading">
+                <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>
                     <div style={{ display: 'flex', alignItems: 'center',color: Boolean(errors?.[field?.name]) ? '#F04438' : '' }}>
                         <span>
                             {field.label}

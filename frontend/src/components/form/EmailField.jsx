@@ -8,7 +8,7 @@ import HistoryIcon from '@mui/icons-material/History';
 const EmailField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
   return (
     <Box sx={{ width: '100%' }}>
-      {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
+      {field.heading && <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
       <TextField
         type='email'
         error={Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false

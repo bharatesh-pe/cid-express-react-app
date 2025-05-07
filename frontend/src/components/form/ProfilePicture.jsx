@@ -120,7 +120,7 @@ const ProfilePicture = ({ field, formData, errors, onChange, onFocus, isFocused,
                         </Box>
                     </Grid>
                     <Grid item xs={6} md={6} sx={{display:'flex',alignItems:'start',justifyContent:'center',flexDirection:'column',gap:'20px',flexWrap:'wrap'}}>
-                        <h4 className='form-field-heading'>
+                        <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>
                             <div style={{ display: 'flex', alignItems: 'center',color: Boolean(errors?.[field?.name]) ? '#F04438' : '' }}>
                                 <span>
                                     {field.label}

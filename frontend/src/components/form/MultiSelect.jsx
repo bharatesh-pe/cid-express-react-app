@@ -8,7 +8,7 @@ const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, on
     return (
         <Box sx={{ width: '100%' }}>
             {field.heading && (
-                <h4 className="form-field-heading">{field.heading}</h4>
+                <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>
             )}
             <Autocomplete
                 className='bg-white'

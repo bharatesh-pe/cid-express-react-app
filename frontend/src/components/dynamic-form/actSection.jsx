@@ -206,9 +206,9 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
             <Table size="small" aria-label="a dense table">
                 <TableHead>
                     <TableRow>
-                        <TableCell sx={{width: '70px'}}>S. No</TableCell>
-                        <TableCell sx={{width: '50%'}}>Act</TableCell>
-                        <TableCell sx={{width: '50%'}}>Section</TableCell>
+                        <TableCell sx={{width: '70px', color: actField.disabled && '#00000050'}}>S. No</TableCell>
+                        <TableCell sx={{width: '50%', color: actField.disabled && '#00000050'}}>Act</TableCell>
+                        <TableCell sx={{width: '50%', color: actField.disabled && '#00000050'}}>Section</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -259,7 +259,7 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
                                         }
                                         disabled={actField.disabled || readOnly}
                                         renderInput={(params) => (
-                                            <TextField {...params} label="Select Act" />
+                                            <TextField {...params} />
                                         )}
                                     />
                                 </TableCell>
@@ -275,7 +275,7 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
                                         }
                                         disabled={sectionField?.disabled || !row.act || readOnly}
                                         renderInput={(params) => (
-                                            <TextField {...params} label="Select Section" />
+                                            <TextField {...params} />
                                         )}
                                     />
                                 </TableCell>

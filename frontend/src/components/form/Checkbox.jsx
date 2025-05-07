@@ -7,7 +7,7 @@ const CheckboxesBtn = ({ field = {}, formData = {}, errors = {}, onChange, onFoc
     return (
         <Box sx={{width:'100%'}}>
             {(field.label || field.kannada) && (
-                <h4 className="form-field-heading">
+                <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`} >
                     <div style={{ display: 'flex', alignItems: 'center',color: Boolean(errors?.[field?.name]) ? '#F04438' : '' }}>
                         <span>
                             {field.label}

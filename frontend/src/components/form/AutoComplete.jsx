@@ -11,7 +11,11 @@ export default function AutocompleteField({ formData, errors, field, onFocus, is
 
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-            {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
+            {field.heading && 
+                <h4 className={`form-field-heading ${disabled || field.disabled ? 'disabled' : ''}`}>
+                    {field.heading}
+                </h4>
+            }
             <Autocomplete
                 disablePortal
                 options={field.options}

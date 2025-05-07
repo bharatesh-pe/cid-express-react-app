@@ -30,7 +30,7 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
     return (
         <div style={{width: '100%'}}>
         <LocalizationProvider dateAdapter={AdapterDayjs} onFocus={onFocus} >
-            {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
+            {field.heading && <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
             <Box sx={{ width: '100%' }} onClick={onFocus}>
                 <DatePicker
                 

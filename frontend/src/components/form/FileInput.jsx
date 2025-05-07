@@ -285,7 +285,7 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
 
     return (
         <Box inert={loading ? true : false}>
-            <h4 className='form-field-heading'>
+            <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>
                 <div style={{ display: 'flex', alignItems: 'center',color: errors && errors[field.name] && Boolean(errors[field.name]) ? '#F04438' : '' }}>
                     <span>
                         {field.label}
