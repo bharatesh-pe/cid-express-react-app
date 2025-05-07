@@ -80,7 +80,7 @@ export default function ApprovalModal({
                 </Box>
             </DialogTitle>
 
-            <DialogContent sx={{ backgroundColor: '#FAFEF9', padding: 3 }}>
+            <DialogContent sx={{ backgroundColor: 'white', padding: 3 }}>
                 <DialogContentText id="alert-dialog-description" component="div">
                     <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
                     <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
