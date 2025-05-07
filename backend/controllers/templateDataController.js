@@ -830,12 +830,12 @@ exports.getTemplateData = async (req, res, next) => {
     const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
     // Filter fields that have is_primary_field as true
-    // const relevantSchema = 
-    // table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused'
-    //   ? schema
-    //   : schema.filter((field) => field.is_primary_field === true);
+    const relevantSchema = 
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused'
+      ? schema
+      : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
    
-    const relevantSchema = schema;
+    // const relevantSchema = schema;
     // Define model attributes based on filtered schema
     const modelAttributes = {
       id: {
@@ -1264,14 +1264,13 @@ exports.getTemplateData = async (req, res, next) => {
             id: data.id,
             created_at: data.created_at,
             updated_at: data.updated_at,
-            ...data,
           };
 
-        //   schema
-        //     .filter((field) => field.is_primary_field === true)
-        //     .forEach((field) => {
-        //       filteredData[field.name] = data[field.name];
-        //     });
+          schema
+            .filter((field) => field.is_primary_field === true || field.table_display_content === true)
+            .forEach((field) => {
+              filteredData[field.name] = data[field.name];
+            });
         }
 
         return filteredData;
