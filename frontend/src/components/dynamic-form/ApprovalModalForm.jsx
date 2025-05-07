@@ -84,9 +84,7 @@ export default function ApprovalModal({
                 <DialogContentText id="alert-dialog-description" component="div">
                     <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
                     <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
-                    <span style={{ color: '#1570EF' }}>
-                        {console.log("approvalItem", approvalItem)}
-                        
+                    <span style={{ color: '#1570EF' }}>                        
                         {approvalItem.find(opt => opt.approval_item_id === formData?.approval_item)?.name || "Approval Item"}
                     </span>
                     </Box>
@@ -134,14 +132,14 @@ export default function ApprovalModal({
                             />
                         </Box>
 
-                        <Box sx={{ display: 'flex', gap: '16px', flexWrap: 'wrap', mb: 3 }}>
+                    <Box sx={{ display: 'flex', gap: '16px', flexWrap: 'wrap', mb: 3 }}>
                         <Box sx={{ flex: 1, minWidth: '200px' }}>
                             <AutocompleteField
                             formData={formData}
                             options={designationData}
                             field={{
-                                heading: 'Designation',
-                                label: 'Designation',
+                                heading: 'Officer Approved',
+                                label: 'Officer Approved',
                                 name: 'approved_by',
                                 options: designationData.map(item => ({
                                 ...item,
@@ -159,11 +157,11 @@ export default function ApprovalModal({
                         </Box>
 
                         <Box sx={{ flex: 1, minWidth: '200px' }}>
-                            <DateField
+                        <DateField
                             field={{
-                                heading: 'Approval Date',
+                                heading: 'Date of Approval',
                                 name: 'approval_date',
-                                label: 'Approval Date',
+                                label: 'Date of Approval',
                                 required: true,
                                 disableFutureDate: 'true',
                                 info: 'Pick the date on which the approval is being granted.',
@@ -171,22 +169,24 @@ export default function ApprovalModal({
                                 supportingTextColor: 'green'
                             }}
                             formData={formData}
-                            value={formData?.approval_date ? dayjs(formData.approval_date) : null}
-                            onChange={(value) =>
-                                onChange(
-                                "approval_date",
-                                dayjs.isDayjs(value) ? value.toISOString() : null
-                                )
+                            value={
+                                formData?.approval_date && dayjs(formData.approval_date).isValid()
+                                ? dayjs(formData.approval_date)
+                                : undefined
                             }
+                            onChange={(newVal) => {
+                                const isoDate = newVal ? dayjs(newVal).toISOString() : null;
+                                onChange("approval_date", isoDate);
+                            }}
+                            
                             />
                         </Box>
-                        </Box>
-
+                    </Box>
                         <LongText
                             field={{
-                            heading: 'Comments',
+                            heading: 'Remarks of Approval Officer',
                             name: 'remarks',
-                            label: 'Comments',
+                            label: 'Remarks of Approval Officer',
                             required: true,
                             info: 'Provide any comments or reasoning related to this approval.',
                             supportingText: 'Provide any comments or reasoning related to this approval.',

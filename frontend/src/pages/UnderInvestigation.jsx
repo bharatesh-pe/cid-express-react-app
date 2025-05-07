@@ -3727,7 +3727,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
       );
       setLoading(false);
       if (viewTemplateResponse && viewTemplateResponse.success) {
-        console.log("viewtemplaterespose", viewTemplateResponse)
         setFormOpen(true);
         setInitialData({});
         setviewReadonly(false);
@@ -5222,7 +5221,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
   };
   const onUpdateTemplateData = async (data) => {
 
-    console.log("dataaa", data)
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -8394,8 +8392,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
   
       const handleApprovalWithSave = async ()=>{
-  console.log("approvalformdataa", approvalFormData)
-          if (!approvalFormData || !approvalFormData["approval_item"]) {
+
+        if (!approvalFormData || !approvalFormData["approval_item"]) {
               toast.error("Please Select Approval Item !", {
                   position: "top-right",
                   autoClose: 3000,
@@ -8929,7 +8927,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
 
     const showApprovalListPage = async (approveData) => {
-      console.log("approvedataa", approveData)
+
       setListApprovalCaseId(approveData.id);
         if(!approveData  || Object.keys(approveData).length === 0){
             setListAddApproveFlag(false);
