@@ -232,9 +232,21 @@ const UnderInvestigation = () => {
       { field: "created_by", headerName: "Created By", width: 150 },
       { field: "created_at", headerName: "Updated At", width: 200 }
     ];
+
+    const permissionStr = localStorage.getItem("user_permissions");
+    let user_role_name = '';
+
+    if (permissionStr) {
+        try {
+            const permission = JSON.parse(permissionStr); // parse the JSON string into an object/array
+            const rawroletitle = permission[0]?.role_title || ""; // safely access role_title
+            const roletitle = rawroletitle.replace(/_/g, " ");
+            user_role_name = roletitle;
+        } catch (e) {
+            console.error("Failed to parse permissions:", e);
+        }
+    }
     
-    const rawRoleTitle = localStorage.getItem("role_title");
-    const user_role_name = rawRoleTitle ? rawRoleTitle.replace(/_/g, " ") : "";
 
     const user_name = localStorage.getItem("username") || "";
 
