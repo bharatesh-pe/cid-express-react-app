@@ -833,8 +833,9 @@ exports.getTemplateData = async (req, res, next) => {
     const relevantSchema = 
     table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused'
       ? schema
-      : schema.filter((field) => field.is_primary_field === true);
-  
+      : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
+   
+    // const relevantSchema = schema;
     // Define model attributes based on filtered schema
     const modelAttributes = {
       id: {
@@ -1266,7 +1267,7 @@ exports.getTemplateData = async (req, res, next) => {
           };
 
           schema
-            .filter((field) => field.is_primary_field === true)
+            .filter((field) => field.is_primary_field === true || field.table_display_content === true)
             .forEach((field) => {
               filteredData[field.name] = data[field.name];
             });
