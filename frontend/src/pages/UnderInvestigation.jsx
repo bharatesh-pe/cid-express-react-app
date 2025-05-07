@@ -5890,6 +5890,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               "Starred",
               "ReadStatus",
               "linked_profile_info",
+              "sys_status"
             ];
 
             if (options.table !== "cid_ui_case_progress_report") {
@@ -5984,6 +5985,47 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     },
                   ]
                 : []),
+                ...(options.table === "cid_ui_case_progress_report"
+                  ? [
+                      {
+                        field: "sys_status",
+                        headerName: "From",
+                        width: 140,
+                        resizable: true,
+                        sortable: true,
+                        cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                        sortComparator: (v1, v2) => {
+                          if (v1 === "AP" && v2 === "ui_case") return -1;
+                          if (v1 === "ui_case" && v2 === "AP") return 1;
+                          return 0;
+                        },
+                        renderCell: (params) => {
+                          const statusText = params.value === "AP" ? "Action Plan" : "Progress Report";
+                          const isUpdated = params.value === "AP";
+                        
+                          return (
+                            <Chip
+                              label={statusText}
+                              size="small"
+                              sx={{
+                                width: '120px',
+                                fontFamily: "Roboto",
+                                fontWeight: 600,
+                                fontSize: "12px",
+                                color: "#1f2937", 
+                                backgroundColor: isUpdated ? "#bfdbfe" : "#fef3c7",
+                                borderRadius: "6px",
+                                padding: "3px",
+                                border: isUpdated ? "1px dashed #3b82f6" : "1px dashed #f59e0b",
+                                textTransform: "capitalize",
+                              }}
+                            />
+                          );
+                        }
+                      },
+                    ]
+                  : []),
+                  
               ...Object.keys(getTemplateResponse.data[0])
                 .filter(
                   (key) =>
@@ -6046,7 +6088,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 ? [
                     {
                       field: "field_pr_status",
-                      headerName: "Status",
+                      headerName: "PDF Status",
                       width: 150,
                       resizable: true,
                       sortable: true,
