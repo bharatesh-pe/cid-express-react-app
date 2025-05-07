@@ -834,7 +834,9 @@ exports.getTemplateData = async (req, res, next) => {
     table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused'
       ? schema
       : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
-   
+    
+    if(table_name === "cid_ui_case_progress_report")
+        relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
     // const relevantSchema = schema;
     // Define model attributes based on filtered schema
     const modelAttributes = {
