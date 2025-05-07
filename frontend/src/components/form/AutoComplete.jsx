@@ -99,9 +99,19 @@ export default function AutocompleteField({ formData, errors, field, onFocus, is
                 focused={isFocused || false}
             //name={textToSnakecase(field.label)}
             />
-            <FormHelperText sx={{ color: errors?.[field?.name] ? '#F04438' : '' }}>
+            {/* <FormHelperText sx={{ color: errors?.[field?.name] ? '#F04438' : '' }}>
                 {errors?.[field?.name] || field?.supportingText || ''}
+            </FormHelperText> */}
+            <FormHelperText
+            sx={{
+                color: errors?.[field?.name]
+                ? '#F04438 !important'
+                : `${field?.supportingTextColor || ''} !important`,
+            }}
+            >
+            {errors?.[field?.name] || field?.supportingText || ''}
             </FormHelperText>
+
         </Box>
     );
 }
