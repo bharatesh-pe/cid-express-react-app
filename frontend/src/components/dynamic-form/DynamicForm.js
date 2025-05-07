@@ -59,6 +59,9 @@ const DynamicForm = ({
 //     ? JSON.parse(localStorage.getItem(template_name + "-formData"))
 //     : {};
   //   console.log('template_name', template_name);
+
+  var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+
   const [formData, setFormData] = useState({});
   const [newFormConfig, setNewFormConfig] = useState(
     formConfig ? formConfig : {}
@@ -86,6 +89,14 @@ const DynamicForm = ({
       setFormData(initialData);
     }
   }, [initialData]);
+
+    const [readOnlyTemplate, setReadonlyTemplate] = useState(readOnly);
+    const [editDataTemplate, setEditDataTemplate] = useState(editData);
+
+    const templateEdit = ()=>{
+        setReadonlyTemplate((prev)=>!prev);
+        setEditDataTemplate((prev)=>!prev);
+    }
 
   const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
 
@@ -396,11 +407,11 @@ const DynamicForm = ({
               if (!result.isConfirmed) {
                 return false;
               } else {
-                !readOnly && editData ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
+                !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
               }
             });
           } else {
-            !readOnly && editData ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
+            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
           }
         } catch (error) {
           setLoading(false);
@@ -424,7 +435,7 @@ const DynamicForm = ({
           }
         }
       } else {
-        !readOnly && editData ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
+        !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
       }
     } else {
       toast.warning("Please Fill Mandatory Fields", {
@@ -1370,7 +1381,7 @@ const DynamicForm = ({
           </Box>
 
           <Box sx={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            {!readOnly && editData && onUpdate ? (
+            {!readOnlyTemplate && editDataTemplate && onUpdate ? (
               <Button
                 onClick={() =>
                   formButtonRef &&
@@ -1390,7 +1401,7 @@ const DynamicForm = ({
                 Update Case
               </Button>
             ) : (
-              !readOnly &&
+              !readOnlyTemplate &&
               onSubmit && (
                 <Button
                   onClick={() =>
@@ -1412,6 +1423,24 @@ const DynamicForm = ({
                 </Button>
               )
             )}
+            {
+                (readOnlyTemplate && userPermissions[0]?.edit_case) && 
+                <Button
+                    onClick={templateEdit}
+                    sx={{
+                        background: "#0167F8",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#FFFFFF",
+                        padding: "6px 16px",
+                    }}
+                    className="Roboto blueButton"
+                >
+                    Edit Case
+                </Button>
+            }
+
           </Box>
         </Box>
         <Box
@@ -1528,23 +1557,21 @@ const DynamicForm = ({
                 const isRequired =
                   field.required === "true" || field.required === true;
 
-                if (!field.disabled) {
-                  field.disabled = readOnly ? true : "";
-                }
+                var readOnlyData = readOnlyTemplate
 
                 if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
                     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
                     if (roleTitle === "admin organization") {
                         if (!field.ao_field) {
-                            field.disabled = true;
+                            readOnlyData = true
                             if (field.required) {
                                 field.required = false;
                             }
                         }
                     } else {
                         if (field.ao_field) {
-                            field.disabled = true;
+                            readOnlyData = true
                             if (field.required) {
                                 field.required = false;
                             }
@@ -1560,7 +1587,7 @@ const DynamicForm = ({
                                 formData={formData}
                                 tableRow={tableActRow}
                                 tableFunc={UpdateTableRowApi}
-                                readOnly={readOnly}
+                                readOnly={readOnlyTemplate}
                                 showOrderCopy={makeOrderCopyShow}
                             />
                         </Grid>
@@ -1578,6 +1605,7 @@ const DynamicForm = ({
                             errors={errors}
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1593,6 +1621,7 @@ const DynamicForm = ({
                             errors={errors}
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1608,6 +1637,7 @@ const DynamicForm = ({
                             errors={errors}
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1623,6 +1653,7 @@ const DynamicForm = ({
                             errors={errors}
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1640,6 +1671,7 @@ const DynamicForm = ({
                             onChange={(value) => {
                               handleChangeDate(field.name, value);
                             }}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1657,6 +1689,7 @@ const DynamicForm = ({
                           onChange={(value) =>
                             handleChangeDate(field.name, value)
                           } // Handle change
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1673,6 +1706,7 @@ const DynamicForm = ({
                             handleChangeDate(field.name, value)
                           } // Handle change
                           onHistory={() => showHistory(field.name)}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1690,6 +1724,7 @@ const DynamicForm = ({
                             onChange={(value) =>
                               handleAutocomplete(field, value.target.value)
                             }
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1707,6 +1742,7 @@ const DynamicForm = ({
                           onChange={(name, selectedCode) =>
                             handleAutocomplete(field, selectedCode)
                           }
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1723,6 +1759,7 @@ const DynamicForm = ({
                           onChange={(name, selectedCode) =>
                             handleAutocomplete(field, selectedCode)
                           }
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1737,6 +1774,7 @@ const DynamicForm = ({
                             errors={errors}
                             onHistory={() => showHistory(field.name)}
                             onChange={handleChange}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1751,6 +1789,7 @@ const DynamicForm = ({
                           formData={formData}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleFileUploadChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1763,6 +1802,7 @@ const DynamicForm = ({
                           formData={formData}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleFileUploadChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1777,6 +1817,7 @@ const DynamicForm = ({
                           errors={errors}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleDropdownChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1791,6 +1832,7 @@ const DynamicForm = ({
                           errors={errors}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleCheckBoxChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1804,6 +1846,7 @@ const DynamicForm = ({
                           errors={errors}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleTabChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );

@@ -3,11 +3,11 @@ import { Box, Checkbox, Tooltip } from "@mui/material";
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const CheckboxesBtn = ({ field = {}, formData = {}, errors = {}, onChange, onFocus, isFocused, onHistory }) => {
+const CheckboxesBtn = ({ field = {}, formData = {}, errors = {}, onChange, onFocus, isFocused, onHistory, readOnly }) => {
     return (
         <Box sx={{width:'100%'}}>
             {(field.label || field.kannada) && (
-                <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`} >
+                <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`} >
                     <div style={{ display: 'flex', alignItems: 'center',color: Boolean(errors?.[field?.name]) ? '#F04438' : '' }}>
                         <span>
                             {field.label}
@@ -68,7 +68,7 @@ const CheckboxesBtn = ({ field = {}, formData = {}, errors = {}, onChange, onFoc
                             name={field.id || ""}
                             id={option.code || ""}
                             value={option.code || ""}
-                            disabled={field.disabled === true}
+                            disabled={readOnly || field.disabled === true}
                             checked={formData[field.name]?.includes(option.code) || false}
                             onChange={(e) =>
                                 onChange(field.name, option.code, e.target.checked)

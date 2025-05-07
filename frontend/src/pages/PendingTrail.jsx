@@ -5955,43 +5955,43 @@ const UnderInvestigation = () => {
             ),
         }
       : null,
-    userPermissions[0]?.edit_pt_case
-      ? {
-            name: "Edit",
-            onclick: (selectedRow) =>
-            handleTemplateDataView(selectedRow, true, table_name),
-            icon: () => (
-                <span className="tableActionIcon">
-                    <svg
-                        width="50"
-                        height="50"
-                        viewBox="0 0 34 34"
-                        fill=""
-                        xmlns="http://www.w3.org/2000/svg"
-                    >
-                        <circle cx="12" cy="12" r="12" fill="" />
-                        <mask
-                            id="mask0_1120_40631"
-                            style={{ maskType: "alpha" }}
-                            maskUnits="userSpaceOnUse"
-                            x="4"
-                            y="4"
-                            width="16"
-                            height="16"
-                        >
-                            <rect x="4" y="4" width="16" height="16" fill="" />
-                        </mask>
-                        <g mask="url(#mask0_1120_40631)">
-                            <path
-                                d="M5.6001 20V17.4666H18.4001V20H5.6001ZM7.53343 15.1423V13.177L14.2399 6.4628C14.3365 6.36625 14.4368 6.29875 14.5409 6.2603C14.6452 6.22186 14.7524 6.20264 14.8628 6.20264C14.9774 6.20264 15.0856 6.22186 15.1873 6.2603C15.2889 6.29875 15.3865 6.3638 15.4801 6.45547L16.2129 7.18464C16.3053 7.28119 16.3717 7.3803 16.4123 7.48197C16.4528 7.58375 16.4731 7.69325 16.4731 7.81047C16.4731 7.91769 16.4531 8.02453 16.4131 8.13097C16.3731 8.23753 16.308 8.33586 16.2179 8.42597L9.5001 15.1423H7.53343ZM14.7438 8.67314L15.6064 7.8103L14.8654 7.0693L14.0026 7.93197L14.7438 8.67314Z"
-                                fill=""
-                            />
-                        </g>
-                    </svg>
-                </span>
-            ),
-        }
-      : null,
+    // userPermissions[0]?.edit_pt_case
+    //   ? {
+    //         name: "Edit",
+    //         onclick: (selectedRow) =>
+    //         handleTemplateDataView(selectedRow, true, table_name),
+    //         icon: () => (
+    //             <span className="tableActionIcon">
+    //                 <svg
+    //                     width="50"
+    //                     height="50"
+    //                     viewBox="0 0 34 34"
+    //                     fill=""
+    //                     xmlns="http://www.w3.org/2000/svg"
+    //                 >
+    //                     <circle cx="12" cy="12" r="12" fill="" />
+    //                     <mask
+    //                         id="mask0_1120_40631"
+    //                         style={{ maskType: "alpha" }}
+    //                         maskUnits="userSpaceOnUse"
+    //                         x="4"
+    //                         y="4"
+    //                         width="16"
+    //                         height="16"
+    //                     >
+    //                         <rect x="4" y="4" width="16" height="16" fill="" />
+    //                     </mask>
+    //                     <g mask="url(#mask0_1120_40631)">
+    //                         <path
+    //                             d="M5.6001 20V17.4666H18.4001V20H5.6001ZM7.53343 15.1423V13.177L14.2399 6.4628C14.3365 6.36625 14.4368 6.29875 14.5409 6.2603C14.6452 6.22186 14.7524 6.20264 14.8628 6.20264C14.9774 6.20264 15.0856 6.22186 15.1873 6.2603C15.2889 6.29875 15.3865 6.3638 15.4801 6.45547L16.2129 7.18464C16.3053 7.28119 16.3717 7.3803 16.4123 7.48197C16.4528 7.58375 16.4731 7.69325 16.4731 7.81047C16.4731 7.91769 16.4531 8.02453 16.4131 8.13097C16.3731 8.23753 16.308 8.33586 16.2179 8.42597L9.5001 15.1423H7.53343ZM14.7438 8.67314L15.6064 7.8103L14.8654 7.0693L14.0026 7.93197L14.7438 8.67314Z"
+    //                             fill=""
+    //                         />
+    //                     </g>
+    //                 </svg>
+    //             </span>
+    //         ),
+    //     }
+    //   : null,
     userPermissions[0]?.delete_pt
       ? {
             name: "Delete",

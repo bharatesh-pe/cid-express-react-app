@@ -5,10 +5,10 @@ import textToSnakecase from './textformater';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) => {
   return (
     <>
-      {field.heading && <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
+      {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-helper-label" className='hideHistoy'>
             <div style={{ display: 'flex', alignItems: 'center',color: Boolean(errors?.[field?.name]) ? '#F04438' : '' }}>
@@ -128,7 +128,7 @@ const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, on
           // name={textToSnakecase(field.label)}
           onChange={(e) => { onChange(e) }}
         //   required={field.required === true}
-          disabled={field.disabled === true}
+          disabled={readOnly || field.disabled === true}
           sx={{
             '& .MuiOutlinedInput-root': {
               // backgroundColor: '#fff', // Inner input background color

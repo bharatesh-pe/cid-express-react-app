@@ -5,10 +5,10 @@ import { Box, InputAdornment, Tooltip } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const ValueRangeField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const ValueRangeField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) => {
   return (
     <Box sx={{ width: '100%' }}>
-      {field.heading && <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
+      {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
       <TextField
         error={Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
         fullWidth
@@ -72,7 +72,7 @@ const ValueRangeField = ({ field, formData, errors, onChange, onFocus, isFocused
         helperText={errors?.[field?.name] || field.supportingText || ' '}  // Display the error if it exists, else fallback to supportingText
         inputProps={{ minLength: field.minLength, maxLength: field.maxLength }}
         // required={field.required === true}
-        disabled={field.disabled === true}
+        disabled={readOnly || field.disabled === true}
         slotProps={{
           input: {
             startAdornment: <InputAdornment position="start">{field.prefix}</InputAdornment>,

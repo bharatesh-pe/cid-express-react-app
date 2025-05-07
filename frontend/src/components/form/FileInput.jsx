@@ -19,7 +19,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 import { CircularProgress } from "@mui/material";
 
-const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) => {
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [attachmentFolder,setAttachmentFolder] = useState([]);
     const [selectedFolder,setSelectedFolder] = useState(null);
@@ -285,7 +285,7 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
 
     return (
         <Box inert={loading ? true : false}>
-            <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>
+            <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>
                 <div style={{ display: 'flex', alignItems: 'center',color: errors && errors[field.name] && Boolean(errors[field.name]) ? '#F04438' : '' }}>
                     <span>
                         {field.label}
@@ -354,7 +354,7 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                 role={undefined}
                 tabIndex={-1}
                 required={field.required === true}
-                disabled={field.disabled === true}
+                disabled={readOnly || field.disabled === true}
                 startIcon={<AddIcon />}
                 sx={{textTransform: 'none'}}
             >
@@ -389,7 +389,7 @@ const FileInput = ({ field, formData, errors, onChange, onFocus, isFocused, onHi
                         <Typography onClick={()=>openFileInNewTab(file.filename)} variant="body2" sx={{ wordBreak: 'break-word', cursor:'pointer' }}>
                             {file.filename instanceof File ? file.filename['name'] : file.filename}
                         </Typography>
-                        <button type="button" disabled={field.disabled === true} onClick={()=>removeAttachment(index)} style={{border:'none',background:'transparent',display:'flex',alignItems:'center',padding:'0',cursor:field.disabled === true ? 'not-allowed' : 'pointer'}}>
+                        <button type="button" disabled={readOnly || field.disabled === true} onClick={()=>removeAttachment(index)} style={{border:'none',background:'transparent',display:'flex',alignItems:'center',padding:'0',cursor:field.disabled === true ? 'not-allowed' : 'pointer'}}>
                             <img src={attachmentCancel} alt="remove" />
                         </button>
                     </Box>

@@ -9,7 +9,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import { CircularProgress } from "@mui/material";
 import HistoryIcon from '@mui/icons-material/History';
 
-const ProfilePicture = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const ProfilePicture = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) => {   
     const [uploadedImage, setUploadedImage] = useState(null); // To store the uploaded image
     const [loading, setLoading] = useState(false); // State for loading indicator
 
@@ -120,7 +120,7 @@ const ProfilePicture = ({ field, formData, errors, onChange, onFocus, isFocused,
                         </Box>
                     </Grid>
                     <Grid item xs={6} md={6} sx={{display:'flex',alignItems:'start',justifyContent:'center',flexDirection:'column',gap:'20px',flexWrap:'wrap'}}>
-                        <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>
+                        <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>
                             <div style={{ display: 'flex', alignItems: 'center',color: Boolean(errors?.[field?.name]) ? '#F04438' : '' }}>
                                 <span>
                                     {field.label}
@@ -177,7 +177,7 @@ const ProfilePicture = ({ field, formData, errors, onChange, onFocus, isFocused,
                             component="label"
                             variant="outlined"
                             tabIndex={-1}
-                            disabled={field.disabled === true}
+                            disabled={readOnly || field.disabled === true}
                             startIcon={<ArrowUpwardIcon />}
                             sx={{textTransform: 'none'}}
                         >

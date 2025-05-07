@@ -8,7 +8,7 @@ import './ShortText.css';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-export default function DateTimeField({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) {
+export default function DateTimeField({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) {
     // Ensure the value is a valid date or null if no date is selected
     const selectedDate = formData && formData[field.name]
         ? dayjs(formData[field.name]) // Convert to dayjs object
@@ -22,7 +22,7 @@ export default function DateTimeField({ field, formData, errors, onChange, onFoc
     return (
         <div style={{ width: '100%' }}>
             <LocalizationProvider dateAdapter={AdapterDayjs} onFocus={onFocus}>
-                {field.heading && <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
+                {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
                 <Box sx={{ width: '100%' }} onClick={onFocus}>
                     <DateTimePicker
                         error={Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
@@ -88,7 +88,7 @@ export default function DateTimeField({ field, formData, errors, onChange, onFoc
                         }}
                         onFocus={onFocus}
                         required={field.required === true}
-                        disabled={field.disabled === true}
+                        disabled={readOnly || field.disabled === true}
                         fullWidth
                         minDate={minDate} // Pass minDate as dayjs object
                         format="DD-MM-YYYY hh:mm a"

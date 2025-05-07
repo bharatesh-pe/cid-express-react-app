@@ -5,10 +5,10 @@ import { Box, Tooltip } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const EmailField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const EmailField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) => {
   return (
     <Box sx={{ width: '100%' }}>
-      {field.heading && <h4 className={`form-field-heading ${field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
+      {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
       <TextField
         type='email'
         error={Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
@@ -75,7 +75,7 @@ const EmailField = ({ field, formData, errors, onChange, onFocus, isFocused, onH
         helperText={errors?.[field?.name] || field.supportingText || ' '}  // Display the error if it exists, else fallback to supportingText
         inputProps={{ minLength: field.minLength, maxLength: field.maxLength }}
         // required={field.required === true}
-        disabled={field.disabled === true}
+        disabled={readOnly || field.disabled === true}
         onChange={(e) => onChange(e)}
         onFocus={onFocus}
         focused={isFocused || false}
