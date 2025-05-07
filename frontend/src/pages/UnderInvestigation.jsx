@@ -254,7 +254,7 @@ const UnderInvestigation = () => {
       { field: "sno", headerName: "S.No", width: 70 },
       { field: "approval_item_id", headerName: "Approval Item", width: 150 },
       { field: "approved_by", headerName: "Approved By", width: 150 },
-      { field: "approved_date", headerName: "Approved Date", width: 150 },
+      // { field: "approved_date", headerName: "Approved Date", width: 150 },
       { field: "created_by", headerName: "Created By", width: 150 },
       { field: "created_at", headerName: "Created At", width: 200 }
     ];
@@ -264,15 +264,12 @@ const UnderInvestigation = () => {
       sno: index + 1,
       approval_item_id: log.approval_item_id,
       approved_by: log.approved_by,
-      approved_date: log.approved_date,
+      // approved_date: log.approved_date,
       created_by: log.created_by,
       created_at: new Date(log.created_at).toLocaleString("en-GB", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
       }).replace(",", "").replace(":", ".")
     }));
     
@@ -3727,7 +3724,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
       );
       setLoading(false);
       if (viewTemplateResponse && viewTemplateResponse.success) {
-        console.log("viewtemplaterespose", viewTemplateResponse)
         setFormOpen(true);
         setInitialData({});
         setviewReadonly(false);
@@ -5222,7 +5218,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
   };
   const onUpdateTemplateData = async (data) => {
 
-    console.log("dataaa", data)
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -8394,8 +8389,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
   
       const handleApprovalWithSave = async ()=>{
-  
-          if (!approvalFormData || !approvalFormData["approval_item"]) {
+
+        if (!approvalFormData || !approvalFormData["approval_item"]) {
               toast.error("Please Select Approval Item !", {
                   position: "top-right",
                   autoClose: 3000,
@@ -8929,7 +8924,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
 
     const showApprovalListPage = async (approveData) => {
-      console.log("approvedataa", approveData)
+
       setListApprovalCaseId(approveData.id);
         if(!approveData  || Object.keys(approveData).length === 0){
             setListAddApproveFlag(false);
@@ -11091,7 +11086,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 aria-describedby="alert-dialog-description"
                 fullScreen
                 fullWidth
-                sx={{ zIndex: "1", marginLeft: '260px' }}
+                sx={{ zIndex: "1", marginLeft: '50px' }}
 
               >
                 <DialogTitle

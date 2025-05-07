@@ -266,9 +266,6 @@ const UnderInvestigation = () => {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
       }).replace(",", "").replace(":", ".")
     }));
     
@@ -277,7 +274,7 @@ const UnderInvestigation = () => {
       { field: "sno", headerName: "S.No", width: 70 },
       { field: "approval_item_id", headerName: "Approval Item", width: 150 },
       { field: "approved_by", headerName: "Approved By", width: 150 },
-      { field: "approved_date", headerName: "Approved Date", width: 150 },
+      // { field: "approved_date", headerName: "Approved Date", width: 150 },
       { field: "created_by", headerName: "Created By", width: 150 },
       { field: "created_at", headerName: "Created At", width: 200 }
     ];
@@ -287,7 +284,7 @@ const UnderInvestigation = () => {
       sno: index + 1,
       approval_item_id: log.approval_item_id,
       approved_by: log.approved_by,
-      approved_date: log.approved_date,
+      // approved_date: log.approved_date,
       created_by: log.created_by,
       created_at: new Date(log.created_at).toLocaleString("en-GB", {
         day: "2-digit",
