@@ -2456,12 +2456,7 @@ const UnderInvestigation = () => {
             }
             } else {
             // Add non-file fields to normalData
-            normalData[field.name] =
-                field.type === "checkbox" || field.type === "multidropdown"
-                ? Array.isArray(data[field.name])
-                    ? data[field.name].join(",")
-                    : data[field.name]
-                : data[field.name];
+            normalData[field.name] =  Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
             }
         }
         });
@@ -2837,12 +2832,7 @@ const UnderInvestigation = () => {
               formData.append(field.name, data[field.name]);
             }
           } else {
-            normalData[field.name] =
-              field.type === "checkbox" || field.type === "multidropdown"
-                ? Array.isArray(data[field.name])
-                  ? data[field.name].join(",")
-                  : data[field.name]
-                : data[field.name];
+            normalData[field.name] =  Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
           }
         }
       });
@@ -3235,12 +3225,7 @@ const UnderInvestigation = () => {
           }
         } else {
           // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
+          normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
         }
       }
     });
@@ -3378,12 +3363,7 @@ const UnderInvestigation = () => {
           }
         } else {
           // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
+          normalData[field.name] =  Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
         }
       }
     });
@@ -3522,12 +3502,7 @@ const UnderInvestigation = () => {
           }
         } else {
           // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
+          normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
         }
       }
     });
