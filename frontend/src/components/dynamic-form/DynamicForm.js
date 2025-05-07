@@ -267,20 +267,22 @@ const DynamicForm = ({
             return null
         }
 
-        const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+        if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
+            const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
-        if (roleTitle === "admin organization") {
-            if (!field.ao_field) {
-                field.disabled = true;
-                if (field.required) {
-                    field.required = false;
+            if (roleTitle === "admin organization") {
+                if (!field.ao_field) {
+                    field.disabled = true;
+                    if (field.required) {
+                        field.required = false;
+                    }
                 }
-            }
-        } else {
-            if (field.ao_field) {
-                field.disabled = true;
-                if (field.required) {
-                    field.required = false;
+            } else {
+                if (field.ao_field) {
+                    field.disabled = true;
+                    if (field.required) {
+                        field.required = false;
+                    }
                 }
             }
         }
@@ -1530,20 +1532,22 @@ const DynamicForm = ({
                   field.disabled = readOnly ? true : "";
                 }
 
-                const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+                if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
+                    const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
-                if (roleTitle === "admin organization") {
-                    if (!field.ao_field) {
-                        field.disabled = true;
-                        if (field.required) {
-                            field.required = false;
+                    if (roleTitle === "admin organization") {
+                        if (!field.ao_field) {
+                            field.disabled = true;
+                            if (field.required) {
+                                field.required = false;
+                            }
                         }
-                    }
-                } else {
-                    if (field.ao_field) {
-                        field.disabled = true;
-                        if (field.required) {
-                            field.required = false;
+                    } else {
+                        if (field.ao_field) {
+                            field.disabled = true;
+                            if (field.required) {
+                                field.required = false;
+                            }
                         }
                     }
                 }
