@@ -639,6 +639,29 @@ const getAllSectionAndActBasedSection = async (req, res) => {
         return adminSendResponse(res, 500, false, "Internal Server Error");
     }
 };
+
+const getDivisionBasedOnDepartment = async (req, res) => {
+    try {
+        const { department_id } = req.body;
+        if (!department_id || department_id === "") {
+            return res.status(400).json({ message: "Department ID is required." });
+        }
+        const divisions = await Division.findAll({
+            where: { department_id },
+            order: [["division_name", "ASC"]]
+        });
+
+        if (!divisions || divisions.length === 0) {
+            return adminSendResponse(res, 200, true, "Please create divisions and try to fetch.", []);
+        }
+
+        return adminSendResponse(res, 200, true, "Divisions retrieved successfully", [ ...divisions ]);
+    } catch (error) {
+        console.error("Error fetching divisions:", error.message);
+        return adminSendResponse(res, 500, false, "Internal Server Error");
+    }
+};
+
 module.exports = {
     getAllDepartments,
     getAllDesignations,
@@ -649,4 +672,5 @@ module.exports = {
     getUserParticularDetails,
     getAllAct,
     getAllSectionAndActBasedSection,
+    getDivisionBasedOnDepartment,
 };
