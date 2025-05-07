@@ -1254,6 +1254,8 @@ exports.getTemplateData = async (req, res, next) => {
           filteredData = { ...data };
           console.log("filteredData", filteredData);
           console.log("table_name",table_name)
+        }else if (table_name === "cid_ui_case_accused") {
+          filteredData = { ...data };
         } else {
           filteredData = {
             id: data.id,
