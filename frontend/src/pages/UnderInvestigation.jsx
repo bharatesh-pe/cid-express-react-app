@@ -4206,10 +4206,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             formData.append(field.name, val);
           }
         } else {
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(val) ? val.join(",") : val
-              : val;
+          normalData[field.name] = Array.isArray(val) ? val.join(",") : val
         }
       }
     });
@@ -4349,12 +4346,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           }
         } else {
           // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
+          normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
         }
       }
     });
@@ -4548,12 +4540,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             formData.append(field.name, data[field.name]);
           }
         } else {
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
+          normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
         }
       }
     });
@@ -5007,12 +4994,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           }
         } else {
           // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
+          normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
         }
       }
     });
@@ -5152,12 +5134,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           }
         } else {
           // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
+          normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
         }
       }
     });
@@ -5315,12 +5292,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           }
         } else {
           // Add non-file fields to normalData
-          normalData[field.name] =
-            field.type === "checkbox" || field.type === "multidropdown"
-              ? Array.isArray(data[field.name])
-                ? data[field.name].join(",")
-                : data[field.name]
-              : data[field.name];
+          normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
         }
       }
     });
@@ -8371,6 +8343,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     setReadonlyApprovalItems(false);
                   } 
   
+                  setApprovalFormData({})
                   setShowApprovalModal(true);
                   setApprovalSaveCaseData({
                       caseData : caseData,
