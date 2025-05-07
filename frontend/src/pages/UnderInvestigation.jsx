@@ -6605,7 +6605,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               setShowMassiveTransferModal(true);
             }
           } else {
-            toast.error("Can't able to find Division field", {
+            toast.error("Can't able to find the selected field", {
               position: "top-right",
               autoClose: 3000,
               className: "toast-error",
