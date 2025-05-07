@@ -10031,7 +10031,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       ! showSubmitAPButton&& (
                       <Button
                       variant="contained"
-                      sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                      color="success"
+                      // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
                       onClick={() => {
                           console.log('selectedRowData:', selectedRowData);
                           handleSubmitAp({ id: selectedRowData?.id });
@@ -10114,7 +10115,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       </label>
                                       {index === array.length - 1 && (
                                         <Button
-                                          variant="outlined"
+                                          variant="contained"
                                           color="primary"
                                           size="small"
                                           onClick={() =>
@@ -10262,7 +10263,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       </label>
                                       {index === array.length - 1 && (
                                         <Button
-                                          variant="outlined"
+                                          variant="contained"
                                           color="primary"
                                           size="small"
                                           onClick={() =>
