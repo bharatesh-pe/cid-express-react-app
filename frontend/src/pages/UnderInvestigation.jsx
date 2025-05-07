@@ -5890,6 +5890,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               "Starred",
               "ReadStatus",
               "linked_profile_info",
+              "sys_status"
             ];
 
             if (options.table !== "cid_ui_case_progress_report") {
@@ -5984,6 +5985,47 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     },
                   ]
                 : []),
+                ...(options.table === "cid_ui_case_progress_report"
+                  ? [
+                      {
+                        field: "sys_status",
+                        headerName: "From",
+                        width: 140,
+                        resizable: true,
+                        sortable: true,
+                        cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                        sortComparator: (v1, v2) => {
+                          if (v1 === "AP" && v2 === "ui_case") return -1;
+                          if (v1 === "ui_case" && v2 === "AP") return 1;
+                          return 0;
+                        },
+                        renderCell: (params) => {
+                          const statusText = params.value === "AP" ? "Action Plan" : "Progress Report";
+                          const isUpdated = params.value === "AP";
+                        
+                          return (
+                            <Chip
+                              label={statusText}
+                              size="small"
+                              sx={{
+                                width: '120px',
+                                fontFamily: "Roboto",
+                                fontWeight: 600,
+                                fontSize: "12px",
+                                color: "#1f2937", 
+                                backgroundColor: isUpdated ? "#bfdbfe" : "#fef3c7",
+                                borderRadius: "6px",
+                                padding: "3px",
+                                border: isUpdated ? "1px dashed #3b82f6" : "1px dashed #f59e0b",
+                                textTransform: "capitalize",
+                              }}
+                            />
+                          );
+                        }
+                      },
+                    ]
+                  : []),
+                  
               ...Object.keys(getTemplateResponse.data[0])
                 .filter(
                   (key) =>
@@ -6046,7 +6088,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 ? [
                     {
                       field: "field_pr_status",
-                      headerName: "Status",
+                      headerName: "PDF Status",
                       width: 150,
                       resizable: true,
                       sortable: true,
@@ -6605,7 +6647,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
               setShowMassiveTransferModal(true);
             }
           } else {
-            toast.error("Can't able to find Division field", {
+            toast.error("Can't able to find the selected field", {
               position: "top-right",
               autoClose: 3000,
               className: "toast-error",
@@ -10419,7 +10461,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
           </Box>
         </DialogTitle>
 
-        <DialogContent sx={{ backgroundColor: '#FAFEF9', padding: 3 }}>
+        <DialogContent sx={{ backgroundColor: 'white', padding: 3 }}>
           <DialogContentText id="alert-dialog-description" component="div">
             <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
               <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
@@ -10912,171 +10954,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
             </DialogActions>
             </Dialog>
         )}
-
-      {/* {approveTableFlag && (
-        <Dialog
-          open={approveTableFlag}
-          onClose={() => setApproveTableFlag(false)}
-          aria-labelledby="alert-dialog-title"
-          aria-describedby="alert-dialog-description"
-          maxWidth="lg"
-          fullWidth
-          sx={{ zIndex: "1" }}
-        >
-          <DialogTitle
-            id="alert-dialog-title"
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            Approval
-            <Box >
-              {!addApproveFlag ? (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    showApprovalAddPage(selectedOtherTemplate.table);
-                  }}
-                >
-                  Add
-                </Button>
-              ) : (
-                <Button
-                  variant="outlined"
-                  onClick={() => {
-                    saveApprovalData(selectedOtherTemplate.table);
-                  }}
-                >
-                  Save
-                </Button>
-              )}
-              <IconButton
-                aria-label="close"
-                onClick={() => setApproveTableFlag(false)}
-                sx={{ color: (theme) => theme.palette.grey[500] }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="alert-dialog-description">
-              <Box py={2} sx={{ width: '90%'}}>
-                {!addApproveFlag ? (
-                  <TableView rows={approvalsData} columns={approvalsColumn} />
-                ) : (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "18px",
-                    }}
-                  >                    
-                    <Autocomplete
-                      id=""
-                      options={approvalItem}
-                      getOptionLabel={(option) => option.name || ""}
-                      name={"approval_item"}
-                      disabled={approvalItemDisabled}
-                      value={
-                        approvalItem.find(
-                          (option) =>
-                            option.approval_item_id ===
-                            (approvalSaveData &&
-                              approvalSaveData["approval_item"])
-                        ) || null
-                      }
-                      onChange={(e, value) =>
-                        handleApprovalSaveData(
-                          "approval_item",
-                          value?.approval_item_id
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          className="selectHideHistory"
-                          label={"Approval Item"}
-                        />
-                      )}
-                    />
-                    <Autocomplete
-                      id=""
-                      options={designationData}
-                      getOptionLabel={(option) => option.designation_name || ""}
-                      name={"approved_by"}
-                      value={
-                        designationData.find(
-                          (option) =>
-                            option.designation_id ===
-                            (approvalSaveData &&
-                              approvalSaveData["approved_by"])
-                        ) || null
-                      }
-                      onChange={(e, value) =>
-                        handleApprovalSaveData(
-                          "approved_by",
-                          value?.designation_id
-                        )
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          className="selectHideHistory"
-                          label={"Designation"}
-                        />
-                      )}
-                    />
-                    <LocalizationProvider
-                      dateAdapter={AdapterDayjs}
-                      sx={{ width: "100%" }}
-                    >
-                      <DemoContainer
-                        components={["DatePicker"]}
-                        sx={{ width: "100%" }}
-                      >
-                        <DatePicker
-                          label="Approval Date"
-                          value={
-                            approvalSaveData["approval_date"]
-                              ? dayjs(approvalSaveData["approval_date"])
-                              : null
-                          }
-                          name="approval_date"
-                          format="DD/MM/YYYY"
-                          sx={{ width: "100%" }}
-                          onChange={(newValue) => {
-                            if (newValue && dayjs.isDayjs(newValue)) {
-                              handleApprovalSaveData(
-                                "approval_date",
-                                newValue.toISOString()
-                              );
-                            } else {
-                              handleApprovalSaveData("approval_date", null);
-                            }
-                          }}
-                        />
-                      </DemoContainer>
-                    </LocalizationProvider>
-                    <TextField
-                      rows={8}
-                      label={"Comments"}
-                      sx={{ width: "100%" }}
-                      name="remarks"
-                      value={approvalSaveData["remarks"]}
-                      onChange={(e) =>
-                        handleApprovalSaveData("remarks", e.target.value)
-                      }
-                    />
-                  </Box>
-                )}
-              </Box>
-            </DialogContentText>
-          </DialogContent>
-        </Dialog>
-      )} */}
 
         {listApproveTableFlag && (
               <Dialog
