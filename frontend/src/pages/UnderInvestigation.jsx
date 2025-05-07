@@ -233,6 +233,13 @@ const UnderInvestigation = () => {
       { field: "created_at", headerName: "Updated At", width: 200 }
     ];
     
+    const rawRoleTitle = localStorage.getItem("role_title");
+    const user_role_name = rawRoleTitle ? rawRoleTitle.replace(/_/g, " ") : "";
+
+    const user_name = localStorage.getItem("username") || "";
+
+   
+    
     const approvalFieldHistory = logs.map((log, index) => ({
       id: index,
       sno: index + 1,
@@ -9101,8 +9108,36 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 gap: '6px'
               }}
             >
+                <Typography variant="h1" align="left" sx={{ fontSize: "20px", color: "black" , fontWeight: 500}}>
+                    {user_name || ""}
+                </Typography>
+                <Typography
+                    variant="caption"
+                    sx={{
+                    fontSize: "11px",
+                    color: "black",
+                    backgroundColor: "#E0E0E0",
+                    px: 1,
+                    py: "2px",
+                    borderRadius: "6px",
+                    display: "inline-block",
+                    fontWeight: 500,
+                    mt: 0.5,
+                    }}
+                >
+                    {user_role_name || ""}
+                </Typography>
+                {/* need a horizontal line here */}
+                <Box
+                    sx={{
+                    width: "1px",
+                    height: "25px",
+                    backgroundColor: "#bfb8b896",
+                    mx: 1,
+                    }}
+                ></Box>
               {/* <img src='./arrow-left.svg' /> */}
-              <Typography variant="h1" align="left" className="ProfileNameText">
+              <Typography variant="h1" align="left" sx={{ fontSize: "16px", color: "#000000b3" , fontWeight: 500}}>
                 {template_name
                   ? template_name
                       .toLowerCase()

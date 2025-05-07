@@ -251,8 +251,13 @@ const Login = () => {
       }
 
        if (data && data.user_role_permissions) {
-        localStorage.setItem("role_id",JSON.stringify(data.user_role_permissions[0].role_id));
-        localStorage.setItem("role_title",JSON.stringify(data.user_role_permissions[0].role_title));
+        //parse the data and use it 
+        const rawroletitle = data.user_role_permissions[0].role_title;
+        const roletitle = rawroletitle.replace(/_/g, " ");
+
+        localStorage.setItem("role_id", data.user_role_permissions[0].role_id.toString()); // Optional: stringify manually if needed
+        localStorage.setItem("role_title", roletitle); // ✅ no stringify
+
       }
 
       if (data && data.users_designation) {
