@@ -122,9 +122,18 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
                     }}
                 />
             </Box>
-            <FormHelperText sx={{ color: errors?.[field?.name] ? '#F04438' : '' }}>
-                {errors?.[field?.name] || field.supportingText || ''}
+            <FormHelperText
+            sx={{
+                color: errors?.[field?.name]
+                ? '#F04438 !important'
+                : `${field?.supportingTextColor || ''} !important`,
+            }}
+            >
+            {errors?.[field?.name] || field?.supportingText || ''}
             </FormHelperText>
+            {/* <FormHelperText sx={{ color: errors?.[field?.name] ? '#F04438' : '' }}>
+                {errors?.[field?.name] || field.supportingText || ''}
+            </FormHelperText> */}
         </LocalizationProvider>
         </div>
     );

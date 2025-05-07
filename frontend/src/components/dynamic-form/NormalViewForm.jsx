@@ -311,20 +311,22 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 return null
             }
 
-            const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+            if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
+                const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
-            if (roleTitle === "admin organization") {
-                if (!field.ao_field) {
-                    field.disabled = true;
-                    if (field.required) {
-                        field.required = false;
+                if (roleTitle === "admin organization") {
+                    if (!field.ao_field) {
+                        field.disabled = true;
+                        if (field.required) {
+                            field.required = false;
+                        }
                     }
-                }
-            } else {
-                if (field.ao_field) {
-                    field.disabled = true;
-                    if (field.required) {
-                        field.required = false;
+                } else {
+                    if (field.ao_field) {
+                        field.disabled = true;
+                        if (field.required) {
+                            field.required = false;
+                        }
                     }
                 }
             }
@@ -1385,24 +1387,29 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     field.disabled = readOnly ? true : '';
                 }
 
-                const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+                if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
 
-                if (roleTitle === "admin organization") {
-                    if (!field.ao_field) {
-                        field.disabled = true;
-                        if (field.required) {
-                            field.required = false;
+                    const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+    
+                    if (roleTitle === "admin organization") {
+                        if (!field.ao_field) {
+                            console.log("hello hello");
+                            field.disabled = true;
+                            if (field.required) {
+                                field.required = false;
+                            }
                         }
-                    }
-                } else {
-                    if (field.ao_field) {
-                        field.disabled = true;
-                        if (field.required) {
-                            field.required = false;
+                    } else {
+                        if (field.ao_field) {
+                            console.log("log");
+                            
+                            field.disabled = true;
+                            if (field.required) {
+                                field.required = false;
+                            }
                         }
                     }
                 }
-
 
                 if(field?.table?.toLowerCase() === "act" && table_name === "cid_under_investigation"){
                     return (

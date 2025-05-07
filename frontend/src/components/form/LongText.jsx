@@ -3,7 +3,7 @@ import TextField from '@mui/material/TextField';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import OutlinedInput from '@mui/material/OutlinedInput';
-import { Box, Tooltip } from '@mui/material';
+import { Box, Tooltip, FormHelperText } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info'; // Material-UI Info Icon
 import HistoryIcon from '@mui/icons-material/History'; // Material-UI History Icon
 import './ShortText.css'
@@ -75,7 +75,7 @@ const LongText = ({ field, formData, errors, onChange, onFocus, isFocused, onHis
                 name={field.name}
                 // name={textToSnakecase(field.label)}
                 value={formData && formData[field.name] || ''}
-                helperText={errors?.[field?.name] || field.supportingText || ' '}  // Display the error if it exists, else fallback to supportingText
+                // helperText={errors?.[field?.name] || field.supportingText || ' '}  // Display the error if it exists, else fallback to supportingText
                 inputProps={{ minLength: field.minLength, maxLength: field.maxLength }}
                 // required={field.required === true}
                 disabled={field.disabled === true}
@@ -95,6 +95,15 @@ const LongText = ({ field, formData, errors, onChange, onFocus, isFocused, onHis
                     },
                 }}
             />
+            <FormHelperText
+            sx={{
+                color: errors?.[field?.name]
+                ? '#F04438 !important'
+                : `${field?.supportingTextColor || ''} !important`,
+            }}
+            >
+            {errors?.[field?.name] || field?.supportingText || ''}
+            </FormHelperText>
         </Box>
     );
 };
