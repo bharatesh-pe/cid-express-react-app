@@ -123,7 +123,7 @@ const getIoUsers = async (req, res) => {
         let usersData  = [];
         let userDesignations = "";
         let userIds = [];
-        if(get_flag && get_flag === "upper" && designation_id && division_id){
+        if(get_flag && get_flag === "upper" && designation_id){
             const userHierarchy = await UsersHierarchyNew.findAll({
                 where: {
                     officer_designation_id: designation_id,
