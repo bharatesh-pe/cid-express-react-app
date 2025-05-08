@@ -6914,7 +6914,7 @@ useEffect(() => {
                                     payloadApi = {
                                         ...payloadApi,
                                         ...newPayload,
-                                        user_hierarchy : getDivisionField[0]?.user_hierarchy || "lower"
+                                        get_flag : getDivisionField[0]?.user_hierarchy || "lower"
                                     }
                                 }
                                 setLoading(true);
