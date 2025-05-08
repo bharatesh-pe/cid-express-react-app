@@ -3569,6 +3569,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             "/templates/viewTemplate",
             viewTableData
           );
+          
           setLoading(false);
 
           if (viewTemplateResponse && viewTemplateResponse.success) {
@@ -10353,11 +10354,50 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       formData={filterAoValues}
                                       onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
                                       value={(() => {
-                                        const fieldValue = filterAoValues?.[field.name];
+                                        var fieldValue = [];
+                                        var selectedOption = '';
+                                        if(field.api && field.api !=="")
+                                        {
+                                            var payloadApi = field.api
+                                            var apiPayload = {};
 
-                                        const selectedOption = field.options.find(
-                                          (option) => String(option.code) === String(fieldValue)
-                                        );
+                                            const response = api.post(payloadApi, apiPayload);
+                                            
+                                            if (!response.data) return { id: field.id, options: [] };
+                                            
+                                            var selectedval = filterAoValues?.[field.name]; 
+
+                                            var fieldOptions = response.data.map((templateData) => {
+                    
+                                                const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                    
+                                                var headerName = nameKey;
+                                                var headerId = 'id';
+                                                
+                                                if(templateData[headerName] == selectedval) 
+                                                {
+                                                    fieldValue = templateData[headerName];
+                                                }
+
+                                                return {
+                                                    name: templateData[headerName],
+                                                    code: templateData[headerId],
+                                                };
+                                            });
+
+
+                                        }
+                                        else
+                                        {
+
+                                            fieldValue = filterAoValues?.[field.name];
+                                            selectedOption = field.options.find(
+                                              (option) => String(option.code) === String(fieldValue)
+                                            );
+                                        }
+
+                                        console.log(">>>>>>>>>>>>>>>>>>>>fieldValue",fieldValue)
+                                        console.log(">>>>>>>>>>>>>>>>>>>>fieldValue",selectedOption)
 
                                         return selectedOption || null;
                                       })()}
