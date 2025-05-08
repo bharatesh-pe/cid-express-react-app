@@ -565,7 +565,7 @@ exports.user_active_deactive = async (req, res) => {
 };
 
 exports.get_users = async (req, res) => {
-  const excluded_role_ids = [1, 10, 21];
+  const excluded_role_ids = [1,2];
   try {
     const {
       page = 1,
@@ -824,7 +824,7 @@ exports.filter_users = async (req, res) => {
 
   try {
     const offset = (page - 1) * limit;
-    const excluded_role_ids = [1, 10, 21];
+    const excluded_role_ids = [1];
 
     const orConditions = [];
 
