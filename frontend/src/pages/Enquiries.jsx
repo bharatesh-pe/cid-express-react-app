@@ -990,7 +990,7 @@ const Enquiries = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_enquiry_no"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_enquiry_no", "field_io_name"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -1057,6 +1057,17 @@ const Enquiries = () => {
                             ),
                             renderCell: renderCellFunc("field_enquiry_no", 0),
                         },
+                        {
+                          field: "field_io_name",
+                          headerName: "IO Name",
+                          width: 130,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_io_nmame")
+                          ),
+                          renderCell: renderCellFunc("field_io_nmame", 0),
+                      },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({

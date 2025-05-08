@@ -1331,7 +1331,7 @@ const UnderInvestigation = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no", "field_io_name"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -1397,6 +1397,17 @@ const UnderInvestigation = () => {
                             ),
                             renderCell: renderCellFunc("field_cc_no./sc_no", 0),
                         },
+                        {
+                          field: "field_io_name",
+                          headerName: "IO Name",
+                          width: 130,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_io_name")
+                          ),
+                          renderCell: renderCellFunc("field_io_name", 0),
+                      },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
