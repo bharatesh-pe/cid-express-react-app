@@ -1331,7 +1331,7 @@ const UnderInvestigation = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no", "field_io_name"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -1397,6 +1397,17 @@ const UnderInvestigation = () => {
                             ),
                             renderCell: renderCellFunc("field_cc_no./sc_no", 0),
                         },
+                        {
+                          field: "field_io_name",
+                          headerName: "IO Name",
+                          width: 130,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_io_name")
+                          ),
+                          renderCell: renderCellFunc("field_io_name", 0),
+                      },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -7705,7 +7716,13 @@ const UnderInvestigation = () => {
       
               <DialogContent sx={{ backgroundColor: 'white', padding: 3 }}>
                 <DialogContentText id="alert-dialog-description" component="div">
-                  <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
+                  <Box sx={{ display: 'flex',
+                    justifyContent: 'center',
+                    fontWeight: 500,
+                    fontSize: '18px',
+                    mb: 2,
+                    textAlign: 'center' 
+                  }}>
                     <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
                     <span style={{ color: '#1570EF' }}>
                       {approvalItem.find(option => option.approval_item_id === approvalSaveData?.approval_item)?.name || "Approval Item"}

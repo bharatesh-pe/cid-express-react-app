@@ -82,7 +82,13 @@ export default function ApprovalModal({
 
             <DialogContent sx={{ backgroundColor: 'white', padding: 3 }}>
                 <DialogContentText id="alert-dialog-description" component="div">
-                    <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
+                    <Box sx={{ display: 'flex',
+                        justifyContent: 'center',
+                        fontWeight: 500,
+                        fontSize: '18px',
+                        mb: 2,
+                        textAlign: 'center'
+                    }}>
                     <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
                     <span style={{ color: '#1570EF' }}>                        
                         {approvalItem.find(opt => opt.approval_item_id === formData?.approval_item)?.name || "Approval Item"}

@@ -2430,7 +2430,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       setTableData(processedData);
 
       const excludedKeys = [
-        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no"
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name"
       ];
 
       const generateReadableHeader = (key) =>
@@ -2526,6 +2526,17 @@ const loadChildMergedCasesData = async (page, caseId) => {
           ),
           renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
       },
+      {
+        field: "field_io_name",
+        headerName: "IO Name",
+        width: 200,
+        resizable: true,
+        cellClassName: 'justify-content-start',
+        renderHeader: (params) => (
+            tableHeaderRender(params, "field_io_name")
+        ),
+        renderCell: renderCellFunc("field_io_name", 0),
+    },
         ...Object.keys(data[0])
           .filter((key) => !excludedKeys.includes(key))
           .map((key) => ({
@@ -2606,7 +2617,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const excludedKeys = [
                     "created_at", "updated_at", "id", "deleted_at", "attachments",
                     "Starred", "ReadStatus", "linked_profile_info",
-                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no"
+                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name"
                 ];
 
                 const generateReadableHeader = (key) =>
@@ -2692,6 +2703,17 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         ),
                         renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                     },
+                    {
+                      field: "field_io_name",
+                      headerName: "IO Name",
+                      width: 200,
+                      resizable: true,
+                      cellClassName: 'justify-content-start',
+                      renderHeader: (params) => (
+                          tableHeaderRender(params, "field_io_name")
+                      ),
+                      renderCell: renderCellFunc("field_io_name", 0),
+                  },
                     ...(sysStatus === "merge_cases"
                       ? [
                           {
@@ -2859,7 +2881,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -2953,6 +2975,17 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             ),
                             renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
                         },
+                        {
+                          field: "field_io_name",
+                          headerName: "IO Name",
+                          width: 200,
+                          resizable: true,
+                          cellClassName: 'justify-content-start',
+                          renderHeader: (params) => (
+                              tableHeaderRender(params, "field_io_name")
+                          ),
+                          renderCell: renderCellFunc("field_io_name", ),
+                      },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -10464,7 +10497,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
         <DialogContent sx={{ backgroundColor: 'white', padding: 3 }}>
           <DialogContentText id="alert-dialog-description" component="div">
-            <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
+            <Box sx={{ display: 'flex',
+              justifyContent: 'center',
+              fontWeight: 500,
+              fontSize: '18px',
+              mb: 2,
+              textAlign: 'center'
+            }}>
               <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
               <span style={{ color: '#1570EF' }}>
                 {approvalItem.find(option => option.approval_item_id === approvalSaveData?.approval_item)?.name || "Approval Item"}
@@ -11441,7 +11480,13 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
               <DialogContent sx={{ backgroundColor: 'white', padding: 3 }}>
                 <DialogContentText id="alert-dialog-description" component="div">
-                  <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
+                  <Box sx={{ display: 'flex',
+                    justifyContent: 'center',
+                    fontWeight: 500,
+                    fontSize: '18px',
+                    mb: 2,
+                    textAlign: 'center' 
+                    }}>
                     <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
                     <span style={{ color: '#1570EF' }}>
                     {approvalItem.find((option) => option.approval_item_id === singleApiData?.approval?.approval_item)?.name 
