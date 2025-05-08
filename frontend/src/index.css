@@ -1167,13 +1167,13 @@ div::first-letter {
       }
       
     .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-columnHeader{
-        border: 1px solid #ccc;
+        border: none;
     }
     .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-filler{
-        border: 1px solid #ccc;
+        border: none;
     }
     .excelViewTable .MuiDataGrid-virtualScroller .MuiDataGrid-topContainer .MuiDataGrid-columnHeaders .MuiDataGrid-row--borderBottom .MuiDataGrid-scrollbarFiller{
-        border: 1px solid #ccc;
+        border: none;
     }
 
     .excelViewTable .MuiDataGrid-row:nth-of-type(even) .MuiDataGrid-cell {
@@ -1184,4 +1184,9 @@ div::first-letter {
     }
     .excelViewTable .MuiDataGrid-cell {
         border: 1px solid #ccc;
+        border-right: none;
+    }
+
+    .MuiDataGrid-filler, .MuiDataGrid-cellEmpty{
+        border: none !important;
     }

@@ -643,11 +643,12 @@ const Layout = ({ children }) => {
                                         fontWeight: 400,
                                         fontSize: "13px",
                                         lineHeight: "16px",
-                                        color: "#98A2B3",
+                                        color: userOverallDesignation.length > 0 ? "#0000EE" : "#98A2B3",
                                         maxWidth: "160px",
                                         overflow: "hidden",
                                         textOverflow: "ellipsis",
                                         whiteSpace: "nowrap",
+                                        textDecoration: userOverallDesignation.length > 0 && 'underline'
                                     }}
                                 >
                                     {designationName ? designationName : ""}
@@ -778,7 +779,7 @@ const Layout = ({ children }) => {
 
                         className={`${designation?.designation_id == localStorage.getItem('designation_id') ? "activeDesignationRole" : ""}`}
 
-                        onClick={() => {
+                        onClick={ async () => {
                             if(designation?.division_id && designation?.designation_id){
                                 localStorage.setItem("designation_id", designation?.designation_id);
                                 localStorage.setItem("designation_name", designation?.designation?.designation_name);
@@ -786,10 +787,53 @@ const Layout = ({ children }) => {
                                 localStorage.setItem("division_name", designation?.division?.division_name);
                                 setOpenUserDesignationDropdown(false);
 
-                                if(JSON.parse(localStorage.getItem("user_id")) === 1){
-                                    navigate("/dashboard");
-                                }else{
-                                    navigate("/case/ui_case");
+                                var selected_designation_id =localStorage.getItem("designation_id") || "0";
+                                var selected_designation_name = localStorage.getItem("designation_name") || "";
+                                var login_user_id = localStorage.getItem("user_id") || "0";
+                                setLoading(true);
+                                try {
+
+                                    const serverURL = process.env.REACT_APP_SERVER_URL;
+                                    const response = await fetch(`${serverURL}/auth/set_user_hierarchy`, {
+                                        method: "POST",
+                                        headers: {
+                                        "Content-Type": "application/json",
+                                        },
+                                        body: JSON.stringify({ user_id: login_user_id, designation_id: selected_designation_id , designation_name: selected_designation_name }),
+                                    });
+
+                                    setLoading(false);
+
+                                    const data = await response.json();
+                                    if (!response.ok) {
+                                        throw new Error(data.message);
+                                    }
+
+                                    const responseData = data.data;
+  
+                                    if (data && data.success && !responseData.getDataBasesOnUsers) {
+                                        localStorage.setItem("allowedUserIds",JSON.stringify(responseData.allowedUserIds));
+                                        localStorage.setItem("allowedDepartmentIds",JSON.stringify(responseData.allowedDepartmentIds));
+                                        localStorage.setItem("allowedDivisionIds",JSON.stringify(responseData.allowedDivisionIds));
+                                        localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
+                                    }else{
+                                        localStorage.setItem("allowedUserIds",JSON.stringify(responseData.allowedUserIds));
+                                        localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
+                                    }
+
+                                    if(JSON.parse(localStorage.getItem("user_id")) === 1){
+                                        navigate("/dashboard");
+                                    }else{
+                                        if (location.pathname === "/case/ui_case") {
+                                            navigate(0);
+                                        } else {
+                                            navigate("/case/ui_case");
+                                        }
+                                    }
+                        
+                                } catch (err) {
+                                    setLoading(false);
+                                    console.log(err,"error");
                                 }
                             }
                         }}
