@@ -10270,6 +10270,7 @@ useEffect(() => {
                           console.log('selectedRowData:', selectedRowData);
                           handleSubmitAp({ id: selectedRowData?.id });
                         }}
+                      disabled={otherTemplatesTotalRecord === 0}
                       >
                         Submit
                       </Button>
