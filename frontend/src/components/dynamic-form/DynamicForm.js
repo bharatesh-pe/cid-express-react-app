@@ -1280,7 +1280,7 @@ const DynamicForm = ({
           position: "absolute",
           top: "0",
           right: "0",
-          left: "256px",
+          left: "50px",
           height: "100%",
           background: "#F5F5F5",
           zIndex: "100",
