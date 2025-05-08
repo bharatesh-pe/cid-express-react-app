@@ -6846,194 +6846,225 @@ useEffect(() => {
     }
   };
 
-  const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
+    const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
 
-    if(options.is_approval && !approved){
-        setApprovalSaveData({});
-        setHasApproval(true); 
-        showApprovalPage(selectedRow, options);
-        return;
-    }
-
-    const selectedFieldData = selectedRow[selectedFieldValue];
-  
-    const viewTableData = {
-      table_name: options.table,
-    };
-  
-    setLoading(true);
-    try {
-      const viewTemplateResponse = await api.post(
-        "/templates/viewTemplate",
-        viewTableData
-      );
-      setLoading(false);
-  
-      if (
-        viewTemplateResponse &&
-        viewTemplateResponse.success &&
-        viewTemplateResponse["data"]
-      ) {
-        if (viewTemplateResponse["data"].fields) {
-          setFormTemplateData(viewTemplateResponse["data"].fields);
-  
-          const getDivisionField = viewTemplateResponse["data"].fields.filter(
-            (data) => data.name === options.field
-          );
-  
-          if (getDivisionField.length > 0) {
-  
-            if (getDivisionField[0].api) {
-              setLoading(true);
-  
-              const payloadApi = {
-                table_name: getDivisionField[0].table,
-              };
-  
-              try {
-                const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
-                setLoading(false);
-  
-                let updatedOptions = [];
-  
-                if (getOptionsValue && getOptionsValue.data) {
-                  if (getDivisionField[0].api === "/templateData/getTemplateData") {
-                    updatedOptions = getOptionsValue.data.map((templateData) => {
-                      const nameKey = Object.keys(templateData).find(
-                        (key) => !["id", "created_at", "updated_at"].includes(key)
-                      );
-                      return {
-                        name: nameKey ? templateData[nameKey] : "",
-                        code: templateData.id,
-                      };
-                    });
-                  } else {
-                    updatedOptions = getOptionsValue.data.map((field) => ({
-                      name:
-                      getDivisionField[0].table === "users"
-                          ? field.name
-                          : field[getDivisionField[0].table + "_name"],
-                      code:
-                      getDivisionField[0].table === "users"
-                          ? field.user_id
-                          : field[getDivisionField[0].table + "_id"],
-                    }));
-                  }
-  
-                  const matchedOption = updatedOptions.find(
-                    (option) =>
-                      (option.code === selectedFieldData || option.name === selectedFieldData)
-                  );
-                  console.log("Pre-selected value:", matchedOption);
-                  const preSelectedDivision = matchedOption || null;
-                  setSelectedOtherFields(preSelectedDivision);
-
-                  
-                  if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
-                    api
-                      .post("cidMaster/getIoUsersBasedOnDivision", {
-                        division_ids: [preSelectedDivision.code],
-                        role_id: null,
-                      })
-                      .then((res) => {
-                        setUsersBasedOnDivision(res.data || []);
-                      })
-                      .catch((err) => {
-                        console.error("Failed to load users based on division", err);
-                        setUsersBasedOnDivision([]);
-                      });
-                  }
-                    
-                  setSelectKey({ name: options.field, title: options.name });
-                //   setSelectedRow(selectedRow);
-                //   setselectedOtherTemplate(options);
-                  setOtherTransferField(updatedOptions);
-                  if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io") {
-                    setShowMassiveTransferModal(true);
-                    setSelectedRowIds([selectedRow.id])
-                  } else {
-                    setShowOtherTransferModal(true);
-                  }
-                }
-              } catch (error) {
-                setLoading(false);
-                if (error?.response?.data) {
-                  toast.error(
-                    error.response.data.message || "Division not found",
-                    {
-                      position: "top-right",
-                      autoClose: 3000,
-                      className: "toast-error",
-                    }
-                  );
-                }
-              }
-            } else {
-              const staticOptions = getDivisionField[0].options || [];
-  
-              const matchedOption = staticOptions.find(
-                (option) => option.code === selectedFieldData
-              );
-              const preSelectedDivision = matchedOption || null;
-              setSelectedOtherFields(preSelectedDivision);
-              
-              if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
-                api
-                  .post("cidMaster/getIoUsersBasedOnDivision", {
-                    division_ids: [preSelectedDivision.code],
-                    role_id: null,
-                  })
-                  .then((res) => {
-                    setUsersBasedOnDivision(res.data || []);
-                  })
-                  .catch((err) => {
-                    console.error("Failed to load users based on division", err);
-                    setUsersBasedOnDivision([]);
-                  });
-              }
-                
-              setSelectKey({ name: options.field, title: options.name });
-            //   setSelectedRow(selectedRow);
-            //   setselectedOtherTemplate(options);
-              setOtherTransferField(staticOptions);
-              if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase() || options.name.trim().toLowerCase() == "reassign io") {
-                setShowMassiveTransferModal(true);
-              } else {
-                setShowOtherTransferModal(true);
-              }
-            }
-          } else {
-            toast.error("Can't able to find Division field", {
-              position: "top-right",
-              autoClose: 3000,
-              className: "toast-error",
-            });
-          }
+        if(options.is_approval && !approved){
+            setApprovalSaveData({});
+            setHasApproval(true); 
+            showApprovalPage(selectedRow, options);
+            return;
         }
-      } else {
-        toast.error(
-          viewTemplateResponse.message || "Failed to get Template. Please try again.",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-error",
-          }
-        );
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error?.response?.data) {
-        toast.error(
-          error.response.data.message || "Please Try Again!",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-error",
-          }
-        );
-      }
-    }
-  };
+
+        const selectedFieldData = selectedRow[selectedFieldValue];
+    
+        const viewTableData = {
+            table_name: options.table,
+        };
+    
+        setLoading(true);
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+            setLoading(false);
+        
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse["data"]) {
+                if (viewTemplateResponse["data"].fields) {
+
+                    var getTemplatePayload = {
+                        "table_name": options.table,
+                        "id": selectedRow.id,
+                        "template_module": "ui_case"
+                    }
+        
+                    setLoading(true);
+        
+                    try {
+                        
+                        const getTemplateResponse = await api.post("/templateData/viewTemplateData",getTemplatePayload);
+                        setLoading(false);
+
+                        setFormTemplateData(viewTemplateResponse["data"].fields);
+                
+                        const getDivisionField = viewTemplateResponse["data"].fields.filter(
+                            (data) => data.name === options.field
+                        );
+  
+                        if (getDivisionField.length > 0) {
+
+                            var newPayload = {};
+    
+                            if(getDivisionField[0].table === "users"){
+                                
+                                if(getTemplateResponse?.success && getTemplateResponse?.data){
+                                    
+                                    if(getTemplateResponse?.data['field_division']){
+                                        newPayload['division_id'] = getTemplateResponse?.data['field_division']
+                                        newPayload['designation_id'] = localStorage.getItem('designation_id') || null
+                                    }
+                                }
+                            }
+    
+                
+                            if (getDivisionField[0].api) {
+                
+                                var payloadApi = {
+                                    table_name: getDivisionField[0].table,
+                                };
+
+                                if(getDivisionField[0].table === "users"){
+                                    payloadApi = {
+                                        ...payloadApi,
+                                        ...newPayload,
+                                        user_hierarchy : getDivisionField[0]?.user_hierarchy || "lower"
+                                    }
+                                }
+                                setLoading(true);
+    
+                                try {
+                                    const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
+                                    setLoading(false);
+                    
+                                    let updatedOptions = [];
+                    
+                                    if (getOptionsValue && getOptionsValue.data) {
+                                        if (getDivisionField[0].api === "/templateData/getTemplateData") {
+                                            updatedOptions = getOptionsValue.data.map((templateData) => {
+                                                const nameKey = Object.keys(templateData).find(
+                                                    (key) => !["id", "created_at", "updated_at"].includes(key)
+                                                );
+                                                return {
+                                                    name: nameKey ? templateData[nameKey] : "",
+                                                    code: templateData.id,
+                                                };
+                                            });
+                                        } else {
+                                            updatedOptions = getOptionsValue.data.map((field) => ({
+                                                name: getDivisionField[0].table === "users" ? field.name : field[getDivisionField[0].table + "_name"],
+                                                code: getDivisionField[0].table === "users" ? field.user_id: field[getDivisionField[0].table + "_id"],
+                                            }));
+                                        }
+    
+                                        const matchedOption = updatedOptions.find(
+                                            (option) =>
+                                            (option.code === selectedFieldData || option.name === selectedFieldData)
+                                        );
+
+                                        console.log("Pre-selected value:", matchedOption);
+                                        const preSelectedDivision = matchedOption || null;
+                                        setSelectedOtherFields(preSelectedDivision);
+
+                        
+                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
+                                            api.post("cidMaster/getIoUsersBasedOnDivision", {
+                                                division_ids: [preSelectedDivision.code],
+                                                role_id: null,
+                                            })
+                                            .then((res) => {
+                                                setUsersBasedOnDivision(res.data || []);
+                                            })
+                                            .catch((err) => {
+                                                console.error("Failed to load users based on division", err);
+                                                setUsersBasedOnDivision([]);
+                                            });
+                                        }
+                            
+                                        setSelectKey({ name: options.field, title: options.name });
+                                        //   setSelectedRow(selectedRow);
+                                        //   setselectedOtherTemplate(options);
+                                        setOtherTransferField(updatedOptions);
+                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io") {
+                                            setShowMassiveTransferModal(true);
+                                            setSelectedRowIds([selectedRow.id])
+                                        } else {
+                                            setShowOtherTransferModal(true);
+                                        }
+                                    }
+                                } catch (error) {
+                                    setLoading(false);
+                                    if (error?.response?.data) {
+                                        toast.error(error.response.data.message || "selected field not found",{
+                                            position: "top-right",
+                                            autoClose: 3000,
+                                            className: "toast-error",
+                                        });
+                                    }
+                                }
+                            } else {
+                                const staticOptions = getDivisionField[0].options || [];
+                    
+                                const matchedOption = staticOptions.find(
+                                    (option) => option.code === selectedFieldData
+                                );
+                                const preSelectedDivision = matchedOption || null;
+                                setSelectedOtherFields(preSelectedDivision);
+                                
+                                if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
+                                    api.post("cidMaster/getIoUsersBasedOnDivision", {
+                                        division_ids: [preSelectedDivision.code],
+                                        role_id: null,
+                                    })
+                                    .then((res) => {
+                                        setUsersBasedOnDivision(res.data || []);
+                                    })
+                                    .catch((err) => {
+                                        console.error("Failed to load users based on division", err);
+                                        setUsersBasedOnDivision([]);
+                                    });
+                                }
+                                    
+                                setSelectKey({ name: options.field, title: options.name });
+                                //   setSelectedRow(selectedRow);
+                                //   setselectedOtherTemplate(options);
+                                setOtherTransferField(staticOptions);
+                                if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase() || options.name.trim().toLowerCase() == "reassign io") {
+                                    setShowMassiveTransferModal(true);
+                                } else {
+                                    setShowOtherTransferModal(true);
+                                }
+                            }
+                        } else {
+                            toast.error("Can't able to find selected field", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                        }
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response["data"]) {
+                            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                    }
+                }
+            } else {
+                toast.error(
+                viewTemplateResponse.message || "Failed to get Template. Please try again.",
+                {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-error",
+                }
+                );
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error?.response?.data) {
+                toast.error(error.response.data.message || "Please Try Again!",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
   
 
 

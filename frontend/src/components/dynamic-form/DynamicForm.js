@@ -1261,7 +1261,7 @@ const DynamicForm = ({
     };
 
   //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
-  //   console.log(stepperData, "stepperData stepperData")  
+  //   console.log(stepperData, "stepperData stepperData")    
   return (
     <>
       <Box
@@ -1424,21 +1424,40 @@ const DynamicForm = ({
               )
             )}
             {
-                (readOnlyTemplate && userPermissions[0]?.edit_case) && 
-                <Button
-                    onClick={templateEdit}
-                    sx={{
-                        background: "#0167F8",
-                        borderRadius: "8px",
-                        fontSize: "14px",
-                        fontWeight: "500",
-                        color: "#FFFFFF",
-                        padding: "6px 16px",
-                    }}
-                    className="Roboto blueButton"
-                >
-                    Edit Case
-                </Button>
+                (
+                    (
+                        readOnlyTemplate &&
+                        userPermissions[0]?.edit_case &&
+                        (table_name !== "cid_under_investigation" &&
+                        table_name !== "cid_pending_trail" &&
+                        table_name !== "cid_enquiries")
+                    )
+                    ||
+                    (
+                        readOnlyTemplate &&
+                        userPermissions[0]?.edit_case &&
+                        (table_name === "cid_under_investigation" ||
+                        table_name === "cid_pending_trail" ||
+                        table_name === "cid_enquiries") &&
+                        formData['field_io_name'] &&
+                        formData['field_io_name'] !== ""
+                    )
+                ) && (
+                    <Button
+                        onClick={templateEdit}
+                        sx={{
+                            background: "#0167F8",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "#FFFFFF",
+                            padding: "6px 16px",
+                        }}
+                        className="Roboto blueButton"
+                    >
+                        Edit Case
+                    </Button>
+                )
             }
 
           </Box>
