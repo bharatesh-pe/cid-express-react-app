@@ -8,7 +8,7 @@ import HistoryIcon from '@mui/icons-material/History';
 const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly, disabled}) => {
   return (
     <Box sx={{ width: '100%' }}>
-      {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
+      {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
       <TextField
         type='text'
         error={errors && Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
@@ -76,7 +76,7 @@ const NumberField = ({ field, formData, errors, onChange, onFocus, isFocused, on
         inputProps={{ minLength: field.minLength, maxLength: field.maxLength ,readOnly: readOnly
         }}
         // required={field.required === true}
-        disabled={field.disabled === true}
+        disabled={readOnly || field.disabled === true}
         onChange={(e) => {
             const regex = /^[0-9]*$/;
             if (regex.test(e.target.value)) {

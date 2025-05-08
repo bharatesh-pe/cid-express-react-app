@@ -449,6 +449,22 @@ const Login = () => {
                 localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
             } 
 
+            const gettingLoginUserDivisons = user_position.map((position) => {
+                const designation = usersDesignations.find(
+                    (designation) => designation?.designation?.designation_name === position?.designation
+                );
+                const division = usersDivision.find(
+                    (division) => division?.division?.division_name === position?.division
+                );
+                return {
+                    ...position,
+                    ...(designation || {}),
+                    ...(division || {})
+                };
+            });
+
+            localStorage.setItem("userOverallDesignation", JSON.stringify(gettingLoginUserDivisons));
+
             if(JSON.parse(localStorage.getItem("user_id")) === 1){
                 navigate("/dashboard");
             }else{

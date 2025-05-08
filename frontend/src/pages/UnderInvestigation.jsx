@@ -4103,7 +4103,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     }
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: "Do you want to submit this Action Item? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+      text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Yes, submit it!',
@@ -5804,9 +5804,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
     const getCellClassName = (key, params, table) => {
         // Example condition: unread rows for a specific table
-        if (table === "cid_ui_case_progress_report" && !params?.row?.ReadStatus) {
-            return "unreadBackground";
-        }
+        // if (table === "cid_ui_case_progress_report" && !params?.row?.ReadStatus) {
+        //     return "unreadBackground";
+        // }
     
         // Add more logic if needed based on `key` or `params`
         return "";
@@ -7930,47 +7930,47 @@ const loadChildMergedCasesData = async (page, caseId) => {
     JSON.parse(localStorage.getItem("user_permissions")) || [];
   var hoverExtraOptions = [
       
-    userPermissions[0]?.edit_case
-      ?  isChildMergedLoading
-      ? null
-      : {
-          name: "Edit",
-          onclick: (selectedRow) => {
-            handleTemplateDataView(selectedRow, true, table_name);
-          },
+    // userPermissions[0]?.edit_case
+    //   ?  isChildMergedLoading
+    //   ? null
+    //   : {
+    //       name: "Edit",
+    //       onclick: (selectedRow) => {
+    //         handleTemplateDataView(selectedRow, true, table_name);
+    //       },
         
-          icon: () => (
-            <span className="tableActionIcon">
-              <svg
-                width="50"
-                height="50"
-                viewBox="0 0 34 34"
-                fill=""
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="12" cy="12" r="12" fill="" />
-                <mask
-                  id="mask0_1120_40631"
-                  style={{ maskType: "alpha" }}
-                  maskUnits="userSpaceOnUse"
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                >
-                  <rect x="4" y="4" width="16" height="16" fill="" />
-                </mask>
-                <g mask="url(#mask0_1120_40631)">
-                  <path
-                    d="M5.6001 20V17.4666H18.4001V20H5.6001ZM7.53343 15.1423V13.177L14.2399 6.4628C14.3365 6.36625 14.4368 6.29875 14.5409 6.2603C14.6452 6.22186 14.7524 6.20264 14.8628 6.20264C14.9774 6.20264 15.0856 6.22186 15.1873 6.2603C15.2889 6.29875 15.3865 6.3638 15.4801 6.45547L16.2129 7.18464C16.3053 7.28119 16.3717 7.3803 16.4123 7.48197C16.4528 7.58375 16.4731 7.69325 16.4731 7.81047C16.4731 7.91769 16.4531 8.02453 16.4131 8.13097C16.3731 8.23753 16.308 8.33586 16.2179 8.42597L9.5001 15.1423H7.53343ZM14.7438 8.67314L15.6064 7.8103L14.8654 7.0693L14.0026 7.93197L14.7438 8.67314Z"
-                    fill=""
-                  />
-                </g>
-              </svg>
-            </span>
-          ),
-        }
-      : null,
+    //       icon: () => (
+    //         <span className="tableActionIcon">
+    //           <svg
+    //             width="50"
+    //             height="50"
+    //             viewBox="0 0 34 34"
+    //             fill=""
+    //             xmlns="http://www.w3.org/2000/svg"
+    //           >
+    //             <circle cx="12" cy="12" r="12" fill="" />
+    //             <mask
+    //               id="mask0_1120_40631"
+    //               style={{ maskType: "alpha" }}
+    //               maskUnits="userSpaceOnUse"
+    //               x="4"
+    //               y="4"
+    //               width="16"
+    //               height="16"
+    //             >
+    //               <rect x="4" y="4" width="16" height="16" fill="" />
+    //             </mask>
+    //             <g mask="url(#mask0_1120_40631)">
+    //               <path
+    //                 d="M5.6001 20V17.4666H18.4001V20H5.6001ZM7.53343 15.1423V13.177L14.2399 6.4628C14.3365 6.36625 14.4368 6.29875 14.5409 6.2603C14.6452 6.22186 14.7524 6.20264 14.8628 6.20264C14.9774 6.20264 15.0856 6.22186 15.1873 6.2603C15.2889 6.29875 15.3865 6.3638 15.4801 6.45547L16.2129 7.18464C16.3053 7.28119 16.3717 7.3803 16.4123 7.48197C16.4528 7.58375 16.4731 7.69325 16.4731 7.81047C16.4731 7.91769 16.4531 8.02453 16.4131 8.13097C16.3731 8.23753 16.308 8.33586 16.2179 8.42597L9.5001 15.1423H7.53343ZM14.7438 8.67314L15.6064 7.8103L14.8654 7.0693L14.0026 7.93197L14.7438 8.67314Z"
+    //                 fill=""
+    //               />
+    //             </g>
+    //           </svg>
+    //         </span>
+    //       ),
+    //     }
+    //   : null,
     ...(sysStatus !== "b_Report" ? hoverTableOptions : []),
     // sysStatus === "ui_case" || sysStatus === "all"
     //   ? {
@@ -11436,165 +11436,167 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 onClose={() => {setNewApprovalPage(false);setSingleApiData({});}}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                maxWidth="lg"
+                maxWidth="md"
                 fullWidth
-                sx={{zIndex:'1'}}
-            >
-                <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: '4px'}}>
-                        Approval
-                        {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                            <Chip
-                                label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                                color="primary"
-                                variant="outlined"
-                                size="small"
-                                sx={{ fontWeight: 500, marginTop: '2px' }}
-                            />
-                        )}
+                PaperProps={{
+                  sx: {
+                    zIndex: 1,
+                    borderRadius: 2,
+                    borderLeft: '8px solid #12B76A',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                    overflow: 'hidden',
+                  }
+                }}
+              >
+
+                 <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      background: 'linear-gradient(to right, #E6F4EA, #F6FFFB)',
+                      fontWeight: 'bold',
+                      fontSize: '20px',
+                      color: 'black',
+                    }}
+                  >
+                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <span>Approval</span>
+                      {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                        <Chip
+                          label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                          sx={{ fontWeight: 500 }}
+                        />
+                      )}
                     </Box>
                     <Box>
-                        <Button variant="outlined" onClick={() => {saveOverallData(true)}}>Save</Button>
-                        <IconButton
-                            aria-label="close"
-                            onClick={() => {setNewApprovalPage(false);setSingleApiData({});}}
-                            sx={{ color: (theme) => theme.palette.grey[500] }}
-                        >
-                            <CloseIcon />
-                        </IconButton>
+                      <Button
+                        variant="contained"
+                        sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                        onClick={() => {saveOverallData(true)}}
+                      >
+                        Submit
+                      </Button>
+                      <IconButton
+                        aria-label="close"
+                        onClick={() => {setNewApprovalPage(false);setSingleApiData({});}}
+                        sx={{ color: '#344054' }}
+                      >
+                        <CloseIcon />
+                      </IconButton>
                     </Box>
-    
-                </DialogTitle>
-                <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
+                  </DialogTitle>
+
+              <DialogContent sx={{ backgroundColor: 'white', padding: 3 }}>
+                <DialogContentText id="alert-dialog-description" component="div">
+                  <Box sx={{ fontWeight: 500, fontSize: '16px', mb: 2 }}>
+                    <span style={{ color: '#F04438' }}>Approval needed to proceed with: </span>
+                    <span style={{ color: '#1570EF' }}>
+                    {approvalItem.find((option) => option.approval_item_id === singleApiData?.approval?.approval_item)?.name 
+                    || "Approval Item"}
+                    </span>
+                  </Box>
                         <Box py={2}>
                             {
-                                <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
-    
-                                    <Box>
-                                    <label
-                                      htmlFor="approval-item"
-                                      style={{
-                                        margin: "0",
-                                        padding: 0, 
-                                        fontSize: "16px",
-                                        fontWeight: 500,
-                                        color: "#475467",
-                                        textTransform: "capitalize",
+                              <Box sx={{display: 'flex', flexDirection: 'column', gap: '18px'}}>
+  
+                                  <Box sx={{ display: 'none' }}>
+                                  <label
+                                    htmlFor="approval-item"
+                                    style={{
+                                      margin: "0",
+                                      padding: 0, 
+                                      fontSize: "16px",
+                                      fontWeight: 500,
+                                      color: "#475467",
+                                      textTransform: "capitalize",
+                                    }}
+                                  >
+                                    Approval Item
+                                  </label>
+                                  <Autocomplete
+                                      id=""
+                                      options={approvalItem}
+                                      getOptionLabel={(option) => option.name || ''}
+                                      name={'approval_item'}
+                                      disabled={disabledApprovalItems}
+                                      sx={{marginTop: '8px' }}
+                                      value={approvalItem.find((option) => option.approval_item_id === (singleApiData?.['approval'] && singleApiData?.['approval']?.['approval_item'])) || null}
+                                      onChange={(e,value)=>approvalNewDataSave('approval_item',value?.approval_item_id)}
+                                      renderInput={(params) =>
+                                          <TextField
+                                              {...params}
+                                              className='selectHideHistory'
+                                              label={'Approval Item'}
+                                          />
+                                      }
+                                  />
+                                  </Box>
+                            <Box sx={{ display: 'flex', gap: '16px', flexWrap: 'wrap', mb: 3 }}>
+                                <Box sx={{ flex: 1, minWidth: '200px' }}>
+                                  <AutocompleteField 
+                                      formData={singleApiData?.approval || {}}
+                                      options={designationData}
+                                      field={{
+                                        heading: 'Officer Approved',
+                                        label: 'Officer Approved',
+                                        name: 'approved_by',
+                                        required: true,
+                                        info: 'Select the Officer Designation approving this item.',
+                                        supportingText: 'Select the Officer Designation approving this item.',
+                                        supportingTextColor: 'green',
+                                        options: designationData.map(item => ({
+                                          ...item,
+                                          code: item.designation_id,
+                                          name: item.designation_name,
+                                        })),
                                       }}
-                                    >
-                                      Approval Item
-                                    </label>
-                                    <Autocomplete
-                                        id=""
-                                        options={approvalItem}
-                                        getOptionLabel={(option) => option.name || ''}
-                                        name={'approval_item'}
-                                        disabled={disabledApprovalItems}
-                                        sx={{marginTop: '8px' }}
-                                        value={approvalItem.find((option) => option.approval_item_id === (singleApiData?.['approval'] && singleApiData?.['approval']?.['approval_item'])) || null}
-                                        onChange={(e,value)=>approvalNewDataSave('approval_item',value?.approval_item_id)}
-                                        renderInput={(params) =>
-                                            <TextField
-                                                {...params}
-                                                className='selectHideHistory'
-                                                label={'Approval Item'}
-                                            />
-                                        }
+                                      onChange={(name, value) => approvalNewDataSave(name, value)}
+                                      value={designationData.find(option => option.designation_id === (singleApiData?.approval?.approved_by)) || null}
                                     />
-                                    </Box>
-                                    <Box>
-                                    <label
-                                      htmlFor="designation"
-                                      style={{
-                                        margin: "0",
-                                        padding: 0, 
-                                        fontSize: "16px",
-                                        fontWeight: 500,
-                                        color: "#475467",
-                                        textTransform: "capitalize",
-                                      }}
-                                    >
-                                      Designation
-                                    </label>
-    
-                                    <Autocomplete
-                                        id=""
-                                        options={designationData}
-                                        getOptionLabel={(option) => option.designation_name || ''}
-                                        name={'approved_by'}
-                                        sx={{marginTop: '8px' }}
-                                        value={designationData.find((option) => option.designation_id === (singleApiData?.['approval'] && singleApiData?.['approval']?.['approved_by'])) || null}
-                                        onChange={(e,value)=>approvalNewDataSave('approved_by',value?.designation_id)}
-                                        renderInput={(params) =>
-                                            <TextField
-                                                {...params}
-                                                className='selectHideHistory'
-                                                label={'Designation'}
-                                            />
-                                        }
-                                    />
-                                    </Box>
-                                    <Box>
-                                    <label
-                                      htmlFor="approval-date"
-                                      style={{
-                                        margin: "0",
-                                        padding: 0, 
-                                        fontSize: "16px",
-                                        fontWeight: 500,
-                                        color: "#475467",
-                                        textTransform: "capitalize",
-                                      }}
-                                    >
-                                      Approval Date
-                                    </label>
 
-                                    <LocalizationProvider dateAdapter={AdapterDayjs} sx={{width:'100%'}}>
-                                        <DemoContainer components={['DatePicker']} sx={{width:'100%'}}>
-                                            <DatePicker 
-                                                label="Approval Date" 
-                                                value={singleApiData?.['approval']?.['approval_date'] ? dayjs(singleApiData?.['approval']?.['approval_date']) : null} 
-                                                name="approval_date" 
-                                                format="DD/MM/YYYY"
-                                                sx={{width:'100%', marginTop: '8px' }}
-                                                maxDate={dayjs()}
-                                                onChange={(newValue) => {
-                                                    if (newValue && dayjs.isDayjs(newValue)) {
-                                                        approvalNewDataSave("approval_date", newValue.toISOString());
-                                                    } else {
-                                                        approvalNewDataSave("approval_date", null);
-                                                    }
-                                                }}
-                                            />
-                                        </DemoContainer>
-                                    </LocalizationProvider>    
-                                    </Box>
-                                    <Box>
-                                    <label
-                                        htmlFor="designation"
-                                        style={{
-                                            margin: "0",
-                                            padding: 0, 
-                                            fontSize: "16px",
-                                            fontWeight: 500,
-                                            color: "#475467",
-                                            textTransform: "capitalize",
-                                        }}
-                                    >
-                                      Remarks
-                                    </label>
+                                  </Box>
 
-                                    <TextField
-                                        rows={8}
-                                        label={'Comments'}
-                                        sx={{width:'100%', marginTop: '8px' }}
-                                        name="remarks"
-                                        value={singleApiData?.['approval']?.['remarks']}
-                                        onChange={(e)=>approvalNewDataSave('remarks', e.target.value)}
-                                    />
-                                    </Box>
+                                  <Box sx={{ flex: 1, minWidth: '200px' }}>
+                                  <DateField
+                                      field={{
+                                          heading: 'Date of Approval',
+                                          name: 'approval_date',
+                                          label: 'Date of Approval',
+                                          required: true,
+                                          disableFutureDate: 'true',
+                                          info: 'Pick the date on which the approval is being granted.',
+                                          supportingText: 'Pick the date on which the approval is being granted.',
+                                          supportingTextColor: 'green'
+                                      }}
+                                      formData={singleApiData?.approval || {}}
+                                      value={singleApiData?.['approval']?.['approval_date'] ? dayjs(singleApiData?.['approval']?.['approval_date']) : null}       
+                                      onChange={(newVal) => {
+                                        const isoDate = newVal ? dayjs(newVal).toISOString() : null;
+                                        approvalNewDataSave("approval_date", isoDate);
+                                      }}
+                                  />
+                                  </Box> 
                                 </Box>
+                                <LongText
+                                  field={{
+                                  heading: 'Remarks of Approval Officer',
+                                  name: 'remarks',
+                                  label: 'Remarks of Approval Officer',
+                                  required: true,
+                                  info: 'Provide any comments or reasoning related to this approval.',
+                                  supportingText: 'Provide any comments or reasoning related to this approval.',
+                                  supportingTextColor: 'green'
+                                  }}
+                                  formData={singleApiData?.approval || {}}
+                                  value={singleApiData?.['approval']?.['remarks']}
+                                  onChange={(e)=>approvalNewDataSave('remarks', e.target.value)}
+                              />
+                              </Box>
                             }
                         </Box>
                     </DialogContentText>

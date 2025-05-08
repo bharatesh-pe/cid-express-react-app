@@ -4,11 +4,11 @@ import Autocomplete from "@mui/material/Autocomplete";
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, disabled }) => {
+const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, disabled, readOnly }) => {
     return (
         <Box sx={{ width: '100%' }}>
             {field.heading && (
-                <h4 className="form-field-heading">{field.heading}</h4>
+                <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>
             )}
             <Autocomplete
                 className='bg-white'
@@ -18,7 +18,7 @@ const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, on
                 id={field.id}
                 error={Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
                 options={field.options}
-                disabled={disabled ||field.disabled === true}
+                disabled={readOnly || disabled ||field.disabled === true}
                 getOptionLabel={(option) => option.name}
                 value={field.options.filter(option => 
                     [].concat(formData?.[field?.name] || []).includes(option.code)

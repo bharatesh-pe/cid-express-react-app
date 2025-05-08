@@ -3,11 +3,11 @@ import { Radio, Box, Tooltip } from "@mui/material";
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const RadioBtn = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const RadioBtn = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) => {
     return (
         <Box sx={{display: 'block '}}>
             {(field.label || field.kannada) && (
-                <h4 className="form-field-heading">
+                <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>
                     <div style={{ display: 'flex', alignItems: 'center',color: Boolean(errors?.[field?.name]) ? '#F04438' : '' }}>
                         <span>
                             {field.label}
@@ -70,7 +70,7 @@ const RadioBtn = ({ field, formData, errors, onChange, onFocus, isFocused, onHis
                             value={option.code} // Value for the radio button
                             checked={formData[field.name] === option.code} // Check state based on formData
                             onChange={() => onChange(field.name, option.code)} // Trigger change with field ID and selected value
-                            disabled={field.disabled === true}
+                            disabled={readOnly || field.disabled === true}
                             onFocus={onFocus}
                             focused={isFocused || false}
                         />
