@@ -1110,10 +1110,13 @@ div::first-letter {
 
     .totalRecordCaseStyle{
         margin: 0;
-        font-size: 0.75rem;
+        /* font-size: 0.75rem; */
+        font-size: 0.7rem; 
         font-weight: 600;
-        color: #1E40AF;
-        padding: 0.25rem 0.75rem;
+        /* color: #1E40AF; */
+        color: #1e40af96;
+        padding: 0.1rem 0.5rem;
+        /* padding: 0.25rem 0.75rem; */
         background-color: #E3F2FD;
         border-radius: 0.75rem;
         height: auto;

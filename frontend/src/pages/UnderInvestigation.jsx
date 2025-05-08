@@ -11,6 +11,7 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HistoryIcon from '@mui/icons-material/History';
+import SaveIcon from '@mui/icons-material/Save';
 import {
   Table,
   TableBody,
@@ -232,6 +233,26 @@ const UnderInvestigation = () => {
       { field: "created_by", headerName: "Created By", width: 150 },
       { field: "created_at", headerName: "Updated At", width: 200 }
     ];
+
+    const permissionStr = localStorage.getItem("user_permissions");
+    let user_role_name = '';
+
+    if (permissionStr) {
+        try {
+            const permission = JSON.parse(permissionStr); // parse the JSON string into an object/array
+            const rawroletitle = permission[0]?.role_title || ""; // safely access role_title
+            const roletitle = rawroletitle.replace(/_/g, " ");
+            user_role_name = roletitle;
+        } catch (e) {
+            console.error("Failed to parse permissions:", e);
+        }
+    }
+    
+
+    const user_name = localStorage.getItem("username") || "";
+    const user_designation = localStorage.getItem("designation_name") || "";
+
+   
     
     const approvalFieldHistory = logs.map((log, index) => ({
       id: index,
@@ -9185,8 +9206,40 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 gap: '6px'
               }}
             >
+                <Typography variant="h1" align="left" sx={{ fontSize: "20px", color: "black" , fontWeight: 500}}>
+                    {user_designation || ""}
+                </Typography>
+                {/* <Typography variant="h1" align="left" sx={{ fontSize: "20px", color: "black" , fontWeight: 500}}>
+                    {user_name || ""}
+                </Typography>
+                <Typography
+                    variant="caption"
+                    sx={{
+                    fontSize: "11px",
+                    color: "black",
+                    backgroundColor: "#E0E0E0",
+                    px: 1,
+                    py: "2px",
+                    borderRadius: "6px",
+                    display: "inline-block",
+                    fontWeight: 500,
+                    mt: 0.5,
+                    }}
+                >
+                    {user_role_name || ""}
+                </Typography>*/}
+
+                {/* need a horizontal line here */}
+                <Box
+                    sx={{
+                    width: "1px",
+                    height: "25px",
+                    backgroundColor: "#bfb8b896",
+                    mx: 1,
+                    }}
+                ></Box>
               {/* <img src='./arrow-left.svg' /> */}
-              <Typography variant="h1" align="left" className="ProfileNameText">
+              <Typography variant="h1" align="left" sx={{ fontSize: "16px", color: "#000000b3" , fontWeight: 500}}>
                 {template_name
                   ? template_name
                       .toLowerCase()
@@ -9949,21 +10002,24 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     )}
                     {/* )} */}
                     <Button
-                      variant="outlined"
-                      onClick={() =>
-                        handleUpdatePdfClick({
-                          selectedOtherTemplate,
-                          selectedRowData,
-                          selectedIds,
-                          prUpdatePdf,
-                        })
-                      }
-                      sx={{
-                        marginLeft: "10px",
-                        height: '40px',
-                        borderColor: '#2e7d32',
-                        color: '#2e7d32',
-                      }}
+                        //   variant="outlined"
+                        onClick={() =>
+                            handleUpdatePdfClick({
+                            selectedOtherTemplate,
+                            selectedRowData,
+                            selectedIds,
+                            prUpdatePdf,
+                            })
+                        }
+                        variant="contained"
+                        // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                        sx={{
+                                marginLeft: "10px",
+                                height: '40px',
+                                backgroundColor: '#12B76A',
+                                color: 'white',
+                                textTransform: 'none',
+                        }}
                     >
                       Update PDF
                     </Button>
@@ -10152,10 +10208,26 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 .map((field, index, array) => (
                                   <Grid item xs={6} key={index}>
                                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                                      <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
-                                        {field.label}
-                                      </label>
-                                      {index === array.length - 1 && (
+                                        <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
+                                            {field.label}
+                                        </label>
+                                        <Tooltip title="Save">
+                                            <SaveIcon  
+                                                onClick={() =>
+                                                    onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                                }
+                                                sx={{
+                                                color: '#1570EF',
+                                                padding: '0 1px',
+                                                fontSize: '25px',
+                                                verticalAlign: 'middle',
+                                                cursor: 'pointer',
+                                                pointerEvents: 'auto',
+                                                marginBottom: '2px'
+                                                }}>
+                                            </SaveIcon>
+                                        </Tooltip>
+                                      {/* {index === array.length - 1 && (
                                         <Button
                                           variant="contained"
                                           color="primary"
@@ -10167,13 +10239,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         >
                                           Update
                                         </Button>
-                                      )}
+                                      )} */}
                                     </div>
 
                                     <TextField
                                       fullWidth
                                       multiline
                                       minRows={8}
+                                      maxRows={10}
                                       variant="outlined"
                                       value={filterAoValues[field.name] || ""}
                                       onChange={(e) =>
@@ -10303,7 +10376,24 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
                                         {field.label}
                                       </label>
-                                      {index === array.length - 1 && (
+                                        <Tooltip title="Save">
+
+                                            <SaveIcon  
+                                                onClick={() =>
+                                                    onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                                }
+                                                sx={{
+                                                color: '#1570EF',
+                                                padding: '0 1px',
+                                                fontSize: '25px',
+                                                verticalAlign: 'middle',
+                                                cursor: 'pointer',
+                                                pointerEvents: 'auto',
+                                                marginBottom: '2px'
+                                                }}>
+                                            </SaveIcon>
+                                        </Tooltip>
+                                      {/* {index === array.length - 1 && (
                                         <Button
                                           variant="contained"
                                           color="primary"
@@ -10315,13 +10405,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         >
                                           Update
                                         </Button>
-                                      )}
+                                      )} */}
                                     </div>
 
                                     <TextField
                                       fullWidth
                                       multiline
                                       minRows={8}
+                                      maxRows={10}
                                       variant="outlined"
                                       value={filterAoValues[field.name] || ""}
                                       onChange={(e) =>
