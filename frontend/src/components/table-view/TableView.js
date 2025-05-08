@@ -104,7 +104,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
             {hoverTableOptions.map((option, index) => (
                 <MenuItem key={index} className='actionHoverOnTable' onClick={() => handleHoverOptionClick(option)} sx={{display: 'flex', alignItems: 'start', height: '40px'}}
-                disabled={selectedRow?.field_io_name == null && option?.name !== 'Edit'}
+                disabled={selectedRow?.field_io_name == null && option?.name.toLowerCase() !== "assign to io"}
                 >
                     {option?.icon ? (
                         typeof option.icon === 'function' ? (
