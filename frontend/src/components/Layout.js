@@ -429,7 +429,7 @@ const Layout = ({ children }) => {
         >
           <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none", borderRight: "1px solid #D0D5DD" }}>
             {/* Sidebar Header */}
-            {/* <Box
+            <Box
               sx={{
                 display: "flex",
                 gap: "8px",
@@ -453,72 +453,13 @@ const Layout = ({ children }) => {
                 <br />
                 System
               </p>
-               <p className="cidLogoText">
-                    {userName ? userName : ""}
-                </p>
-                <p sx={{ fontSize: "8px", color: "#98A2B3" , background: "black", padding: "0px 4px", borderRadius: "4px"}}>
-                    {designationName ? designationName : ""}
-                </p>    
 
                 <Navbar unreadNotificationCount={notificationCount} />
 
               <Divider sx={{ marginTop: 1 }} />
-            </Box> */}
-
-            <Box
-                sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    borderBottom: "1px solid #D0D5DD",
-                    height: "64px",
-                    px: 3,
-                }}
-            >
-                {/* Logo and Title */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <img
-                    srcSet={`${LogoText}?w=150&fit=crop&auto=format&dpr=2 4x`}
-                    src={`${LogoText}?w=150&fit=crop&auto=format`}
-                    alt="Logo"
-                    style={{ width: "48px", height: "48px", borderRadius: "6px" }}
-                    loading="lazy"
-                    />
-                    <Box>
-                    <Typography sx={{ lineHeight: 1.2, fontWeight: 500 }}>
-                        Case Management
-                        <br />
-                        System
-                    </Typography>
-                    </Box>
-                </Box>
-                {/* Navbar */}
-                <Navbar unreadNotificationCount={notificationCount} />
             </Box>
-            {/* User Info
-            <Box sx={{  borderBottom: "1px solid #D0D5DD",px : 3}}>
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2 , paddingBottom: "8px"}}>+
-                    <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
-                        {userName || ""}
-                    </Typography>
-                    <Typography
-                        variant="caption"
-                        sx={{
-                        fontSize: "11px",
-                        color: "#667085",
-                        backgroundColor: "#E0E0E0",
-                        px: 1,
-                        py: "2px",
-                        borderRadius: "6px",
-                        display: "inline-block",
-                        mt: 0.5,
-                        }}
-                    >
-                        {designationName || ""}
-                    </Typography>
-                </Box>
-            </Box> */}
 
+            
             {/* Sidebar Content (Navigation Links) */}
 
             <Box
