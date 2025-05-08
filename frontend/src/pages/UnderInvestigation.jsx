@@ -2549,7 +2549,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       },
       {
         field: "field_io_name",
-        headerName: "IO Name",
+        headerName: "Assign To IO",
         width: 200,
         resizable: true,
         cellClassName: 'justify-content-start',
@@ -2726,7 +2726,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     },
                     {
                       field: "field_io_name",
-                      headerName: "IO Name",
+                      headerName: "Assign To IO",
                       width: 200,
                       resizable: true,
                       cellClassName: 'justify-content-start',
@@ -2998,7 +2998,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         },
                         {
                           field: "field_io_name",
-                          headerName: "IO Name",
+                          headerName: "Assign To IO",
                           width: 200,
                           resizable: true,
                           cellClassName: 'justify-content-start',
