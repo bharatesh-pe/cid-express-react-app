@@ -11,6 +11,7 @@ import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HistoryIcon from '@mui/icons-material/History';
+import SaveIcon from '@mui/icons-material/Save';
 import {
   Table,
   TableBody,
@@ -9959,21 +9960,24 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     )}
                     {/* )} */}
                     <Button
-                      variant="outlined"
-                      onClick={() =>
-                        handleUpdatePdfClick({
-                          selectedOtherTemplate,
-                          selectedRowData,
-                          selectedIds,
-                          prUpdatePdf,
-                        })
-                      }
-                      sx={{
-                        marginLeft: "10px",
-                        height: '40px',
-                        borderColor: '#2e7d32',
-                        color: '#2e7d32',
-                      }}
+                        //   variant="outlined"
+                        onClick={() =>
+                            handleUpdatePdfClick({
+                            selectedOtherTemplate,
+                            selectedRowData,
+                            selectedIds,
+                            prUpdatePdf,
+                            })
+                        }
+                        variant="contained"
+                        // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                        sx={{
+                                marginLeft: "10px",
+                                height: '40px',
+                                backgroundColor: '#12B76A',
+                                color: 'white',
+                                textTransform: 'none',
+                        }}
                     >
                       Update PDF
                     </Button>
@@ -10162,10 +10166,26 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 .map((field, index, array) => (
                                   <Grid item xs={6} key={index}>
                                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                                      <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
-                                        {field.label}
-                                      </label>
-                                      {index === array.length - 1 && (
+                                        <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
+                                            {field.label}
+                                        </label>
+                                        <Tooltip title="Save">
+                                            <SaveIcon  
+                                                onClick={() =>
+                                                    onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                                }
+                                                sx={{
+                                                color: '#1570EF',
+                                                padding: '0 1px',
+                                                fontSize: '25px',
+                                                verticalAlign: 'middle',
+                                                cursor: 'pointer',
+                                                pointerEvents: 'auto',
+                                                marginBottom: '2px'
+                                                }}>
+                                            </SaveIcon>
+                                        </Tooltip>
+                                      {/* {index === array.length - 1 && (
                                         <Button
                                           variant="contained"
                                           color="primary"
@@ -10177,13 +10197,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         >
                                           Update
                                         </Button>
-                                      )}
+                                      )} */}
                                     </div>
 
                                     <TextField
                                       fullWidth
                                       multiline
                                       minRows={8}
+                                      maxRows={10}
                                       variant="outlined"
                                       value={filterAoValues[field.name] || ""}
                                       onChange={(e) =>
@@ -10313,7 +10334,24 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
                                         {field.label}
                                       </label>
-                                      {index === array.length - 1 && (
+                                        <Tooltip title="Save">
+
+                                            <SaveIcon  
+                                                onClick={() =>
+                                                    onActionPlanUpdate("cid_under_investigation", filterAoValues)
+                                                }
+                                                sx={{
+                                                color: '#1570EF',
+                                                padding: '0 1px',
+                                                fontSize: '25px',
+                                                verticalAlign: 'middle',
+                                                cursor: 'pointer',
+                                                pointerEvents: 'auto',
+                                                marginBottom: '2px'
+                                                }}>
+                                            </SaveIcon>
+                                        </Tooltip>
+                                      {/* {index === array.length - 1 && (
                                         <Button
                                           variant="contained"
                                           color="primary"
@@ -10325,13 +10363,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                         >
                                           Update
                                         </Button>
-                                      )}
+                                      )} */}
                                     </div>
 
                                     <TextField
                                       fullWidth
                                       multiline
                                       minRows={8}
+                                      maxRows={10}
                                       variant="outlined"
                                       value={filterAoValues[field.name] || ""}
                                       onChange={(e) =>
