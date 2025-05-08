@@ -3,7 +3,7 @@ import { Box, Checkbox, Tooltip } from "@mui/material";
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
 
-const TabsComponents = ({ field = {}, formData = {}, errors = {}, onChange, onFocus, isFocused, onHistory }) => {
+const TabsComponents = ({ field = {}, formData = {}, errors = {}, onChange, onFocus, isFocused, onHistory, readOnly }) => {
 
     return (
         <Box sx={{width:'100%'}}>
@@ -69,7 +69,7 @@ const TabsComponents = ({ field = {}, formData = {}, errors = {}, onChange, onFo
                             name={`${field.name}-${index}`}
                             id={`${field.name}-${option.code}-${index}`}
                             value={option.code || ""}
-                            disabled={field.disabled === true}
+                            disabled={readOnly || field.disabled === true}
                             checked={formData[field.name] === option.code || false}
                             onChange={(e) =>
                                 onChange(field.name, option.code, e.target.checked)

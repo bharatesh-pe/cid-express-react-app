@@ -206,9 +206,9 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
             <Table size="small" aria-label="a dense table">
                 <TableHead>
                     <TableRow>
-                        <TableCell sx={{width: '70px'}}>S. No</TableCell>
-                        <TableCell sx={{width: '50%'}}>Act</TableCell>
-                        <TableCell sx={{width: '50%'}}>Section</TableCell>
+                        <TableCell sx={{width: '70px', color: actField.disabled && '#00000050'}}>S. No</TableCell>
+                        <TableCell sx={{width: '50%', color: actField.disabled && '#00000050'}}>Act</TableCell>
+                        <TableCell sx={{width: '50%', color: actField.disabled && '#00000050'}}>Section</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -238,12 +238,12 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
                                         
                                         {tableRow.length > 0 && (
                                             <Button disabled={actField.disabled || readOnly} sx={{padding: '0', minWidth: '0 !important'}}>
-                                                <DeleteIcon sx={{color:'red', cursor: 'pointer'}} onClick={()=>deleteRow(index)} />
+                                                <DeleteIcon sx={{color:(actField.disabled || readOnly) ? '#ccc' : 'red', cursor: 'pointer'}} onClick={()=>deleteRow(index)} />
                                             </Button>
                                         )}
                                         {index === tableRow.length - 1 && (
                                             <Button disabled={actField.disabled || readOnly} sx={{padding: '0', minWidth: '0 !important'}} >
-                                                <AddIcon sx={{color:'blue', cursor: 'pointer'}} onClick={addRow} />
+                                                <AddIcon sx={{color:(actField.disabled || readOnly) ? '#ccc' :'blue', cursor: 'pointer'}} onClick={addRow} />
                                             </Button>
                                         )}
                                     </Box>
@@ -259,7 +259,7 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
                                         }
                                         disabled={actField.disabled || readOnly}
                                         renderInput={(params) => (
-                                            <TextField {...params} label="Select Act" />
+                                            <TextField {...params} />
                                         )}
                                     />
                                 </TableCell>
@@ -275,7 +275,7 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
                                         }
                                         disabled={sectionField?.disabled || !row.act || readOnly}
                                         renderInput={(params) => (
-                                            <TextField {...params} label="Select Section" />
+                                            <TextField {...params} />
                                         )}
                                     />
                                 </TableCell>

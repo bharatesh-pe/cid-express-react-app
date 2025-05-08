@@ -64,7 +64,7 @@ exports.get_all_roles = async (req, res) => {
      const {
         page = 1,
         limit = 5,
-        sort_by = "role_id",
+        sort_by = "created_at",
         order = "DESC",
         search = "",
         search_field = "",

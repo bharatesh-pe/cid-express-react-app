@@ -71,6 +71,16 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     }
   }, [initialData]);
 
+    var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+
+    const [readOnlyTemplate, setReadonlyTemplate] = useState(readOnly);
+    const [editDataTemplate, setEditDataTemplate] = useState(editData);
+
+    const templateEdit = ()=>{
+        setReadonlyTemplate((prev)=>!prev);
+        setEditDataTemplate((prev)=>!prev);
+    }
+
   const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
 
     const [tableActRow, setTableActRow] = useState([{ act: "", section: "" }]);
@@ -438,11 +448,11 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         if (!result.isConfirmed) {
                             return false;
                         }else{
-                            !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+                            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
                         }
                     })
                 }else{
-                    !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+                    !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
                 }
     
             } catch (error) {
@@ -463,7 +473,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 }
             }
         }else{
-            !readOnly && editData ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
         }
     } else {
         toast.warning('Please Fill Mandatory Fields', {
@@ -1300,13 +1310,13 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
-            {!readOnly && editData && onUpdate ?
+            {!readOnlyTemplate && editDataTemplate && onUpdate ?
 
               <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
                 Update
               </Button>
 
-              :!readOnly && onSubmit && (
+              :!readOnlyTemplate && onSubmit && (
                 <>
                   <Button
                     onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()}
@@ -1327,6 +1337,24 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                   )}
                 </>
               )
+            }
+
+            {
+                (readOnlyTemplate && userPermissions[0]?.edit_case) && 
+                <Button
+                    onClick={templateEdit}
+                    sx={{
+                        background: "#0167F8",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#FFFFFF",
+                        padding: "6px 16px",
+                    }}
+                    className="Roboto blueButton"
+                >
+                    Edit Case
+                </Button>
             }
 
           </Box>
@@ -1383,9 +1411,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
                 const isRequired = field.required === 'true' || field.required === true;
 
-                if(!field.disabled){
-                    field.disabled = readOnly ? true : '';
-                }
+                var readOnlyData = readOnlyTemplate
 
                 if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
 
@@ -1393,17 +1419,14 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     
                     if (roleTitle === "admin organization") {
                         if (!field.ao_field) {
-                            console.log("hello hello");
-                            field.disabled = true;
+                            readOnlyData = true;
                             if (field.required) {
                                 field.required = false;
                             }
                         }
                     } else {
                         if (field.ao_field) {
-                            console.log("log");
-                            
-                            field.disabled = true;
+                            readOnlyData = true;
                             if (field.required) {
                                 field.required = false;
                             }
@@ -1419,7 +1442,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                                 formData={formData}
                                 tableRow={tableActRow}
                                 tableFunc={UpdateTableRowApi}
-                                readOnly={readOnly}
+                                readOnly={readOnlyData}
                                 showOrderCopy={makeOrderCopyShow}
                             />
                         </Grid>
@@ -1438,6 +1461,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             errors={errors}
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1453,20 +1477,8 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             errors={errors}
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
+                            readOnly={readOnlyData}
                           />
-                          {!errors[field.name] && field.supportingText && (
-                            <p style={{ color: '#98A2B3', margin: '2px 0', fontSize: '14px' }}>
-                              {field.supportingText}
-                            </p>
-                          )}
-                          {/* {errors[field.name] && (
-                      <p className="error_msg_class">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'red' }}>
-                          <i style={{ rotate: '180deg' }} className='pi pi-info error_icon_field'></i>
-                          <span>{errors[field.name]}</span>
-                        </div>
-                      </p>
-                    )} */}
                         </div>
                       </Grid>
                     );
@@ -1481,6 +1493,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             errors={errors}
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1496,6 +1509,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             errors={errors}
                             onChange={handleChange}
                             onHistory={() => showHistory(field.name)}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1510,7 +1524,9 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             formData={formData}
                             errors={errors}
                             onHistory={() => showHistory(field.name)}
-                            onChange={(value) => { handleChangeDate(field.name, value) }} />
+                            onChange={(value) => { handleChangeDate(field.name, value) }} 
+                            readOnly={readOnlyData}    
+                        />
                         </div>
                       </Grid>
                     );
@@ -1525,6 +1541,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           // onChange={handleChange} // Handle changes
                           onHistory={() => showHistory(field.name)}
                           onChange={(value) => handleChangeDate(field.name, value)} // Handle change
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1539,6 +1556,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           // onChange={handleChange} // Handle changes
                           onChange={(value) => handleChangeDate(field.name, value)} // Handle change
                           onHistory={() => showHistory(field.name)}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1553,7 +1571,9 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             formData={formData}
                             errors={errors}
                             onHistory={() => showHistory(field.name)}
-                            onChange={(value) => handleAutocomplete(field, value.target.value)} />
+                            onChange={(value) => handleAutocomplete(field, value.target.value)} 
+                            readOnly={readOnlyData}
+                        />
                         </div>
                       </Grid>
                     );
@@ -1568,6 +1588,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           errors={errors}
                           onHistory={() => showHistory(field.name)}
                           onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1582,6 +1603,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           errors={errors}
                           onHistory={() => showHistory(field.name)}
                           onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1596,6 +1618,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             errors={errors}
                             onHistory={() => showHistory(field.name)}
                             onChange={handleChange}
+                            readOnly={readOnlyData}
                           />
                         </div>
                       </Grid>
@@ -1610,6 +1633,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           formData={formData}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleFileUploadChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1622,6 +1646,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           formData={formData}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleFileUploadChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1636,6 +1661,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           errors={errors}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleDropdownChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1650,6 +1676,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           errors={errors}
                           onHistory={() => showHistory(field.name)}
                           onChange={handleCheckBoxChange}
+                          readOnly={readOnlyData}
                         />
                       </Grid>
                     );
@@ -1663,6 +1690,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                                 errors={errors}
                                 onHistory={() => showHistory(field.name)}
                                 onChange={handleTabChange}
+                                readOnly={readOnlyData}
                             />
                         </Grid>
                     );

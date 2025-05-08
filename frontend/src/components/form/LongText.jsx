@@ -9,10 +9,10 @@ import HistoryIcon from '@mui/icons-material/History'; // Material-UI History Ic
 import './ShortText.css'
 import textToSnakecase from './textformater';
 
-const LongText = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory }) => {
+const LongText = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) => {
     return (
         <Box sx={{ width: '100%' }}>
-            {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
+            {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
             <TextField
                 error={Boolean(errors?.[field?.name])}  // Use Boolean to convert error to true or false
                 fullWidth
@@ -78,7 +78,7 @@ const LongText = ({ field, formData, errors, onChange, onFocus, isFocused, onHis
                 // helperText={errors?.[field?.name] || field.supportingText || ' '}  // Display the error if it exists, else fallback to supportingText
                 inputProps={{ minLength: field.minLength, maxLength: field.maxLength }}
                 // required={field.required === true}
-                disabled={field.disabled === true}
+                disabled={readOnly || field.disabled === true}
                 onChange={(e) => onChange(e)}
                 onFocus={onFocus}
                 // focused={isFocused || false}

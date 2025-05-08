@@ -65,7 +65,7 @@ const get_master_data = async (req, res) => {
 };
 
 const fetch_role_data = async () => {
-  const excluded_role_ids = [1, 10 ,21]; 
+  const excluded_role_ids = [1]; 
 
   try {
     const roles = await Role.findAll({
@@ -87,7 +87,7 @@ const fetch_role_data = async () => {
 };
 
 const fetch_designation_data = async () => {
-  const excluded_designation_ids = [1, 10, 21]; 
+  const excluded_designation_ids = [10]; 
   try {
     // Fetch designations with departments
     let data = await Designation.findAll({
