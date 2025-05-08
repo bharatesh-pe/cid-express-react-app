@@ -249,6 +249,7 @@ const UnderInvestigation = () => {
     
 
     const user_name = localStorage.getItem("username") || "";
+    const user_designation = localStorage.getItem("designation_name") || "";
 
    
     
@@ -9163,6 +9164,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
               }}
             >
                 <Typography variant="h1" align="left" sx={{ fontSize: "20px", color: "black" , fontWeight: 500}}>
+                    {user_designation || ""}
+                </Typography>
+                {/* <Typography variant="h1" align="left" sx={{ fontSize: "20px", color: "black" , fontWeight: 500}}>
                     {user_name || ""}
                 </Typography>
                 <Typography
@@ -9180,7 +9184,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     }}
                 >
                     {user_role_name || ""}
-                </Typography>
+                </Typography>*/}
+
                 {/* need a horizontal line here */}
                 <Box
                     sx={{
