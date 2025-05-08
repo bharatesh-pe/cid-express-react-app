@@ -6809,7 +6809,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 if(getDivisionField[0].table === "users"){
                                     payloadApi = {
                                         ...payloadApi,
-                                        ...newPayload
+                                        ...newPayload,
+                                        user_hierarchy : getDivisionField[0]?.user_hierarchy || "lower"
                                     }
                                 }
                                 setLoading(true);
