@@ -3569,6 +3569,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             "/templates/viewTemplate",
             viewTableData
           );
+          
           setLoading(false);
 
           if (viewTemplateResponse && viewTemplateResponse.success) {
@@ -3645,50 +3646,153 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
     }
   };
-  const loadAOFields = async () => {
-    setLoading(true);
-    try {
-      const response = await api.post("/templates/viewTemplate", {
-        table_name: "cid_under_investigation",
-      });
-      if (response.success && response.data?.fields) {
-        let aoOnlyFields = response.data.fields.filter(field =>
+//   const loadAOFields = async () => {
+//     setLoading(true);
+//     try {
+//       const response = await api.post("/templates/viewTemplate", {
+//         table_name: "cid_under_investigation",
+//       });
+//       if (response.success && response.data?.fields) {
+//         let aoOnlyFields = response.data.fields.filter(field =>
+//           field.ao_field === true &&
+//           field.hide_from_ux === false &&
+//           field.name !== 'field_act' &&
+//           field.name !== 'field_section'
+//         );
+                
+//         const briefFactField = response.data.fields.find(field => field.name === 'field_breif_fact');
+//         const policeStationField = response.data.fields.find(field => field.name === 'field_investigation_carried_out_by_the_police_station');
+        
+//         if (briefFactField && !aoOnlyFields.includes(briefFactField)) {
+//             aoOnlyFields.push(briefFactField);
+//         }
+        
+//         if (policeStationField && !aoOnlyFields.includes(policeStationField)) {
+//             aoOnlyFields.push(policeStationField);
+//         }
+
+//        if (aoOnlyFields.length > 0) {
+//             aoOnlyFields.forEach((field, index) => {
+//                 if(field && field.api)
+//                 {
+//                      var payloadApi = field.api
+
+//                      const response = await api.post(payloadApi, apiPayload);
+                     
+//                     if (!response.data) return { id: field.id, options: [] };
+
+//                     const updatedOptions = response.data.map((templateData) => {
+
+//                         const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
+
+//                         var headerName = nameKey;
+//                         var headerId = 'id';
+
+//                         return {
+//                             name: templateData[headerName],
+//                             code: templateData[headerId],
+//                         };
+//                     });
+
+//                     // return { id: field.id, options: updatedOptions };
+//                     field.options = updatedOptions
+//                 }
+//             });
+//         }
+
+        
+        
+//         setAoFields(aoOnlyFields);
+        
+//         loadValueField(aoFieldId, false, "cid_under_investigation");
+//         setLoading(false);
+//     }
+    
+//     } catch (error) {
+//       toast.error("Failed to load AO fields", {
+//         position: "top-right",
+//         autoClose: 3000,
+//         className: "toast-error",
+//       });
+//     }
+//   };
+  
+const loadAOFields = async () => {
+  setLoading(true);
+  try {
+    const response = await api.post("/templates/viewTemplate", {
+      table_name: "cid_under_investigation",
+    });
+
+    if (response.success && response.data?.fields) {
+      let aoOnlyFields = response.data.fields.filter(
+        (field) =>
           field.ao_field === true &&
           field.hide_from_ux === false &&
-          field.name !== 'field_act' &&
-          field.name !== 'field_section'
-        );
-                
-        const briefFactField = response.data.fields.find(field => field.name === 'field_breif_fact');
-        const policeStationField = response.data.fields.find(field => field.name === 'field_investigation_carried_out_by_the_police_station');
-        
-        if (briefFactField && !aoOnlyFields.includes(briefFactField)) {
-            aoOnlyFields.push(briefFactField);
+          field.name !== "field_act" &&
+          field.name !== "field_section"
+      );
+
+      const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
+      const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
+
+      if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
+      if (policeStationField && !aoOnlyFields.includes(policeStationField)) aoOnlyFields.push(policeStationField);
+
+      for (const field of aoOnlyFields) {
+        if (field && field.api) {
+          const payloadApi = field.api;
+          const apiPayload = {}; // Define this as needed
+
+          try {
+            const res = await api.post(payloadApi, apiPayload);
+            if (!res.data) continue;
+
+            const updatedOptions = res.data.map((item) => {
+                const nameKey = Object.keys(item).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                var headerName = nameKey;
+                var headerId = 'id';
+
+                if(field.table === "users"){
+                    headerName = "name"
+                    headerId =  "user_id"
+                }else if(field.api !== "/templateData/getTemplateData"){
+                    headerName = field.table + "_name"
+                    headerId =  field.table + "_id"
+                }
+
+                return {
+                    name: item[headerName],
+                    code: item[headerId],
+                };
+            });
+
+            field.options = updatedOptions;
+          } catch (err) {
+            console.error(`Error loading options for field ${field.name}`, err);
+          }
         }
-        
-        if (policeStationField && !aoOnlyFields.includes(policeStationField)) {
-            aoOnlyFields.push(policeStationField);
-        }
-        
-        setAoFields(aoOnlyFields);
-        
-        loadValueField(aoFieldId, false, "cid_under_investigation");
-        setLoading(false);
+      }
+
+      setAoFields(aoOnlyFields);
+      loadValueField(aoFieldId, false, "cid_under_investigation");
     }
-    
-    } catch (error) {
-      toast.error("Failed to load AO fields", {
-        position: "top-right",
-        autoClose: 3000,
-        className: "toast-error",
-      });
-    }
-  };
-  useEffect(() => {
+  } catch (error) {
+    toast.error("Failed to load AO fields", {
+      position: "top-right",
+      autoClose: 3000,
+      className: "toast-error",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
     if (selectedOtherTemplate?.table === "cid_ui_case_action_plan" || selectedOtherTemplate?.table === 'cid_ui_case_progress_report' ) {
       loadAOFields();
     }
-  }, [selectedOtherTemplate]);
+  }, [selectedOtherTemplate,aoFieldId]);
   
   const onActionPlanUpdate = async (table_name, data) => {
     
@@ -10245,7 +10349,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     <TextField
                                       fullWidth
                                       multiline
-                                      minRows={8}
+                                      minRows={10}
                                       maxRows={10}
                                       variant="outlined"
                                       value={filterAoValues[field.name] || ""}
@@ -10353,11 +10457,17 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                       formData={filterAoValues}
                                       onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
                                       value={(() => {
-                                        const fieldValue = filterAoValues?.[field.name];
+                                        
 
-                                        const selectedOption = field.options.find(
-                                          (option) => String(option.code) === String(fieldValue)
-                                        );
+                                        var fieldValue = filterAoValues?.[field.name];
+                                        var selectedOption = field.options.find(
+                                              (option) => String(option.code) === String(fieldValue)
+                                            );
+
+                                        console.log(">>>>>>>>>>>>>>>>>>>>field.options",field.options)
+                                        console.log(">>>>>>>>>>>>>>>>>>>>field.name",field.name)
+                                        console.log(">>>>>>>>>>>>>>>>>>>>fieldValue",fieldValue)
+                                        console.log(">>>>>>>>>>>>>>>>>>>>selectedOption",selectedOption)
 
                                         return selectedOption || null;
                                       })()}
@@ -10411,7 +10521,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                     <TextField
                                       fullWidth
                                       multiline
-                                      minRows={8}
+                                      minRows={10}
                                       maxRows={10}
                                       variant="outlined"
                                       value={filterAoValues[field.name] || ""}
