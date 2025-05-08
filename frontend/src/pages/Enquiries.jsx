@@ -1190,27 +1190,31 @@ const Enquiries = () => {
     );
   };
 
-    const tableHeaderRender = (params, key)=>{
+    const tableHeaderRender = (params, key) => {
         return (
             <Tooltip title={params.colDef.headerName} arrow placement="top">
                 <Typography
-                    className="MuiDataGrid-columnHeaderTitle"
-                    noWrap
+                    className="MuiDataGrid-columnHeaderTitle mui-multiline-header"
                     sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        lineHeight: '1.2em',
+                        fontSize: "15px",
+                        fontWeight: "500",
+                        color: "#1D2939",
                         width: '100%',
-                        color: "#1D2939", 
-                        fontSize: "15px", 
-                        fontWeight: "500"
                     }}
                 >
                     {params.colDef.headerName}
                 </Typography>
             </Tooltip>
-        )
-    }
+        );
+    };
 
   const hyperLinkShow = async (params) => {
     if (!params.table || !params.id) {
