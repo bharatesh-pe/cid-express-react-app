@@ -3156,13 +3156,22 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
     return (
         <Tooltip title={value} placement="top">
-            <span
-                style={highlightColor}
-                onClick={onClickHandler}
-                className={`tableValueTextView Roboto ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
-            >
-                {value || "-"}
-            </span>
+            {
+                (key === "field_io_name" && (value === "" || !value)) ? (
+                    <span className="io-alert-flashy">
+                        <span className="flashy-dot"></span>
+                        ASSIGN IO
+                    </span>                  
+                ) : (
+                    <span
+                        style={highlightColor}
+                        onClick={onClickHandler}
+                        className={`tableValueTextView Roboto blink-badge ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                    >
+                        {value || "-"}
+                    </span>
+                )
+            }
         </Tooltip>
     );
   };
