@@ -85,7 +85,7 @@ export default function ApprovalModal({
                     <Box sx={{ display: 'flex',
                         justifyContent: 'center',
                         fontWeight: 500,
-                        fontSize: '16px',
+                        fontSize: '18px',
                         mb: 2,
                         textAlign: 'center'
                     }}>
