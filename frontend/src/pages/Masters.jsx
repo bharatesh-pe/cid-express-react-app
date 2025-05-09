@@ -187,7 +187,7 @@ const MastersView = () => {
                             value={searchValue}
                             id="tableSearch" 
                             size="small"
-                            placeholder='Search anything'
+                            placeholder='Search masters'
                             variant="outlined" 
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
