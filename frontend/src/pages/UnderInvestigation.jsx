@@ -2988,7 +2988,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         {
                             field: "field_cid_crime_no./enquiry_no",
                             headerName: "Cid Crime No./Enquiry No",
-                            width: 200,
+                            width: 130,
                             resizable: true,
                             cellClassName: 'justify-content-start',
                             renderHeader: (params) => (
@@ -3012,7 +3012,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             .map((key) => ({
                                 field: key,
                                 headerName: generateReadableHeader(key),
-                                width: generateReadableHeader(key).length < 15 ? 100 : 180,
+                                width: generateReadableHeader(key).length < 15 ? 100 : 200,
                                 resizable: true,
                                 renderHeader: (params) => (
                                     tableHeaderRender(params, key)
@@ -3198,27 +3198,31 @@ const loadChildMergedCasesData = async (page, caseId) => {
   };
   
 
-    const tableHeaderRender = (params, key)=>{
+    const tableHeaderRender = (params, key) => {
         return (
             <Tooltip title={params.colDef.headerName} arrow placement="top">
                 <Typography
-                    className="MuiDataGrid-columnHeaderTitle"
-                    noWrap
+                    className="MuiDataGrid-columnHeaderTitle mui-multiline-header"
                     sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        lineHeight: '1.2em',
+                        fontSize: "15px",
+                        fontWeight: "500",
+                        color: "#1D2939",
                         width: '100%',
-                        color: "#1D2939", 
-                        fontSize: "15px", 
-                        fontWeight: "500"
                     }}
                 >
                     {params.colDef.headerName}
                 </Typography>
             </Tooltip>
-        )
-    }
+        );
+    };
 
   const hyperLinkShow = async (params) => {
     if (!params.table || !params.id) {
@@ -10270,6 +10274,7 @@ useEffect(() => {
                           console.log('selectedRowData:', selectedRowData);
                           handleSubmitAp({ id: selectedRowData?.id });
                         }}
+                      disabled={otherTemplatesTotalRecord === 0}
                       >
                         Submit
                       </Button>
