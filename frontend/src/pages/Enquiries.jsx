@@ -1755,6 +1755,12 @@ const Enquiries = () => {
     }
   };
 
+    
+    const closeAddForm = ((flag)=>{
+        loadTableData(paginationCount);
+        setFormOpen(false);
+    });
+
   const showOptionTemplate = async (table_name) => {
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
@@ -2373,7 +2379,7 @@ const Enquiries = () => {
     });
   };
 
-  const onSaveTemplateData = async (data) => {
+  const onSaveTemplateData = async (data, saveNew) => {
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -2470,7 +2476,16 @@ const Enquiries = () => {
           draggable: true,
           progress: undefined,
           className: "toast-success",
-          onOpen: () => loadTableData(paginationCount),
+          onOpen: () => {
+
+            if(saveNew === true){
+                getTemplate(table_name);
+                setFormOpen(false);
+                return;
+            } else {
+                loadTableData(paginationCount);
+            }
+        },
         });
       } else {
         const errorMessage = saveTemplateData.message
@@ -4394,7 +4409,7 @@ const Enquiries = () => {
           initialData={initialData}
           onSubmit={onSaveTemplateData}
           onError={onSaveTemplateError}
-          closeForm={setFormOpen}
+          closeForm={closeAddForm}
         />
       )}
 

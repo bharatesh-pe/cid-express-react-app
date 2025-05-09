@@ -97,6 +97,8 @@ const UnderInvestigation = () => {
     const [singleApiData, setSingleApiData] = useState({});
     const [disabledApprovalItems, setDisabledApprovalItems] = useState(false);
 
+    const [saveNew, setSaveNew] = useState(null);
+
     // on save approval modal
 
     const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -3914,6 +3916,7 @@ useEffect(() => {
               : []
           );
         }
+        setSaveNew(null);
       } else {
         const errorMessage = viewTemplateResponse.message
           ? viewTemplateResponse.message
@@ -3950,6 +3953,18 @@ useEffect(() => {
       }
     }
   };
+
+    const closeAddForm = ((flag)=>{
+
+        if (sysStatus === "merge_cases") {
+            loadMergedCasesData(paginationCount); 
+        } else {
+            loadTableData(paginationCount);
+        }
+        setFormOpen(false);
+        setSaveNew(null);
+
+    });
 
   const getIoUsers = async () => {
     const res = await api.post("cidMaster/getIoUsers");
@@ -5090,7 +5105,7 @@ useEffect(() => {
     });
   };
 
-  const onSaveTemplateData = async (data) => {
+  const onSaveTemplateData = async (data, saveNew) => {
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -5167,6 +5182,7 @@ useEffect(() => {
     });
     normalData.sys_status = "ui_case";
     
+    setSaveNew(saveNew);
     showCaseApprovalPage(normalData,formData, true);
     return;
 
@@ -6893,6 +6909,11 @@ useEffect(() => {
                         );
   
                         if (getDivisionField.length > 0) {
+
+                            if(getDivisionField[0].type === "file"){
+                                console.log("file field find");                                
+                                return;
+                            }
 
                             var newPayload = {};
     
@@ -8721,45 +8742,58 @@ useEffect(() => {
   
               setLoading(false);
   
-              if (overallSaveData && overallSaveData.success) {
+                if (overallSaveData && overallSaveData.success) {
   
-                  toast.success(overallSaveData.message ? overallSaveData.message : "Case Created Successfully", {
-                      position: "top-right",
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      className: "toast-success",
-                      onOpen: () => {
-                        if (sysStatus === "merge_cases") {
-                          loadMergedCasesData(paginationCount);
-                        } else {
-                          loadTableData(paginationCount);
-                        }
-                      },
-                  });
+                    toast.success(overallSaveData.message ? overallSaveData.message : "Case Created Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => {
+
+                            if(saveNew === true){
+                                getTemplate(table_name);
+                                setFormOpen(false);
+                                setShowApprovalModal(false);
+                                setApprovalSaveCaseData({});
+                                setApprovalItemsData([]);
+                                setApprovalDesignationData([]);
+                                setApprovalSaveData({});
+                                return;
+                            }
+
+                            if (sysStatus === "merge_cases") {
+                                loadMergedCasesData(paginationCount);
+                            } else {
+                                loadTableData(paginationCount);
+                            }
+                        },
+                    });
+    
+                    setShowApprovalModal(false);
+                    setApprovalSaveCaseData({});
+                    setApprovalItemsData([]);
+                    setApprovalDesignationData([]);
+                    setApprovalSaveData({});
+                    setSaveNew(null);
   
-                  setShowApprovalModal(false);
-                  setApprovalSaveCaseData({});
-                  setApprovalItemsData([]);
-                  setApprovalDesignationData([]);
-                setApprovalSaveData({});
-  
-              } else {
-                  const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
-                  toast.error(errorMessage, {
-                      position: "top-right",
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      className: "toast-error",
-                  });
-              }
+                } else {
+                    const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
           } catch (error) {
               setLoading(false);
               if (error && error.response && error.response["data"]) {
@@ -9727,7 +9761,7 @@ useEffect(() => {
           initialData={initialData}
           onSubmit={onSaveTemplateData}
           onError={onSaveTemplateError}
-          closeForm={setFormOpen}
+          closeForm={closeAddForm}
         />
       )}
 

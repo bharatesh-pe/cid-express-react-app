@@ -528,6 +528,8 @@ const CaseActions = () => {
                     var updatedOptions = viewTemplateResponse.data['fields'].filter((element)=>{
                         if(element && element.options){
                             return element;
+                        }else if(element && element.type === "file"){
+                            return element;
                         }
                     });
 

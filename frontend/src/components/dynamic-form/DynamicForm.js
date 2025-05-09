@@ -84,6 +84,8 @@ const DynamicForm = ({
     { field: "date", headerName: "Date & Time", flex: 1 },
   ]);
 
+  const saveNewRef = useRef(false);
+
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       setFormData(initialData);
@@ -407,11 +409,11 @@ const DynamicForm = ({
               if (!result.isConfirmed) {
                 return false;
               } else {
-                !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
+                !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData, saveNewRef?.current); // This will pass the form data to the parent `onSubmit` function
               }
             });
           } else {
-            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
+            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData, saveNewRef?.current); // This will pass the form data to the parent `onSubmit` function
           }
         } catch (error) {
           setLoading(false);
@@ -435,7 +437,7 @@ const DynamicForm = ({
           }
         }
       } else {
-        !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData); // This will pass the form data to the parent `onSubmit` function
+        !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData, saveNewRef?.current); // This will pass the form data to the parent `onSubmit` function
       }
     } else {
       toast.warning("Please Fill Mandatory Fields", {
@@ -1403,24 +1405,47 @@ const DynamicForm = ({
             ) : (
               !readOnlyTemplate &&
               onSubmit && (
-                <Button
-                  onClick={() =>
-                    formButtonRef &&
-                    formButtonRef.current &&
-                    formButtonRef.current.click()
-                  }
-                  sx={{
-                    background: "#0167F8",
-                    borderRadius: "8px",
-                    fontSize: "14px",
-                    fontWeight: "500",
-                    color: "#FFFFFF",
-                    padding: "6px 16px",
-                  }}
-                  className="Roboto blueButton"
-                >
-                  Register Case
-                </Button>
+                <>
+                    <Button
+                        onClick={() => {
+                            saveNewRef.current = false;
+                            formButtonRef &&
+                            formButtonRef.current &&
+                            formButtonRef.current.click()
+                        }}
+                        sx={{
+                            background: "#0167F8",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "#FFFFFF",
+                            padding: "6px 16px",
+                        }}
+                        className="Roboto blueButton"
+                    >
+                        Register Case
+                    </Button>
+                    <Button
+                        onClick={() =>{
+                            saveNewRef.current = true;
+                            formButtonRef &&
+                            formButtonRef.current &&
+                            formButtonRef.current.click()
+                        }}
+                        sx={{
+                            background: "#0167F8",
+                            borderRadius: "8px",
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "#FFFFFF",
+                            padding: "6px 16px",
+                        }}
+                        className="Roboto GreenFillBtn"
+                        variant="contained"
+                    >
+                        Save & New
+                    </Button>
+                </>
               )
             )}
             {
