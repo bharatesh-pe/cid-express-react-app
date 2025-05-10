@@ -10500,11 +10500,6 @@ useEffect(() => {
                                               (option) => String(option.code) === String(fieldValue)
                                             );
 
-                                        console.log(">>>>>>>>>>>>>>>>>>>>field.options",field.options)
-                                        console.log(">>>>>>>>>>>>>>>>>>>>field.name",field.name)
-                                        console.log(">>>>>>>>>>>>>>>>>>>>fieldValue",fieldValue)
-                                        console.log(">>>>>>>>>>>>>>>>>>>>selectedOption",selectedOption)
-
                                         return selectedOption || null;
                                       })()}
                                       disabled={true}

@@ -687,7 +687,7 @@ const CreateProfile = () => {
                                 id="tableSearch" 
                                 autoComplete='off'
                                 size="small"
-                                placeholder='Search anything'
+                                placeholder='Search templates'
                                 variant="outlined" 
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
