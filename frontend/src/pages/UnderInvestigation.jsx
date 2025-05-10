@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import DynamicForm from "../components/dynamic-form/DynamicForm";
@@ -739,6 +739,13 @@ const UnderInvestigation = () => {
     const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
 
     const [natureOfDisposalFileUpload, setNatureOfDisposalFileUpload] = useState({});
+    var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+
+    const templateActionAddFlag = useRef(false);
+    const fieldActionAddFlag = useRef(false);
+    const attachmentEditFlag = useRef(false);
+
+    const [showFileAttachment, setShowFileAttachments] = useState(false);
 
     const handleFileUploadChange = (fieldName, files) => {
         setNatureOfDisposalFileUpload((prevData) => {
@@ -3112,21 +3119,29 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const userPermissionsArray = JSON.parse(localStorage.getItem("user_permissions")) || [];
                 const userPermissions = userPermissionsArray[0] || {};
     
-                const updatedActions = getActionsDetails.data.data
-                    .map((action) => {
+                const updatedActions = getActionsDetails.data.data.map((action) => {
                         if (action?.icon) action.icon = createSvgIcon(action.icon);
     
                         if (action.permissions) {
                             const parsedPermissions = JSON.parse(action.permissions);
-                            const hasValidPermission = parsedPermissions.some(
-                                (permission) => userPermissions[permission] === true
-                            );
-                            return hasValidPermission ? action : null;
+
+                            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions) && parsedPermissions?.['show']) {
+
+                                const hasValidPermission = parsedPermissions?.['show'].some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                                return hasValidPermission ? action : null;
+
+                            }else{
+                                const hasValidPermission = parsedPermissions.some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                                return hasValidPermission ? action : null;
+                            }
                         }
     
-                        return action;
-                    })
-                    .filter(Boolean);
+                    return action;
+                }).filter(Boolean);
     
                 setHoverTableOptions(updatedActions);
             } else {
@@ -6020,6 +6035,53 @@ useEffect(() => {
         filter: !searchFlag ? othersFilterData : {},
     };
 
+        var disabledEditFlag = false;
+        var disabledDeleteFlag = false;
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['add'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['add'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+    
+                    templateActionAddFlag.current = hasAddPermission;
+                }else{
+                    templateActionAddFlag.current = true;
+                }
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasEditPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    disabledEditFlag = hasEditPermission
+                }else{
+                    disabledEditFlag = true;
+                }
+
+                if(parsedPermissions?.['delete'].length > 0){
+                    const hasDeletePermission = parsedPermissions?.['delete'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    disabledDeleteFlag = hasDeletePermission
+                }else{
+                    disabledDeleteFlag = true;
+                }
+
+            }else{
+                templateActionAddFlag.current = true;
+                disabledEditFlag = true;
+                disabledDeleteFlag = true;
+            }
+
+        }
+
     setLoading(true);
 
     try {
@@ -6557,7 +6619,7 @@ useEffect(() => {
                           View
                         </Button>
                 
-                        {canEdit&& (
+                        {disabledEditFlag && (
                           !isActionPlan && (
                           !isViewAction && (
                             !isPdfUpdated && (
@@ -6582,7 +6644,7 @@ useEffect(() => {
                             )
                             )))
                           )}
-                        {canDelete&& (
+                        {disabledDeleteFlag && (
                           !isActionPlan && (
                           !isViewAction && (
                             !isPdfUpdated && (
@@ -6880,6 +6942,27 @@ useEffect(() => {
         const viewTableData = {
             table_name: options.table,
         };
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    fieldActionAddFlag.current = hasAddPermission;
+                }else{
+                    fieldActionAddFlag.current = true;
+                }
+
+            }else{
+                fieldActionAddFlag.current = true;
+            }
+        }
     
         setLoading(true);
         try {
@@ -6911,7 +6994,7 @@ useEffect(() => {
                         if (getDivisionField.length > 0) {
 
                             if(getDivisionField[0].type === "file"){
-                                console.log("file field find");                                
+                                showAttachmentField(options, selectedRow);
                                 return;
                             }
 
@@ -8129,8 +8212,6 @@ useEffect(() => {
         }
     };
 
-  var userPermissions =
-    JSON.parse(localStorage.getItem("user_permissions")) || [];
   var hoverExtraOptions = [
       
     // userPermissions[0]?.edit_case
@@ -9353,6 +9434,32 @@ useEffect(() => {
         }
     }
 
+    const showAttachmentField = (options, selectedRow) => {
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    attachmentEditFlag.current = hasAddPermission;
+                }else{
+                    attachmentEditFlag.current = true;
+                }
+
+            }else{
+                attachmentEditFlag.current = true;
+            }
+        }
+
+        setShowFileAttachments(true);
+    }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -10157,7 +10264,7 @@ useEffect(() => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!isChildMergedLoading && (
+                    {!isChildMergedLoading && templateActionAddFlag.current === true (
                       <Button
                         variant="outlined"
                         sx={{
@@ -10284,9 +10391,7 @@ useEffect(() => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!viewModeOnly && (
-                    !isChildMergedLoading && (
-                      !showSubmitAPButton && (
+                    {!viewModeOnly && !isChildMergedLoading && !showSubmitAPButton && templateActionAddFlag.current === true && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -10296,7 +10401,7 @@ useEffect(() => {
                         >
                             Add
                         </Button>
-                    )))}
+                    )}
                     {/* )} */}
                     {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' && (
                       ! showSubmitAPButton&& (
@@ -10883,7 +10988,7 @@ useEffect(() => {
                 getOptionLabel={(option) => option.name || ""}
                 value={selectedOtherFields || null}
                 onChange={(event, newValue) => setSelectedOtherFields(newValue)}
-                disabled={isChildMergedLoading}
+                disabled={isChildMergedLoading || fieldActionAddFlag.current === false}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -10900,7 +11005,7 @@ useEffect(() => {
           >
             Cancel
           </Button>
-          {!isChildMergedLoading && (
+          {!isChildMergedLoading && fieldActionAddFlag.current === true && (
             <>
               <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
                 Submit
@@ -10967,6 +11072,8 @@ useEffect(() => {
                     label={selectKey?.title.trim() == "Reassign IO" ? "Division" : selectKey?.title}
                     />
                 )}
+                disabled={fieldActionAddFlag.current === false}
+
               />
             </FormControl>
 
@@ -10985,6 +11092,7 @@ useEffect(() => {
                         label="IO User"
                       />
                     )}
+                    disabled={fieldActionAddFlag.current === false}
                   />
                 </FormControl>
               </>
@@ -11011,14 +11119,17 @@ useEffect(() => {
             }}
             >Cancel
           </Button>
-          <Button
-            className="fillPrimaryBtn"
-            onClick={() => {
-              handleMassiveDivisionChange();
-            }}
-          >
-            Submit
-          </Button>
+          {
+            fieldActionAddFlag.current === true &&
+            <Button
+                className="fillPrimaryBtn"
+                onClick={() => {
+                    handleMassiveDivisionChange();
+                }}
+            >
+                Submit
+            </Button>
+          }
         </DialogActions>
       </Dialog>
 
@@ -12084,6 +12195,47 @@ useEffect(() => {
           </Box>
         </DialogContent>
       </Dialog>
+
+          { showFileAttachment && 
+                <Dialog
+                    open={showFileAttachment}
+                    onClose={() => setShowFileAttachments(false)}
+                    fullWidth
+                    maxWidth="sm"
+                >
+                    <DialogTitle>
+                        {selectedOtherTemplate?.['name']?.charAt(0).toUpperCase() + selectedOtherTemplate?.['name']?.slice(1) || "Attachment View"}
+                        <IconButton
+                            edge="end"
+                            color="inherit"
+                            onClick={() => setShowFileAttachments(false)}
+                            aria-label="close"
+                            sx={{ position: "absolute", right: 20, top: 12 }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+
+                    <DialogContent
+                        sx={{
+                            maxHeight: "60vh",
+                            overflowY: "auto",
+                        }}
+                        >
+                            <Box pt={2}>
+                                <FileInput
+                                    field={{
+                                        name : selectedOtherTemplate?.['field'] || "",
+                                        disabled: true,
+                                        label : selectedOtherTemplate?.['name'] || "",
+                                    }}
+                                    formData={selectedRowData}
+                                />
+                            </Box>
+                    </DialogContent>
+                </Dialog>
+          }
+
     </Box>
   );
 };

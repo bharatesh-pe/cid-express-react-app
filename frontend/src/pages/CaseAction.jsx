@@ -958,7 +958,28 @@ const CaseActions = () => {
         setPaginationCount(1);
         setForceTableLoad((prev) => !prev);
     }
-    
+
+    const handleTabChange = (values)=>{
+        setTabValue(values);
+        setAddActionFormData({});
+    }
+
+    const handleOtherTemplatePermissions = (type, values) => {
+        setAddActionFormData((prevData) => ({
+            ...prevData,
+            permissions: {
+                ...(prevData.permissions || {}),
+                [type]: values
+            }
+        }));
+    };
+
+    var permissionTypes = ["show", "add", "edit", "delete"];
+
+    if(tabValue !== 'template'){
+        var permissionTypes = ["show", "edit"];
+    }
+
     return (
         <Box p={2} inert={loading ? true : false}>
     
@@ -1050,8 +1071,9 @@ const CaseActions = () => {
                 onClose={() => setActionAddModal(false)}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
-                maxWidth="md"
+                fullScreen
                 fullWidth
+                sx={{marginLeft: '50px'}}
             >
                 <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
                     Add Case Action
@@ -1069,7 +1091,7 @@ const CaseActions = () => {
 
                             <Tabs
                                 value={tabValue}
-                                onChange={(e, newValue) => setTabValue(newValue)}
+                                onChange={(e, newValue) => handleTabChange(newValue)}
                                 centered
                             >
                                 <Tab label="Template-Based Action" value="template" />
@@ -1085,7 +1107,7 @@ const CaseActions = () => {
                                     label="Action Name"
                                     name="name"
                                     autoComplete='off'
-                                    value={addActionFormData.name}
+                                    value={addActionFormData.name || ""}
                                     onChange={handleChange}
                                     error={!!addActionErrors.profile_name}
                                     required
@@ -1125,7 +1147,7 @@ const CaseActions = () => {
 
                             <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
                                 <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
-                                    Choose how do you want to create your template
+                                    Choose which template do you want to create action
                                 </h4>
                                 <Box>
                                     {moduleOptions.options?.map((option, index) => {
@@ -1150,7 +1172,7 @@ const CaseActions = () => {
                                                     required
                                                     id={`${moduleOptions.id}-${option.code}`}
                                                     value={option.code}
-                                                    checked={isSelected}
+                                                    checked={isSelected || false}
                                                     onChange={handleChange}
                                                 />
                                                 <label className='Roboto' style={{ color: `${styles.color}`, fontWeight: `${styles.fontWeight}`, fontSize: '14px', cursor: 'pointer' }} htmlFor={`${moduleOptions.id}-${option.code}`}>
@@ -1183,19 +1205,9 @@ const CaseActions = () => {
                                 />
                             </Box>
 
-                            { tabValue === 'template' ? 
-
-                                <>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Switch name={'is_pdf'} checked={addActionFormData['is_pdf']} onChange={handleSwitch} />
-                                        <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
-                                            Do you want to enable PDF Upload
-                                        </Typography>
-                                    </Box>
-                                </>
-
-                            :
-                                <>
+                                {
+                                    tabValue !== 'template' &&
+                                    <>
                                     <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
                                         <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
                                             Choose which fields do want to update
@@ -1216,22 +1228,32 @@ const CaseActions = () => {
                                             }
                                         />
                                     </Box>
-                                </>
+                                    </>
+                                }
 
-                            }
-
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Switch name={'is_approval'} checked={addActionFormData['is_approval']} onChange={handleSwitch} />
-                                        <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
-                                            Do you want to enable Approval
-                                        </Typography>
+                                    <Box sx={{display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', justifyContent: 'start' }}>
+                                        { tabValue === 'template' &&
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <Switch name={'is_pdf'} checked={addActionFormData['is_pdf'] || false} onChange={handleSwitch} />
+                                                <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
+                                                    Do you want to enable PDF Upload
+                                                </Typography>
+                                            </Box>
+                                        }
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Switch name={'is_approval'} checked={addActionFormData['is_approval'] || false} onChange={handleSwitch} />
+                                            <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
+                                                Do you want to enable Approval
+                                            </Typography>
+                                        </Box>
+                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                            <Switch name={'is_view_action'} checked={addActionFormData['is_view_action'] || false} onChange={handleSwitch} />
+                                            <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
+                                                Do you want to enable only View Action
+                                            </Typography>
+                                        </Box>
                                     </Box>
-                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                        <Switch name={'is_view_action'} checked={addActionFormData['is_view_action']} onChange={handleSwitch} />
-                                        <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>
-                                            Do you want to enable only View Action
-                                        </Typography>
-                                    </Box>
+                                    
                                     {
                                         addActionFormData['is_approval'] && 
                                         <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
@@ -1256,32 +1278,38 @@ const CaseActions = () => {
                                         </Box>
                                     }
 
-                                    <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
-                                        <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
-                                            Choose which permission do you want to add
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, color: '#1D2939' }}>
+                                            Choose which permissions you want to add
                                         </h4>
-                                        <Autocomplete
-                                            id=""
-                                            options={permissionData}
-                                            required
-                                            multiple
-                                            limitTags={3}
-                                            getOptionLabel={(option) => option.permission_name}
-                                            value={permissionData.filter(option => 
-                                                [].concat(addActionFormData?.['permissions'] || []).includes(option.permission_key)
-                                            )}
-                                            onChange={(event, newValue) => {
-                                                const selectedCodes = newValue ? newValue.map(item => item.permission_key) : [];
-                                                handleOtherTemplateChange('permissions', selectedCodes);
-                                            }}
-                                            renderInput={(params) =>
-                                                <TextField
-                                                    {...params}
-                                                    className='selectHideHistory'
-                                                    label='Select Permission'
-                                                />
-                                            }
-                                        />
+
+                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                                            {permissionTypes.map((type) => (
+                                                <Box key={type} sx={{width: '48%'}}>
+                                                    <p style={{ textTransform: 'capitalize', margin: '4px 0', color: '#1D2939' }}>Select permissions to {type}</p>
+                                                    <Autocomplete
+                                                        multiple
+                                                        options={permissionData}
+                                                        getOptionLabel={(option) => option.permission_name}
+                                                        value={permissionData.filter(option =>
+                                                            (addActionFormData?.permissions?.[type] || []).includes(option.permission_key)
+                                                        )}
+                                                        onChange={(event, newValue) => {
+                                                            const selected = newValue.map(item => item.permission_key);
+                                                            handleOtherTemplatePermissions(type, selected);
+                                                        }}
+                                                        renderInput={(params) =>
+                                                            <TextField
+                                                                {...params}
+                                                                sx={{textTransform: 'capitalize'}}
+                                                                label={`Select ${type} Permissions`}
+                                                                className='selectHideHistory'
+                                                            />
+                                                        }
+                                                    />
+                                                </Box>
+                                            ))}
+                                        </Box>
                                     </Box>
 
                                     <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
