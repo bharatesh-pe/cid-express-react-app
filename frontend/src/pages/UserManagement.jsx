@@ -290,13 +290,25 @@ const UserManagement = () => {
 
     const handleClear = ()=>{
         setSearchValue('');
+        setNewUser({
+            id: null,
+            name: "",
+            mobile: "",
+            role: "",
+            kgid: "",
+            designation: "",
+            supervisor_designation: "",
+            division: "",
+            department: "",
+        });
         setForceTableLoad((prev) => !prev);
     }
 
     const searchTableData = ()=>{
         setPaginationCount(1);
         // setForceTableLoad((prev) => !prev);
-        handleFilters();
+        // handleFilters();
+        fetchUsers(paginationCount);
         setIsFilterApplied(true);
     }
 
@@ -349,10 +361,24 @@ const UserManagement = () => {
   };
   const fetchUsers = async (page) => {
 
+    console.log("newUser",newUser)
+    var filters = {};
+    if (newUser.name) filters.name = newUser.name;
+    if (newUser.kgid) filters.kgid = newUser.kgid;
+    if (newUser.role) filters.role_id = newUser.role;
+    if (newUser.mobile) filters.mobile = newUser.mobile;
+    if (newUser.department) filters.department_id = newUser.department;
+    if (newUser.division) filters.division_id = newUser.division;
+    if (newUser.designation) filters.designation_id = newUser.designation;
+    if (newUser.dev_status !== undefined)
+    filters.dev_status = newUser.dev_status;
+
+    var current_page = paginationCount;
     var payload = {
-        page,
+        page: current_page,
         limit: 10,
         search: searchValue || "",
+        filter: filters
     }
 
     setLoading(true);
@@ -409,6 +435,13 @@ const UserManagement = () => {
       }));
 
       setUsers(formattedUsers);
+
+      if(modalTitle === "Set Filters")
+      {
+        setIsFilterApplied(true);
+        setIsModalOpen(false);
+        setModalTitle("Add User");
+      }
     } catch (err) {
       console.log(err);
       let errorMessage = err.message || "Failed to fetch users.";
@@ -1477,17 +1510,17 @@ const UserManagement = () => {
                         onClick={() => {
                           setIsModalOpen(true);
                           setModalTitle("Set Filters");
-                          setNewUser({
-                            id: null,
-                            name: "",
-                            mobile: "",
-                            role: "",
-                            kgid: "",
-                            designation: "",
-                            supervisor_designation: "",
-                            division: "",
-                            department: "",
-                          });
+                        //   setNewUser({
+                        //     id: null,
+                        //     name: "",
+                        //     mobile: "",
+                        //     role: "",
+                        //     kgid: "",
+                        //     designation: "",
+                        //     supervisor_designation: "",
+                        //     division: "",
+                        //     department: "",
+                        //   });
                         }}
             
                       >
@@ -1700,7 +1733,7 @@ const UserManagement = () => {
                     },
                   }}
                   onClick={
-                    modalTitle === "Set Filters" ? handleFilters : handleSave
+                    modalTitle === "Set Filters" ? fetchUsers : handleSave
                   }
                 >
                 {modalTitle === "Edit User"
