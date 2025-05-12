@@ -1518,9 +1518,7 @@ const DynamicForm = ({
                 </Typography>
               )}
               <Typography className="HighlightedText">
-                {stepperData && stepperData[activeStep]
-                  ? stepperData[activeStep]
-                  : "Details"}
+                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : "General Detail"}
               </Typography>
             </Box>
 

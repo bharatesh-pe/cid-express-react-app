@@ -2178,7 +2178,7 @@ const Formbuilder = () => {
                                             </Typography>
                                             }
                                             <Typography className='HighlightedText'>
-                                                {steps && steps.length ? steps[activeStep] : 'Details'}
+                                                {steps && steps.length ? steps[activeStep] : 'General Detail'}
                                             </Typography>
                                         </Box>
                                         {/* <Box sx={{ display: 'flex', alignItems: 'center', gap: '20px', background: '#F9FAFB', border: '.8px solid #D0D5DD', borderRadius: '6px', padding: '4px 8px' }} px={1}>
