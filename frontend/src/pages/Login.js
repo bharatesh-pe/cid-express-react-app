@@ -465,10 +465,10 @@ const Login = () => {
 
             localStorage.setItem("userOverallDesignation", JSON.stringify(gettingLoginUserDivisons));
 
-            if(JSON.parse(localStorage.getItem("user_id")) === 1){
+            if (location.pathname === "/dashboard") {
+                navigate(0);
+            } else {
                 navigate("/dashboard");
-            }else{
-                navigate("/case/ui_case");
             }
 
         } catch (err) {
