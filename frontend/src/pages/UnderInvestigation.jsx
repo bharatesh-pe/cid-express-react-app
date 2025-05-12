@@ -770,7 +770,7 @@ const UnderInvestigation = () => {
         setSelectedRowData(selectedRow);
         setApprovedByCourt(approved);
         setShowOrderCopy(true);
-        showNewApprovalPage("Pending Acceptance");
+        showNewApprovalPage("B Report");
     }
 
     const handleNatureOfDisposalSubmit = () => {
@@ -1905,7 +1905,28 @@ const UnderInvestigation = () => {
         }
 
         if(showOrderCopy){
-            showActionsOptionsTemplate("cid_ui_case_court_order_copy");
+
+            if(!approvedByCourt){
+
+                Swal.fire({
+                    title: "Choose Case Type",
+                    text: "Please select the case type you want to proceed with.",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonText: "PT Case",
+                    cancelButtonText: "UI Case",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        showActionsOptionsTemplate("cid_pending_trail");
+                    } else {
+                        console.log("UI Case selected");
+                    }
+                });
+
+            }else{
+                showActionsOptionsTemplate("cid_ui_case_court_order_copy");
+            }
+
             return;
         }
 
@@ -8285,7 +8306,7 @@ useEffect(() => {
         } : null,
         sysStatus === "b_Report" ?
         {
-            name: "Approved By Court",
+            name: "Accepted By Court",
             onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
         } : null,
         sysStatus === "b_Report" ? 
