@@ -30,6 +30,8 @@ import eyes from "../Images/eye.svg"
 import edit from "../Images/tableEdit.svg";
 import trash from "../Images/tableTrash.svg";
 import ErrorIcon from "../Images/erroricon.png";
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+
 
 const CaseActions = () => {
     const navigate = useNavigate();
@@ -1075,28 +1077,33 @@ const CaseActions = () => {
                 fullWidth
                 sx={{marginLeft: '50px'}}
             >
-                <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }} >
-                    Add Case Action
-                    <IconButton
-                        aria-label="close"
-                        onClick={() => setActionAddModal(false)}
-                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, justifyContent: 'space-between' }}
+                >
+                    <Box sx={{display:'inline-flex', alignItems: 'center', gap: 1, cursor: 'pointer'}} onClick={() => setActionAddModal(false)} >
+                        <ArrowBackIcon/>
+                        Add Case Action
+                    </Box>
+
+                    <Tabs
+                        value={tabValue}
+                        onChange={(e, newValue) => handleTabChange(newValue)}
+                        centered
                     >
-                        <CloseIcon />
-                    </IconButton>
+                        <Tab label="Template-Based Action" value="template" />
+                        <Tab label="Field-Based Action" value="field" />
+                    </Tabs>
+
+                    <Box sx={{display:'inline-flex', alignItems: 'center', gap: 1}}>
+                        <Button variant="contained" className='blueButton' sx={{padding: '6px 32px'}} onClick={() => addNewActionData()}>Add</Button>
+                    </Box>
+
                 </DialogTitle>
+
                 <DialogContent sx={{ minWidth: '400px' }}>
                     <DialogContentText id="alert-dialog-description">
                         <FormControl sx={{paddingTop: '20px', gap:'32px'}} fullWidth>
-
-                            <Tabs
-                                value={tabValue}
-                                onChange={(e, newValue) => handleTabChange(newValue)}
-                                centered
-                            >
-                                <Tab label="Template-Based Action" value="template" />
-                                <Tab label="Field-Based Action" value="field" />
-                            </Tabs>
 
                             <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
                                 <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
@@ -1277,10 +1284,11 @@ const CaseActions = () => {
                                             />
                                         </Box>
                                     }
+                                    <div className='divider' style={{margin: '0'}}></div>
 
                                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                        <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, color: '#1D2939' }}>
-                                            Choose which permissions you want to add
+                                        <h4 className='Roboto' style={{ fontSize: '20px', fontWeight: '500', margin: 0, color: '#1D2939' }}>
+                                            Permissions
                                         </h4>
 
                                         <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
@@ -1311,10 +1319,11 @@ const CaseActions = () => {
                                             ))}
                                         </Box>
                                     </Box>
+                                    <div className='divider' style={{margin: '0'}}></div>
 
-                                    <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}}>
+                                    <Box sx={{display:'flex',flexDirection:'column',gap:'12px'}} mb={5}>
                                         <h4 className='Roboto' style={{ fontSize: '16px', fontWeight: '400', margin: 0, marginBottom:0, color: '#1D2939' }} >
-                                            Choose which action do want to add
+                                            Choose which tabs should show the filter
                                         </h4>
                                         <Autocomplete
                                             id=""
@@ -1344,10 +1353,6 @@ const CaseActions = () => {
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
-                <DialogActions sx={{ padding: '12px 24px' }}>
-                    <Button onClick={() => setActionAddModal(false)}>Cancel</Button>
-                    <Button variant="contained" className='blueButton' sx={{padding: '6px 32px'}} onClick={() => addNewActionData()}>Add</Button>
-                </DialogActions>
             </Dialog>
             
 
