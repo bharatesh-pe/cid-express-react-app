@@ -32,11 +32,11 @@ const MastersView = () => {
     const columns: GridColDef[] = [
         { field: 'sl_no', headerName: 'S.No', resizable: false,width: 70, renderCell: (params) => tableCellRender(params, "sl_no") },
         { 
-            field: 'template_name', 
+            field: 'name', 
             headerName: 'Masters List',
             resizable: false,
             width: 250,
-            renderCell: (params) => tableCellRender(params, "template_name"),
+            renderCell: (params) => tableCellRender(params, "name"),
             renderHeader: () => (
                 <div onClick={() => ApplyTableSort('table_name')} style={{ display: "flex", alignItems: "center", justifyContent: 'space-between', width: '200px' }}>
                     <span style={{ color:'#1D2939', fontSize:'15px', fontWeight:'500' }}>Masters List</span>
@@ -112,28 +112,28 @@ const MastersView = () => {
         setShowMasters(false);
     
        switch (selectedName) {
-            case "Designation":
+            case "designation":
                 navigate("/master/designation");
                 break;
-            case "Department":
+            case "department":
                 navigate("/master/department");
                 break;
-            case "Division":
+            case "division":
                 navigate("/master/division");
                 break;
-            case "Approval Items":
+            case "approval_item":
                 navigate("/master/approval");
                 break;
-            case "KGID":
+            case "kgid":
                 navigate("/master/kgid");
                 break;
-            case "Hierarchy":
+            case "hierarchy":
                 navigate("/master/hierarchy");
                 break;
-            case "Act":
+            case "act":
                 navigate("/master/act");
                 break;
-            case "Section":
+            case "section":
                 navigate("/master/section");
                 break;
             default:
@@ -210,7 +210,8 @@ const MastersView = () => {
                     rows={filteredMasters.map((master, index) => ({
                         id: index + 1,
                         sl_no: index + 1,
-                        template_name: master.name
+                        name: master.name,
+                        template_name: master.key
                     }))} 
                     columns={columns} 
                     paginationCount={paginationCount} 
