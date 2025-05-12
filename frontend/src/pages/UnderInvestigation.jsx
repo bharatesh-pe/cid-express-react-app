@@ -770,7 +770,7 @@ const UnderInvestigation = () => {
         setSelectedRowData(selectedRow);
         setApprovedByCourt(approved);
         setShowOrderCopy(true);
-        showNewApprovalPage("B Report");
+        showNewApprovalPage("Pending Acceptance");
     }
 
     const handleNatureOfDisposalSubmit = () => {
@@ -1120,7 +1120,7 @@ const UnderInvestigation = () => {
             var approvalItems = {
                 id : selectedRowData.id,
                 module_name : 'Under Investigation',
-                action : 'B Report Change'
+                action : 'Pending Acceptance Change'
             }
 
             othersData = {
@@ -9723,7 +9723,7 @@ useEffect(() => {
                 id="filterReinvestigation"
                 className={`filterTabs ${sysStatus === "b_Report" ? "Active" : ""}`}
             >
-                B Report
+                Pending Acceptance
             </Box>
             <Box
               onClick={() => {
@@ -12013,7 +12013,7 @@ useEffect(() => {
                                 options={[
                                     { name: "A Final Charge Sheet", code: "disposal" },
                                     { name: "A Preliminary Charge Sheet", code: "178_cases" },
-                                    { name: "B Report", code: "b_Report" },
+                                    { name: "Pending Acceptance", code: "b_Report" },
                                     { name: "C Report", code: "c_Report" },
                                 ]}
                                 getOptionLabel={(option) => option.name || ""}
