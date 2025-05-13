@@ -1240,7 +1240,7 @@ const UnderInvestigation = () => {
 
         var othersUpdateData = {
             id : selectedRowData.id,
-            sys_status : approvedByCourt ? 'disposal' : 'ui_case',
+            sys_status : 'disposal',
             default_status : "ui_case"
         }
         
@@ -1919,7 +1919,7 @@ const UnderInvestigation = () => {
                     if (result.isConfirmed) {
                         showActionsOptionsTemplate("cid_pending_trail");
                     } else {
-                        console.log("UI Case selected");
+                        natureOfDisposalSysStatus("ui_case")
                     }
                 });
 
