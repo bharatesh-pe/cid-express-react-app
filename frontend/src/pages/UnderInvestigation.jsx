@@ -3225,7 +3225,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     <span
                         style={highlightColor}
                         onClick={onClickHandler}
-                        className={`tableValueTextView Roboto blink-badge ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                        className={`tableValueTextView Roboto`}
                     >
                         {value || "-"}
                     </span>

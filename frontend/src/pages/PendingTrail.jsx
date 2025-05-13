@@ -1400,7 +1400,7 @@ const UnderInvestigation = () => {
                           {
                             field: "field_cc_no./sc_no",
                             headerName: "Cc No./Sc No",
-                            width: 130,
+                            width: 180,
                             resizable: true,
                             cellClassName: 'justify-content-start',
                             renderHeader: (params) => (
@@ -1524,19 +1524,22 @@ const UnderInvestigation = () => {
 
     return (
         <Tooltip title={value} placement="top">
-            <span
-                style={highlightColor}
-                onClick={onClickHandler}
-                className={`tableValueTextView Roboto ${
-                params?.row &&
-                !params.row["ReadStatus"] &&
-                localStorage.getItem("authAdmin") === "false"
-                    ? ""
-                    : "read"
-                }`}
-            >
-                {value || "-"}
-            </span>
+            {
+                (key === "field_cc_no./sc_no" && (value === "" || !value)) ? (
+                    <span className="io-alert-flashy">
+                        <span className="flashy-dot"></span>
+                        CC Pending
+                    </span>                  
+                ) : (
+                    <span
+                        style={highlightColor}
+                        onClick={onClickHandler}
+                        className={`tableValueTextView Roboto`}
+                    >
+                        {value || "-"}
+                    </span>
+                )
+            }
         </Tooltip>
     );
   };
