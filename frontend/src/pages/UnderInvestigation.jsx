@@ -90,6 +90,8 @@ import FileInput from "../components/form/FileInput";
 const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+    const { pageCount, systemStatus } = location.state || {};
+
   // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
 
     //   new further investigation func states
@@ -109,7 +111,7 @@ const UnderInvestigation = () => {
     const [approvalSaveCaseData, setApprovalSaveCaseData] = useState({});
 
   const [showOptionModal, setShowOptionModal] = useState(false);
-  const [paginationCount, setPaginationCount] = useState(1);
+  const [paginationCount, setPaginationCount] = useState(pageCount ? pageCount : 1);
   const [tableSortOption, settableSortOption] = useState("DESC");
   const [tableSortKey, setTableSortKey] = useState("");
   const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
@@ -121,7 +123,7 @@ const UnderInvestigation = () => {
   const [template_name, setTemplate_name] = useState("");
   const [table_name, setTable_name] = useState("");
 
-  const [sysStatus, setSysSattus] = useState("ui_case");
+  const [sysStatus, setSysSattus] = useState(systemStatus ? systemStatus : "ui_case");
 
   const [stepperData, setstepperData] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -3025,6 +3027,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 }).filter(Boolean);                
 
                 var extraActions = [
+                    {
+                        name: "Crime Investigation",
+                    },
                     ...(sysStatus !== "b_Report" ? updatedActions : []),
                     sysStatus === "disposal"
                     ? {
@@ -8206,6 +8211,8 @@ useEffect(() => {
                             contentArray: JSON.stringify(hoverTableOptionsRef.current),
                             headerDetails: rowData?.["field_cid_crime_no./enquiry_no"] || null,
                             backNavigation: "/case/ui_case",
+                            paginationCount: paginationCount,
+                            sysStatus: sysStatus
                         }
 
                         navigate("/caseView", {state: stateObj});

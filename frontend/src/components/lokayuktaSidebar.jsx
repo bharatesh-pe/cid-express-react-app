@@ -100,6 +100,8 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
         }
     };
 
+    const validSidebarItems = contentArray?.filter(item => !item?.field && item?.table) || [];
+
     return (
         <Box>
             <Box
@@ -154,33 +156,25 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
                                     paddingBottom: "150px",
                                 }}
                             >
-                                {contentArray && contentArray.length > 0 && contentArray.map((element, index) => {
-
-                                    if(element?.field){
-                                        return null;
-                                    }
-
-                                    return (
-                                        <Tooltip title={element?.name} arrow placement="right">
-                                            <ListItem
-                                                sx={{ cursor: "pointer" }}
-                                                // className={`lokayuktaSidebarMenus menuColor_${index + 1} ${activeSidebar?.name === element.name && "active"}`}
-                                                className={`sidebarMenus ${activeSidebar?.name === element.name && "active"}`}
-                                                onClick={()=>onClick ? onClick(element) : console.log("sidebar selected")}
-                                            >
-                                                <ListItemText primary={element?.name} />
-                                                {/* {
-                                                    activeSidebar?.name === element.name &&
-                                                    <Box>
-                                                        <span className="sidebarHighlight">
-                                                            <span className="flashy-dot"></span>
-                                                        </span>  
-                                                    </Box>
-                                                } */}
-                                            </ListItem>
-                                        </Tooltip>
-                                    );
-                                })}
+                                {
+                                    validSidebarItems.length > 0 ? (
+                                        validSidebarItems.map((element, index) => (
+                                            <Tooltip title={element?.name} arrow placement="right" key={index}>
+                                                <ListItem
+                                                    sx={{ cursor: "pointer" }}
+                                                    className={`sidebarMenus ${activeSidebar?.name === element.name ? "active" : ""}`}
+                                                    onClick={() => onClick ? onClick(element) : console.log("sidebar selected")}
+                                                >
+                                                    <ListItemText primary={element?.name} />
+                                                </ListItem>
+                                            </Tooltip>
+                                        ))
+                                    ) : (
+                                        <ListItem sx={{ cursor: "pointer", textAlign: 'center' }} className="sidebarMenus">
+                                            <ListItemText primary="No Actions Found" />
+                                        </ListItem>
+                                    )
+                                }
 
                             </Box>
                         </List>

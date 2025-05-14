@@ -9,7 +9,7 @@ const LokayuktaView = () => {
 
     const navigate = useNavigate();
     const { state } = useLocation();
-    const { contentArray, headerDetails, backNavigation } = state || {};
+    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus } = state || {};
 
     const [activeSidebar, setActiveSidebar] = useState(null);
 
@@ -18,10 +18,15 @@ const LokayuktaView = () => {
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
     const backToForm = ()=>{
-        console.log(backNavigation,"backNavigation");
 
         if(backNavigation){
-            navigate(backNavigation);
+
+            var stateObj = {
+                pageCount: paginationCount,
+                systemStatus: sysStatus
+            }
+
+            navigate(backNavigation, {state : stateObj});
         }
     }
 
@@ -84,7 +89,7 @@ const LokayuktaView = () => {
                                 Print
                             </Button>
                         }
-                        <Button
+                        {/* <Button
                             sx={{
                                 background: "#0167F8",
                                 borderRadius: "8px",
@@ -96,7 +101,7 @@ const LokayuktaView = () => {
                             className="Roboto blueButton"
                         >
                             Update Case
-                        </Button>
+                        </Button> */}
                     </Box>
 
                 </Box>
