@@ -574,6 +574,7 @@ const UnderInvestigation = () => {
   ] = useState(null);
   const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
   const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
+  const [showAddAPButton, setShowAddAPButton] = useState(false);
 
   // for pdf download
   const [isDownloadPdf, setIsDownloadPdf] = useState(false);
@@ -2453,7 +2454,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       setTableData(processedData);
 
       const excludedKeys = [
-        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name"
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name" ,"field_io_name_id"
       ];
 
       const generateReadableHeader = (key) =>
@@ -2640,7 +2641,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const excludedKeys = [
                     "created_at", "updated_at", "id", "deleted_at", "attachments",
                     "Starred", "ReadStatus", "linked_profile_info",
-                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name"
+                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name","field_io_name_id"
                 ];
 
                 const generateReadableHeader = (key) =>
@@ -2904,7 +2905,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -6011,6 +6012,7 @@ useEffect(() => {
     var getTemplatePayload = {
         table_name: options.table,
         ui_case_id: selectedRow.id,
+        case_io_id: selectedRow.field_io_name_id || "",
         pt_case_id: selectedRow?.pt_case_id || null,
         limit : 10,
         page : !searchFlag ? otherTemplatesPaginationCount : 1,
@@ -6060,13 +6062,20 @@ useEffect(() => {
           
           setShowReplacePdfButton(showReplacePdf);
           
-          let anySubmitAP = false;
+          let anySubmitAP = true;
+          let anyAddAP = false;
 
           if (options.table === "cid_ui_case_action_plan") {
-            anySubmitAP = records.some(record => record.field_status === "submit");
+            if(records.some(record => record.supervisior_designation_id == localStorage.getItem('designation_id')))
+            {
+                anySubmitAP = false;
+            }
+            // anySubmitAP = records.some(record => record.field_status === "submit");
           }
 
+          console.log("checking uv",anySubmitAP)
           setShowSubmitAPButton(anySubmitAP);
+          setShowAddAPButton(anyAddAP);
 
           if (getTemplateResponse.data[0]) {
             var excludedKeys = [
@@ -6085,7 +6094,8 @@ useEffect(() => {
               excludedKeys.push("hasFieldPrStatus");
             }
             if (options.table === "cid_ui_case_action_plan") {
-              excludedKeys.push("field_status");
+                excludedKeys.push("field_status");
+                excludedKeys.push("supervisior_designation_id");
             }
             if (options.table === "cid_ui_case_trail_monitoring") {
               excludedKeys.push("field_witness");
@@ -6537,7 +6547,21 @@ useEffect(() => {
 
                     const isViewAction = options.is_view_action === true
                     
-                    const isActionPlan = options.table === "cid_ui_case_action_plan" && params.row.field_status === 'submit';
+                    var isActionPlan = true;
+
+                    if(options.table === "cid_ui_case_action_plan")
+                    {
+                        if(params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
+                        {
+                            isActionPlan =false;
+                        }
+
+                        if(params.row.field_status === 'submit')
+                        {
+                            isActionPlan =true;
+                        }
+                    }
+
                     return (
                       <Box
                         sx={{
@@ -10286,7 +10310,7 @@ useEffect(() => {
                     {/* {isIoAuthorized && ( */}
                     {!viewModeOnly && (
                     !isChildMergedLoading && (
-                      !showSubmitAPButton && (
+                      !showAddAPButton && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -10298,7 +10322,7 @@ useEffect(() => {
                         </Button>
                     )))}
                     {/* )} */}
-                    {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' && (
+                    {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' &&  (
                       ! showSubmitAPButton&& (
                       <Button
                       variant="contained"
