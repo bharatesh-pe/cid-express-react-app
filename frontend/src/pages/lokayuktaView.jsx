@@ -32,10 +32,7 @@ const LokayuktaView = () => {
 
     const sidebarActive = (item)=>{
         setActiveSidebar(item);
-    }
-
-    console.log(userPermissions[0]?.case_details_print,"userPermissions[0]?.case_details_print");
-    
+    }    
 
     return (
         <Box sx={{ display: "flex" }}>
