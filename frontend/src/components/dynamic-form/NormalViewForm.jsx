@@ -1348,7 +1348,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
               )
             }
 
-            {
+            {/* {
                 (readOnlyTemplate && userPermissions[0]?.edit_case) && 
                 <Button
                     onClick={templateEdit}
@@ -1364,7 +1364,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 >
                     Edit Case
                 </Button>
-            }
+            } */}
 
           </Box>
         </Box>
