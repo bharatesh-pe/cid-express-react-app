@@ -65,6 +65,8 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     { field: 'date', headerName: 'Date & Time', flex: 1 }
   ]);
 
+  const saveNewActionRef = useRef(false);
+
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       setFormData(initialData);
@@ -448,11 +450,11 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         if (!result.isConfirmed) {
                             return false;
                         }else{
-                            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+                            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData, saveNewActionRef?.current);  // This will pass the form data to the parent `onSubmit` function
                         }
                     })
                 }else{
-                    !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+                    !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData, saveNewActionRef?.current);  // This will pass the form data to the parent `onSubmit` function
                 }
     
             } catch (error) {
@@ -473,7 +475,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 }
             }
         }else{
-            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData);  // This will pass the form data to the parent `onSubmit` function
+            !readOnlyTemplate && editDataTemplate ? onUpdate(formData) : onSubmit(formData, saveNewActionRef?.current);  // This will pass the form data to the parent `onSubmit` function
         }
     } else {
         toast.warning('Please Fill Mandatory Fields', {
@@ -1319,22 +1321,29 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
               :!readOnlyTemplate && onSubmit && (
                 <>
                   <Button
-                    onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()}
+                  onClick={() => {
+                      saveNewActionRef.current = false;
+                      formButtonRef &&
+                      formButtonRef.current &&
+                      formButtonRef.current.click()
+                  }}
                     sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
                     className="Roboto blueButton"
                   >
                     Save
                   </Button>
             
-                  {table_name === 'cid_ui_case_action_plan' && (
                     <Button
                     variant="contained" color="success"
-
-                    onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()}
+                    onClick={() =>{
+                        saveNewActionRef.current = true;
+                        formButtonRef &&
+                        formButtonRef.current &&
+                        formButtonRef.current.click()
+                    }}
                     >
                       Save & New
                     </Button>
-                  )}
                 </>
               )
             }

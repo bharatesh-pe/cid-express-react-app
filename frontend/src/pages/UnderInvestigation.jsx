@@ -98,6 +98,7 @@ const UnderInvestigation = () => {
     const [disabledApprovalItems, setDisabledApprovalItems] = useState(false);
 
     const [saveNew, setSaveNew] = useState(null);
+    const [saveNewAction, setSaveNewAction] = useState(null);
 
     // on save approval modal
 
@@ -160,8 +161,7 @@ const UnderInvestigation = () => {
   const [selectedOtherTemplate, setselectedOtherTemplate] = useState({});
   const [otherTemplateData, setOtherTemplateData] = useState([]);
   const [otherInitialTemplateData, setOtherInitialTemplateData] = useState([]);
-  const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] =
-    useState(false);
+  const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] = useState(false);
   const [otherEditTemplateData, setOtherEditTemplateData] = useState(false);
   const [otherRowId, setOtherRowId] = useState(null);
   const [otherTemplateId, setOtherTemplateId] = useState(null);
@@ -3848,6 +3848,7 @@ useEffect(() => {
           );
         }
         setSaveNew(null);
+        setSaveNewAction(null);
       } else {
         const errorMessage = viewTemplateResponse.message
           ? viewTemplateResponse.message
@@ -3894,6 +3895,7 @@ useEffect(() => {
         }
         setFormOpen(false);
         setSaveNew(null);
+        setSaveNewAction(null);
 
     });
 
@@ -3929,6 +3931,7 @@ useEffect(() => {
     };
     setLoading(true);
     setOtherReadOnlyTemplateData(false);
+    setOtherEditTemplateData(false);
     try {
       const viewTemplateResponse = await api.post(
         "/templates/viewTemplate",
@@ -4353,7 +4356,8 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     }
   };
 
-  const otherAPPRTemplateSaveFunc = async (data) => {
+  const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
+
     if ((!natureOfDisposalModal && !showOrderCopy) &&
         (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
       toast.warning("Please Check The Template", {
@@ -4444,9 +4448,13 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
           };
           onUpdateTemplateData(combinedData);
         }
-        await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+        if(saveNewAction){
+          await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);   
+          showOptionTemplate(selectedOtherTemplate.table);
+        }else{
+          handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+        }
 
-        showOptionTemplate(selectedOtherTemplate.table);
       } else {
         toast.error(response.message || "Failed to change the status. Please try again.", {
           position: "top-right",
@@ -4464,7 +4472,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     }
   };
 
-  const otherTemplateSaveFunc = async (data) => {
+  const otherTemplateSaveFunc = async (data, saveNewAction) => {
 
     if ((!natureOfDisposalModal && !showOrderCopy) && (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
         toast.warning("Please Check The Template", {
@@ -4597,18 +4605,16 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
-                onOpen: () => {
-                  if (sysStatus === "merge_cases") {
-                    loadMergedCasesData(paginationCount);
-                  } else {
-                    if(!selectedOtherTemplate?.field){
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
-                    }else{
-                        loadTableData(paginationCount);
-                    }
-                  }
-                },
             });
+
+            if (sysStatus === "merge_cases") {
+              loadMergedCasesData(paginationCount);
+            }else if(saveNewAction){
+              await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
+              showOptionTemplate(selectedOtherTemplate.table);
+            }else{
+              handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
+            }
 
             setOtherFormOpen(false);
             setAddApproveFlag(false);
@@ -5122,6 +5128,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
   };
 
   const onSaveTemplateData = async (data, saveNew) => {
+
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
