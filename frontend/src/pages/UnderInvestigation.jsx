@@ -98,6 +98,7 @@ const UnderInvestigation = () => {
     const [disabledApprovalItems, setDisabledApprovalItems] = useState(false);
 
     const [saveNew, setSaveNew] = useState(null);
+    const [saveNewAction, setSaveNewAction] = useState(null);
 
     // on save approval modal
 
@@ -160,8 +161,7 @@ const UnderInvestigation = () => {
   const [selectedOtherTemplate, setselectedOtherTemplate] = useState({});
   const [otherTemplateData, setOtherTemplateData] = useState([]);
   const [otherInitialTemplateData, setOtherInitialTemplateData] = useState([]);
-  const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] =
-    useState(false);
+  const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] = useState(false);
   const [otherEditTemplateData, setOtherEditTemplateData] = useState(false);
   const [otherRowId, setOtherRowId] = useState(null);
   const [otherTemplateId, setOtherTemplateId] = useState(null);
@@ -576,6 +576,7 @@ const UnderInvestigation = () => {
   const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
   const [showAddAPButton, setShowAddAPButton] = useState(false);
 
+  const [showSubmitPFButton, setShowSubmitPFButton] = useState(false);
   // for pdf download
   const [isDownloadPdf, setIsDownloadPdf] = useState(false);
   const [downloadPdfFields, setDownloadPdfFields] = useState({});
@@ -3653,76 +3654,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
     }
   };
-//   const loadAOFields = async () => {
-//     setLoading(true);
-//     try {
-//       const response = await api.post("/templates/viewTemplate", {
-//         table_name: "cid_under_investigation",
-//       });
-//       if (response.success && response.data?.fields) {
-//         let aoOnlyFields = response.data.fields.filter(field =>
-//           field.ao_field === true &&
-//           field.hide_from_ux === false &&
-//           field.name !== 'field_act' &&
-//           field.name !== 'field_section'
-//         );
-                
-//         const briefFactField = response.data.fields.find(field => field.name === 'field_breif_fact');
-//         const policeStationField = response.data.fields.find(field => field.name === 'field_investigation_carried_out_by_the_police_station');
-        
-//         if (briefFactField && !aoOnlyFields.includes(briefFactField)) {
-//             aoOnlyFields.push(briefFactField);
-//         }
-        
-//         if (policeStationField && !aoOnlyFields.includes(policeStationField)) {
-//             aoOnlyFields.push(policeStationField);
-//         }
-
-//        if (aoOnlyFields.length > 0) {
-//             aoOnlyFields.forEach((field, index) => {
-//                 if(field && field.api)
-//                 {
-//                      var payloadApi = field.api
-
-//                      const response = await api.post(payloadApi, apiPayload);
-                     
-//                     if (!response.data) return { id: field.id, options: [] };
-
-//                     const updatedOptions = response.data.map((templateData) => {
-
-//                         const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
-
-//                         var headerName = nameKey;
-//                         var headerId = 'id';
-
-//                         return {
-//                             name: templateData[headerName],
-//                             code: templateData[headerId],
-//                         };
-//                     });
-
-//                     // return { id: field.id, options: updatedOptions };
-//                     field.options = updatedOptions
-//                 }
-//             });
-//         }
-
-        
-        
-//         setAoFields(aoOnlyFields);
-        
-//         loadValueField(aoFieldId, false, "cid_under_investigation");
-//         setLoading(false);
-//     }
-    
-//     } catch (error) {
-//       toast.error("Failed to load AO fields", {
-//         position: "top-right",
-//         autoClose: 3000,
-//         className: "toast-error",
-//       });
-//     }
-//   };
   
 const loadAOFields = async () => {
   setLoading(true);
@@ -3918,6 +3849,7 @@ useEffect(() => {
           );
         }
         setSaveNew(null);
+        setSaveNewAction(null);
       } else {
         const errorMessage = viewTemplateResponse.message
           ? viewTemplateResponse.message
@@ -3964,6 +3896,7 @@ useEffect(() => {
         }
         setFormOpen(false);
         setSaveNew(null);
+        setSaveNewAction(null);
 
     });
 
@@ -3999,6 +3932,7 @@ useEffect(() => {
     };
     setLoading(true);
     setOtherReadOnlyTemplateData(false);
+    setOtherEditTemplateData(false);
     try {
       const viewTemplateResponse = await api.post(
         "/templates/viewTemplate",
@@ -4252,7 +4186,92 @@ useEffect(() => {
     }
   };
 
+const handleSubmitPF = async ({ id, selectedIds }) => {
 
+    if (!id || id.length === 0) {
+      toast.error("Please select at least one record to submit.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
+    const result = await Swal.fire({
+      title: 'Are you sure?',
+      text: "Do you want to submit this Property Form? Once submitted, the selected record will be move to the FSL.",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, submit it!',
+      cancelButtonText: 'Cancel',
+    });
+  
+    if (result.isConfirmed) {
+      const payload = {
+        transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
+        ui_case_id: id,
+        row_ids: selectedIds
+      };
+  
+      try {
+        setLoading(true);
+        const response = await api.post('/templateData/submitPropertyFormFSL', payload);
+  
+        if (response.success) {
+          toast.success("The Property Form has been submitted", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+            onOpen: () => {
+              if (sysStatus === "merge_cases") {
+                loadMergedCasesData(paginationCount);
+              } else {
+                if(!selectedOtherTemplate?.field){
+                    handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
+                }else{
+                    loadTableData(paginationCount);
+                }
+              }
+            },
+        });
+         setSelectedIds([]);
+        } else {
+          toast.error(response.message || 'Something went wrong.', {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+        }
+      } catch (error) {
+        toast.error(error.message || 'Submission failed.', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+      });
+      }finally{
+        setLoading(false);
+      }
+    }
+  };
   const handleSubmitAp = async ({ id }) => {
 
     if (!id || id.length === 0) {
@@ -4338,7 +4357,8 @@ useEffect(() => {
     }
   };
 
-  const otherAPPRTemplateSaveFunc = async (data) => {
+  const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
+
     if ((!natureOfDisposalModal && !showOrderCopy) &&
         (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
       toast.warning("Please Check The Template", {
@@ -4398,7 +4418,7 @@ useEffect(() => {
       normalData["field_pr_status"] = "No";
     }
   
-    normalData.sys_status = "AP";
+    normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : "AP";
     normalData.field_status = "";
     normalData["ui_case_id"] = selectedRowData.id;
   
@@ -4429,9 +4449,13 @@ useEffect(() => {
           };
           onUpdateTemplateData(combinedData);
         }
-        await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+        if(saveNewAction){
+          await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);   
+          showOptionTemplate(selectedOtherTemplate.table);
+        }else{
+          handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+        }
 
-        showOptionTemplate(selectedOtherTemplate.table);
       } else {
         toast.error(response.message || "Failed to change the status. Please try again.", {
           position: "top-right",
@@ -4449,7 +4473,7 @@ useEffect(() => {
     }
   };
 
-  const otherTemplateSaveFunc = async (data) => {
+  const otherTemplateSaveFunc = async (data, saveNewAction) => {
 
     if ((!natureOfDisposalModal && !showOrderCopy) && (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
         toast.warning("Please Check The Template", {
@@ -4582,18 +4606,16 @@ useEffect(() => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
-                onOpen: () => {
-                  if (sysStatus === "merge_cases") {
-                    loadMergedCasesData(paginationCount);
-                  } else {
-                    if(!selectedOtherTemplate?.field){
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
-                    }else{
-                        loadTableData(paginationCount);
-                    }
-                  }
-                },
             });
+
+            if (sysStatus === "merge_cases") {
+              loadMergedCasesData(paginationCount);
+            }else if(saveNewAction){
+              await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
+              showOptionTemplate(selectedOtherTemplate.table);
+            }else{
+              handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
+            }
 
             setOtherFormOpen(false);
             setAddApproveFlag(false);
@@ -5107,6 +5129,7 @@ useEffect(() => {
   };
 
   const onSaveTemplateData = async (data, saveNew) => {
+
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -6077,6 +6100,14 @@ useEffect(() => {
           setShowSubmitAPButton(anySubmitAP);
           setShowAddAPButton(anyAddAP);
 
+          let anySubmitPF = false;
+
+          if (options.table === "cid_ui_case_property_form") {
+            anySubmitPF = records.every(record => record.sys_status === "submit");
+          }
+
+          setShowSubmitPFButton(anySubmitPF);
+
           if (getTemplateResponse.data[0]) {
             var excludedKeys = [
               "updated_at",
@@ -6159,7 +6190,28 @@ useEffect(() => {
                   
                   ]
                 : []),
-              ...(options.table !== "cid_ui_case_progress_report"
+                 ...(options.table === "cid_ui_case_property_form"
+                ? [
+                  {
+                    field: "select",
+                    headerName: "",
+                    width: 50,
+                    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                    renderCell: (params) => {
+                      const isPFUpdated = params.row.sys_status === 'PF';
+
+                      return isPFUpdated ? (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                      </div>
+                    ) : null;
+
+                    }
+                 }
+                  
+                  ]
+                : []),
+              ...(options.table !== "cid_ui_case_progress_report" && options.table !== "cid_ui_case_property_form"
                 ? [
                     {
                       field: "sl_no",
@@ -6562,6 +6614,8 @@ useEffect(() => {
                         }
                     }
 
+                    const isPropertyForm = options.table === "cid_ui_case_property_form" && params.row.sys_status === 'submit';
+                    
                     return (
                       <Box
                         sx={{
@@ -6582,7 +6636,7 @@ useEffect(() => {
                         </Button>
                 
                         {canEdit&& (
-                          !isActionPlan && (
+                          !isActionPlan && !isPropertyForm && (
                           !isViewAction && (
                             !isPdfUpdated && (
                                !isChildMergedLoading && (
@@ -6607,7 +6661,7 @@ useEffect(() => {
                             )))
                           )}
                         {canDelete&& (
-                          !isActionPlan && (
+                          !isActionPlan && !isPropertyForm && (
                           !isViewAction && (
                             !isPdfUpdated && (
                               !isChildMergedLoading && (
@@ -9877,7 +9931,7 @@ useEffect(() => {
                   formConfig={optionFormTemplateData}
                   stepperData={optionStepperData}
                   onSubmit={
-                    selectedOtherTemplate?.table === "cid_ui_case_action_plan"
+                    selectedOtherTemplate?.table === "cid_ui_case_action_plan" ||selectedOtherTemplate?.table === "cid_ui_case_property_form"
                       ? otherAPPRTemplateSaveFunc
                       : otherTemplateSaveFunc 
                   }
@@ -10322,14 +10376,25 @@ useEffect(() => {
                         </Button>
                     )))}
                     {/* )} */}
-                    {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' &&  (
+                    {selectedOtherTemplate?.table === 'cid_ui_case_property_form' && (
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() => {
+                          handleSubmitPF({ id: selectedRowData?.id, selectedIds });
+                        }}
+                        disabled={showSubmitPFButton}
+                      >
+                        Submit
+                      </Button>
+                    )}
+                    {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' && (
                       ! showSubmitAPButton&& (
                       <Button
                       variant="contained"
                       color="success"
                       // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
                       onClick={() => {
-                          console.log('selectedRowData:', selectedRowData);
                           handleSubmitAp({ id: selectedRowData?.id });
                         }}
                       disabled={otherTemplatesTotalRecord === 0}
