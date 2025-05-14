@@ -9912,6 +9912,10 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                       : otherTemplateSaveFunc 
                   }
                   onUpdate={otherTemplateUpdateFunc}
+                   disableEditButton={
+                    (selectedOtherTemplate.table === "cid_ui_case_action_plan") ||
+                    (selectedOtherTemplate.table === "cid_ui_case_property_form")
+                  }
                   onError={onSaveTemplateError}
                   closeForm={closeOtherForm}
                   headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
