@@ -1190,27 +1190,31 @@ const Enquiries = () => {
     );
   };
 
-    const tableHeaderRender = (params, key)=>{
+    const tableHeaderRender = (params, key) => {
         return (
             <Tooltip title={params.colDef.headerName} arrow placement="top">
                 <Typography
-                    className="MuiDataGrid-columnHeaderTitle"
-                    noWrap
+                    className="MuiDataGrid-columnHeaderTitle mui-multiline-header"
                     sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        lineHeight: '1.2em',
+                        fontSize: "15px",
+                        fontWeight: "500",
+                        color: "#1D2939",
                         width: '100%',
-                        color: "#1D2939", 
-                        fontSize: "15px", 
-                        fontWeight: "500"
                     }}
                 >
                     {params.colDef.headerName}
                 </Typography>
             </Tooltip>
-        )
-    }
+        );
+    };
 
   const hyperLinkShow = async (params) => {
     if (!params.table || !params.id) {
@@ -1750,6 +1754,12 @@ const Enquiries = () => {
       }
     }
   };
+
+    
+    const closeAddForm = ((flag)=>{
+        loadTableData(paginationCount);
+        setFormOpen(false);
+    });
 
   const showOptionTemplate = async (table_name) => {
     if (!table_name || table_name === "") {
@@ -2369,7 +2379,7 @@ const Enquiries = () => {
     });
   };
 
-  const onSaveTemplateData = async (data) => {
+  const onSaveTemplateData = async (data, saveNew) => {
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -2466,7 +2476,16 @@ const Enquiries = () => {
           draggable: true,
           progress: undefined,
           className: "toast-success",
-          onOpen: () => loadTableData(paginationCount),
+          onOpen: () => {
+
+            if(saveNew === true){
+                getTemplate(table_name);
+                setFormOpen(false);
+                return;
+            } else {
+                loadTableData(paginationCount);
+            }
+        },
         });
       } else {
         const errorMessage = saveTemplateData.message
@@ -4390,7 +4409,7 @@ const Enquiries = () => {
           initialData={initialData}
           onSubmit={onSaveTemplateData}
           onError={onSaveTemplateError}
-          closeForm={setFormOpen}
+          closeForm={closeAddForm}
         />
       )}
 

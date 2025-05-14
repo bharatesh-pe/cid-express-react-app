@@ -208,7 +208,7 @@ const TemplateMastersView = () => {
                 value={searchValue}
                 id="tableSearch" 
                 size="small"
-                placeholder='Search anything'
+                placeholder='Search templates'
                 variant="outlined" 
                 onKeyDown={(e) => {
                     if (e.key === "Enter") {

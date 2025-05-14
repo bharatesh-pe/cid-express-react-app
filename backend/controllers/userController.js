@@ -565,23 +565,85 @@ exports.user_active_deactive = async (req, res) => {
 };
 
 exports.get_users = async (req, res) => {
-  const excluded_role_ids = [1,2];
+  const excluded_role_ids = [1, 2];
+
   try {
     const {
-      page = 1,
-      limit = 10,
-      sort_by = "created_at",
-      order = "DESC",
+        page = 1,
+        limit = 10,
+        sort_by = "created_at",
+        order = "DESC",
+        search = ""
     } = req.query;
 
     const offset = (page - 1) * limit;
+    const { filter = {}, from_date = null, to_date = null } = req.query;
+    
+    const andConditions = [];
 
-    // Build role WHERE clause manually to avoid boolean spreading
+    // Filter conditions (AND)
+    if (filter.role_id) andConditions.push({ role_id: filter.role_id });
+
+    // if (filter.department_id) {
+    //   if (Array.isArray(filter.department_id)) {
+    //     andConditions.push({ "$users_departments.department_id$": { [Op.in]: filter.department_id } });
+    //   } else {
+    //     andConditions.push({ "$users_departments.department_id$": filter.department_id });
+    //   }
+    // }
+
+    // if (filter.division_id) {
+    //   if (Array.isArray(filter.division_id)) {
+    //     andConditions.push({ "$users_division.division_id$": { [Op.in]: filter.division_id } });
+    //   } else {
+    //     andConditions.push({ "$users_division.division_id$": filter.division_id });
+    //   }
+    // }
+
+    // if (filter.designation_id) andConditions.push({ "$users_designations.designation_id$": filter.designation_id });
+    if (filter.designation_id) {
+      if (Array.isArray(filter.designation_id)) {
+        andConditions.push({ "$users_designations.designation_id$": { [Op.in]: filter.designation_id } });
+      } else {
+        andConditions.push({ "$users_designations.designation_id$": filter.designation_id });
+      }
+    }
+    if (filter.dev_status !== undefined) andConditions.push({ dev_status: filter.dev_status });
+
+    if (filter.kgid) andConditions.push({ "$kgidDetails.id$": filter.kgid });
+    // if (filter.name) andConditions.push({ "$kgidDetails.name$": filter.name });
+    // if (filter.mobile) andConditions.push({ "$kgidDetails.mobile$": filter.mobile });
+
+    // Date filter
+    if (from_date || to_date) {
+      const createdAt = {};
+      if (from_date) createdAt[Op.gte] = new Date(`${from_date}T00:00:00.000Z`);
+      if (to_date) createdAt[Op.lte] = new Date(`${to_date}T23:59:59.999Z`);
+      andConditions.push({ created_at: createdAt });
+    }
+
+    // Search conditions (OR)
+    if (search) {
+      const searchConditions = [
+        { "$kgidDetails.name$": { [Op.iLike]: `%${search}%` } },
+        { "$kgidDetails.kgid$": { [Op.iLike]: `%${search}%` } },
+        { "$kgidDetails.mobile$": { [Op.iLike]: `%${search}%` } },
+        { "$role.role_title$": { [Op.iLike]: `%${search}%` } },
+        { "$users_designations.designation.designation_name$": { [Op.iLike]: `%${search}%` } },
+        { "$users_departments.department.department_name$": { [Op.iLike]: `%${search}%` } },
+        { "$users_division.division.division_name$": { [Op.iLike]: `%${search}%` } }
+      ];
+      andConditions.push({ [Op.or]: searchConditions });
+    }
+
+    // Final WHERE clause
+    const finalWhere = andConditions.length > 0 ? { [Op.and]: andConditions } : {};
+
     const roleWhere = {
       role_id: { [Op.notIn]: excluded_role_ids },
     };
 
-    const include = [
+    const includeFull = [
       {
         model: Role,
         as: "role",
@@ -592,7 +654,7 @@ exports.get_users = async (req, res) => {
       {
         model: KGID,
         as: "kgidDetails",
-        attributes: ["kgid", "name", "mobile"],
+        attributes: ["id","kgid", "name", "mobile"],
         required: false,
       },
       {
@@ -604,7 +666,7 @@ exports.get_users = async (req, res) => {
           {
             model: Designation,
             as: "designation",
-            attributes: ["designation_name"],
+            attributes: ["designation_id","designation_name"],
           },
         ],
       },
@@ -637,16 +699,9 @@ exports.get_users = async (req, res) => {
     ];
 
     const { rows: userRows, count: totalItems } = await Users.findAndCountAll({
-      attributes: ["user_id"],
-      include: [
-        {
-          model: Role,
-          as: "role",
-          required: true,
-          where: roleWhere,
-          attributes: [],
-        },
-      ],
+      attributes: ["user_id", "role_id", "dev_status"],
+      include: includeFull,
+      where: finalWhere,
       order: [[sort_by, order]],
       limit: parseInt(limit),
       offset: parseInt(offset),
@@ -654,16 +709,21 @@ exports.get_users = async (req, res) => {
       subQuery: false,
     });
 
-    const userIds = userRows.map(u => u.user_id);
+    // const users = userRows.map(u => u.user_id);
+    const users = userRows;
 
-    const users = await Users.findAll({
-      where: {
-        user_id: userIds,
-      },
-      attributes: ["user_id", "role_id", "dev_status"],
-      include,
-      order: [[sort_by, order]],
-    });
+    if (users.length === 0) {
+      return res.status(200).json({
+        users: [],
+        meta: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          totalItems: 0,
+          totalPages: 0,
+          order,
+        },
+      });
+    }
 
     const totalPages = Math.ceil(totalItems / limit);
 
@@ -685,7 +745,6 @@ exports.get_users = async (req, res) => {
     });
   }
 };
-
 
 // exports.filter_users = async (req, res) => {
 //   const {
@@ -853,6 +912,9 @@ exports.filter_users = async (req, res) => {
     }
 
     const filters = orConditions.length > 0 ? { [Op.or]: orConditions } : {};
+
+
+    console.log("############################################## filters",filters);
 
     const { rows: users, count: totalItems } = await Users.findAndCountAll({
       include: [
