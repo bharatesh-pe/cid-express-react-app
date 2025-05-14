@@ -574,7 +574,7 @@ const UnderInvestigation = () => {
   ] = useState(null);
   const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
   const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
-  const [showAddAPButton, setShowAddAPButton] = useState(false);
+  const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false);
 
   const [showSubmitPFButton, setShowSubmitPFButton] = useState(false);
   // for pdf download
@@ -4287,19 +4287,35 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
       });
       return;
     }
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, submit it!',
-      cancelButtonText: 'Cancel',
-    });
+    var result ;
+    if(isImmediateSupervisior)
+    {
+        result = await Swal.fire({
+          title: 'Are you sure?',
+          text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, submit it!',
+          cancelButtonText: 'Cancel',
+        });
+    }
+    else
+    {
+        result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, submit it!',
+            cancelButtonText: 'Cancel',
+          });
+    }
   
     if (result.isConfirmed) {
       const payload = {
         transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
         ui_case_id: id,
+        isSupervisior : isImmediateSupervisior
       };
   
       try {
@@ -4418,10 +4434,9 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
       normalData["field_pr_status"] = "No";
     }
   
-    normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : "AP";
+    normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : "";
     normalData.field_status = "";
     normalData["ui_case_id"] = selectedRowData.id;
-  
     formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
     formData.append("data", JSON.stringify(normalData));
     formData.append("transaction_id", randomApprovalId);
@@ -6083,28 +6098,43 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
             }
           }
           
-          setShowReplacePdfButton(showReplacePdf);
-          
-          let anySubmitAP = true;
-          let anyAddAP = false;
+        setShowReplacePdfButton(showReplacePdf);
 
-          if (options.table === "cid_ui_case_action_plan") {
-            if(records.some(record => record.supervisior_designation_id == localStorage.getItem('designation_id')))
-            {
+        let anySubmitAP = true;
+        let isSuperivisor = false;
+
+        if (options.table === "cid_ui_case_action_plan") {
+            const userDesigId = localStorage.getItem('designation_id');
+            
+            const allAPWithSameSupervisor = records.every(
+                record =>
+                record.field_status === "" &&
+                record.supervisior_designation_id == userDesigId
+            );
+            
+            const allAPWithOutIOSubmit = records.every(
+                record =>
+                record.sys_status === "" &&
+                record.field_status === "" &&
+                record.supervisior_designation_id != userDesigId
+            );
+            
+            if (allAPWithSameSupervisor || allAPWithOutIOSubmit) {
                 anySubmitAP = false;
             }
-            // anySubmitAP = records.some(record => record.field_status === "submit");
-          }
 
-          console.log("checking uv",anySubmitAP)
-          setShowSubmitAPButton(anySubmitAP);
-          setShowAddAPButton(anyAddAP);
+            if(allAPWithSameSupervisor)
+                isSuperivisor = true;
+        }
+          
+        setShowSubmitAPButton(anySubmitAP);
+        setIsImmediateSupervisior(isSuperivisor);
+        
+        let anySubmitPF = false;
 
-          let anySubmitPF = false;
-
-          if (options.table === "cid_ui_case_property_form") {
-            anySubmitPF = records.every(record => record.sys_status === "submit");
-          }
+        if (options.table === "cid_ui_case_property_form") {
+        anySubmitPF = records.every(record => record.sys_status === "submit");
+        }
 
           setShowSubmitPFButton(anySubmitPF);
 
@@ -6599,16 +6629,19 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
 
                     const isViewAction = options.is_view_action === true
                     
-                    var isActionPlan = true;
+                    var isActionPlan = false;
 
                     if(options.table === "cid_ui_case_action_plan")
                     {
-                        if(params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
+                        if(params.row.sys_status === 'AP' && params.row.supervisior_designation_id != localStorage.getItem('designation_id'))
+                        {
+                            isActionPlan =true;
+                        }
+                        else if((params.row.sys_status === 'AP' || params.row.sys_status === '') && params.row.field_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
                         {
                             isActionPlan =false;
                         }
-
-                        if(params.row.field_status === 'submit')
+                        else if(params.row.field_status === 'submit' || params.row.sys_status === 'submit' )
                         {
                             isActionPlan =true;
                         }
@@ -10364,7 +10397,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                     {/* {isIoAuthorized && ( */}
                     {!viewModeOnly && (
                     !isChildMergedLoading && (
-                      !showAddAPButton && (
+                      !showSubmitAPButton && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -10395,7 +10428,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                       color="success"
                       // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
                       onClick={() => {
-                          handleSubmitAp({ id: selectedRowData?.id });
+                          handleSubmitAp({ id: selectedRowData?.id});
                         }}
                       disabled={otherTemplatesTotalRecord === 0}
                       >

@@ -840,6 +840,9 @@ exports.getTemplateData = async (req, res, next) => {
     
     if(table_name === "cid_ui_case_progress_report")
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+
+    if(table_name === "cid_ui_case_action_plan")
+        relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
     
     if(table_name === "cid_ui_case_property_form")
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
@@ -8062,7 +8065,7 @@ exports.saveActionPlan = async (req, res) => {
 
 
 exports.submitActionPlanPR = async (req, res) => {
-	const { transaction_id, ui_case_id } = req.body;
+	const { transaction_id, ui_case_id , isSupervisior } = req.body;
 	const { user_id: userId } = req.user;
 
 	if (!transaction_id || !ui_case_id) {
@@ -8105,87 +8108,103 @@ exports.submitActionPlanPR = async (req, res) => {
 			return userSendResponse(res, 400, false, "No Action Plan data found.", null);
 		}
 
-		// Update field_status in Action Plan
-		await sequelize.query(
-			`UPDATE cid_ui_case_action_plan SET field_status = 'submit' WHERE ui_case_id = :ui_case_id`,
-			{
-				replacements: { ui_case_id },
-				type: Sequelize.QueryTypes.UPDATE,
-				transaction: t,
-			}
-		);
+        if(!isSupervisior)
+        {
+            // Update field_status in Action Plan
+            await sequelize.query(
+                `UPDATE cid_ui_case_action_plan SET sys_status = 'AP' WHERE ui_case_id = :ui_case_id`,
+                {
+                    replacements: { ui_case_id },
+                    type: Sequelize.QueryTypes.UPDATE,
+                    transaction: t,
+                }
+            );
 
-		// Load Progress Report template
-		const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
-		if (!prTemplate) {
-			await t.rollback();
-			return userSendResponse(res, 400, false, "Progress Report template not found.", null);
-		}
-
-		const progressSchema = typeof prTemplate.fields === "string" ? JSON.parse(prTemplate.fields) : prTemplate.fields;
-
-		// Build Sequelize model from template schema
-		const buildModelAttributes = (schema, sampleData) => {
-			const completeSchema = [
-				{ name: "created_by", data_type: "TEXT", not_null: false },
-				{ name: "created_by_id", data_type: "INTEGER", not_null: false },
-				...schema,
-			];
-
-			["sys_status", "ui_case_id", "pt_case_id"].forEach((field) => {
-				if (sampleData[field]) {
-					completeSchema.unshift({
-						name: field,
-						data_type: typeof sampleData[field] === "number" ? "INTEGER" : "TEXT",
-						not_null: false,
-					});
-				}
-			});
-
-			const modelAttributes = {};
-			for (const field of completeSchema) {
-				const { name, data_type, not_null, default_value } = field;
-				const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-				modelAttributes[name] = {
-					type: sequelizeType,
-					allowNull: !not_null,
-					defaultValue: default_value ?? null,
-				};
-			}
-			return modelAttributes;
-		};
-
-		const sampleData = actionPlanData[0];
-		const modelAttributes = buildModelAttributes(progressSchema, sampleData);
-
-		const ProgressReportModel = sequelize.define("cid_ui_case_progress_report", modelAttributes, {
-			freezeTableName: true,
-			timestamps: true,
-			createdAt: "created_at",
-			updatedAt: "updated_at",
-		});
-
-		await ProgressReportModel.sync();
-
-		// Prepare data to insert into PR
-		const actionPlanDataToInsert = actionPlanData.map(item => {
-			const newItem = {
-				...item,
-				sys_status: "AP",
-				field_pr_status: "No",
-				created_by: userName,
-				created_by_id: userId,
-				ui_case_id: item.ui_case_id,
-				pt_case_id: item.pt_case_id,
-			};
-			delete newItem.id;
-			delete newItem.created_at;
-			delete newItem.updated_at;
-			return newItem;
-		});
-
-		// Insert into Progress Report
-		await ProgressReportModel.bulkCreate(actionPlanDataToInsert, { transaction: t });
+        }
+        else
+        {
+            // Update field_status in Action Plan
+            await sequelize.query(
+                `UPDATE cid_ui_case_action_plan SET field_status = 'submit' WHERE ui_case_id = :ui_case_id`,
+                {
+                    replacements: { ui_case_id },
+                    type: Sequelize.QueryTypes.UPDATE,
+                    transaction: t,
+                }
+            );
+    
+            // Load Progress Report template
+            const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
+            if (!prTemplate) {
+                await t.rollback();
+                return userSendResponse(res, 400, false, "Progress Report template not found.", null);
+            }
+    
+            const progressSchema = typeof prTemplate.fields === "string" ? JSON.parse(prTemplate.fields) : prTemplate.fields;
+    
+            // Build Sequelize model from template schema
+            const buildModelAttributes = (schema, sampleData) => {
+                const completeSchema = [
+                    { name: "created_by", data_type: "TEXT", not_null: false },
+                    { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                    ...schema,
+                ];
+    
+                ["sys_status", "ui_case_id", "pt_case_id"].forEach((field) => {
+                    if (sampleData[field]) {
+                        completeSchema.unshift({
+                            name: field,
+                            data_type: typeof sampleData[field] === "number" ? "INTEGER" : "TEXT",
+                            not_null: false,
+                        });
+                    }
+                });
+    
+                const modelAttributes = {};
+                for (const field of completeSchema) {
+                    const { name, data_type, not_null, default_value } = field;
+                    const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                    modelAttributes[name] = {
+                        type: sequelizeType,
+                        allowNull: !not_null,
+                        defaultValue: default_value ?? null,
+                    };
+                }
+                return modelAttributes;
+            };
+    
+            const sampleData = actionPlanData[0];
+            const modelAttributes = buildModelAttributes(progressSchema, sampleData);
+    
+            const ProgressReportModel = sequelize.define("cid_ui_case_progress_report", modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+    
+            await ProgressReportModel.sync();
+    
+            // Prepare data to insert into PR
+            const actionPlanDataToInsert = actionPlanData.map(item => {
+                const newItem = {
+                    ...item,
+                    sys_status: "AP",
+                    field_pr_status: "No",
+                    created_by: userName,
+                    created_by_id: userId,
+                    ui_case_id: item.ui_case_id,
+                    pt_case_id: item.pt_case_id,
+                };
+                delete newItem.id;
+                delete newItem.created_at;
+                delete newItem.updated_at;
+                return newItem;
+            });
+    
+            // Insert into Progress Report
+            await ProgressReportModel.bulkCreate(actionPlanDataToInsert, { transaction: t });
+        }
 
 		await t.commit();
 		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
