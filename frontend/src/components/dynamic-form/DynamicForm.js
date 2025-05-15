@@ -189,6 +189,27 @@ const DynamicForm = ({
 
         }
 
+        if(table_name === "cid_pending_trail" && formData?.['field_cc_pending']){
+            
+            var requiredStatus = false;
+
+            if(formData?.['field_cc_pending'] === "No"){
+                requiredStatus = true;
+            }
+
+            setNewFormConfig((prevFormConfig) => {
+                const updatedFormConfig = prevFormConfig.map((data) => {
+                    if(data.name === "field_cc_no./sc_no"){
+                        return {...data, required : requiredStatus }
+                    }else{
+                        return data;
+                    }
+                });
+                return updatedFormConfig;
+            });
+
+        }
+
     },[formData]);
 
     const UpdateTableRowApi = (rows)=>{
@@ -1518,9 +1539,7 @@ const DynamicForm = ({
                 </Typography>
               )}
               <Typography className="HighlightedText">
-                {stepperData && stepperData[activeStep]
-                  ? stepperData[activeStep]
-                  : "Details"}
+                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : "General Detail"}
               </Typography>
             </Box>
 

@@ -220,72 +220,26 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
         }
 
-        // const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+        if(table_name === "cid_pending_trail" && formData?.['field_cc_pending']){
+            
+            var requiredStatus = false;
 
-        // if(formData?.['field_section']){
+            if(formData?.['field_cc_pending'] === "No"){
+                requiredStatus = true;
+            }
 
-        //     var actFields = allFields.filter((element)=>{
-        //         return element.name === 'field_section';
-        //     });
+            setNewFormConfig((prevFormConfig) => {
+                const updatedFormConfig = prevFormConfig.map((data) => {
+                    if(data.name === "field_cc_no./sc_no"){
+                        return {...data, required : requiredStatus }
+                    }else{
+                        return data;
+                    }
+                });
+                return updatedFormConfig;
+            });
+        }
 
-        //     if(actFields?.[0]?.options){
-
-        //         var getOptionName = actFields[0].options.filter((element)=>{
-        //             if(formData?.['field_section']?.includes(element.code)){
-        //                 return element;
-        //             }
-        //         });
-
-        //         if(getOptionName.length > 0){
-        //             var showSectionNames = ['17a', '17b', '19']
-
-        //             var getSectionValues = getOptionName.filter((element)=> showSectionNames.includes((element.name).toLowerCase()));
-
-        //             var hide_from_ux = true;
-
-        //             if(getSectionValues.length > 0){
-        //                 hide_from_ux = false;
-        //             }
-
-        //             var updatedFormConfig = allFields.map((element)=>{
-        //                 if(element.name === "field_order_copy_(_17a_done_)"){
-        //                     element.hide_from_ux = hide_from_ux;
-        //                 }
-
-        //                 return element
-        //             });
-
-        //             setNewFormConfig(updatedFormConfig);
-        //             delete formData["field_order_copy_(_17a_done_)"];
-
-        //         }else{
-
-        //             var updatedFormConfig = allFields.map((element)=>{
-        //                 if(element.name === "field_order_copy_(_17a_done_)"){
-        //                     element.hide_from_ux = true;
-        //                 }
-        
-        //                 return element
-        //             });
-        
-        //             setNewFormConfig(updatedFormConfig);
-        //             delete formData["field_order_copy_(_17a_done_)"];
-        //         }
-        //     }
-
-        // }else{
-
-        //     var updatedFormConfig = allFields.map((element)=>{
-        //         if(element.name === "field_order_copy_(_17a_done_)"){
-        //             element.hide_from_ux = true;
-        //         }
-
-        //         return element
-        //     });
-
-        //     setNewFormConfig(updatedFormConfig);
-        //     delete formData["field_order_copy_(_17a_done_)"];
-        // }
 
     },[formData]);
 
@@ -1379,7 +1333,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 </Typography>
               }
               <Typography className='HighlightedText'>
-                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'Details'}
+                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
               </Typography>
             </Box>
 

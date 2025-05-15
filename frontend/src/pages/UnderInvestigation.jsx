@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import DynamicForm from "../components/dynamic-form/DynamicForm";
@@ -742,6 +742,13 @@ const UnderInvestigation = () => {
     const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
 
     const [natureOfDisposalFileUpload, setNatureOfDisposalFileUpload] = useState({});
+    var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+
+    const templateActionAddFlag = useRef(false);
+    const fieldActionAddFlag = useRef(false);
+    const attachmentEditFlag = useRef(false);
+
+    const [showFileAttachment, setShowFileAttachments] = useState(false);
 
     const handleFileUploadChange = (fieldName, files) => {
         setNatureOfDisposalFileUpload((prevData) => {
@@ -1116,7 +1123,7 @@ const UnderInvestigation = () => {
             var approvalItems = {
                 id : selectedRowData.id,
                 module_name : 'Under Investigation',
-                action : 'B Report Change'
+                action : 'Pending Acceptance Change'
             }
 
             othersData = {
@@ -1236,7 +1243,7 @@ const UnderInvestigation = () => {
 
         var othersUpdateData = {
             id : selectedRowData.id,
-            sys_status : approvedByCourt ? 'disposal' : 'ui_case',
+            sys_status : 'disposal',
             default_status : "ui_case"
         }
         
@@ -1901,7 +1908,28 @@ const UnderInvestigation = () => {
         }
 
         if(showOrderCopy){
-            showActionsOptionsTemplate("cid_ui_case_court_order_copy");
+
+            if(!approvedByCourt){
+
+                Swal.fire({
+                    title: "Choose Case Type",
+                    text: "Please select the case type you want to proceed with.",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonText: "PT Case",
+                    cancelButtonText: "UI Case",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        showActionsOptionsTemplate("cid_pending_trail");
+                    } else {
+                        natureOfDisposalSysStatus("ui_case")
+                    }
+                });
+
+            }else{
+                showActionsOptionsTemplate("cid_ui_case_court_order_copy");
+            }
+
             return;
         }
 
@@ -3115,21 +3143,29 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const userPermissionsArray = JSON.parse(localStorage.getItem("user_permissions")) || [];
                 const userPermissions = userPermissionsArray[0] || {};
     
-                const updatedActions = getActionsDetails.data.data
-                    .map((action) => {
+                const updatedActions = getActionsDetails.data.data.map((action) => {
                         if (action?.icon) action.icon = createSvgIcon(action.icon);
     
                         if (action.permissions) {
                             const parsedPermissions = JSON.parse(action.permissions);
-                            const hasValidPermission = parsedPermissions.some(
-                                (permission) => userPermissions[permission] === true
-                            );
-                            return hasValidPermission ? action : null;
+
+                            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions) && parsedPermissions?.['show']) {
+
+                                const hasValidPermission = parsedPermissions?.['show'].some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                                return hasValidPermission ? action : null;
+
+                            }else{
+                                const hasValidPermission = parsedPermissions.some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                                return hasValidPermission ? action : null;
+                            }
                         }
     
-                        return action;
-                    })
-                    .filter(Boolean);
+                    return action;
+                }).filter(Boolean);
     
                 setHoverTableOptions(updatedActions);
             } else {
@@ -3192,7 +3228,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     <span
                         style={highlightColor}
                         onClick={onClickHandler}
-                        className={`tableValueTextView Roboto blink-badge ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                        className={`tableValueTextView Roboto`}
                     >
                         {value || "-"}
                     </span>
@@ -6062,6 +6098,53 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
         filter: !searchFlag ? othersFilterData : {},
     };
 
+        var disabledEditFlag = false;
+        var disabledDeleteFlag = false;
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['add'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['add'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+    
+                    templateActionAddFlag.current = hasAddPermission;
+                }else{
+                    templateActionAddFlag.current = true;
+                }
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasEditPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    disabledEditFlag = hasEditPermission
+                }else{
+                    disabledEditFlag = true;
+                }
+
+                if(parsedPermissions?.['delete'].length > 0){
+                    const hasDeletePermission = parsedPermissions?.['delete'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    disabledDeleteFlag = hasDeletePermission
+                }else{
+                    disabledDeleteFlag = true;
+                }
+
+            }else{
+                templateActionAddFlag.current = true;
+                disabledEditFlag = true;
+                disabledDeleteFlag = true;
+            }
+
+        }
+
     setLoading(true);
 
     try {
@@ -7016,6 +7099,27 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
         const viewTableData = {
             table_name: options.table,
         };
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    fieldActionAddFlag.current = hasAddPermission;
+                }else{
+                    fieldActionAddFlag.current = true;
+                }
+
+            }else{
+                fieldActionAddFlag.current = true;
+            }
+        }
     
         setLoading(true);
         try {
@@ -7047,7 +7151,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                         if (getDivisionField.length > 0) {
 
                             if(getDivisionField[0].type === "file"){
-                                console.log("file field find");                                
+                                showAttachmentField(options, selectedRow);
                                 return;
                             }
 
@@ -8265,8 +8369,6 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
         }
     };
 
-  var userPermissions =
-    JSON.parse(localStorage.getItem("user_permissions")) || [];
   var hoverExtraOptions = [
       
     // userPermissions[0]?.edit_case
@@ -8340,7 +8442,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
         } : null,
         sysStatus === "b_Report" ?
         {
-            name: "Approved By Court",
+            name: "Accepted By Court",
             onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
         } : null,
         sysStatus === "b_Report" ? 
@@ -9489,6 +9591,32 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
         }
     }
 
+    const showAttachmentField = (options, selectedRow) => {
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    attachmentEditFlag.current = hasAddPermission;
+                }else{
+                    attachmentEditFlag.current = true;
+                }
+
+            }else{
+                attachmentEditFlag.current = true;
+            }
+        }
+
+        setShowFileAttachments(true);
+    }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -9752,7 +9880,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                 id="filterReinvestigation"
                 className={`filterTabs ${sysStatus === "b_Report" ? "Active" : ""}`}
             >
-                B Report
+                Pending Acceptance
             </Box>
             <Box
               onClick={() => {
@@ -10301,7 +10429,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!isChildMergedLoading && (
+                    {!isChildMergedLoading && templateActionAddFlag.current === true (
                       <Button
                         variant="outlined"
                         sx={{
@@ -10428,9 +10556,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!viewModeOnly && (
-                    !isChildMergedLoading && (
-                      !showSubmitAPButton && (
+                    {!viewModeOnly && !isChildMergedLoading && !showSubmitAPButton && templateActionAddFlag.current === true && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -10440,7 +10566,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                         >
                             Add
                         </Button>
-                    )))}
+                    )}
                     {/* )} */}
                     {selectedOtherTemplate?.table === 'cid_ui_case_property_form' && (
                       <Button
@@ -11033,7 +11159,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                 getOptionLabel={(option) => option.name || ""}
                 value={selectedOtherFields || null}
                 onChange={(event, newValue) => setSelectedOtherFields(newValue)}
-                disabled={isChildMergedLoading}
+                disabled={isChildMergedLoading || fieldActionAddFlag.current === false}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -11050,7 +11176,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
           >
             Cancel
           </Button>
-          {!isChildMergedLoading && (
+          {!isChildMergedLoading && fieldActionAddFlag.current === true && (
             <>
               <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
                 Submit
@@ -11117,6 +11243,8 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                     label={selectKey?.title.trim() == "Reassign IO" ? "Division" : selectKey?.title}
                     />
                 )}
+                disabled={fieldActionAddFlag.current === false}
+
               />
             </FormControl>
 
@@ -11135,6 +11263,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                         label="IO User"
                       />
                     )}
+                    disabled={fieldActionAddFlag.current === false}
                   />
                 </FormControl>
               </>
@@ -11161,14 +11290,17 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
             }}
             >Cancel
           </Button>
-          <Button
-            className="fillPrimaryBtn"
-            onClick={() => {
-              handleMassiveDivisionChange();
-            }}
-          >
-            Submit
-          </Button>
+          {
+            fieldActionAddFlag.current === true &&
+            <Button
+                className="fillPrimaryBtn"
+                onClick={() => {
+                    handleMassiveDivisionChange();
+                }}
+            >
+                Submit
+            </Button>
+          }
         </DialogActions>
       </Dialog>
 
@@ -12057,7 +12189,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                                 options={[
                                     { name: "A Final Charge Sheet", code: "disposal" },
                                     { name: "A Preliminary Charge Sheet", code: "178_cases" },
-                                    { name: "B Report", code: "b_Report" },
+                                    { name: "Pending Acceptance", code: "b_Report" },
                                     { name: "C Report", code: "c_Report" },
                                 ]}
                                 getOptionLabel={(option) => option.name || ""}
@@ -12234,6 +12366,47 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
           </Box>
         </DialogContent>
       </Dialog>
+
+          { showFileAttachment && 
+                <Dialog
+                    open={showFileAttachment}
+                    onClose={() => setShowFileAttachments(false)}
+                    fullWidth
+                    maxWidth="sm"
+                >
+                    <DialogTitle>
+                        {selectedOtherTemplate?.['name']?.charAt(0).toUpperCase() + selectedOtherTemplate?.['name']?.slice(1) || "Attachment View"}
+                        <IconButton
+                            edge="end"
+                            color="inherit"
+                            onClick={() => setShowFileAttachments(false)}
+                            aria-label="close"
+                            sx={{ position: "absolute", right: 20, top: 12 }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+
+                    <DialogContent
+                        sx={{
+                            maxHeight: "60vh",
+                            overflowY: "auto",
+                        }}
+                        >
+                            <Box pt={2}>
+                                <FileInput
+                                    field={{
+                                        name : selectedOtherTemplate?.['field'] || "",
+                                        disabled: true,
+                                        label : selectedOtherTemplate?.['name'] || "",
+                                    }}
+                                    formData={selectedRowData}
+                                />
+                            </Box>
+                    </DialogContent>
+                </Dialog>
+          }
+
     </Box>
   );
 };

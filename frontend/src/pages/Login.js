@@ -465,11 +465,7 @@ const Login = () => {
 
             localStorage.setItem("userOverallDesignation", JSON.stringify(gettingLoginUserDivisons));
 
-            if(JSON.parse(localStorage.getItem("user_id")) === 1){
-                navigate("/dashboard");
-            }else{
-                navigate("/case/ui_case");
-            }
+            navigate("/dashboard");
 
         } catch (err) {
             //in err Error: You have exceeded the maximum number of attempts

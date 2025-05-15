@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import DynamicForm from "../components/dynamic-form/DynamicForm";
@@ -67,6 +67,7 @@ import LongText from "../components/form/LongText";
 import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import GenerateProfilePdf from "./GenerateProfilePdf";
 import WestIcon from '@mui/icons-material/West';
+import FileInput from "../components/form/FileInput";
 
 const UnderInvestigation = () => {
   const location = useLocation();
@@ -419,6 +420,14 @@ const UnderInvestigation = () => {
     const [viewModeOnly,setViewModeOnly] = useState(false);
     const [isApprovalSaveMode, setIsApprovalSaveMode] = useState(true);
     const [forceListApprovalTableLoad, setForceListApprovalTableLoad] = useState(false);
+
+    var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+
+    const templateActionAddFlag = useRef(false);
+    const fieldActionAddFlag = useRef(false);
+    const attachmentEditFlag = useRef(false);
+
+    const [showFileAttachment, setShowFileAttachments] = useState(false);
 
      useEffect(() => {
             setListApprovalSearchValue("");
@@ -1391,7 +1400,7 @@ const UnderInvestigation = () => {
                           {
                             field: "field_cc_no./sc_no",
                             headerName: "Cc No./Sc No",
-                            width: 130,
+                            width: 180,
                             resizable: true,
                             cellClassName: 'justify-content-start',
                             renderHeader: (params) => (
@@ -1515,19 +1524,22 @@ const UnderInvestigation = () => {
 
     return (
         <Tooltip title={value} placement="top">
-            <span
-                style={highlightColor}
-                onClick={onClickHandler}
-                className={`tableValueTextView Roboto ${
-                params?.row &&
-                !params.row["ReadStatus"] &&
-                localStorage.getItem("authAdmin") === "false"
-                    ? ""
-                    : "read"
-                }`}
-            >
-                {value || "-"}
-            </span>
+            {
+                (key === "field_cc_no./sc_no" && (value === "" || !value)) ? (
+                    <span className="io-alert-flashy">
+                        <span className="flashy-dot"></span>
+                        CC Pending
+                    </span>                  
+                ) : (
+                    <span
+                        style={highlightColor}
+                        onClick={onClickHandler}
+                        className={`tableValueTextView Roboto`}
+                    >
+                        {value || "-"}
+                    </span>
+                )
+            }
         </Tooltip>
     );
   };
@@ -3770,6 +3782,15 @@ const UnderInvestigation = () => {
     }
   }, []);
 
+    function createSvgIcon(svgString) {
+        return () => (
+            <span
+                dangerouslySetInnerHTML={{ __html: svgString }}
+                className="tableActionIcon"
+            />
+        );
+    }
+
     const getActions = async () => {
         var payloadObj = {
             module: "pt_case",
@@ -3789,16 +3810,29 @@ const UnderInvestigation = () => {
 
                     const userPermissions = userPermissionsArray[0] || {};
 
-                    var updatedActions = getActionsDetails.data["data"].filter((action) => {
-                        if (action.permissions) {
-                            var parsedPermissions = JSON.parse(action.permissions);
+                    const updatedActions = getActionsDetails.data.data.map((action) => {
+                            if (action?.icon) action.icon = createSvgIcon(action.icon);
+        
+                            if (action.permissions) {
+                                const parsedPermissions = JSON.parse(action.permissions);
 
-                            const hasValidPermission = parsedPermissions.some((permission) => userPermissions[permission] === true);
+                                if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions) && parsedPermissions?.['show']) {
 
-                            return hasValidPermission;
-                        }
-                        return true;
-                    });
+                                    const hasValidPermission = parsedPermissions?.['show'].some(
+                                        (permission) => userPermissions[permission] === true
+                                    );
+                                    return hasValidPermission ? action : null;
+
+                                }else{
+                                    const hasValidPermission = parsedPermissions.some(
+                                        (permission) => userPermissions[permission] === true
+                                    );
+                                    return hasValidPermission ? action : null;
+                                }
+                            }
+        
+                        return action;
+                    }).filter(Boolean);
 
                     setHoverTableOptions(updatedActions);
                 }
@@ -4014,6 +4048,54 @@ const UnderInvestigation = () => {
           to_date: !searchFlag ? othersToDate : null,
           filter: !searchFlag ? othersFilterData : {},
       };
+
+        var disabledEditFlag = false;
+        var disabledDeleteFlag = false;
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['add'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['add'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+    
+                    templateActionAddFlag.current = hasAddPermission;
+                }else{
+                    templateActionAddFlag.current = true;
+                }
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasEditPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    disabledEditFlag = hasEditPermission
+                }else{
+                    disabledEditFlag = true;
+                }
+
+
+                if(parsedPermissions?.['delete'].length > 0){
+                    const hasDeletePermission = parsedPermissions?.['delete'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    disabledDeleteFlag = hasDeletePermission
+                }else{
+                    disabledDeleteFlag = true;
+                }
+
+            }else{
+                templateActionAddFlag.current = true;
+                disabledEditFlag = true;
+                disabledDeleteFlag = true;
+            }
+
+        }
   
       setLoading(true);
   
@@ -4465,7 +4547,7 @@ const UnderInvestigation = () => {
                             View
                           </Button>
                   
-                          {canEdit&& (
+                          {disabledEditFlag && (
                             !isViewAction && (
                               !isPdfUpdated && (
                                 <Button
@@ -4486,7 +4568,7 @@ const UnderInvestigation = () => {
                                 </Button>
                               ))
                             )}
-                          {canDelete&& (
+                          {disabledDeleteFlag && (
                             !isViewAction && (
                               !isPdfUpdated && (
                                 <Button
@@ -4654,6 +4736,27 @@ const UnderInvestigation = () => {
     const viewTableData = {
       table_name: options.table,
     };
+
+    if (options.permissions) {
+
+        const parsedPermissions = JSON.parse(options.permissions);
+
+        if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+            
+            if(parsedPermissions?.['edit'].length > 0){
+                const hasAddPermission = parsedPermissions?.['edit'].some(
+                    (permission) => userPermissions?.[0]?.[permission] === true
+                );
+
+                fieldActionAddFlag.current = hasAddPermission;
+            }else{
+                fieldActionAddFlag.current = true;
+            }
+
+        }else{
+            fieldActionAddFlag.current = true;
+        }
+    }
   
     setLoading(true);
     try {
@@ -4676,6 +4779,11 @@ const UnderInvestigation = () => {
           );
   
           if (getDivisionField.length > 0) {
+
+            if(getDivisionField[0].type === "file"){
+                showAttachmentField(options, selectedRow);
+                return;
+            }
   
             if (getDivisionField[0].api) {
               setLoading(true);
@@ -5957,9 +6065,6 @@ const UnderInvestigation = () => {
 
   const [isUpdatePdf, setIsUpdatePdf] = useState(false);
 
-  var userPermissions =
-    JSON.parse(localStorage.getItem("user_permissions")) || [];
-
   var hoverExtraOptions = [
     userPermissions[0]?.view_pt
       ? {
@@ -6756,6 +6861,33 @@ const UnderInvestigation = () => {
                 }
             }
         };
+
+        const showAttachmentField = (options, selectedRow) => {
+
+            if (options.permissions) {
+
+                const parsedPermissions = JSON.parse(options.permissions);
+
+                if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                    if(parsedPermissions?.['edit'].length > 0){
+                        const hasAddPermission = parsedPermissions?.['edit'].some(
+                            (permission) => userPermissions?.[0]?.[permission] === true
+                        );
+
+                        attachmentEditFlag.current = hasAddPermission;
+                    }else{
+                        attachmentEditFlag.current = true;
+                    }
+
+                }else{
+                    attachmentEditFlag.current = true;
+                }
+            }
+
+            setShowFileAttachments(true);
+        }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -7397,7 +7529,7 @@ const UnderInvestigation = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!viewModeOnly && (
+                    {!viewModeOnly && templateActionAddFlag.current === true (
                       <Button
                         variant="outlined"
                         onClick={() => {
@@ -7474,7 +7606,7 @@ const UnderInvestigation = () => {
                         </Typography>
                     )}
                     </Box>
-                    {/* {isIoAuthorized && ( */}
+                    {templateActionAddFlag.current === true && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -7484,7 +7616,7 @@ const UnderInvestigation = () => {
                         >
                             Add
                         </Button>
-                    {/* )} */}
+                    )}
                 </Box>
               )}
             </Box>
@@ -7859,6 +7991,7 @@ const UnderInvestigation = () => {
                       (selectedOtherFields && selectedOtherFields.code)
                   ) || null
                 }
+                disabled={fieldActionAddFlag.current === false}
                 onChange={(event, newValue) => setSelectedOtherFields(newValue)}
                 renderInput={(params) => (
                   <TextField
@@ -7875,9 +8008,12 @@ const UnderInvestigation = () => {
           <Button onClick={() => setShowOtherTransferModal(false)}>
             Cancel
           </Button>
-          <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
-            Submit
-          </Button>
+            {
+                fieldActionAddFlag.current === true && 
+                <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
+                    Submit
+                </Button>
+            }
         </DialogActions>
       </Dialog>
 
@@ -8557,6 +8693,46 @@ const UnderInvestigation = () => {
                 </Box>
               </DialogContent>
             </Dialog>
+
+            {showFileAttachment &&
+                <Dialog
+                    open={showFileAttachment}
+                    onClose={() => setShowFileAttachments(false)}
+                    fullWidth
+                    maxWidth="sm"
+                >
+                    <DialogTitle>
+                        {selectedOtherTemplate?.['name']?.charAt(0).toUpperCase() + selectedOtherTemplate?.['name']?.slice(1) || "Attachment View"}
+                        <IconButton
+                            edge="end"
+                            color="inherit"
+                            onClick={() => setShowFileAttachments(false)}
+                            aria-label="close"
+                            sx={{ position: "absolute", right: 20, top: 12 }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+
+                    <DialogContent
+                        sx={{
+                            maxHeight: "60vh",
+                            overflowY: "auto",
+                        }}
+                    >
+                        <Box pt={2}>
+                            <FileInput
+                                field={{
+                                    name : selectedOtherTemplate?.['field'] || "",
+                                    disabled: true,
+                                    label : selectedOtherTemplate?.['name'] || "",
+                                }}
+                                formData={selectedRowData}
+                            />
+                        </Box>
+                    </DialogContent>
+                </Dialog>
+            }
     </Box>
   );
 };
