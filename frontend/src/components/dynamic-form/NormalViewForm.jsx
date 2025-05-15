@@ -43,7 +43,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import ActTable from './actSection';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, disableEditButton = false }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
   const [formData, setFormData] = useState({});
   const [newFormConfig, setNewFormConfig] = useState(formConfig ? formConfig : {})
@@ -66,7 +66,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
   ]);
 
   const saveNewActionRef = useRef(false);
-
+  
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
       setFormData(initialData);
@@ -1349,7 +1349,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             }
 
             {
-                (readOnlyTemplate && userPermissions[0]?.edit_case) && 
+                (readOnlyTemplate && userPermissions[0]?.edit_case && !disableEditButton) && 
                 <Button
                     onClick={templateEdit}
                     sx={{
