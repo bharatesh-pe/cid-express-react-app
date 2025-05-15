@@ -4434,7 +4434,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
       normalData["field_pr_status"] = "No";
     }
   
-    normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : "";
+    normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : isImmediateSupervisior ? "AP" : "";
     normalData.field_status = "";
     normalData["ui_case_id"] = selectedRowData.id;
     formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
