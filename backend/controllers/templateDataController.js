@@ -28,6 +28,8 @@ const {
   UiMergedCases,
   ApprovalFieldLog,
   ApprovalActivityLog,
+  UsersHierarchy,
+  UserDesignation,
 } = require("../models");
 const excluded_role_ids = [1, 10, 21];
 const { userSendResponse } = require("../services/userSendResponse");
@@ -809,6 +811,7 @@ exports.getTemplateData = async (req, res, next) => {
     search_field = "",
     table_name,
     is_read = "",
+    case_io_id = "",
   } = req.body;
   const {  ui_case_id, pt_case_id } = req.body;
   const { filter = {}, from_date = null, to_date = null } = req.body;
@@ -831,12 +834,19 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused'
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form'
       ? schema
       : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
     
     if(table_name === "cid_ui_case_progress_report")
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+
+    if(table_name === "cid_ui_case_action_plan")
+        relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+    
+    if(table_name === "cid_ui_case_property_form")
+        relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+  
     // const relevantSchema = schema;
     // Define model attributes based on filtered schema
     const modelAttributes = {
@@ -1253,10 +1263,27 @@ exports.getTemplateData = async (req, res, next) => {
             });
             filteredData.field_division = division ? division.division_name : "Unknown";
           }
-        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan') {
-          filteredData = { ...data };
-          console.log("filteredData", filteredData);
-          console.log("table_name",table_name)
+        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form') {
+            filteredData = { ...data };
+            if (table_name === 'cid_ui_case_action_plan' && case_io_id && case_io_id !== "") {
+                const case_io_user_designation = await UserDesignation.findOne({
+                    attributes: ["designation_id"],
+                    where: { user_id: case_io_id },
+                });
+            
+                let supervisorDesignationId = '';
+            
+                if (case_io_user_designation?.designation_id) {
+                    const immediate_supervisior = await UsersHierarchy.findOne({
+                        attributes: ["supervisor_designation_id"],
+                        where: { officer_designation_id: case_io_user_designation.designation_id },
+                    });
+            
+                    supervisorDesignationId = immediate_supervisior?.supervisor_designation_id || '';
+                }
+            
+                filteredData['supervisior_designation_id'] = supervisorDesignationId;
+            }            
         }else if (table_name === "cid_ui_case_accused") {
           filteredData = { ...data };
           console.log("filteredData", filteredData);    
@@ -3164,12 +3191,13 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
           }
         }
         for (const fieldName in dropdownFieldMappings) {
-          if (
-            data[fieldName] !== undefined &&
-            dropdownFieldMappings[fieldName][data[fieldName]]
-          ) {
-            data[fieldName] = dropdownFieldMappings[fieldName][data[fieldName]];
-          }
+            if (data[fieldName] !== undefined &&dropdownFieldMappings[fieldName][data[fieldName]]) {
+                if(fieldName === "field_io_name")
+                {
+                    data["field_io_name_id"] = data[fieldName];
+                }
+                data[fieldName] = dropdownFieldMappings[fieldName][data[fieldName]];
+            }
         }
 
         // Fetch attachments related to this row
@@ -3192,45 +3220,45 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         let task_read_count = 0;
         let task_unread_count = 0;
 
-        if(table_name == "cid_under_investigation")
-        {
+        // if(table_name == "cid_under_investigation")
+        // {
 
-            const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
-                where: {
-                    ui_case_id: case_id,
-                },
-            });
+        //     const {rows: task_all_records, count: task_count } = await progressReportModel.findAndCountAll({
+        //         where: {
+        //             ui_case_id: case_id,
+        //         },
+        //     });
 
-            const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
-                where: {
-                    ui_case_id: case_id,  
-                },
-                include: {
-                    model: db.TemplateUserStatus,
-                    as: 'ReadStatus',
-                    required: is_read,
-                    where: {
-                        user_id: userId,
-                        template_id: progressReportTableData.template_id
-                    },
-                    attributes: ['template_user_status_id']
-                },
-            });
+        //     const {rows: task_readed_records } = await progressReportModel.findAndCountAll({
+        //         where: {
+        //             ui_case_id: case_id,  
+        //         },
+        //         include: {
+        //             model: db.TemplateUserStatus,
+        //             as: 'ReadStatus',
+        //             required: is_read,
+        //             where: {
+        //                 user_id: userId,
+        //                 template_id: progressReportTableData.template_id
+        //             },
+        //             attributes: ['template_user_status_id']
+        //         },
+        //     });
 
-            if (task_readed_records && task_readed_records.length > 0) {
-                task_readed_records.forEach((record) => {
-                    const readStatus = record.ReadStatus;
-                    if (readStatus) {
-                        task_read_count += 1;
-                    }
-                });
-            }
+        //     if (task_readed_records && task_readed_records.length > 0) {
+        //         task_readed_records.forEach((record) => {
+        //             const readStatus = record.ReadStatus;
+        //             if (readStatus) {
+        //                 task_read_count += 1;
+        //             }
+        //         });
+        //     }
 
-            if(task_read_count != 0) 
-                task_unread_count = task_count - task_read_count;
-            else
-                task_unread_count = task_count;
-        }
+        //     if(task_read_count != 0) 
+        //         task_unread_count = task_count - task_read_count;
+        //     else
+        //         task_unread_count = task_count;
+        // }
 
         data.task_unread_count = task_unread_count || 0;
 
@@ -7821,7 +7849,7 @@ exports.deMergeCaseData = async (req, res) => {
 
 exports.saveActionPlan = async (req, res) => {
 
-    const { data, others_data , transaction_id } = req.body;
+    const { table_name, data, others_data , transaction_id } = req.body;
 
 	// if (user_designation_id === undefined || user_designation_id === null) {
 	// 	return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -7863,7 +7891,8 @@ exports.saveActionPlan = async (req, res) => {
 
         if (data) {
             // Insert into cid_ui_case_action_plan
-            const tableData = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
+            const tableData = await Template.findOne({ where: { table_name } });
+
             if (!tableData) {
                 return userSendResponse(res, 400, false, `Table cid_ui_case_action_plan does not exist.`, null);
             }
@@ -7890,7 +7919,7 @@ exports.saveActionPlan = async (req, res) => {
             }
 
             // validData.field_status = "submit";
-            validData.sys_status = "AP";
+            validData.sys_status = "";
             validData.created_by = userName;
             validData.created_by_id = userId;
 
@@ -7922,7 +7951,7 @@ exports.saveActionPlan = async (req, res) => {
                 };
             }
 
-            const Model = sequelize.define('cid_ui_case_action_plan', modelAttributes, {
+            const Model = sequelize.define(tableData.table_name, modelAttributes, {
                 freezeTableName: true,
                 timestamps: true,
                 createdAt: "created_at",
@@ -8036,7 +8065,7 @@ exports.saveActionPlan = async (req, res) => {
 
 
 exports.submitActionPlanPR = async (req, res) => {
-	const { transaction_id, ui_case_id } = req.body;
+	const { transaction_id, ui_case_id , isSupervisior } = req.body;
 	const { user_id: userId } = req.user;
 
 	if (!transaction_id || !ui_case_id) {
@@ -8079,21 +8108,186 @@ exports.submitActionPlanPR = async (req, res) => {
 			return userSendResponse(res, 400, false, "No Action Plan data found.", null);
 		}
 
-		// Update field_status in Action Plan
-		await sequelize.query(
-			`UPDATE cid_ui_case_action_plan SET field_status = 'submit' WHERE ui_case_id = :ui_case_id`,
+        if(!isSupervisior)
+        {
+            // Update field_status in Action Plan
+            await sequelize.query(
+                `UPDATE cid_ui_case_action_plan SET sys_status = 'AP' WHERE ui_case_id = :ui_case_id`,
+                {
+                    replacements: { ui_case_id },
+                    type: Sequelize.QueryTypes.UPDATE,
+                    transaction: t,
+                }
+            );
+
+        }
+        else
+        {
+            // Update field_status in Action Plan
+            await sequelize.query(
+                `UPDATE cid_ui_case_action_plan SET field_status = 'submit' WHERE ui_case_id = :ui_case_id`,
+                {
+                    replacements: { ui_case_id },
+                    type: Sequelize.QueryTypes.UPDATE,
+                    transaction: t,
+                }
+            );
+    
+            // Load Progress Report template
+            const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
+            if (!prTemplate) {
+                await t.rollback();
+                return userSendResponse(res, 400, false, "Progress Report template not found.", null);
+            }
+    
+            const progressSchema = typeof prTemplate.fields === "string" ? JSON.parse(prTemplate.fields) : prTemplate.fields;
+    
+            // Build Sequelize model from template schema
+            const buildModelAttributes = (schema, sampleData) => {
+                const completeSchema = [
+                    { name: "created_by", data_type: "TEXT", not_null: false },
+                    { name: "created_by_id", data_type: "INTEGER", not_null: false },
+                    ...schema,
+                ];
+    
+                ["sys_status", "ui_case_id", "pt_case_id"].forEach((field) => {
+                    if (sampleData[field]) {
+                        completeSchema.unshift({
+                            name: field,
+                            data_type: typeof sampleData[field] === "number" ? "INTEGER" : "TEXT",
+                            not_null: false,
+                        });
+                    }
+                });
+    
+                const modelAttributes = {};
+                for (const field of completeSchema) {
+                    const { name, data_type, not_null, default_value } = field;
+                    const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                    modelAttributes[name] = {
+                        type: sequelizeType,
+                        allowNull: !not_null,
+                        defaultValue: default_value ?? null,
+                    };
+                }
+                return modelAttributes;
+            };
+    
+            const sampleData = actionPlanData[0];
+            const modelAttributes = buildModelAttributes(progressSchema, sampleData);
+    
+            const ProgressReportModel = sequelize.define("cid_ui_case_progress_report", modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+    
+            await ProgressReportModel.sync();
+    
+            // Prepare data to insert into PR
+            const actionPlanDataToInsert = actionPlanData.map(item => {
+                const newItem = {
+                    ...item,
+                    sys_status: "AP",
+                    field_pr_status: "No",
+                    created_by: userName,
+                    created_by_id: userId,
+                    ui_case_id: item.ui_case_id,
+                    pt_case_id: item.pt_case_id,
+                };
+                delete newItem.id;
+                delete newItem.created_at;
+                delete newItem.updated_at;
+                return newItem;
+            });
+    
+            // Insert into Progress Report
+            await ProgressReportModel.bulkCreate(actionPlanDataToInsert, { transaction: t });
+        }
+
+		await t.commit();
+		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
+
+	} catch (error) {
+		console.error("Error submitting Action Plan:", error);
+		if (t) await t.rollback();
+		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+		return userSendResponse(
+			res,
+			isDuplicate ? 400 : 500,
+			false,
+			isDuplicate ? "Duplicate entry detected." : "Internal Server Error.",
+			error
+		);
+	} finally {
+		if (fs.existsSync(dirPath)) {
+			fs.rmSync(dirPath, { recursive: true, force: true });
+		}
+	}
+};
+
+
+
+exports.submitPropertyFormFSL = async (req, res) => {
+	const { transaction_id, ui_case_id, row_ids } = req.body;
+	const { user_id: userId } = req.user;
+
+	if (!transaction_id || !ui_case_id) {
+		return userSendResponse(res, 400, false, "transaction_id and ui_case_id are required.", null);
+	}
+
+	let t = await dbConfig.sequelize.transaction();
+	const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+
+	try {
+		// Duplicate transaction check
+		if (fs.existsSync(dirPath)) {
+			return res.status(400).json({ success: false, message: "Duplicate transaction detected.", dirPath });
+		}
+		fs.mkdirSync(dirPath, { recursive: true });
+
+		// Get user info
+		const userData = await Users.findOne({
+			include: [{ model: KGID, as: "kgidDetails", attributes: ["kgid", "name", "mobile"] }],
+			where: { user_id: userId },
+		});
+		const userName = userData?.kgidDetails?.name || null;
+
+		// Validate action plan template
+		const apTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_property_form" } });
+		if (!apTemplate) {
+			return userSendResponse(res, 400, false, "Property Form template not found.", null);
+		}
+
+		// Fetch Property Form records
+		const propertyFormData = await sequelize.query(
+			`SELECT * FROM cid_ui_case_property_form WHERE ui_case_id = :ui_case_id`,
 			{
 				replacements: { ui_case_id },
+				type: Sequelize.QueryTypes.SELECT,
+				transaction: t,
+			}
+		);
+		if (!propertyFormData?.length) {
+			return userSendResponse(res, 400, false, "No Property Form data found.", null);
+		}
+
+		// Update sys_status only for selected row_ids
+		await sequelize.query(
+			`UPDATE cid_ui_case_property_form SET sys_status = 'submit' WHERE id IN (:row_ids)`,
+			{
+				replacements: { row_ids },
 				type: Sequelize.QueryTypes.UPDATE,
 				transaction: t,
 			}
 		);
 
-		// Load Progress Report template
-		const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
+		// Load FSL template
+		const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_forensic_science_laboratory" } });
 		if (!prTemplate) {
 			await t.rollback();
-			return userSendResponse(res, 400, false, "Progress Report template not found.", null);
+			return userSendResponse(res, 400, false, "FSL template not found.", null);
 		}
 
 		const progressSchema = typeof prTemplate.fields === "string" ? JSON.parse(prTemplate.fields) : prTemplate.fields;
@@ -8129,24 +8323,25 @@ exports.submitActionPlanPR = async (req, res) => {
 			return modelAttributes;
 		};
 
-		const sampleData = actionPlanData[0];
+		const sampleData = propertyFormData[0];
 		const modelAttributes = buildModelAttributes(progressSchema, sampleData);
 
-		const ProgressReportModel = sequelize.define("cid_ui_case_progress_report", modelAttributes, {
+		const PropertyFormModel = sequelize.define("cid_ui_case_forensic_science_laboratory", modelAttributes, {
 			freezeTableName: true,
 			timestamps: true,
 			createdAt: "created_at",
 			updatedAt: "updated_at",
 		});
 
-		await ProgressReportModel.sync();
+		await PropertyFormModel.sync();
 
-		// Prepare data to insert into PR
-		const actionPlanDataToInsert = actionPlanData.map(item => {
+		// Filter selected rows only
+		const filteredPropertyFormData = propertyFormData.filter(item => row_ids.includes(item.id));
+
+		const propertyFormDataToInsert = filteredPropertyFormData.map(item => {
 			const newItem = {
 				...item,
-				sys_status: "AP",
-				field_pr_status: "No",
+				sys_status: "PF",
 				created_by: userName,
 				created_by_id: userId,
 				ui_case_id: item.ui_case_id,
@@ -8158,12 +8353,11 @@ exports.submitActionPlanPR = async (req, res) => {
 			return newItem;
 		});
 
-		// Insert into Progress Report
-		await ProgressReportModel.bulkCreate(actionPlanDataToInsert, { transaction: t });
+		// Insert selected rows into Progress Report
+		await PropertyFormModel.bulkCreate(propertyFormDataToInsert, { transaction: t });
 
 		await t.commit();
 		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
-
 	} catch (error) {
 		console.error("Error submitting Action Plan:", error);
 		if (t) await t.rollback();
@@ -8181,7 +8375,6 @@ exports.submitActionPlanPR = async (req, res) => {
 		}
 	}
 };
-
 
 function normalizeValues(values, expectedType) {
   return values
