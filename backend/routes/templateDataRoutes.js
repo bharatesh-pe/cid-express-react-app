@@ -359,6 +359,8 @@ router.post('/saveActionPlan', (req, res, next) => {
 
 router.post('/submitActionPlanPR',[validate_token],
     templateDataController.submitActionPlanPR)
-    
+ router.post('/submitPropertyFormFSL',[validate_token],
+    templateDataController.submitPropertyFormFSL)
+   
         
 module.exports = router;
