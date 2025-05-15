@@ -3029,6 +3029,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 var extraActions = [
                     {
                         name: "Crime Investigation",
+                        caseView : true,
+                        viewAction : true
                     },
                     ...(sysStatus !== "b_Report" ? updatedActions : []),
                     sysStatus === "disposal"
@@ -8212,7 +8214,13 @@ useEffect(() => {
                             headerDetails: rowData?.["field_cid_crime_no./enquiry_no"] || null,
                             backNavigation: "/case/ui_case",
                             paginationCount: paginationCount,
-                            sysStatus: sysStatus
+                            sysStatus: sysStatus,
+                            rowData: viewTemplateData?.["data"] || {},
+                            tableFields: viewTemplateResponse?.["data"]?.["fields"] || [],
+                            stepperData: viewTemplateResponse?.["data"]?.no_of_sections > 0 && viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"].sections : [],
+                            template_id : viewTemplateResponse?.["data"]?.template_id,
+                            template_name : viewTemplateResponse?.["data"]?.template_name,
+                            table_name: table_name
                         }
 
                         navigate("/caseView", {state: stateObj});

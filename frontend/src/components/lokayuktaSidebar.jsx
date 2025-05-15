@@ -100,7 +100,7 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
         }
     };
 
-    const validSidebarItems = contentArray?.filter(item => !item?.field && item?.table) || [];
+    const validSidebarItems = contentArray?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
 
     return (
         <Box>
