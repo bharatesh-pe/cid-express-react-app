@@ -10231,7 +10231,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                 </Box>
 
                 {APIsSubmited && (<Box className="notifyAtTopCaseStyle">
-                    submission Request(SP) for Approval.
+                    Submission request in progress. Awaiting SP approval.
                 </Box>)}
 
             </Box>
