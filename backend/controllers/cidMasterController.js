@@ -170,11 +170,13 @@ const getIoUsers = async (req, res) => {
             if (!userDesignations || userDesignations.length === 0) {
                 return res.status(200).json({ data: [] });
             }
+
             userIds = userDesignations.map(user => user.user_id && user.user_id !== null ? user.user_id : null).filter(userId => userId !== null);
+
             usersData = await Users.findAll({
                 where: {
                     user_id: {
-                        [Op.in]: userIds,
+                    [Op.in]: userIds,
                     },
                     dev_status: true,
                 },
@@ -185,20 +187,33 @@ const getIoUsers = async (req, res) => {
                         attributes: ["role_id", "role_title"],
                         where: {
                             role_id: {
-                                [Op.notIn]: excluded_role_ids,
+                            [Op.notIn]: excluded_role_ids,
                             },
                         },
                     },
                     {
                         model: KGID,
                         as: "kgidDetails",
-                        attributes: ["kgid", "name", "mobile"], // Fetch name here
+                        attributes: ["kgid", "name", "mobile"],
+                    },
+                    {
+                        model: UserDesignation, 
+                        as: "users_designations",
+                        attributes: ["users_designation_id", "designation_id"],
+                        include: [
+                            {
+                            model: Designation,
+                            as: "designation",
+                            attributes: ["designation_name"],
+                            },
+                        ],
                     },
                 ],
                 attributes: ["user_id"],
-                raw: true, // Flatten the result
-                nest: true, // Keeps relations grouped
+                raw: true,
+                nest: true,
             });
+
         }
         else if(get_flag && get_flag === "lower" && designation_id ){
             const userHierarchy = await UsersHierarchyNew.findAll({
@@ -273,6 +288,18 @@ const getIoUsers = async (req, res) => {
                         as: "kgidDetails",
                         attributes: ["kgid", "name", "mobile"], // Fetch name here
                     },
+                    {
+                        model: UserDesignation, 
+                        as: "users_designations",
+                        attributes: ["users_designation_id", "designation_id"],
+                        include: [
+                            {
+                            model: Designation,
+                            as: "designation",
+                            attributes: ["designation_name"],
+                            },
+                        ],
+                    },
                 ],
                 attributes: ["user_id"],
                 raw: true, // Flatten the result
@@ -323,7 +350,19 @@ const getIoUsers = async (req, res) => {
                         model: KGID,
                         as: "kgidDetails",
                         attributes: ["kgid", "name", "mobile"],
-                    }
+                    },
+                    {
+                        model: UserDesignation, 
+                        as: "users_designations",
+                        attributes: ["users_designation_id", "designation_id"],
+                        include: [
+                            {
+                            model: Designation,
+                            as: "designation",
+                            attributes: ["designation_name"],
+                            },
+                        ],
+                    },
                 ],
                 attributes: ["user_id"],
                 raw: true,
@@ -357,6 +396,18 @@ const getIoUsers = async (req, res) => {
                         model: KGID,
                         as: "kgidDetails",
                         attributes: ["kgid", "name", "mobile"], // Fetch name here
+                    },
+                    {
+                        model: UserDesignation, 
+                        as: "users_designations",
+                        attributes: ["users_designation_id", "designation_id"],
+                        include: [
+                            {
+                            model: Designation,
+                            as: "designation",
+                            attributes: ["designation_name"],
+                            },
+                        ],
                     },
                     // {
                     //     model: UserDesignation,
@@ -407,7 +458,7 @@ const getIoUsers = async (req, res) => {
     // Transform output to move kgidDetails.name to the top level
     const users = usersData.map(user => ({
         ...user,
-        name: user.kgidDetails?.name || "Unknown", // Move name to top level
+        name: (user.kgidDetails?.name + " - " + user.users_designations?.designation?.designation_name) || "", // Move name to top level
         kgidDetails: undefined // Remove the nested object if not needed
     }));
 
@@ -468,6 +519,18 @@ const getIoUsersBasedOnDivision = async (req, res) => {
                     as: "kgidDetails",
                     attributes: ["kgid", "name", "mobile"],
                 },
+                {
+                    model: UserDesignation, 
+                    as: "users_designations",
+                    attributes: ["users_designation_id", "designation_id"],
+                    include: [
+                        {
+                        model: Designation,
+                        as: "designation",
+                        attributes: ["designation_name"],
+                        },
+                    ],
+                }
             ],
             attributes: ["user_id"],
             raw: true,
@@ -477,9 +540,9 @@ const getIoUsersBasedOnDivision = async (req, res) => {
         // Transform output: move kgidDetails.name to top level.
         const users = usersData.map(user => ({
             ...user,
-            name: user.kgidDetails?.name || "Unknown",
-            kgid: user.kgidDetails?.kgid || "Unknown",
-            mobile: user.kgidDetails?.mobile || "Unknown",
+            name: (user.kgidDetails?.name + " - " + user.users_designations?.designation?.designation_name) || "",
+            kgid: user.kgidDetails?.kgid || "",
+            mobile: user.kgidDetails?.mobile || "",
             kgidDetails: undefined, // remove nested object if not needed
         }));
         

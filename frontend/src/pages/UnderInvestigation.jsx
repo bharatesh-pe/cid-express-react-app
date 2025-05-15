@@ -574,6 +574,7 @@ const UnderInvestigation = () => {
   ] = useState(null);
   const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
   const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
+  const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false);
 
   const [showSubmitPFButton, setShowSubmitPFButton] = useState(false);
   // for pdf download
@@ -2454,7 +2455,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       setTableData(processedData);
 
       const excludedKeys = [
-        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name"
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name" ,"field_io_name_id"
       ];
 
       const generateReadableHeader = (key) =>
@@ -2641,7 +2642,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const excludedKeys = [
                     "created_at", "updated_at", "id", "deleted_at", "attachments",
                     "Starred", "ReadStatus", "linked_profile_info",
-                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name"
+                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name","field_io_name_id"
                 ];
 
                 const generateReadableHeader = (key) =>
@@ -2905,7 +2906,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -4286,19 +4287,35 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
       });
       return;
     }
-    const result = await Swal.fire({
-      title: 'Are you sure?',
-      text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, submit it!',
-      cancelButtonText: 'Cancel',
-    });
+    var result ;
+    if(isImmediateSupervisior)
+    {
+        result = await Swal.fire({
+          title: 'Are you sure?',
+          text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, submit it!',
+          cancelButtonText: 'Cancel',
+        });
+    }
+    else
+    {
+        result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, submit it!',
+            cancelButtonText: 'Cancel',
+          });
+    }
   
     if (result.isConfirmed) {
       const payload = {
         transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
         ui_case_id: id,
+        isSupervisior : isImmediateSupervisior
       };
   
       try {
@@ -4417,10 +4434,9 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
       normalData["field_pr_status"] = "No";
     }
   
-    normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : "AP";
+    normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : isImmediateSupervisior ? "AP" : "";
     normalData.field_status = "";
     normalData["ui_case_id"] = selectedRowData.id;
-  
     formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
     formData.append("data", JSON.stringify(normalData));
     formData.append("transaction_id", randomApprovalId);
@@ -6034,6 +6050,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     var getTemplatePayload = {
         table_name: options.table,
         ui_case_id: selectedRow.id,
+        case_io_id: selectedRow.field_io_name_id || "",
         pt_case_id: selectedRow?.pt_case_id || null,
         limit : 10,
         page : !searchFlag ? otherTemplatesPaginationCount : 1,
@@ -6081,21 +6098,43 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
             }
           }
           
-          setShowReplacePdfButton(showReplacePdf);
+        setShowReplacePdfButton(showReplacePdf);
+
+        let anySubmitAP = true;
+        let isSuperivisor = false;
+
+        if (options.table === "cid_ui_case_action_plan") {
+            const userDesigId = localStorage.getItem('designation_id');
+            
+            const allAPWithSameSupervisor = records.every(
+                record =>
+                record.field_status === "" &&
+                record.supervisior_designation_id == userDesigId
+            );
+            
+            const allAPWithOutIOSubmit = records.every(
+                record =>
+                record.sys_status === "others" &&
+                record.field_status === "" &&
+                record.supervisior_designation_id != userDesigId
+            );
+            
+            if (allAPWithSameSupervisor || allAPWithOutIOSubmit) {
+                anySubmitAP = false;
+            }
+
+            if(allAPWithSameSupervisor)
+                isSuperivisor = true;
+        }
           
-          let anySubmitAP = false;
+        setShowSubmitAPButton(anySubmitAP);
+        setIsImmediateSupervisior(isSuperivisor);
+        
+        let anySubmitPF = false;
 
-          if (options.table === "cid_ui_case_action_plan") {
-            anySubmitAP = records.some(record => record.field_status === "submit");
-          }
-
-          setShowSubmitAPButton(anySubmitAP);
-
-          let anySubmitPF = false;
-
-          if (options.table === "cid_ui_case_property_form") {
-            anySubmitPF = records.every(record => record.sys_status === "submit");
-          }
+        if (options.table === "cid_ui_case_property_form") {
+        anySubmitPF = records.every(record => record.sys_status === "submit");
+        }
 
           setShowSubmitPFButton(anySubmitPF);
 
@@ -6116,7 +6155,8 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
               excludedKeys.push("hasFieldPrStatus");
             }
             if (options.table === "cid_ui_case_action_plan") {
-              excludedKeys.push("field_status");
+                excludedKeys.push("field_status");
+                excludedKeys.push("supervisior_designation_id");
             }
             if (options.table === "cid_ui_case_trail_monitoring") {
               excludedKeys.push("field_witness");
@@ -6589,9 +6629,26 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
 
                     const isViewAction = options.is_view_action === true
                     
-                    const isActionPlan = options.table === "cid_ui_case_action_plan" && params.row.field_status === 'submit';
+                    var isActionPlan = false;
+
+                    if(options.table === "cid_ui_case_action_plan")
+                    {
+                        if(params.row.sys_status === 'AP' && params.row.supervisior_designation_id != localStorage.getItem('designation_id'))
+                        {
+                            isActionPlan =true;
+                        }
+                        else if((params.row.sys_status === 'AP' || params.row.sys_status === 'others') && params.row.field_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
+                        {
+                            isActionPlan =false;
+                        }
+                        else if(params.row.field_status === 'submit' || params.row.sys_status === 'AP' )
+                        {
+                            isActionPlan =true;
+                        }
+                    }
 
                     const isPropertyForm = options.table === "cid_ui_case_property_form" && params.row.sys_status === 'submit';
+                    
                     return (
                       <Box
                         sx={{
@@ -10387,7 +10444,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                       color="success"
                       // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
                       onClick={() => {
-                          handleSubmitAp({ id: selectedRowData?.id });
+                          handleSubmitAp({ id: selectedRowData?.id});
                         }}
                       disabled={otherTemplatesTotalRecord === 0}
                       >
