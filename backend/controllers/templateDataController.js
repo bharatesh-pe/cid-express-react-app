@@ -8112,7 +8112,7 @@ exports.submitActionPlanPR = async (req, res) => {
         {
             // Update field_status in Action Plan
             await sequelize.query(
-                `UPDATE cid_ui_case_action_plan SET sys_status = 'AP' WHERE ui_case_id = :ui_case_id`,
+                `UPDATE cid_ui_case_action_plan SET sys_status = 'IO' WHERE ui_case_id = :ui_case_id`,
                 {
                     replacements: { ui_case_id },
                     type: Sequelize.QueryTypes.UPDATE,
@@ -8125,7 +8125,7 @@ exports.submitActionPlanPR = async (req, res) => {
         {
             // Update field_status in Action Plan
             await sequelize.query(
-                `UPDATE cid_ui_case_action_plan SET field_status = 'submit' WHERE ui_case_id = :ui_case_id`,
+                `UPDATE cid_ui_case_action_plan SET field_submit_status = 'submit' WHERE ui_case_id = :ui_case_id`,
                 {
                     replacements: { ui_case_id },
                     type: Sequelize.QueryTypes.UPDATE,
