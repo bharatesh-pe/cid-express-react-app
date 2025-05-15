@@ -10368,6 +10368,18 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                         Submit
                       </Button>
                     )}
+                    {selectedOtherTemplate?.table === 'cid_ui_case_property_form' && (
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() => {
+                          handleSubmitPF({ id: selectedRowData?.id, selectedIds });
+                        }}
+                        disabled={showSubmitPFButton}
+                      >
+                        Export/Import
+                      </Button>
+                    )}
                     {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' && (
                       ! showSubmitAPButton&& (
                       <Button
