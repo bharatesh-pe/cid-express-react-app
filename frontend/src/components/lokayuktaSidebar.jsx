@@ -103,7 +103,7 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
     const validSidebarItems = contentArray?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
 
     return (
-        <Box>
+        <>
             <Box
                 sx={{
                     display: { xs: "none", md: "block" },
@@ -270,7 +270,7 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
                     <CircularProgress size={100} />
                 </div>
             )}
-        </Box>
+        </>
     );
 };
 

@@ -1,23 +1,35 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { Box, Button, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, IconButton, InputAdornment, Stack, Tooltip, Typography } from "@mui/material";
 import LokayuktaSidebar from "../components/lokayuktaSidebar";
 import { West } from "@mui/icons-material";
+import TextFieldInput from "@mui/material/TextField";
 
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
+import api from "../services/api";
+
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import SearchIcon from "@mui/icons-material/Search";
+import FilterListIcon from "@mui/icons-material/FilterList";
+import AddIcon from "@mui/icons-material/Add";
+import DynamicForm from "../components/dynamic-form/DynamicForm";
 
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
     const { state } = useLocation();
-    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name } = state || {};
+    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module } = state || {};
 
+    const [loading, setLoading] = useState(false);
+    
     const [activeSidebar, setActiveSidebar] = useState(null);
 
     const [sidebarContentArray, setSidebarContentArray] = useState(contentArray ? JSON.parse(contentArray) : []);
 
+    // crime investigation states
     const [formReadFlag, setFormReadFlag] = useState(true);
     const [formEditFlag, setFormEditFlag] = useState(false);
     
@@ -32,11 +44,37 @@ const LokayuktaView = () => {
     const [templateId, setTemplateId] = useState(template_id || null);
 
 
+    // table content states
     const [tableViewFlag, setTableViewFlag] = useState(false);
+
     const [tableColumnData, setTableColumnData] = useState([
         { field: 'sl_no', headerName: 'Sl. No.' },
     ]);
     const [tableRowData, setTableRowData] = useState([]);
+
+    const tablePaginationCount = useRef(1);
+
+    const [tableSearchValue, setTableSearchValue] = useState(null);
+    const [tableTotalPage, setTableTotalPage] = useState(1);
+    const [tableTotalRecord, setTableTotalRecord] = useState(0);
+
+    const [tableFilterToDate, setTableFilterToDate] = useState(null);
+    const [tableFilterFromDate, setTableFilterFromDate] = useState(null);
+    const [tableFilterOtherFilters, setTableFilterOtherFilters] = useState({});
+
+
+    // action template states
+    const [formOpen, setFormOpen] = useState(false);
+    const [selectedRowId, setSelectedRowId] = useState(null);
+    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+    const [selectedTableName, setSelectedTableName] = useState(null);
+    const [selectedTemplateName, setSelectedTemplateName] = useState(null);
+    const [readonlyForm, setReadonlyForm] = useState(null);
+    const [editOnlyForm, setEditOnlyForm] = useState(null);
+
+    const [formFields, setFormFields] = useState([]);
+    const [initalFormData, setInitialFormData] = useState({});
+    const [formStepperData, setFormStepperData] = useState([]);
 
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
@@ -54,6 +92,11 @@ const LokayuktaView = () => {
     }
 
     const sidebarActive = (item)=>{
+
+        if(!item){
+            return false;
+        }
+
         setActiveSidebar(item);
         if(item?.viewAction){
             setTableViewFlag(false);
@@ -73,17 +116,442 @@ const LokayuktaView = () => {
         }
     }
 
-    const getTableData = (option) => {
-        console.log(option,"option");
+    function isValidISODate(value) {
+        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
+    }
+
+    const tableHeaderRender = (params, key) => {
+        return (
+            <Tooltip title={params.colDef.headerName} arrow placement="top">
+                <Typography
+                    className="MuiDataGrid-columnHeaderTitle mui-multiline-header"
+                    sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        lineHeight: '1.2em',
+                        fontSize: "15px",
+                        fontWeight: "500",
+                        color: "#1D2939",
+                        width: '100%',
+                    }}
+                >
+                    {params.colDef.headerName}
+                </Typography>
+            </Tooltip>
+        );
+    };
+
+    const tableCellRender = (key, params, value, index, tableName) => {
+        // if (params?.row?.attachments) {
+        //     var attachmentField = params.row.attachments.find((data) => data.field_name === key);
+        //     if (attachmentField) {
+        //         return fileUploadTableView(key, params, params.value);
+        //     }
+        // }
+
+        let highlightColor = {};
+        let onClickHandler = null;
+
+        if (tableName && index !== null && index === 0 ) {
+            highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
+
+            onClickHandler = (event) => {event.stopPropagation()};
+        }
+
+
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    style={highlightColor}
+                    onClick={onClickHandler}
+                    className={`tableValueTextView Roboto`}
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
+        );
+    };
+
+    const getTableData = async (options, reOpen, noFilters) => {
+
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        console.log(tableSearchValue,"tableSearchValue tableSearchValue");
+
+        var getTemplatePayload = {
+            table_name: options.table,
+            ui_case_id: ui_case_id,
+            case_io_id: rowData?.field_io_name_id || "",
+            pt_case_id: pt_case_id,
+            limit : 10,
+            page : tablePaginationCount.current,
+            search: noFilters ? "" : tableSearchValue,        
+            from_date: noFilters ? null : tableFilterFromDate,
+            to_date: noFilters ? null : tableFilterToDate,
+            filter: noFilters ? {} : tableFilterOtherFilters,
+        };
+
+        setLoading(true);
+        try {
+
+            const getTemplateResponse = await api.post("/templateData/getTemplateData",getTemplatePayload);
+            setLoading(false);
+
+            if (getTemplateResponse && getTemplateResponse.success) {
+
+                const { meta, data } = getTemplateResponse;
+            
+                const totalPages = meta?.meta?.totalPages;
+                const totalItems = meta?.meta?.totalItems;
+                
+                if (totalPages !== null && totalPages !== undefined) {
+                    setTableTotalPage(totalPages);
+                }
+                
+                if (totalItems !== null && totalItems !== undefined) {
+                    setTableTotalRecord(totalItems);
+                }
+
+                if (data?.length > 0) {
+
+                    const excludedKeys = [
+                        "created_at", "updated_at", "id", "deleted_at", "attachments",
+                        "Starred", "ReadStatus", "linked_profile_info",
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
+                    ];
+
+                    const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
+
+                    const updatedHeader = [
+                        {
+                            field: "sl_no",
+                            headerName: "S.No",
+                            resizable: false,
+                            width: 75,
+                            renderCell: (params) => {
+                                return (
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "4px",
+                                        }}
+                                    >
+                                        {params.value}
+                                    </Box>
+                                );
+                            }
+                        },
+                        ...Object.keys(data[0]).filter((key) => !excludedKeys.includes(key))
+                        .map((key) => ({
+                            field: key,
+                            headerName: generateReadableHeader(key),
+                            width: generateReadableHeader(key).length < 15 ? 100 : 200,
+                            resizable: true,
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, key)
+                            ),
+                            renderCell: renderCellFunc(key),
+                        })),
+                    ]
+
+                    const formatDate = (value) => {
+                        const parsed = Date.parse(value);
+                        if (isNaN(parsed)) return value;
+                        return new Date(parsed).toLocaleDateString("en-GB");
+                    };
+
+                    const updatedTableData = getTemplateResponse.data.map((field, index) => {
+
+                        const updatedField = {};
+
+                        Object.keys(field).forEach((key) => {
+                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                                updatedField[key] = formatDate(field[key]);
+                            } else {
+                                updatedField[key] = field[key];
+                            }
+                        });
+
+                        return {
+                            ...updatedField,
+                            sl_no: (tablePaginationCount.current - 1) * 10 + (index + 1),
+                            ...(field.id ? {} : { id: "unique_id_" + index }),
+                        };
+                    });
+
+                    setTableColumnData(updatedHeader);
+                    setTableRowData(updatedTableData);
+                }else{
+                    setTableColumnData([]);
+                    setTableRowData([]);
+                }
+
+                setFormOpen(false);
+
+                if(reOpen){
+                    showAddNewForm();
+                    return;
+                }
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
     }
 
     useEffect(()=>{
-        setActiveSidebar(sidebarContentArray?.[0] || null)
+        setActiveSidebar(sidebarContentArray?.[0] || null);
     },[]);
 
+    const handleClear = () => {
+        tablePaginationCount.current = 1;
+        setTableSearchValue("");
+        setTableFilterToDate(null);
+        setTableFilterFromDate(null);
+        setTableFilterOtherFilters({});
 
-    const formSubmit = (data)=>{
-        console.log(data,"data");
+        getTableData(activeSidebar, false, true);
+    };
+
+    const searchTableData = ()=>{
+        tablePaginationCount.current = 1;
+        getTableData(activeSidebar);
+    }
+
+    const handlePagination = (page) => {
+        tablePaginationCount.current = page
+        getTableData(activeSidebar);
+    }
+
+    const closeAddForm = ()=>{
+        setFormOpen(false);
+    }
+
+    const showAddNewForm = async ()=>{
+        
+        if(!activeSidebar?.table){
+            toast.error("Please Check The Template !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const viewTableData = {
+            table_name: activeSidebar.table,
+        };
+
+        setLoading(true);
+    
+        try {
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+            setLoading(false);
+
+            if (viewTemplateResponse && viewTemplateResponse.success) {
+                
+                setSelectedRowId(null);
+                setSelectedTemplateId(viewTemplateResponse?.["data"]?.template_id);
+                setSelectedTableName(viewTemplateResponse?.["data"]?.table_name);
+                setSelectedTemplateName(viewTemplateResponse?.["data"]?.template_name);
+                
+                setReadonlyForm(false);
+                setEditOnlyForm(false);
+                
+                setFormFields(viewTemplateResponse?.["data"]?.["fields"] || []);
+                setInitialFormData({});
+                if (viewTemplateResponse?.["data"]?.no_of_sections && viewTemplateResponse?.["data"]?.no_of_sections > 0) {
+                    setFormStepperData(viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"]?.sections: []);
+                }
+
+                setFormOpen(true);
+
+            } else {
+
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+    
+    const formSubmit = async (data, formOpen)=>{
+
+        if (!activeSidebar.table || activeSidebar.table === "") {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+    
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+    
+        const formData = new FormData();
+        formData.append("table_name", activeSidebar.table);
+    
+        var normalData = {}; // Non-file upload fields
+    
+        formFields.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    // Append file fields to formData
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+
+                            const hasFileInstance = data[field.name].some((file) => file.filename instanceof File);
+                            var filteredArray = data[field.name].filter((file) => file.filename instanceof File);
+
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                    formData.append(field.name, file.filename);
+                                    }
+                                });
+            
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+                
+                                formData.append("folder_attachment_ids",JSON.stringify(filteredArray));
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+
+        normalData.sys_status = "ui_case";
+        normalData["ui_case_id"] = rowData.id;
+        
+        formData.append("data", JSON.stringify(normalData));
+        setLoading(true);
+        
+        try {
+            const saveTemplateData = await api.post("/templateData/insertTemplateData",formData);
+            setLoading(false);
+    
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Created Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => formOpen ? getTableData(activeSidebar, true) : getTableData(activeSidebar)
+                });
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the data. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
     }
 
     const formUpdate = (data)=>{
@@ -95,80 +563,15 @@ const LokayuktaView = () => {
     }
 
     return (
-        <Box sx={{ display: "flex" }}>
+        <Stack direction="row" justifyContent="space-between">
 
             <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} />
 
-            <Box width={'100%'}>
+            <Box flex={4} sx={{ overflow: "hidden" }}>
 
-                {/* header content */}
-                {/* <Box sx={{display: 'none', justifyContent: 'space-between', borderBottom: '1px solid #D0D5DD', height: '55.5px', padding: '3px 12px'}}>
-
-                    <Typography
-                        sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                        className="Roboto"
-                        onClick={backToForm}
-                    >
-                        <West />
-                        {headerDetails || "Case Details"}
-                    </Typography>
-
-                    <Box sx={{display: 'flex', alignItems: 'center', gap: '6px'}}>
-                        {
-                            userPermissions[0]?.case_details_download && 
-                            <Button
-                                sx={{
-                                    background: "#0167F8",
-                                    borderRadius: "8px",
-                                    fontSize: "14px",
-                                    fontWeight: "500",
-                                    color: "#FFFFFF",
-                                    padding: "6px 16px",
-                                }}
-                                className="Roboto GreenFillBtn"
-                            >
-                                Download
-                            </Button>
-                        }
-                        {
-                            userPermissions[0]?.case_details_print && 
-                            <Button
-                                sx={{
-                                    background: "#0167F8",
-                                    borderRadius: "8px",
-                                    fontSize: "14px",
-                                    fontWeight: "500",
-                                    color: "#FFFFFF",
-                                    padding: "6px 16px",
-                                }}
-                                className="Roboto GreenFillBtn"
-                            >
-                                Print
-                            </Button>
-                        }
-                        <Button
-                            sx={{
-                                background: "#0167F8",
-                                borderRadius: "8px",
-                                fontSize: "14px",
-                                fontWeight: "500",
-                                color: "#FFFFFF",
-                                padding: "6px 16px",
-                            }}
-                            className="Roboto blueButton"
-                        >
-                            Update Case
-                        </Button>
-                    </Box>
-
-                </Box> */}
-
-                {/* body content */}
-                <Box sx={{overflow: 'auto', height: '100vh'}}>
-
-                    {
-                        !tableViewFlag ?
-
+                {
+                    !tableViewFlag ?
+                    <Box sx={{overflow: 'auto', height: '100vh'}}>
                         <NormalViewForm 
                             table_row_id={tableRowId}
                             template_id={templateId}
@@ -186,30 +589,139 @@ const LokayuktaView = () => {
                             closeForm={backToForm}
                             noPadding={true}
                         />
-
-                        :
-                        <Box p={2}>
+                    </Box>
+                    :
+                    <Box p={2}>
+                        <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
                             <Typography
-                                px={1}
-                                pb={1}
                                 sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                                 className="Roboto"
                                 onClick={backToForm}
                             >
                                 <West />
                                 {headerDetails || "Case Details"}
-                            </Typography>    
+                            </Typography>
+
+                            <Box sx={{display: 'flex', alignItems: 'start', gap: '12px'}}>
+                                <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'end'}}>
+                                    <TextFieldInput
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ color: '#475467' }} />
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: (
+                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                    <IconButton
+                                                        sx={{ padding: "0 5px", borderRadius: "0" }}
+                                                    >
+                                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                                    </IconButton>
+                                                </Box>
+                                            )
+                                        }}
+                                        onInput={(e) => setTableSearchValue(e.target.value)}
+                                        value={tableSearchValue}
+                                        id="tableSearch"
+                                        size="small"
+                                        placeholder='Search..'
+                                        variant="outlined"
+                                        className="profileSearchClass"
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                searchTableData();
+                                            }
+                                        }}
+                                        sx={{
+                                            width: '400px', borderRadius: '6px', outline: 'none',
+                                            '& .MuiInputBase-input::placeholder': {
+                                                color: '#475467',
+                                                opacity: '1',
+                                                fontSize: '14px',
+                                                fontWeight: '400',
+                                                fontFamily: 'Roboto'
+                                            },
+                                        }}
+                                    />
+                                    {(tableSearchValue || tableFilterToDate || tableFilterFromDate ||
+                                        Object.keys(tableFilterOtherFilters).length > 0) && (
+                                        <Typography
+                                            onClick={handleClear}
+                                            sx={{
+                                                fontSize: "13px",
+                                                fontWeight: "500",
+                                                textDecoration: "underline",
+                                                cursor: "pointer",
+                                            }}
+                                            mt={1}
+                                        >
+                                            Clear Filter
+                                        </Typography>
+                                    )}
+                                </Box>
+
+                                <Button
+                                    onClick={showAddNewForm}
+                                    sx={{height: "38px",}}
+                                    className="blueButton"
+                                    startIcon={
+                                        <AddIcon
+                                            sx={{
+                                                border: "1.3px solid #FFFFFF",
+                                                borderRadius: "50%",
+                                                background:"#4D4AF3 !important",
+                                            }}
+                                        />
+                                    }
+                                    variant="contained"
+                                >
+                                    Add New
+                                </Button>
+                            </Box>
+                        </Box>
+
+                        <Box sx={{overflow: 'auto'}}>
                             <TableView
-                                rows={tableRowData} 
+                                rows={tableRowData}
                                 columns={tableColumnData}
+                                totalPage={tableTotalPage}
+                                totalRecord={tableTotalRecord}
+                                paginationCount={tablePaginationCount.current}
+                                handlePagination={handlePagination}
                             />
                         </Box>
-                    }                    
 
-                </Box>
+                    </Box>
+                }
 
             </Box>
-        </Box>
+
+            {formOpen && (
+                <DynamicForm
+                    table_row_id={selectedRowId}
+                    template_id={selectedTemplateId}
+                    table_name={selectedTableName}
+                    template_name={selectedTemplateName}
+                    readOnly={readonlyForm}
+                    editData={editOnlyForm}
+                    formConfig={formFields}
+                    initialData={initalFormData}
+                    stepperData={formStepperData}
+                    onSubmit={formSubmit}
+                    onUpdate={formUpdate}
+                    onError={formError}
+                    closeForm={closeAddForm}
+                />
+            )}
+
+            {loading && (
+                <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
+                    <CircularProgress size={100} />
+                </div>
+            )}
+        </Stack>
     );
 };
 
