@@ -6114,7 +6114,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
             
             const allAPWithOutIOSubmit = records.every(
                 record =>
-                record.sys_status === "" &&
+                record.sys_status === "others" &&
                 record.field_status === "" &&
                 record.supervisior_designation_id != userDesigId
             );
@@ -6637,11 +6637,11 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                         {
                             isActionPlan =true;
                         }
-                        else if((params.row.sys_status === 'AP' || params.row.sys_status === '') && params.row.field_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
+                        else if((params.row.sys_status === 'AP' || params.row.sys_status === 'others') && params.row.field_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
                         {
                             isActionPlan =false;
                         }
-                        else if(params.row.field_status === 'submit' || params.row.sys_status === 'submit' )
+                        else if(params.row.field_status === 'submit' || params.row.sys_status === 'AP' )
                         {
                             isActionPlan =true;
                         }
