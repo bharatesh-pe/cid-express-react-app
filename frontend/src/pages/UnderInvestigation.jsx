@@ -98,6 +98,7 @@ const UnderInvestigation = () => {
     const [disabledApprovalItems, setDisabledApprovalItems] = useState(false);
 
     const [saveNew, setSaveNew] = useState(null);
+    const [saveNewAction, setSaveNewAction] = useState(null);
 
     // on save approval modal
 
@@ -160,8 +161,7 @@ const UnderInvestigation = () => {
   const [selectedOtherTemplate, setselectedOtherTemplate] = useState({});
   const [otherTemplateData, setOtherTemplateData] = useState([]);
   const [otherInitialTemplateData, setOtherInitialTemplateData] = useState([]);
-  const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] =
-    useState(false);
+  const [otherReadOnlyTemplateData, setOtherReadOnlyTemplateData] = useState(false);
   const [otherEditTemplateData, setOtherEditTemplateData] = useState(false);
   const [otherRowId, setOtherRowId] = useState(null);
   const [otherTemplateId, setOtherTemplateId] = useState(null);
@@ -574,7 +574,9 @@ const UnderInvestigation = () => {
   ] = useState(null);
   const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
   const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
+  const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false);
 
+  const [showSubmitPFButton, setShowSubmitPFButton] = useState(false);
   // for pdf download
   const [isDownloadPdf, setIsDownloadPdf] = useState(false);
   const [downloadPdfFields, setDownloadPdfFields] = useState({});
@@ -585,6 +587,7 @@ const UnderInvestigation = () => {
 
     const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
     const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
+    const [APIsSubmited, setAPIsSubmited] = useState(false);
     const [otherTemplatesPaginationCount, setOtherTemplatesPaginationCount] = useState(1);
     const [otherSearchValue, setOtherSearchValue] = useState('');
 
@@ -2481,7 +2484,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
       setTableData(processedData);
 
       const excludedKeys = [
-        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name"
+        "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name" ,"field_io_name_id"
       ];
 
       const generateReadableHeader = (key) =>
@@ -2668,7 +2671,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const excludedKeys = [
                     "created_at", "updated_at", "id", "deleted_at", "attachments",
                     "Starred", "ReadStatus", "linked_profile_info",
-                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name"
+                    "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name","field_io_name_id"
                 ];
 
                 const generateReadableHeader = (key) =>
@@ -2932,7 +2935,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -3688,76 +3691,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
       }
     }
   };
-//   const loadAOFields = async () => {
-//     setLoading(true);
-//     try {
-//       const response = await api.post("/templates/viewTemplate", {
-//         table_name: "cid_under_investigation",
-//       });
-//       if (response.success && response.data?.fields) {
-//         let aoOnlyFields = response.data.fields.filter(field =>
-//           field.ao_field === true &&
-//           field.hide_from_ux === false &&
-//           field.name !== 'field_act' &&
-//           field.name !== 'field_section'
-//         );
-                
-//         const briefFactField = response.data.fields.find(field => field.name === 'field_breif_fact');
-//         const policeStationField = response.data.fields.find(field => field.name === 'field_investigation_carried_out_by_the_police_station');
-        
-//         if (briefFactField && !aoOnlyFields.includes(briefFactField)) {
-//             aoOnlyFields.push(briefFactField);
-//         }
-        
-//         if (policeStationField && !aoOnlyFields.includes(policeStationField)) {
-//             aoOnlyFields.push(policeStationField);
-//         }
-
-//        if (aoOnlyFields.length > 0) {
-//             aoOnlyFields.forEach((field, index) => {
-//                 if(field && field.api)
-//                 {
-//                      var payloadApi = field.api
-
-//                      const response = await api.post(payloadApi, apiPayload);
-                     
-//                     if (!response.data) return { id: field.id, options: [] };
-
-//                     const updatedOptions = response.data.map((templateData) => {
-
-//                         const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
-
-//                         var headerName = nameKey;
-//                         var headerId = 'id';
-
-//                         return {
-//                             name: templateData[headerName],
-//                             code: templateData[headerId],
-//                         };
-//                     });
-
-//                     // return { id: field.id, options: updatedOptions };
-//                     field.options = updatedOptions
-//                 }
-//             });
-//         }
-
-        
-        
-//         setAoFields(aoOnlyFields);
-        
-//         loadValueField(aoFieldId, false, "cid_under_investigation");
-//         setLoading(false);
-//     }
-    
-//     } catch (error) {
-//       toast.error("Failed to load AO fields", {
-//         position: "top-right",
-//         autoClose: 3000,
-//         className: "toast-error",
-//       });
-//     }
-//   };
   
 const loadAOFields = async () => {
   setLoading(true);
@@ -3953,6 +3886,7 @@ useEffect(() => {
           );
         }
         setSaveNew(null);
+        setSaveNewAction(null);
       } else {
         const errorMessage = viewTemplateResponse.message
           ? viewTemplateResponse.message
@@ -3999,6 +3933,7 @@ useEffect(() => {
         }
         setFormOpen(false);
         setSaveNew(null);
+        setSaveNewAction(null);
 
     });
 
@@ -4034,6 +3969,7 @@ useEffect(() => {
     };
     setLoading(true);
     setOtherReadOnlyTemplateData(false);
+    setOtherEditTemplateData(false);
     try {
       const viewTemplateResponse = await api.post(
         "/templates/viewTemplate",
@@ -4287,8 +4223,7 @@ useEffect(() => {
     }
   };
 
-
-  const handleSubmitAp = async ({ id }) => {
+const handleSubmitPF = async ({ id, selectedIds }) => {
 
     if (!id || id.length === 0) {
       toast.error("Please select at least one record to submit.", {
@@ -4305,7 +4240,7 @@ useEffect(() => {
     }
     const result = await Swal.fire({
       title: 'Are you sure?',
-      text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+      text: "Do you want to submit this Property Form? Once submitted, the selected record will be move to the FSL.",
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Yes, submit it!',
@@ -4316,6 +4251,108 @@ useEffect(() => {
       const payload = {
         transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
         ui_case_id: id,
+        row_ids: selectedIds
+      };
+  
+      try {
+        setLoading(true);
+        const response = await api.post('/templateData/submitPropertyFormFSL', payload);
+  
+        if (response.success) {
+          toast.success("The Property Form has been submitted", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
+            onOpen: () => {
+              if (sysStatus === "merge_cases") {
+                loadMergedCasesData(paginationCount);
+              } else {
+                if(!selectedOtherTemplate?.field){
+                    handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
+                }else{
+                    loadTableData(paginationCount);
+                }
+              }
+            },
+        });
+         setSelectedIds([]);
+        } else {
+          toast.error(response.message || 'Something went wrong.', {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+        }
+      } catch (error) {
+        toast.error(error.message || 'Submission failed.', {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+      });
+      }finally{
+        setLoading(false);
+      }
+    }
+  };
+  const handleSubmitAp = async ({ id }) => {
+
+    if (!id || id.length === 0) {
+      toast.error("Please select at least one record to submit.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
+    var result ;
+    if(isImmediateSupervisior)
+    {
+        result = await Swal.fire({
+          title: 'Are you sure?',
+          text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, submit it!',
+          cancelButtonText: 'Cancel',
+        });
+    }
+    else
+    {
+        result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, submit it!',
+            cancelButtonText: 'Cancel',
+          });
+    }
+  
+    if (result.isConfirmed) {
+      const payload = {
+        transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
+        ui_case_id: id,
+        isSupervisior : isImmediateSupervisior
       };
   
       try {
@@ -4373,7 +4410,8 @@ useEffect(() => {
     }
   };
 
-  const otherAPPRTemplateSaveFunc = async (data) => {
+  const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
+
     if ((!natureOfDisposalModal && !showOrderCopy) &&
         (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
       toast.warning("Please Check The Template", {
@@ -4432,11 +4470,11 @@ useEffect(() => {
     if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
       normalData["field_pr_status"] = "No";
     }
-  
-    normalData.sys_status = "AP";
-    normalData.field_status = "";
+    
+    console.log("isImmediateSupervisior",isImmediateSupervisior);
+    normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : isImmediateSupervisior ? "IO" : "ui_case";
+    normalData.field_submit_status = "";
     normalData["ui_case_id"] = selectedRowData.id;
-  
     formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
     formData.append("data", JSON.stringify(normalData));
     formData.append("transaction_id", randomApprovalId);
@@ -4464,9 +4502,13 @@ useEffect(() => {
           };
           onUpdateTemplateData(combinedData);
         }
-        await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+        if(saveNewAction){
+          await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);   
+          showOptionTemplate(selectedOtherTemplate.table);
+        }else{
+          handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+        }
 
-        showOptionTemplate(selectedOtherTemplate.table);
       } else {
         toast.error(response.message || "Failed to change the status. Please try again.", {
           position: "top-right",
@@ -4484,7 +4526,7 @@ useEffect(() => {
     }
   };
 
-  const otherTemplateSaveFunc = async (data) => {
+  const otherTemplateSaveFunc = async (data, saveNewAction) => {
 
     if ((!natureOfDisposalModal && !showOrderCopy) && (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
         toast.warning("Please Check The Template", {
@@ -4617,18 +4659,16 @@ useEffect(() => {
                 draggable: true,
                 progress: undefined,
                 className: "toast-success",
-                onOpen: () => {
-                  if (sysStatus === "merge_cases") {
-                    loadMergedCasesData(paginationCount);
-                  } else {
-                    if(!selectedOtherTemplate?.field){
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
-                    }else{
-                        loadTableData(paginationCount);
-                    }
-                  }
-                },
             });
+
+            if (sysStatus === "merge_cases") {
+              loadMergedCasesData(paginationCount);
+            }else if(saveNewAction){
+              await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
+              showOptionTemplate(selectedOtherTemplate.table);
+            }else{
+              handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
+            }
 
             setOtherFormOpen(false);
             setAddApproveFlag(false);
@@ -5142,6 +5182,7 @@ useEffect(() => {
   };
 
   const onSaveTemplateData = async (data, saveNew) => {
+
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
         position: "top-right",
@@ -6047,6 +6088,7 @@ useEffect(() => {
     var getTemplatePayload = {
         table_name: options.table,
         ui_case_id: selectedRow.id,
+        case_io_id: selectedRow.field_io_name_id || "",
         pt_case_id: selectedRow?.pt_case_id || null,
         limit : 10,
         page : !searchFlag ? otherTemplatesPaginationCount : 1,
@@ -6128,439 +6170,334 @@ useEffect(() => {
         }
         
         if (getTemplateResponse.data && getTemplateResponse.data) {
-          const records = getTemplateResponse.data;
+            const records = getTemplateResponse.data;
 
-          let showReplacePdf = false;
+            let showReplacePdf = false;
+            let APisSubmited = false;
 
-          if (selectedOtherTemplate?.table || options.table === "cid_ui_case_progress_report") {
-            const anyHasPRStatus = records.some(record => record.field_pr_status === "Yes");
-          
-            // Show button only if no one has PR status true
-            if (!anyHasPRStatus) {
-              showReplacePdf = true;
+
+            if (selectedOtherTemplate?.table || options.table === "cid_ui_case_progress_report") {
+                const anyHasPRStatus = records.some(record => record.field_pr_status === "Yes");
+                
+                // Show button only if no one has PR status true
+                if (!anyHasPRStatus) {
+                showReplacePdf = true;
+                }
             }
-          }
-          
-          setShowReplacePdfButton(showReplacePdf);
-          
-          let anySubmitAP = false;
 
-          if (options.table === "cid_ui_case_action_plan") {
-            anySubmitAP = records.some(record => record.field_status === "submit");
-          }
-
-          setShowSubmitAPButton(anySubmitAP);
-
-          if (getTemplateResponse.data[0]) {
-            var excludedKeys = [
-              "updated_at",
-              "id",
-              "deleted_at",
-              "attachments",
-              "Starred",
-              "ReadStatus",
-              "linked_profile_info",
-              "sys_status"
-            ];
-
-            if (options.table !== "cid_ui_case_progress_report") {
-              excludedKeys.push("created_at");
-              excludedKeys.push("hasFieldPrStatus");
+            if(options.table === "cid_ui_case_progress_report")
+            {
+                APisSubmited = !records.some(record => record.sys_status === "AP");
             }
+          
+            setShowReplacePdfButton(showReplacePdf);
+
+            let anySubmitAP = false;
+            let isSuperivisor = false;
+
             if (options.table === "cid_ui_case_action_plan") {
-              excludedKeys.push("field_status");
-            }
-            if (options.table === "cid_ui_case_trail_monitoring") {
-              excludedKeys.push("field_witness");
-              excludedKeys.push("field_accused");
-              excludedKeys.push("field_accused/witness");
-              excludedKeys.push("field_cw_attended_the_trial");
-              excludedKeys.push("field_hearing_date");
-              excludedKeys.push("field_next_hearing_date");
-              excludedKeys.push("field_notice_received_on");
-              excludedKeys.push("field_notice_served_on");
-              excludedKeys.push("field_number_of_notice_executed");
-              excludedKeys.push("field_number_of_notice_not_executed");
-              excludedKeys.push("field_number_of_proclamation_executed");
-              excludedKeys.push("field_number_of_proclamation_not_executed");
-              excludedKeys.push("field_number_of_summons_executed");
-              excludedKeys.push("field_number_of_summons_not_executed");
-              excludedKeys.push("field_number_of_warrant_executed");
-              excludedKeys.push("field_number_of_warrant_not_executed");
-              excludedKeys.push("field_process_type");
-              excludedKeys.push("field_proclamation_received_on");
-              excludedKeys.push("field_proclamation_served_on");
-              excludedKeys.push("field_reappear");
-              excludedKeys.push("field_reason");
-              excludedKeys.push("field_summons_received_on");
-              excludedKeys.push("field_summons_served_on");
-              excludedKeys.push("field_trialresult");
-              excludedKeys.push("field_warrant_received_on");
-              excludedKeys.push("field_warrant_served_on");
+                const userDesigId = localStorage.getItem('designation_id');
+                anySubmitAP = true;
+                if(records && records.length > 0)
+                {
+                    const allAPWithSameSupervisor = records.every(
+                        record =>
+                        record.field_submit_status === "" &&
+                        record.supervisior_designation_id == userDesigId
+                    );
+                    
+                    const allAPWithOutIOSubmit = records.every(
+                        record =>
+                        record.sys_status === "ui_case" &&
+                        record.field_submit_status === "" &&
+                        record.supervisior_designation_id != userDesigId
+                    );
+                    
+                    if (allAPWithSameSupervisor || allAPWithOutIOSubmit) {
+                        anySubmitAP = false;
+                    }
+        
+                    if(allAPWithSameSupervisor)
+                        isSuperivisor = true;
+
+                    APisSubmited = records.every(
+                        record =>
+                        record.sys_status === "ui_case" ||
+                        record.sys_status === "IO" &&
+                        record.field_submit_status === "" &&
+                        record.supervisior_designation_id != userDesigId
+                    );
+                }
+                else{
+                    anySubmitAP = false;
+                }
             }
 
-            const updatedHeader = ([
-              ...(options.table === "cid_ui_case_progress_report"
-                ? [
-                  {
-                    field: "select",
-                    headerName: "",
-                    width: 50,
-                    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
-                    renderCell: (params) => {
-                      const isPdfUpdated = params.row.field_pr_status === "Yes";
-                      const isPdfUpdating = params.row.field_status === "Completed";
-                      // const isAssignedUser = String(params.row.field_assigned_to_id);
-                      // const isAssignedUserId = String(localStorage.getItem("user_id"));
-                    
-                      // const isAssignedBy = String(params.row.field_assigned_by_id);
-                      // const isAuthorized = isAssignedUserId === isAssignedUser;
-                      // const isAuthorizedBy = isAssignedBy === isAssignedUserId;
-                                        
-                      // if (isPdfUpdated) return null;
-                    
-                      // const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
-                    
-                      return isPdfUpdated || !isPdfUpdating ? null : (
-                        <div onClick={(e) => e.stopPropagation()}>
-                        <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
-                      </div>
-                      );
+            setShowSubmitAPButton(anySubmitAP);
+            setIsImmediateSupervisior(isSuperivisor);
+            setAPIsSubmited(APisSubmited);
+            
+            let anySubmitPF = false;
+
+            if (options.table === "cid_ui_case_property_form") {
+                anySubmitPF = records.every(record => record.sys_status === "submit");
+            }
+
+            setShowSubmitPFButton(anySubmitPF);
+
+            if (getTemplateResponse.data[0]) {
+                var excludedKeys = [
+                "updated_at",
+                "id",
+                "deleted_at",
+                "attachments",
+                "Starred",
+                "ReadStatus",
+                "linked_profile_info",
+                "sys_status"
+                ];
+
+                if (options.table !== "cid_ui_case_progress_report") {
+                excludedKeys.push("created_at");
+                excludedKeys.push("hasFieldPrStatus");
+                }
+                if (options.table === "cid_ui_case_action_plan") {
+                    excludedKeys.push("field_status");
+                    excludedKeys.push("field_submit_status");
+                    excludedKeys.push("supervisior_designation_id");
+                }
+                if (options.table === "cid_ui_case_trail_monitoring") {
+                excludedKeys.push("field_witness");
+                excludedKeys.push("field_accused");
+                excludedKeys.push("field_accused/witness");
+                excludedKeys.push("field_cw_attended_the_trial");
+                excludedKeys.push("field_hearing_date");
+                excludedKeys.push("field_next_hearing_date");
+                excludedKeys.push("field_notice_received_on");
+                excludedKeys.push("field_notice_served_on");
+                excludedKeys.push("field_number_of_notice_executed");
+                excludedKeys.push("field_number_of_notice_not_executed");
+                excludedKeys.push("field_number_of_proclamation_executed");
+                excludedKeys.push("field_number_of_proclamation_not_executed");
+                excludedKeys.push("field_number_of_summons_executed");
+                excludedKeys.push("field_number_of_summons_not_executed");
+                excludedKeys.push("field_number_of_warrant_executed");
+                excludedKeys.push("field_number_of_warrant_not_executed");
+                excludedKeys.push("field_process_type");
+                excludedKeys.push("field_proclamation_received_on");
+                excludedKeys.push("field_proclamation_served_on");
+                excludedKeys.push("field_reappear");
+                excludedKeys.push("field_reason");
+                excludedKeys.push("field_summons_received_on");
+                excludedKeys.push("field_summons_served_on");
+                excludedKeys.push("field_trialresult");
+                excludedKeys.push("field_warrant_received_on");
+                excludedKeys.push("field_warrant_served_on");
+                }
+
+                const updatedHeader = ([
+                ...(options.table === "cid_ui_case_progress_report"
+                    ? [
+                    {
+                        field: "select",
+                        headerName: "",
+                        width: 50,
+                        cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                        renderCell: (params) => {
+                        const isPdfUpdated = params.row.field_pr_status === "Yes";
+                        const isPdfUpdating = params.row.field_status === "Completed";
+                        // const isAssignedUser = String(params.row.field_assigned_to_id);
+                        // const isAssignedUserId = String(localStorage.getItem("user_id"));
+                        
+                        // const isAssignedBy = String(params.row.field_assigned_by_id);
+                        // const isAuthorized = isAssignedUserId === isAssignedUser;
+                        // const isAuthorizedBy = isAssignedBy === isAssignedUserId;
+                                            
+                        // if (isPdfUpdated) return null;
+                        
+                        // const bothUnauthorized = !isAuthorized && !isAuthorizedBy;
+                        
+                        return isPdfUpdated || !isPdfUpdating ? null : (
+                            <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                        </div>
+                        );
+                        }
+                        
                     }
                     
-                  }
-                  
-                  ]
-                : []),
-              ...(options.table !== "cid_ui_case_progress_report"
-                ? [
+                    ]
+                    : []),
+                    ...(options.table === "cid_ui_case_property_form"
+                    ? [
                     {
-                      field: "sl_no",
-                      headerName: "S.No",
-                      resizable: false,
-                      width: 75,
-                      renderCell: (params) => {
-                        return (
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
+                        field: "select",
+                        headerName: "",
+                        width: 50,
+                        cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                        renderCell: (params) => {
+                        const isPFUpdated = params.row.sys_status === 'PF';
+
+                        return isPFUpdated ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                            <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                        </div>
+                        ) : null;
+
+                        }
+                    }
+                    
+                    ]
+                    : []),
+                ...(options.table !== "cid_ui_case_progress_report" && options.table !== "cid_ui_case_property_form"
+                    ? [
+                        {
+                        field: "sl_no",
+                        headerName: "S.No",
+                        resizable: false,
+                        width: 75,
+                        renderCell: (params) => {
+                            return (
+                            <Box
+                                sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
+                                }}
+                            >
+                                {params.value}
+                            </Box>
+                            );
+                        },
+                        },
+                    ]
+                    : []),
+                    ...(options.table === "cid_ui_case_progress_report"
+                    ? [
+                        {
+                            field: "sys_status",
+                            headerName: "From",
+                            width: 140,
+                            resizable: true,
+                            sortable: true,
+                            cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                            sortComparator: (v1, v2) => {
+                            if (v1 === "AP" && v2 === "ui_case") return -1;
+                            if (v1 === "ui_case" && v2 === "AP") return 1;
+                            return 0;
+                            },
+                            renderCell: (params) => {
+                            const statusText = params.value === "AP" ? "Action Plan" : "Progress Report";
+                            const isUpdated = params.value === "AP";
+                            
+                            return (
+                                <Chip
+                                label={statusText}
+                                size="small"
+                                sx={{
+                                    width: '120px',
+                                    fontFamily: "Roboto",
+                                    fontWeight: 600,
+                                    fontSize: "12px",
+                                    color: "#1f2937", 
+                                    backgroundColor: isUpdated ? "#bfdbfe" : "#fef3c7",
+                                    borderRadius: "6px",
+                                    padding: "3px",
+                                    border: isUpdated ? "1px dashed #3b82f6" : "1px dashed #f59e0b",
+                                    textTransform: "capitalize",
+                                }}
+                                />
+                            );
+                            }
+                        },
+                        ]
+                    : []),
+                    
+                ...Object.keys(getTemplateResponse.data[0])
+                    .filter(
+                    (key) =>
+                        !excludedKeys.includes(key) &&
+                        key !== "field_pt_case_id" &&
+                        key !== "field_ui_case_id" &&
+                        key !== "field_pr_status" &&
+                        key !== "field_evidence_file" &&
+                        key !== "created_by" &&
+                        key !== "field_last_updated" &&
+                        key !== "field_date_created" &&
+                        key !== "field_description" &&
+                        key !== "field_assigned_to_id"&&
+                        key !== "field_assigned_by_id"&&
+                        key !== "field_served_or_unserved"&&
+                        key !== "field_reappear"&&
+                        key !== "hasFieldPrStatus"       
+                    )
+                    .map((key) => {
+                    var updatedKeyName = key
+                        .replace(/^field_/, "")
+                        .replace(/_/g, " ")
+                        .toLowerCase()
+                        .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+                    return {
+                        field: key,
+                        headerName: updatedKeyName ? updatedKeyName : "",
+                        width: options.table === 'cid_ui_case_action_plan'
+                        ? 250
+                        : (updatedKeyName.length < 15 ? 100 : 180),
+                        resizable: true,
+                        cellClassName: (params) => getCellClassName(key, params, options.table),
+                        renderHeader: () => (
+                        <div
+                            style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
                             }}
-                          >
-                            {params.value}
-                          </Box>
-                        );
-                      },
-                    },
-                  ]
-                : []),
+                        >
+                            <span
+                            style={{
+                                color: "#1D2939",
+                                fontSize: "15px",
+                                fontWeight: "500",
+                            }}
+                            >
+                            {updatedKeyName ? updatedKeyName : "-"}
+                            </span>
+                        </div>
+                        ),
+                        renderCell: (params) => {
+                        return tableCellRender(key, params, params.value);
+                        },
+                    };
+                    }),
                 ...(options.table === "cid_ui_case_progress_report"
-                  ? [
-                      {
-                        field: "sys_status",
-                        headerName: "From",
-                        width: 140,
+                    ? [
+                        {
+                        field: "field_pr_status",
+                        headerName: "PDF Status",
+                        width: 150,
                         resizable: true,
                         sortable: true,
                         cellClassName: (params) => getCellClassName("sl_no", params, options.table),
                         sortComparator: (v1, v2) => {
-                          if (v1 === "AP" && v2 === "ui_case") return -1;
-                          if (v1 === "ui_case" && v2 === "AP") return 1;
-                          return 0;
+                            if (v1 === "Yes" && v2 === "No") return -1;
+                            if (v1 === "No" && v2 === "Yes") return 1;
+                            return 0;
                         },
                         renderCell: (params) => {
-                          const statusText = params.value === "AP" ? "Action Plan" : "Progress Report";
-                          const isUpdated = params.value === "AP";
-                        
-                          return (
-                            <Chip
-                              label={statusText}
-                              size="small"
-                              sx={{
-                                width: '120px',
-                                fontFamily: "Roboto",
-                                fontWeight: 600,
-                                fontSize: "12px",
-                                color: "#1f2937", 
-                                backgroundColor: isUpdated ? "#bfdbfe" : "#fef3c7",
-                                borderRadius: "6px",
-                                padding: "3px",
-                                border: isUpdated ? "1px dashed #3b82f6" : "1px dashed #f59e0b",
-                                textTransform: "capitalize",
-                              }}
-                            />
-                          );
-                        }
-                      },
-                    ]
-                  : []),
-                  
-              ...Object.keys(getTemplateResponse.data[0])
-                .filter(
-                  (key) =>
-                    !excludedKeys.includes(key) &&
-                    key !== "field_pt_case_id" &&
-                    key !== "field_ui_case_id" &&
-                    key !== "field_pr_status" &&
-                    key !== "field_evidence_file" &&
-                    key !== "created_by" &&
-                    key !== "field_last_updated" &&
-                    key !== "field_date_created" &&
-                    key !== "field_description" &&
-                    key !== "field_assigned_to_id"&&
-                    key !== "field_assigned_by_id"&&
-                    key !== "field_served_or_unserved"&&
-                    key !== "field_reappear"&&
-                    key !== "hasFieldPrStatus"       
-                )
-                .map((key) => {
-                  var updatedKeyName = key
-                    .replace(/^field_/, "")
-                    .replace(/_/g, " ")
-                    .toLowerCase()
-                    .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+                            const isUpdated = params.value === "Yes";
+                            const statusText = isUpdated
+                            ? "PDF Updated"
+                            : "Not Updated";
+                            const statusColor = isUpdated ? "#22c55e" : "#ef4444";
+                            const borderColor = isUpdated ? "#34D399" : "#EF4444";
 
-                  return {
-                    field: key,
-                    headerName: updatedKeyName ? updatedKeyName : "",
-                    width: options.table === 'cid_ui_case_action_plan'
-                      ? 250
-                      : (updatedKeyName.length < 15 ? 100 : 180),
-                    resizable: true,
-                    cellClassName: (params) => getCellClassName(key, params, options.table),
-                    renderHeader: () => (
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          width: "100%",
-                        }}
-                      >
-                        <span
-                          style={{
-                            color: "#1D2939",
-                            fontSize: "15px",
-                            fontWeight: "500",
-                          }}
-                        >
-                          {updatedKeyName ? updatedKeyName : "-"}
-                        </span>
-                      </div>
-                    ),
-                    renderCell: (params) => {
-                      return tableCellRender(key, params, params.value);
-                    },
-                  };
-                }),
-              ...(options.table === "cid_ui_case_progress_report"
-                ? [
-                    {
-                      field: "field_pr_status",
-                      headerName: "PDF Status",
-                      width: 150,
-                      resizable: true,
-                      sortable: true,
-                      cellClassName: (params) => getCellClassName("sl_no", params, options.table),
-                      sortComparator: (v1, v2) => {
-                        if (v1 === "Yes" && v2 === "No") return -1;
-                        if (v1 === "No" && v2 === "Yes") return 1;
-                        return 0;
-                      },
-                      renderCell: (params) => {
-                        const isUpdated = params.value === "Yes";
-                        const statusText = isUpdated
-                          ? "PDF Updated"
-                          : "Not Updated";
-                        const statusColor = isUpdated ? "#22c55e" : "#ef4444";
-                        const borderColor = isUpdated ? "#34D399" : "#EF4444";
-
-                        return (
-                          <Chip
-                            label={statusText}
-                            size="small"
-                            sx={{
-                              fontFamily: "Roboto",
-                              fontWeight: 400,
-                              color: "white",
-                              borderColor: borderColor,
-                              borderRadius: "4px",
-                              backgroundColor: statusColor,
-                              textTransform: "capitalize",
-                              borderStyle: "solid",
-                              borderWidth: "1px",
-                            }}
-                          />
-                        );
-                      },
-                    },
-                  ]
-                : []),
-                ,
-              ...(options.table === "cid_ui_case_trail_monitoring"
-                ? [
-                  {
-                    field: "field_served_or_unserved",
-                    headerName: "Served/UnServed",
-                    width: 150,
-                    resizable: true,
-                    sortable: true,
-                    // headerAlign: "center",
-                    // align: "center",    
-                    sortComparator: (v1, v2) => {
-                      if (v1 === "Yes" && v2 === "No") return -1;
-                      if (v1 === "No" && v2 === "Yes") return 1;
-                      return 0;
-                    },
-                    renderCell: (params) => {
-                      const value = params.value;
-                      const isYes = value === "Yes";
-                      const isNo = value === "No";
-                  
-                      if (!isYes && !isNo) {
-                        return (
-                          <Box
-                            sx={{
-                              fontFamily: "Roboto",
-                              width: "100%",
-                              display: "flex",
-                              justifyContent: "center",
-                              }}
-                          >
-                            -
-                          </Box>
-                        );
-                      }
-                  
-                      const statusText = isYes ? "Served" : "UnServed";
-                      const statusColor = isYes ? "#22c55e" : "#ef4444";
-                      const borderColor = isYes ? "#34D399" : "#EF4444";
-                  
-                      return (
-                        <div
-                          style={{
-                            width: "100%",
-                            display: "flex",
-                            justifyContent: "center",
-                            paddingTop: "8px",
-                          }}
-                        >
-                          <Chip
-                            label={statusText}
-                            size="small"
-                            sx={{
-                              fontFamily: "Roboto",
-                              fontWeight: 400,
-                              color: "white",
-                              borderColor: borderColor,
-                              borderRadius: "4px",
-                              backgroundColor: statusColor,
-                              textTransform: "capitalize",
-                              borderStyle: "solid",
-                              borderWidth: "1px",
-                              minWidth: "80px",
-                              textAlign: "center",
-                              justifyContent: "center",
-                              display: "flex",
-                            }}
-                          />
-                        </div>
-                      );
-                      
-                    },
-                  }
-                ]
-                : []),,
-                ...(options.table === "cid_ui_case_trail_monitoring"
-                  ? [
-                    {
-                      field: "field_reappear",
-                      headerName: "Reappear",
-                      width: 100,
-                      resizable: true,
-                      sortable: true,
-                      sortComparator: (v1, v2) => {
-                        if (v1 === "Yes" && v2 === "No") return -1;
-                        if (v1 === "No" && v2 === "Yes") return 1;
-                        return 0;
-                      },
-                      // renderCell: (params) => {
-                      //   const value = params.value;
-                      //   const isYes = value === "Yes";
-                      //   const isNo = value === "No";
-                    
-                      //   if (!isYes && !isNo) {
-                      //     return (
-                      //       <Box
-                      //         sx={{
-                      //           fontFamily: "Roboto",
-                      //           width: "100%",
-                      //           marginLeft: "15px",
-                      //         }}
-                      //       >
-                      //         -
-                      //       </Box>
-                      //     );
-                      //   }
-                                        
-                      //   return (
-                      //     <Box
-                      //       sx={{
-                      //         display: "flex",
-                      //         alignItems: "center",
-                      //         justifyContent: "flex-start",
-                      //         height: "100%",
-                      //         pl: 1,
-                      //       }}
-                      //     >
-                      //       {isYes ? (
-                      //         <CheckCircleIcon sx={{ color: "#22c55e" }} />
-                      //       ) : (
-                      //         <CancelIcon sx={{ color: "#ef4444" }} />
-                      //       )}
-                      //     </Box>
-                      //   );
-                        
-                    
-                      // },
-                      renderCell: (params) => {
-                        const value = params.value;
-                        const isYes = value === "Yes";
-                        const isNo = value === "No";
-                    
-                        if (!isYes && !isNo) {
-                          return (
-                            <Box
-                              sx={{
-                                fontFamily: "Roboto",
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                                }}
-                            >
-                              -
-                            </Box>
-                          );
-                        }
-                    
-                        const statusText = isYes ? "Yes" : "No";
-                        const statusColor = isYes ? "#22c55e" : "#ef4444";
-                        const borderColor = isYes ? "#34D399" : "#EF4444";
-                    
-                        return (
-                          <div
-                            style={{
-                              width: "100%",
-                              display: "flex",
-                              justifyContent: "center",
-                              paddingTop: "8px",
-                            }}
-                          >
+                            return (
                             <Chip
-                              label={statusText}
-                              size="small"
-                              sx={{
+                                label={statusText}
+                                size="small"
+                                sx={{
                                 fontFamily: "Roboto",
                                 fontWeight: 400,
                                 color: "white",
@@ -6570,205 +6507,404 @@ useEffect(() => {
                                 textTransform: "capitalize",
                                 borderStyle: "solid",
                                 borderWidth: "1px",
-                                minWidth: "40px",
+                                }}
+                            />
+                            );
+                        },
+                        },
+                    ]
+                    : []),
+                    ,
+                ...(options.table === "cid_ui_case_trail_monitoring"
+                    ? [
+                    {
+                        field: "field_served_or_unserved",
+                        headerName: "Served/UnServed",
+                        width: 150,
+                        resizable: true,
+                        sortable: true,
+                        // headerAlign: "center",
+                        // align: "center",    
+                        sortComparator: (v1, v2) => {
+                        if (v1 === "Yes" && v2 === "No") return -1;
+                        if (v1 === "No" && v2 === "Yes") return 1;
+                        return 0;
+                        },
+                        renderCell: (params) => {
+                        const value = params.value;
+                        const isYes = value === "Yes";
+                        const isNo = value === "No";
+                    
+                        if (!isYes && !isNo) {
+                            return (
+                            <Box
+                                sx={{
+                                fontFamily: "Roboto",
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                }}
+                            >
+                                -
+                            </Box>
+                            );
+                        }
+                    
+                        const statusText = isYes ? "Served" : "UnServed";
+                        const statusColor = isYes ? "#22c55e" : "#ef4444";
+                        const borderColor = isYes ? "#34D399" : "#EF4444";
+                    
+                        return (
+                            <div
+                            style={{
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                paddingTop: "8px",
+                            }}
+                            >
+                            <Chip
+                                label={statusText}
+                                size="small"
+                                sx={{
+                                fontFamily: "Roboto",
+                                fontWeight: 400,
+                                color: "white",
+                                borderColor: borderColor,
+                                borderRadius: "4px",
+                                backgroundColor: statusColor,
+                                textTransform: "capitalize",
+                                borderStyle: "solid",
+                                borderWidth: "1px",
+                                minWidth: "80px",
                                 textAlign: "center",
                                 justifyContent: "center",
                                 display: "flex",
-                              }}
+                                }}
                             />
-                          </div>
+                            </div>
                         );
                         
-                      },
-                    },      
+                        },
+                    }
                     ]
-                  : []),
-                {
-                  field: "",
-                  headerName: "Action",
-                  width: 300,
-                  cellClassName: (params) => getCellClassName("sl_no", params, options.table),
-                  renderCell: (params) => {
-                    const isPdfUpdated =
-                      options.table === "cid_ui_case_progress_report" &&
-                      params.row.field_pr_status === "Yes";
-                
-                    // const isAssignedUser =
-                    //   String(localStorage.getItem("user_id")) ===
-                    //   String(params.row.field_assigned_to_id);
-                
-                    // const showEditAndDeleteButtons =
-                    //   options.table === "cid_ui_case_progress_report"
-                    //     ? !isPdfUpdated && (isAuthorized || isAssignedUser)
-                    //     : !isPdfUpdated && isAuthorized;
-                
-                    const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-                    const canEdit = userPermissions[0]?.action_edit;
-                    const canDelete = userPermissions[0]?.action_delete;
-                    const checkserved =
-                      options.table === "cid_ui_case_trail_monitoring" &&
-                      params.row.field_served_or_unserved === "Yes";
-
-                    const checkUnServed = 
-                      options.table === "cid_ui_case_trail_monitoring" &&
-                      params.row.field_served_or_unserved === "No";
-
-
-                    const checkreappear =
-                      options.table === "cid_ui_case_trail_monitoring" &&
-                      params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
-
-                    const isViewAction = options.is_view_action === true
-                    
-                    const isActionPlan = options.table === "cid_ui_case_action_plan" && params.row.field_status === 'submit';
-                    return (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "10px",
-                          height: "100%",
-                        }}
-                      >
-                        <Button
-                          variant="outlined"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleOthersTemplateDataView(params.row, false, options.table);
-                          }}
-                        >
-                          View
-                        </Button>
-                
-                        {disabledEditFlag && (
-                          !isActionPlan && (
-                          !isViewAction && (
-                            !isPdfUpdated && (
-                               !isChildMergedLoading && (
-                              <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={async (event) => {
-                                  event.stopPropagation();
-                                  setIsFromEdit(true);
-                                  setSelectedApprovalEdit(params.row);
-                                  if (options.is_approval) {
-                                    await showApprovalPage(params.row, options);
-                                  } else {
-                                    handleOthersTemplateDataView(params.row, true, options.table);
-                                  }
+                    : []),,
+                    ...(options.table === "cid_ui_case_trail_monitoring"
+                    ? [
+                        {
+                        field: "field_reappear",
+                        headerName: "Reappear",
+                        width: 100,
+                        resizable: true,
+                        sortable: true,
+                        sortComparator: (v1, v2) => {
+                            if (v1 === "Yes" && v2 === "No") return -1;
+                            if (v1 === "No" && v2 === "Yes") return 1;
+                            return 0;
+                        },
+                        // renderCell: (params) => {
+                        //   const value = params.value;
+                        //   const isYes = value === "Yes";
+                        //   const isNo = value === "No";
+                        
+                        //   if (!isYes && !isNo) {
+                        //     return (
+                        //       <Box
+                        //         sx={{
+                        //           fontFamily: "Roboto",
+                        //           width: "100%",
+                        //           marginLeft: "15px",
+                        //         }}
+                        //       >
+                        //         -
+                        //       </Box>
+                        //     );
+                        //   }
+                                            
+                        //   return (
+                        //     <Box
+                        //       sx={{
+                        //         display: "flex",
+                        //         alignItems: "center",
+                        //         justifyContent: "flex-start",
+                        //         height: "100%",
+                        //         pl: 1,
+                        //       }}
+                        //     >
+                        //       {isYes ? (
+                        //         <CheckCircleIcon sx={{ color: "#22c55e" }} />
+                        //       ) : (
+                        //         <CancelIcon sx={{ color: "#ef4444" }} />
+                        //       )}
+                        //     </Box>
+                        //   );
+                            
+                        
+                        // },
+                        renderCell: (params) => {
+                            const value = params.value;
+                            const isYes = value === "Yes";
+                            const isNo = value === "No";
+                        
+                            if (!isYes && !isNo) {
+                            return (
+                                <Box
+                                sx={{
+                                    fontFamily: "Roboto",
+                                    width: "100%",
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    }}
+                                >
+                                -
+                                </Box>
+                            );
+                            }
+                        
+                            const statusText = isYes ? "Yes" : "No";
+                            const statusColor = isYes ? "#22c55e" : "#ef4444";
+                            const borderColor = isYes ? "#34D399" : "#EF4444";
+                        
+                            return (
+                            <div
+                                style={{
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                paddingTop: "8px",
                                 }}
-                              
-                              >
-                                Edit
-                              </Button>
+                            >
+                                <Chip
+                                label={statusText}
+                                size="small"
+                                sx={{
+                                    fontFamily: "Roboto",
+                                    fontWeight: 400,
+                                    color: "white",
+                                    borderColor: borderColor,
+                                    borderRadius: "4px",
+                                    backgroundColor: statusColor,
+                                    textTransform: "capitalize",
+                                    borderStyle: "solid",
+                                    borderWidth: "1px",
+                                    minWidth: "40px",
+                                    textAlign: "center",
+                                    justifyContent: "center",
+                                    display: "flex",
+                                }}
+                                />
+                            </div>
+                            );
+                            
+                        },
+                        },      
+                        ]
+                    : []),
+                    {
+                    field: "",
+                    headerName: "Action",
+                    width: 300,
+                    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                    renderCell: (params) => {
+                        const isPdfUpdated =
+                        options.table === "cid_ui_case_progress_report" &&
+                        params.row.field_pr_status === "Yes";
+                    
+                        // const isAssignedUser =
+                        //   String(localStorage.getItem("user_id")) ===
+                        //   String(params.row.field_assigned_to_id);
+                    
+                        // const showEditAndDeleteButtons =
+                        //   options.table === "cid_ui_case_progress_report"
+                        //     ? !isPdfUpdated && (isAuthorized || isAssignedUser)
+                        //     : !isPdfUpdated && isAuthorized;
+                    
+                        const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                        const canEdit = userPermissions[0]?.action_edit;
+                        const canDelete = userPermissions[0]?.action_delete;
+                        const checkserved =
+                        options.table === "cid_ui_case_trail_monitoring" &&
+                        params.row.field_served_or_unserved === "Yes";
+
+                        const checkUnServed = 
+                        options.table === "cid_ui_case_trail_monitoring" &&
+                        params.row.field_served_or_unserved === "No";
+
+
+                        const checkreappear =
+                        options.table === "cid_ui_case_trail_monitoring" &&
+                        params.row.field_reappear === "Yes" || params.row.field_reappear === "No";
+
+                        const isViewAction = options.is_view_action === true
+                        
+                        var isActionPlan = false;
+
+                        if(options.table === "cid_ui_case_action_plan")
+                        {
+                            if(params.row.sys_status === 'IO' && params.row.supervisior_designation_id != localStorage.getItem('designation_id'))
+                            {
+                                isActionPlan =true;
+                            }
+                            else if((params.row.sys_status === 'IO' || params.row.sys_status === 'ui_case') && params.row.field_submit_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
+                            {
+                                isActionPlan =false;
+                            }
+                            else if(params.row.field_submit_status === 'submit' || params.row.sys_status === 'IO' )
+                            {
+                                isActionPlan =true;
+                            }
+                        }
+
+                        const isPropertyForm = options.table === "cid_ui_case_property_form" && params.row.sys_status === 'submit';
+                        
+                        return (
+                        <Box
+                            sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "10px",
+                            height: "100%",
+                            }}
+                        >
+                            <Button
+                            variant="outlined"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                handleOthersTemplateDataView(params.row, false, options.table);
+                            }}
+                            >
+                            View
+                            </Button>
+                    
+                            {canEdit&& (
+                            !isActionPlan && !isPropertyForm && (
+                            !isViewAction && (
+                                !isPdfUpdated && (
+                                !isChildMergedLoading && (
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={async (event) => {
+                                    event.stopPropagation();
+                                    setIsFromEdit(true);
+                                    setSelectedApprovalEdit(params.row);
+                                    if (options.is_approval) {
+                                        await showApprovalPage(params.row, options);
+                                    } else {
+                                        handleOthersTemplateDataView(params.row, true, options.table);
+                                    }
+                                    }}
+                                
+                                >
+                                    Edit
+                                </Button>
+                                )
+                                )))
+                            )}
+                            {canDelete&& (
+                            !isActionPlan && !isPropertyForm && (
+                            !isViewAction && (
+                                !isPdfUpdated && (
+                                !isChildMergedLoading && (
+                                <Button
+                                    variant="contained"
+                                    color="error"
+                                    onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleOthersDeleteTemplateData(params.row, options.table);
+                                    }}
+                                >
+                                    Delete
+                                </Button>
                             )
                             )))
-                          )}
-                        {disabledDeleteFlag && (
-                          !isActionPlan && (
-                          !isViewAction && (
-                            !isPdfUpdated && (
-                              !isChildMergedLoading && (
-                              <Button
-                                variant="contained"
-                                color="error"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleOthersDeleteTemplateData(params.row, options.table);
-                                }}
-                              >
-                                Delete
-                              </Button>
-                           )
-                          )))
-                        )}
-                        {options.table === "cid_ui_case_trail_monitoring" && (
-                          <>
-                            {!checkserved && !checkUnServed &&(
-                              <Button
-                                variant="contained"
-                                color = "success"
-                                disabled={checkserved}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleServedUnserved(params.row, options);
-                                }}
-                              >
-                                Served/Unserved
-                              </Button>
                             )}
-                            {checkserved && !checkreappear && (
-                              <Button
-                                variant="contained"
-                                // style={{
-                                //   backgroundColor: checkreappear ? "#d6d6d6" : "#ffc107",
-                                //   color: checkreappear ? "#a6a6a6" : "black",
-                                //   cursor: checkreappear ? "not-allowed" : "pointer",
-                                // }}
-                                color = "warning"
-                                disabled={checkreappear}
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  handleReappear(params.row, options);
-                                }}
-                              >
-                                Reappear
-                              </Button>
+                            {options.table === "cid_ui_case_trail_monitoring" && (
+                            <>
+                                {!checkserved && !checkUnServed &&(
+                                <Button
+                                    variant="contained"
+                                    color = "success"
+                                    disabled={checkserved}
+                                    onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleServedUnserved(params.row, options);
+                                    }}
+                                >
+                                    Served/Unserved
+                                </Button>
+                                )}
+                                {checkserved && !checkreappear && (
+                                <Button
+                                    variant="contained"
+                                    // style={{
+                                    //   backgroundColor: checkreappear ? "#d6d6d6" : "#ffc107",
+                                    //   color: checkreappear ? "#a6a6a6" : "black",
+                                    //   cursor: checkreappear ? "not-allowed" : "pointer",
+                                    // }}
+                                    color = "warning"
+                                    disabled={checkreappear}
+                                    onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleReappear(params.row, options);
+                                    }}
+                                >
+                                    Reappear
+                                </Button>
+                                )}
+                            </>
                             )}
-                          </>
-                        )}
 
-                      </Box>
-                    );
-                  },
-                }
-                                
-            ]).filter(Boolean);
+                        </Box>
+                        );
+                    },
+                    }
+                                    
+                ]).filter(Boolean);
 
-            setOtherTemplateColumn(updatedHeader);
-          } else {
-            setOtherTemplateColumn([]);
-          }
+                setOtherTemplateColumn(updatedHeader);
+            } else {
+                setOtherTemplateColumn([]);
+            }
 
-        const formatDate = (value) => {
-            const parsed = Date.parse(value);
-            if (isNaN(parsed)) return value;
-            return new Date(parsed).toLocaleDateString("en-GB");
-        };
+            const formatDate = (value) => {
+                const parsed = Date.parse(value);
+                if (isNaN(parsed)) return value;
+                return new Date(parsed).toLocaleDateString("en-GB");
+            };
 
-        const updatedTableData = getTemplateResponse.data.map((field, index) => {
-            const updatedField = {};
+            const updatedTableData = getTemplateResponse.data.map((field, index) => {
+                const updatedField = {};
 
-            Object.keys(field).forEach((key) => {
-                if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                  updatedField[key] = formatDate(field[key]);
-                } else {
-                  updatedField[key] = field[key];
-                }
+                Object.keys(field).forEach((key) => {
+                    if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                    updatedField[key] = formatDate(field[key]);
+                    } else {
+                    updatedField[key] = field[key];
+                    }
+                });
+
+                return {
+                    ...updatedField,
+                    sl_no: (otherTablePagination - 1) * 10 + (index + 1),
+                    ...(field.id ? {} : { id: "unique_id_" + index }),
+                };
             });
 
-            return {
-                ...updatedField,
-                sl_no: (otherTablePagination - 1) * 10 + (index + 1),
-                ...(field.id ? {} : { id: "unique_id_" + index }),
-            };
-        });
+            setOtherTemplateData(updatedTableData);
+            if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
+            await checkPdfEntryStatus(selectedRow.id);
+                await getUploadedFiles(selectedRow, options);
+            }
 
-        setOtherTemplateData(updatedTableData);
-        if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
-          await checkPdfEntryStatus(selectedRow.id);
-            await getUploadedFiles(selectedRow, options);
+            if(options.is_view_action === true){
+            setViewModeOnly(true)
+            }
+            else{
+            setViewModeOnly(false)
+            }
+            setOtherTemplateModalOpen(true);
         }
-
-        if(options.is_view_action === true){
-          setViewModeOnly(true)
-        }
-        else{
-          setViewModeOnly(false)
-        }
-        setOtherTemplateModalOpen(true);
-    }
 
         setOtherFormOpen(false);
         setOptionStepperData([]);
@@ -9981,11 +10117,15 @@ useEffect(() => {
                   formConfig={optionFormTemplateData}
                   stepperData={optionStepperData}
                   onSubmit={
-                    selectedOtherTemplate?.table === "cid_ui_case_action_plan"
+                    selectedOtherTemplate?.table === "cid_ui_case_action_plan" ||selectedOtherTemplate?.table === "cid_ui_case_property_form"
                       ? otherAPPRTemplateSaveFunc
                       : otherTemplateSaveFunc 
                   }
                   onUpdate={otherTemplateUpdateFunc}
+                   disableEditButton={
+                    (selectedOtherTemplate.table === "cid_ui_case_action_plan") ||
+                    (selectedOtherTemplate.table === "cid_ui_case_property_form")
+                  }
                   onError={onSaveTemplateError}
                   closeForm={closeOtherForm}
                   headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
@@ -10218,6 +10358,10 @@ useEffect(() => {
                     {otherTemplatesTotalRecord} Records
                 </Box>
 
+                {APIsSubmited && (<Box className="notifyAtTopCaseStyle">
+                    Submission request in progress. Awaiting SP approval.
+                </Box>)}
+
             </Box>
             <Box sx={{display: 'flex', alignItems: 'center'}}>
               {selectedOtherTemplate?.table ===
@@ -10424,6 +10568,18 @@ useEffect(() => {
                         </Button>
                     )}
                     {/* )} */}
+                    {selectedOtherTemplate?.table === 'cid_ui_case_property_form' && (
+                      <Button
+                        variant="contained"
+                        color="success"
+                        onClick={() => {
+                          handleSubmitPF({ id: selectedRowData?.id, selectedIds });
+                        }}
+                        disabled={showSubmitPFButton}
+                      >
+                        Submit
+                      </Button>
+                    )}
                     {selectedOtherTemplate?.table === 'cid_ui_case_action_plan' && (
                       ! showSubmitAPButton&& (
                       <Button
@@ -10431,8 +10587,7 @@ useEffect(() => {
                       color="success"
                       // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
                       onClick={() => {
-                          console.log('selectedRowData:', selectedRowData);
-                          handleSubmitAp({ id: selectedRowData?.id });
+                          handleSubmitAp({ id: selectedRowData?.id});
                         }}
                       disabled={otherTemplatesTotalRecord === 0}
                       >
