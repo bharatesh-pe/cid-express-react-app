@@ -1361,7 +1361,7 @@ div::first-letter {
     .lokayuktaSidebarMenus{
         padding-top: 4px !important;
         padding-bottom: 4px !important;
-        padding-left: 18px !important;
+        padding-left: 10px !important;
         width: 100% !important;
         border-radius: 2px;
     }
