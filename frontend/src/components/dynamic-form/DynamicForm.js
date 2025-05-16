@@ -84,6 +84,15 @@ const DynamicForm = ({
     { field: "date", headerName: "Date & Time", flex: 1 },
   ]);
 
+  const [caseHistoryModal, setCaseHistoryModal] = useState(false);
+  const [caseHistoryData, setCaseHistoryData] = useState([]);
+  const [caseHistoryHeaderData, setCasehistoryHeaderData] = useState([
+    { field: "sl_no", headerName: "Sl. No." },
+    { field: "action", headerName: "Action", flex: 1 },
+    { field: "actor_name", headerName: "User", flex: 1 },
+    { field: "date", headerName: "Date & Time", flex: 1 },
+  ]);
+
   const saveNewRef = useRef(false);
 
   useEffect(() => {
@@ -1057,6 +1066,74 @@ const DynamicForm = ({
     }
   };
 
+  
+    const CaseLogs = async () => {
+        if ( !template_id || template_id === "" || !table_row_id || table_row_id === "" ) {
+        return false;
+        }
+
+        var payload = {
+        template_id: template_id,
+        table_row_id: table_row_id,
+        };
+
+        setLoading(true);
+
+        try {
+            const getHistoryResponse = await api.post( "/profileHistories/getCaseHistory",payload);
+            setLoading(false);
+
+            if (getHistoryResponse && getHistoryResponse.success) {
+                if ( getHistoryResponse["data"] && getHistoryResponse["data"].length > 0 ) {
+                    var updatedData = getHistoryResponse["data"].map((data, index) => {
+                    // var fullname = "";
+
+                    const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: true, // Optional: shows time in AM/PM format
+                    });
+
+                    return {
+                        ...data,
+                        id: data.log_id,
+                        sl_no: index + 1,
+                        actor_name: data.actor_name,
+                        date: readableDate,
+                    };
+                });
+
+                setCaseHistoryData(updatedData);
+                setCaseHistoryModal(true);
+            } else {
+            setCaseHistoryData([]);
+            setCaseHistoryModal(true);
+            }
+        } else {
+            setCaseHistoryData([]);
+            setCaseHistoryModal(true);
+        }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+                });
+            }
+        }
+    };
+
     useEffect(() => {
         const fetchTemplateData = async () => {
             try { 
@@ -1448,6 +1525,36 @@ const DynamicForm = ({
                 </>
               )
             )}
+            {
+                 (
+                    (
+                        readOnlyTemplate &&
+                        userPermissions[0]?.edit_case &&
+                        (table_name !== "cid_under_investigation" &&
+                        table_name !== "cid_pending_trail" &&
+                        table_name !== "cid_enquiries")
+                    )
+                    ||
+                    (
+                        readOnlyTemplate &&
+                        userPermissions[0]?.edit_case &&
+                        (table_name === "cid_under_investigation" ||
+                        table_name === "cid_pending_trail" ||
+                        table_name === "cid_enquiries") &&
+                        formData['field_io_name'] &&
+                        formData['field_io_name'] !== ""
+                    )
+                ) && (
+                    <Button
+                        variant="outlined"
+                        sx={{marginLeft: "10px", height: '40px'}}
+                        onClick = {() => {CaseLogs()}}
+                    >
+                        Case Log
+                    </Button>
+                )
+
+            }
             {
                 (
                     (
@@ -1970,6 +2077,43 @@ const DynamicForm = ({
             <DialogContentText id="alert-dialog-description">
               <Box py={2}>
                 <TableView rows={historyData} columns={historyHeaderData} />
+              </Box>
+            </DialogContentText>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {caseHistoryModal && (
+        <Dialog
+          open={caseHistoryModal}
+          onClose={() => setCaseHistoryModal(false)}
+          aria-labelledby="alert-dialog-title"
+          aria-describedby="alert-dialog-description"
+          maxWidth="md"
+          fullWidth
+          className="approvalModal"
+        >
+          <DialogTitle
+            id="alert-dialog-title"
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Box>Case History</Box>
+            <IconButton
+              aria-label="close"
+              onClick={() => setCaseHistoryModal(false)}
+              sx={{ color: (theme) => theme.palette.grey[500] }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="alert-dialog-description">
+              <Box py={2}>
+                <TableView rows={caseHistoryData} columns={caseHistoryHeaderData} />
               </Box>
             </DialogContentText>
           </DialogContent>
