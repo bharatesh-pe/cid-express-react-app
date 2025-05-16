@@ -266,7 +266,8 @@ const UnderInvestigation = () => {
     const hoverTableOptionsRef = useRef([]);
 
     useEffect(() => {
-        hoverTableOptionsRef.current = hoverTableOptions;
+        var filteredActions =  hoverTableOptions?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
+        hoverTableOptionsRef.current = filteredActions;
     }, [hoverTableOptions]);
 
    
@@ -8439,8 +8440,18 @@ const handleOpenExportPopup = async () => {
 
                     if (viewTemplateResponse && viewTemplateResponse.success) {
 
+                        var actionTemplateMenus = hoverTableOptionsRef.current.map((element)=>{
+
+                            if(element?.icon && typeof element.icon === 'function'){
+                                element.icon = element?.icon();
+                            }
+
+                            return element;
+
+                        });
+
                         var stateObj = {
-                            contentArray: JSON.stringify(hoverTableOptionsRef.current),
+                            contentArray: JSON.stringify(actionTemplateMenus),
                             headerDetails: rowData?.["field_cid_crime_no./enquiry_no"] || null,
                             backNavigation: "/case/ui_case",
                             paginationCount: paginationCount,

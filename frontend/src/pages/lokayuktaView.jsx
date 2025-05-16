@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { Box, Button, CircularProgress, IconButton, InputAdornment, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, Tooltip, Typography } from "@mui/material";
 import LokayuktaSidebar from "../components/lokayuktaSidebar";
 import { West } from "@mui/icons-material";
 import TextFieldInput from "@mui/material/TextField";
@@ -16,6 +16,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import DynamicForm from "../components/dynamic-form/DynamicForm";
+import ApprovalModal from "../components/dynamic-form/ApprovalModalForm";
 
 const LokayuktaView = () => {
 
@@ -75,6 +76,16 @@ const LokayuktaView = () => {
     const [formFields, setFormFields] = useState([]);
     const [initalFormData, setInitialFormData] = useState({});
     const [formStepperData, setFormStepperData] = useState([]);
+
+    // for approval data
+
+    const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [approvalItemsData, setApprovalItemsData] = useState([]);
+    const [readonlyApprovalItems, setReadonlyApprovalItems] = useState(false);
+    const [approvalDesignationData, setApprovalDesignationData] = useState([]);
+    const [approvalFormData, setApprovalFormData] = useState({});
+    const [approvalSaveCaseData, setApprovalSaveCaseData] = useState({});
+    const [reOpenAddCase, setReOpenAddCase] = useState(false);
 
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
@@ -186,8 +197,6 @@ const LokayuktaView = () => {
             ui_case_id = rowData?.ui_case_id
             pt_case_id = rowData?.id
         }
-
-        console.log(tableSearchValue,"tableSearchValue tableSearchValue");
 
         var getTemplatePayload = {
             table_name: options.table,
@@ -301,6 +310,7 @@ const LokayuktaView = () => {
                 }
 
                 setFormOpen(false);
+                setShowApprovalModal(false);
 
                 if(reOpen){
                     showAddNewForm();
@@ -460,26 +470,231 @@ const LokayuktaView = () => {
             });
             return;
         }
+
+        setApprovalSaveCaseData(data);
+        setReOpenAddCase(formOpen);
+        showCaseApprovalPage(true);
+        return;
+
+
     
+        // const formData = new FormData();
+
+        // setLoading(true);
+        
+        // try {
+        //     const saveTemplateData = await api.post("/templateData/insertTemplateData",formData);
+        //     setLoading(false);
+    
+        //     if (saveTemplateData && saveTemplateData.success) {
+        //         toast.success(saveTemplateData.message || "Data Created Successfully", {
+        //             position: "top-right",
+        //             autoClose: 3000,
+        //             hideProgressBar: false,
+        //             closeOnClick: true,
+        //             pauseOnHover: true,
+        //             draggable: true,
+        //             progress: undefined,
+        //             className: "toast-success",
+        //             onOpen: () => formOpen ? getTableData(activeSidebar, true) : getTableData(activeSidebar)
+        //         });
+        //     } else {
+        //         const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the data. Please try again.";
+        //         toast.error(errorMessage, {
+        //             position: "top-right",
+        //             autoClose: 3000,
+        //             hideProgressBar: false,
+        //             closeOnClick: true,
+        //             pauseOnHover: true,
+        //             draggable: true,
+        //             progress: undefined,
+        //             className: "toast-error",
+        //         });
+        //     }
+        // } catch (error) {
+        //     setLoading(false);
+        //     if (error && error.response && error.response["data"]) {
+        //         toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+        //             position: "top-right",
+        //             autoClose: 3000,
+        //             hideProgressBar: false,
+        //             closeOnClick: true,
+        //             pauseOnHover: true,
+        //             draggable: true,
+        //             progress: undefined,
+        //             className: "toast-error",
+        //         });
+        //     }
+        // }
+    }
+
+    const showCaseApprovalPage = async (isSave)=>{
+        
+        setLoading(true);
+        try {
+            const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
+            setLoading(false);
+
+            if (getActionsDetails && getActionsDetails.success) {
+
+                setApprovalItemsData(getActionsDetails.data['approval_item']);
+                setApprovalDesignationData(getActionsDetails.data['designation']);
+
+                var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
+                    if(!isSave){
+                        if((data.name).toLowerCase() === 'case updation'){
+                            return data;
+                        }
+                    }else{
+                        if((data.name).toLowerCase() === 'case registration'){
+                            return data;
+                        }
+                    }
+                });
+
+                setApprovalFormData({})
+
+                if(getFurtherInvestigationItems?.[0]){
+                    caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                    setReadonlyApprovalItems(true);
+                }else{
+                    caseApprovalOnChange('approval_item', null);
+                    setReadonlyApprovalItems(false);
+                } 
+
+                setShowApprovalModal(true);
+            } else {
+    
+                const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+    
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const caseApprovalOnChange = (name, value)=>{
+        setApprovalFormData((prev)=>{
+            return{
+                ...prev,
+                [name] : value
+            }
+        });
+    }
+
+    const handleApprovalWithSave = async ()=> {
+
+        if (!approvalFormData || !approvalFormData["approval_item"]) {
+            toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        
+        if (!approvalFormData || !approvalFormData["approved_by"]) {
+            toast.error("Please Select Designation !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!approvalFormData || !approvalFormData["approval_date"]) {
+            toast.error("Please Select Approval Date !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        if (!approvalFormData || !approvalFormData["remarks"]) {
+    
+            toast.error("Please Enter Comments !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
         const formData = new FormData();
+
+        var approvalItems = {
+            module_name : 'Under Investigation',
+            action : 'Create Case'
+        }
+
+        var approvalData = {
+            approval : approvalFormData,
+            approval_details : approvalItems,
+            others_table_name : table_name
+        }
+
+        
         formData.append("table_name", activeSidebar.table);
     
         var normalData = {}; // Non-file upload fields
     
         formFields.forEach((field) => {
-            if (data[field.name]) {
+            if (approvalSaveCaseData[field.name]) {
                 if (field.type === "file" || field.type === "profilepicture") {
                     // Append file fields to formData
                     if (field.type === "file") {
-                        if (Array.isArray(data[field.name])) {
+                        if (Array.isArray(approvalSaveCaseData[field.name])) {
 
-                            const hasFileInstance = data[field.name].some((file) => file.filename instanceof File);
-                            var filteredArray = data[field.name].filter((file) => file.filename instanceof File);
+                            const hasFileInstance = approvalSaveCaseData[field.name].some((file) => file.filename instanceof File);
+                            var filteredArray = approvalSaveCaseData[field.name].filter((file) => file.filename instanceof File);
 
                             if (hasFileInstance) {
-                                data[field.name].forEach((file) => {
+                                approvalSaveCaseData[field.name].forEach((file) => {
                                     if (file.filename instanceof File) {
-                                    formData.append(field.name, file.filename);
+                                        formData.append(field.name, file.filename);
                                     }
                                 });
             
@@ -494,26 +709,33 @@ const LokayuktaView = () => {
                             }
                         }
                     } else {
-                        formData.append(field.name, data[field.name]);
+                        formData.append(field.name, approvalSaveCaseData[field.name]);
                     }
                 } else {
-                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                    normalData[field.name] = Array.isArray(approvalSaveCaseData[field.name]) ? approvalSaveCaseData[field.name].join(",") : approvalSaveCaseData[field.name]
                 }
             }
         });
 
         normalData.sys_status = "ui_case";
         normalData["ui_case_id"] = rowData.id;
-        
+
         formData.append("data", JSON.stringify(normalData));
+        formData.append("others_data", JSON.stringify(approvalData));
+        var transitionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transitionId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
+
         setLoading(true);
-        
+          
         try {
-            const saveTemplateData = await api.post("/templateData/insertTemplateData",formData);
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
+
             setLoading(false);
-    
-            if (saveTemplateData && saveTemplateData.success) {
-                toast.success(saveTemplateData.message || "Data Created Successfully", {
+
+            if (overallSaveData && overallSaveData.success) {
+
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Created Successfully", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -522,10 +744,10 @@ const LokayuktaView = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => formOpen ? getTableData(activeSidebar, true) : getTableData(activeSidebar)
+                    onOpen: () => { getTableData(activeSidebar, reOpenAddCase) }
                 });
             } else {
-                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the data. Please try again.";
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to Add case. Please try again.";
                 toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
@@ -599,7 +821,18 @@ const LokayuktaView = () => {
                                 onClick={backToForm}
                             >
                                 <West />
-                                {headerDetails || "Case Details"}
+                                <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
+                                    {template_name ? template_name : 'Form'}
+                                </Typography>
+                                {headerDetails && (
+                                    <Chip
+                                        label={headerDetails}
+                                        color="primary"
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{ fontWeight: 500, marginTop: '2px' }}
+                                    />
+                                )}
                             </Typography>
 
                             <Box sx={{display: 'flex', alignItems: 'start', gap: '12px'}}>
@@ -715,6 +948,20 @@ const LokayuktaView = () => {
                     closeForm={closeAddForm}
                 />
             )}
+
+            <ApprovalModal
+                open={showApprovalModal}
+                onClose={() => setShowApprovalModal(false)}
+                onSave={handleApprovalWithSave}
+                
+                approvalItem={approvalItemsData}
+                disabledApprovalItems={readonlyApprovalItems}
+        
+                designationData={approvalDesignationData}
+                
+                formData={approvalFormData}
+                onChange={caseApprovalOnChange}
+            />
 
             {loading && (
                 <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
