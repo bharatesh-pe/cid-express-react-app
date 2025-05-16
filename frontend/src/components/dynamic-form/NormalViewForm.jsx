@@ -43,7 +43,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import ActTable from './actSection';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, disableEditButton = false }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton = false }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
   const [formData, setFormData] = useState({});
   const [newFormConfig, setNewFormConfig] = useState(formConfig ? formConfig : {})
@@ -1231,7 +1231,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 //   console.log(stepperData, "stepperData stepperData")
   return (
     <>
-      <Box inert={loading ? true : false} p={2}>
+      <Box inert={loading ? true : false} p={noPadding ? 0 : 2} px={2}>
         {stepperData && stepperData.length > 0 && (
           <Box px={2} py={1} sx={{ background: '#FFFFFF' }}>
             <Stepper className={'stepperWidth_' + stepperData.length} sx={{ minWidth: '300px', maxWidth: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} activeStep={activeStep} >
@@ -1247,7 +1247,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '99' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '99' }}>
           <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '4px' }}>
             <ArrowBackIcon sx={{ fontSize: '22px', fontWeight: '500', color: '#171A1C' }} />
             <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
