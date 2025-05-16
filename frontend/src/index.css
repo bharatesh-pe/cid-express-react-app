@@ -1362,7 +1362,7 @@ div::first-letter {
         padding-top: 4px !important;
         padding-bottom: 4px !important;
         padding-left: 10px !important;
-        width: 100% !important;
+        width: 90% !important;
         border-radius: 2px;
     }
 
@@ -1438,4 +1438,44 @@ div::first-letter {
         white-space: nowrap;
         max-width: 160px; /* Adjust based on your layout */
         display: block;
+    }
+
+    .sidebarChildContainer {
+        position: relative;
+        margin-left: 6px !important;
+        border-left: 1.5px solid #1d2939;
+    }
+
+    .sidebarChildItem {
+        position: relative;
+        padding-left: 16px;
+        margin: 8px 16px;
+    }
+
+    .sidebarChildItem::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: -16px;
+        width: 16px;
+        height: 0;
+        border-top: 1.5px solid #1d2939;
+    }
+
+    .sidebarChildItem.active::before {
+        left: -20px;
+    }
+
+    .sidebarChildContainer .sidebarChildItem:last-child::after {
+        content: "";
+        position: absolute;
+        top: 55%;
+        left: -20px;
+        height: calc(50% + 8px);
+        width: 10px;
+        background-color: white;
+    }
+
+    .sidebarChildContainer .sidebarChildItem.active:last-child::after {
+        left: -24px;
     }
