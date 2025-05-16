@@ -1502,7 +1502,8 @@ const DynamicForm = ({
               </Button>
             ) : (
               !readOnlyTemplate &&
-              onSubmit && (
+              onSubmit &&
+                 (
                 <>
                     <Button
                         onClick={() => {
@@ -1521,7 +1522,7 @@ const DynamicForm = ({
                         }}
                         className="Roboto blueButton"
                     >
-                        Register Case
+                        {["cid_under_investigation", "cid_pending_trail" , "cid_enquiries"].includes(table_name) ? "Register Case" : "Save"}
                     </Button>
                     <Button
                         onClick={() =>{
