@@ -10,7 +10,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 
-const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
+const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) => {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -167,13 +167,13 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
                                 </Tooltip>
 
                                 <Collapse in={openRegister} timeout="auto" unmountOnExit>
-                                    <List component="div" disablePadding>
+                                    <List component="div" disablePadding className="sidebarChildContainer">
 
                                         {registerItem ? (
-                                            <Tooltip title={"FIR"} arrow placement="right" key={"FIR"}>
+                                            <Tooltip title={templateName ? templateName : "FIR"} arrow placement="right" key={templateName ? templateName : "FIR"}>
                                                 <ListItem
-                                                    sx={{ cursor: "pointer", pl: 4, mt: 1, borderRadius: '4px' }}
-                                                    className={`lokayuktaSidebarMenus menuColor_1 ${activeSidebar?.name === registerItem.name ? "active" : ""}`}
+                                                    sx={{ cursor: "pointer", borderRadius: '4px' }}
+                                                    className={`sidebarChildItem lokayuktaSidebarMenus menuColor_1 ${activeSidebar?.name === registerItem.name ? "active" : ""}`}
                                                     onClick={() => onClick ? onClick(registerItem) : console.log("sidebar selected")}
                                                 >
                                                     {registerItem?.icon && registerItem?.icon?.props && registerItem?.icon?.props.dangerouslySetInnerHTML ? (
@@ -194,7 +194,7 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
                                                             </svg>
                                                         </span>
                                                     )}
-                                                    <ListItemText primary={"FIR"} />
+                                                    <ListItemText primary={templateName ? templateName : "FIR"} />
                                                 </ListItem>
                                             </Tooltip>
                                         ) : (
@@ -218,14 +218,14 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar}) => {
                                 </Tooltip>
 
                                 <Collapse in={openInvestigation} timeout="auto" unmountOnExit>
-                                    <List component="div" disablePadding>
+                                    <List component="div" disablePadding className="sidebarChildContainer">
 
                                         {investigationItems.length > 0 ? (
                                             investigationItems.map((element, index) => (
                                                 <Tooltip title={element?.name} arrow placement="right" key={index}>
                                                     <ListItem
-                                                        sx={{ cursor: "pointer", pl: 4, mt: 1, borderRadius: '4px' }}
-                                                        className={`lokayuktaSidebarMenus menuColor_${index + 2} ${activeSidebar?.name === element.name ? "active" : ""}`}
+                                                        sx={{ cursor: "pointer", borderRadius: '4px' }}
+                                                        className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${index + 2} ${activeSidebar?.name === element.name ? "active" : ""}`}
                                                         onClick={() => onClick ? onClick(element) : console.log("sidebar selected")}
                                                     >
                                                         {element?.icon && element?.icon?.props && element?.icon?.props.dangerouslySetInnerHTML ? (

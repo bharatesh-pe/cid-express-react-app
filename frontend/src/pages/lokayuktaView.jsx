@@ -475,57 +475,6 @@ const LokayuktaView = () => {
         setReOpenAddCase(formOpen);
         showCaseApprovalPage(true);
         return;
-
-
-    
-        // const formData = new FormData();
-
-        // setLoading(true);
-        
-        // try {
-        //     const saveTemplateData = await api.post("/templateData/insertTemplateData",formData);
-        //     setLoading(false);
-    
-        //     if (saveTemplateData && saveTemplateData.success) {
-        //         toast.success(saveTemplateData.message || "Data Created Successfully", {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-success",
-        //             onOpen: () => formOpen ? getTableData(activeSidebar, true) : getTableData(activeSidebar)
-        //         });
-        //     } else {
-        //         const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the data. Please try again.";
-        //         toast.error(errorMessage, {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // } catch (error) {
-        //     setLoading(false);
-        //     if (error && error.response && error.response["data"]) {
-        //         toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // }
     }
 
     const showCaseApprovalPage = async (isSave)=>{
@@ -540,22 +489,10 @@ const LokayuktaView = () => {
                 setApprovalItemsData(getActionsDetails.data['approval_item']);
                 setApprovalDesignationData(getActionsDetails.data['designation']);
 
-                var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                    if(!isSave){
-                        if((data.name).toLowerCase() === 'case updation'){
-                            return data;
-                        }
-                    }else{
-                        if((data.name).toLowerCase() === 'case registration'){
-                            return data;
-                        }
-                    }
-                });
-
                 setApprovalFormData({})
 
-                if(getFurtherInvestigationItems?.[0]){
-                    caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                if(activeSidebar?.approval_items){
+                    caseApprovalOnChange('approval_item', Number(activeSidebar?.approval_items));
                     setReadonlyApprovalItems(true);
                 }else{
                     caseApprovalOnChange('approval_item', null);
@@ -787,7 +724,7 @@ const LokayuktaView = () => {
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} />
+            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
