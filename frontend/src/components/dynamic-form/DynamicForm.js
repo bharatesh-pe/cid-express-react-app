@@ -1107,37 +1107,37 @@ const DynamicForm = ({
             if (getHistoryResponse && getHistoryResponse.success) {
                 if ( getHistoryResponse["data"] && getHistoryResponse["data"].length > 0 ) {
                     var updatedData = getHistoryResponse["data"].map((data, index) => {
-                    // var fullname = "";
+                        // var fullname = "";
 
-                    const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "2-digit",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
-                        hour12: true, // Optional: shows time in AM/PM format
+                        const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true, // Optional: shows time in AM/PM format
+                        });
+
+                        return {
+                            ...data,
+                            id: data.log_id,
+                            sl_no: index + 1,
+                            actor_name: data.actor_name,
+                            date: readableDate,
+                        };
                     });
 
-                    return {
-                        ...data,
-                        id: data.log_id,
-                        sl_no: index + 1,
-                        actor_name: data.actor_name,
-                        date: readableDate,
-                    };
-                });
-
-                setCaseHistoryData(updatedData);
-                setCaseHistoryModal(true);
+                    setCaseHistoryData(updatedData);
+                    setCaseHistoryModal(true);
+                } else {
+                    setCaseHistoryData([]);
+                    setCaseHistoryModal(true);
+                }
             } else {
-            setCaseHistoryData([]);
-            setCaseHistoryModal(true);
+                setCaseHistoryData([]);
+                setCaseHistoryModal(true);
             }
-        } else {
-            setCaseHistoryData([]);
-            setCaseHistoryModal(true);
-        }
         } catch (error) {
             setLoading(false);
             if (error && error.response && error.response["data"]) {
