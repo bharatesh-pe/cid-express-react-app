@@ -822,15 +822,15 @@ const Layout = ({ children }) => {
                                         localStorage.setItem("getDataBasesOnUsers",JSON.stringify(responseData.getDataBasesOnUsers));
                                     }
 
-                                    if(JSON.parse(localStorage.getItem("user_id")) === 1){
-                                        navigate("/dashboard");
-                                    }else{
-                                        if (location.pathname === "/case/ui_case") {
+                                    // if(JSON.parse(localStorage.getItem("user_id")) === 1){
+                                    //     navigate("/dashboard");
+                                    // }else{
+                                        if (location.pathname === "/dashboard") {
                                             navigate(0);
                                         } else {
-                                            navigate("/case/ui_case");
+                                            navigate("/dashboard");
                                         }
-                                    }
+                                    // }
                         
                                 } catch (err) {
                                     setLoading(false);

@@ -1246,3 +1246,151 @@ div::first-letter {
           box-shadow: 0 0 3px 1px #ff6467;
         }
     }           
+
+
+    .menuColor_1 {
+        background-color: #ff6b6b; /* red */
+        color: #fff;
+    }
+    .menuColor_2 {
+        background-color: #6bc1ff; /* blue */
+        color: #fff;
+    }
+    .menuColor_3 {
+        background-color: #6bff95; /* green */
+        color: #fff;
+    }
+    .menuColor_4 {
+        background-color: #ffdf6b; /* yellow */
+        color: #000;
+    }
+    .menuColor_5 {
+        background-color: #d36bff; /* purple */
+        color: #fff;
+    }
+    .menuColor_6 {
+        background-color: #6bffe8; /* teal */
+        color: #000;
+    }
+    .menuColor_7 {
+        background-color: #ffa76b; /* orange */
+        color: #000;
+    }
+    .menuColor_8 {
+        background-color: #8d6bff; /* violet */
+        color: #fff;
+    }
+    .menuColor_9 {
+        background-color: #6bffcb; /* mint */
+        color: #000;
+    }
+    .menuColor_10 {
+        background-color: #ff6bb2; /* pink */
+        color: #fff;
+    }
+    .menuColor_11 {
+        background-color: #00bfa5; /* aqua green */
+        color: #fff;
+    }
+    .menuColor_12 {
+        background-color: #ff8a65; /* coral */
+        color: #fff;
+    }
+    .menuColor_13 {
+        background-color: #ba68c8; /* lavender purple */
+        color: #fff;
+    }
+    .menuColor_14 {
+        background-color: #ffd54f; /* golden yellow */
+        color: #000;
+    }
+    .menuColor_15 {
+        background-color: #4db6ac; /* turquoise */
+        color: #fff;
+    }
+    .menuColor_16 {
+        background-color: #f06292; /* pink rose */
+        color: #fff;
+    }
+    .menuColor_17 {
+        background-color: #9575cd; /* pastel violet */
+        color: #fff;
+    }
+    .menuColor_18 {
+        background-color: #7986cb; /* slate blue */
+        color: #fff;
+    }
+    .menuColor_19 {
+        background-color: #81c784; /* soft green */
+        color: #000;
+    }
+    .menuColor_20 {
+        background-color: #ffb74d; /* warm orange */
+        color: #000;
+    }
+
+    .lokayuktaSidebarMenus .MuiListItemIcon-root{
+        min-width: 30px !important;
+    }
+
+    .lokayuktaSidebarMenus{
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        padding-left: 18px !important;
+        width: 100% !important;
+        border-radius: 2px;
+    }
+
+    .lokayuktaSidebarMenus .MuiListItemIcon-root svg {
+        stroke: #000000;
+    }
+
+    .lokayuktaSidebarMenus .MuiListItemIcon-root .outsideSvg {
+        stroke: #000000;
+        fill: #000000;
+    }
+
+    .lokayuktaSidebarMenus .MuiListItemText-root span {
+        font-size: 14px !important;
+        font-weight: 400 !important;
+        color: #000000 !important;
+        font-family: "Roboto" !important;
+    }
+
+    .lokayuktaSidebarMenus.active {
+        position: relative;
+        background-color: rgba(255, 255, 255, 0.1);
+        border-left: 4px solid #1d4ed8;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        backdrop-filter: blur(4px);
+        color: #1d2939 !important;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .lokayuktaSidebarMenus:hover{
+        transform: scale(1.03);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease-in-out;
+    }
+
+    .sidebarHighlight {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: bold;
+        color: #ff1a1a;
+        font-size: 14px;
+        height: 23px;
+        padding: 3px 12px 3px 8px;
+        border-radius: 25px;
+    }
+
+    .lokayuktaSidebarMenus .MuiListItemText-root span {
+        overflow: hidden !important;
+        white-space: nowrap !important;
+        text-overflow: ellipsis !important;
+        display: block !important;
+        max-width: 180px; /* Adjust this based on your sidebar width */
+    }

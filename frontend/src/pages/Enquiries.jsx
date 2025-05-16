@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import VerifiedIcon from '@mui/icons-material/Verified';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
@@ -142,6 +142,10 @@ const Enquiries = () => {
     const [othersToDate, setOthersToDate] = useState(null);
     const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     const [othersFilterData, setOthersFilterData] = useState({});
+
+    var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+
+    const templateActionAddFlag = useRef(false);
 
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
@@ -2867,22 +2871,27 @@ const Enquiries = () => {
 
                     const userPermissions = userPermissionsArray[0] || {};
 
-                    var updatedActions = getActionsDetails.data["data"].map((action) => {
+                    const updatedActions = getActionsDetails.data.data.map((action) => {
+                            if (action?.icon) action.icon = createSvgIcon(action.icon);
+        
+                            if (action.permissions) {
+                                const parsedPermissions = JSON.parse(action.permissions);
 
-                        if (action?.icon) {
-                            action.icon = createSvgIcon(action.icon);
-                        }
+                                if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions) && parsedPermissions?.['show']) {
 
-                        if (action.permissions) {
-                            var parsedPermissions = JSON.parse(action.permissions);
+                                    const hasValidPermission = parsedPermissions?.['show'].some(
+                                        (permission) => userPermissions[permission] === true
+                                    );
+                                    return hasValidPermission ? action : null;
 
-                            const hasValidPermission = parsedPermissions.some(
-                                (permission) => userPermissions[permission] === true
-                            );
-
-                            return hasValidPermission ? action : null;
-                        }
-
+                                }else{
+                                    const hasValidPermission = parsedPermissions.some(
+                                        (permission) => userPermissions[permission] === true
+                                    );
+                                    return hasValidPermission ? action : null;
+                                }
+                            }
+        
                         return action;
                     }).filter(Boolean);
 
@@ -2981,6 +2990,54 @@ const Enquiries = () => {
         to_date: !searchFlag ? othersToDate : null,
         filter: !searchFlag ? othersFilterData : {},
     };
+
+    var disabledEditFlag = false;
+    var disabledDeleteFlag = false;
+
+    if (options.permissions) {
+
+        const parsedPermissions = JSON.parse(options.permissions);
+
+        if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+            if(parsedPermissions?.['add'].length > 0){
+                const hasAddPermission = parsedPermissions?.['add'].some(
+                    (permission) => userPermissions?.[0]?.[permission] === true
+                );
+
+                templateActionAddFlag.current = hasAddPermission;
+            }else{
+                templateActionAddFlag.current = true;
+            }
+
+            if(parsedPermissions?.['edit'].length > 0){
+                const hasEditPermission = parsedPermissions?.['edit'].some(
+                    (permission) => userPermissions?.[0]?.[permission] === true
+                );
+
+                disabledEditFlag = hasEditPermission
+            }else{
+                disabledEditFlag = true;
+            }
+
+
+            if(parsedPermissions?.['delete'].length > 0){
+                const hasDeletePermission = parsedPermissions?.['delete'].some(
+                    (permission) => userPermissions?.[0]?.[permission] === true
+                );
+
+                disabledDeleteFlag = hasDeletePermission
+            }else{
+                disabledDeleteFlag = true;
+            }
+
+        }else{
+            templateActionAddFlag.current = true;
+            disabledEditFlag = true;
+            disabledDeleteFlag = true;
+        }
+
+    }
 
     setLoading(true);
 
@@ -3101,7 +3158,7 @@ const Enquiries = () => {
                       >
                         View
                       </Button>
-                        {canEdit&& (
+                        {disabledEditFlag && (
                           !isViewAction && (
                           <>
                           {/* {isAuthorized && ( */}
@@ -3119,7 +3176,7 @@ const Enquiries = () => {
                            </>
                          ))}
                       
-                        {canDelete&& (
+                        {disabledDeleteFlag && (
                           !isViewAction && (
                           <>
                           {/* {isAuthorized && ( */}
@@ -4714,7 +4771,7 @@ const Enquiries = () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!viewModeOnly && (
+                    {!viewModeOnly && templateActionAddFlag.current === true (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
