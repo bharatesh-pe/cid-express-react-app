@@ -87,12 +87,19 @@ import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import WestIcon from '@mui/icons-material/West';
 import FileInput from "../components/form/FileInput";
 
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import ImportExportIcon from '@mui/icons-material/ImportExport';
+
 const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
 
   // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
+    const [exportableData, setExportableData] = useState([]);
+    const [showExportPopup, setShowExportPopup] = useState(false);
+    const [tabIndex, setTabIndex] = useState(0);
 
     //   new further investigation func states
     const [newApprovalPage, setNewApprovalPage] = useState(false);
@@ -5991,7 +5998,94 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
         return "";
     };
   
-  
+  const exportToExcel = (data, fileName) => {
+  if (!data || data.length === 0) return;
+
+  const excludedFields = [
+    "id",
+    "created_at",
+    "updated_at",
+    "created_by",
+    "sys_status",
+    "ReadStatus",
+  ];
+
+  const formattedData = data.map((item, index) => {
+    const newItem = { "S.no": index + 1 };
+
+    Object.entries(item).forEach(([key, val]) => {
+      if (!excludedFields.includes(key)) {
+        let cleanKey = key.startsWith("field_") ? key.slice(6) : key;
+
+        cleanKey = cleanKey
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (char) => char.toUpperCase());
+
+        const isDateField =
+          key.toLowerCase().includes("_date") ||
+          key.toLowerCase().endsWith("date");
+
+        let formattedVal = val;
+
+        if (
+          isDateField &&
+          typeof val === "string" &&
+          !isNaN(Date.parse(val))
+        ) {
+          formattedVal = dayjs(val).format("DD-MM-YYYY");
+        }
+
+        newItem[cleanKey] = formattedVal;
+      }
+    });
+
+    return newItem;
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+  const excelBuffer = XLSX.write(workbook, {
+    bookType: "xlsx",
+    type: "array",
+  });
+
+  const blob = new Blob([excelBuffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+
+  saveAs(blob, `${fileName}.xlsx`);
+  setShowExportPopup(false);
+};
+const handleOpenExportPopup = async () => {
+  if (!selectedRowData || !selectedOtherTemplate) return;
+
+  const payload = {
+    table_name: selectedOtherTemplate.table,
+    ui_case_id: selectedRowData.id,
+    pt_case_id: selectedRowData?.pt_case_id || null,
+    case_io_id: selectedRowData.field_io_name_id || "",
+  };
+
+  try {
+    const res = await api.post('/templateData/getActionTemplateData', payload);
+    setExportableData(res.data || []);
+    setShowExportPopup(true);
+  } catch (err) {
+    console.error('Failed to fetch export data:', err);
+    toast.error(
+        err || "Please Try Again!",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        }
+      );
+  }
+};
+
+
   const handleOtherTemplateActions = async (options, selectedRow, searchFlag,fromUploadedFiles) => {
     setAoFieldId(selectedRow);
     fromUploadedFiles = fromUploadedFiles ?? false;
@@ -10219,6 +10313,237 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
         </div>
       )}
 
+
+            {showExportPopup && (
+              <Dialog
+                open={showExportPopup}
+                onClose={() => setShowExportPopup(false)}
+                maxWidth="md"
+                fullWidth
+                PaperProps={{
+                  sx: {
+                    p: 3,
+                    borderRadius: 3,
+                    bgcolor: "#f9fafb",
+                    boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+                    minHeight: 400,
+                    maxHeight: "80vh",
+                    display: "flex",
+                    flexDirection: "column",
+                  },
+                }}
+              >
+                {/* Tabs */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1.5,
+                    justifyContent: "center",
+                    mb: 2,
+                  }}
+                >
+                  {[0, 1].map((idx) => (
+                    <Button
+                      key={idx}
+                      variant={tabIndex === idx ? "contained" : "outlined"}
+                      color="primary"
+                      onClick={() => setTabIndex(idx)}
+                      sx={{
+                        borderRadius: "20px",
+                        textTransform: "none",
+                        px: 3,
+                        py: 1,
+                        fontWeight: 600,
+                        fontSize: 15,
+                        minWidth: 110,
+                      }}
+                    >
+                      {idx === 0 ? "Export" : "Import"}
+                    </Button>
+                  ))}
+                </Box>
+
+                {/* Main Content */}
+                <Box
+                  sx={{
+                    bgcolor: "white",
+                    borderRadius: 2,
+                    boxShadow: "0 3px 10px rgba(0,0,0,0.05)",
+                    p: 3,
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                  }}
+                >
+                  {/* Export Content */}
+                  {tabIndex === 0 && (
+                    <>
+                      <Typography variant="h6" sx={{ fontSize: 17, fontWeight: 600, mb: 2 }}>
+                        Exported Data
+                      </Typography>
+
+                      {exportableData.length === 0 ? (
+                        <Typography
+                          sx={{
+                            textAlign: "center",
+                            mt: 6,
+                            color: "#777",
+                            fontSize: 15,
+                            flexGrow: 1,
+                          }}
+                        >
+                          No data available to export.
+                        </Typography>
+                      ) : (
+                        <Box sx={{ overflowX: "auto", flexGrow: 1 }}>
+                          <Table size="small" stickyHeader>
+                            <TableHead>
+                              <TableRow>
+                                <TableCell sx={{ fontWeight: 700, minWidth: 40, py: 1 }}>S.no</TableCell>
+                                {Object.keys(exportableData[0])
+                                  .filter(
+                                    (col) =>
+                                      ![
+                                        "id",
+                                        "created_at",
+                                        "updated_at",
+                                        "created_by",
+                                        "sys_status",
+                                        "ReadStatus",
+                                      ].includes(col)
+                                  )
+                                  .map((col) => {
+                                    let display = col.startsWith("field_") ? col.slice(6) : col;
+                                    display = display
+                                      .replace(/_/g, " ")
+                                      .split(" ")
+                                      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                                      .join(" ");
+                                    return (
+                                      <TableCell key={col} sx={{ fontWeight: 600, minWidth: 110, py: 1 }}>
+                                        {display}
+                                      </TableCell>
+                                    );
+                                  })}
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {exportableData.map((row, idx) => (
+                                <TableRow key={idx} hover>
+                                  <TableCell sx={{ py: 0.8 }}>{idx + 1}</TableCell>
+                                  {Object.keys(row)
+                                    .filter(
+                                      (col) =>
+                                        ![
+                                          "id",
+                                          "created_at",
+                                          "updated_at",
+                                          "created_by",
+                                          "sys_status",
+                                          "ReadStatus",
+                                        ].includes(col)
+                                    )
+                                    .map((col) => {
+                                      let val = row[col];
+                                      const isDateField =
+                                        col.toLowerCase().includes("_date") || col.toLowerCase().endsWith("date");
+
+                                      if (
+                                        isDateField &&
+                                        typeof val === "string" &&
+                                        !isNaN(Date.parse(val)) &&
+                                        dayjs(val).isValid()
+                                      ) {
+                                        val = dayjs(val).format("DD-MM-YYYY");
+                                      }
+                                      return (
+                                        <TableCell key={col} sx={{ py: 0.8, fontSize: 13 }}>
+                                          {val}
+                                        </TableCell>
+                                      );
+                                    })}
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </Box>
+                      )}
+                    </>
+                  )}
+
+                  {/* Import Content */}
+                  {tabIndex === 1 && (
+                    <Box
+                      sx={{
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 3,
+                      }}
+                    >
+                      <Typography variant="h6" sx={{ fontWeight: 600, fontSize: 18 }}>
+                        Upload Excel to Import Data
+                      </Typography>
+                      <Box
+                        sx={{
+                          border: "1px dashed #ccc",
+                          borderRadius: 2,
+                          padding: "20px 30px",
+                          backgroundColor: "#f5f5f5",
+                          width: "100%",
+                          maxWidth: 400,
+                          textAlign: "center",
+                        }}
+                      >
+                        <input type="file" accept=".xlsx,.xls,.csv" style={{ width: "100%" }} />
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Footer Buttons */}
+              <Box
+                sx={{
+                  mt: 3,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  alignItems: "center",
+                  gap: 1.5,
+                }}
+              >
+                {tabIndex === 0 && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    disabled={exportableData.length === 0}
+                    onClick={() =>
+                      exportToExcel(
+                        exportableData,
+                        (selectedOtherTemplate?.name || "Exported_Data").replace(/\s+/g, "_")
+                      )
+                    }
+                  >
+                    Download Excel
+                  </Button>
+                )}
+
+                {tabIndex === 1 && (
+                  <Button variant="contained" color="primary">
+                    Import Data
+                  </Button>
+                )}
+
+                <Button variant="outlined" color="secondary" onClick={() => setShowExportPopup(false)}>
+                  Close
+                </Button>
+              </Box>
+
+              </Dialog>
+            )}
+
       {/* other templates ui */}
       {otherTemplateModalOpen && (
         <Dialog
@@ -10484,6 +10809,32 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
                         </Button>
                     )}
                     {/* )} */}
+                    {selectedOtherTemplate?.table === 'cid_ui_case_property_form' && (
+                      <Button
+                        onClick={handleOpenExportPopup}
+                        sx={{
+                          
+                          height: 40,
+                          px: 2.8,
+                          fontWeight: 600,
+                          fontSize: 14,
+                          textTransform: 'none',
+                          borderRadius: '8px',
+                          backgroundColor: '#1976d2',
+                          color: '#fff',
+                          '&:hover': {
+                            backgroundColor: '#115293',
+                          },
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1.2,
+                        }}
+                      >
+                        <ImportExportIcon sx={{ fontSize: 18 }} />
+                        Export / Import
+                      </Button>
+                    )}
                     {selectedOtherTemplate?.table === 'cid_ui_case_property_form' && (
                       <Button
                         variant="contained"

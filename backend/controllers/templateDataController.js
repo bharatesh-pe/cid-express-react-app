@@ -801,6 +801,257 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
   }
 };
 
+exports.getActionTemplateData = async (req, res, next) => {
+  const {
+    sort_by = "template_id",
+    order = "DESC",
+    table_name,
+    is_read = "",
+    case_io_id = "",
+    ui_case_id,
+    pt_case_id,
+    filter = {},
+    from_date = null,
+    to_date = null,
+  } = req.body;
+
+  const fields = {};
+  const Op = Sequelize.Op;
+  const userId = req.user?.user_id || null;
+
+  try {
+    const tableData = await Template.findOne({ where: { table_name } });
+    if (!tableData) {
+      return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+    }
+
+    const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+    const relevantSchema = 
+      table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || 
+      table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || 
+      table_name === 'cid_ui_case_property_form'
+        ? schema
+        : schema.filter(field => field.is_primary_field === true || field.table_display_content === true);
+
+    if (["cid_ui_case_progress_report", "cid_ui_case_action_plan", "cid_ui_case_property_form"].includes(table_name)) {
+      relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+    }
+
+    const modelAttributes = {
+      id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+      created_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
+      updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
+      created_by: { type: Sequelize.DataTypes.STRING, allowNull: true },
+    };
+
+    const associations = [];
+    const fieldConfigs = {};
+
+    for (const field of relevantSchema) {
+      const { name: columnName, data_type, not_null, default_value, table, forign_key, attributes } = field;
+
+      if (!columnName || !data_type) {
+        modelAttributes[columnName] = {
+          type: Sequelize.DataTypes.STRING,
+          allowNull: not_null ? false : true,
+          defaultValue: default_value || null,
+        };
+        continue;
+      }
+
+      const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+      modelAttributes[columnName] = {
+        type: sequelizeType,
+        allowNull: not_null ? false : true,
+        defaultValue: default_value || null,
+      };
+
+      fields[columnName] = {
+        type: sequelizeType,
+        allowNull: !not_null,
+        defaultValue: default_value || null,
+      };
+
+      if (table && forign_key && attributes) {
+        associations.push({
+          relatedTable: table,
+          foreignKey: columnName,
+          targetAttribute: attributes,
+        });
+      }
+    }
+
+    const Model = sequelize.define(table_name, modelAttributes, {
+      freezeTableName: true,
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    });
+
+    const include = [];
+
+    for (const association of associations) {
+      const RelatedModel = require(`../models`)[association.relatedTable];
+      if (RelatedModel) {
+        Model.belongsTo(RelatedModel, {
+          foreignKey: association.foreignKey,
+          as: `${association.relatedTable}Details`,
+        });
+
+        include.push({
+          model: RelatedModel,
+          as: `${association.relatedTable}Details`,
+        });
+      }
+    }
+
+    Model.hasOne(db.TemplateUserStatus, {
+      foreignKey: 'table_row_id',
+      sourceKey: 'id',
+      as: 'ReadStatus',
+      constraints: false,
+    });
+
+    include.push({
+      model: db.TemplateUserStatus,
+      as: 'ReadStatus',
+      required: is_read,
+      where: {
+        user_id: userId,
+        template_id: tableData.template_id,
+      },
+      attributes: ['template_user_status_id'],
+    });
+
+    await Model.sync();
+
+    let whereClause = {};
+
+    if (ui_case_id && pt_case_id) {
+      whereClause = { [Op.or]: [{ ui_case_id }, { pt_case_id }] };
+    } else if (ui_case_id) {
+      whereClause = { ui_case_id };
+    } else if (pt_case_id) {
+      whereClause = { pt_case_id };
+    }
+
+    if (filter && typeof filter === "object") {
+      Object.entries(filter).forEach(([key, value]) => {
+        if (fields[key]) {
+          whereClause[key] = value;
+        }
+      });
+    }
+
+    if (from_date || to_date) {
+      whereClause["created_at"] = {};
+      if (from_date) whereClause["created_at"][Op.gte] = new Date(`${from_date}T00:00:00.000Z`);
+      if (to_date) whereClause["created_at"][Op.lte] = new Date(`${to_date}T23:59:59.999Z`);
+    }
+
+    const validSortBy = fields[sort_by] ? sort_by : "created_at";
+
+    const records = await Model.findAll({
+      where: whereClause,
+      include,
+      order: [[col(validSortBy), order.toUpperCase()]],
+    });
+
+    const transformedRecords = await Promise.all(
+      records.map(async (record) => {
+        const data = record.toJSON();
+        let filteredData;
+
+        data.ReadStatus = !!data.ReadStatus;
+
+        if (table_name === "cid_ui_case_progress_report") {
+          filteredData = { ...data };
+
+          if (data.field_assigned_to) {
+            filteredData.field_assigned_to_id = data.field_assigned_to;
+            let hasAnyYes = false;
+
+            if (typeof data.field_pr_status === "string") {
+              hasAnyYes = data.field_pr_status === "Yes";
+            } else if (Array.isArray(data.field_pr_status)) {
+              hasAnyYes = data.field_pr_status.some(status => status === "Yes" || status.status === "Yes");
+            }
+
+            filteredData.hasFieldPrStatus = hasAnyYes;
+
+            const assignedToUser = await Users.findOne({ where: { user_id: data.field_assigned_to }, attributes: ["kgid_id"] });
+            if (assignedToUser?.kgid_id) {
+              const kgidRecord = await KGID.findOne({ where: { id: assignedToUser.kgid_id }, attributes: ["name"] });
+              filteredData.field_assigned_to = kgidRecord?.name || " ";
+            } else {
+              filteredData.field_assigned_to = " ";
+            }
+          }
+
+          if (data.field_assigned_by) {
+            filteredData.field_assigned_by_id = data.field_assigned_by;
+            const assignedByUser = await Users.findOne({ where: { user_id: data.field_assigned_by }, attributes: ["kgid_id"] });
+            if (assignedByUser?.kgid_id) {
+              const kgidRecord = await KGID.findOne({ where: { id: assignedByUser.kgid_id }, attributes: ["name"] });
+              filteredData.field_assigned_by = kgidRecord?.name || "Unknown";
+            } else {
+              filteredData.field_assigned_by = "Unknown";
+            }
+          }
+
+          if (data.field_division) {
+            const division = await Division.findOne({ where: { division_id: data.field_division }, attributes: ["division_name"] });
+            filteredData.field_division = division?.division_name || "Unknown";
+          }
+
+        } else if (["cid_pt_case_trail_monitoring", "cid_ui_case_action_plan", "cid_ui_case_property_form"].includes(table_name)) {
+          filteredData = { ...data };
+          if (table_name === 'cid_ui_case_action_plan' && case_io_id) {
+            const case_io_user_designation = await UserDesignation.findOne({
+              attributes: ["designation_id"],
+              where: { user_id: case_io_id },
+            });
+
+            const supervisorDesignationId = case_io_user_designation?.designation_id
+              ? (await UsersHierarchy.findOne({
+                  attributes: ["supervisor_designation_id"],
+                  where: { officer_designation_id: case_io_user_designation.designation_id },
+                }))?.supervisor_designation_id || ''
+              : '';
+
+            filteredData.supervisior_designation_id = supervisorDesignationId;
+          }
+        } else if (table_name === "cid_ui_case_accused") {
+          filteredData = { ...data };
+        } else {
+          filteredData = {
+            id: data.id,
+            created_at: data.created_at,
+            updated_at: data.updated_at,
+          };
+
+          schema
+            .filter(field => field.is_primary_field === true || field.table_display_content === true)
+            .forEach(field => {
+              filteredData[field.name] = data[field.name];
+            });
+        }
+
+        return filteredData;
+      })
+    );
+
+    const responseMessage = `Fetched data successfully from table ${table_name}.`;
+    return userSendResponse(res, 200, true, responseMessage, transformedRecords);
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    return userSendResponse(res, 500, false, "Server error.", error);
+  }
+};
+
+
 exports.getTemplateData = async (req, res, next) => {
   const {
     page = 1,
