@@ -1249,84 +1249,109 @@ div::first-letter {
 
 
     .menuColor_1 {
-        background-color: #ff6b6b; /* red */
+        background-color: #ffa2a2; /* red */
         color: #fff;
+    }
+    .menuColor_1 .tableActionIcon svg {
+        fill: #ffa2a2 !important;
     }
     .menuColor_2 {
-        background-color: #6bc1ff; /* blue */
+        background-color: #a4f4cf; /* blue */
         color: #fff;
+    }
+    .menuColor_2 .tableActionIcon svg {
+        fill: #a4f4cf !important;
     }
     .menuColor_3 {
-        background-color: #6bff95; /* green */
+        background-color: #ffb86a; /* green */
         color: #fff;
+    }
+    .menuColor_3 .tableActionIcon svg {
+        fill: #ffb86a !important;
     }
     .menuColor_4 {
-        background-color: #ffdf6b; /* yellow */
+        background-color: #dab2ff; /* yellow */
         color: #000;
+    }
+    .menuColor_4 .tableActionIcon svg {
+        fill: #dab2ff !important;
     }
     .menuColor_5 {
-        background-color: #d36bff; /* purple */
+        background-color: #a3b3ff; /* purple */
         color: #fff;
     }
+    .menuColor_5 .tableActionIcon svg {
+        fill: #a3b3ff !important;
+    }
     .menuColor_6 {
-        background-color: #6bffe8; /* teal */
+        background-color: #ffd230; /* teal */
         color: #000;
     }
+    .menuColor_6 .tableActionIcon svg {
+        fill: #ffd230 !important;
+    }
     .menuColor_7 {
-        background-color: #ffa76b; /* orange */
+        background-color: #bbf451; /* orange */
         color: #000;
+    }
+    .menuColor_7 .tableActionIcon svg {
+        fill: #bbf451 !important;
     }
     .menuColor_8 {
         background-color: #8d6bff; /* violet */
         color: #fff;
     }
+    .menuColor_8 .tableActionIcon svg {
+        fill: #8d6bff !important;
+    }
     .menuColor_9 {
         background-color: #6bffcb; /* mint */
         color: #000;
+    }
+    .menuColor_9 .tableActionIcon svg {
+        fill: #6bffcb !important;
     }
     .menuColor_10 {
         background-color: #ff6bb2; /* pink */
         color: #fff;
     }
+    .menuColor_10 .tableActionIcon svg {
+        fill: #ff6bb2 !important;
+    }
     .menuColor_11 {
         background-color: #00bfa5; /* aqua green */
         color: #fff;
+    }
+    .menuColor_11 .tableActionIcon svg {
+        fill: #00bfa5 !important;
     }
     .menuColor_12 {
         background-color: #ff8a65; /* coral */
         color: #fff;
     }
+    .menuColor_12 .tableActionIcon svg {
+        fill: #ff8a65 !important;
+    }
     .menuColor_13 {
         background-color: #ba68c8; /* lavender purple */
         color: #fff;
+    }
+    .menuColor_13 .tableActionIcon svg {
+        fill: #ba68c8 !important;
     }
     .menuColor_14 {
         background-color: #ffd54f; /* golden yellow */
         color: #000;
     }
+    .menuColor_14 .tableActionIcon svg {
+        fill: #ffd54f !important;
+    }
     .menuColor_15 {
         background-color: #4db6ac; /* turquoise */
         color: #fff;
     }
-    .menuColor_16 {
-        background-color: #f06292; /* pink rose */
-        color: #fff;
-    }
-    .menuColor_17 {
-        background-color: #9575cd; /* pastel violet */
-        color: #fff;
-    }
-    .menuColor_18 {
-        background-color: #7986cb; /* slate blue */
-        color: #fff;
-    }
-    .menuColor_19 {
-        background-color: #81c784; /* soft green */
-        color: #000;
-    }
-    .menuColor_20 {
-        background-color: #ffb74d; /* warm orange */
-        color: #000;
+    .menuColor_15 .tableActionIcon svg {
+        fill: #4db6ac !important;
     }
 
     .lokayuktaSidebarMenus .MuiListItemIcon-root{
@@ -1369,6 +1394,11 @@ div::first-letter {
         transition: all 0.3s ease;
     }
 
+    .lokayuktaSidebarMenus.active .tableActionIcon svg {
+        fill: #FFFFFF !important;
+        transition: all 0.3s ease;
+    }
+
     .lokayuktaSidebarMenus:hover{
         transform: scale(1.03);
         box-shadow: 0 3px 10px rgba(0, 0, 0, 0.15);
@@ -1393,4 +1423,19 @@ div::first-letter {
         text-overflow: ellipsis !important;
         display: block !important;
         max-width: 180px; /* Adjust this based on your sidebar width */
+    }
+
+    .lokayuktaSidebarMenus .tableActionIcon{
+        width: 30px;
+        height: 30px;
+        margin-right: 6px;
+    }
+
+    .sidebarTextEllipsis span{
+        color: #FFFFFF;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 160px; /* Adjust based on your layout */
+        display: block;
     }
