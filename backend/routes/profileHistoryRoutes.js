@@ -6,6 +6,7 @@ const router = express.Router();
 
 
 router.post('/getProfileHistory', [validate_token], getProfileHistoryValidation, profileHistoryController.getProfileHistory);
+router.post('/getCaseHistory', [validate_token], getProfileHistoryValidation, profileHistoryController.getCaseHistory);
 
 
 module.exports = router;
