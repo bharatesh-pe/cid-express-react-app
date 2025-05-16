@@ -28,6 +28,7 @@ const {
   UiMergedCases,
   ApprovalFieldLog,
   ApprovalActivityLog,
+  CaseHistory,
   UsersHierarchy,
   UserDesignation,
 } = require("../models");
@@ -592,6 +593,14 @@ exports.updateTemplateData = async (req, res, next) => {
         //     actor_name: actorName,
         //     activity: `Updated`,
         // });
+
+        await CaseHistory.create({
+            template_id: tableData.template_id,
+            table_row_id: id,
+            user_id: actorId,
+            actor_name: userName,
+            action: `Updated`,
+        });
       }
 
       const fileUpdates = {};
@@ -2172,6 +2181,14 @@ exports.deleteTemplateData = async (req, res, next) => {
               table_row_id: data.id,
           },
       });
+
+      await CaseHistory.destroy({
+            where: {
+                template_id: tableData.template_id,
+                table_row_id: data.id,
+            },
+        });
+
       return userSendResponse(
         res,
         200,
@@ -4238,337 +4255,11 @@ exports.checkPdfEntry = async (req, res) => {
 // Cache for dynamically generated models
 const modelCache = {};
 
-// exports.caseSysStatusUpdation = async (req, res) => {
-//   let dirPath = "";
-//   try {
-//     const { table_name, data, transaction_id } = req.body;
-//     if (!table_name || !data || typeof data !== "object") {
-//       return userSendResponse(res, 400, false, "Invalid request format.");
-//     }
-//     dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-//     if (fs.existsSync(dirPath))
-//       return res
-//         .status(400)
-//         .json({ success: false, message: "Duplicate transaction detected." });
-//     fs.mkdirSync(dirPath, { recursive: true });
-
-//     // Extract id and sys_status
-//     const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
-//     if (!id || !sys_status) {
-//       return userSendResponse(
-//         res,
-//         400,
-//         false,
-//         "ID and sys_status are required."
-//       );
-//     }
-
-//     // Ensure id is an integer
-//     const recordId = parseInt(id, 10);
-//     if (isNaN(recordId)) {
-//       return userSendResponse(res, 400, false, "Invalid ID format.");
-//     }
-
-//     // Fetch table schema
-//     const tableData = await Template.findOne({ where: { table_name } });
-//     if (!tableData) {
-//       return userSendResponse(
-//         res,
-//         400,
-//         false,
-//         `Table ${table_name} does not exist.`
-//       );
-//     }
-
-//     // Parse schema
-//     const schema =
-//       typeof tableData.fields === "string"
-//         ? JSON.parse(tableData.fields)
-//         : tableData.fields;
-
-//     // Include ID and sys_status in schema
-//     const completeSchema = [
-//       {
-//         name: "id",
-//         data_type: "INTEGER",
-//         not_null: true,
-//         primaryKey: true,
-//         autoIncrement: true,
-//       },
-//       {
-//         name: "sys_status",
-//         data_type: "TEXT",
-//         not_null: false,
-//         default_value: default_status,
-//       },
-//       { name: "created_by", data_type: "TEXT", not_null: false },
-//       { name: "updated_by", data_type: "TEXT", not_null: false },
-//       { name: "created_by_id", data_type: "INTEGER", not_null: false },
-//       { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-//       { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-//       { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-//       ...schema,
-//     ];
-
-//     // Check if model already exists in cache
-//     let Model = modelCache[table_name];
-
-//     if (!Model) {
-//       const modelAttributes = {};
-//       for (const field of completeSchema) {
-//         const {
-//           name,
-//           data_type,
-//           not_null,
-//           default_value,
-//           primaryKey,
-//           autoIncrement,
-//         } = field;
-//         const sequelizeType =
-//           typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-
-//         modelAttributes[name] = {
-//           type: sequelizeType,
-//           allowNull: !not_null,
-//           defaultValue: default_value || null,
-//         };
-
-//         if (primaryKey) modelAttributes[name].primaryKey = true;
-//         if (autoIncrement) modelAttributes[name].autoIncrement = true;
-//       }
-
-//       // Define the model once and store it in the cache
-//       Model = sequelize.define(
-//         table_name,
-//         {
-//           ...modelAttributes,
-//         },
-//         {
-//           freezeTableName: true,
-//           timestamps: true,
-//           createdAt: "created_at",
-//           updatedAt: "updated_at",
-//           underscored: true,
-//         }
-//       );
-
-//       await Model.sync({ alter: true });
-
-//       // Cache the model
-//       modelCache[table_name] = Model;
-//     }
-
-//     // Find existing record
-//     const record = await Model.findByPk(recordId);
-//     if (!record) {
-//       return userSendResponse(
-//         res,
-//         404,
-//         false,
-//         `Record with ID ${id} not found in table ${table_name}.`
-//       );
-//     }
-
-//     // Update sys_status
-//     const [updatedCount] = await Model.update(
-//       { sys_status },
-//       { where: { id: recordId } }
-//     );
-
-//     if (updatedCount === 0) {
-//       return userSendResponse(
-//         res,
-//         400,
-//         false,
-//         "No changes detected or update failed."
-//       );
-//     }
-
-//     if (ui_case_id && sys_status === "178_cases") {
-//       const investigationTable = await Template.findOne({
-//         where: { table_name: "cid_under_investigation" },
-//       });
-//       if (!investigationTable) {
-//         return userSendResponse(
-//           res,
-//           400,
-//           false,
-//           "Investigation table not found."
-//         );
-//       }
-
-//       const invSchema =
-//         typeof investigationTable.fields === "string"
-//           ? JSON.parse(investigationTable.fields)
-//           : investigationTable.fields;
-
-//       const completeInvSchema = [
-//         {
-//           name: "id",
-//           data_type: "INTEGER",
-//           not_null: true,
-//           primaryKey: true,
-//           autoIncrement: true,
-//         },
-//         { name: "sys_status", data_type: "TEXT", not_null: false },
-//         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-//         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-//         { name: "created_by", data_type: "TEXT", not_null: false },
-//         { name: "updated_by", data_type: "TEXT", not_null: false },
-//         { name: "created_by_id", data_type: "INTEGER", not_null: false },
-//         { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-//         ...invSchema,
-//       ];
-
-//       let InvModel = modelCache["cid_under_investigation"];
-//       if (!InvModel) {
-//         const invModelAttributes = {};
-//         for (const field of completeInvSchema) {
-//           const { name, data_type, not_null, primaryKey, autoIncrement } =
-//             field;
-//           const sequelizeType =
-//             typeMapping?.[data_type.toUpperCase()] ||
-//             Sequelize.DataTypes.STRING;
-
-//           invModelAttributes[name] = {
-//             type: sequelizeType,
-//             allowNull: !not_null,
-//           };
-
-//           if (primaryKey) invModelAttributes[name].primaryKey = true;
-//           if (autoIncrement) invModelAttributes[name].autoIncrement = true;
-//         }
-
-//         InvModel = sequelize.define(
-//           "cid_under_investigation",
-//           invModelAttributes,
-//           {
-//             freezeTableName: true,
-//             timestamps: true,
-//             createdAt: "created_at",
-//             updatedAt: "updated_at",
-//             underscored: true,
-//           }
-//         );
-
-//         await InvModel.sync({ alter: true });
-//         modelCache["cid_under_investigation"] = InvModel;
-//       }
-
-//       const invRecord = await InvModel.findOne({ where: { id: ui_case_id } });
-//       if (invRecord) {
-//         await InvModel.update(
-//           { sys_status: "178_cases" },
-//           { where: { id: ui_case_id } }
-//         );
-//       } else {
-//         console.log(
-//           "No matching record found in `cid_under_investigation` for id:",
-//           ui_case_id
-//         );
-//       }
-//     }
-
-//     if (pt_case_id && sys_status === "178_cases") {
-//       const investigationTable = await Template.findOne({
-//         where: { table_name: "cid_pending_trail" },
-//       });
-//       if (!investigationTable) {
-//         return userSendResponse(
-//           res,
-//           400,
-//           false,
-//           "Investigation table not found."
-//         );
-//       }
-
-//       const invSchema =
-//         typeof investigationTable.fields === "string"
-//           ? JSON.parse(investigationTable.fields)
-//           : investigationTable.fields;
-
-//       const completeInvSchema = [
-//         {
-//           name: "id",
-//           data_type: "INTEGER",
-//           not_null: true,
-//           primaryKey: true,
-//           autoIncrement: true,
-//         },
-//         { name: "sys_status", data_type: "TEXT", not_null: false },
-//         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-//         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-//         { name: "created_by", data_type: "TEXT", not_null: false },
-//         { name: "updated_by", data_type: "TEXT", not_null: false },
-//         { name: "created_by_id", data_type: "INTEGER", not_null: false },
-//         { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-//         ...invSchema,
-//       ];
-
-//       let InvModel = modelCache["cid_pending_trail"];
-//       if (!InvModel) {
-//         const invModelAttributes = {};
-//         for (const field of completeInvSchema) {
-//           const { name, data_type, not_null, primaryKey, autoIncrement } =
-//             field;
-//           const sequelizeType =
-//             typeMapping?.[data_type.toUpperCase()] ||
-//             Sequelize.DataTypes.STRING;
-
-//           invModelAttributes[name] = {
-//             type: sequelizeType,
-//             allowNull: !not_null,
-//           };
-
-//           if (primaryKey) invModelAttributes[name].primaryKey = true;
-//           if (autoIncrement) invModelAttributes[name].autoIncrement = true;
-//         }
-
-//         InvModel = sequelize.define("cid_pending_trail", invModelAttributes, {
-//           freezeTableName: true,
-//           timestamps: true,
-//           createdAt: "created_at",
-//           updatedAt: "updated_at",
-//           underscored: true,
-//         });
-
-//         await InvModel.sync({ alter: true });
-//         modelCache["cid_pending_trail"] = InvModel;
-//       }
-
-//       const invRecord = await InvModel.findOne({ where: { id: pt_case_id } });
-//       if (invRecord) {
-//         await InvModel.update(
-//           { sys_status: "178_cases" },
-//           { where: { id: pt_case_id } }
-//         );
-//       } else {
-//         console.log(
-//           "No matching record found in `cid_pending_trail` for id:",
-//           pt_case_id
-//         );
-//       }
-//     }
-
-//     return userSendResponse(
-//       res,
-//       200,
-//       true,
-//       "Case record updated successfully!"
-//     );
-//   } catch (error) {
-//     console.error("Error updating case status:", error);
-//     return userSendResponse(res, 500, false, "Internal Server Error.", error);
-//   } finally {
-//     if (fs.existsSync(dirPath))
-//       fs.rmSync(dirPath, { recursive: true, force: true });
-//   }
-// };
-
 exports.caseSysStatusUpdation = async (req, res) => {
   let dirPath = "";
   try {
     const { table_name, data, transaction_id } = req.body;
+    const userId = req.user?.user_id || null;
     if (!table_name || !data || typeof data !== "object") {
       return userSendResponse(res, 400, false, "Invalid request format.");
     }
@@ -4710,6 +4401,28 @@ exports.caseSysStatusUpdation = async (req, res) => {
       { sys_status },
       { where: { id: recordId } }
     );
+
+    // Fetch user data
+    const userData = await Users.findOne({
+        include: [
+        {
+            model: KGID,
+            as: "kgidDetails",
+            attributes: ["kgid", "name", "mobile"],
+        },
+        ],
+        where: { user_id: userId },
+    });
+
+    let userName = userData?.kgidDetails?.name || null;
+
+    await CaseHistory.create({
+        template_id: tableData.template_id,
+        table_row_id: recordId,
+        user_id: userId,
+        actor_name: userName,
+        action: `Status Updated`,
+    });
 
     if (updatedCount === 0) {
       return userSendResponse(
@@ -5558,6 +5271,15 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						{ where: { id: recordId }, transaction: t }
 					);
 
+                    await CaseHistory.create({
+                        template_id: otherTableData.template_id,
+                        table_row_id: recordId,
+                        user_id: userId,
+                        actor_name: userName,
+                        action: `Status Updated`,
+                        transaction: t
+                    });
+
 					if (updatedCount === 0) {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "No changes detected or update failed.");
@@ -5887,6 +5609,14 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                     //     actor_name: actorName,
                     //     activity: `Updated`,
                     // });
+                    await CaseHistory.create({
+                        template_id: tableData.template_id,
+                        table_row_id: id,
+                        user_id: userId,
+                        actor_name: userName,
+                        action: `Updated`,
+                        transaction: t
+                    });
                 }
 
                 const fileUpdates = {};
@@ -6025,6 +5755,15 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 						{ sys_status },
 						{ where: { id: recordId }, transaction: t }
 					);
+
+                    await CaseHistory.create({
+                        template_id: otherTableData.template_id,
+                        table_row_id: recordId,
+                        user_id: userId,
+                        actor_name: userName,
+                        action: `Status Updated`,
+                        transaction: t
+                    });
 
 					if (updatedCount === 0) {
 						await t.rollback();
@@ -8455,6 +8194,15 @@ exports.submitActionPlanPR = async (req, res) => {
     
             // Insert into Progress Report
             await ProgressReportModel.bulkCreate(actionPlanDataToInsert, { transaction: t });
+
+            // await CaseHistory.create({
+            //     template_id: otherTableData.template_id,
+            //     table_row_id: recordId,
+            //     user_id: userId,
+            //     actor_name: userName,
+            //     action: `Status Updated`,
+            //     transaction: t
+            // });
         }
 
 		await t.commit();

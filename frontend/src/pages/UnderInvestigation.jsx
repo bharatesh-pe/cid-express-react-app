@@ -5266,6 +5266,25 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     }
   };
 
+  const caseHistory = async () =>
+  {
+    if (!table_name || table_name === "") {
+        toast.warning("Please Check The Template", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-warning",
+        });
+        return;
+    }
+
+    console.log("case history table name",table_name);
+  }
+
   const onCaseUpdateTemplateData = async (data) => {
 
     if (!table_name || table_name === "") {
