@@ -91,7 +91,7 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 
-const ActionPlan = () => {
+const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -131,7 +131,6 @@ const ActionPlan = () => {
     const [ptCaseTableName, setPtCaseTableName] = useState(null);
     const [ptCaseTemplateName, setPtCaseTemplateName] = useState(null);
 
-    const [selectedRowData, setSelectedRowData] = useState(null);
     const [uploadedFiles, setUploadedFiles] = useState([]);
 
     const [totalPage, setTotalPage] = useState(0);
@@ -360,13 +359,11 @@ const ActionPlan = () => {
     const [saveNewAction, setSaveNewAction] = useState(null);
 
     const showNatureOfDisposal = (selectedRow) => {
-        setSelectedRowData(selectedRow);
         setNatureOfDisposalValue(null);
         setNatureOfDisposalModal(true);
     };
 
     const showOrderCopyCourt =  (selectedRow, tableName, approved)=> {
-        setSelectedRowData(selectedRow);
         setApprovedByCourt(approved);
         setShowOrderCopy(true);
         showNewApprovalPage("B Report");
@@ -510,7 +507,6 @@ const ActionPlan = () => {
     // const isAuthorized = await handleAssignToIo(selectedRow, "cid_under_investigation");
     // setIsIoAuthorized(isAuthorized);    
 
-    setSelectedRowData(selectedRow);
     setselectedOtherTemplate(options);
 
     setSelectedRow(selectedRow);
@@ -3723,7 +3719,6 @@ const ActionPlan = () => {
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     setFurtherInvestigationSelectedRow(data);
-                    setSelectedRowData(selectedRow);
                     showNewApprovalPage();
                 } else {
                     console.log("sys status updation canceled.");
