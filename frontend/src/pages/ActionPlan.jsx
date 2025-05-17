@@ -603,63 +603,42 @@ const ActionPlan = () => {
 
             let showReplacePdf = false;
             let APisSubmited = false;
-
-
-            if (selectedOtherTemplate?.table || options.table === "cid_ui_case_progress_report") {
-                const anyHasPRStatus = records.some(record => record.field_pr_status === "Yes");
-                
-                // Show button only if no one has PR status true
-                if (!anyHasPRStatus) {
-                showReplacePdf = true;
-                }
-            }
-
-            if(options.table === "cid_ui_case_progress_report")
-            {
-                APisSubmited = !records.some(record => record.sys_status === "AP");
-            }
-            
-            setShowReplacePdfButton(showReplacePdf);
-
-            let anySubmitAP = false;
+            let anySubmitAP = true;
             let isSuperivisor = false;
 
-            if (options.table === "cid_ui_case_action_plan") {
-                const userDesigId = localStorage.getItem('designation_id');
-                anySubmitAP = true;
-                if(records && records.length > 0)
-                {
-                    const allAPWithSameSupervisor = records.every(
-                        record =>
-                        record.field_submit_status === "" &&
-                        record.supervisior_designation_id == userDesigId
-                    );
-                    
-                    const allAPWithOutIOSubmit = records.every(
-                        record =>
-                        record.sys_status === "ui_case" &&
-                        record.field_submit_status === "" &&
-                        record.supervisior_designation_id != userDesigId
-                    );
-                    
-                    if (allAPWithSameSupervisor || allAPWithOutIOSubmit) {
-                        anySubmitAP = false;
-                    }
-        
-                    if(allAPWithSameSupervisor)
-                        isSuperivisor = true;
-
-                    APisSubmited = records.every(
-                        record =>
-                        record.sys_status === "ui_case" ||
-                        record.sys_status === "IO" &&
-                        record.field_submit_status === "" &&
-                        record.supervisior_designation_id != userDesigId
-                    );
-                }
-                else{
+            const userDesigId = localStorage.getItem('designation_id');
+            if(records && records.length > 0)
+            {
+                const allAPWithSameSupervisor = records.every(
+                    record =>
+                    record.field_submit_status === "" &&
+                    record.supervisior_designation_id == userDesigId
+                );
+                
+                const allAPWithOutIOSubmit = records.every(
+                    record =>
+                    record.sys_status === "ui_case" &&
+                    record.field_submit_status === "" &&
+                    record.supervisior_designation_id != userDesigId
+                );
+                
+                if (allAPWithSameSupervisor || allAPWithOutIOSubmit) {
                     anySubmitAP = false;
                 }
+    
+                if(allAPWithSameSupervisor)
+                    isSuperivisor = true;
+
+                APisSubmited = records.every(
+                    record =>
+                    record.sys_status === "ui_case" ||
+                    record.sys_status === "IO" &&
+                    record.field_submit_status === "" &&
+                    record.supervisior_designation_id != userDesigId
+                );
+            }
+            else{
+                anySubmitAP = false;
             }
 
             setShowSubmitAPButton(anySubmitAP);
@@ -668,11 +647,6 @@ const ActionPlan = () => {
             
             let anySubmitPF = false;
 
-            if (options.table === "cid_ui_case_property_form") {
-                anySubmitPF = records.every(record => record.sys_status === "submit");
-            }
-
-            setShowSubmitPFButton(anySubmitPF);
 
             if (getTemplateResponse.data[0]) {
                 var excludedKeys = [
@@ -780,13 +754,13 @@ const ActionPlan = () => {
                                             variant="outlined"
                                             onClick={(event) => {
                                                 event.stopPropagation();
-                                                handleOthersTemplateDataView(params.row, false, options.table);
+                                                handleOthersTemplateDataView(params.row, false, 'cid_ui_case_action_plan');
                                             }}
                                         >
                                             View
                                         </Button>
                             
-                                        {canEdit&& ( !isActionPlan && ( !isViewAction && ( !isChildMergedLoading && (
+                                        {canEdit&& ( !isActionPlan && ( !isViewAction && (
                                             <Button
                                                 variant="contained"
                                                 color="primary"
@@ -804,7 +778,7 @@ const ActionPlan = () => {
                                             >
                                                 Edit
                                             </Button>
-                                        ))))}
+                                        )))}
 
                                         {canDelete&& ( !isActionPlan && ( !isViewAction && ( !isChildMergedLoading && (
                                             <Button
@@ -1072,252 +1046,7 @@ const ActionPlan = () => {
             handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
         }
     }
- 
-    const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue, approved) => {
 
-        if(options.is_approval && !approved){
-            setApprovalSaveData({});
-            setHasApproval(true); 
-            showApprovalPage(selectedRow, options);
-            return;
-        }
-
-        const selectedFieldData = selectedRow[selectedFieldValue];
-    
-        const viewTableData = {
-            table_name: options.table,
-        };
-
-        if (options.permissions) {
-
-            const parsedPermissions = JSON.parse(options.permissions);
-
-            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
-
-                if(parsedPermissions?.['edit'].length > 0){
-                    const hasAddPermission = parsedPermissions?.['edit'].some(
-                        (permission) => userPermissions?.[0]?.[permission] === true
-                    );
-
-                    fieldActionAddFlag.current = hasAddPermission;
-                }else{
-                    fieldActionAddFlag.current = true;
-                }
-
-            }else{
-                fieldActionAddFlag.current = true;
-            }
-        }
-    
-        setLoading(true);
-        try {
-            const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
-            setLoading(false);
-        
-            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse["data"]) {
-                if (viewTemplateResponse["data"].fields) {
-
-                    var getTemplatePayload = {
-                        "table_name": options.table,
-                        "id": selectedRow.id,
-                        "template_module": "ui_case"
-                    }
-        
-                    setLoading(true);
-        
-                    try {
-                        
-                        const getTemplateResponse = await api.post("/templateData/viewTemplateData",getTemplatePayload);
-                        setLoading(false);
-
-                        setFormTemplateData(viewTemplateResponse["data"].fields);
-                
-                        const getDivisionField = viewTemplateResponse["data"].fields.filter(
-                            (data) => data.name === options.field
-                        );
-    
-                        if (getDivisionField.length > 0) {
-
-                            if(getDivisionField[0].type === "file"){
-                                showAttachmentField(options, selectedRow);
-                                return;
-                            }
-
-                            var newPayload = {};
-    
-                            if(getDivisionField[0].table === "users"){
-                                
-                                if(getTemplateResponse?.success && getTemplateResponse?.data){
-                                    
-                                    if(getTemplateResponse?.data['field_division']){
-                                        newPayload['division_id'] = getTemplateResponse?.data['field_division']
-                                        newPayload['designation_id'] = localStorage.getItem('designation_id') || null
-                                    }
-                                }
-                            }
-    
-                
-                            if (getDivisionField[0].api) {
-                
-                                var payloadApi = {
-                                    table_name: getDivisionField[0].table,
-                                };
-
-                                if(getDivisionField[0].table === "users"){
-                                    payloadApi = {
-                                        ...payloadApi,
-                                        ...newPayload,
-                                        get_flag : getDivisionField[0]?.user_hierarchy || "lower"
-                                    }
-                                }
-                                setLoading(true);
-    
-                                try {
-                                    const getOptionsValue = await api.post(getDivisionField[0].api, payloadApi);
-                                    setLoading(false);
-                    
-                                    let updatedOptions = [];
-                    
-                                    if (getOptionsValue && getOptionsValue.data) {
-                                        if (getDivisionField[0].api === "/templateData/getTemplateData") {
-                                            updatedOptions = getOptionsValue.data.map((templateData) => {
-                                                const nameKey = Object.keys(templateData).find(
-                                                    (key) => !["id", "created_at", "updated_at"].includes(key)
-                                                );
-                                                return {
-                                                    name: nameKey ? templateData[nameKey] : "",
-                                                    code: templateData.id,
-                                                };
-                                            });
-                                        } else {
-                                            updatedOptions = getOptionsValue.data.map((field) => ({
-                                                name: getDivisionField[0].table === "users" ? field.name : field[getDivisionField[0].table + "_name"],
-                                                code: getDivisionField[0].table === "users" ? field.user_id: field[getDivisionField[0].table + "_id"],
-                                            }));
-                                        }
-    
-                                        const matchedOption = updatedOptions.find(
-                                            (option) =>
-                                            (option.code === selectedFieldData || option.name === selectedFieldData)
-                                        );
-
-                                        console.log("Pre-selected value:", matchedOption);
-                                        const preSelectedDivision = matchedOption || null;
-                                        setSelectedOtherFields(preSelectedDivision);
-
-                        
-                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
-                                            api.post("cidMaster/getIoUsersBasedOnDivision", {
-                                                division_ids: [preSelectedDivision.code],
-                                                role_id: null,
-                                            })
-                                            .then((res) => {
-                                                setUsersBasedOnDivision(res.data || []);
-                                            })
-                                            .catch((err) => {
-                                                console.error("Failed to load users based on division", err);
-                                                setUsersBasedOnDivision([]);
-                                            });
-                                        }
-                            
-                                        setSelectKey({ name: options.field, title: options.name });
-                                        //   setSelectedRow(selectedRow);
-                                        //   setselectedOtherTemplate(options);
-                                        setOtherTransferField(updatedOptions);
-                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io") {
-                                            setShowMassiveTransferModal(true);
-                                            setSelectedRowIds([selectedRow.id])
-                                        } else {
-                                            setShowOtherTransferModal(true);
-                                        }
-                                    }
-                                } catch (error) {
-                                    setLoading(false);
-                                    if (error?.response?.data) {
-                                        toast.error(error.response.data.message || "selected field not found",{
-                                            position: "top-right",
-                                            autoClose: 3000,
-                                            className: "toast-error",
-                                        });
-                                    }
-                                }
-                            } else {
-                                const staticOptions = getDivisionField[0].options || [];
-                    
-                                const matchedOption = staticOptions.find(
-                                    (option) => option.code === selectedFieldData
-                                );
-                                const preSelectedDivision = matchedOption || null;
-                                setSelectedOtherFields(preSelectedDivision);
-                                
-                                if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io" && preSelectedDivision?.code) {
-                                    api.post("cidMaster/getIoUsersBasedOnDivision", {
-                                        division_ids: [preSelectedDivision.code],
-                                        role_id: null,
-                                    })
-                                    .then((res) => {
-                                        setUsersBasedOnDivision(res.data || []);
-                                    })
-                                    .catch((err) => {
-                                        console.error("Failed to load users based on division", err);
-                                        setUsersBasedOnDivision([]);
-                                    });
-                                }
-                                    
-                                setSelectKey({ name: options.field, title: options.name });
-                                //   setSelectedRow(selectedRow);
-                                //   setselectedOtherTemplate(options);
-                                setOtherTransferField(staticOptions);
-                                if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase() || options.name.trim().toLowerCase() == "reassign io") {
-                                    setShowMassiveTransferModal(true);
-                                } else {
-                                    setShowOtherTransferModal(true);
-                                }
-                            }
-                        } else {
-                            toast.error("Can't able to find selected field", {
-                                position: "top-right",
-                                autoClose: 3000,
-                                className: "toast-error",
-                            });
-                        }
-                    } catch (error) {
-                        setLoading(false);
-                        if (error && error.response && error.response["data"]) {
-                            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    }
-                }
-            } else {
-                toast.error(
-                viewTemplateResponse.message || "Failed to get Template. Please try again.",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    className: "toast-error",
-                }
-                );
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error?.response?.data) {
-                toast.error(error.response.data.message || "Please Try Again!",{
-                    position: "top-right",
-                    autoClose: 3000,
-                    className: "toast-error",
-                });
-            }
-        }
-    };
 
     const getCellClassName = (key, params, table) => {
         // Example condition: unread rows for a specific table
@@ -1327,16 +1056,6 @@ const ActionPlan = () => {
     
         // Add more logic if needed based on `key` or `params`
         return "";
-    };
-
-    const toggleSelectRow = (id) => {
-        setSelectedIds((prevSelectedIds) => {
-            const updated = prevSelectedIds.includes(id)
-            ? prevSelectedIds.filter((selectedId) => selectedId !== id)
-            : [...prevSelectedIds, id];
-    
-            return updated;
-        });
     };
 
     const tableCellRender = (key, params, value, index, tableName) => {
@@ -1469,62 +1188,6 @@ const ActionPlan = () => {
         });
     };
                 
-    const handleServedUnserved = (row, options) => {
-        Swal.fire({
-        title: "Mark as Served?",
-        text: "Do you want to mark this case as Served?",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Served",
-        cancelButtonText: "UnServed",
-        reverseButtons: false,
-        }).then((result) => {
-        if (result.isConfirmed) {
-            const updatedRow = {
-            id: row.id,
-            options: options,
-            field_served_or_unserved: "Yes",
-            };
-            otherTemplateTrailUpdate(updatedRow);
-        } else if (result.dismiss === Swal.DismissReason.cancel) {
-            const updatedRow = {
-            id: row.id,
-            options: options,
-            field_served_or_unserved: "No",
-            };
-            otherTemplateTrailUpdate(updatedRow);
-        }
-        });
-    }; 
-
-    const handleReappear = (row, options) => {
-    Swal.fire({
-        title: "Mark for Reappear?",
-        text: "Do you want to mark this case as Reappear?",
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Yes, Reappear it!",
-        cancelButtonText: "No",
-        reverseButtons: false,
-    }).then((result) => {
-        if (result.isConfirmed) {
-        const updatedRow = {
-            id: row.id,
-            options: options,
-            field_reappear: "Yes",
-        };
-        otherTemplateTrailUpdate(updatedRow);
-        }else if (result.dismiss === Swal.DismissReason.cancel) {
-        const updatedRow = {
-            id: row.id,
-            options: options,
-            field_reappear: "No",
-        };
-        otherTemplateTrailUpdate(updatedRow);
-        }
-    });
-    };
-
     function isValidISODate(value) {
         return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
     }
@@ -1886,89 +1549,6 @@ const ActionPlan = () => {
                     });
                 }
             }
-    };
-
-    const otherTemplateTrailUpdate = async (data) => {
-    
-        if (!data.id || !data.options?.table) {
-        toast.warning("Please Check the Template", {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-warning",
-        });
-        return;
-        }
-    
-        const updateFields = {};
-    
-        if (data.hasOwnProperty("field_served_or_unserved")) {
-        updateFields.field_served_or_unserved = data.field_served_or_unserved;
-        }
-        
-        if (data.hasOwnProperty("field_reappear")) {
-        updateFields.field_reappear = data.field_reappear;
-        }
-        
-        
-        const formData = new FormData();
-        formData.append("table_name", data.options.table);
-        formData.append("id", data.id);
-        formData.append("data", JSON.stringify(updateFields));
-    
-        setLoading(true);
-    
-        try {
-        const saveTemplateData = await api.post(
-            "/templateData/updateTemplateData",
-            formData,
-            {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-            }
-        );
-        
-        setLoading(false);
-    
-        if (saveTemplateData && saveTemplateData.success) {
-            localStorage.removeItem(data.name + "-formData");
-    
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-success",
-            });
-    
-            handleOtherTemplateActions(data.options, selectedRow);
-    
-            setOtherEditTemplateData(false);
-            setOtherReadOnlyTemplateData(false);
-            setTemplateApprovalData({});
-            setTemplateApproval(false);
-            setAddApproveFlag(false);
-            setApproveTableFlag(false);
-            setApprovalSaveData({});
-        } else {
-            const errorMessage = saveTemplateData?.message || "Failed to update the template. Please try again.";
-            toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        console.error("API Error:", error);
-    
-        toast.error(
-            error?.response?.data?.message || error?.message || "Please Try Again!",
-            {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-error",
-            }
-        );
-        }
     };
 
     const loadMergedCasesData = async (page) => {
@@ -2687,158 +2267,6 @@ const ActionPlan = () => {
             );
             }
         }
-    };
-
-    const handleUpdatePdfClick = async ({
-        selectedOtherTemplate,
-        selectedRowData,
-        selectedIds,
-        prUpdatePdf,
-    }) => {
-        const getTemplatePayload = {
-        table_name: selectedOtherTemplate?.table,
-        ui_case_id: selectedRowData?.id,
-        };
-    
-        setLoading(true);
-        try {
-        const getTemplateResponse = await api.post(
-            "/templateData/getTemplateData",
-            getTemplatePayload
-        );
-        setLoading(false);
-    
-        if (getTemplateResponse && getTemplateResponse.success) {
-            const dataToAppend = getTemplateResponse.data.filter(
-            (item) => item.field_pr_status === "No"
-            );
-    
-            if (!selectedIds || selectedIds.length === 0) {
-            toast.error("Please choose a record to append.", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-            }
-    
-            const filteredDataToAppend = dataToAppend.filter(
-            (item) =>
-                selectedIds.includes(item.id) && item.field_pr_status === "No"
-            );
-    
-            if (filteredDataToAppend.length > 0) {
-            const appendText = JSON.stringify(filteredDataToAppend);
-            await prUpdatePdf({ appendText });
-            } else {
-            toast.error("Already this records are Updated to PDF", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            }
-        } else {
-            toast.error("Failed to fetch template data. Please try again.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        toast.error("Error fetching template data. Please try again.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        }
-    };
-
-    const prUpdatePdf = async (data) => {
-    try {
-        setLoading(true);
-
-        const parsedAppendText = JSON.parse(data.appendText);
-
-        const payload = {
-        selected_row_id: selectedIds,
-        ui_case_id: selectedRow.id,
-        appendText: JSON.stringify(parsedAppendText),
-        };
-
-        const saveTemplateData = await api.post(
-        "/templateData/appendToLastLineOfPDF",
-        payload
-        );
-
-        setLoading(false);
-
-        if (saveTemplateData && saveTemplateData.success) {
-        toast.success(
-            saveTemplateData.message || "Data appended successfully.",
-            {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-            }
-        );
-        setOtherTemplateModalOpen(false);
-        setSelectedIds([]);
-        } else {
-        const errorMessage =
-            saveTemplateData.message ||
-            "Failed to append data. Please try again.";
-        toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        }
-    } catch (error) {
-        setLoading(false);
-        if (error?.response?.data) {
-        toast.error(error.response.data.message || "Please try again!", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        }
-    }
     };
 
     const handleAutocomplete = (field, selectedValue, othersFilter) => {
@@ -3934,120 +3362,6 @@ const ActionPlan = () => {
         }
     };
 
-    const handleOpenExportPopup = async () => {
-      if (!selectedRowData || !selectedOtherTemplate) return;
-    
-      const payload = {
-        table_name: selectedOtherTemplate.table,
-        ui_case_id: selectedRowData.id,
-        pt_case_id: selectedRowData?.pt_case_id || null,
-        case_io_id: selectedRowData.field_io_name_id || "",
-      };
-    
-      try {
-        const res = await api.post('/templateData/getActionTemplateData', payload);
-        setExportableData(res.data || []);
-        setShowExportPopup(true);
-      } catch (err) {
-        console.error('Failed to fetch export data:', err);
-        toast.error(
-            err || "Please Try Again!",
-            {
-              position: "top-right",
-              autoClose: 3000,
-              className: "toast-error",
-            }
-          );
-      }
-    };
-
-    const handleSubmitPF = async ({ id, selectedIds }) => {
-    
-        if (!id || id.length === 0) {
-          toast.error("Please select at least one record to submit.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          });
-          return;
-        }
-        const result = await Swal.fire({
-          title: 'Are you sure?',
-          text: "Do you want to submit this Property Form? Once submitted, the selected record will be move to the FSL.",
-          icon: 'question',
-          showCancelButton: true,
-          confirmButtonText: 'Yes, submit it!',
-          cancelButtonText: 'Cancel',
-        });
-      
-        if (result.isConfirmed) {
-          const payload = {
-            transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
-            ui_case_id: id,
-            row_ids: selectedIds
-          };
-      
-          try {
-            setLoading(true);
-            const response = await api.post('/templateData/submitPropertyFormFSL', payload);
-      
-            if (response.success) {
-              toast.success("The Property Form has been submitted", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-success",
-                onOpen: () => {
-                  if (sysStatus === "merge_cases") {
-                    loadMergedCasesData(paginationCount);
-                  } else {
-                    if(!selectedOtherTemplate?.field){
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
-                    }else{
-                        loadTableData(paginationCount);
-                    }
-                  }
-                },
-            });
-             setSelectedIds([]);
-            } else {
-              toast.error(response.message || 'Something went wrong.', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            }
-          } catch (error) {
-            toast.error(error.message || 'Submission failed.', {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-          });
-          }finally{
-            setLoading(false);
-          }
-        }
-    };
-
     const handleSubmitAp = async ({ id }) => {
     
         if (!id || id.length === 0) {
@@ -4894,7 +4208,7 @@ const ActionPlan = () => {
         </DialogActions>
         </Dialog>
     )}
-    
+
     return (
         <Dialog
             open={otherTemplateModalOpen}
@@ -5009,7 +4323,7 @@ const ActionPlan = () => {
                         )}
                         </Box>
                         {/* {isIoAuthorized && ( */}
-                        {!viewModeOnly && !isChildMergedLoading && !showSubmitAPButton && templateActionAddFlag.current === true && (
+                        {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
                             <Button
                                 variant="outlined"
                                 sx={{height: '40px'}}
