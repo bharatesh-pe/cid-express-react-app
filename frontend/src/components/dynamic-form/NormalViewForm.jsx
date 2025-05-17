@@ -43,7 +43,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import ActTable from './actSection';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, disableEditButton = false }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton = false }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
   const [formData, setFormData] = useState({});
   const [newFormConfig, setNewFormConfig] = useState(formConfig ? formConfig : {})
@@ -220,72 +220,26 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
         }
 
-        // const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
+        if(table_name === "cid_pending_trail" && formData?.['field_cc_pending']){
+            
+            var requiredStatus = false;
 
-        // if(formData?.['field_section']){
+            if(formData?.['field_cc_pending'] === "No"){
+                requiredStatus = true;
+            }
 
-        //     var actFields = allFields.filter((element)=>{
-        //         return element.name === 'field_section';
-        //     });
+            setNewFormConfig((prevFormConfig) => {
+                const updatedFormConfig = prevFormConfig.map((data) => {
+                    if(data.name === "field_cc_no./sc_no"){
+                        return {...data, required : requiredStatus }
+                    }else{
+                        return data;
+                    }
+                });
+                return updatedFormConfig;
+            });
+        }
 
-        //     if(actFields?.[0]?.options){
-
-        //         var getOptionName = actFields[0].options.filter((element)=>{
-        //             if(formData?.['field_section']?.includes(element.code)){
-        //                 return element;
-        //             }
-        //         });
-
-        //         if(getOptionName.length > 0){
-        //             var showSectionNames = ['17a', '17b', '19']
-
-        //             var getSectionValues = getOptionName.filter((element)=> showSectionNames.includes((element.name).toLowerCase()));
-
-        //             var hide_from_ux = true;
-
-        //             if(getSectionValues.length > 0){
-        //                 hide_from_ux = false;
-        //             }
-
-        //             var updatedFormConfig = allFields.map((element)=>{
-        //                 if(element.name === "field_order_copy_(_17a_done_)"){
-        //                     element.hide_from_ux = hide_from_ux;
-        //                 }
-
-        //                 return element
-        //             });
-
-        //             setNewFormConfig(updatedFormConfig);
-        //             delete formData["field_order_copy_(_17a_done_)"];
-
-        //         }else{
-
-        //             var updatedFormConfig = allFields.map((element)=>{
-        //                 if(element.name === "field_order_copy_(_17a_done_)"){
-        //                     element.hide_from_ux = true;
-        //                 }
-        
-        //                 return element
-        //             });
-        
-        //             setNewFormConfig(updatedFormConfig);
-        //             delete formData["field_order_copy_(_17a_done_)"];
-        //         }
-        //     }
-
-        // }else{
-
-        //     var updatedFormConfig = allFields.map((element)=>{
-        //         if(element.name === "field_order_copy_(_17a_done_)"){
-        //             element.hide_from_ux = true;
-        //         }
-
-        //         return element
-        //     });
-
-        //     setNewFormConfig(updatedFormConfig);
-        //     delete formData["field_order_copy_(_17a_done_)"];
-        // }
 
     },[formData]);
 
@@ -1277,7 +1231,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 //   console.log(stepperData, "stepperData stepperData")
   return (
     <>
-      <Box inert={loading ? true : false} p={2}>
+      <Box inert={loading ? true : false} p={noPadding ? 0 : 2} px={2}>
         {stepperData && stepperData.length > 0 && (
           <Box px={2} py={1} sx={{ background: '#FFFFFF' }}>
             <Stepper className={'stepperWidth_' + stepperData.length} sx={{ minWidth: '300px', maxWidth: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }} activeStep={activeStep} >
@@ -1293,7 +1247,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '99' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '99' }}>
           <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '4px' }}>
             <ArrowBackIcon sx={{ fontSize: '22px', fontWeight: '500', color: '#171A1C' }} />
             <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
@@ -1379,7 +1333,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 </Typography>
               }
               <Typography className='HighlightedText'>
-                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'Details'}
+                {stepperData && stepperData[activeStep] ? stepperData[activeStep] : 'General Detail'}
               </Typography>
             </Box>
 

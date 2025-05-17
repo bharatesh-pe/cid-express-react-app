@@ -284,7 +284,7 @@ router.post('/uploadFile',
         templateDataController.getUploadedFiles)
     
 router.post('/caseSysStatusUpdation',
-
+    [validate_token],
     templateDataController.caseSysStatusUpdation)
 
 router.post('/appendToLastLineOfPDF',

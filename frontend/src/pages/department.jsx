@@ -97,7 +97,7 @@ const Department = () => {
 
 
     const departmentColumnData = [
-        { field: 'name', headerName: 'Department', width: 200 },
+        { field: 'name', headerName: 'Wing', width: 200 },
         // { field: 'description', headerName: 'Description', width: 300 },
         {
             field: '',
@@ -554,7 +554,7 @@ const Department = () => {
             <ArrowBack sx={{ fontSize: 24, color: "#1D2939" }} />
 
                         <Typography className="Roboto" sx={{ fontSize: "20px", fontWeight: "600", color: "#1D2939", margin: 0 }}>
-                            Department
+                            Wing
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'start', gap: '12px' }}>
@@ -587,7 +587,7 @@ const Department = () => {
                                 value={searchValue}
                                 id="tableSearch"
                                 size="small"
-                                placeholder="Search Department"
+                                placeholder="Search Wing"
                                 variant="outlined"
                                 className="profileSearchClass"
                                 onKeyDown={(e) => {
@@ -649,7 +649,7 @@ const Department = () => {
                             }
                             variant="contained"
                             >
-                                Add Department
+                                Add Wing
                         </Button>                                                
                     </Box>
                 </Box>
@@ -700,20 +700,20 @@ const Department = () => {
                         >
                         <WestIcon sx={{ color: 'black' }}/>
                         <Typography sx={{ fontSize: '18px', fontWeight: 500,}}>
-                        {showViewModal && "View Department"}
-                        {showEditModal && "Edit Department"}
-                        {showRoleAddModal && "Add Department"}
+                        {showViewModal && "View Wing"}
+                        {showEditModal && "Edit Wing"}
+                        {showRoleAddModal && "Add Wing"}
                         </Typography>
                     </Box>
 
                     {showEditModal && (
                         <Button variant="outlined" onClick={handleEditData}>
-                            Update Department
+                            Update Wing
                         </Button>
                     )}
                     {showRoleAddModal && (
                         <Button variant="outlined" onClick={handleAddSaveData}>
-                            Add Department
+                            Add Wing
                         </Button>
                     )}
                 </DialogTitle>
@@ -722,11 +722,11 @@ const Department = () => {
                         <FormControl fullWidth>
                             <Box sx={{ marginY: '8px' }}>
                                 <h4 className="form-field-heading" style={{ color: !!errorRoleData.department_name && '#d32f2f' }}>
-                                    Department
+                                    Wing
                                 </h4>
                                 <TextField
                                     fullWidth
-                                    label="Department"
+                                    label="Wing"
                                     name="department_name"
                                     autoComplete="off"
                                     value={showRoleAddModal ? addRoleData.department_name : selectedRole?.department_name || selectedRole?.name}
@@ -810,7 +810,7 @@ const Department = () => {
                         </p>
 
                         <p style={{ fontSize: "16px", color: "rgb(156 163 175)", margin: 0 }}>
-                            Are you sure you want to delete the {roleNameToDelete} Department? This action
+                            Are you sure you want to delete the {roleNameToDelete} Wing? This action
                             cannot be undone.
                         </p>
                     </DialogContent>

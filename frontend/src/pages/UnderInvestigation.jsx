@@ -1,4 +1,4 @@
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import DynamicForm from "../components/dynamic-form/DynamicForm";
@@ -95,6 +95,8 @@ import { BorderTop } from "@mui/icons-material";
 const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
+    const { pageCount, systemStatus } = location.state || {};
+
   // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
     const [exportableData, setExportableData] = useState([]);
     const [showExportPopup, setShowExportPopup] = useState(false);
@@ -118,7 +120,7 @@ const UnderInvestigation = () => {
     const [approvalSaveCaseData, setApprovalSaveCaseData] = useState({});
 
   const [showOptionModal, setShowOptionModal] = useState(false);
-  const [paginationCount, setPaginationCount] = useState(1);
+  const [paginationCount, setPaginationCount] = useState(pageCount ? pageCount : 1);
   const [tableSortOption, settableSortOption] = useState("DESC");
   const [tableSortKey, setTableSortKey] = useState("");
   const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
@@ -130,7 +132,7 @@ const UnderInvestigation = () => {
   const [template_name, setTemplate_name] = useState("");
   const [table_name, setTable_name] = useState("");
 
-  const [sysStatus, setSysSattus] = useState("ui_case");
+  const [sysStatus, setSysSattus] = useState(systemStatus ? systemStatus : "ui_case");
 
   const [stepperData, setstepperData] = useState([]);
   const [formOpen, setFormOpen] = useState(false);
@@ -342,6 +344,13 @@ const monthwiseColumns = [
 
     const user_name = localStorage.getItem("username") || "";
     const user_designation = localStorage.getItem("designation_name") || "";
+
+    const hoverTableOptionsRef = useRef([]);
+
+    useEffect(() => {
+        var filteredActions =  hoverTableOptions?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
+        hoverTableOptionsRef.current = filteredActions;
+    }, [hoverTableOptions]);
 
    
     
@@ -832,6 +841,13 @@ const monthwiseColumns = [
     const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
 
     const [natureOfDisposalFileUpload, setNatureOfDisposalFileUpload] = useState({});
+    var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+
+    const templateActionAddFlag = useRef(false);
+    const fieldActionAddFlag = useRef(false);
+    const attachmentEditFlag = useRef(false);
+
+    const [showFileAttachment, setShowFileAttachments] = useState(false);
 
     const handleFileUploadChange = (fieldName, files) => {
         setNatureOfDisposalFileUpload((prevData) => {
@@ -1206,7 +1222,7 @@ const monthwiseColumns = [
             var approvalItems = {
                 id : selectedRowData.id,
                 module_name : 'Under Investigation',
-                action : 'B Report Change'
+                action : 'Pending Acceptance Change'
             }
 
             othersData = {
@@ -1326,7 +1342,7 @@ const monthwiseColumns = [
 
         var othersUpdateData = {
             id : selectedRowData.id,
-            sys_status : approvedByCourt ? 'disposal' : 'ui_case',
+            sys_status : 'disposal',
             default_status : "ui_case"
         }
         
@@ -1991,7 +2007,28 @@ const monthwiseColumns = [
         }
 
         if(showOrderCopy){
-            showActionsOptionsTemplate("cid_ui_case_court_order_copy");
+
+            if(!approvedByCourt){
+
+                Swal.fire({
+                    title: "Choose Case Type",
+                    text: "Please select the case type you want to proceed with.",
+                    icon: "question",
+                    showCancelButton: true,
+                    confirmButtonText: "PT Case",
+                    cancelButtonText: "UI Case",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        showActionsOptionsTemplate("cid_pending_trail");
+                    } else {
+                        natureOfDisposalSysStatus("ui_case")
+                    }
+                });
+
+            }else{
+                showActionsOptionsTemplate("cid_ui_case_court_order_copy");
+            }
+
             return;
         }
 
@@ -2132,153 +2169,7 @@ const monthwiseColumns = [
             }
         }
     }
-  const handleTemplateDataView = async (rowData, editData, table_name) => {
-    if (!table_name || table_name === "") {
-      toast.warning("Please Check Table Name", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
-    }
 
-    var viewTemplatePayload = {
-      table_name: table_name,
-      id: rowData.id,
-    };
-    setLoading(true);
-    try {
-      const viewTemplateData = await api.post(
-        "/templateData/viewTemplateData",
-        viewTemplatePayload
-      );
-      setLoading(false);
-
-      if (viewTemplateData && viewTemplateData.success) {
-        setInitialData(viewTemplateData.data ? viewTemplateData.data : {});
-        setviewReadonly(!editData);
-        setEditTemplateData(editData);
-        setLinkLeader(false);
-        setLinkOrganization(false);
-        setSelectedRowId(null);
-        setSelectedTemplateId(null);
-
-        const viewTableData = {
-          table_name: table_name,
-        };
-
-        setLoading(true);
-        try {
-          const viewTemplateResponse = await api.post(
-            "/templates/viewTemplate",
-            viewTableData
-          );
-          setLoading(false);
-
-          if (viewTemplateResponse && viewTemplateResponse.success) {
-            if (viewTemplateResponse["data"].is_link_to_leader === true) {
-              setLinkLeader(true);
-            } else if (
-              viewTemplateResponse["data"].is_link_to_organization === true
-            ) {
-              setLinkOrganization(true);
-            }
-
-            setFormOpen(true);
-            setSelectedRowId(rowData.id);
-            setSelectedTemplateId(viewTemplateResponse["data"].template_id);
-            setFormTemplateData(
-              viewTemplateResponse.data["fields"]
-                ? viewTemplateResponse.data["fields"]
-                : []
-            );
-            if (
-              viewTemplateResponse.data.no_of_sections &&
-              viewTemplateResponse.data.no_of_sections > 0
-            ) {
-              setstepperData(
-                viewTemplateResponse.data.sections
-                  ? viewTemplateResponse.data.sections
-                  : []
-              );
-            }
-          } else {
-            const errorMessage = viewTemplateResponse.message
-              ? viewTemplateResponse.message
-              : "Failed to delete the template. Please try again.";
-            toast.error(errorMessage, {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-            });
-          }
-        } catch (error) {
-          setLoading(false);
-          if (error && error.response && error.response["data"]) {
-            toast.error(
-              error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-              {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-              }
-            );
-          }
-        }
-      } else {
-        const errorMessage = viewTemplateData.message
-          ? viewTemplateData.message
-          : "Failed to create the template. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
-        toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          }
-        );
-      }
-    }
-  };
-  
   const handleCheckboxChangeField = (event, row) => {
     const isSelected = event.target.checked;
   
@@ -3205,23 +3096,104 @@ const loadChildMergedCasesData = async (page, caseId) => {
                 const userPermissionsArray = JSON.parse(localStorage.getItem("user_permissions")) || [];
                 const userPermissions = userPermissionsArray[0] || {};
     
-                const updatedActions = getActionsDetails.data.data
-                    .map((action) => {
+                const updatedActions = getActionsDetails.data.data.map((action) => {
                         if (action?.icon) action.icon = createSvgIcon(action.icon);
     
                         if (action.permissions) {
                             const parsedPermissions = JSON.parse(action.permissions);
-                            const hasValidPermission = parsedPermissions.some(
-                                (permission) => userPermissions[permission] === true
-                            );
-                            return hasValidPermission ? action : null;
+
+                            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions) && parsedPermissions?.['show']) {
+
+                                const hasValidPermission = parsedPermissions?.['show'].some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                                return hasValidPermission ? action : null;
+
+                            }else{
+                                const hasValidPermission = parsedPermissions.some(
+                                    (permission) => userPermissions[permission] === true
+                                );
+                                return hasValidPermission ? action : null;
+                            }
                         }
     
-                        return action;
-                    })
-                    .filter(Boolean);
+                    return action;
+                }).filter(Boolean);                
+
+                var extraActions = [
+                    {
+                        name: "Crime Investigation",
+                        caseView : true,
+                        viewAction : true
+                    },
+                    ...(sysStatus !== "b_Report" ? updatedActions : []),
+                    sysStatus === "disposal"
+                    ? {
+                        name: "Re Open",
+                        onclick: (selectedRow) =>
+                            changeSysStatus(
+                            selectedRow,
+                            "Reinvestigation",
+                            "Do you want to update this case to Reinvestigation ?"
+                            ),
+                        }
+                    : null,
+                        sysStatus !== "b_Report" && sysStatus !== 'merge_cases' && sysStatus !== 'disposal' ?{
+                            name: "Nature of Disposal",
+                            onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
+                        } : null,
+                        sysStatus === "b_Report" ?
+                        {
+                            name: "Accepted By Court",
+                            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
+                        } : null,
+                        sysStatus === "b_Report" ? 
+                        {
+                            name: "Rejected By Court",
+                            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
+                        } : null,
+                    userPermissions?.delete_case
+                    ?  isChildMergedLoading
+                    ? null
+                    : {
+                        name: "Delete",
+                        onclick: (selectedRow) =>
+                            handleDeleteTemplateData(selectedRow, table_name),
+                        icon: () => (
+                            <span className="tableActionIcon">
+                            <svg
+                                width="50"
+                                height="50"
+                                viewBox="0 0 34 34"
+                                fill=""
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <circle cx="12" cy="12" r="12" fill="" />
+                                <mask
+                                id="mask0_1120_40636"
+                                style={{ maskType: "alpha" }}
+                                maskUnits="userSpaceOnUse"
+                                x="4"
+                                y="4"
+                                width="16"
+                                height="16"
+                                >
+                                <rect x="4" y="4" width="16" height="16" fill="" />
+                                </mask>
+                                <g mask="url(#mask0_1120_40636)">
+                                <path
+                                    d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z"
+                                    fill=""
+                                />
+                                </g>
+                            </svg>
+                            </span>
+                        ),
+                        }
+                    : null,
+                ].filter(Boolean);
     
-                setHoverTableOptions(updatedActions);
+                setHoverTableOptions(extraActions);
             } else {
                 setLoading(false);
                 toast.error(getActionsDetails.message || "Failed to fetch actions.", {
@@ -3266,7 +3238,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
     if (tableName && index !== null && index === 0 ) {
         highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
-        onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
+        onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName, hoverTableOptions)};
     }
 
 
@@ -3282,7 +3254,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     <span
                         style={highlightColor}
                         onClick={onClickHandler}
-                        className={`tableValueTextView Roboto blink-badge ${ params?.row && !params.row["ReadStatus"] ? "" : ""}`}
+                        className={`tableValueTextView Roboto`}
                     >
                         {value || "-"}
                     </span>
@@ -5423,6 +5395,25 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     }
   };
 
+  const caseHistory = async () =>
+  {
+    if (!table_name || table_name === "") {
+        toast.warning("Please Check The Template", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-warning",
+        });
+        return;
+    }
+
+    console.log("case history table name",table_name);
+  }
+
   const onCaseUpdateTemplateData = async (data) => {
 
     if (!table_name || table_name === "") {
@@ -6317,6 +6308,53 @@ const handleOpenExportPopup = async () => {
         to_date: !searchFlag ? othersToDate : null,
         filter: !searchFlag ? othersFilterData : {},
     };
+
+        var disabledEditFlag = false;
+        var disabledDeleteFlag = false;
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['add'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['add'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+    
+                    templateActionAddFlag.current = hasAddPermission;
+                }else{
+                    templateActionAddFlag.current = true;
+                }
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasEditPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    disabledEditFlag = hasEditPermission
+                }else{
+                    disabledEditFlag = true;
+                }
+
+                if(parsedPermissions?.['delete'].length > 0){
+                    const hasDeletePermission = parsedPermissions?.['delete'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    disabledDeleteFlag = hasDeletePermission
+                }else{
+                    disabledDeleteFlag = true;
+                }
+
+            }else{
+                templateActionAddFlag.current = true;
+                disabledEditFlag = true;
+                disabledDeleteFlag = true;
+            }
+
+        }
 
     setLoading(true);
 
@@ -7281,6 +7319,27 @@ const handleOpenExportPopup = async () => {
         const viewTableData = {
             table_name: options.table,
         };
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    fieldActionAddFlag.current = hasAddPermission;
+                }else{
+                    fieldActionAddFlag.current = true;
+                }
+
+            }else{
+                fieldActionAddFlag.current = true;
+            }
+        }
     
         setLoading(true);
         try {
@@ -7312,7 +7371,7 @@ const handleOpenExportPopup = async () => {
                         if (getDivisionField.length > 0) {
 
                             if(getDivisionField[0].type === "file"){
-                                console.log("file field find");                                
+                                showAttachmentField(options, selectedRow);
                                 return;
                             }
 
@@ -8530,143 +8589,132 @@ const handleOpenExportPopup = async () => {
         }
     };
 
-  var userPermissions =
-    JSON.parse(localStorage.getItem("user_permissions")) || [];
-  var hoverExtraOptions = [
-      
-    // userPermissions[0]?.edit_case
-    //   ?  isChildMergedLoading
-    //   ? null
-    //   : {
-    //       name: "Edit",
-    //       onclick: (selectedRow) => {
-    //         handleTemplateDataView(selectedRow, true, table_name);
-    //       },
-        
-    //       icon: () => (
-    //         <span className="tableActionIcon">
-    //           <svg
-    //             width="50"
-    //             height="50"
-    //             viewBox="0 0 34 34"
-    //             fill=""
-    //             xmlns="http://www.w3.org/2000/svg"
-    //           >
-    //             <circle cx="12" cy="12" r="12" fill="" />
-    //             <mask
-    //               id="mask0_1120_40631"
-    //               style={{ maskType: "alpha" }}
-    //               maskUnits="userSpaceOnUse"
-    //               x="4"
-    //               y="4"
-    //               width="16"
-    //               height="16"
-    //             >
-    //               <rect x="4" y="4" width="16" height="16" fill="" />
-    //             </mask>
-    //             <g mask="url(#mask0_1120_40631)">
-    //               <path
-    //                 d="M5.6001 20V17.4666H18.4001V20H5.6001ZM7.53343 15.1423V13.177L14.2399 6.4628C14.3365 6.36625 14.4368 6.29875 14.5409 6.2603C14.6452 6.22186 14.7524 6.20264 14.8628 6.20264C14.9774 6.20264 15.0856 6.22186 15.1873 6.2603C15.2889 6.29875 15.3865 6.3638 15.4801 6.45547L16.2129 7.18464C16.3053 7.28119 16.3717 7.3803 16.4123 7.48197C16.4528 7.58375 16.4731 7.69325 16.4731 7.81047C16.4731 7.91769 16.4531 8.02453 16.4131 8.13097C16.3731 8.23753 16.308 8.33586 16.2179 8.42597L9.5001 15.1423H7.53343ZM14.7438 8.67314L15.6064 7.8103L14.8654 7.0693L14.0026 7.93197L14.7438 8.67314Z"
-    //                 fill=""
-    //               />
-    //             </g>
-    //           </svg>
-    //         </span>
-    //       ),
-    //     }
-    //   : null,
-    ...(sysStatus !== "b_Report" ? hoverTableOptions : []),
-    // sysStatus === "ui_case" || sysStatus === "all"
-    //   ? {
-    //       name: "Preliminary Charge Sheet - 173 (8)",
-    //       onclick: (selectedRow) =>
-    //         changeSysStatus(
-    //           selectedRow,
-    //           "178_cases",
-    //           "Do you want to update this case to 173(8) ?"
-    //         ),
-    //     }
-    //   : null,
+    const handleTemplateDataView = async (rowData, editData, table_name) => {
 
-    sysStatus === "disposal"
-      ? {
-          name: "Re Open",
-          onclick: (selectedRow) =>
-            changeSysStatus(
-              selectedRow,
-              "Reinvestigation",
-              "Do you want to update this case to Reinvestigation ?"
-            ),
+        if (!table_name || table_name === "") {
+            toast.warning("Please Check Table Name", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
         }
-      : null,
-        sysStatus !== "b_Report" && sysStatus !== 'merge_cases' && sysStatus !== 'disposal' ?{
-            name: "Nature of Disposal",
-            onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
-        } : null,
-        sysStatus === "b_Report" ?
-        {
-            name: "Approved By Court",
-            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
-        } : null,
-        sysStatus === "b_Report" ? 
-        {
-            name: "Rejected By Court",
-            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
-        } : null,
-    userPermissions[0]?.case_details_download
-      ? {
-          name: "Download",
-          onclick: (selectedRow) =>
-            getPdfContentData(selectedRow, false, table_name),
+
+        var viewTemplatePayload = {
+            table_name: table_name,
+            id: rowData.id,
+        };
+
+        setLoading(true);
+
+        try {
+
+            const viewTemplateData = await api.post("/templateData/viewTemplateData",viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData && viewTemplateData.success) {
+
+                const viewTableData = {
+                    table_name: table_name,
+                };
+
+                setLoading(true);
+                try {
+                    const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+                    setLoading(false);
+
+                    if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                        var actionTemplateMenus = hoverTableOptionsRef.current.map((element)=>{
+
+                            if(element?.icon && typeof element.icon === 'function'){
+                                element.icon = element?.icon();
+                            }
+
+                            return element;
+
+                        });
+
+                        var stateObj = {
+                            contentArray: JSON.stringify(actionTemplateMenus),
+                            headerDetails: rowData?.["field_cid_crime_no./enquiry_no"] || null,
+                            backNavigation: "/case/ui_case",
+                            paginationCount: paginationCount,
+                            sysStatus: sysStatus,
+                            rowData: viewTemplateData?.["data"] || {},
+                            tableFields: viewTemplateResponse?.["data"]?.["fields"] || [],
+                            stepperData: viewTemplateResponse?.["data"]?.no_of_sections > 0 && viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"].sections : [],
+                            template_id : viewTemplateResponse?.["data"]?.template_id,
+                            template_name : viewTemplateResponse?.["data"]?.template_name,
+                            table_name: table_name
+                        }
+
+                        navigate("/caseView", {state: stateObj});
+
+                    } else {
+                        const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response["data"]) {
+                        toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            } else {
+                const errorMessage = viewTemplateData.message
+                ? viewTemplateData.message
+                : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
         }
-      : null,
-    userPermissions[0]?.case_details_print
-      ? {
-          name: "Print",
-          onclick: (selectedRow) =>
-            getPdfContentData(selectedRow, true, table_name),
-        }
-      : null,
-      userPermissions[0]?.delete_case
-      ?  isChildMergedLoading
-      ? null
-      : {
-          name: "Delete",
-          onclick: (selectedRow) =>
-            handleDeleteTemplateData(selectedRow, table_name),
-          icon: () => (
-            <span className="tableActionIcon">
-              <svg
-                width="50"
-                height="50"
-                viewBox="0 0 34 34"
-                fill=""
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="12" cy="12" r="12" fill="" />
-                <mask
-                  id="mask0_1120_40636"
-                  style={{ maskType: "alpha" }}
-                  maskUnits="userSpaceOnUse"
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                >
-                  <rect x="4" y="4" width="16" height="16" fill="" />
-                </mask>
-                <g mask="url(#mask0_1120_40636)">
-                  <path
-                    d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z"
-                    fill=""
-                  />
-                </g>
-              </svg>
-            </span>
-          ),
-        }
-      : null,
-  ].filter(Boolean);
+    };
 
   // Advance filter functions
 
@@ -9754,6 +9802,32 @@ const handleOpenExportPopup = async () => {
         }
     }
 
+    const showAttachmentField = (options, selectedRow) => {
+
+        if (options.permissions) {
+
+            const parsedPermissions = JSON.parse(options.permissions);
+
+            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
+
+                if(parsedPermissions?.['edit'].length > 0){
+                    const hasAddPermission = parsedPermissions?.['edit'].some(
+                        (permission) => userPermissions?.[0]?.[permission] === true
+                    );
+
+                    attachmentEditFlag.current = hasAddPermission;
+                }else{
+                    attachmentEditFlag.current = true;
+                }
+
+            }else{
+                attachmentEditFlag.current = true;
+            }
+        }
+
+        setShowFileAttachments(true);
+    }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -10017,7 +10091,7 @@ const handleOpenExportPopup = async () => {
                 id="filterReinvestigation"
                 className={`filterTabs ${sysStatus === "b_Report" ? "Active" : ""}`}
             >
-                B Report
+                Pending Acceptance
             </Box>
             <Box
               onClick={() => {
@@ -10128,7 +10202,7 @@ const handleOpenExportPopup = async () => {
 
         <TableView 
             hoverTable={true}
-            hoverTableOptions={hoverExtraOptions}
+            hoverTableOptions={hoverTableOptions}
             hoverActionFuncHandle={handleOtherTemplateActions}
             height={true} 
             rows={tableData} 
@@ -10797,7 +10871,7 @@ const handleOpenExportPopup = async () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!isChildMergedLoading && (
+                    {!isChildMergedLoading && templateActionAddFlag.current === true (
                       <Button
                         variant="outlined"
                         sx={{
@@ -10925,9 +10999,7 @@ const handleOpenExportPopup = async () => {
                     )}
                     </Box>
                     {/* {isIoAuthorized && ( */}
-                    {!viewModeOnly && (
-                    !isChildMergedLoading && (
-                      !showSubmitAPButton && (
+                    {!viewModeOnly && !isChildMergedLoading && !showSubmitAPButton && templateActionAddFlag.current === true && (
                         <Button
                             variant="outlined"
                             sx={{height: '40px'}}
@@ -10937,7 +11009,7 @@ const handleOpenExportPopup = async () => {
                         >
                             Add
                         </Button>
-                    )))}
+                    )}
                     {/* )} */}
                     {selectedOtherTemplate?.table === 'cid_ui_case_property_form' && (
                       <Button
@@ -11409,7 +11481,7 @@ const handleOpenExportPopup = async () => {
           {childMergedData.length > 0 ? (
             <TableView
               hoverTable={true}
-              hoverTableOptions={hoverExtraOptions}
+              hoverTableOptions={hoverTableOptions}
               hoverActionFuncHandle={handleOtherTemplateActions}
               height={true}
               rows={childMergedData}
@@ -11582,7 +11654,7 @@ const handleOpenExportPopup = async () => {
                 getOptionLabel={(option) => option.name || ""}
                 value={selectedOtherFields || null}
                 onChange={(event, newValue) => setSelectedOtherFields(newValue)}
-                disabled={isChildMergedLoading}
+                disabled={isChildMergedLoading || fieldActionAddFlag.current === false}
                 renderInput={(params) => (
                   <TextField
                     {...params}
@@ -11599,7 +11671,7 @@ const handleOpenExportPopup = async () => {
           >
             Cancel
           </Button>
-          {!isChildMergedLoading && (
+          {!isChildMergedLoading && fieldActionAddFlag.current === true && (
             <>
               <Button className="fillPrimaryBtn" onClick={handleSaveDivisionChange}>
                 Submit
@@ -11666,6 +11738,8 @@ const handleOpenExportPopup = async () => {
                     label={selectKey?.title.trim() == "Reassign IO" ? "Division" : selectKey?.title}
                     />
                 )}
+                disabled={fieldActionAddFlag.current === false}
+
               />
             </FormControl>
 
@@ -11684,6 +11758,7 @@ const handleOpenExportPopup = async () => {
                         label="IO User"
                       />
                     )}
+                    disabled={fieldActionAddFlag.current === false}
                   />
                 </FormControl>
               </>
@@ -11710,14 +11785,17 @@ const handleOpenExportPopup = async () => {
             }}
             >Cancel
           </Button>
-          <Button
-            className="fillPrimaryBtn"
-            onClick={() => {
-              handleMassiveDivisionChange();
-            }}
-          >
-            Submit
-          </Button>
+          {
+            fieldActionAddFlag.current === true &&
+            <Button
+                className="fillPrimaryBtn"
+                onClick={() => {
+                    handleMassiveDivisionChange();
+                }}
+            >
+                Submit
+            </Button>
+          }
         </DialogActions>
       </Dialog>
 
@@ -12606,7 +12684,7 @@ const handleOpenExportPopup = async () => {
                                 options={[
                                     { name: "A Final Charge Sheet", code: "disposal" },
                                     { name: "A Preliminary Charge Sheet", code: "178_cases" },
-                                    { name: "B Report", code: "b_Report" },
+                                    { name: "Pending Acceptance", code: "b_Report" },
                                     { name: "C Report", code: "c_Report" },
                                 ]}
                                 getOptionLabel={(option) => option.name || ""}
@@ -12783,6 +12861,47 @@ const handleOpenExportPopup = async () => {
           </Box>
         </DialogContent>
       </Dialog>
+
+          { showFileAttachment && 
+                <Dialog
+                    open={showFileAttachment}
+                    onClose={() => setShowFileAttachments(false)}
+                    fullWidth
+                    maxWidth="sm"
+                >
+                    <DialogTitle>
+                        {selectedOtherTemplate?.['name']?.charAt(0).toUpperCase() + selectedOtherTemplate?.['name']?.slice(1) || "Attachment View"}
+                        <IconButton
+                            edge="end"
+                            color="inherit"
+                            onClick={() => setShowFileAttachments(false)}
+                            aria-label="close"
+                            sx={{ position: "absolute", right: 20, top: 12 }}
+                        >
+                            <CloseIcon />
+                        </IconButton>
+                    </DialogTitle>
+
+                    <DialogContent
+                        sx={{
+                            maxHeight: "60vh",
+                            overflowY: "auto",
+                        }}
+                        >
+                            <Box pt={2}>
+                                <FileInput
+                                    field={{
+                                        name : selectedOtherTemplate?.['field'] || "",
+                                        disabled: true,
+                                        label : selectedOtherTemplate?.['name'] || "",
+                                    }}
+                                    formData={selectedRowData}
+                                />
+                            </Box>
+                    </DialogContent>
+                </Dialog>
+          }
+
     </Box>
   );
 };
