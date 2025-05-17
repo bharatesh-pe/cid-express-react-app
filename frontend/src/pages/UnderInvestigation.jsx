@@ -5730,13 +5730,6 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     setIsValid(false);
   };
 
-  const handleNextPage = () => {
-    setPaginationCount((prev) => prev + 1);
-  };
-
-  const handlePrevPage = () => {
-    setPaginationCount((prev) => prev - 1);
-  };
 
     const handlePagination = (page) => {
         setPaginationCount(page)
