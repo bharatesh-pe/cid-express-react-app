@@ -1469,7 +1469,7 @@ div::first-letter {
     .sidebarChildContainer .sidebarChildItem:last-child::after {
         content: "";
         position: absolute;
-        top: 55%;
+        top: 53%;
         left: -20px;
         height: calc(50% + 8px);
         width: 10px;
