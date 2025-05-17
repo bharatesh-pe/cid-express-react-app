@@ -4,11 +4,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, Tooltip, Typography } from "@mui/material";
 import LokayuktaSidebar from "../components/lokayuktaSidebar";
 import { West } from "@mui/icons-material";
+import DeleteIcon from '@mui/icons-material/Delete';
 import TextFieldInput from "@mui/material/TextField";
 
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import api from "../services/api";
+import Swal from "sweetalert2";
 
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -242,30 +244,38 @@ const LokayuktaView = () => {
 
                     const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
 
-                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
+                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table);
 
                     const updatedHeader = [
                         {
                             field: "sl_no",
                             headerName: "S.No",
                             resizable: false,
-                            width: 75,
+                            width: 65,
                             renderCell: (params) => {
                                 return (
                                     <Box
                                         sx={{
                                             display: "flex",
                                             alignItems: "center",
-                                            gap: "4px",
+                                            justifyContent: "end",
+                                            gap: "8px",
                                         }}
                                     >
                                         {params.value}
+                                        <DeleteIcon
+                                            sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleActionDelete(params.row, options);
+                                            }}
+                                        />
                                     </Box>
                                 );
                             }
                         },
                         ...Object.keys(data[0]).filter((key) => !excludedKeys.includes(key))
-                        .map((key) => ({
+                        .map((key, index) => ({
                             field: key,
                             headerName: generateReadableHeader(key),
                             width: generateReadableHeader(key).length < 15 ? 100 : 200,
@@ -273,7 +283,7 @@ const LokayuktaView = () => {
                             renderHeader: (params) => (
                                 tableHeaderRender(params, key)
                             ),
-                            renderCell: renderCellFunc(key),
+                            renderCell: renderCellFunc(key, index),
                         })),
                     ]
 
@@ -357,6 +367,88 @@ const LokayuktaView = () => {
     const handlePagination = (page) => {
         tablePaginationCount.current = page
         getTableData(activeSidebar);
+    }
+
+    const handleActionDelete = async (data, options)=>{
+
+        if(!data?.id || !options?.table){
+            toast.error('Invaild Template ID', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: "Are you sure?",
+            text: "Do you want to delete this data ?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Delete it!",
+            cancelButtonText: "No",
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                const deleteTemplateData = {
+                    table_name: options?.table,
+                    where: { id: data.id },
+                };
+
+                setLoading(true);
+
+                try {
+                    const deleteTemplateDataResponse = await api.post("templateData/deleteTemplateData",deleteTemplateData);
+                    setLoading(false);
+
+                    if (deleteTemplateDataResponse && deleteTemplateDataResponse.success) {
+                        toast.success(deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Template Deleted Successfully",{
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-success",
+                            onOpen: () => {getTableData(options)}
+                        });
+                    } else {
+                        const errorMessage = deleteTemplateDataResponse.message ? deleteTemplateDataResponse.message : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response["data"]) {
+                        toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            } else {
+                console.log("Template deletion canceled.");
+            }
+        });
     }
 
     const closeAddForm = ()=>{
@@ -475,57 +567,6 @@ const LokayuktaView = () => {
         setReOpenAddCase(formOpen);
         showCaseApprovalPage(true);
         return;
-
-
-    
-        // const formData = new FormData();
-
-        // setLoading(true);
-        
-        // try {
-        //     const saveTemplateData = await api.post("/templateData/insertTemplateData",formData);
-        //     setLoading(false);
-    
-        //     if (saveTemplateData && saveTemplateData.success) {
-        //         toast.success(saveTemplateData.message || "Data Created Successfully", {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-success",
-        //             onOpen: () => formOpen ? getTableData(activeSidebar, true) : getTableData(activeSidebar)
-        //         });
-        //     } else {
-        //         const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the data. Please try again.";
-        //         toast.error(errorMessage, {
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // } catch (error) {
-        //     setLoading(false);
-        //     if (error && error.response && error.response["data"]) {
-        //         toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-        //             position: "top-right",
-        //             autoClose: 3000,
-        //             hideProgressBar: false,
-        //             closeOnClick: true,
-        //             pauseOnHover: true,
-        //             draggable: true,
-        //             progress: undefined,
-        //             className: "toast-error",
-        //         });
-        //     }
-        // }
     }
 
     const showCaseApprovalPage = async (isSave)=>{
@@ -540,22 +581,10 @@ const LokayuktaView = () => {
                 setApprovalItemsData(getActionsDetails.data['approval_item']);
                 setApprovalDesignationData(getActionsDetails.data['designation']);
 
-                var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                    if(!isSave){
-                        if((data.name).toLowerCase() === 'case updation'){
-                            return data;
-                        }
-                    }else{
-                        if((data.name).toLowerCase() === 'case registration'){
-                            return data;
-                        }
-                    }
-                });
-
                 setApprovalFormData({})
 
-                if(getFurtherInvestigationItems?.[0]){
-                    caseApprovalOnChange('approval_item', getFurtherInvestigationItems[0].approval_item_id);
+                if(activeSidebar?.approval_items){
+                    caseApprovalOnChange('approval_item', Number(activeSidebar?.approval_items));
                     setReadonlyApprovalItems(true);
                 }else{
                     caseApprovalOnChange('approval_item', null);
@@ -787,7 +816,7 @@ const LokayuktaView = () => {
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} />
+            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
