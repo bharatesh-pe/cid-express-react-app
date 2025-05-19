@@ -145,7 +145,7 @@ const ProgressReport = ({templateName, headerDetails, rowId, options, selectedRo
     const templateActionAddFlag = useRef(false);
     const fieldActionAddFlag = useRef(false);
     const attachmentEditFlag = useRef(false);
-const [disableEditButtonFlag, setDisableEditButtonFlag] = useState(false);
+    const [disableEditButtonFlag, setDisableEditButtonFlag] = useState(false);
 
     const [showFileAttachment, setShowFileAttachments] = useState(false);
 
@@ -516,7 +516,7 @@ const monthwiseColumns = [
     },
   },
 {
-    headerName: "File Name",
+    headerName: "File",
     field: "monthwise_file_name",
     width: 300,
     renderCell: (params) => {
@@ -1118,7 +1118,7 @@ const toggleSelectRow = (id) => {
                             variant="outlined"
                             onClick={(event) => {
                                 event.stopPropagation();
-                                handleOthersTemplateDataView(params.row, true, options.table, !isEditAllowed);
+                                handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
                             }}
                             >
                             View
@@ -1249,7 +1249,7 @@ const toggleSelectRow = (id) => {
                 return field;
                 });
                 setOptionFormTemplateData(processedFields);
-      setDisableEditButtonFlag(disableEditButton);
+                setDisableEditButtonFlag(disableEditButton);
 
                 setOtherFormOpen(true);
                 setOtherRowId(rowData.id);
@@ -5005,9 +5005,9 @@ const prUpdatePdf = async ({ appendText, aoFields, selectedIds, selectedRow }) =
         totalRecord={otherTemplatesTotalRecord}
         paginationCount={otherTemplatesPaginationCount}
         handlePagination={handleOtherPagination}
-        handleRowClick={(row) =>
-          handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)
-        }
+        // handleRowClick={(row) =>
+        //   handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)
+        // }
         tableName={selectedOtherTemplate?.table}
       />
   </Box>
