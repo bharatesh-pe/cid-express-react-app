@@ -467,7 +467,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
             "supervisior_designation_id"
           ];
 
-         const updatedHeader = ([
+           const updatedHeader = [
             {
               field: "select",
               headerName: "",
@@ -484,7 +484,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                 );
               },
             },
-
             {
               field: "sl_no",
               headerName: "S.No",
@@ -512,7 +511,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                 );
               },
             },
-
             {
               field: "sys_status",
               headerName: "From",
@@ -550,23 +548,64 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
               },
             },
 
+            {
+              field: "field_action_item",
+              headerName: "Action Item",
+              width: 200,
+              resizable: true,
+              cellClassName: (params) => getCellClassName("field_action_item", params, options.table),
+              renderHeader: () => (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                  <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>Action Item</span>
+                </div>
+              ),
+              renderCell: (params) => {
+                const isPdfUpdated = params.row.field_pr_status === "Yes";
+                const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                const canEdit = userPermissions[0]?.action_edit;
+                const isViewAction = options.is_view_action === true;
+                const isEditAllowed = canEdit && !isViewAction && !isPdfUpdated;
+
+                return (
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
+                    }}
+                    style={{
+                      color: '#2563eb',
+                      textDecoration: 'underline',
+                      cursor: 'pointer',
+                      fontWeight: 400,
+                      fontSize: '14px'
+                    }}
+                  >
+                    {params.value || 'View'}
+                  </span>
+                );
+              }
+            },
+
             ...Object.keys(getTemplateResponse.data[0])
-              .filter(
-                (key) =>
-                  !excludedKeys.includes(key) &&
-                  key !== "field_pt_case_id" &&
-                  key !== "field_ui_case_id" &&
-                  key !== "field_pr_status" &&
-                  key !== "field_evidence_file" &&
-                  key !== "created_by" &&
-                  key !== "field_last_updated" &&
-                  key !== "field_date_created" &&
-                  key !== "field_description" &&
-                  key !== "field_assigned_to_id" &&
-                  key !== "field_assigned_by_id" &&
-                  key !== "field_served_or_unserved" &&
-                  key !== "field_reappear" &&
-                  key !== "hasFieldPrStatus"
+              .filter((key) =>
+                !excludedKeys.includes(key) &&
+                ![
+                  "field_action_item",
+                  "created_at",
+                  "field_pt_case_id",
+                  "field_ui_case_id",
+                  "field_pr_status",
+                  "field_evidence_file",
+                  "created_by",
+                  "field_last_updated",
+                  "field_date_created",
+                  "field_description",
+                  "field_assigned_to_id",
+                  "field_assigned_by_id",
+                  "field_served_or_unserved",
+                  "field_reappear",
+                  "hasFieldPrStatus"
+                ].includes(key)
               )
               .map((key) => {
                 const updatedKeyName = key
@@ -574,8 +613,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                   .replace(/_/g, " ")
                   .toLowerCase()
                   .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-                const isActionItem = key === "field_action_item";
 
                 return {
                   field: key,
@@ -590,74 +627,62 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                       </span>
                     </div>
                   ),
-                  renderCell: isActionItem
-                    ? (params) => {
-                        const isPdfUpdated = params.row.field_pr_status === "Yes";
-                        const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-                        const canEdit = userPermissions[0]?.action_edit;
-                        const isViewAction = options.is_view_action === true;
-                        const isEditAllowed = canEdit && !isViewAction && !isPdfUpdated;
-
-                        return (
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
-                            }}
-                            style={{
-                              color: '#2563eb',
-                              textDecoration: 'underline',
-                              cursor: 'pointer',
-                              fontWeight: 400,
-                              fontSize: '14px'
-                            }}
-                          >
-                            {params.value || 'View'}
-                          </span>
-                        );
-                      }
-                    : (params) => tableCellRender(key, params, params.value),
+                  renderCell: (params) => tableCellRender(key, params, params.value),
                 };
               }),
 
-              {
-                field: "field_pr_status",
-                headerName: "PDF Status",
-                width: 150,
-                resizable: true,
-                sortable: true,
-                cellClassName: (params) => getCellClassName("sl_no", params, options.table),
-                sortComparator: (v1, v2) => {
-                  if (v1 === "Yes" && v2 === "No") return -1;
-                  if (v1 === "No" && v2 === "Yes") return 1;
-                  return 0;
-                },
-                renderCell: (params) => {
-                  const isUpdated = params.value === "Yes";
-                  const statusText = isUpdated ? "PDF Updated" : "Not Updated";
-                  const statusColor = isUpdated ? "#22c55e" : "#ef4444";
-                  const borderColor = isUpdated ? "#34D399" : "#EF4444";
-
-                  return (
-                    <Chip
-                      label={statusText}
-                      size="small"
-                      sx={{
-                        fontFamily: "Roboto",
-                        fontWeight: 400,
-                        color: "white",
-                        borderColor: borderColor,
-                        borderRadius: "4px",
-                        backgroundColor: statusColor,
-                        textTransform: "capitalize",
-                        borderStyle: "solid",
-                        borderWidth: "1px",
-                      }}
-                    />
-                  );
-                },
+            {
+              field: "field_pr_status",
+              headerName: "PDF Status",
+              width: 150,
+              resizable: true,
+              sortable: true,
+              cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+              sortComparator: (v1, v2) => {
+                if (v1 === "Yes" && v2 === "No") return -1;
+                if (v1 === "No" && v2 === "Yes") return 1;
+                return 0;
               },
-            ]).filter(Boolean);
+              renderCell: (params) => {
+                const isUpdated = params.value === "Yes";
+                const statusText = isUpdated ? "PDF Updated" : "Not Updated";
+                const statusColor = isUpdated ? "#22c55e" : "#ef4444";
+                const borderColor = isUpdated ? "#34D399" : "#EF4444";
+
+                return (
+                  <Chip
+                    label={statusText}
+                    size="small"
+                    sx={{
+                      fontFamily: "Roboto",
+                      fontWeight: 400,
+                      color: "white",
+                      borderColor: borderColor,
+                      borderRadius: "4px",
+                      backgroundColor: statusColor,
+                      textTransform: "capitalize",
+                      borderStyle: "solid",
+                      borderWidth: "1px",
+                    }}
+                  />
+                );
+              },
+            },
+
+            ...(Object.keys(getTemplateResponse.data[0]).includes("created_at") ? [{
+              field: "created_at",
+              headerName: "Created At",
+              width: 200,
+              resizable: true,
+              renderHeader: () => (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                  <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>Created At</span>
+                </div>
+              ),
+              renderCell: (params) => tableCellRender("created_at", params, params.row.created_at)
+            }] : [])
+          ].filter(Boolean);
+
 
 
           setOtherTemplateColumn(updatedHeader);
