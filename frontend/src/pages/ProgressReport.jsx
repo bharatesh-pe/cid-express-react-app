@@ -1883,272 +1883,6 @@ const fileUploadTableView = (type, rowData, attachment, filePath) => {
             }
     };
 
-    const loadMergedCasesData = async (page) => {
-        const getTemplatePayload = {
-            page,
-            limit: 10,
-            sort_by: tableSortKey,
-            order: tableSortOption,
-            search: searchValue || "",
-            table_name,
-            is_starred: starFlag,
-            is_read: readFlag,
-            template_module: "ui_case",
-            sys_status: sysStatus,
-            from_date: fromDateValue,
-            to_date: toDateValue,
-            filter: filterValues,
-        };
-    
-        setLoading(true);
-    
-        try {
-            const getTemplateResponse = await api.post( "/templateData/getMergeParentData", getTemplatePayload);
-    
-            setLoading(false);
-    
-            if (getTemplateResponse?.success && getTemplateResponse?.message !== "No merged case found") {
-                const { data, meta } = getTemplateResponse.data;
-    
-                const totalPages = meta?.totalPages;
-                const totalItems = meta?.totalItems;
-    
-                if (totalPages !== null && totalPages !== undefined) {
-                    setTotalPage(totalPages);
-                }
-    
-                if (totalItems !== null && totalItems !== undefined) {
-                    setTotalRecord(totalItems);
-                }
-    
-                if (meta?.table_name && meta?.template_name) {
-                    setTemplate_name(meta.template_name);
-                    setTable_name(meta.table_name);
-                }
-    
-                if (data?.length > 0) {
-                    const excludedKeys = [
-                        "created_at", "updated_at", "id", "deleted_at", "attachments",
-                        "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name","field_io_name_id"
-                    ];
-    
-                    const generateReadableHeader = (key) =>
-                        key
-                            .replace(/^field_/, "")
-                            .replace(/_/g, " ")
-                            .toLowerCase()
-                            .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-    
-                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
-    
-                    // {
-                    //     field: "task",
-                    //     headerName: "",
-                    //     width: 50,
-                    //     resizable: true,
-                    //     renderHeader: (params) => (
-                    //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-                    //     ),
-                    //     renderCell: (params) => (
-                    //         <Badge
-                    //             badgeContent={params?.row?.['task_unread_count']}
-                    //             color="primary"
-                    //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-                    //         >
-                    //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-                    //         </Badge>
-                    //     ),
-                    // },
-    
-                    const updatedHeader = [
-                        
-                        {
-                            field: "select",
-                            headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
-                            width: 50,
-                            resizable: false,
-                            renderCell: (params) => (
-                                <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-                                    <Checkbox
-                                        checked={params.row.isSelected || false}
-                                        onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                                    />
-                                </Box>
-                            ),
-                        },
-                        {
-                            field: "approval",
-                            headerName: "Approval",
-                            width: 50,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
-                            ),                            
-                            renderCell: (params) => (
-                                <Button
-                                    variant="contained"
-                                    color="transparent"
-                                    size="small"
-                                    sx={{
-                                        padding: 0,
-                                        fontSize: '0.75rem',
-                                        textTransform: 'none',
-                                        boxShadow: 'none',
-                                        '&:hover':{
-                                            boxShadow: 'none',
-                                        }
-                                    }}
-                                >
-                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
-                                </Button>
-                            )
-                        },
-                        {
-                            field: "field_cid_crime_no./enquiry_no",
-                            headerName: "Cid Crime No./Enquiry No",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
-                            ),
-                            renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
-                        },
-                        {
-                            field: "field_io_name",
-                            headerName: "Assign To IO",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_io_name")
-                            ),
-                            renderCell: renderCellFunc("field_io_name", 0),
-                        },
-                        ...(sysStatus === "merge_cases"
-                            ? [
-                                {
-                                field: "child_case",
-                                headerName: "Child Case",
-                                width: 100,
-                                resizable: true,
-                                renderCell: (params) => {
-                                    const childCount = params.row.childCount || 0;
-                                    const caseId = params.row.id;
-    
-                                    const handleClick = async () => {
-                                    loadChildMergedCasesData("1", caseId);
-                                    };
-                                    
-                                    const statusColor = "#3b82f6";
-                                    const borderColor = "#2563eb";
-                        
-                                    return (
-                                    <Chip
-                                        label={childCount}
-                                        size="small"
-                                        onClick={handleClick} 
-                                        sx={{
-                                        fontFamily: "Roboto",
-                                        fontWeight: 500,
-                                        color: "white",
-                                        borderColor: borderColor,
-                                        borderRadius: "4px",
-                                        backgroundColor: statusColor,
-                                        borderStyle: "solid",
-                                        borderWidth: "1px",
-                                        }}
-                                    />
-                                    );
-                                },
-                                },
-                            ]
-                            : []),
-                        ...Object.keys(data[0])
-                            .filter((key) => !excludedKeys.includes(key))
-                            .map((key) => ({
-                                field: key,
-                                headerName: generateReadableHeader(key),
-                                width: generateReadableHeader(key).length < 15 ? 100 : 180,
-                                resizable: true,
-                                renderHeader: (params) => (
-                                    tableHeaderRender(params, key)
-                                ),
-                                renderCell: renderCellFunc(key),
-                        })),
-                    ];
-    
-                    setviewTemplateTableData(updatedHeader);
-    
-                    const formatDate = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        return new Date(parsed).toLocaleDateString("en-GB");
-                    };
-    
-                    const updatedTableData = data.map((field, index) => {
-                        const updatedField = {};
-    
-                        for (const [key, val] of Object.entries(field)) {
-                            if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val);
-                            } else {
-                                updatedField[key] = val;
-                            }
-                        }
-    
-                        return {
-                            ...updatedField,
-                            sl_no: (page - 1) * 10 + (index + 1),
-                            ...(field.id ? {} : { id: "unique_id_" + index }),
-                        };
-                    });
-    
-                    setTableData(updatedTableData);
-                }else{
-                    setTableData([]);
-                }
-    
-                setviewReadonly(false);
-                setEditTemplateData(false);
-                setInitialData({});
-                setFormOpen(false);
-                setSelectedRow(null);
-                setSelectedParentId([]);
-    
-                await getActions();
-            }else if (getTemplateResponse?.success && getTemplateResponse?.message === "No merged case found") {
-                setTableData([]);
-            }  else {
-                setLoading(false);
-                toast.error(getTemplateResponse.message || "Failed to load template data.", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-        }
-    };
-
     const loadTableData = async (page) => {
         const getTemplatePayload = {
             page,
@@ -3432,11 +3166,7 @@ const fileUploadTableView = (type, rowData, attachment, filePath) => {
                                 progress: undefined,
                                 className: "toast-success",
                                 onOpen: () => {
-                                if (sysStatus === "merge_cases") {
-                                    loadMergedCasesData(paginationCount);
-                                } else {
                                     loadTableData(paginationCount);
-                                }
                                 },
                             });
                         } else {
@@ -3605,11 +3335,7 @@ const fileUploadTableView = (type, rowData, attachment, filePath) => {
                     progress: undefined,
                     className: "toast-success",
                     onOpen: () => {
-                      if (sysStatus === "merge_cases") {
-                        loadMergedCasesData(paginationCount);
-                      } else {
                         loadTableData(paginationCount);
-                      }
                     },
                   }
                 );
@@ -3693,107 +3419,6 @@ const fileUploadTableView = (type, rowData, attachment, filePath) => {
         }
     };
 
-    const handleSubmitAp = async ({ id }) => {
-    
-        if (!id || id.length === 0) {
-          toast.error("Please select at least one record to submit.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          });
-          return;
-        }
-        var result ;
-        if(isImmediateSupervisior)
-        {
-            result = await Swal.fire({
-              title: 'Are you sure?',
-              text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
-              icon: 'question',
-              showCancelButton: true,
-              confirmButtonText: 'Yes, submit it!',
-              cancelButtonText: 'Cancel',
-            });
-        }
-        else
-        {
-            result = await Swal.fire({
-                title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, submit it!',
-                cancelButtonText: 'Cancel',
-              });
-        }
-      
-        if (result.isConfirmed) {
-          const payload = {
-            transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
-            ui_case_id: id,
-            isSupervisior : isImmediateSupervisior
-          };
-      
-          try {
-            setLoading(true);
-            const response = await api.post('/templateData/submitActionPlanPR', payload);
-      
-            if (response.success) {
-              toast.success("The Action Plan has been submitted", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-success",
-                onOpen: () => {
-                  if (sysStatus === "merge_cases") {
-                    loadMergedCasesData(paginationCount);
-                  } else {
-                    if(!selectedOtherTemplate?.field){
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
-                    }else{
-                        loadTableData(paginationCount);
-                    }
-                  }
-                },
-            });
-            } else {
-              toast.error(response.message || 'Something went wrong.', {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            }
-          } catch (error) {
-            toast.error(error.message || 'Submission failed.', {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-          });
-          }finally{
-            setLoading(false);
-          }
-        }
-    };
-
     const onActionPlanUpdate = async (table_name, data) => {
     
     if (!table_name || table_name === "") {
@@ -3846,11 +3471,7 @@ const fileUploadTableView = (type, rowData, attachment, filePath) => {
             progress: undefined,
             className: "toast-success",
             onOpen: () => {
-            if (sysStatus === "merge_cases") {
-                loadMergedCasesData(paginationCount);
-            } else {
                 handleOtherTemplateActions("cid_ui_case_action_plan");
-            }
             },
         });
         } else {
@@ -4098,9 +3719,7 @@ const fileUploadTableView = (type, rowData, attachment, filePath) => {
                     className: "toast-success",
                 });
     
-                if (sysStatus === "merge_cases") {
-                  loadMergedCasesData(paginationCount);
-                }else if(saveNewAction){
+                if(saveNewAction){
                   await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
                   showOptionTemplate(selectedOtherTemplate.table);
                 }else{
@@ -4427,11 +4046,9 @@ const fileUploadTableView = (type, rowData, attachment, filePath) => {
               progress: undefined,
               className: "toast-success",
               onOpen: () => {
-                if (sysStatus === "merge_cases") {
-                  loadMergedCasesData(paginationCount);
-                } else {
+
                   loadTableData(paginationCount);
-                }
+              
               },
             });
     
