@@ -2303,6 +2303,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
       const aoFieldValues = (await loadValueField(rowId, false, "cid_under_investigation")) || {};
 
+
       const aoFieldsToInclude = [
         "field_cid_crime_no./enquiry_no",
         "field_crime_number_of_ps",
@@ -2314,13 +2315,30 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
       const filteredAOFieldValues = {};
 
-      aoFieldsToInclude.forEach((key) => {
-        if (aoFieldValues[key] !== undefined) {
-          filteredAOFieldValues[key] = aoFieldValues[key];
-        } else {
-          console.warn(`Field ${key} is missing or undefined.`);
-        }
-      });
+
+        aoFieldsToInclude.forEach((key) => {
+            const value = aoFieldValues[key];
+            if (value !== undefined) {
+                filteredAOFieldValues[key] = value;
+            
+                const field = aoFields.find(
+                    (f) => f?.name === key && f.field_name === "Dropdown" && Array.isArray(f.options)
+                );
+            
+                if (field) {
+                    const matchedOption = field.options.find(
+                    (opt) => opt?.code == value
+                    );
+            
+                    if (matchedOption?.name) {
+                        filteredAOFieldValues[key] = matchedOption.name;
+                    }
+                }
+            } else {
+                console.warn(`Field ${key} is missing or undefined.`);
+            }
+        });
+      
 
       await prUpdatePdf({
         appendText: filteredDataToAppend,
