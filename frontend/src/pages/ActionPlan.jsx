@@ -1,28 +1,10 @@
-import { use, useEffect, useRef, useState } from "react";
+import {  useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
-import DynamicForm from "../components/dynamic-form/DynamicForm";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import SelectAllIcon from '@mui/icons-material/SelectAll';
-
-import VerifiedIcon from '@mui/icons-material/Verified';
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
-import HistoryIcon from '@mui/icons-material/History';
 import SaveIcon from '@mui/icons-material/Save';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-} from "@mui/material";
-
 import api from "../services/api";
-import { Badge, Chip, Tooltip } from "@mui/material";
+import {  Chip, Tooltip } from "@mui/material";
 import {
   Box,
   Button,
@@ -32,7 +14,6 @@ import {
   IconButton,
   Checkbox,
   Grid,
-  Autocomplete,
   TextField,
 } from "@mui/material";
 import TextFieldInput from "@mui/material/TextField";
@@ -40,56 +21,15 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-
-import ClearIcon from "@mui/icons-material/Clear";
 import SearchIcon from "@mui/icons-material/Search";
-import ASC from "@mui/icons-material/North";
-import DESC from "@mui/icons-material/South";
-import AddIcon from "@mui/icons-material/Add";
-import filterLines from "../Images/filterLines.svg";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
-import pdfIcon from "../Images/pdfIcon.svg";
-import docIcon from "../Images/docIcon.svg";
-import xlsIcon from "../Images/xlsIcon.svg";
-import pptIcon from "../Images/pptIcon.svg";
-import jpgIcon from "../Images/jpgIcon.svg";
-import pngIcon from "../Images/pngIcon.svg";
-import CloseIcon from "@mui/icons-material/Close";
-import { CircularProgress } from "@mui/material";
-import StarIcon from "@mui/icons-material/Star";
-import StarBorderIcon from "@mui/icons-material/StarBorder";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import TaskIcon from '@mui/icons-material/Task';
-import AssignmentIcon from '@mui/icons-material/Assignment';
-
-import AddTaskIcon from '@mui/icons-material/AddTask';
-import { DemoContainer } from "@mui/x-date-pickers/internals/demo";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import dayjs from "dayjs";
-import SelectField from "../components/form/Select";
 import MultiSelect from "../components/form/MultiSelect";
 import AutocompleteField from "../components/form/AutoComplete";
-import { InputLabel, Select, MenuItem } from '@mui/material';
-import NumberField from "../components/form/NumberField";
 import ShortText from "../components/form/ShortText";
-import LongText from "../components/form/LongText";
-import DateField from "../components/form/Date";
-import GenerateProfilePdf from "./GenerateProfilePdf";
-
-import ApprovalModal from '../components/dynamic-form/ApprovalModalForm';
 import WestIcon from '@mui/icons-material/West';
-import FileInput from "../components/form/FileInput";
-
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
-import ImportExportIcon from '@mui/icons-material/ImportExport';
 
 const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
     const location = useLocation();
@@ -99,337 +39,56 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const [aoFields, setAoFields] = useState([]);
     const [aoFieldId,setAoFieldId] = useState(selectedRowData);
     const [filterAoValues, setFilterAoValues] = useState({});
-    // nature of disposal state
-    const [natureOfDisposalModal, setNatureOfDisposalModal] = useState(false);
-    const [natureOfDisposalValue, setNatureOfDisposalValue] = useState(null);
-    const [overallDisposalData, setOverallDisposalData] = useState({});
-    const [approvedByCourt, setApprovedByCourt] = useState(false);
-    const [showOrderCopy, setShowOrderCopy] = useState(false);
-
-    // more then one template state
-    const [moreThenTemplate, setMoreThenTemplate] = useState(false);
-    const [moreThenTemplateTableName, setMoreThenTemplateTableName] = useState(null);
-    const [moreThenTemplateTemplateName, setMoreThenTemplateTemplateName] = useState(null);
-    const [moreThenTemplateTemplateFields, setMoreThenTemplateTemplateFields] = useState(null);
-    const [moreThenTemplateStepperData, setMoreThenTemplateStepperData] = useState([]);
-    const [moreThenTemplateInitialData, setMoreThenTemplateInitialData] = useState([]);
     const [viewModeOnly,setViewModeOnly] = useState(false);
-    const [isApprovalSaveMode, setIsApprovalSaveMode] = useState(true);
     const [isFromEdit, setIsFromEdit] = useState(false);
     const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
-
-    const [natureOfDisposalFileUpload, setNatureOfDisposalFileUpload] = useState({});
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-
     const templateActionAddFlag = useRef(false);
-    const fieldActionAddFlag = useRef(false);
     const attachmentEditFlag = useRef(false);
-
-    const [showFileAttachment, setShowFileAttachments] = useState(false);
-
-    const [showPtCaseModal, setShowPtCaseModal] = useState(false);
-    const [ptCaseTableName, setPtCaseTableName] = useState(null);
-    const [ptCaseTemplateName, setPtCaseTemplateName] = useState(null);
-
-    const [uploadedFiles, setUploadedFiles] = useState([]);
-
     const [totalPage, setTotalPage] = useState(0);
     const [totalRecord, setTotalRecord] = useState(0);
-
-    // filter states
-    const [showFilterModal, setShowFilterModal] = useState(false);
     const [filterDropdownObj, setfilterDropdownObj] = useState([]);
     const [filterValues, setFilterValues] = useState({});
     const [fromDateValue, setFromDateValue] = useState(null);
     const [toDateValue, setToDateValue] = useState(null);
-    const [forceTableLoad, setForceTableLoad] = useState(false);
-
-    const [furtherInvestigationPtCase, setFurtherInvestigationPtCase] =
-    useState(false);
-    const [furtherInvestigationSelectedRow, setFurtherInvestigationSelectedRow] =
-    useState([]);
-    const [
-    furtherInvestigationSelectedValue,
-    setFurtherInvestigationSelectedValue,
-    ] = useState(null);
-    const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
     const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
-    const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false);
-
-    const [showSubmitPFButton, setShowSubmitPFButton] = useState(false);
-    // for pdf download
-    const [isDownloadPdf, setIsDownloadPdf] = useState(false);
-    const [downloadPdfFields, setDownloadPdfFields] = useState({});
-    const [downloadPdfData, setDownloadPdfData] = useState([]);
-    const [isPrint, setIsPrint] = useState(false);
-    const [selectedIds, setSelectedIds] = useState([]);
-        
-        
+    const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false); 
     const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
     const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
     const [APIsSubmited, setAPIsSubmited] = useState(false);
     const [otherTemplatesPaginationCount, setOtherTemplatesPaginationCount] = useState(1);
     const [otherSearchValue, setOtherSearchValue] = useState('');
-
     const [othersFilterModal, setOthersFilterModal] = useState(false);
     const [othersFromDate, setOthersFromDate] = useState(null);
     const [othersToDate, setOthersToDate] = useState(null);
     const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
     const [othersFilterData, setOthersFilterData] = useState({});
-    const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
-    const [showMergeModal, setShowMergeModal] = useState(false);
-    const [selectedParentId, setSelectedParentId] = useState("");
-    const [usersBasedOnDivision, setUsersBasedOnDivision] = useState([]);
-    const [selectedUser, setSelectedUser] = useState(null);
-    const [childMergedDialogOpen, setChildMergedDialogOpen] = useState(false);
-    const [childMergedData, setChildMergedData] = useState([]);
-    const [childMergedColumns, setChildMergedColumns] = useState([]);
-    const [childMergedPagination, setChildMergedPagination] = useState(1);
-    const [childMergedTotalPages, setChildMergedTotalPages] = useState(0);
-    const [childMergedTotalRecords, setChildMergedTotalRecords] = useState(0);
-    const [childMergedCaseTitle, setChildMergedCaseTitle] = useState("");
-    const [childMergedCaseCID, setChildMergedCaseCID] = useState("");
-    const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
-    const [hasApproval, setHasApproval] = useState(false);
-
-
-    // const [isIoAuthorized, setIsIoAuthorized] = useState(true);
-    const [exportableData, setExportableData] = useState([]);
-    const [showExportPopup, setShowExportPopup] = useState(false);
-    const [tabIndex, setTabIndex] = useState(0);
-
-    //   new further investigation func states
-    const [newApprovalPage, setNewApprovalPage] = useState(false);
-    const [singleApiData, setSingleApiData] = useState({});
-    const [disabledApprovalItems, setDisabledApprovalItems] = useState(false);
-
-    const [listApprovalsData, setListApprovalsData] = useState([]);
-    const [listApproveTableFlag, setListApproveTableFlag] = useState(false);
-    const [listAddApproveFlag, setListAddApproveFlag] = useState(false);
-    const [listApprovalCaseNo, setListApprovalCaseNo] = useState("");
-    const [listApprovalsColumn, setListApprovalsColumn] = useState([
-        { field: "sl_no", headerName: "S.No", width: 80 },
-        { field: "approvalItem", headerName: "Approval Item", width: 150 },
-        { field: "approvedBy", headerName: "Approved By", width: 140 },
-        { field: "approval_date", headerName: "Approval Date", width: 150 },
-        { field: "remarks", headerName: "Remarks", width: 120 },
-    ]);
-    const [listApprovalCaseData, setListApprovalCaseData] = useState({});
-    const [logs, setLogs] = useState([]);
-    const [openLogDialog, setOpenLogDialog] = useState(false);
-    const [LogDialogTitle, SetLogDialogTitle] = useState("");
-    const [activityLogs,setActivityLogs] = useState([]);
-    const [openActivityLogDialog, setOpenActivityLogDialog] = useState(false);
-    const [listApprovalCaseId, setListApprovalCaseId] = useState(null);
-    const approvalFieldHistoryHeader = [
-        { field: "sno", headerName: "S.No", width: 70 },
-        { field: "old_value", headerName: "Old Value", width: 150 },
-        { field: "updated_value", headerName: "New Value", width: 150 },
-        { field: "created_by", headerName: "Created By", width: 150 },
-        { field: "created_at", headerName: "Updated At", width: 200 }
-    ];
-
-    const listApprovalActionColumn = {
-        field: "actions",
-        headerName: "Actions",
-        width: 300,
-        sortable: false,
-        renderCell: (params) => {
-            const row = params.row;
-
-            const handleListApprovalView = () => {
-                setListApprovalSaveData(row);
-                setListApprovalItemDisabled(true);
-                setListAddApproveFlag(true);
-                setListApproveTableFlag(true);
-            };
-
-            const handleListApprovalEdit = () => {
-                setListApprovalSaveData(row);
-                setListApprovalItemDisabled(false);
-                setListAddApproveFlag(true);
-                setListApproveTableFlag(true);
-            };
-
-            const handleListApprovalDelete = async () => {
-                const result = await Swal.fire({
-                    title: "Are you sure?",
-                    text: "This action will permanently delete the approval record.",
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonText: "Yes, Delete it!",
-                    cancelButtonText: "No",
-                });
-
-                if (result.isConfirmed) {
-                    setLoading(true);
-                    try {
-                        const response = await api.post("/ui_approval/delete_ui_case_approval", {
-                            approval_id: row.approval_id,
-                            transaction_id: `approval_delete_${Date.now()}`,
-                        });
-
-                        if (response && response.success) {
-                            toast.success('The approval record has been deleted.', {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-success",
-                            });
-                            // showApprovalListPage(row)
-                            setListApprovalTotalRecord(0);
-                            setListApprovalTotalPage(0);
-                            setListApproveTableFlag(false);
-                        } else {
-                            toast.error(response?.message || "Could not delete the record.", {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                            setLoading(false);
-                    } catch (error) {
-                        console.error("Delete error:", error);
-                        toast.error('Something went wrong during deletion.', {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-                            setLoading(false);
-                    }
-                }
-            };
-
-            console.log("isChildMergedLoading from approval:", isChildMergedLoading);
-
-            return (
-                <Box sx={{ display: "flex", gap: 1, marginTop: '4px' }}>
-                    <Button variant="outlined" onClick={handleListApprovalView}>
-                        View
-                    </Button>
-                    {!isChildMergedLoading && (
-                        <>
-                    <Button variant="contained" color="primary" onClick={handleListApprovalEdit} >
-                        Edit
-                    </Button>
-                    <Button variant="contained" color="error" onClick={handleListApprovalDelete}>
-                        Delete
-                    </Button>
-                    </>
-                    )}
-                </Box>
-            );
-        }
-    };
-
-    const [listApprovalItem, setListApprovalItem] = useState([]);
-    const [listApprovalItemDisabled, setListApprovalItemDisabled] = useState(false);
-    const [listDesignationData, setListDesignationData] = useState([]);
-    const [listRandomApprovalId, setListRandomApprovalId] = useState(0);
-    const [listApprovalSaveData, setListApprovalSaveData] = useState({});
-    const [listApprovalTotalRecord, setListApprovalTotalRecord] = useState(0);
-    const [listApprovalTotalPage, setListApprovalTotalPage] = useState(0);
-    const [listApprovalPaginationCount, setListApprovalPaginationCount] = useState(1);
-    const listApprovalPagination = (page) => {
-        setListApprovalPaginationCount(page)
-    }
-    const [listApprovalSearchValue,setListApprovalSearchValue] =  useState('');
-    const [listApprovalFromDate,setListApprovalFromDate] =  useState(null);
-    const [listApprovalToDate,setListApprovalToDate] =  useState(null);
-    const [listApprovalFiltersDropdown,setListApprovalFiltersDropdown] =  useState([]);
-    const [listApprovalFilterData,setListApprovalFilterData] =  useState({});
-    const [forceListApprovalTableLoad, setForceListApprovalTableLoad] = useState(false);
-    
-
-    const [saveNew, setSaveNew] = useState(null);
-    const [saveNewAction, setSaveNewAction] = useState(null);
-
-    const showNatureOfDisposal = (selectedRow) => {
-        setNatureOfDisposalValue(null);
-        setNatureOfDisposalModal(true);
-    };
-
-    const showOrderCopyCourt =  (selectedRow, tableName, approved)=> {
-        setApprovedByCourt(approved);
-        setShowOrderCopy(true);
-        showNewApprovalPage("B Report");
-    }
-    
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
-    }
-
-    // on save approval modal
-
-    const [showApprovalModal, setShowApprovalModal] = useState(false);
-    const [approvalItemsData, setApprovalItemsData] = useState([]);
-    const [readonlyApprovalItems, setReadonlyApprovalItems] = useState(false);
-    const [approvalDesignationData, setApprovalDesignationData] = useState([]);
-    const [approvalFormData, setApprovalFormData] = useState({});
-    const [approvalSaveCaseData, setApprovalSaveCaseData] = useState({});
-            
-    const [showOptionModal, setShowOptionModal] = useState(false);
+    }   
     const [paginationCount, setPaginationCount] = useState(pageCount ? pageCount : 1);
     const [tableSortOption, settableSortOption] = useState("DESC");
     const [tableSortKey, setTableSortKey] = useState("");
-    const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
     const [tableData, setTableData] = useState([]);
     const [isValid, setIsValid] = useState(false);
     const [searchValue, setSearchValue] = useState(null);
-    const [linkLeader, setLinkLeader] = useState(false);
-    const [linkOrganization, setLinkOrganization] = useState(false);
-    const [template_name, setTemplate_name] = useState("");
     const [table_name, setTable_name] = useState("");
-
     const [sysStatus, setSysSattus] = useState(systemStatus ? systemStatus : "ui_case");
-
-    const [stepperData, setstepperData] = useState([]);
     const [formOpen, setFormOpen] = useState(false);
     const [formTemplateData, setFormTemplateData] = useState([]);
     const [initialData, setInitialData] = useState({});
     const [viewReadonly, setviewReadonly] = useState(false);
     const [editTemplateData, setEditTemplateData] = useState(false);
-    const [selectedRowId, setSelectedRowId] = useState(null);
     const [selectedRowIds, setSelectedRowIds] = useState([]);
-    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-
     const [otherFormOpen, setOtherFormOpen] = useState(false);
     const [optionStepperData, setOptionStepperData] = useState([]);
     const [optionFormTemplateData, setOptionFormTemplateData] = useState([]);
-
-    const [showDownloadModal, setShowDownloadModal] = useState(false);
-    const [showDownloadData, setShowDownloadData] = useState([]);
-    const [showSelectedDownloadData, setShowSelectedDownloadData] = useState({});
-
-    const [showAttachmentModal, setShowAttachmentModal] = useState(false);
-    const [showAttachmentKey, setShowAttachmentKey] = useState(null);
-    const [showAttachmentData, setShowAttachmentData] = useState([]);
-
     const [starFlag, setStarFlag] = useState(null);
     const [readFlag, setReadFlag] = useState(null);
-
     const [loading, setLoading] = useState(false); // State for loading indicator
-
-    const searchParams = new URLSearchParams(location.search);
-
     const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
     { field: "sl_no", headerName: "S.No" },
     ]);
-
     const [otherTemplateModalOpen, setOtherTemplateModalOpen] = useState(false);
     const [selectedOtherTemplate, setselectedOtherTemplate] = useState(options);
     const [otherTemplateData, setOtherTemplateData] = useState([]);
@@ -441,48 +100,12 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const [otherTemplateColumn, setOtherTemplateColumn] = useState([
     { field: "sl_no", headerName: "S.No" },
     ]);
-    const [hasPdfEntry, setHasPdfEntry] = useState(false);
     const [hoverTableOptions, setHoverTableOptions] = useState([]);
     const [otherTablePagination, setOtherTablePagination] = useState(1);
-
-    // for actions
-
     const [selectedRow, setSelectedRow] = useState(selectedRowData);
-    const [templateApproval, setTemplateApproval] = useState(false);
-    const [templateApprovalData, setTemplateApprovalData] = useState({});
-    const [disposalUpdate, setDisposalUpdate] = useState(false);
-
-    // transfer to other division states
-
-    const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
-    const [showMassiveTransferModal, setShowMassiveTransferModal] = useState(false);
-
-    const [otherTransferField, setOtherTransferField] = useState([]);
     const [selectedOtherFields, setSelectedOtherFields] = useState(null);
     const [selectKey, setSelectKey] = useState(null);
-    const [mergeDialogData, setMergeDialogData] = useState([]);
-
-    // for approve states
-
-    const [approveTableFlag, setApproveTableFlag] = useState(false);
-    const [addApproveFlag, setAddApproveFlag] = useState(false);
-
-    const [approvalsData, setApprovalsData] = useState([]);
-    const [approvalsColumn, setApprovalsColumn] = useState([
-    { field: "sl_no", headerName: "S.No" },
-    { field: "approvalItem", headerName: "Approval Item", flex: 1 },
-    { field: "approvedBy", headerName: "Approved By", flex: 1 },
-    { field: "approval_date", headerName: "Approval Date", flex: 1 },
-    { field: "remarks", headerName: "Remarks", flex: 1 },
-    ]);
-    const [approvalItem, setApprovalItem] = useState([]);
-    const [approvalItemDisabled, setApprovalItemDisabled] = useState(false);
-    const [designationData, setDesignationData] = useState([]);
-
     const [randomApprovalId, setRandomApprovalId] = useState(0);
-
-    const [approvalSaveData, setApprovalSaveData] = useState({});
-
     const hoverTableOptionsRef = useRef([]);
 
     const loadValueField = async (rowData, editData, table_name) => {
@@ -681,7 +304,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     
     useEffect(() => {
           loadAOFields();
-    }, [selectedOtherTemplate,aoFieldId]);
+    }, []);
 
     useEffect(()=>{
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
@@ -693,18 +316,18 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         setIsValid(false);
     };
 
-    const handleOtherTemplateActions = async (options, selectedRow, searchFlag,fromUploadedFiles) => {
+    const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
         const randomId = `random_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         var disabledEditFlag = false;
         var disabledDeleteFlag = false;  
         setRandomApprovalId(randomId);
 
-        console.log(selectedRow);
+        console.log("checking selectedRow",selectedRow);
         var getTemplatePayload = {
             table_name: options.table,
             ui_case_id: selectedRow.id,
-            case_io_id: selectedRow.field_io_name || "",
+            case_io_id: selectedRow?.field_io_name || "",
             pt_case_id: selectedRow?.pt_case_id || null,
             limit : 10,
             page : !searchFlag ? otherTemplatesPaginationCount : 1,
@@ -786,37 +409,78 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     let isSuperivisor = false;
                     const userDesigId = localStorage.getItem('designation_id');
 
-                    if(records && records.length > 0)
-                    {
-                        const allAPWithSameSupervisor = records.every(
-                            record =>
-                            record.field_submit_status === "" || record.field_submit_status === null &&
-                            record.supervisior_designation_id == userDesigId
+                    if (records && records.length > 0) {
+
+                        // Get supervisor-specific records
+                        const supervisorRecords = records.filter(
+                            record => record.supervisior_designation_id == userDesigId
                         );
+
                         
-                        const allAPWithOutIOSubmit = records.every(
+                        let allAPWithOutSupervisorSubmit = false;
+
+
+                        // Check if all supervisor records are NOT submitted
+                        // allAPWithOutSupervisorSubmit = supervisorRecords.length > 0 && supervisorRecords.every(
+                        //     r => r.field_submit_status === "" || r.field_submit_status === null
+                        // );
+                        
+
+
+                        for (let i = 0; i < supervisorRecords.length; i++) {
+                            const status = supervisorRecords[i]['field_submit_status'];
+                            console.log("checking the loop", i);
+                            console.log("supervisorRecords[i]", supervisorRecords[i]);
+                            console.log("field_submit_status", status);
+                            console.log("condition check", status === "" || status === null);
+                        
+                            if (status === "" || status === null) {
+                                allAPWithOutSupervisorSubmit = true;
+                                console.log("Set allAPWithOutSupervisorSubmit to true");
+                                break;
+                            }
+                        }
+                    
+                        // Get non-supervisor records with sys_status "ui_case"
+                        const ioRecords = records.filter(
                             record =>
-                            record.sys_status === "ui_case" &&
-                            record.field_submit_status === "" || record.field_submit_status === null &&
-                            record.supervisior_designation_id != userDesigId
+                                record.sys_status === "ui_case" &&
+                                record.supervisior_designation_id != userDesigId
                         );
-                        
-                        if (allAPWithSameSupervisor || allAPWithOutIOSubmit) {
+                    
+                        // Check if all IO records are NOT submitted
+                        const allAPWithOutIOSubmit = ioRecords.length > 0 &&
+                            ioRecords.every(
+                                record => record.field_submit_status === "" || record.field_submit_status === null
+                            );
+                    
+                        // Set flags accordingly
+                        if (allAPWithOutSupervisorSubmit || allAPWithOutIOSubmit) {
                             anySubmitAP = false;
                         }
-            
-                        if(allAPWithSameSupervisor)
+                    
+                        if (allAPWithOutSupervisorSubmit) {
                             isSuperivisor = true;
-
-                        APisSubmited = records.every(
-                            record =>
+                        }
+                    
+                        // APisSubmited logic with clear grouping
+                        APisSubmited = records.every(record =>
                             record.sys_status === "ui_case" ||
-                            record.sys_status === "IO" &&
-                            record.field_submit_status === "" || record.field_submit_status === null &&
-                            record.supervisior_designation_id != userDesigId
+                            (
+                                record.sys_status === "IO" &&
+                                (record.field_submit_status === "" || record.field_submit_status === null) &&
+                                record.supervisior_designation_id != userDesigId
+                            )
                         );
+                    
+                    } else {
+                        anySubmitAP = false;
                     }
 
+                    
+                    console.log('anySubmitAP',anySubmitAP);
+
+                    console.log('isSuperivisor',isSuperivisor)
                     setShowSubmitAPButton(anySubmitAP);
                     setIsImmediateSupervisior(isSuperivisor);
                     setAPIsSubmited(APisSubmited);
@@ -862,7 +526,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         headerName: updatedKeyName ? updatedKeyName : "",
                                         width: 250,
                                         resizable: true,
-                                        cellClassName: (params) => getCellClassName(key, params, 'cid_ui_case_action_plan'),
                                         renderHeader: () => (
                                         <div
                                             style={{
@@ -892,7 +555,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     field: "",
                                     headerName: "Action",
                                     width: 300,
-                                    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
                                     renderCell: (params) => {
                                     
                                         const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
@@ -953,7 +615,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                     </Button>
                                                 )))}
 
-                                                {canDelete&& ( !isActionPlan && ( !isViewAction && ( !isChildMergedLoading && (
+                                                {canDelete&& ( !isActionPlan && ( !isViewAction && ( 
                                                     <Button
                                                         variant="contained"
                                                         color="error"
@@ -964,7 +626,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                                     >
                                                         Delete
                                                     </Button>
-                                                ))))}
+                                                )))}
                                             </Box>
                                         );
                                     },
@@ -972,7 +634,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         ]).filter(Boolean);
 
                         setOtherTemplateColumn(updatedHeader);
-                        setOtherTemplateModalOpen(true);
                     } else {
                         setOtherTemplateColumn([]);
                     }
@@ -1008,7 +669,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     else{
                         setViewModeOnly(false)
                     }
-                    setOtherTemplateModalOpen(true);
                 }
 
                 setOtherFormOpen(false);
@@ -1209,32 +869,12 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
     const closeOtherForm = ()=>{
         setOtherFormOpen(false)
-        setShowPtCaseModal(false);
         if(selectedOtherTemplate?.table === "cid_ui_case_action_plan"){
             handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
         }
     }
 
-
-    const getCellClassName = (key, params, table) => {
-        // Example condition: unread rows for a specific table
-        // if (table === "cid_ui_case_progress_report" && !params?.row?.ReadStatus) {
-        //     return "unreadBackground";
-        // }
-    
-        // Add more logic if needed based on `key` or `params`
-        return "";
-    };
-
     const tableCellRender = (key, params, value, index, tableName) => {
-        if (params?.row?.attachments) {
-        var attachmentField = params.row.attachments.find(
-            (data) => data.field_name === key
-        );
-        if (attachmentField) {
-            return fileUploadTableView(key, params, params.value);
-        }
-        }
     
         let highlightColor = {};
         let onClickHandler = null;
@@ -1359,238 +999,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     function isValidISODate(value) {
         return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
     }
-
-    function createSvgIcon(svgString) {
-        return () => (
-        <span
-            dangerouslySetInnerHTML={{ __html: svgString }}
-            className="tableActionIcon"
-        />
-        );
-    }
-
-    const checkPdfEntryStatus = async (caseId) => {
-        if (!caseId) {
-            setHasPdfEntry(false);
-            return;
-        }
-        try {
-            const response = await api.post("/templateData/checkPdfEntry", {
-            ui_case_id: caseId,
-            is_pdf: true,
-            });
-    
-            if (response.success && response.data) {
-            setHasPdfEntry(true);
-            } else {
-            setHasPdfEntry(false);
-            }
-        } catch (error) {
-            console.error("Error checking PDF entry:", error);
-            setHasPdfEntry(false);
-        }
-    };
-
-    const getUploadedFiles = async (selectedRow, options) => {
-    
-        if (!selectedRow || !selectedRow.id) {
-        console.error("Invalid selectedRow for file retrieval:", selectedRow);
-        return;
-        }
-        try {
-        const response = await api.post("/templateData/getUploadedFiles", {
-            ui_case_id: selectedRow.id,
-        });
-    
-        if (response && response.success) {
-            setUploadedFiles(response.data);
-            handleOtherTemplateActions(options, selectedRow, false, true);
-        }
-        } catch (error) {
-        console.error("Error fetching uploaded files:", error);
-        }
-    };
-
-    const showApprovalPage = async (approveData, Options) => {
-
-    var payloadObj = {
-        case_id: approveData.id,
-    };
-
-    setLoading(true);
-
-    try {
-        const getActionsDetails = await api.post(
-        "/ui_approval/get_ui_case_approvals",
-        payloadObj
-        );
-
-        setLoading(false);
-
-        if (getActionsDetails && getActionsDetails.success) {
-        var updatedOptions = [];
-
-        if (getActionsDetails.data["approvals"].length > 0) {
-            updatedOptions = getActionsDetails.data["approvals"].map(
-            (data, index) => {
-                const formatDate = (fieldValue) => {
-                if (!fieldValue || typeof fieldValue !== "string")
-                    return fieldValue;
-
-                var dateValue = new Date(fieldValue);
-
-                if (
-                    isNaN(dateValue.getTime()) ||
-                    (!fieldValue.includes("-") && !fieldValue.includes("/"))
-                ) {
-                    return fieldValue;
-                }
-
-                if (isNaN(dateValue.getTime())) return fieldValue;
-
-                var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                var monthValue = String(dateValue.getMonth() + 1).padStart(
-                    2,
-                    "0"
-                );
-                var yearValue = dateValue.getFullYear();
-                return `${dayValue}/${monthValue}/${yearValue}`;
-                };
-
-                const updatedField = {};
-
-                Object.keys(data).forEach((key) => {
-                if (
-                    data[key] &&
-                    key !== "id" &&
-                    !isNaN(new Date(data[key]).getTime())
-                ) {
-                    updatedField[key] = formatDate(data[key]);
-                } else {
-                    updatedField[key] = data[key];
-                }
-                });
-
-                return {
-                ...updatedField,
-                sl_no: index + 1,
-                id: data.approval_id,
-                };
-            }
-            );
-        }
-
-        if(Options.table === "cid_ui_case_progress_report" && !Options?.approval_items){
-
-            var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                if((data.name).toLowerCase() === "progress report approval"){
-                    return data;
-                }
-            });
-
-            if(getFurtherInvestigationItems?.[0]){
-                Options['approval_items'] = getFurtherInvestigationItems?.[0].approval_item_id
-            }
-        }
-
-        // showApprovalAddPage(Options);
-        // setApprovalsData(updatedOptions);
-        // setApprovalItem(getActionsDetails.data["approval_item"]);
-        // setDesignationData(getActionsDetails.data["designation"]);
-
-        // setApproveTableFlag(true);
-
-        } else {
-        const errorMessage = getActionsDetails.message
-            ? getActionsDetails.message
-            : "Failed to create the template. Please try again.";
-        toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        }
-    } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-        toast.error(
-            error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-            {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-            }
-        );
-        }
-    }
-    };
-                        
-    const showAttachmentField = (options, selectedRow) => {
-
-        if (options.permissions) {
-
-            const parsedPermissions = JSON.parse(options.permissions);
-
-            if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
-
-                if(parsedPermissions?.['edit'].length > 0){
-                    const hasAddPermission = parsedPermissions?.['edit'].some(
-                        (permission) => userPermissions?.[0]?.[permission] === true
-                    );
-
-                    attachmentEditFlag.current = hasAddPermission;
-                }else{
-                    attachmentEditFlag.current = true;
-                }
-
-            }else{
-                attachmentEditFlag.current = true;
-            }
-        }
-
-        setShowFileAttachments(true);
-    }
-
-    const fileUploadTableView = (type, rowData, attachment) => {
-    if (attachment && attachment !== "") {
-        var separateAttachment = attachment.split(",");
-        return (
-        <Box
-            sx={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer", height: '100%' }}
-            onClick={(e) => {
-                e.stopPropagation();
-                showAttachmentFileModal(type, rowData.row);
-            }}
-        >
-            <Box className="Roboto attachmentTableBox">
-            <span style={{ display: "flex" }}>
-                {getFileIcon(separateAttachment[0])}
-            </span>
-            <span className="Roboto attachmentTableName">
-                {separateAttachment[0]}
-            </span>
-            </Box>
-            {separateAttachment.length > 1 && (
-            <button className="Roboto attachmentTableBtn">
-                {separateAttachment.length - 1}+
-            </button>
-            )}
-        </Box>
-        );
-    }
-    };
 
     const handleTemplateDataView = async (rowData, editData, table_name) => {
     
@@ -1719,272 +1127,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
     };
 
-    const loadMergedCasesData = async (page) => {
-        const getTemplatePayload = {
-            page,
-            limit: 10,
-            sort_by: tableSortKey,
-            order: tableSortOption,
-            search: searchValue || "",
-            table_name,
-            is_starred: starFlag,
-            is_read: readFlag,
-            template_module: "ui_case",
-            sys_status: sysStatus,
-            from_date: fromDateValue,
-            to_date: toDateValue,
-            filter: filterValues,
-        };
-    
-        setLoading(true);
-    
-        try {
-            const getTemplateResponse = await api.post( "/templateData/getMergeParentData", getTemplatePayload);
-    
-            setLoading(false);
-    
-            if (getTemplateResponse?.success && getTemplateResponse?.message !== "No merged case found") {
-                const { data, meta } = getTemplateResponse.data;
-    
-                const totalPages = meta?.totalPages;
-                const totalItems = meta?.totalItems;
-    
-                if (totalPages !== null && totalPages !== undefined) {
-                    setTotalPage(totalPages);
-                }
-    
-                if (totalItems !== null && totalItems !== undefined) {
-                    setTotalRecord(totalItems);
-                }
-    
-                if (meta?.table_name && meta?.template_name) {
-                    setTemplate_name(meta.template_name);
-                    setTable_name(meta.table_name);
-                }
-    
-                if (data?.length > 0) {
-                    const excludedKeys = [
-                        "created_at", "updated_at", "id", "deleted_at", "attachments",
-                        "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no", "field_io_name","field_io_name_id"
-                    ];
-    
-                    const generateReadableHeader = (key) =>
-                        key
-                            .replace(/^field_/, "")
-                            .replace(/_/g, " ")
-                            .toLowerCase()
-                            .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-    
-                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
-    
-                    // {
-                    //     field: "task",
-                    //     headerName: "",
-                    //     width: 50,
-                    //     resizable: true,
-                    //     renderHeader: (params) => (
-                    //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-                    //     ),
-                    //     renderCell: (params) => (
-                    //         <Badge
-                    //             badgeContent={params?.row?.['task_unread_count']}
-                    //             color="primary"
-                    //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-                    //         >
-                    //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-                    //         </Badge>
-                    //     ),
-                    // },
-    
-                    const updatedHeader = [
-                        
-                        {
-                            field: "select",
-                            headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
-                            width: 50,
-                            resizable: false,
-                            renderCell: (params) => (
-                                <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-                                    <Checkbox
-                                        checked={params.row.isSelected || false}
-                                        onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                                    />
-                                </Box>
-                            ),
-                        },
-                        {
-                            field: "approval",
-                            headerName: "Approval",
-                            width: 50,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
-                            ),                            
-                            renderCell: (params) => (
-                                <Button
-                                    variant="contained"
-                                    color="transparent"
-                                    size="small"
-                                    sx={{
-                                        padding: 0,
-                                        fontSize: '0.75rem',
-                                        textTransform: 'none',
-                                        boxShadow: 'none',
-                                        '&:hover':{
-                                            boxShadow: 'none',
-                                        }
-                                    }}
-                                >
-                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
-                                </Button>
-                            )
-                        },
-                        {
-                            field: "field_cid_crime_no./enquiry_no",
-                            headerName: "Cid Crime No./Enquiry No",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
-                            ),
-                            renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
-                        },
-                        {
-                            field: "field_io_name",
-                            headerName: "Assign To IO",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_io_name")
-                            ),
-                            renderCell: renderCellFunc("field_io_name", 0),
-                        },
-                        ...(sysStatus === "merge_cases"
-                            ? [
-                                {
-                                field: "child_case",
-                                headerName: "Child Case",
-                                width: 100,
-                                resizable: true,
-                                renderCell: (params) => {
-                                    const childCount = params.row.childCount || 0;
-                                    const caseId = params.row.id;
-    
-                                    const handleClick = async () => {
-                                    loadChildMergedCasesData("1", caseId);
-                                    };
-                                    
-                                    const statusColor = "#3b82f6";
-                                    const borderColor = "#2563eb";
-                        
-                                    return (
-                                    <Chip
-                                        label={childCount}
-                                        size="small"
-                                        onClick={handleClick} 
-                                        sx={{
-                                        fontFamily: "Roboto",
-                                        fontWeight: 500,
-                                        color: "white",
-                                        borderColor: borderColor,
-                                        borderRadius: "4px",
-                                        backgroundColor: statusColor,
-                                        borderStyle: "solid",
-                                        borderWidth: "1px",
-                                        }}
-                                    />
-                                    );
-                                },
-                                },
-                            ]
-                            : []),
-                        ...Object.keys(data[0])
-                            .filter((key) => !excludedKeys.includes(key))
-                            .map((key) => ({
-                                field: key,
-                                headerName: generateReadableHeader(key),
-                                width: generateReadableHeader(key).length < 15 ? 100 : 180,
-                                resizable: true,
-                                renderHeader: (params) => (
-                                    tableHeaderRender(params, key)
-                                ),
-                                renderCell: renderCellFunc(key),
-                        })),
-                    ];
-    
-                    setviewTemplateTableData(updatedHeader);
-    
-                    const formatDate = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        return new Date(parsed).toLocaleDateString("en-GB");
-                    };
-    
-                    const updatedTableData = data.map((field, index) => {
-                        const updatedField = {};
-    
-                        for (const [key, val] of Object.entries(field)) {
-                            if (val && typeof val === "string" && (val.includes("-") || val.includes("/"))) {
-                                updatedField[key] = formatDate(val);
-                            } else {
-                                updatedField[key] = val;
-                            }
-                        }
-    
-                        return {
-                            ...updatedField,
-                            sl_no: (page - 1) * 10 + (index + 1),
-                            ...(field.id ? {} : { id: "unique_id_" + index }),
-                        };
-                    });
-    
-                    setTableData(updatedTableData);
-                }else{
-                    setTableData([]);
-                }
-    
-                setviewReadonly(false);
-                setEditTemplateData(false);
-                setInitialData({});
-                setFormOpen(false);
-                setSelectedRow(null);
-                setSelectedParentId([]);
-    
-                await getActions();
-            }else if (getTemplateResponse?.success && getTemplateResponse?.message === "No merged case found") {
-                setTableData([]);
-            }  else {
-                setLoading(false);
-                toast.error(getTemplateResponse.message || "Failed to load template data.", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-        }
-    };
-
     const loadTableData = async (page) => {
         const getTemplatePayload = {
             page,
@@ -2023,7 +1165,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 }
 
                 if (meta?.table_name && meta?.template_name) {
-                    setTemplate_name(meta.template_name);
                     setTable_name(meta.table_name);
                 }
     
@@ -2067,53 +1208,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
                     const updatedHeader = [
                         
-                        {
-                            field: "select",
-                            headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
-                            width: 50,
-                            resizable: false,
-                            renderCell: (params) => {
-                                const isDisabled = !params?.row?.["field_io_name"];
-                                return (
-                                <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-                                    <Checkbox
-                                        checked={params.row.isSelected || false}
-                                        onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                                        disabled={isDisabled}
-                                    />
-                                </Box>
-                            )},
-                        },
-                        {
-                            field: "approval",
-                            headerName: "Approval",
-                            width: 50,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
-                            ),                            
-                            renderCell: (params) => {
-                                const isDisabled = !params?.row?.["field_io_name"];
-                                return(
-                                <Button
-                                    variant="contained"
-                                    color="transparent"
-                                    size="small"
-                                    sx={{
-                                        padding: 0,
-                                        fontSize: '0.75rem',
-                                        textTransform: 'none',
-                                        boxShadow: 'none',
-                                        '&:hover':{
-                                            boxShadow: 'none',
-                                        }
-                                    }}
-                                >
-                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={isDisabled ? undefined : ()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
-                                </Button>
-                            )}
-                        },
                         {
                             field: "field_cid_crime_no./enquiry_no",
                             headerName: "Cid Crime No./Enquiry No",
@@ -2186,9 +1280,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 setInitialData({});
                 setFormOpen(false);
                 setSelectedRow(null);
-                setSelectedParentId([]);
     
-                await getActions();
             } else {
                 setLoading(false);
                 toast.error(getTemplateResponse.message || "Failed to load template data.", {
@@ -2310,13 +1402,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     }
 
     const showOptionTemplate = async (tableName, approved) => {
-    
-        if(selectedOtherTemplate.is_approval && !approved ){
-            setApprovalSaveData({});
-            showApprovalPage(selectedRowData, selectedOtherTemplate);
-            return;
-        }
-    
+
         if (!tableName || tableName === "") {
             toast.warning("Please Check The Template", {
             position: "top-right",
@@ -2330,7 +1416,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             });
             return;
         }
-    
+        
+
         const viewTableData = {
             table_name: tableName,
         };
@@ -2345,7 +1432,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             const ioUsers = await getIoUsers();
             const userId = localStorage.getItem("user_id");
             const userName = localStorage.getItem("username");
-    
+            
             setLoading(false);
             if (viewTemplateResponse && viewTemplateResponse.success) {
             var caseFields = [];
@@ -2571,91 +1658,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         }
     };
 
-    const showAttachmentFileModal = (type, row) => {
-        if (row[type]) {
-            var attachments = row[type].split(",");
-            setShowAttachmentModal(true);
-            setShowAttachmentKey(row);
-            setShowAttachmentData(attachments);
-        } else {
-            console.log("no attachments found");
-        }
-    };
-
-    const getFileIcon = (fileName) => {
-        fileName = fileName.split(".").pop().toLowerCase();
-        switch (fileName) {
-        case "pdf":
-            return <img src={pdfIcon} />;
-        case "jpg":
-        case "jpeg":
-            return <img src={jpgIcon} />;
-        case "png":
-        case "svg":
-        case "gif":
-            return <img src={pngIcon} />;
-        case "xls":
-        case "xlsx":
-            return <img src={xlsIcon} />;
-        case "csv":
-        case "docx":
-        case "doc":
-            return <img src={docIcon} />;
-        case "ppt":
-            return <img src={pptIcon} />;
-        default:
-            return <InsertDriveFileIcon />;
-        }
-    };
-
-    const handleCheckboxChangeField = (event, row) => {
-        const isSelected = event.target.checked;
-        
-        setTableData((prevData) =>
-            prevData.map((data) =>
-            data.id === row.id ? { ...data, isSelected } : data
-            )
-        );
-        
-        if (isSelected) {
-            setSelectedRowIds((prevIds) => [...prevIds, row.id]);
-            setSelectedMergeRowData((prev) => [...prev, row]);
-        } else {
-            setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id));
-            setSelectedMergeRowData((prev) => prev.filter((r) => r.id !== row.id));
-        }
-    };
-
-    const handleActionShow = (rowData, isLoading)=>{
-        
-        if(!rowData){
-            toast.error("Please Check Case Data !",{
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-    
-        if (isLoading) {
-            setIsChildMergedLoading(true);
-        }
-    
-        setListApprovalsColumn((prev) => {
-            const withoutActions = prev.filter((col) => col.field !== "actions");
-            return [...withoutActions, listApprovalActionColumn];
-        });
-
-        setListApprovalCaseData(rowData);
-
-        showApprovalListPage(rowData)
-    }
-
     const tableHeaderRender = (params, key) => {
         return (
             <Tooltip title={params.colDef.headerName} arrow placement="top">
@@ -2680,322 +1682,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 </Typography>
             </Tooltip>
         );
-    };
-
-    const loadChildMergedCasesData = async (page, caseId) => {
-      setIsChildMergedLoading(true); 
-      setLoading(true);
-    
-      const payload = {
-        page,
-        limit: 10,
-        sort_by: tableSortKey,
-        order: tableSortOption,
-        search: searchValue || "",
-        table_name,
-        is_starred: starFlag,
-        is_read: readFlag,
-        template_module: "ui_case",
-        sys_status: sysStatus,
-        from_date: fromDateValue,
-        to_date: toDateValue,
-        filter: filterValues,
-        case_id: String(caseId),
-      };
-    
-      try {
-        const response = await api.post("/templateData/getMergeChildData", payload);
-    
-        if (response?.success) {
-          const { data, meta } = response.data;
-    
-          const processedData = data.map((row) => ({
-            ...row,
-            isSelected: false,
-          }));
-    
-          setTableData(processedData);
-    
-          const excludedKeys = [
-            "created_at", "updated_at", "deleted_at", "attachments", "task_unread_count", "id", "field_cid_crime_no./enquiry_no", "field_io_name" ,"field_io_name_id"
-          ];
-    
-          const generateReadableHeader = (key) =>
-            key
-              .replace(/^field_/, "")
-              .replace(/_/g, " ")
-              .toLowerCase()
-              .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-    
-          const renderCellFunc = (key, count) => (params) =>
-            tableCellRender(key, params, params.value, count, meta.table_name);
-    
-        //   {
-        //     field: "task_child",
-        //     headerName: "",
-        //     width: 50,
-        //     resizable: true,
-        //     renderHeader: (params) => (
-        //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-        //     ),
-        //     renderCell: (params) => (
-        //         <Badge
-        //             badgeContent={params?.row?.['task_unread_count']}
-        //             color="primary"
-        //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-        //         >
-        //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-        //         </Badge>
-        //     ),
-        // },
-    
-          const updatedHeader = [
-            {
-              field: "select_child",
-              headerName: (
-                <Tooltip title="Select All">
-                  <SelectAllIcon sx={{ fill: "#1f1dac" }} />
-                </Tooltip>
-              ),
-              width: 50,
-              resizable: false,
-              renderCell: (params) => (
-                <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-                  <Checkbox
-                    onChange={(event) => {
-                      handleCheckboxDemerge(event, params.row);
-                    }}
-                  />
-                </Box>
-              ),
-            }
-            ,
-          {
-              field: "approval_child",
-              headerName: "Approval",
-              width: 50,
-              resizable: true,
-              cellClassName: 'justify-content-start',
-              renderHeader: (params) => (
-                  <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
-              ),                            
-              renderCell: (params) => (
-                  <Button
-                      variant="contained"
-                      color="transparent"
-                      size="small"
-                      sx={{
-                          padding: 0,
-                          fontSize: '0.75rem',
-                          textTransform: 'none',
-                          boxShadow: 'none',
-                          '&:hover':{
-                              boxShadow: 'none',
-                          }
-                      }}
-                  >
-                      <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={() => {
-                        setIsChildMergedLoading(true);
-                        handleActionShow(params?.row, true);
-                      }}
-                      sx={{fontSize:'26px'}} /></Tooltip>
-                  </Button>
-              )
-          },
-          {
-              field: "field_cid_crime_no./enquiry_no",
-              headerName: "Cid Crime No./Enquiry No",
-              width: 200,
-              resizable: true,
-              cellClassName: 'justify-content-start',
-              renderHeader: (params) => (
-                  tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
-              ),
-              renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
-          },
-          {
-            field: "field_io_name",
-            headerName: "Assign To IO",
-            width: 200,
-            resizable: true,
-            cellClassName: 'justify-content-start',
-            renderHeader: (params) => (
-                tableHeaderRender(params, "field_io_name")
-            ),
-            renderCell: renderCellFunc("field_io_name", 0),
-        },
-            ...Object.keys(data[0])
-              .filter((key) => !excludedKeys.includes(key))
-              .map((key) => ({
-                field: key,
-                headerName: generateReadableHeader(key),
-                width: generateReadableHeader(key).length < 15 ? 120 : 180,
-                resizable: true,
-                renderHeader: (params) => tableHeaderRender(params, key),
-                renderCell: renderCellFunc(key),
-              })),
-          ];
-    
-          setChildMergedData(data || []);
-          setChildMergedColumns(updatedHeader);
-          setChildMergedPagination(page);
-          setChildMergedTotalPages(meta?.totalPages || 0);
-          setChildMergedTotalRecords(meta?.totalItems || 0);
-          setChildMergedDialogOpen(true);
-          setChildMergedCaseCID(data?.[0]?.["field_cid_crime_no./enquiry_no"] || "");
-          setChildMergedCaseTitle(selectedOtherTemplate?.name || "");
-        } else {
-          toast.error(response?.message || "Failed to load child merged cases.");
-        }
-      } catch (error) {
-        toast.error(error?.message || "Something went wrong.");
-      }
-      finally {
-        setLoading(false);
-      }
-    };
-
-    const getActions = async () => {
-            const payloadObj = {
-                module: "ui_case",
-                tab: sysStatus,
-            };
-        
-            setLoading(true);
-        
-            try {
-                const getActionsDetails = await api.post("/action/get_actions", payloadObj);
-        
-                setLoading(false);
-    
-                if (getActionsDetails?.success && getActionsDetails.data?.data) {
-                    const userPermissionsArray = JSON.parse(localStorage.getItem("user_permissions")) || [];
-                    const userPermissions = userPermissionsArray[0] || {};
-        
-                    const updatedActions = getActionsDetails.data.data.map((action) => {
-                            if (action?.icon) action.icon = createSvgIcon(action.icon);
-        
-                            if (action.permissions) {
-                                const parsedPermissions = JSON.parse(action.permissions);
-    
-                                if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions) && parsedPermissions?.['show']) {
-    
-                                    const hasValidPermission = parsedPermissions?.['show'].some(
-                                        (permission) => userPermissions[permission] === true
-                                    );
-                                    return hasValidPermission ? action : null;
-    
-                                }else{
-                                    const hasValidPermission = parsedPermissions.some(
-                                        (permission) => userPermissions[permission] === true
-                                    );
-                                    return hasValidPermission ? action : null;
-                                }
-                            }
-        
-                        return action;
-                    }).filter(Boolean);                
-    
-                    var extraActions = [
-                        {
-                            name: "Crime Investigation",
-                            caseView : true,
-                            viewAction : true
-                        },
-                        ...(sysStatus !== "b_Report" ? updatedActions : []),
-                        sysStatus === "disposal"
-                        ? {
-                            name: "Re Open",
-                            onclick: (selectedRow) =>
-                                changeSysStatus(
-                                selectedRow,
-                                "Reinvestigation",
-                                "Do you want to update this case to Reinvestigation ?"
-                                ),
-                            }
-                        : null,
-                            sysStatus !== "b_Report" && sysStatus !== 'merge_cases' && sysStatus !== 'disposal' ?{
-                                name: "Nature of Disposal",
-                                onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
-                            } : null,
-                            sysStatus === "b_Report" ?
-                            {
-                                name: "Accepted By Court",
-                                onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
-                            } : null,
-                            sysStatus === "b_Report" ? 
-                            {
-                                name: "Rejected By Court",
-                                onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
-                            } : null,
-                        userPermissions?.delete_case
-                        ?  isChildMergedLoading
-                        ? null
-                        : {
-                            name: "Delete",
-                            onclick: (selectedRow) =>
-                                handleDeleteTemplateData(selectedRow, table_name),
-                            icon: () => (
-                                <span className="tableActionIcon">
-                                <svg
-                                    width="50"
-                                    height="50"
-                                    viewBox="0 0 34 34"
-                                    fill=""
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <circle cx="12" cy="12" r="12" fill="" />
-                                    <mask
-                                    id="mask0_1120_40636"
-                                    style={{ maskType: "alpha" }}
-                                    maskUnits="userSpaceOnUse"
-                                    x="4"
-                                    y="4"
-                                    width="16"
-                                    height="16"
-                                    >
-                                    <rect x="4" y="4" width="16" height="16" fill="" />
-                                    </mask>
-                                    <g mask="url(#mask0_1120_40636)">
-                                    <path
-                                        d="M9.40504 17.2666C9.10493 17.2666 8.85126 17.163 8.64404 16.9558C8.43681 16.7486 8.3332 16.4949 8.3332 16.1948V8.39997H7.5332V7.5333H10.3999V6.8103H13.5999V7.5333H16.4665V8.39997H15.6665V16.1876C15.6665 16.4959 15.5629 16.7527 15.3557 16.9583C15.1485 17.1639 14.8948 17.2666 14.5947 17.2666H9.40504ZM10.6692 15.2H11.5357V9.59997H10.6692V15.2ZM12.464 15.2H13.3305V9.59997H12.464V15.2Z"
-                                        fill=""
-                                    />
-                                    </g>
-                                </svg>
-                                </span>
-                            ),
-                            }
-                        : null,
-                    ].filter(Boolean);
-        
-                    setHoverTableOptions(extraActions);
-                } else {
-                    setLoading(false);
-                    toast.error(getActionsDetails.message || "Failed to fetch actions.", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                }
-            } catch (error) {
-                setLoading(false);
-                toast.error(error?.response?.data?.message || "Please Try Again!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
     };
 
     const getAllOptionsforFilter = async (dropdownFields, others) => {
@@ -3056,477 +1742,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const getIoUsers = async () => {
         const res = await api.post("cidMaster/getIoUsers");
         return res?.data || [];
-    };
-
-    const showApprovalListPage = async (approveData) => {
-
-        setListApprovalCaseId(approveData.id);
-        if(!approveData  || Object.keys(approveData).length === 0){
-            setListAddApproveFlag(false);
-            setListApproveTableFlag(false);
-            return;
-        }
-
-
-        var payloadObj = {
-            case_id: approveData.id,
-            page: listApprovalPaginationCount,
-            limit: 10,
-            search: listApprovalSearchValue || "",
-        };
-
-        setListApprovalTotalRecord(0);
-        setListApprovalTotalPage(0);
-
-        setLoading(true);
-
-        try {
-            const getActionsDetails = await api.post(
-                "/ui_approval/get_ui_case_approvals",
-                payloadObj
-            );
-    
-            setLoading(false);
-    
-            if (getActionsDetails && getActionsDetails.success) {
-                var updatedOptions = [];
-    
-                if (getActionsDetails.data["approvals"].length > 0) {
-                    updatedOptions = getActionsDetails.data["approvals"].map(
-                        (data, index) => {
-                        const formatDate = (fieldValue) => {
-                            if (!fieldValue || typeof fieldValue !== "string")
-                            return fieldValue;
-        
-                            var dateValue = new Date(fieldValue);
-        
-                            if (
-                            isNaN(dateValue.getTime()) ||
-                            (!fieldValue.includes("-") && !fieldValue.includes("/"))
-                            ) {
-                            return fieldValue;
-                            }
-        
-                            if (isNaN(dateValue.getTime())) return fieldValue;
-        
-                            var dayValue = String(dateValue.getDate()).padStart(2, "0");
-                            var monthValue = String(dateValue.getMonth() + 1).padStart(
-                            2,
-                            "0"
-                            );
-                            var yearValue = dateValue.getFullYear();
-                            return `${dayValue}/${monthValue}/${yearValue}`;
-                        };
-        
-                        const updatedField = {};
-        
-                        Object.keys(data).forEach((key) => {
-                            if (
-                            data[key] &&
-                            key !== "id" &&
-                            !isNaN(new Date(data[key]).getTime())
-                            ) {
-                            updatedField[key] = formatDate(data[key]);
-                            } else {
-                            updatedField[key] = data[key];
-                            }
-                        });
-        
-                        return {
-                            ...updatedField,
-                            sl_no: index + 1,
-                            id: data.approval_id,
-                        };
-                        }
-                    );
-
-                    const approvalMetaData = getActionsDetails.data["meta"]
-
-                    if(approvalMetaData && approvalMetaData.totalItems && approvalMetaData.totalItems > 0){
-                        setListApprovalTotalRecord(approvalMetaData.totalItems);
-                    }
-
-                    if(approvalMetaData && approvalMetaData.totalPages && approvalMetaData.totalPages > 0 )
-                    {
-                        setListApprovalTotalPage(approvalMetaData.totalPages)
-                    }
-
-                }
-    
-                setListApprovalsData(updatedOptions);
-                setListApprovalItem(getActionsDetails.data["approval_item"]);
-                setListDesignationData(getActionsDetails.data["designation"]);
-    
-                setListAddApproveFlag(false);
-                setListApproveTableFlag(true);
-                setListApprovalCaseNo(approveData?.["field_cid_crime_no./enquiry_no"] || "")
-    
-                const randomId = `approval_${Date.now()}_${Math.floor(
-                Math.random() * 1000
-                )}`;
-                setListRandomApprovalId(randomId);
-            } else {
-                const errorMessage = getActionsDetails.message
-                ? getActionsDetails.message
-                : "Failed to create the template. Please try again.";
-                toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                }
-                );
-            }
-        }
-    };
-    
-    const handleCheckboxDemerge = (event, row) => {
-        const isSelected = event.target.checked;
-      
-        setTableData((prevData) =>
-          prevData.map((data) =>
-            data.id === row.id ? { ...data, isSelected } : data
-          )
-        );
-      
-        setSelectedRowIds((prevIds) => {
-          if (isSelected) {
-            return [...prevIds, row.id];
-          } else {
-            return prevIds.filter((id) => id !== row.id);
-          }
-        });
-      
-        setSelectedMergeRowData((prevData) => {
-          if (isSelected) {
-            return [...prevData, row];
-          } else {
-            return prevData.filter((r) => r.id !== row.id);
-          }
-        });
-    };
-
-    const changeSysStatus = async (data, value, text)=>{
-
-        if((data.pt_case_id !== null && data.pt_case_id !== undefined) || value === 'Reinvestigation'){
-
-            Swal.fire({
-                title: 'Are you sure?',
-                text: text,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes !',
-                cancelButtonText: 'No',
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-
-                    var payloadSysStatus = {
-                        table_name: table_name,
-                        data: {
-                            "id": data.id,
-                            "sys_status": value,
-                            "pt_case_id": data.pt_case_id,
-                            "default_status": "ui_case"
-                        },
-                    };
-            
-                    setLoading(true);
-
-                    try {
-                        const chnageSysStatus = await api.post( "/templateData/caseSysStatusUpdation", payloadSysStatus);
-                        setLoading(false);
-                        if (chnageSysStatus && chnageSysStatus.success) {
-                            toast.success( chnageSysStatus.message ? chnageSysStatus.message : "Status Changed Successfully", {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-success",
-                                onOpen: () => {
-                                if (sysStatus === "merge_cases") {
-                                    loadMergedCasesData(paginationCount);
-                                } else {
-                                    loadTableData(paginationCount);
-                                }
-                                },
-                            });
-                        } else {
-                            const errorMessage = chnageSysStatus.message ? chnageSysStatus.message : "Failed to change the status. Please try again.";
-                            toast.error(errorMessage, {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    } catch (error) {
-                        setLoading(false);
-                        if (error && error.response && error.response["data"]) {
-                            toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    }
-                } else {
-                    console.log("sys status updation canceled.");
-                }
-            });
-        }else{
-
-            Swal.fire({
-                title: 'Are you sure?',
-                text: text,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes !',
-                cancelButtonText: 'No',
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    setFurtherInvestigationSelectedRow(data);
-                    showNewApprovalPage();
-                } else {
-                    console.log("sys status updation canceled.");
-                }
-            });
-        }
-    };
-    
-    const showNewApprovalPage = async (approvalItem)=>{
-
-            setLoading(true);
-            // var payload = {
-            //     page:listApprovalPaginationCount,
-            //     limit: 10,
-            //     search: searchValue || "",
-            // }
-
-
-            try {
-
-                const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals" );
-
-                setLoading(false);
-
-                if (getActionsDetails && getActionsDetails.success) {
-
-                    setApprovalItem(getActionsDetails.data['approval_item']);
-                    setDesignationData(getActionsDetails.data['designation']);
-
-                    var approvalItemName = "further investigation"
-
-                    if(natureOfDisposalModal || showOrderCopy){
-                        approvalItemName = "Change of Disposal Type"
-                    }
-
-                    if(approvalItem){
-                        approvalItemName = approvalItem
-                    }
-
-                    var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                        if((data.name).toLowerCase() === approvalItemName.toLowerCase()){
-                            return data;
-                        }
-                    });
-
-                    setApprovalSaveData({});
-                    setNewApprovalPage(true);
-
-                } else {
-
-                    const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
-                    toast.error(errorMessage, {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-
-                }
-
-            } catch (error) {
-                setLoading(false);
-                if (error && error.response && error.response['data']) {
-                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                }
-            }
-    };
-
-    const handleDeleteTemplateData = (rowData, table_name) => {
-        Swal.fire({
-          title: "Are you sure?",
-          text: "Do you want to delete this profile ?",
-          icon: "warning",
-          showCancelButton: true,
-          confirmButtonText: "Yes, Delete it!",
-          cancelButtonText: "No",
-        }).then(async (result) => {
-          if (result.isConfirmed) {
-            const deleteTemplateData = {
-              table_name: table_name,
-              where: { id: rowData.id },
-            };
-            setLoading(true);
-    
-            try {
-              const deleteTemplateDataResponse = await api.post(
-                "templateData/deleteTemplateData",
-                deleteTemplateData
-              );
-              setLoading(false);
-    
-              if (
-                deleteTemplateDataResponse &&
-                deleteTemplateDataResponse.success
-              ) {
-                toast.success(
-                  deleteTemplateDataResponse.message
-                    ? deleteTemplateDataResponse.message
-                    : "Template Deleted Successfully",
-                  {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () => {
-                      if (sysStatus === "merge_cases") {
-                        loadMergedCasesData(paginationCount);
-                      } else {
-                        loadTableData(paginationCount);
-                      }
-                    },
-                  }
-                );
-              } else {
-                const errorMessage = deleteTemplateDataResponse.message
-                  ? deleteTemplateDataResponse.message
-                  : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-error",
-                });
-              }
-            } catch (error) {
-              setLoading(false);
-              if (error && error.response && error.response["data"]) {
-                toast.error(
-                  error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                  {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                  }
-                );
-              }
-            }
-          } else {
-            console.log("Template deletion canceled.");
-          }
-        });
-    };
-
-    const handleFileUpload = async (event) => {
-        setLoading(true);
-        const file = event.target.files[0];
-    
-        if (!file) {
-          Swal.fire("Error", "Please select a file.", "error");
-          return;
-        }
-    
-        if (!selectedRowData || !selectedRowData.id) {
-          Swal.fire("Error", "Invalid case ID.", "error");
-          return;
-        }
-    
-        const caseId = selectedRowData.id;
-    
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("ui_case_id", caseId);
-        formData.append("created_by", "0");
-    
-        try {
-          const response = await api.post("/templateData/uploadFile", formData);
-    
-          if (response.success) {
-            Swal.fire("Success", "File uploaded successfully.", "success");
-            checkPdfEntryStatus(caseId);
-            getUploadedFiles(selectedRowData);
-          } else {
-            Swal.fire("Error", response.message || "Upload failed.", "error");
-          }
-        } catch (error) {
-          console.error("Upload error:", error);
-          Swal.fire("Error", "Failed to upload file.", "error");
-        } finally {
-          setLoading(false);
-        }
     };
 
     const handleSubmitAp = async ({ id }) => {
@@ -3590,15 +1805,12 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 progress: undefined,
                 className: "toast-success",
                 onOpen: () => {
-                  if (sysStatus === "merge_cases") {
-                    loadMergedCasesData(paginationCount);
-                  } else {
+                  
                     if(!selectedOtherTemplate?.field){
                         handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
                     }else{
                         loadTableData(paginationCount);
                     }
-                  }
                 },
             });
             } else {
@@ -3632,77 +1844,72 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
     const onActionPlanUpdate = async (table_name, data) => {
     
-    if (!table_name || table_name === "") {
-        toast.warning("Please Check The Template");
-        return;
-    }
-    
-    if (!data || Object.keys(data).length === 0) {
-        toast.warning("Data Is Empty Please Check Once");
-        return;
-    }
-    
-    const formData = new FormData();
-    formData.append("table_name", table_name);
-    
-    let normalData = {};
-    
-    const allowedFields = [
-        "field_breif_fact",
-        "field_investigation_carried_out_by_the_police_station"
-    ];
-    
-    allowedFields.forEach((key) => {
-        const value = data[key];
-        if (value !== undefined && value !== null && value !== "") {
-        normalData[key] = value;
+        if (!table_name || table_name === "") {
+            toast.warning("Please Check The Template");
+            return;
         }
-    });
+        
+        if (!data || Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once");
+            return;
+        }
     
-    formData.append("id", data.id);
-    formData.append("data", JSON.stringify(normalData));
+        const formData = new FormData();
+        formData.append("table_name", table_name);
+        
+        let normalData = {};
+        
+        const allowedFields = [
+            "field_breif_fact",
+            "field_investigation_carried_out_by_the_police_station"
+        ];
     
-    try {
-        setLoading(true);
-        const saveTemplateData = await api.post(
-        "/templateData/updateTemplateData",
-        formData
-        );
-        setLoading(false);
-    
-        if (saveTemplateData && saveTemplateData.success) {
-        toast.success(saveTemplateData.message || "Data Updated Successfully", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-            onOpen: () => {
-            if (sysStatus === "merge_cases") {
-                loadMergedCasesData(paginationCount);
-            } else {
-                handleOtherTemplateActions("cid_ui_case_action_plan");
+        allowedFields.forEach((key) => {
+            const value = data[key];
+            if (value !== undefined && value !== null && value !== "") {
+            normalData[key] = value;
             }
-            },
         });
-        } else {
-        toast.error(saveTemplateData.message || "Failed to update the data.");
+        
+        formData.append("id", data.id);
+        formData.append("data", JSON.stringify(normalData));
+    
+        try {
+            setLoading(true);
+            const saveTemplateData = await api.post(
+            "/templateData/updateTemplateData",
+            formData
+            );
+            setLoading(false);
+        
+            if (saveTemplateData && saveTemplateData.success) {
+            toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-success",
+                onOpen: () => {
+                    handleOtherTemplateActions("cid_ui_case_action_plan");
+                },
+            });
+            } else {
+            toast.error(saveTemplateData.message || "Failed to update the data.");
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(
+            error?.response?.data?.message || "Update failed. Please try again."
+            );
         }
-    } catch (error) {
-        setLoading(false);
-        toast.error(
-        error?.response?.data?.message || "Update failed. Please try again."
-        );
-    }
     };
 
     const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
     
-        if ((!natureOfDisposalModal && !showOrderCopy) &&
-            (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
+        if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
           toast.warning("Please Check The Template", {
             position: "top-right",
             autoClose: 3000,
@@ -3719,9 +1926,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
           });
           return;
         }
-      
-    
-      
+
         const formData = new FormData();
         const normalData = {};
       
@@ -3748,15 +1953,11 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
           }
         });
       
-        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
-          normalData["field_pr_status"] = "No";
-        }
         
-        console.log("isImmediateSupervisior",isImmediateSupervisior);
-        normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : isImmediateSupervisior ? "IO" : "ui_case";
+        normalData.sys_status = isImmediateSupervisior ? "IO" : "ui_case";
         normalData.field_submit_status = "";
         normalData["ui_case_id"] = selectedRowData.id;
-        formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
+        formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
@@ -3785,7 +1986,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
             if(saveNewAction){
               await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);   
-              showOptionTemplate(selectedOtherTemplate.table);
+              showOptionTemplate('cid_ui_case_action_plan');
             }else{
               handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
             }
@@ -3809,7 +2010,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     
     const otherTemplateSaveFunc = async (data, saveNewAction) => {
     
-        if ((!natureOfDisposalModal && !showOrderCopy) && (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
+        if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
             toast.warning("Please Check The Template", {
                 position: "top-right",
                 autoClose: 3000,
@@ -3883,32 +2084,13 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
           }
         });
-    
-        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
-            normalData["field_pr_status"] = "No";
-        }
-    
-        normalData.sys_status = showPtCaseModal ? "pt_case" : "ui_case";
+        normalData.sys_status = "ui_case";
         normalData["ui_case_id"] = selectedRowData.id;
     
         var othersData = {};
     
-        if(Object.keys(approvalSaveData).length > 0 ){
-            othersData['approval'] = approvalSaveData;
     
-            var approvalItems = {
-                id : selectedRowData.id,
-                module_name : 'Under Investigation',
-                action : selectedOtherTemplate.name ? selectedOtherTemplate.name : 'Action'
-            }
-    
-            othersData = {
-                            ...othersData, 
-                            approval_details : approvalItems
-                        }
-        }
-    
-        formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
+        formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
         formData.append("others_data", JSON.stringify(othersData));
         formData.append("transaction_id", randomApprovalId);
@@ -3934,27 +2116,14 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     className: "toast-success",
                 });
     
-                if (sysStatus === "merge_cases") {
-                  loadMergedCasesData(paginationCount);
-                }else if(saveNewAction){
+               if(saveNewAction){
                   await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
-                  showOptionTemplate(selectedOtherTemplate.table);
+                  showOptionTemplate('cid_ui_case_action_plan');
                 }else{
                   handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
                 }
     
                 setOtherFormOpen(false);
-                setAddApproveFlag(false);
-                setApproveTableFlag(false);
-              //   if (Object.keys(othersData).length > 0) {
-              //     setOtherTemplateModalOpen(false);
-              //   }
-              //   else{
-              //   setOtherTemplateModalOpen(true);
-              //   handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
-    
-              // }
-                setApprovalSaveData({});
     
                 if(selectedOtherTemplate?.field){
                     var combinedData = {
@@ -3967,11 +2136,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     
                     setSelectKey(null);
                     setSelectedRow(null);
-                    setOtherTransferField([]);
-                    setShowOtherTransferModal(false);
                     setSelectedOtherFields(null);
                     setselectedOtherTemplate(null);
-                    setOtherTemplateModalOpen(false);
                 }else{
                     return;
                 }
@@ -4088,22 +2254,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
       
         let othersData = {};
       
-        if (Object.keys(approvalSaveData).length > 0) {
-          const approvalDetails = {
-            id: selectedRowData.id,
-            type: 'ui_case',
-            module_name: "Under Investigation",
-            action: selectedOtherTemplate.name || "Action",
-          };
-      
-          othersData = {
-            approval: approvalSaveData,
-            approval_details: approvalDetails,
-          };
-      
-          formData.append("others_data", JSON.stringify(othersData));
-        }
-      
         setLoading(true);
       
         try {
@@ -4129,11 +2279,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
       
             setOtherEditTemplateData(false);
             setOtherReadOnlyTemplateData(false);
-            setTemplateApprovalData({});
-            setTemplateApproval(false);
-            setAddApproveFlag(false);
-            setApproveTableFlag(false);
-            setApprovalSaveData({});
           } else {
             const errorMessage =
               updateRes.message || "Failed to update. Please try again.";
@@ -4263,26 +2408,15 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
               progress: undefined,
               className: "toast-success",
               onOpen: () => {
-                if (sysStatus === "merge_cases") {
-                  loadMergedCasesData(paginationCount);
-                } else {
                   loadTableData(paginationCount);
-                }
               },
             });
     
             setSelectKey(null);
             setSelectedRow([]);
-            setOtherTransferField([]);
             setSelectedOtherFields(null);
             setselectedOtherTemplate(null);
-            setUsersBasedOnDivision([]);
-            setSelectedUser(null);
             setSelectedRowIds([]);
-            setSelectedMergeRowData([]); 
-            setSelectedParentId(null);    
-            setApprovalSaveData({});
-            setHasApproval(false);
     
           } else {
             const errorMessage = saveTemplateData.message
@@ -4321,297 +2455,287 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         }
     };
 
-    {otherFormOpen && (
-        <Dialog
-            open={otherFormOpen}
-            onClose={() => closeOtherForm}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-            maxWidth="xl"
-            fullWidth
-        >
-        <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
-            <DialogContentText id="alert-dialog-description">
-            <FormControl fullWidth>
-                <NormalViewForm
-                table_row_id={otherRowId}
-                template_id={otherTemplateId}
-                template_name={
-                    showPtCaseModal && ptCaseTemplateName
-                    ? ptCaseTemplateName
-                    : selectedOtherTemplate?.name
-                }
-                table_name={
-                    showPtCaseModal && ptCaseTableName
-                    ? ptCaseTableName
-                    : selectedOtherTemplate?.table
-                }
-                readOnly={otherReadOnlyTemplateData}
-                editData={otherEditTemplateData}
-                initialData={otherInitialTemplateData}
-                formConfig={optionFormTemplateData}
-                stepperData={optionStepperData}
-                onSubmit={
-                    selectedOtherTemplate?.table === "cid_ui_case_action_plan" ||selectedOtherTemplate?.table === "cid_ui_case_property_form"
-                    ? otherAPPRTemplateSaveFunc
-                    : otherTemplateSaveFunc 
-                }
-                onUpdate={otherTemplateUpdateFunc}
-                    disableEditButton={
-                    (selectedOtherTemplate.table === "cid_ui_case_action_plan") ||
-                    (selectedOtherTemplate.table === "cid_ui_case_property_form")
-                }
-                onError={onSaveTemplateError}
-                closeForm={closeOtherForm}
-                headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
-                />
-            </FormControl>
-            </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ padding: "12px 24px" }}>
-            <Button onClick={closeOtherForm}>
-                Cancel
-            </Button>
-        </DialogActions>
-        </Dialog>
-    )}
-
+ 
     return (
         <>
-            <Box
-                sx={{
-                    width: '100%',
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    borderRadius: 2,
-                    boxShadow: 2,
-                    zIndex: 1,
-                }}
-            >
-                {/* Header Section */}
+        <Box sx={{  overflow: 'auto' , height: '100vh'}}>
+            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
                 <Box
                     sx={{
-                        display: "flex",
-                        alignItems: "start",
-                        justifyContent: "space-between",
-                        mb: 2
+                        width: '100%',
+                        p: 2,
+                        bgcolor: 'background.paper',
+                        borderRadius: 2,
+                        boxShadow: 2,
+                        zIndex: 1,
                     }}
                 >
-                    <Box 
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
-                        onClick={() => backNavigation()}
+                    {/* Header Section */}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "start",
+                            justifyContent: "space-between",
+                            mb: 2
+                        }}
                     >
-                        <WestIcon />
-                        <Typography variant="body1" fontWeight={500}>
-                            {selectedOtherTemplate?.name}
-                        </Typography>
+                        <Box 
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => backNavigation()}
+                        >
+                            <WestIcon />
+                            <Typography variant="body1" fontWeight={500}>
+                                {selectedOtherTemplate?.name}
+                            </Typography>
 
-                        {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                            <Chip
-                                label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                                color="primary"
-                                variant="outlined"
-                                size="small"
-                                sx={{ fontWeight: 500, mt: '2px' }}
-                            />
-                        )}
+                            {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                                <Chip
+                                    label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, mt: '2px' }}
+                                />
+                            )}
 
-                        <Box className="totalRecordCaseStyle">
-                            {otherTemplatesTotalRecord} Records
+                            <Box className="totalRecordCaseStyle">
+                                {otherTemplatesTotalRecord} Records
+                            </Box>
+
+                            {APIsSubmited && (
+                                <Box className="notifyAtTopCaseStyle">
+                                    Submission request in progress. Awaiting SP approval.
+                                </Box>
+                            )}
                         </Box>
 
-                        {APIsSubmited && (
-                            <Box className="notifyAtTopCaseStyle">
-                                Submission request in progress. Awaiting SP approval.
-                            </Box>
-                        )}
-                    </Box>
+                        {/* Actions Section */}
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
+                                <Box></Box>
 
-                    {/* Actions Section */}
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
-                            <Box></Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
-                                <TextFieldInput
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <SearchIcon sx={{ color: "#475467" }} />
-                                            </InputAdornment>
-                                        ),
-                                        endAdornment: (
-                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <IconButton
-                                                    sx={{ px: 1, borderRadius: 0 }}
-                                                    onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                                >
-                                                    <FilterListIcon sx={{ color: "#475467" }} />
-                                                </IconButton>
-                                            </Box>
-                                        ),
-                                    }}
-                                    onInput={(e) => setOtherSearchValue(e.target.value)}
-                                    value={otherSearchValue}
-                                    id="tableSearch"
-                                    size="small"
-                                    placeholder="Search anything"
-                                    variant="outlined"
-                                    className="profileSearchClass"
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault();
-                                            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
-                                        }
-                                    }}
-                                    sx={{
-                                        width: '350px',
-                                        borderRadius: '6px',
-                                        '& .MuiInputBase-input::placeholder': {
-                                            color: '#475467',
-                                            opacity: 1,
-                                            fontSize: '14px',
-                                            fontWeight: 400,
-                                            fontFamily: 'Roboto',
-                                        },
-                                    }}
-                                />
-                                {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
-                                    <Typography
-                                        onClick={handleOtherClear}
-                                        sx={{
-                                            fontSize: "13px",
-                                            fontWeight: "500",
-                                            textDecoration: "underline",
-                                            cursor: "pointer",
-                                            mt: 1,
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
+                                    <TextFieldInput
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ color: "#475467" }} />
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: (
+                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                    <IconButton
+                                                        sx={{ px: 1, borderRadius: 0 }}
+                                                        onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                                    >
+                                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                                    </IconButton>
+                                                </Box>
+                                            ),
                                         }}
+                                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                                        value={otherSearchValue}
+                                        id="tableSearch"
+                                        size="small"
+                                        placeholder="Search anything"
+                                        variant="outlined"
+                                        className="profileSearchClass"
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                                            }
+                                        }}
+                                        sx={{
+                                            width: '350px',
+                                            borderRadius: '6px',
+                                            '& .MuiInputBase-input::placeholder': {
+                                                color: '#475467',
+                                                opacity: 1,
+                                                fontSize: '14px',
+                                                fontWeight: 400,
+                                                fontFamily: 'Roboto',
+                                            },
+                                        }}
+                                    />
+                                    {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                                        <Typography
+                                            onClick={handleOtherClear}
+                                            sx={{
+                                                fontSize: "13px",
+                                                fontWeight: "500",
+                                                textDecoration: "underline",
+                                                cursor: "pointer",
+                                                mt: 1,
+                                            }}
+                                        >
+                                            Clear Filter
+                                        </Typography>
+                                    )}
+                                </Box>
+
+                               
+                                {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
+                                    <Button
+                                        variant="outlined"
+                                        sx={{ height: '40px' }}
+                                        onClick={() => showOptionTemplate('cid_ui_case_action_plan')}
                                     >
-                                        Clear Filter
-                                    </Typography>
+                                        Add
+                                    </Button>
+                                )}
+                                {!showSubmitAPButton && (
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
+                                        disabled={otherTemplatesTotalRecord === 0}
+                                    >
+                                        Submit
+                                    </Button>
                                 )}
                             </Box>
-
-                            {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
-                                <Button
-                                    variant="outlined"
-                                    sx={{ height: '40px' }}
-                                    onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
-                                >
-                                    Add
-                                </Button>
-                            )}
-                            {!showSubmitAPButton && (
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
-                                    disabled={otherTemplatesTotalRecord === 0}
-                                >
-                                    Submit
-                                </Button>
-                            )}
                         </Box>
                     </Box>
-                </Box>
 
-                {/* AO Fields & Table Section */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                    {aoFields.length > 0 ? (
-                        <Grid container spacing={2}>
-                            {aoFields.slice(0, 6).map((field, index) => (
-                                <Grid item xs={12} md={4} key={index}>
-                                    {field.type === 'text' && (
-                                        <ShortText key={field.id} field={field} formData={filterAoValues} disabled />
-                                    )}
-                                    {field.type === 'multidropdown' && (
-                                        <MultiSelect
-                                            key={field.id}
-                                            field={field}
-                                            formData={filterAoValues}
-                                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                            disabled
-                                        />
-                                    )}
-                                    {(field.type === 'dropdown' || field.type === 'autocomplete') && (
-                                        <AutocompleteField
-                                            key={field.id}
-                                            field={field}
-                                            formData={filterAoValues}
-                                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                            value={(() => {
-                                                const fieldValue = filterAoValues?.[field.name];
-                                                return field.options.find(opt => String(opt.code) === String(fieldValue)) || null;
-                                            })()}
-                                            disabled
-                                        />
-                                    )}
-                                </Grid>
-                            ))}
-
-                            {/* Text Areas */}
-                            <Grid container item xs={12} spacing={2} alignItems="flex-start">
-                                {aoFields
-                                    .slice(4)
-                                    .filter(f => f.type === 'textarea')
-                                    .map((field, index) => (
-                                        <Grid item xs={6} key={index}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                <Typography sx={{ fontWeight: 'bold', color: 'black', mr: 1 }}>
-                                                    {field.label}
-                                                </Typography>
-                                                <Tooltip title="Save">
-                                                    <SaveIcon
-                                                        onClick={() => onActionPlanUpdate("cid_under_investigation", filterAoValues)}
-                                                        sx={{
-                                                            color: '#1570EF',
-                                                            p: '0 1px',
-                                                            fontSize: '25px',
-                                                            cursor: 'pointer',
-                                                            mb: '2px'
-                                                        }}
-                                                    />
-                                                </Tooltip>
-                                            </Box>
-                                            <TextField
-                                                fullWidth
-                                                multiline
-                                                minRows={10}
-                                                maxRows={10}
-                                                variant="outlined"
-                                                value={filterAoValues[field.name] || ""}
-                                                onChange={(e) =>
-                                                    setFilterAoValues(prev => ({
-                                                        ...prev,
-                                                        [field.name]: e.target.value,
-                                                    }))
-                                                }
+                    {/* AO Fields & Table Section */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                        {aoFields.length > 0 ? (
+                            <Grid container spacing={2}>
+                                {aoFields.slice(0, 6).map((field, index) => (
+                                    <Grid item xs={12} md={4} key={index}>
+                                        {field.type === 'text' && (
+                                            <ShortText key={field.id} field={field} formData={filterAoValues} disabled />
+                                        )}
+                                        {field.type === 'multidropdown' && (
+                                            <MultiSelect
+                                                key={field.id}
+                                                field={field}
+                                                formData={filterAoValues}
+                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                disabled
                                             />
-                                        </Grid>
-                                    ))}
-                            </Grid>
-                        </Grid>
-                    ) : (
-                        <Typography variant="body2" color="text.secondary">
-                            No AO Fields Available
-                        </Typography>
-                    )}
-                </Box>
+                                        )}
+                                        {(field.type === 'dropdown' || field.type === 'autocomplete') && (
+                                            <AutocompleteField
+                                                key={field.id}
+                                                field={field}
+                                                formData={filterAoValues}
+                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                value={(() => {
+                                                    const fieldValue = filterAoValues?.[field.name];
+                                                    return field.options.find(opt => String(opt.code) === String(fieldValue)) || null;
+                                                })()}
+                                                disabled
+                                            />
+                                        )}
+                                    </Grid>
+                                ))}
 
-                {/* Data Table */}
-                <TableView
-                    rows={otherTemplateData}
-                    columns={otherTemplateColumn}
-                    totalPage={otherTemplatesTotalPage}
-                    totalRecord={otherTemplatesTotalRecord}
-                    paginationCount={otherTemplatesPaginationCount}
-                    handlePagination={handleOtherPagination}
-                    tableName={selectedOtherTemplate?.table}
-                />
+                                {/* Text Areas */}
+                                <Grid container item xs={12} spacing={2} alignItems="flex-start">
+                                    {aoFields
+                                        .slice(4)
+                                        .filter(f => f.type === 'textarea')
+                                        .map((field, index) => (
+                                            <Grid item xs={6} key={index}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                    <Typography sx={{ fontWeight: 'bold', color: 'black', mr: 1 }}>
+                                                        {field.label}
+                                                    </Typography>
+                                                    <Tooltip title="Save">
+                                                        <SaveIcon
+                                                            onClick={() => onActionPlanUpdate("cid_under_investigation", filterAoValues)}
+                                                            sx={{
+                                                                color: '#1570EF',
+                                                                p: '0 1px',
+                                                                fontSize: '25px',
+                                                                cursor: 'pointer',
+                                                                mb: '2px'
+                                                            }}
+                                                        />
+                                                    </Tooltip>
+                                                </Box>
+                                                <TextField
+                                                    fullWidth
+                                                    multiline
+                                                    minRows={10}
+                                                    maxRows={10}
+                                                    variant="outlined"
+                                                    value={filterAoValues[field.name] || ""}
+                                                    onChange={(e) =>
+                                                        setFilterAoValues(prev => ({
+                                                            ...prev,
+                                                            [field.name]: e.target.value,
+                                                        }))
+                                                    }
+                                                />
+                                            </Grid>
+                                        ))}
+                                </Grid>
+                            </Grid>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary">
+                                No AO Fields Available
+                            </Typography>
+                        )}
+                    </Box>
+
+                    {/* Data Table */}
+                    <TableView
+                        rows={otherTemplateData}
+                        columns={otherTemplateColumn}
+                        totalPage={otherTemplatesTotalPage}
+                        totalRecord={otherTemplatesTotalRecord}
+                        paginationCount={otherTemplatesPaginationCount}
+                        handlePagination={handleOtherPagination}
+                        tableName={selectedOtherTemplate?.table}
+                    />
+                </Box>
             </Box>
+        </Box>
+
+        {otherFormOpen && (
+            <Dialog
+                open={otherFormOpen}
+                onClose={() => closeOtherForm}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+            <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                <DialogContentText id="alert-dialog-description">
+                <FormControl fullWidth>
+                    <NormalViewForm
+                    table_row_id={otherRowId}
+                    template_id={otherTemplateId}
+                    template_name={ selectedOtherTemplate?.name}
+                    table_name={selectedOtherTemplate?.table}
+                    readOnly={otherReadOnlyTemplateData}
+                    editData={otherEditTemplateData}
+                    initialData={otherInitialTemplateData}
+                    formConfig={optionFormTemplateData}
+                    stepperData={optionStepperData}
+                    onSubmit={otherAPPRTemplateSaveFunc}
+                    onUpdate={otherTemplateUpdateFunc}
+                    disableEditButton={true}
+                    onError={onSaveTemplateError}
+                    closeForm={closeOtherForm}
+                    headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                    />
+                </FormControl>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ padding: "12px 24px" }}>
+                <Button onClick={closeOtherForm}>
+                    Cancel
+                </Button>
+            </DialogActions>
+            </Dialog>
+        )}
         </>
     );    
 };
-
 
 export default ActionPlan;
