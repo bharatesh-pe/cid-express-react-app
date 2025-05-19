@@ -2469,7 +2469,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                       }
                     }}
                     sx={{
-                      width: { xs: '100%', sm: '350px' },
+                      width: { xs: '100%', sm: '250px' },
                       borderRadius: '6px',
                       '& .MuiInputBase-input::placeholder': {
                         color: '#475467',
