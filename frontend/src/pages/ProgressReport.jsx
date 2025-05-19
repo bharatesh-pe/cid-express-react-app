@@ -2,26 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
-import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
-import SelectAllIcon from '@mui/icons-material/SelectAll';
 import DeleteIcon from '@mui/icons-material/Delete';
-import VerifiedIcon from '@mui/icons-material/Verified';
-import { TableCell } from "@mui/material";
 import api from "../services/api";
 import SaveIcon from '@mui/icons-material/Save';
-import { Badge, Chip, Tooltip } from "@mui/material";
-import {
-  Box,
-  Button,
-  FormControl,
-  InputAdornment,
-  Typography,
-  IconButton,
-  Checkbox,
-  Grid,
-  Autocomplete,
-  TextField,
-} from "@mui/material";
+import { Chip, Tooltip } from "@mui/material";
+import { Box , Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField} from "@mui/material";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -31,7 +16,6 @@ import SearchIcon from "@mui/icons-material/Search";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
@@ -60,125 +44,58 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     fetchData();
   }, [rowId]);
 
-
   const [selectedTab, setSelectedTab] = useState(0);
-
   const handleTabChange = (event, newValue) => {
     setSelectedTab(newValue);
   };
-
   const location = useLocation();
   const navigate = useNavigate();
   const { pageCount, systemStatus } = location.state || {};
-
   const [aoFields, setAoFields] = useState([]);
   const [aoFieldId, setAoFieldId] = useState(selectedRowData);
   const [filterAoValues, setFilterAoValues] = useState({});
-
   var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-
   const templateActionAddFlag = useRef(false);
   const [disableEditButtonFlag, setDisableEditButtonFlag] = useState(false);
-
   const [showPtCaseModal, setShowPtCaseModal] = useState(false);
   const [ptCaseTableName, setPtCaseTableName] = useState(null);
   const [ptCaseTemplateName, setPtCaseTemplateName] = useState(null);
-
   const [uploadedFiles, setUploadedFiles] = useState([]);
-
-  const [totalPage, setTotalPage] = useState(0);
-  const [totalRecord, setTotalRecord] = useState(0);
-
-  // filter states
-  const [showFilterModal, setShowFilterModal] = useState(false);
   const [filterDropdownObj, setfilterDropdownObj] = useState([]);
   const [filterValues, setFilterValues] = useState({});
-  const [fromDateValue, setFromDateValue] = useState(null);
-  const [toDateValue, setToDateValue] = useState(null);
-  const [forceTableLoad, setForceTableLoad] = useState(false);
-
-  const [furtherInvestigationPtCase, setFurtherInvestigationPtCase] =
-    useState(false);
-  const [furtherInvestigationSelectedRow, setFurtherInvestigationSelectedRow] =
-    useState([]);
-  const [
-    furtherInvestigationSelectedValue,
-    setFurtherInvestigationSelectedValue,
-  ] = useState(null);
   const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
   const [isSubmitAllowed, setIsSubmitAllowed] = useState(false);
   const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
   const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false);
-
-  // for pdf download
-  const [isDownloadPdf, setIsDownloadPdf] = useState(false);
-  const [downloadPdfFields, setDownloadPdfFields] = useState({});
-  const [downloadPdfData, setDownloadPdfData] = useState([]);
-  const [isPrint, setIsPrint] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
-
-
   const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
   const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
   const [APIsSubmited, setAPIsSubmited] = useState(false);
   const [otherTemplatesPaginationCount, setOtherTemplatesPaginationCount] = useState(1);
   const [otherSearchValue, setOtherSearchValue] = useState('');
-
   const [othersFilterModal, setOthersFilterModal] = useState(false);
   const [othersFromDate, setOthersFromDate] = useState(null);
   const [othersToDate, setOthersToDate] = useState(null);
   const [othersFiltersDropdown, setOthersFiltersDropdown] = useState([]);
   const [othersFilterData, setOthersFilterData] = useState({});
-  const [selectedMergeRowData, setSelectedMergeRowData] = useState([]);
   const [selectedParentId, setSelectedParentId] = useState("");
-  const [usersBasedOnDivision, setUsersBasedOnDivision] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
-
-
   const handleOtherPagination = (page) => {
     setOtherTemplatesPaginationCount(page)
   }
-
   const [paginationCount, setPaginationCount] = useState(pageCount ? pageCount : 1);
-  const [tableSortOption, settableSortOption] = useState("DESC");
-  const [tableSortKey, setTableSortKey] = useState("");
-  const [tableData, setTableData] = useState([]);
   const [isValid, setIsValid] = useState(false);
-  const [searchValue, setSearchValue] = useState(null);
-  const [linkLeader, setLinkLeader] = useState(false);
-  const [linkOrganization, setLinkOrganization] = useState(false);
-  const [template_name, setTemplate_name] = useState("");
   const [table_name, setTable_name] = useState("");
-
   const [sysStatus, setSysSattus] = useState(systemStatus ? systemStatus : "ui_case");
-
-  const [formOpen, setFormOpen] = useState(false);
   const [formTemplateData, setFormTemplateData] = useState([]);
   const [initialData, setInitialData] = useState({});
   const [viewReadonly, setviewReadonly] = useState(false);
   const [editTemplateData, setEditTemplateData] = useState(false);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
-
   const [otherFormOpen, setOtherFormOpen] = useState(false);
   const [optionStepperData, setOptionStepperData] = useState([]);
   const [optionFormTemplateData, setOptionFormTemplateData] = useState([]);
-
-  const [showAttachmentModal, setShowAttachmentModal] = useState(false);
-  const [showAttachmentKey, setShowAttachmentKey] = useState(null);
-  const [showAttachmentData, setShowAttachmentData] = useState([]);
-
-  const [starFlag, setStarFlag] = useState(null);
-  const [readFlag, setReadFlag] = useState(null);
-
-  const [loading, setLoading] = useState(false); // State for loading indicator
-
-  const searchParams = new URLSearchParams(location.search);
-
-  const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
-    { field: "sl_no", headerName: "S.No" },
-  ]);
-
+  const [loading, setLoading] = useState(false);
   const [otherTemplateModalOpen, setOtherTemplateModalOpen] = useState(false);
   const [selectedOtherTemplate, setselectedOtherTemplate] = useState(options);
   const [otherTemplateData, setOtherTemplateData] = useState([]);
@@ -194,23 +111,19 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
   const [hoverTableOptions, setHoverTableOptions] = useState([]);
   const [otherTablePagination, setOtherTablePagination] = useState(1);
   const PageSize = 5;
-
   const [monthwiseData, setMonthwiseData] = useState([]);
   const [monthwiseTotalRecord, setMonthwiseTotalRecord] = useState(0);
   const [monthwiseTotalPage, setMonthwiseTotalPage] = useState(1);
-  const [monthwisePaginationCount, setMonthwisePaginationCount] = useState(PageSize);
-  const [monthwiseCurrentPage, setMonthwiseCurrentPage] = useState(1); // renamed
-
+  const [monthwiseCurrentPage, setMonthwiseCurrentPage] = useState(1);
+  const [selectedRow, setSelectedRow] = useState(selectedRowData);
+  const [selectedOtherFields, setSelectedOtherFields] = useState(null);
+  const [selectKey, setSelectKey] = useState(null);
+  const [randomApprovalId, setRandomApprovalId] = useState(0);
+  const hoverTableOptionsRef = useRef([]);
 
   const handleMonthwisePagination = (page) => {
     getMonthWiseFile(selectedRow, page);
   };
-
-  useEffect(() => {
-    if (selectedTab === 3 && rowId && hasPdfEntry) {
-      getUploadedFiles(rowId, options);
-    }
-  }, [selectedTab, rowId, hasPdfEntry]);
 
   const monthwiseColumns = [
     {
@@ -252,20 +165,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       },
     },
   ];
-
-
-  // for actions
-
-  const [selectedRow, setSelectedRow] = useState(selectedRowData);
-
-  const [selectedOtherFields, setSelectedOtherFields] = useState(null);
-  const [selectKey, setSelectKey] = useState(null);
-
-  const [randomApprovalId, setRandomApprovalId] = useState(0);
-
-
-  const hoverTableOptionsRef = useRef([]);
-
 
   const loadValueField = async (rowData, editData, table_name) => {
     if (!table_name || table_name === "") {
@@ -324,7 +223,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       return [];
     }
   };
-
 
   const loadAOFields = async () => {
     setLoading(true);
@@ -403,18 +301,9 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
   useEffect(() => {
     const fetchData = async () => {
-      if (selectedTab === 1 || selectedTab === 0) {
+      if (selectedTab === 0 || selectedTab === 1) {
         await handleOtherTemplateActions(options, selectedRowData, true, true);
-      }
-    };
-
-    fetchData();
-  }, [selectedTab, rowId]);
-
-
-  useEffect(() => {
-    const fetchData = async () => {
-      if (selectedTab === 2) {
+      } else if (selectedTab === 2) {
         await getMonthWiseFile(rowId);
       }
     };
@@ -422,6 +311,11 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     fetchData();
   }, [selectedTab, rowId]);
 
+  useEffect(() => {
+    if (selectedTab === 3 && rowId && hasPdfEntry) {
+      getUploadedFiles(rowId, options);
+    }
+  }, [selectedTab, rowId, hasPdfEntry]);
 
 
   const onSaveTemplateError = (error) => {
@@ -438,8 +332,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       return updated;
     });
   };
-
-
 
   const handleOtherTemplateActions = async (options, selectedRow, searchFlag, fromUploadedFiles) => {
 
@@ -815,7 +707,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
-
   const handleOthersTemplateDataView = async (
     rowData,
     editData,
@@ -983,7 +874,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   }
 
-
   const getCellClassName = (key, params, table) => {
     // Example condition: unread rows for a specific table
     // if (table === "cid_ui_case_progress_report" && !params?.row?.ReadStatus) {
@@ -1129,15 +1019,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
   }
 
-  function createSvgIcon(svgString) {
-    return () => (
-      <span
-        dangerouslySetInnerHTML={{ __html: svgString }}
-        className="tableActionIcon"
-      />
-    );
-  }
-
   const checkPdfEntryStatus = async (caseId) => {
     if (!caseId) {
       setHasPdfEntry(false);
@@ -1180,7 +1061,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
-
   const getMonthWiseFile = async (ui_case_id, page = 1) => {
     if (!ui_case_id) {
       console.error("Invalid ui_case_id for file retrieval:", ui_case_id);
@@ -1194,10 +1074,9 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       });
 
       if (response && response.success) {
-        setMonthwiseData(response.data || []); // just set data as is
+        setMonthwiseData(response.data || []);
         setMonthwiseTotalRecord(response.totalRecords || 0);
         setMonthwiseTotalPage(Math.ceil((response.totalRecords || 0) / PageSize));
-        setMonthwisePaginationCount(PageSize);
         setMonthwiseCurrentPage(page);
       }
     } catch (error) {
@@ -1205,14 +1084,11 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
-
   useEffect(() => {
     if (selectedRow) {
       getMonthWiseFile(selectedRow, 1);
     }
   }, [selectedRow]);
-
-
 
 
   const fileUploadTableView = (type, rowData, attachment, filePath) => {
@@ -1244,7 +1120,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       );
     }
   };
-
 
   const handleTemplateDataView = async (rowData, editData, table_name) => {
 
@@ -1370,189 +1245,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
           className: "toast-error",
         });
       }
-    }
-  };
-
-  const loadTableData = async (page) => {
-    const getTemplatePayload = {
-      page,
-      limit: 10,
-      sort_by: tableSortKey,
-      order: tableSortOption,
-      search: searchValue || "",
-      table_name,
-      is_starred: starFlag,
-      is_read: readFlag,
-      template_module: "ui_case",
-      sys_status: sysStatus,
-      from_date: fromDateValue,
-      to_date: toDateValue,
-      filter: filterValues,
-    };
-
-    setLoading(true);
-
-    try {
-      const getTemplateResponse = await api.post("/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
-      setLoading(false);
-
-      if (getTemplateResponse?.success) {
-        const { data, meta } = getTemplateResponse.data;
-
-        const totalPages = meta?.totalPages;
-        const totalItems = meta?.totalItems;
-
-        if (totalPages !== null && totalPages !== undefined) {
-          setTotalPage(totalPages);
-        }
-
-        if (totalItems !== null && totalItems !== undefined) {
-          setTotalRecord(totalItems);
-        }
-
-        if (meta?.table_name && meta?.template_name) {
-          setTemplate_name(meta.template_name);
-          setTable_name(meta.table_name);
-        }
-
-        if (data?.length > 0) {
-          const excludedKeys = [
-            "created_at", "updated_at", "id", "deleted_at", "attachments",
-            "Starred", "ReadStatus", "linked_profile_info",
-            "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cid_crime_no./enquiry_no", "field_io_name", "field_io_name_id"
-          ];
-
-          const generateReadableHeader = (key) =>
-            key
-              .replace(/^field_/, "")
-              .replace(/_/g, " ")
-              .toLowerCase()
-              .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-
-          const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
-
-
-          const updatedHeader = [
-
-            {
-              field: "select",
-              headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
-              width: 50,
-              resizable: false,
-              renderCell: (params) => {
-                const isDisabled = !params?.row?.["field_io_name"];
-                return (
-                  <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-                    <Checkbox
-                      checked={params.row.isSelected || false}
-                      onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                      disabled={isDisabled}
-                    />
-                  </Box>
-                )
-              },
-            },
-
-            {
-              field: "field_cid_crime_no./enquiry_no",
-              headerName: "Cid Crime No./Enquiry No",
-              width: 130,
-              resizable: true,
-              cellClassName: 'justify-content-start',
-              renderHeader: (params) => (
-                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
-              ),
-              renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
-            },
-            {
-              field: "field_io_name",
-              headerName: "Assign To IO",
-              width: 200,
-              resizable: true,
-              cellClassName: 'justify-content-start',
-              renderHeader: (params) => (
-                tableHeaderRender(params, "field_io_name")
-              ),
-              renderCell: renderCellFunc("field_io_name",),
-            },
-            ...Object.keys(data[0])
-              .filter((key) => !excludedKeys.includes(key))
-              .map((key) => ({
-                field: key,
-                headerName: generateReadableHeader(key),
-                width: generateReadableHeader(key).length < 15 ? 100 : 200,
-                resizable: true,
-                renderHeader: (params) => (
-                  tableHeaderRender(params, key)
-                ),
-                renderCell: renderCellFunc(key),
-              })),
-          ];
-
-          setviewTemplateTableData(updatedHeader);
-
-          const formatDate = (value) => {
-            const parsed = Date.parse(value);
-            if (isNaN(parsed)) return value;
-            return new Date(parsed).toLocaleDateString("en-GB");
-          };
-
-          const updatedTableData = data.map((field, index) => {
-            const updatedField = {};
-
-            Object.keys(field).forEach((key) => {
-              if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                updatedField[key] = formatDate(field[key]);
-              } else {
-                updatedField[key] = field[key];
-              }
-            });
-
-            return {
-              ...updatedField,
-              sl_no: (page - 1) * 10 + (index + 1),
-              ...(field.id ? {} : { id: "unique_id_" + index }),
-            };
-          });
-
-          setTableData(updatedTableData);
-        } else {
-          setTableData([]);
-        }
-
-        setviewReadonly(false);
-        setEditTemplateData(false);
-        setInitialData({});
-        setFormOpen(false);
-        setSelectedRow(null);
-        setSelectedParentId([]);
-
-      } else {
-        setLoading(false);
-        toast.error(getTemplateResponse.message || "Failed to load template data.", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      toast.error(error?.response?.data?.message || "Please Try Again!", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-error",
-      });
     }
   };
 
@@ -1904,17 +1596,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
-  const showAttachmentFileModal = (type, row) => {
-    if (row[type]) {
-      var attachments = row[type].split(",");
-      setShowAttachmentModal(true);
-      setShowAttachmentKey(row);
-      setShowAttachmentData(attachments);
-    } else {
-      console.log("no attachments found");
-    }
-  };
-
   const getFileIcon = (fileName) => {
     fileName = fileName.split(".").pop().toLowerCase();
     switch (fileName) {
@@ -1939,51 +1620,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       default:
         return <InsertDriveFileIcon />;
     }
-  };
-
-  const handleCheckboxChangeField = (event, row) => {
-    const isSelected = event.target.checked;
-
-    setTableData((prevData) =>
-      prevData.map((data) =>
-        data.id === row.id ? { ...data, isSelected } : data
-      )
-    );
-
-    if (isSelected) {
-      setSelectedRowIds((prevIds) => [...prevIds, row.id]);
-      setSelectedMergeRowData((prev) => [...prev, row]);
-    } else {
-      setSelectedRowIds((prevIds) => prevIds.filter((id) => id !== row.id));
-      setSelectedMergeRowData((prev) => prev.filter((r) => r.id !== row.id));
-    }
-  };
-
-
-  const tableHeaderRender = (params, key) => {
-    return (
-      <Tooltip title={params.colDef.headerName} arrow placement="top">
-        <Typography
-          className="MuiDataGrid-columnHeaderTitle mui-multiline-header"
-          sx={{
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'normal',
-            wordBreak: 'break-word',
-            lineHeight: '1.2em',
-            fontSize: "15px",
-            fontWeight: "500",
-            color: "#1D2939",
-            width: '100%',
-          }}
-        >
-          {params.colDef.headerName}
-        </Typography>
-      </Tooltip>
-    );
   };
 
   const getAllOptionsforFilter = async (dropdownFields, others) => {
@@ -2045,7 +1681,6 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     const res = await api.post("cidMaster/getIoUsers");
     return res?.data || [];
   };
-
 
   const handleFileUpload = async (event) => {
     setLoading(true);
@@ -2553,21 +2188,14 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
           draggable: true,
           progress: undefined,
           className: "toast-success",
-          onOpen: () => {
-
-            loadTableData(paginationCount);
-
-          },
         });
 
         setSelectKey(null);
         setSelectedRow([]);
         setSelectedOtherFields(null);
         setselectedOtherTemplate(null);
-        setUsersBasedOnDivision([]);
         setSelectedUser(null);
         setSelectedRowIds([]);
-        setSelectedMergeRowData([]);
         setSelectedParentId(null);
       } else {
         const errorMessage = saveTemplateData.message
@@ -2606,42 +2234,14 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
+  const handleUpdatePdfClick = async ({ selectedOtherTemplate, rowId, selectedIds, prUpdatePdf }) => {
+    const getTemplatePayload = {
+      table_name: selectedOtherTemplate?.table,
+      ui_case_id: rowId,
+    };
 
-
-const handleUpdatePdfClick = async ({ selectedOtherTemplate, rowId, selectedIds, prUpdatePdf }) => {
-  const getTemplatePayload = {
-    table_name: selectedOtherTemplate?.table,
-    ui_case_id: rowId,
-  };
-
-  if (!selectedIds || selectedIds.length === 0) {
-    toast.error("Please choose a record to append.", {
-      position: "top-right",
-      autoClose: 3000,
-      className: "toast-warning",
-    });
-    return;
-  }
-
-  setLoading(true);
-
-  try {
-    const getTemplateResponse = await api.post("/templateData/getTemplateData", getTemplatePayload);
-
-    if (!getTemplateResponse?.success) {
-      throw new Error(getTemplateResponse.message || "Failed to fetch template data.");
-    }
-
-    const dataToAppend = getTemplateResponse.data.filter(
-      (item) => item.field_pr_status === "No"
-    );
-
-    const filteredDataToAppend = dataToAppend.filter(
-      (item) => selectedIds.includes(item.id)
-    );
-
-    if (filteredDataToAppend.length === 0) {
-      toast.error("These records have already been updated to the PDF.", {
+    if (!selectedIds || selectedIds.length === 0) {
+      toast.error("Please choose a record to append.", {
         position: "top-right",
         autoClose: 3000,
         className: "toast-warning",
@@ -2649,94 +2249,120 @@ const handleUpdatePdfClick = async ({ selectedOtherTemplate, rowId, selectedIds,
       return;
     }
 
-    const aoFieldValues = (await loadValueField(rowId, false, "cid_under_investigation")) || {};
+    setLoading(true);
 
-    const aoFieldsToInclude = [
-      "field_cid_crime_no./enquiry_no",
-      "field_crime_number_of_ps",
-      "field_name_of_the_police_station",
-      "field_referring_agency",
-      "field_dept_unit",
-      "field_division",
-    ];
+    try {
+      const getTemplateResponse = await api.post("/templateData/getTemplateData", getTemplatePayload);
 
-    const filteredAOFieldValues = {};
-
-    aoFieldsToInclude.forEach((key) => {
-      if (aoFieldValues[key] !== undefined) {
-        filteredAOFieldValues[key] = aoFieldValues[key];
-      } else {
-        console.warn(`Field ${key} is missing or undefined.`);
+      if (!getTemplateResponse?.success) {
+        throw new Error(getTemplateResponse.message || "Failed to fetch template data.");
       }
-    });
 
-    await prUpdatePdf({
-      appendText: filteredDataToAppend,
-      aoFields: filteredAOFieldValues,
-      selectedIds,
-      selectedRow: rowId,
-    });
+      const dataToAppend = getTemplateResponse.data.filter(
+        (item) => item.field_pr_status === "No"
+      );
 
-  } catch (error) {
-    console.error("Error in handleUpdatePdfClick:", error);
-    toast.error("Error fetching template data. Please try again.", {
-      position: "top-right",
-      autoClose: 3000,
-      className: "toast-error",
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+      const filteredDataToAppend = dataToAppend.filter(
+        (item) => selectedIds.includes(item.id)
+      );
 
-const prUpdatePdf = async ({ appendText, aoFields, selectedIds, selectedRow }) => {
-  setLoading(true);
+      if (filteredDataToAppend.length === 0) {
+        toast.error("These records have already been updated to the PDF.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-warning",
+        });
+        return;
+      }
 
-  try {
-    const payload = {
-      selected_row_id: selectedIds,
-      ui_case_id: selectedRow,
-      appendText,
-      aoFields,
-      created_by: localStorage.getItem("user_id"),
-    };
+      const aoFieldValues = (await loadValueField(rowId, false, "cid_under_investigation")) || {};
 
-    const saveTemplateData = await api.post(
-      "/templateData/appendToLastLineOfPDF",
-      payload
-    );
+      const aoFieldsToInclude = [
+        "field_cid_crime_no./enquiry_no",
+        "field_crime_number_of_ps",
+        "field_name_of_the_police_station",
+        "field_referring_agency",
+        "field_dept_unit",
+        "field_division",
+      ];
 
-    if (saveTemplateData?.success) {
-      toast.success(saveTemplateData.message || "Data appended successfully.", {
+      const filteredAOFieldValues = {};
+
+      aoFieldsToInclude.forEach((key) => {
+        if (aoFieldValues[key] !== undefined) {
+          filteredAOFieldValues[key] = aoFieldValues[key];
+        } else {
+          console.warn(`Field ${key} is missing or undefined.`);
+        }
+      });
+
+      await prUpdatePdf({
+        appendText: filteredDataToAppend,
+        aoFields: filteredAOFieldValues,
+        selectedIds,
+        selectedRow: rowId,
+      });
+
+    } catch (error) {
+      console.error("Error in handleUpdatePdfClick:", error);
+      toast.error("Error fetching template data. Please try again.", {
         position: "top-right",
         autoClose: 3000,
-        className: "toast-success",
-      });
-
-      setOtherTemplateModalOpen(false);
-      setSelectedIds([]);
-      handleOtherTemplateActions("cid_ui_case_progress_report", selectedRow, true, true);
-    } else {
-      toast.error(saveTemplateData.message || "Failed to append data.", {
-        position: "top-right",
-        autoClose: true,
         className: "toast-error",
       });
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error("Error during PDF update:", error);
-    toast.error(
-      error?.response?.data?.message || "Error appending to PDF. Try again!",
-      {
-        position: "top-right",
-        autoClose: 3000,
-        className: "toast-error",
+  };
+
+  const prUpdatePdf = async ({ appendText, aoFields, selectedIds, selectedRow }) => {
+    setLoading(true);
+
+    try {
+      const payload = {
+        selected_row_id: selectedIds,
+        ui_case_id: selectedRow,
+        appendText,
+        aoFields,
+        created_by: localStorage.getItem("user_id"),
+      };
+
+      const saveTemplateData = await api.post(
+        "/templateData/appendToLastLineOfPDF",
+        payload
+      );
+
+      if (saveTemplateData?.success) {
+        toast.success(saveTemplateData.message || "Data appended successfully.", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-success",
+        });
+
+        setOtherTemplateModalOpen(false);
+        setSelectedIds([]);
+        handleOtherTemplateActions("cid_ui_case_progress_report", selectedRow, true, true);
+      } else {
+        toast.error(saveTemplateData.message || "Failed to append data.", {
+          position: "top-right",
+          autoClose: true,
+          className: "toast-error",
+        });
       }
-    );
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (error) {
+      console.error("Error during PDF update:", error);
+      toast.error(
+        error?.response?.data?.message || "Error appending to PDF. Try again!",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        }
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
@@ -2950,7 +2576,7 @@ const prUpdatePdf = async ({ appendText, aoFields, selectedIds, selectedRow }) =
             height="200px"
           >
             <Typography>Please Upload your Progress Report Pdf</Typography>
-            <Button variant="contained" component="label" disabled={isChildMergedLoading}>
+            <Button variant="contained" component="label">
               Upload File
               <input
                 type="file"

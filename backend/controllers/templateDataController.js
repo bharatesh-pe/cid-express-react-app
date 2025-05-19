@@ -4745,15 +4745,17 @@ function shouldInsertGeneralInfoForMonthPdf(currentCaseId, currentMonth) {
 
 async function insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, target = 'pdfDoc') {
   const alreadyInserted = target === 'pdfDoc' ? pdfDocGeneralInfoInserted : monthPdfGeneralInfoInserted;
-  if (alreadyInserted) {
-    return false;
-  }
+  if (alreadyInserted) return false;
 
-  const page = pdfDoc.addPage([pageWidth, pageHeight]);
   const fontSize = 12;
-  let currentY = pageHeight - 80;
   const startX = 50;
+  const labelWidth = 200;
+  const valueWidth = pageWidth - 300;
+  let currentY = pageHeight - 80;
 
+  let page = pdfDoc.addPage([pageWidth, pageHeight]);
+
+  // Draw bold "General Info" heading
   page.drawText("General Info", {
     x: startX,
     y: currentY,
@@ -4761,20 +4763,86 @@ async function insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regula
     font: boldFont,
     color: rgb(0, 0, 0),
   });
-
-  currentY -= 20;
+  currentY -= 30;
 
   for (let [key, val] of Object.entries(aoFields)) {
     const label = formatLabel(key);
-    const value = val?.toString() || 'N/A';
+    const rawValue = val?.toString() || 'N/A';
 
-    page.drawRectangle({ x: startX, y: currentY - 20, width: 200, height: 30, borderColor: rgb(0, 0, 0), borderWidth: 1 });
-    page.drawRectangle({ x: startX + 200, y: currentY - 20, width: pageWidth - 300, height: 30, borderColor: rgb(0, 0, 0), borderWidth: 1 });
+    // Split into lines, handle line breaks and word wrap
+    const rawLines = rawValue.split('\n');
+    const wrappedLines = [];
 
-    page.drawText(label, { x: startX + 5, y: currentY - 5, size: fontSize, font: boldFont, color: rgb(0, 0, 0) });
-    page.drawText(value, { x: startX + 205, y: currentY - 5, size: fontSize, font: regularFont, color: rgb(0, 0, 0) });
+    for (let rawLine of rawLines) {
+      rawLine = breakLongWords(rawLine, regularFont, fontSize, valueWidth);
+      const words = rawLine.trim().split(/\s+/);
+      let currentLine = "";
 
-    currentY -= 40;
+      for (let word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const width = regularFont.widthOfTextAtSize(testLine, fontSize);
+        if (width <= valueWidth) {
+          currentLine = testLine;
+        } else {
+          wrappedLines.push(currentLine);
+          currentLine = word;
+        }
+      }
+
+      if (currentLine) wrappedLines.push(currentLine);
+    }
+
+    const valueHeight = wrappedLines.length * (fontSize + 4);
+    const rowHeight = Math.max(30, valueHeight + 10);
+
+    // Add page if overflow
+    if (currentY - rowHeight < 50) {
+      page = pdfDoc.addPage([pageWidth, pageHeight]);
+      currentY = pageHeight - 80;
+    }
+
+    // Draw rectangles
+    page.drawRectangle({
+      x: startX,
+      y: currentY - rowHeight,
+      width: labelWidth,
+      height: rowHeight,
+      borderColor: rgb(0, 0, 0),
+      borderWidth: 1,
+    });
+
+    page.drawRectangle({
+      x: startX + labelWidth,
+      y: currentY - rowHeight,
+      width: valueWidth,
+      height: rowHeight,
+      borderColor: rgb(0, 0, 0),
+      borderWidth: 1,
+    });
+
+    // Draw label (bold)
+    page.drawText(label, {
+      x: startX + 5,
+      y: currentY - 15,
+      size: fontSize,
+      font: boldFont,
+      color: rgb(0, 0, 0),
+    });
+
+    // Draw wrapped value
+    let textY = currentY - 15;
+    for (let line of wrappedLines) {
+      page.drawText(line, {
+        x: startX + labelWidth + 10,
+        y: textY,
+        size: fontSize,
+        font: regularFont,
+        color: rgb(0, 0, 0),
+      });
+      textY -= fontSize + 4;
+    }
+
+    currentY -= rowHeight;
   }
 
   if (target === 'pdfDoc') pdfDocGeneralInfoInserted = true;
@@ -4782,7 +4850,6 @@ async function insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regula
 
   return true;
 }
-
 
 async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regularFont, boldFont) {
 
