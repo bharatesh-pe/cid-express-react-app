@@ -19,6 +19,7 @@ import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
 import DynamicForm from "../components/dynamic-form/DynamicForm";
 import ApprovalModal from "../components/dynamic-form/ApprovalModalForm";
+import ActionPlan from "./ActionPlan";
 
 const LokayuktaView = () => {
 
@@ -821,6 +822,19 @@ const LokayuktaView = () => {
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
                 {
+                    activeSidebar && (activeSidebar?.table === "cid_ui_case_action_plan" || activeSidebar?.table === "cid_ui_case_progress_report") ?
+                    
+                    <ActionPlan
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                    
+                    :
+                    
                     !tableViewFlag ?
                     <Box sx={{overflow: 'auto', height: '100vh'}}>
                         <NormalViewForm 
@@ -954,7 +968,6 @@ const LokayuktaView = () => {
                                 handlePagination={handlePagination}
                             />
                         </Box>
-
                     </Box>
                 }
 

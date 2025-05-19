@@ -46,6 +46,7 @@ import Section from './pages/section';
 import CaseActions from './pages/CaseAction';
 import TemplateMastersView from './pages/templateMasters';
 import LokayuktaView from './pages/lokayuktaView';
+import ActionPlan from './pages/ActionPlan';
 
 import { ToastContainer } from 'react-toastify';
 function App() {
@@ -442,6 +443,17 @@ function App() {
                 <ProtectedRoute>
                     {/* <Layout> */}
                         <LokayuktaView />
+                    {/* </Layout> */}
+                </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/action_plan"
+                element={
+                <ProtectedRoute>
+                    {/* <Layout> */}
+                        <ActionPlan />
                     {/* </Layout> */}
                 </ProtectedRoute>
                 }
