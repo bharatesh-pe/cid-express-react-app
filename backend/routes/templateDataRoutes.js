@@ -291,6 +291,9 @@ router.post('/appendToLastLineOfPDF',
         // userAuthMiddleware,
         templateDataController.appendToLastLineOfPDF)
 
+router.post('/getMonthWiseByCaseId',
+        templateDataController.getMonthWiseByCaseId)
+
 router.post('/saveDataWithApprovalToTemplates',
       (req, res, next) => {
         if (req.is('multipart/form-data')) {

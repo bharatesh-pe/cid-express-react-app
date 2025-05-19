@@ -22,6 +22,7 @@ const {
 	TemplateStar,
   	TemplateUserStatus,
   	UiProgressReportFileStatus,
+    UiProgressReportMonthWise,
 	ApprovalItem,
 	System_Alerts,
 	UiCaseApproval,
@@ -1576,6 +1577,7 @@ exports.getTemplateData = async (req, res, next) => {
       },
     };
 
+
     // Log the user activity
     // await ActivityLog.create({
     //     template_id: tableData.template_id,
@@ -1585,7 +1587,10 @@ exports.getTemplateData = async (req, res, next) => {
     //     activity: `Viewed`,
     // });
 
-    const responseMessage = `Fetched data successfully from table ${table_name}.`;
+     const currentDate = new Date();
+      templateresult.currentDate = currentDate;
+
+     const responseMessage = `Fetched data successfully from table ${table_name}.`;
     return userSendResponse(
       res,
       200,
@@ -4668,198 +4673,436 @@ exports.getUploadedFiles = async (req, res) => {
   }
 };
 
+const formatDate = (isoDate) => {
+  const date = new Date(isoDate);
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${month}/${day}/${year}`;
+};
+
+const getCurrentMonthDateLabel = () => {
+  const today = new Date();
+  const month = today.toLocaleString('default', { month: 'long' }).toLowerCase();
+  const year = today.getFullYear(); 
+  return `${month}_${year}`;
+};
+
+const formatLabel = (label) => {
+  label = label.startsWith('field_') ? label.slice(6) : label;
+
+  return label
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+
+const breakLongWords = (text, font, fontSize, maxWidth) => {
+  let result = '';
+  let currentLine = '';
+
+  for (let char of text) {
+    const testLine = currentLine + char;
+    const width = font.widthOfTextAtSize(testLine, fontSize);
+
+    if (width > maxWidth) {
+      result += currentLine + '\n';
+      currentLine = char;
+    } else {
+      currentLine += char;
+    }
+  }
+
+  result += currentLine;
+
+  return result;
+};
+
+
+
+let lastPdfDocCaseId = null;
+let lastMonthPdfKey = null;
+
+let pdfDocGeneralInfoInserted = false;
+let monthPdfGeneralInfoInserted = false;
+
+function shouldInsertGeneralInfoForPdfDoc(currentCaseId) {
+  if (lastPdfDocCaseId !== currentCaseId) {
+    lastPdfDocCaseId = currentCaseId;
+    pdfDocGeneralInfoInserted = false;
+  }
+  return !pdfDocGeneralInfoInserted;
+}
+
+function shouldInsertGeneralInfoForMonthPdf(currentCaseId, currentMonth) {
+  const key = `${currentCaseId}_${currentMonth}`;
+  if (lastMonthPdfKey !== key) {
+    lastMonthPdfKey = key;
+    monthPdfGeneralInfoInserted = false;
+  }
+  return !monthPdfGeneralInfoInserted;
+}
+
+async function insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, target = 'pdfDoc') {
+  const alreadyInserted = target === 'pdfDoc' ? pdfDocGeneralInfoInserted : monthPdfGeneralInfoInserted;
+  if (alreadyInserted) return false;
+
+  const fontSize = 12;
+  const startX = 50;
+  const labelWidth = 200;
+  const valueWidth = pageWidth - 300;
+  let currentY = pageHeight - 80;
+
+  let page = pdfDoc.addPage([pageWidth, pageHeight]);
+
+  // Draw bold "General Info" heading
+  page.drawText("General Info", {
+    x: startX,
+    y: currentY,
+    size: fontSize + 2,
+    font: boldFont,
+    color: rgb(0, 0, 0),
+  });
+  currentY -= 30;
+
+  for (let [key, val] of Object.entries(aoFields)) {
+    const label = formatLabel(key);
+    const rawValue = val?.toString() || 'N/A';
+
+    // Split into lines, handle line breaks and word wrap
+    const rawLines = rawValue.split('\n');
+    const wrappedLines = [];
+
+    for (let rawLine of rawLines) {
+      rawLine = breakLongWords(rawLine, regularFont, fontSize, valueWidth);
+      const words = rawLine.trim().split(/\s+/);
+      let currentLine = "";
+
+      for (let word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const width = regularFont.widthOfTextAtSize(testLine, fontSize);
+        if (width <= valueWidth) {
+          currentLine = testLine;
+        } else {
+          wrappedLines.push(currentLine);
+          currentLine = word;
+        }
+      }
+
+      if (currentLine) wrappedLines.push(currentLine);
+    }
+
+    const valueHeight = wrappedLines.length * (fontSize + 4);
+    const rowHeight = Math.max(30, valueHeight + 10);
+
+    // Add page if overflow
+    if (currentY - rowHeight < 50) {
+      page = pdfDoc.addPage([pageWidth, pageHeight]);
+      currentY = pageHeight - 80;
+    }
+
+    // Draw rectangles
+    page.drawRectangle({
+      x: startX,
+      y: currentY - rowHeight,
+      width: labelWidth,
+      height: rowHeight,
+      borderColor: rgb(0, 0, 0),
+      borderWidth: 1,
+    });
+
+    page.drawRectangle({
+      x: startX + labelWidth,
+      y: currentY - rowHeight,
+      width: valueWidth,
+      height: rowHeight,
+      borderColor: rgb(0, 0, 0),
+      borderWidth: 1,
+    });
+
+    // Draw label (bold)
+    page.drawText(label, {
+      x: startX + 5,
+      y: currentY - 15,
+      size: fontSize,
+      font: boldFont,
+      color: rgb(0, 0, 0),
+    });
+
+    // Draw wrapped value
+    let textY = currentY - 15;
+    for (let line of wrappedLines) {
+      page.drawText(line, {
+        x: startX + labelWidth + 10,
+        y: textY,
+        size: fontSize,
+        font: regularFont,
+        color: rgb(0, 0, 0),
+      });
+      textY -= fontSize + 4;
+    }
+
+    currentY -= rowHeight;
+  }
+
+  if (target === 'pdfDoc') pdfDocGeneralInfoInserted = true;
+  else monthPdfGeneralInfoInserted = true;
+
+  return true;
+}
+
+async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regularFont, boldFont) {
+
+  const omitKeys = [
+    'id',
+    'ReadStatus',
+    'field_pr_status',
+    'sys_status',
+    'updated_at',
+    'field_ui_case_id',
+    'ui_case_id',
+    'field_pt_case_id',
+    'field_evidence_file',
+    'field_assigned_to_id',
+    'field_assigned_by_id'
+  ];
+
+  const fontSize = 12;
+  const startX = 50;
+
+  for (let data of appendText) {
+    // Omit unwanted keys
+    omitKeys.forEach(key => delete data[key]);
+
+    // Reorder if needed
+    const { created_by, created_at, ...rest } = data;
+    data = { ...rest, created_by, created_at };
+
+    // Always start a fresh page for every record
+    let page = pdfDoc.addPage([pageWidth, pageHeight]);
+    let currentY = pageHeight - 80;
+
+    for (let [label, value] of Object.entries(data)) {
+      const fieldLabel = formatLabel(label);
+      let fieldValue = value ? value.toString() : 'N/A';
+
+      // Format date fields
+      if ((label === 'field_due_date' || label === 'created_at') && value) {
+        try {
+          const dateObj = new Date(value);
+          fieldValue = dateObj.toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit'
+          });
+        } catch (e) {
+          console.warn(`Invalid date for ${label}: ${value}`);
+        }
+      }
+
+      const rawLines = fieldValue.split('\n');
+      const wrappedLines = [];
+
+      for (let rawLine of rawLines) {
+        rawLine = breakLongWords(rawLine, regularFont, fontSize, pageWidth - 200);
+        const words = rawLine.trim().split(/\s+/);
+        let currentLine = '';
+
+        for (let word of words) {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          const width = regularFont.widthOfTextAtSize(testLine, fontSize);
+          if (width <= pageWidth - 200) {
+            currentLine = testLine;
+          } else {
+            wrappedLines.push(currentLine);
+            currentLine = word;
+          }
+        }
+
+        if (currentLine) wrappedLines.push(currentLine);
+      }
+
+      let remainingLines = [...wrappedLines];
+
+      while (remainingLines.length > 0) {
+        const availableHeight = currentY - 50;
+        const linesPerPage = Math.floor((availableHeight - 10) / (fontSize + 4));
+        const linesToPrint = remainingLines.splice(0, linesPerPage);
+        const valueHeight = linesToPrint.length * (fontSize + 4);
+        const rowHeight = Math.max(30, valueHeight + 10);
+
+        page.drawRectangle({
+          x: startX,
+          y: currentY - rowHeight,
+          width: 200,
+          height: rowHeight,
+          borderColor: rgb(0, 0, 0),
+          borderWidth: 1,
+        });
+
+        page.drawRectangle({
+          x: startX + 200,
+          y: currentY - rowHeight,
+          width: pageWidth - 300,
+          height: rowHeight,
+          borderColor: rgb(0, 0, 0),
+          borderWidth: 1,
+        });
+
+        page.drawText(fieldLabel, {
+          x: startX + 5,
+          y: currentY - 15,
+          size: fontSize,
+          font: boldFont,
+          color: rgb(0, 0, 0),
+        });
+
+        let textY = currentY - 15;
+        for (let line of linesToPrint) {
+          page.drawText(line, {
+            x: startX + 210,
+            y: textY,
+            size: fontSize,
+            font: regularFont,
+            color: rgb(0, 0, 0),
+          });
+          textY -= fontSize + 4;
+        }
+
+        currentY -= rowHeight;
+
+        if (remainingLines.length > 0 || currentY < 100) {
+          page = pdfDoc.addPage([pageWidth, pageHeight]);
+          currentY = pageHeight - 80;
+        }
+      }
+    }
+  }
+
+}
+
+
 exports.appendToLastLineOfPDF = async (req, res) => {
-  const { ui_case_id, appendText, transaction_id, selected_row_id } = req.body;
-
-  if (!ui_case_id || !appendText || !selected_row_id) {
-    return res.status(400).json({ success: false, message: "Missing required fields." });
-  }
-
-  const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-  if (fs.existsSync(dirPath)) {
-    return res.status(400).json({ success: false, message: "Duplicate transaction detected." });
-  }
-  fs.mkdirSync(dirPath, { recursive: true });
-
   try {
+    
+    const { ui_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields } = req.body;
+
+    if (!ui_case_id || !appendText || !selected_row_id || !aoFields) {
+      console.error("Missing required fields.");
+      return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+    fs.mkdirSync(dirPath, { recursive: true });
+
     const latestFile = await UiProgressReportFileStatus.findOne({
       where: { ui_case_id, is_pdf: true },
-      order: [["created_at", "DESC"]],
+      order: [['created_at', 'DESC']],
     });
 
     if (!latestFile) {
-      return res.status(404).json({ success: false, message: "No PDF file found for the given case ID." });
+      console.error("No PDF file found.");
+      return res.status(404).json({ success: false, message: 'No PDF file found.' });
     }
 
-    const pdfPath = path.join(__dirname, "../public", latestFile.file_path);
-    const outputPath = path.join(__dirname, "../public/files", `updated_${latestFile.file_name}`);
+    const pdfPath = path.join(__dirname, '../public', latestFile.file_path);
     const existingPdfBytes = fs.readFileSync(pdfPath);
     const pdfDoc = await PDFDocument.load(existingPdfBytes);
+
     const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     const pageWidth = 595.276;
     const pageHeight = 841.89;
-    const dataArray = JSON.parse(appendText);
 
-    const formatDate = (isoDate) => {
-      const date = new Date(isoDate);
-      const month = (date.getMonth() + 1).toString().padStart(2, "0");
-      const day = date.getDate().toString().padStart(2, "0");
-      const year = date.getFullYear();
-      return `${month}/${day}/${year}`;
-    };
+    const monthLabelRaw = getCurrentMonthDateLabel();
+    const monthLabelDisplay = monthLabelRaw.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const monthwiseFileName = `${monthLabelRaw}.pdf`;
+    const monthwisePath = path.join(__dirname, '../public/files/monthwise_reports', monthwiseFileName);
+    const monthOfTheFile = monthLabelDisplay.split(' ')[0] + " Submission";
 
-    const formatLabel = (label) => {
-      label = label.startsWith("field_") ? label.slice(6) : label;
-      label = label.replace(/_/g, " ");
-      return label.replace(/\b\w/g, (char) => char.toUpperCase());
-    };
+    fs.mkdirSync(path.dirname(monthwisePath), { recursive: true });
 
-    const breakLongWords = (text, font, fontSize, maxWidth) => {
-      let result = '';
-      let currentLine = '';
+    const existingMonthwise = await UiProgressReportMonthWise.findOne({
+      where: { ui_case_id, monthwise_file_name: monthwiseFileName }
+    });
 
-      for (let char of text) {
-        const testLine = currentLine + char;
-        const width = font.widthOfTextAtSize(testLine, fontSize);
-        if (width > maxWidth) {
-          result += currentLine + '\n';
-          currentLine = char;
-        } else {
-          currentLine += char;
-        }
-      }
-      result += currentLine;
-      return result;
-    };
+    const isNewMonthFile = !existingMonthwise;
+    let monthPdf;
 
-    for (let data of dataArray) {
-      let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
-      const fontSize = 12;
-      let currentY = pageHeight - 80;
-      const minRowHeight = 30;
-      const labelBoxWidth = 200;
-      const valueBoxWidth = pageWidth - labelBoxWidth - 100;
-      const startX = 50;
+    if (isNewMonthFile) {
+      monthPdf = await PDFDocument.create();
+      const submissionPage = monthPdf.addPage([pageWidth, pageHeight]);
+      const fontSize = 24;
+      const centerX = 50;
+      const centerY = pageHeight / 2;
 
-      if (data.field_date_created) data.field_date_created = formatDate(data.field_date_created);
-      if (data.field_last_updated) data.field_last_updated = formatDate(data.field_last_updated);
-      if (data.created_at) data.created_at = formatDate(data.created_at);
-      if (data.field_due_date) data.field_due_date = formatDate(data.field_due_date)
-
-      delete data.field_ui_case_id;
-      delete data.ui_case_id;
-      delete data.sys_status;
-      delete data.updated_at;
-      delete data.id;
-      delete data.field_pt_case_id;
-      delete data.field_evidence_file;
-      delete data.field_pr_status;
-      delete data.field_assigned_to_id;
-      delete data.field_assigned_by_id;
-      delete data.ReadStatus;
-      delete data.hasFieldPrStatus;
-
-      const { created_by, created_at, ...rest } = data;
-      data = { ...rest, created_by, created_at };
-
-      const entries = Object.entries(data);
-
-      for (const [label, value] of entries) {
-        const fieldLabel = formatLabel(label);
-        const fieldValue = value ? value.toString() : "N/A";
-        const lineWidthLimit = valueBoxWidth - 20;
-        const rawLines = fieldValue.split("\n");
-        const wrappedLines = [];
-
-        for (let rawLine of rawLines) {
-          rawLine = breakLongWords(rawLine, regularFont, fontSize, lineWidthLimit);
-          const words = rawLine.trim().split(/\s+/);
-          let currentLine = '';
-
-          for (let word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const testWidth = regularFont.widthOfTextAtSize(testLine, fontSize);
-            if (testWidth <= lineWidthLimit) {
-              currentLine = testLine;
-            } else {
-              if (currentLine) wrappedLines.push(currentLine);
-              currentLine = word;
-            }
-          }
-          if (currentLine) wrappedLines.push(currentLine);
-        }
-
-        let remainingLines = [...wrappedLines];
-
-        while (remainingLines.length > 0) {
-          const availableHeight = currentY - 50;
-          const linesPerPage = Math.floor((availableHeight - 10) / (fontSize + 4));
-          const linesToPrint = remainingLines.splice(0, linesPerPage);
-
-          const valueHeight = linesToPrint.length * (fontSize + 4);
-          const rowHeight = Math.max(minRowHeight, valueHeight + 10);
-
-          newPage.drawRectangle({
-            x: startX,
-            y: currentY - rowHeight,
-            width: labelBoxWidth,
-            height: rowHeight,
-            borderColor: rgb(0, 0, 0),
-            borderWidth: 1,
-          });
-
-          newPage.drawRectangle({
-            x: startX + labelBoxWidth,
-            y: currentY - rowHeight,
-            width: valueBoxWidth,
-            height: rowHeight,
-            borderColor: rgb(0, 0, 0),
-            borderWidth: 1,
-          });
-
-          if (remainingLines.length + linesToPrint.length === wrappedLines.length) {
-            newPage.drawText(fieldLabel, {
-              x: startX + 10,
-              y: currentY - 15,
-              size: fontSize,
-              font: boldFont,
-              color: rgb(0, 0, 0),
-            });
-          }
-
-          let textY = currentY - 15;
-          for (let line of linesToPrint) {
-            newPage.drawText(line, {
-              x: startX + labelBoxWidth + 10,
-              y: textY,
-              size: fontSize,
-              font: regularFont,
-              color: rgb(0, 0, 0),
-            });
-            textY -= (fontSize + 4);
-          }
-
-          currentY -= rowHeight;
-
-          if (remainingLines.length > 0 || currentY < 100) {
-            newPage = pdfDoc.addPage([pageWidth, pageHeight]);
-            currentY = pageHeight - 80;
-          }
-        }
-      }
+      submissionPage.drawText(monthLabelDisplay, {
+        x: centerX,
+        y: centerY + fontSize + 10,
+        size: fontSize,
+        font: boldFont,
+        color: rgb(0, 0, 0),
+      });
+      submissionPage.drawText("SUBMISSION", {
+        x: centerX,
+        y: centerY,
+        size: fontSize,
+        font: boldFont,
+        color: rgb(0, 0, 0),
+      });
+      submissionPage.drawText("PROGRESS REPORT", {
+        x: centerX,
+        y: centerY - fontSize - 10,
+        size: fontSize,
+        font: boldFont,
+        color: rgb(0, 0, 0),
+      });
+    } else {
+      const existingMonthPdfBytes = fs.readFileSync(monthwisePath);
+      monthPdf = await PDFDocument.load(existingMonthPdfBytes);
     }
 
-    const pdfBytes = await pdfDoc.save();
-    fs.writeFileSync(outputPath, pdfBytes);
+    let generalInfoAddedMain = false;
+    let generalInfoAddedMonth = false;
+
+    if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
+  await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
+}
+
+
+   if (shouldInsertGeneralInfoForMonthPdf(ui_case_id, monthLabelRaw)) {
+  await insertGeneralInfo(monthPdf, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'monthPdf');
+}
+
+
+    await appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regularFont, boldFont);
+    await appendTextToPdf(monthPdf, appendText, pageWidth, pageHeight, regularFont, boldFont);
+
+    const updatedPdfBytes = await pdfDoc.save();
+    const outputPath = path.join(__dirname, '../public/files', `updated_${latestFile.file_name}`);
+    fs.writeFileSync(outputPath, updatedPdfBytes);
+
+    const monthwisePdfBytes = await monthPdf.save();
+    fs.writeFileSync(monthwisePath, monthwisePdfBytes);
 
     await UiProgressReportFileStatus.update(
-      { file_path: path.join("files", `updated_${latestFile.file_name}`) },
+      { file_path: path.join('files', `updated_${latestFile.file_name}`) },
       { where: { id: latestFile.id } }
     );
 
-    const tableName = "cid_ui_case_progress_report";
+    if (isNewMonthFile) {
+      await UiProgressReportMonthWise.create({
+        ui_case_id,
+        created_by,
+        month_of_the_file: monthOfTheFile,
+        monthwise_file_name: monthwiseFileName,
+        monthwise_file_path: path.join('files', 'monthwise_reports', monthwiseFileName),
+        submission_date: new Date(),
+      });
+    }
+
+const tableName = "cid_ui_case_progress_report";
     const Model = sequelize.define(
       tableName,
       {
@@ -4875,24 +5118,47 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       }
     );
 
-    await Model.update(
-      { field_pr_status: "Yes" },
-      { where: { id: selected_row_id } }
-    );
+    await Model.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
+    return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
+  } catch (error) {
+    console.error('Error in appendToLastLineOfPDF:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+
+
+
+
+
+exports.getMonthWiseByCaseId = async (req, res) => {
+  try {
+    const ui_case_id = req.query.ui_case_id || req.body.ui_case_id;
+    const page = parseInt(req.query.page || req.body.page, 10) || 1;
+    const limit = parseInt(req.query.limit || req.body.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+
+    if (!ui_case_id) {
+      return res.status(400).json({ success: false, message: 'ui_case_id is required.' });
+    }
+
+    const totalRecords = await UiProgressReportMonthWise.count({ where: { ui_case_id } });
+
+    const records = await UiProgressReportMonthWise.findAll({
+      where: { ui_case_id },
+      order: [['submission_date', 'DESC']],
+      limit,
+      offset,
+    });
 
     return res.status(200).json({
       success: true,
-      message: "PDF updated successfully.",
-      file_path: outputPath,
+      data: records,
+      totalRecords,
     });
-  } catch (err) {
-    console.error("Error appending to PDF:", err.message);
-    return res.status(500).json({
-      success: false,
-      message: err.message || "Internal server error.",
-    });
-  } finally {
-    if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
+  } catch (error) {
+    console.error('Error fetching monthwise progress reports:', error);
+    return res.status(500).json({ success: false, message: 'Failed to fetch data.' });
   }
 };
 
