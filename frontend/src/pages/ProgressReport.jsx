@@ -2408,11 +2408,11 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
               {otherTemplatesTotalRecord} Records
             </Box>
 
-            {/* {APIsSubmited && (
+            {APIsSubmited && (
               <Box className="notifyAtTopCaseStyle">
                 Submission request in progress. Awaiting SP approval.
               </Box>
-            )} */}
+            )}
           </Box>
 
           {hasPdfEntry && (
@@ -2503,6 +2503,8 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                     display: 'flex',
                     flexWrap: 'wrap',
                     gap: 1.5,
+                    justifyContent: 'flex-end',
+                    marginLeft: 'auto',
                   }}
                 >
                   <Button
@@ -2555,16 +2557,17 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                       backgroundColor: '#12B76A',
                       color: 'white',
                       textTransform: 'none',
-                      marginRight: '12px',
+                      marginLeft: 'auto',
+                      mr: 3,
                     }}
                   >
                     Submit
                   </Button>
                 </Box>
-
               </Box>
             </Box>
           )}
+
         </Box>
 
         {!hasPdfEntry ? (
