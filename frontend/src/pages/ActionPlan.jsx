@@ -790,21 +790,24 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     {
                         const allAPWithSameSupervisor = records.every(
                             record =>
-                            record.field_submit_status === "" || record.field_submit_status === null &&
+                            (record.field_submit_status === "" || record.field_submit_status === null )&&
                             record.supervisior_designation_id == userDesigId
                         );
                         
                         const allAPWithOutIOSubmit = records.every(
                             record =>
                             record.sys_status === "ui_case" &&
-                            record.field_submit_status === "" || record.field_submit_status === null &&
+                            (record.field_submit_status === "" || record.field_submit_status === null) &&
                             record.supervisior_designation_id != userDesigId
                         );
+                        console.log('userDesigId',userDesigId);
                         
                         if (allAPWithSameSupervisor || allAPWithOutIOSubmit) {
                             anySubmitAP = false;
                         }
-            
+                        
+                        console.log('allAPWithSameSupervisor',allAPWithSameSupervisor)
+
                         if(allAPWithSameSupervisor)
                             isSuperivisor = true;
 
@@ -812,11 +815,11 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             record =>
                             record.sys_status === "ui_case" ||
                             record.sys_status === "IO" &&
-                            record.field_submit_status === "" || record.field_submit_status === null &&
+                            (record.field_submit_status === "" || record.field_submit_status === null) &&
                             record.supervisior_designation_id != userDesigId
                         );
                     }
-
+                    console.log('isSuperivisor',isSuperivisor)
                     setShowSubmitAPButton(anySubmitAP);
                     setIsImmediateSupervisior(isSuperivisor);
                     setAPIsSubmited(APisSubmited);
@@ -2310,13 +2313,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     }
 
     const showOptionTemplate = async (tableName, approved) => {
-    
-        if(selectedOtherTemplate.is_approval && !approved ){
-            setApprovalSaveData({});
-            showApprovalPage(selectedRowData, selectedOtherTemplate);
-            return;
-        }
-    
+
+
         if (!tableName || tableName === "") {
             toast.warning("Please Check The Template", {
             position: "top-right",
@@ -2330,7 +2328,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             });
             return;
         }
-    
+        
+
         const viewTableData = {
             table_name: tableName,
         };
@@ -2345,7 +2344,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             const ioUsers = await getIoUsers();
             const userId = localStorage.getItem("user_id");
             const userName = localStorage.getItem("username");
-    
+            
             setLoading(false);
             if (viewTemplateResponse && viewTemplateResponse.success) {
             var caseFields = [];
@@ -3753,7 +3752,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         }
         
         console.log("isImmediateSupervisior",isImmediateSupervisior);
-        normalData.sys_status = selectedOtherTemplate.table === "cid_ui_case_property_form" ? "PF" : isImmediateSupervisior ? "IO" : "ui_case";
+        normalData.sys_status = selectedOtherTemplate.table === isImmediateSupervisior ? "IO" : "ui_case";
         normalData.field_submit_status = "";
         normalData["ui_case_id"] = selectedRowData.id;
         formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
@@ -3785,7 +3784,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
             if(saveNewAction){
               await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);   
-              showOptionTemplate(selectedOtherTemplate.table);
+              showOptionTemplate('cid_ui_case_action_plan');
             }else{
               handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
             }
@@ -3883,12 +3882,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             }
           }
         });
-    
-        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
-            normalData["field_pr_status"] = "No";
-        }
-    
-        normalData.sys_status = showPtCaseModal ? "pt_case" : "ui_case";
+        normalData.sys_status = "ui_case";
         normalData["ui_case_id"] = selectedRowData.id;
     
         var othersData = {};
@@ -3938,7 +3932,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                   loadMergedCasesData(paginationCount);
                 }else if(saveNewAction){
                   await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
-                  showOptionTemplate(selectedOtherTemplate.table);
+                  showOptionTemplate('cid_ui_case_action_plan');
                 }else{
                   handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
                 }
@@ -4321,65 +4315,11 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         }
     };
 
-    {otherFormOpen && (
-        <Dialog
-            open={otherFormOpen}
-            onClose={() => closeOtherForm}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-            maxWidth="xl"
-            fullWidth
-        >
-        <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
-            <DialogContentText id="alert-dialog-description">
-            <FormControl fullWidth>
-                <NormalViewForm
-                table_row_id={otherRowId}
-                template_id={otherTemplateId}
-                template_name={
-                    showPtCaseModal && ptCaseTemplateName
-                    ? ptCaseTemplateName
-                    : selectedOtherTemplate?.name
-                }
-                table_name={
-                    showPtCaseModal && ptCaseTableName
-                    ? ptCaseTableName
-                    : selectedOtherTemplate?.table
-                }
-                readOnly={otherReadOnlyTemplateData}
-                editData={otherEditTemplateData}
-                initialData={otherInitialTemplateData}
-                formConfig={optionFormTemplateData}
-                stepperData={optionStepperData}
-                onSubmit={
-                    selectedOtherTemplate?.table === "cid_ui_case_action_plan" ||selectedOtherTemplate?.table === "cid_ui_case_property_form"
-                    ? otherAPPRTemplateSaveFunc
-                    : otherTemplateSaveFunc 
-                }
-                onUpdate={otherTemplateUpdateFunc}
-                    disableEditButton={
-                    (selectedOtherTemplate.table === "cid_ui_case_action_plan") ||
-                    (selectedOtherTemplate.table === "cid_ui_case_property_form")
-                }
-                onError={onSaveTemplateError}
-                closeForm={closeOtherForm}
-                headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
-                />
-            </FormControl>
-            </DialogContentText>
-        </DialogContent>
-        <DialogActions sx={{ padding: "12px 24px" }}>
-            <Button onClick={closeOtherForm}>
-                Cancel
-            </Button>
-        </DialogActions>
-        </Dialog>
-    )}
-
+ 
     return (
         <>
-        <Box sx={{ height: '100vh'}}>
-            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', overflow: 'auto'}}>
+        <Box sx={{  overflow: 'auto' , height: '100vh'}}>
+            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
                 <Box
                     sx={{
                         width: '100%',
@@ -4498,7 +4438,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     <Button
                                         variant="outlined"
                                         sx={{ height: '40px' }}
-                                        onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
+                                        onClick={() => showOptionTemplate('cid_ui_case_action_plan')}
                                     >
                                         Add
                                     </Button>
@@ -4613,6 +4553,61 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 </Box>
             </Box>
         </Box>
+
+        {otherFormOpen && (
+            <Dialog
+                open={otherFormOpen}
+                onClose={() => closeOtherForm}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+            <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                <DialogContentText id="alert-dialog-description">
+                <FormControl fullWidth>
+                    <NormalViewForm
+                    table_row_id={otherRowId}
+                    template_id={otherTemplateId}
+                    template_name={
+                        showPtCaseModal && ptCaseTemplateName
+                        ? ptCaseTemplateName
+                        : selectedOtherTemplate?.name
+                    }
+                    table_name={
+                        showPtCaseModal && ptCaseTableName
+                        ? ptCaseTableName
+                        : selectedOtherTemplate?.table
+                    }
+                    readOnly={otherReadOnlyTemplateData}
+                    editData={otherEditTemplateData}
+                    initialData={otherInitialTemplateData}
+                    formConfig={optionFormTemplateData}
+                    stepperData={optionStepperData}
+                    onSubmit={
+                        selectedOtherTemplate?.table === "cid_ui_case_action_plan" ||selectedOtherTemplate?.table === "cid_ui_case_property_form"
+                        ? otherAPPRTemplateSaveFunc
+                        : otherTemplateSaveFunc 
+                    }
+                    onUpdate={otherTemplateUpdateFunc}
+                        disableEditButton={
+                        (selectedOtherTemplate.table === "cid_ui_case_action_plan") ||
+                        (selectedOtherTemplate.table === "cid_ui_case_property_form")
+                    }
+                    onError={onSaveTemplateError}
+                    closeForm={closeOtherForm}
+                    headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                    />
+                </FormControl>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ padding: "12px 24px" }}>
+                <Button onClick={closeOtherForm}>
+                    Cancel
+                </Button>
+            </DialogActions>
+            </Dialog>
+        )}
         </>
     );    
 };
