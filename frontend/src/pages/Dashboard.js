@@ -17,12 +17,12 @@ import LogoText from "../Images/cid_logo.png";
 import { useNavigate } from 'react-router-dom';
 
     const tabLabels = [
-        { label: "UI Case", key: "case/ui_case" },
-        { label: "PT Case", key: "case/pt_case" },
-        { label: "Enquiries", key: "case/enquiry" },
-        { label: "Government Order", key: "repository/gn_order" },
-        { label: "Judgements", key: "repository/judgements" },
-        { label: "Circular", key: "repository/circular" },
+        { label: "UI Case", route: "/case/ui_case" },
+        { label: "PT Case", route: "/case/pt_case" },
+        { label: "Enquiries", route: "/case/enquiry" },
+        { label: "Government Order", route: "/repository/gn_order" },
+        { label: "Judgements", route: "/repository/judgements" },
+        { label: "Circular", route: "/repository/circular" },
     ];
 
 
@@ -241,7 +241,9 @@ const Dashboard = () => {
     const [activeTab, setActiveTab] = useState(0);
     const navigate = useNavigate();
 
-    console.log(tabLabels[activeTab],"tabLabels");
+    const userId = localStorage.getItem("user_id");
+
+    if (userId === "1") return null;
 
     return (
         <Box sx={{ bgcolor: "#e5e7eb", minHeight: "100vh" }}>
@@ -311,7 +313,7 @@ const Dashboard = () => {
                     <Card
                     key={idx}
                     elevation={6}
-                    onClick={() => navigate('/case/ui_case')}
+                    onClick={() => navigate(tabLabels?.[activeTab]?.route)}
                     sx={{
                         width: bottomActions && bottomActions?.[job.title]?.actions ? 405 : 300,
                         maxHeight: 130,
