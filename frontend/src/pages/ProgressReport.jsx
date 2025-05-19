@@ -2367,479 +2367,483 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
   return (
     <>
-      <Box
-        sx={{
-          width: '100%',
-          p: 2,
-          bgcolor: 'background.paper',
-          borderRadius: 2,
-          boxShadow: 2,
-          zIndex: 1,
-        }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "start",
-            justifyContent: "space-between",
-            mb: 2
-          }}
-        >
-          <Box
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
-            onClick={() => backNavigation()}
-          >
-            <WestIcon />
-            <Typography variant="body1" fontWeight={500}>
-              {selectedOtherTemplate?.name}
-            </Typography>
-
-            {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-              <Chip
-                label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                color="primary"
-                variant="outlined"
-                size="small"
-                sx={{ fontWeight: 500, mt: '2px' }}
-              />
-            )}
-
-            <Box className="totalRecordCaseStyle">
-              {otherTemplatesTotalRecord} Records
-            </Box>
-
-            {APIsSubmited && (
-              <Box className="notifyAtTopCaseStyle">
-                Submission request in progress. Awaiting SP approval.
-              </Box>
-            )}
-          </Box>
-
-          {hasPdfEntry && (
-            <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-              <Box
+    <Box sx={{  overflow: 'auto' , height: '100vh'}}>
+        <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+            <Box
                 sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: 'stretch', sm: 'center' },
-                  justifyContent: 'space-between',
-                  width: '100%',
-                  gap: 2,
+                width: '100%',
+                p: 2,
+                bgcolor: 'background.paper',
+                borderRadius: 2,
+                boxShadow: 2,
+                zIndex: 1,
                 }}
-              >
-                <Box sx={{ display: 'none' }}></Box>
-
+            >
                 <Box
-                  sx={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: { xs: 'stretch', sm: 'flex-end' },
-                    flexGrow: 1,
-                  }}
+                sx={{
+                    display: "flex",
+                    alignItems: "start",
+                    justifyContent: "space-between",
+                    mb: 2
+                }}
                 >
-                  <TextFieldInput
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <SearchIcon sx={{ color: "#475467" }} />
-                        </InputAdornment>
-                      ),
-                      endAdornment: (
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <IconButton
-                            sx={{ px: 1, borderRadius: 0 }}
-                            onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                          >
-                            <FilterListIcon sx={{ color: "#475467" }} />
-                          </IconButton>
-                        </Box>
-                      ),
-                    }}
-                    onInput={(e) => setOtherSearchValue(e.target.value)}
-                    value={otherSearchValue}
-                    id="tableSearch"
-                    size="small"
-                    placeholder="Search anything"
-                    variant="outlined"
-                    className="profileSearchClass"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
-                      }
-                    }}
-                    sx={{
-                      width: { xs: '100%', sm: '250px' },
-                      borderRadius: '6px',
-                      '& .MuiInputBase-input::placeholder': {
-                        color: '#475467',
-                        opacity: 1,
-                        fontSize: '14px',
-                        fontWeight: 400,
-                        fontFamily: 'Roboto',
-                      },
-                    }}
-                  />
-
-                  {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
-                    <Typography
-                      onClick={handleOtherClear}
-                      sx={{
-                        fontSize: "13px",
-                        fontWeight: "500",
-                        textDecoration: "underline",
-                        cursor: "pointer",
-                        mt: 1,
-                        textAlign: { xs: 'left', sm: 'right' },
-                      }}
-                    >
-                      Clear Filter
+                <Box
+                    sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+                    onClick={() => backNavigation()}
+                >
+                    <WestIcon />
+                    <Typography variant="body1" fontWeight={500}>
+                    {selectedOtherTemplate?.name}
                     </Typography>
-                  )}
+
+                    {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                    <Chip
+                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                        color="primary"
+                        variant="outlined"
+                        size="small"
+                        sx={{ fontWeight: 500, mt: '2px' }}
+                    />
+                    )}
+
+                    <Box className="totalRecordCaseStyle">
+                    {otherTemplatesTotalRecord} Records
+                    </Box>
+
+                    {APIsSubmited && (
+                    <Box className="notifyAtTopCaseStyle">
+                        Submission request in progress. Awaiting SP approval.
+                    </Box>
+                    )}
                 </Box>
 
-                <Box
-                  sx={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 1.5,
-                    justifyContent: 'flex-end',
-                    marginLeft: 'auto',
-                  }}
-                >
-                  <Button
-                    variant="outlined"
-                    sx={{
-                      height: '40px',
-                      borderColor: '#1976d2',
-                      color: '#1976d2',
-                      textTransform: 'none',
-                    }}
-                    onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
-                  >
-                    Add
-                  </Button>
-
-                  {showReplacePdfButton && (
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      sx={{
-                        height: '40px',
-                        borderColor: '#d32f2f',
-                        color: '#d32f2f',
-                        textTransform: 'none',
-                      }}
+                {hasPdfEntry && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                    <Box
+                        sx={{
+                        display: 'flex',
+                        flexDirection: { xs: 'column', sm: 'row' },
+                        alignItems: { xs: 'stretch', sm: 'center' },
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        gap: 2,
+                        }}
                     >
-                      Replace PDF
-                      <input
+                        <Box sx={{ display: 'none' }}></Box>
+
+                        <Box
+                        sx={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: { xs: 'stretch', sm: 'flex-end' },
+                            flexGrow: 1,
+                        }}
+                        >
+                        <TextFieldInput
+                            InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                <SearchIcon sx={{ color: "#475467" }} />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <Box sx={{ display: "flex", alignItems: "center" }}>
+                                <IconButton
+                                    sx={{ px: 1, borderRadius: 0 }}
+                                    onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                >
+                                    <FilterListIcon sx={{ color: "#475467" }} />
+                                </IconButton>
+                                </Box>
+                            ),
+                            }}
+                            onInput={(e) => setOtherSearchValue(e.target.value)}
+                            value={otherSearchValue}
+                            id="tableSearch"
+                            size="small"
+                            placeholder="Search anything"
+                            variant="outlined"
+                            className="profileSearchClass"
+                            onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                            }
+                            }}
+                            sx={{
+                            width: { xs: '100%', sm: '250px' },
+                            borderRadius: '6px',
+                            '& .MuiInputBase-input::placeholder': {
+                                color: '#475467',
+                                opacity: 1,
+                                fontSize: '14px',
+                                fontWeight: 400,
+                                fontFamily: 'Roboto',
+                            },
+                            }}
+                        />
+
+                        {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                            <Typography
+                            onClick={handleOtherClear}
+                            sx={{
+                                fontSize: "13px",
+                                fontWeight: "500",
+                                textDecoration: "underline",
+                                cursor: "pointer",
+                                mt: 1,
+                                textAlign: { xs: 'left', sm: 'right' },
+                            }}
+                            >
+                            Clear Filter
+                            </Typography>
+                        )}
+                        </Box>
+
+                        <Box
+                        sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 1.5,
+                            justifyContent: 'flex-end',
+                            marginLeft: 'auto',
+                        }}
+                        >
+                        <Button
+                            variant="outlined"
+                            sx={{
+                            height: '40px',
+                            borderColor: '#1976d2',
+                            color: '#1976d2',
+                            textTransform: 'none',
+                            }}
+                            onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
+                        >
+                            Add
+                        </Button>
+
+                        {showReplacePdfButton && (
+                            <Button
+                            variant="outlined"
+                            component="label"
+                            sx={{
+                                height: '40px',
+                                borderColor: '#d32f2f',
+                                color: '#d32f2f',
+                                textTransform: 'none',
+                            }}
+                            >
+                            Replace PDF
+                            <input
+                                type="file"
+                                hidden
+                                accept="application/pdf"
+                                onChange={(event) => handleFileUpload(event)}
+                            />
+                            </Button>
+                        )}
+
+                        <Button
+                            onClick={() =>
+                            handleUpdatePdfClick({
+                                selectedOtherTemplate,
+                                rowId,
+                                selectedIds,
+                                prUpdatePdf,
+                            })
+                            }
+                            variant="contained"
+                            disabled={!isSubmitAllowed}
+                            sx={{
+                            height: '40px',
+                            backgroundColor: '#12B76A',
+                            color: 'white',
+                            textTransform: 'none',
+                            marginLeft: 'auto',
+                            mr: 3,
+                            }}
+                        >
+                            Submit
+                        </Button>
+                        </Box>
+                    </Box>
+                    </Box>
+                )}
+
+                </Box>
+
+                {!hasPdfEntry ? (
+                <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    height="200px"
+                >
+                    <Typography>Please Upload your Progress Report Pdf</Typography>
+                    <Button variant="contained" component="label">
+                    Upload File
+                    <input
                         type="file"
                         hidden
                         accept="application/pdf"
                         onChange={(event) => handleFileUpload(event)}
-                      />
+                    />
                     </Button>
-                  )}
-
-                  <Button
-                    onClick={() =>
-                      handleUpdatePdfClick({
-                        selectedOtherTemplate,
-                        rowId,
-                        selectedIds,
-                        prUpdatePdf,
-                      })
-                    }
-                    variant="contained"
-                    disabled={!isSubmitAllowed}
-                    sx={{
-                      height: '40px',
-                      backgroundColor: '#12B76A',
-                      color: 'white',
-                      textTransform: 'none',
-                      marginLeft: 'auto',
-                      mr: 3,
-                    }}
-                  >
-                    Submit
-                  </Button>
                 </Box>
-              </Box>
-            </Box>
-          )}
-
-        </Box>
-
-        {!hasPdfEntry ? (
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            height="200px"
-          >
-            <Typography>Please Upload your Progress Report Pdf</Typography>
-            <Button variant="contained" component="label">
-              Upload File
-              <input
-                type="file"
-                hidden
-                accept="application/pdf"
-                onChange={(event) => handleFileUpload(event)}
-              />
-            </Button>
-          </Box>
-        ) : (
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-          <Tabs 
-            value={selectedTab} 
-            onChange={handleTabChange} 
-            aria-label="Progress Report Tabs"
-            sx={{
-              // backgroundColor: '#f4f5fa',
-              '& .MuiTabs-indicator': {
-                backgroundColor: '#1f1dac',
-              },
-            }}
-          >
-            <Tab 
-              label="General Info" 
-              sx={{
-                ...(selectedTab === 0 && {
-                  color: '#1f1dac',
-                  borderBottom: `3px solid #1f1dac`, 
-                  backgroundColor: 'transparent',
-                }),
-                '&:hover': {
-                  // backgroundColor: selectedTab !== 0 ? '#d0e1ff' : '',
-                },
-                '&.Mui-selected': {
-                  color: '#1f1dac', 
-                  backgroundColor: 'transparent',
-                },
-                padding: '10px 20px',
-                transition: 'background-color 0.3s ease',
-                borderRadius: '0px', 
-              }} 
-            />
-            
-            <Tab 
-              label="Action Item" 
-              sx={{
-                ...(selectedTab === 1 && {
-                  color: '#1f1dac',
-                  borderBottom: `3px solid #1f1dac`,
-                  backgroundColor: 'transparent',
-                }),
-                '&:hover': {
-                  // backgroundColor: selectedTab !== 1 ? '#d0e1ff' : '', 
-                },
-                '&.Mui-selected': {
-                  color: '#1f1dac',
-                  backgroundColor: 'transparent',
-                },
-                padding: '10px 20px',
-                transition: 'background-color 0.3s ease',
-                borderRadius: '0px',
-              }} 
-            />
-            
-            <Tab 
-              label="Monthwise PDF" 
-              sx={{
-                ...(selectedTab === 2 && {
-                  color: '#1f1dac',
-                  borderBottom: `3px solid #1f1dac`,
-                  backgroundColor: 'transparent',
-                }),
-                '&:hover': {
-                  // backgroundColor: selectedTab !== 2 ? '#d0e1ff' : '',
-                },
-                '&.Mui-selected': {
-                  color: '#1f1dac',
-                  backgroundColor: 'transparent',
-                },
-                padding: '10px 20px',
-                transition: 'background-color 0.3s ease',
-                borderRadius: '0px',
-              }} 
-            />
-            
-            <Tab 
-              label="Final PDF" 
-              sx={{
-                ...(selectedTab === 3 && {
-                  color: '#1f1dac',
-                  borderBottom: `3px solid #1f1dac`,
-                  backgroundColor: 'transparent',
-                }),
-                '&:hover': {
-                  // backgroundColor: selectedTab !== 3 ? '#d0e1ff' : '',
-                },
-                '&.Mui-selected': {
-                  color: '#1f1dac',
-                  backgroundColor: 'transparent',
-                },
-                padding: '10px 20px',
-                transition: 'background-color 0.3s ease',
-                borderRadius: '0px',
-              }} 
-            />
-          </Tabs>
-
-
-            {selectedTab === 0 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px', marginTop: '30px' }}>
-                {aoFields.length > 0 ? (
-                  <Grid container spacing={2}>
-                    {aoFields.slice(0, 6).map((field, index) => (
-                      <Grid item xs={12} md={4} key={index}>
-                        {field.type === 'text' && (
-                          <ShortText
-                            key={field.id}
-                            field={field}
-                            formData={filterAoValues}
-                            disabled={true}
-                          />
-                        )}
-                        {field.type === 'multidropdown' && (
-                          <MultiSelect
-                            key={field.id}
-                            field={field}
-                            formData={filterAoValues}
-                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                            disabled={true}
-                          />
-                        )}
-                        {(field.type === 'dropdown' || field.type === 'autocomplete') && (
-                          <AutocompleteField
-                            key={field.id}
-                            field={field}
-                            formData={filterAoValues}
-                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                            value={(() => {
-                              const fieldValue = filterAoValues?.[field.name];
-                              const selectedOption = field.options.find(
-                                (option) => String(option.code) === String(fieldValue)
-                              );
-                              return selectedOption || null;
-                            })()}
-                            disabled={true}
-                          />
-                        )}
-                      </Grid>
-                    ))}
-                    <Grid container item xs={12} spacing={2} alignItems="flex-start">
-                      {aoFields
-                        .slice(4)
-                        .filter(f => f.type === 'textarea')
-                        .map((field, index) => (
-                          <Grid item xs={6} key={index}>
-                            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                              <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
-                                {field.label}
-                              </label>
-                              <Tooltip title="Save">
-                                <SaveIcon
-                                  onClick={() => onPR_FieldsUpdate("cid_under_investigation", filterAoValues)}
-                                  sx={{
-                                    color: '#1570EF',
-                                    padding: '0 1px',
-                                    fontSize: '25px',
-                                    verticalAlign: 'middle',
-                                    cursor: 'pointer',
-                                    pointerEvents: 'auto',
-                                    marginBottom: '2px',
-                                  }}
-                                />
-                              </Tooltip>
-                            </div>
-                            <TextField
-                              fullWidth
-                              multiline
-                              minRows={10}
-                              maxRows={10}
-                              variant="outlined"
-                              value={filterAoValues[field.name] || ""}
-                              onChange={(e) =>
-                                setFilterAoValues((prev) => ({
-                                  ...prev,
-                                  [field.name]: e.target.value,
-                                }))
-                              }
-                            />
-                          </Grid>
-                        ))}
-                    </Grid>
-                  </Grid>
                 ) : (
-                  <Typography variant="body2" color="text.secondary">
-                    No AO Fields Available
-                  </Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                <Tabs 
+                    value={selectedTab} 
+                    onChange={handleTabChange} 
+                    aria-label="Progress Report Tabs"
+                    sx={{
+                    // backgroundColor: '#f4f5fa',
+                    '& .MuiTabs-indicator': {
+                        backgroundColor: '#1f1dac',
+                    },
+                    }}
+                >
+                    <Tab 
+                    label="General Info" 
+                    sx={{
+                        ...(selectedTab === 0 && {
+                        color: '#1f1dac',
+                        borderBottom: `3px solid #1f1dac`, 
+                        backgroundColor: 'transparent',
+                        }),
+                        '&:hover': {
+                        // backgroundColor: selectedTab !== 0 ? '#d0e1ff' : '',
+                        },
+                        '&.Mui-selected': {
+                        color: '#1f1dac', 
+                        backgroundColor: 'transparent',
+                        },
+                        padding: '10px 20px',
+                        transition: 'background-color 0.3s ease',
+                        borderRadius: '0px', 
+                    }} 
+                    />
+                    
+                    <Tab 
+                    label="Action Item" 
+                    sx={{
+                        ...(selectedTab === 1 && {
+                        color: '#1f1dac',
+                        borderBottom: `3px solid #1f1dac`,
+                        backgroundColor: 'transparent',
+                        }),
+                        '&:hover': {
+                        // backgroundColor: selectedTab !== 1 ? '#d0e1ff' : '', 
+                        },
+                        '&.Mui-selected': {
+                        color: '#1f1dac',
+                        backgroundColor: 'transparent',
+                        },
+                        padding: '10px 20px',
+                        transition: 'background-color 0.3s ease',
+                        borderRadius: '0px',
+                    }} 
+                    />
+                    
+                    <Tab 
+                    label="Monthwise PDF" 
+                    sx={{
+                        ...(selectedTab === 2 && {
+                        color: '#1f1dac',
+                        borderBottom: `3px solid #1f1dac`,
+                        backgroundColor: 'transparent',
+                        }),
+                        '&:hover': {
+                        // backgroundColor: selectedTab !== 2 ? '#d0e1ff' : '',
+                        },
+                        '&.Mui-selected': {
+                        color: '#1f1dac',
+                        backgroundColor: 'transparent',
+                        },
+                        padding: '10px 20px',
+                        transition: 'background-color 0.3s ease',
+                        borderRadius: '0px',
+                    }} 
+                    />
+                    
+                    <Tab 
+                    label="Final PDF" 
+                    sx={{
+                        ...(selectedTab === 3 && {
+                        color: '#1f1dac',
+                        borderBottom: `3px solid #1f1dac`,
+                        backgroundColor: 'transparent',
+                        }),
+                        '&:hover': {
+                        // backgroundColor: selectedTab !== 3 ? '#d0e1ff' : '',
+                        },
+                        '&.Mui-selected': {
+                        color: '#1f1dac',
+                        backgroundColor: 'transparent',
+                        },
+                        padding: '10px 20px',
+                        transition: 'background-color 0.3s ease',
+                        borderRadius: '0px',
+                    }} 
+                    />
+                </Tabs>
+
+
+                    {selectedTab === 0 && (
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px', marginTop: '30px' }}>
+                        {aoFields.length > 0 ? (
+                        <Grid container spacing={2}>
+                            {aoFields.slice(0, 6).map((field, index) => (
+                            <Grid item xs={12} md={4} key={index}>
+                                {field.type === 'text' && (
+                                <ShortText
+                                    key={field.id}
+                                    field={field}
+                                    formData={filterAoValues}
+                                    disabled={true}
+                                />
+                                )}
+                                {field.type === 'multidropdown' && (
+                                <MultiSelect
+                                    key={field.id}
+                                    field={field}
+                                    formData={filterAoValues}
+                                    onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                    disabled={true}
+                                />
+                                )}
+                                {(field.type === 'dropdown' || field.type === 'autocomplete') && (
+                                <AutocompleteField
+                                    key={field.id}
+                                    field={field}
+                                    formData={filterAoValues}
+                                    onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                    value={(() => {
+                                    const fieldValue = filterAoValues?.[field.name];
+                                    const selectedOption = field.options.find(
+                                        (option) => String(option.code) === String(fieldValue)
+                                    );
+                                    return selectedOption || null;
+                                    })()}
+                                    disabled={true}
+                                />
+                                )}
+                            </Grid>
+                            ))}
+                            <Grid container item xs={12} spacing={2} alignItems="flex-start">
+                            {aoFields
+                                .slice(4)
+                                .filter(f => f.type === 'textarea')
+                                .map((field, index) => (
+                                <Grid item xs={6} key={index}>
+                                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                    <label style={{ fontWeight: 'bold', color: 'black', marginRight: '10px' }}>
+                                        {field.label}
+                                    </label>
+                                    <Tooltip title="Save">
+                                        <SaveIcon
+                                        onClick={() => onPR_FieldsUpdate("cid_under_investigation", filterAoValues)}
+                                        sx={{
+                                            color: '#1570EF',
+                                            padding: '0 1px',
+                                            fontSize: '25px',
+                                            verticalAlign: 'middle',
+                                            cursor: 'pointer',
+                                            pointerEvents: 'auto',
+                                            marginBottom: '2px',
+                                        }}
+                                        />
+                                    </Tooltip>
+                                    </div>
+                                    <TextField
+                                    fullWidth
+                                    multiline
+                                    minRows={10}
+                                    maxRows={10}
+                                    variant="outlined"
+                                    value={filterAoValues[field.name] || ""}
+                                    onChange={(e) =>
+                                        setFilterAoValues((prev) => ({
+                                        ...prev,
+                                        [field.name]: e.target.value,
+                                        }))
+                                    }
+                                    />
+                                </Grid>
+                                ))}
+                            </Grid>
+                        </Grid>
+                        ) : (
+                        <Typography variant="body2" color="text.secondary">
+                            No AO Fields Available
+                        </Typography>
+                        )}
+                    </Box>
+                    )}
+                </Box>
                 )}
-              </Box>
-            )}
-          </Box>
-        )}
 
-        {selectedTab === 1 && (
-          <Box>
-            <TableView
-              key={randomApprovalId}
-              rows={otherTemplateData}
-              columns={otherTemplateColumn}
-              totalPage={otherTemplatesTotalPage}
-              totalRecord={otherTemplatesTotalRecord}
-              paginationCount={otherTemplatesPaginationCount}
-              handlePagination={handleOtherPagination}
-              // handleRowClick={(row) =>
-              //   handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)
-              // }
-              tableName={selectedOtherTemplate?.table}
-            />
-          </Box>
-        )}
+                {selectedTab === 1 && (
+                <Box>
+                    <TableView
+                    key={randomApprovalId}
+                    rows={otherTemplateData}
+                    columns={otherTemplateColumn}
+                    totalPage={otherTemplatesTotalPage}
+                    totalRecord={otherTemplatesTotalRecord}
+                    paginationCount={otherTemplatesPaginationCount}
+                    handlePagination={handleOtherPagination}
+                    // handleRowClick={(row) =>
+                    //   handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)
+                    // }
+                    tableName={selectedOtherTemplate?.table}
+                    />
+                </Box>
+                )}
 
-        {selectedTab === 2 && (
-          <Box>
-            <TableView
-              rows={monthwiseData}
-              columns={monthwiseColumns}
-              totalPage={monthwiseTotalPage}
-              totalRecord={monthwiseTotalRecord}
-              paginationCount={monthwiseCurrentPage}
-              handlePagination={handleMonthwisePagination}
-            />
-          </Box>
-        )}
+                {selectedTab === 2 && (
+                <Box>
+                    <TableView
+                    rows={monthwiseData}
+                    columns={monthwiseColumns}
+                    totalPage={monthwiseTotalPage}
+                    totalRecord={monthwiseTotalRecord}
+                    paginationCount={monthwiseCurrentPage}
+                    handlePagination={handleMonthwisePagination}
+                    />
+                </Box>
+                )}
 
-        {selectedTab === 3 && (
-          <Box
-            display="flex"
-            flexDirection="column"
-            alignItems="center"
-            justifyContent="center"
-            marginTop="50px"
-          >
-            <Typography variant="h6">Preview Uploaded PDF</Typography>
+                {selectedTab === 3 && (
+                <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="center"
+                    justifyContent="center"
+                    marginTop="50px"
+                >
+                    <Typography variant="h6">Preview Uploaded PDF</Typography>
 
-            {uploadedFiles.length > 0 && uploadedFiles[0].file_path ? (
-              <>
-                <iframe
-                  src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
-                  width="100%"
-                  height="500px"
-                  style={{ border: 'none' }}
-                />
-              </>
-            ) : (
-              <>
-                <Typography>No PDF found.</Typography>
-              </>
-            )}
-          </Box>
-        )}
-      </Box>
+                    {uploadedFiles.length > 0 && uploadedFiles[0].file_path ? (
+                    <>
+                        <iframe
+                        src={`${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${uploadedFiles[0].file_path}`}
+                        width="100%"
+                        height="500px"
+                        style={{ border: 'none' }}
+                        />
+                    </>
+                    ) : (
+                    <>
+                        <Typography>No PDF found.</Typography>
+                    </>
+                    )}
+                </Box>
+                )}
+            </Box>
+        </Box>
+    </Box>
 
 
       {otherFormOpen && (
