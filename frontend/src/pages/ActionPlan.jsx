@@ -4378,237 +4378,241 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
     return (
         <>
-            <Box
-                sx={{
-                    width: '100%',
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    borderRadius: 2,
-                    boxShadow: 2,
-                    zIndex: 1,
-                }}
-            >
-                {/* Header Section */}
+        <Box sx={{overflow: 'auto', height: '100vh'}}>
+            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
                 <Box
                     sx={{
-                        display: "flex",
-                        alignItems: "start",
-                        justifyContent: "space-between",
-                        mb: 2
+                        width: '100%',
+                        p: 2,
+                        bgcolor: 'background.paper',
+                        borderRadius: 2,
+                        boxShadow: 2,
+                        zIndex: 1,
                     }}
                 >
-                    <Box 
-                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
-                        onClick={() => backNavigation()}
+                    {/* Header Section */}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "start",
+                            justifyContent: "space-between",
+                            mb: 2
+                        }}
                     >
-                        <WestIcon />
-                        <Typography variant="body1" fontWeight={500}>
-                            {selectedOtherTemplate?.name}
-                        </Typography>
+                        <Box 
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => backNavigation()}
+                        >
+                            <WestIcon />
+                            <Typography variant="body1" fontWeight={500}>
+                                {selectedOtherTemplate?.name}
+                            </Typography>
 
-                        {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                            <Chip
-                                label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                                color="primary"
-                                variant="outlined"
-                                size="small"
-                                sx={{ fontWeight: 500, mt: '2px' }}
-                            />
-                        )}
+                            {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                                <Chip
+                                    label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, mt: '2px' }}
+                                />
+                            )}
 
-                        <Box className="totalRecordCaseStyle">
-                            {otherTemplatesTotalRecord} Records
+                            <Box className="totalRecordCaseStyle">
+                                {otherTemplatesTotalRecord} Records
+                            </Box>
+
+                            {APIsSubmited && (
+                                <Box className="notifyAtTopCaseStyle">
+                                    Submission request in progress. Awaiting SP approval.
+                                </Box>
+                            )}
                         </Box>
 
-                        {APIsSubmited && (
-                            <Box className="notifyAtTopCaseStyle">
-                                Submission request in progress. Awaiting SP approval.
-                            </Box>
-                        )}
-                    </Box>
+                        {/* Actions Section */}
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
+                                <Box></Box>
 
-                    {/* Actions Section */}
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
-                            <Box></Box>
-
-                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
-                                <TextFieldInput
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <SearchIcon sx={{ color: "#475467" }} />
-                                            </InputAdornment>
-                                        ),
-                                        endAdornment: (
-                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                <IconButton
-                                                    sx={{ px: 1, borderRadius: 0 }}
-                                                    onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                                >
-                                                    <FilterListIcon sx={{ color: "#475467" }} />
-                                                </IconButton>
-                                            </Box>
-                                        ),
-                                    }}
-                                    onInput={(e) => setOtherSearchValue(e.target.value)}
-                                    value={otherSearchValue}
-                                    id="tableSearch"
-                                    size="small"
-                                    placeholder="Search anything"
-                                    variant="outlined"
-                                    className="profileSearchClass"
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            e.preventDefault();
-                                            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
-                                        }
-                                    }}
-                                    sx={{
-                                        width: '350px',
-                                        borderRadius: '6px',
-                                        '& .MuiInputBase-input::placeholder': {
-                                            color: '#475467',
-                                            opacity: 1,
-                                            fontSize: '14px',
-                                            fontWeight: 400,
-                                            fontFamily: 'Roboto',
-                                        },
-                                    }}
-                                />
-                                {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
-                                    <Typography
-                                        onClick={handleOtherClear}
-                                        sx={{
-                                            fontSize: "13px",
-                                            fontWeight: "500",
-                                            textDecoration: "underline",
-                                            cursor: "pointer",
-                                            mt: 1,
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
+                                    <TextFieldInput
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <SearchIcon sx={{ color: "#475467" }} />
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: (
+                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                    <IconButton
+                                                        sx={{ px: 1, borderRadius: 0 }}
+                                                        onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                                    >
+                                                        <FilterListIcon sx={{ color: "#475467" }} />
+                                                    </IconButton>
+                                                </Box>
+                                            ),
                                         }}
+                                        onInput={(e) => setOtherSearchValue(e.target.value)}
+                                        value={otherSearchValue}
+                                        id="tableSearch"
+                                        size="small"
+                                        placeholder="Search anything"
+                                        variant="outlined"
+                                        className="profileSearchClass"
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                e.preventDefault();
+                                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                                            }
+                                        }}
+                                        sx={{
+                                            width: '350px',
+                                            borderRadius: '6px',
+                                            '& .MuiInputBase-input::placeholder': {
+                                                color: '#475467',
+                                                opacity: 1,
+                                                fontSize: '14px',
+                                                fontWeight: 400,
+                                                fontFamily: 'Roboto',
+                                            },
+                                        }}
+                                    />
+                                    {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                                        <Typography
+                                            onClick={handleOtherClear}
+                                            sx={{
+                                                fontSize: "13px",
+                                                fontWeight: "500",
+                                                textDecoration: "underline",
+                                                cursor: "pointer",
+                                                mt: 1,
+                                            }}
+                                        >
+                                            Clear Filter
+                                        </Typography>
+                                    )}
+                                </Box>
+
+                                {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
+                                    <Button
+                                        variant="outlined"
+                                        sx={{ height: '40px' }}
+                                        onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
                                     >
-                                        Clear Filter
-                                    </Typography>
+                                        Add
+                                    </Button>
+                                )}
+                                {!showSubmitAPButton && (
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
+                                        disabled={otherTemplatesTotalRecord === 0}
+                                    >
+                                        Submit
+                                    </Button>
                                 )}
                             </Box>
-
-                            {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
-                                <Button
-                                    variant="outlined"
-                                    sx={{ height: '40px' }}
-                                    onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
-                                >
-                                    Add
-                                </Button>
-                            )}
-                            {!showSubmitAPButton && (
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
-                                    disabled={otherTemplatesTotalRecord === 0}
-                                >
-                                    Submit
-                                </Button>
-                            )}
                         </Box>
                     </Box>
-                </Box>
 
-                {/* AO Fields & Table Section */}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                    {aoFields.length > 0 ? (
-                        <Grid container spacing={2}>
-                            {aoFields.slice(0, 6).map((field, index) => (
-                                <Grid item xs={12} md={4} key={index}>
-                                    {field.type === 'text' && (
-                                        <ShortText key={field.id} field={field} formData={filterAoValues} disabled />
-                                    )}
-                                    {field.type === 'multidropdown' && (
-                                        <MultiSelect
-                                            key={field.id}
-                                            field={field}
-                                            formData={filterAoValues}
-                                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                            disabled
-                                        />
-                                    )}
-                                    {(field.type === 'dropdown' || field.type === 'autocomplete') && (
-                                        <AutocompleteField
-                                            key={field.id}
-                                            field={field}
-                                            formData={filterAoValues}
-                                            onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                            value={(() => {
-                                                const fieldValue = filterAoValues?.[field.name];
-                                                return field.options.find(opt => String(opt.code) === String(fieldValue)) || null;
-                                            })()}
-                                            disabled
-                                        />
-                                    )}
-                                </Grid>
-                            ))}
-
-                            {/* Text Areas */}
-                            <Grid container item xs={12} spacing={2} alignItems="flex-start">
-                                {aoFields
-                                    .slice(4)
-                                    .filter(f => f.type === 'textarea')
-                                    .map((field, index) => (
-                                        <Grid item xs={6} key={index}>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                <Typography sx={{ fontWeight: 'bold', color: 'black', mr: 1 }}>
-                                                    {field.label}
-                                                </Typography>
-                                                <Tooltip title="Save">
-                                                    <SaveIcon
-                                                        onClick={() => onActionPlanUpdate("cid_under_investigation", filterAoValues)}
-                                                        sx={{
-                                                            color: '#1570EF',
-                                                            p: '0 1px',
-                                                            fontSize: '25px',
-                                                            cursor: 'pointer',
-                                                            mb: '2px'
-                                                        }}
-                                                    />
-                                                </Tooltip>
-                                            </Box>
-                                            <TextField
-                                                fullWidth
-                                                multiline
-                                                minRows={10}
-                                                maxRows={10}
-                                                variant="outlined"
-                                                value={filterAoValues[field.name] || ""}
-                                                onChange={(e) =>
-                                                    setFilterAoValues(prev => ({
-                                                        ...prev,
-                                                        [field.name]: e.target.value,
-                                                    }))
-                                                }
+                    {/* AO Fields & Table Section */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                        {aoFields.length > 0 ? (
+                            <Grid container spacing={2}>
+                                {aoFields.slice(0, 6).map((field, index) => (
+                                    <Grid item xs={12} md={4} key={index}>
+                                        {field.type === 'text' && (
+                                            <ShortText key={field.id} field={field} formData={filterAoValues} disabled />
+                                        )}
+                                        {field.type === 'multidropdown' && (
+                                            <MultiSelect
+                                                key={field.id}
+                                                field={field}
+                                                formData={filterAoValues}
+                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                disabled
                                             />
-                                        </Grid>
-                                    ))}
-                            </Grid>
-                        </Grid>
-                    ) : (
-                        <Typography variant="body2" color="text.secondary">
-                            No AO Fields Available
-                        </Typography>
-                    )}
-                </Box>
+                                        )}
+                                        {(field.type === 'dropdown' || field.type === 'autocomplete') && (
+                                            <AutocompleteField
+                                                key={field.id}
+                                                field={field}
+                                                formData={filterAoValues}
+                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                value={(() => {
+                                                    const fieldValue = filterAoValues?.[field.name];
+                                                    return field.options.find(opt => String(opt.code) === String(fieldValue)) || null;
+                                                })()}
+                                                disabled
+                                            />
+                                        )}
+                                    </Grid>
+                                ))}
 
-                {/* Data Table */}
-                <TableView
-                    rows={otherTemplateData}
-                    columns={otherTemplateColumn}
-                    totalPage={otherTemplatesTotalPage}
-                    totalRecord={otherTemplatesTotalRecord}
-                    paginationCount={otherTemplatesPaginationCount}
-                    handlePagination={handleOtherPagination}
-                    tableName={selectedOtherTemplate?.table}
-                />
+                                {/* Text Areas */}
+                                <Grid container item xs={12} spacing={2} alignItems="flex-start">
+                                    {aoFields
+                                        .slice(4)
+                                        .filter(f => f.type === 'textarea')
+                                        .map((field, index) => (
+                                            <Grid item xs={6} key={index}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                    <Typography sx={{ fontWeight: 'bold', color: 'black', mr: 1 }}>
+                                                        {field.label}
+                                                    </Typography>
+                                                    <Tooltip title="Save">
+                                                        <SaveIcon
+                                                            onClick={() => onActionPlanUpdate("cid_under_investigation", filterAoValues)}
+                                                            sx={{
+                                                                color: '#1570EF',
+                                                                p: '0 1px',
+                                                                fontSize: '25px',
+                                                                cursor: 'pointer',
+                                                                mb: '2px'
+                                                            }}
+                                                        />
+                                                    </Tooltip>
+                                                </Box>
+                                                <TextField
+                                                    fullWidth
+                                                    multiline
+                                                    minRows={10}
+                                                    maxRows={10}
+                                                    variant="outlined"
+                                                    value={filterAoValues[field.name] || ""}
+                                                    onChange={(e) =>
+                                                        setFilterAoValues(prev => ({
+                                                            ...prev,
+                                                            [field.name]: e.target.value,
+                                                        }))
+                                                    }
+                                                />
+                                            </Grid>
+                                        ))}
+                                </Grid>
+                            </Grid>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary">
+                                No AO Fields Available
+                            </Typography>
+                        )}
+                    </Box>
+
+                    {/* Data Table */}
+                    <TableView
+                        rows={otherTemplateData}
+                        columns={otherTemplateColumn}
+                        totalPage={otherTemplatesTotalPage}
+                        totalRecord={otherTemplatesTotalRecord}
+                        paginationCount={otherTemplatesPaginationCount}
+                        handlePagination={handleOtherPagination}
+                        tableName={selectedOtherTemplate?.table}
+                    />
+                </Box>
             </Box>
+        </Box>
         </>
     );    
 };
