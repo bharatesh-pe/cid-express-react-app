@@ -421,7 +421,7 @@ const Layout = ({ children }) => {
         {/* Sidebar */}
         <Box
           sx={{
-            display: { xs: "none", md: "block" },
+            display: location.pathname === "/dashboard" ? "none" : "block",
             width: "253px",
             minWidth: "253px",
             overflow: "hidden",
