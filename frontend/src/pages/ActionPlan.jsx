@@ -782,7 +782,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
                     const records = getTemplateResponse.data;
                     let APisSubmited = false;
-                    let anySubmitAP = true;
+                    let anySubmitAP = false;
                     let isSuperivisor = false;
                     const userDesigId = localStorage.getItem('designation_id');
 
@@ -4378,8 +4378,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
 
     return (
         <>
-        <Box sx={{overflow: 'auto', height: '100vh'}}>
-            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
+        <Box sx={{ height: '100vh'}}>
+            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', overflow: 'auto'}}>
                 <Box
                     sx={{
                         width: '100%',
