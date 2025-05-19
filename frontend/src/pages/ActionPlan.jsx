@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import SaveIcon from '@mui/icons-material/Save';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from "../services/api";
 import {  Chip, Tooltip } from "@mui/material";
 import {
@@ -35,7 +36,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
-
+    const [disableEditButtonFlag, setDisableEditButtonFlag] = useState(false);
     const [aoFields, setAoFields] = useState([]);
     const [aoFieldId,setAoFieldId] = useState(selectedRowData);
     const [filterAoValues, setFilterAoValues] = useState({});
@@ -501,136 +502,124 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         ];
 
                     
-                        const updatedHeader = ([                   
+                        const updatedHeader = ([
+                            {
+                                field: "sl_no",
+                                headerName: "S.No",
+                                resizable: false,
+                                width: 75,
+                                renderCell: (params) => {
+                                    const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                                    const canDelete = userPermissions[0]?.action_delete;
+                                    const isViewAction = options.is_view_action === true;
+                                    let isActionPlan = false;
+
+                                    if (params.row.sys_status === 'IO' && params.row.supervisior_designation_id !== localStorage.getItem('designation_id')) {
+                                        isActionPlan = true;
+                                    } else if ((params.row.sys_status === 'IO' || params.row.sys_status === 'ui_case') &&
+                                        params.row.field_submit_status === '' &&
+                                        params.row.supervisior_designation_id === localStorage.getItem('designation_id')) {
+                                        isActionPlan = false;
+                                    } else if (params.row.field_submit_status === 'submit' || params.row.sys_status === 'IO') {
+                                        isActionPlan = true;
+                                    }
+
+                                    return (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                            {params.value}
+                                            {canDelete && !isViewAction && !isActionPlan && (
+                                                <DeleteIcon
+                                                    sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
+                                    );
+                                },
+                            },
+
                             ...Object.keys(getTemplateResponse.data[0]).filter(
                                 (key) =>
                                     !excludedKeys.includes(key) &&
-                                    key !== "field_pt_case_id" &&
-                                    key !== "field_ui_case_id" &&
-                                    key !== "field_pr_status" &&
-                                    key !== "field_evidence_file" &&
-                                    key !== "created_by" &&
-                                    key !== "field_last_updated" &&
-                                    key !== "field_date_created" &&
-                                    key !== "field_description" &&
-                                    key !== "field_assigned_to_id"&&
-                                    key !== "field_assigned_by_id"&&
-                                    key !== "field_served_or_unserved"&&
-                                    key !== "field_reappear"&&
-                                    key !== "hasFieldPrStatus"       
-                                ).map((key) => {
-                                    var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+                                    ![
+                                        "field_pt_case_id",
+                                        "field_ui_case_id",
+                                        "field_pr_status",
+                                        "field_evidence_file",
+                                        "created_by",
+                                        "created_at",
+                                        "field_last_updated",
+                                        "field_date_created",
+                                        "field_description",
+                                        "field_assigned_to_id",
+                                        "field_assigned_by_id",
+                                        "field_served_or_unserved",
+                                        "field_reappear",
+                                        "hasFieldPrStatus"
+                                    ].includes(key)
+                            ).map((key) => {
+                                const updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
 
-                                    return {
-                                        field: key,
-                                        headerName: updatedKeyName ? updatedKeyName : "",
-                                        width: 250,
-                                        resizable: true,
-                                        renderHeader: () => (
-                                        <div
-                                            style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            width: "100%",
-                                            }}
-                                        >
-                                            <span
-                                            style={{
-                                                color: "#1D2939",
-                                                fontSize: "15px",
-                                                fontWeight: "500",
-                                            }}
-                                            >
-                                            {updatedKeyName ? updatedKeyName : "-"}
+                                return {
+                                    field: key,
+                                    headerName: updatedKeyName || "",
+                                    width: 250,
+                                    resizable: true,
+                                    renderHeader: () => (
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                                            <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
+                                                {updatedKeyName || "-"}
                                             </span>
                                         </div>
-                                        ),
-                                        renderCell: (params) => {
-                                        return tableCellRender(key, params, params.value);
-                                        },
-                                    };
-                                }),
-                                {
-                                    field: "",
-                                    headerName: "Action",
-                                    width: 300,
+                                    ),
                                     renderCell: (params) => {
-                                    
-                                        const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-                                        const canEdit = userPermissions[0]?.action_edit;
-                                        const canDelete = userPermissions[0]?.action_delete;
-                                        const isViewAction = options.is_view_action === true
-                                        var isActionPlan = false;
+                                        if (key === "field_action_item") {
+                                            const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                                            const canEdit = userPermissions[0]?.action_edit;
+                                            const isViewAction = options.is_view_action === true;
+                                            let isActionPlan = false;
 
-                                        if(params.row.sys_status === 'IO' && params.row.supervisior_designation_id != localStorage.getItem('designation_id'))
-                                        {
-                                            isActionPlan =true;
-                                        }
-                                        else if((params.row.sys_status === 'IO' || params.row.sys_status === 'ui_case') && params.row.field_submit_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
-                                        {
-                                            isActionPlan =false;
-                                        }
-                                        else if(params.row.field_submit_status === 'submit' || params.row.sys_status === 'IO' )
-                                        {
-                                            isActionPlan =true;
-                                        }
-                                        
-                                        return (
-                                            <Box
-                                                sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "10px",
-                                                height: "100%",
-                                                }}
-                                            >
-                                                <Button
-                                                    variant="outlined"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        handleOthersTemplateDataView(params.row, false, 'cid_ui_case_action_plan');
+                                            if (params.row.sys_status === "IO" && params.row.supervisior_designation_id !== localStorage.getItem("designation_id")) {
+                                                isActionPlan = true;
+                                            } else if (
+                                                (params.row.sys_status === "IO" || params.row.sys_status === "ui_case") &&
+                                                params.row.field_submit_status === "" &&
+                                                params.row.supervisior_designation_id === localStorage.getItem("designation_id")
+                                            ) {
+                                                isActionPlan = false;
+                                            } else if (params.row.field_submit_status === "submit" || params.row.sys_status === "IO") {
+                                                isActionPlan = true;
+                                            }
+
+                                            const isEditAllowed = canEdit && !isViewAction && !isActionPlan;
+
+                                            return (
+                                                <span
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
+                                                    }}
+                                                    style={{
+                                                        color: "#2563eb",
+                                                        textDecoration: "underline",
+                                                        cursor: "pointer",
+                                                        fontWeight: 400,
+                                                        fontSize: "14px",
                                                     }}
                                                 >
-                                                    View
-                                                </Button>
-                                    
-                                                {canEdit&& ( !isActionPlan && ( !isViewAction && (
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        onClick={async (event) => {
-                                                        event.stopPropagation();
-                                                        setIsFromEdit(true);
-                                                        setSelectedApprovalEdit(params.row);
-                                                        if (options.is_approval) {
-                                                            // await showApprovalPage(params.row, options);
-                                                        } else {
-                                                            handleOthersTemplateDataView(params.row, true, options.table);
-                                                        }
-                                                        }}
-                                                    
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                )))}
+                                                    {params.value || "View"}
+                                                </span>
+                                            );
+                                        }
 
-                                                {canDelete&& ( !isActionPlan && ( !isViewAction && ( 
-                                                    <Button
-                                                        variant="contained"
-                                                        color="error"
-                                                        onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
-                                                        }}
-                                                    >
-                                                        Delete
-                                                    </Button>
-                                                )))}
-                                            </Box>
-                                        );
-                                    },
-                                }                
+                                        return tableCellRender(key, params, params.value);
+                                    }
+                                };
+                            }),
+
                         ]).filter(Boolean);
 
                         setOtherTemplateColumn(updatedHeader);
@@ -714,7 +703,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const handleOthersTemplateDataView = async (
         rowData,
         editData,
-        table_name
+        table_name,
+        disableEditButton
     ) => {
         if (!table_name || table_name === "") {
         toast.warning("Please Check Table Name", {
@@ -781,7 +771,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                 return field;
                 });
                 setOptionFormTemplateData(processedFields);
-    
+                setDisableEditButtonFlag(disableEditButton);
+
                 setOtherFormOpen(true);
                 setOtherRowId(rowData.id);
                 setOtherTemplateId(viewTemplateResponse["data"].template_id);
@@ -2719,7 +2710,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     stepperData={optionStepperData}
                     onSubmit={otherAPPRTemplateSaveFunc}
                     onUpdate={otherTemplateUpdateFunc}
-                    disableEditButton={true}
+                    disableEditButton={disableEditButtonFlag}
                     onError={onSaveTemplateError}
                     closeForm={closeOtherForm}
                     headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
