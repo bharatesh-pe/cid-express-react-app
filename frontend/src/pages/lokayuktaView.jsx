@@ -21,7 +21,7 @@ import DynamicForm from "../components/dynamic-form/DynamicForm";
 import ApprovalModal from "../components/dynamic-form/ApprovalModalForm";
 import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
-import PropertyForm from "/PropertyForm";
+import PropertyForm from "./PropertyForm";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();

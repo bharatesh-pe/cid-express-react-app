@@ -463,201 +463,201 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         if (records[0]) {
           const excludedKeys = [
             "updated_at", "id", "deleted_at", "attachments", "Starred", "ReadStatus",
-            "linked_profile_info", "sys_status", "field_status", "field_submit_status",
+            "linked_profile_info", "sys_status", "field_submit_status",
             "supervisior_designation_id"
           ];
 
          const updatedHeader = ([
-  {
-    field: "select",
-    headerName: "",
-    width: 50,
-    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
-    renderCell: (params) => {
-      const isPdfUpdated = params.row.field_pr_status === "Yes";
-      const isPdfUpdating = params.row.field_status === "Completed";
+            {
+              field: "select",
+              headerName: "",
+              width: 50,
+              cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+              renderCell: (params) => {
+                const isPdfUpdated = params.row.field_pr_status === "Yes";
+                const isPdfUpdating = params.row.field_status === "Completed";
 
-      return isPdfUpdated || !isPdfUpdating ? null : (
-        <div onClick={(e) => e.stopPropagation()}>
-          <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
-        </div>
-      );
-    },
-  },
+                return isPdfUpdated || !isPdfUpdating ? null : (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                  </div>
+                );
+              },
+            },
 
-  {
-    field: "sl_no",
-    headerName: "S.No",
-    resizable: false,
-    width: 75,
-    renderCell: (params) => {
-      const isPdfUpdated = params.row.field_pr_status === "Yes";
-      const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-      const canDelete = userPermissions[0]?.action_delete;
-      const isViewAction = options.is_view_action === true;
+            {
+              field: "sl_no",
+              headerName: "S.No",
+              resizable: false,
+              width: 75,
+              renderCell: (params) => {
+                const isPdfUpdated = params.row.field_pr_status === "Yes";
+                const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                const canDelete = userPermissions[0]?.action_delete;
+                const isViewAction = options.is_view_action === true;
 
-      return (
-        <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          {params.value}
-          {canDelete && !isViewAction && !isPdfUpdated && (
-            <DeleteIcon
-              sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
-              onClick={(event) => {
-                event.stopPropagation();
-                handleOthersDeleteTemplateData(params.row, options.table);
-              }}
-            />
-          )}
-        </Box>
-      );
-    },
-  },
+                return (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                    {params.value}
+                    {canDelete && !isViewAction && !isPdfUpdated && (
+                      <DeleteIcon
+                        sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleOthersDeleteTemplateData(params.row, options.table);
+                        }}
+                      />
+                    )}
+                  </Box>
+                );
+              },
+            },
 
-  {
-    field: "sys_status",
-    headerName: "From",
-    width: 140,
-    resizable: true,
-    sortable: true,
-    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
-    sortComparator: (v1, v2) => {
-      if (v1 === "AP" && v2 === "ui_case") return -1;
-      if (v1 === "ui_case" && v2 === "AP") return 1;
-      return 0;
-    },
-    renderCell: (params) => {
-      const statusText = params.value === "AP" ? "Action Plan" : "Progress Report";
-      const isUpdated = params.value === "AP";
+            {
+              field: "sys_status",
+              headerName: "From",
+              width: 140,
+              resizable: true,
+              sortable: true,
+              cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+              sortComparator: (v1, v2) => {
+                if (v1 === "AP" && v2 === "ui_case") return -1;
+                if (v1 === "ui_case" && v2 === "AP") return 1;
+                return 0;
+              },
+              renderCell: (params) => {
+                const statusText = params.value === "AP" ? "Action Plan" : "Progress Report";
+                const isUpdated = params.value === "AP";
 
-      return (
-        <Chip
-          label={statusText}
-          size="small"
-          sx={{
-            width: '120px',
-            fontFamily: "Roboto",
-            fontWeight: 600,
-            fontSize: "12px",
-            color: "#1f2937",
-            backgroundColor: isUpdated ? "#bfdbfe" : "#fef3c7",
-            borderRadius: "6px",
-            padding: "3px",
-            border: isUpdated ? "1px dashed #3b82f6" : "1px dashed #f59e0b",
-            textTransform: "capitalize",
-          }}
-        />
-      );
-    },
-  },
+                return (
+                  <Chip
+                    label={statusText}
+                    size="small"
+                    sx={{
+                      width: '120px',
+                      fontFamily: "Roboto",
+                      fontWeight: 600,
+                      fontSize: "12px",
+                      color: "#1f2937",
+                      backgroundColor: isUpdated ? "#bfdbfe" : "#fef3c7",
+                      borderRadius: "6px",
+                      padding: "3px",
+                      border: isUpdated ? "1px dashed #3b82f6" : "1px dashed #f59e0b",
+                      textTransform: "capitalize",
+                    }}
+                  />
+                );
+              },
+            },
 
-  ...Object.keys(getTemplateResponse.data[0])
-    .filter(
-      (key) =>
-        !excludedKeys.includes(key) &&
-        key !== "field_pt_case_id" &&
-        key !== "field_ui_case_id" &&
-        key !== "field_pr_status" &&
-        key !== "field_evidence_file" &&
-        key !== "created_by" &&
-        key !== "field_last_updated" &&
-        key !== "field_date_created" &&
-        key !== "field_description" &&
-        key !== "field_assigned_to_id" &&
-        key !== "field_assigned_by_id" &&
-        key !== "field_served_or_unserved" &&
-        key !== "field_reappear" &&
-        key !== "hasFieldPrStatus"
-    )
-    .map((key) => {
-      const updatedKeyName = key
-        .replace(/^field_/, "")
-        .replace(/_/g, " ")
-        .toLowerCase()
-        .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+            ...Object.keys(getTemplateResponse.data[0])
+              .filter(
+                (key) =>
+                  !excludedKeys.includes(key) &&
+                  key !== "field_pt_case_id" &&
+                  key !== "field_ui_case_id" &&
+                  key !== "field_pr_status" &&
+                  key !== "field_evidence_file" &&
+                  key !== "created_by" &&
+                  key !== "field_last_updated" &&
+                  key !== "field_date_created" &&
+                  key !== "field_description" &&
+                  key !== "field_assigned_to_id" &&
+                  key !== "field_assigned_by_id" &&
+                  key !== "field_served_or_unserved" &&
+                  key !== "field_reappear" &&
+                  key !== "hasFieldPrStatus"
+              )
+              .map((key) => {
+                const updatedKeyName = key
+                  .replace(/^field_/, "")
+                  .replace(/_/g, " ")
+                  .toLowerCase()
+                  .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
 
-      const isActionItem = key === "field_action_item";
+                const isActionItem = key === "field_action_item";
 
-      return {
-        field: key,
-        headerName: updatedKeyName || "",
-        width: 200,
-        resizable: true,
-        cellClassName: (params) => getCellClassName(key, params, options.table),
-        renderHeader: () => (
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-            <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
-              {updatedKeyName || "-"}
-            </span>
-          </div>
-        ),
-        renderCell: isActionItem
-          ? (params) => {
-              const isPdfUpdated = params.row.field_pr_status === "Yes";
-              const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-              const canEdit = userPermissions[0]?.action_edit;
-              const isViewAction = options.is_view_action === true;
-              const isEditAllowed = canEdit && !isViewAction && !isPdfUpdated;
+                return {
+                  field: key,
+                  headerName: updatedKeyName || "",
+                  width: 200,
+                  resizable: true,
+                  cellClassName: (params) => getCellClassName(key, params, options.table),
+                  renderHeader: () => (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                      <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
+                        {updatedKeyName || "-"}
+                      </span>
+                    </div>
+                  ),
+                  renderCell: isActionItem
+                    ? (params) => {
+                        const isPdfUpdated = params.row.field_pr_status === "Yes";
+                        const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                        const canEdit = userPermissions[0]?.action_edit;
+                        const isViewAction = options.is_view_action === true;
+                        const isEditAllowed = canEdit && !isViewAction && !isPdfUpdated;
 
-              return (
-                <span
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
-                  }}
-                  style={{
-                    color: '#2563eb',
-                    textDecoration: 'underline',
-                    cursor: 'pointer',
-                    fontWeight: 400,
-                    fontSize: '14px'
-                  }}
-                >
-                  {params.value || 'View'}
-                </span>
-              );
-            }
-          : (params) => tableCellRender(key, params, params.value),
-      };
-    }),
+                        return (
+                          <span
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
+                            }}
+                            style={{
+                              color: '#2563eb',
+                              textDecoration: 'underline',
+                              cursor: 'pointer',
+                              fontWeight: 400,
+                              fontSize: '14px'
+                            }}
+                          >
+                            {params.value || 'View'}
+                          </span>
+                        );
+                      }
+                    : (params) => tableCellRender(key, params, params.value),
+                };
+              }),
 
-  {
-    field: "field_pr_status",
-    headerName: "PDF Status",
-    width: 150,
-    resizable: true,
-    sortable: true,
-    cellClassName: (params) => getCellClassName("sl_no", params, options.table),
-    sortComparator: (v1, v2) => {
-      if (v1 === "Yes" && v2 === "No") return -1;
-      if (v1 === "No" && v2 === "Yes") return 1;
-      return 0;
-    },
-    renderCell: (params) => {
-      const isUpdated = params.value === "Yes";
-      const statusText = isUpdated ? "PDF Updated" : "Not Updated";
-      const statusColor = isUpdated ? "#22c55e" : "#ef4444";
-      const borderColor = isUpdated ? "#34D399" : "#EF4444";
+              {
+                field: "field_pr_status",
+                headerName: "PDF Status",
+                width: 150,
+                resizable: true,
+                sortable: true,
+                cellClassName: (params) => getCellClassName("sl_no", params, options.table),
+                sortComparator: (v1, v2) => {
+                  if (v1 === "Yes" && v2 === "No") return -1;
+                  if (v1 === "No" && v2 === "Yes") return 1;
+                  return 0;
+                },
+                renderCell: (params) => {
+                  const isUpdated = params.value === "Yes";
+                  const statusText = isUpdated ? "PDF Updated" : "Not Updated";
+                  const statusColor = isUpdated ? "#22c55e" : "#ef4444";
+                  const borderColor = isUpdated ? "#34D399" : "#EF4444";
 
-      return (
-        <Chip
-          label={statusText}
-          size="small"
-          sx={{
-            fontFamily: "Roboto",
-            fontWeight: 400,
-            color: "white",
-            borderColor: borderColor,
-            borderRadius: "4px",
-            backgroundColor: statusColor,
-            textTransform: "capitalize",
-            borderStyle: "solid",
-            borderWidth: "1px",
-          }}
-        />
-      );
-    },
-  },
-]).filter(Boolean);
+                  return (
+                    <Chip
+                      label={statusText}
+                      size="small"
+                      sx={{
+                        fontFamily: "Roboto",
+                        fontWeight: 400,
+                        color: "white",
+                        borderColor: borderColor,
+                        borderRadius: "4px",
+                        backgroundColor: statusColor,
+                        textTransform: "capitalize",
+                        borderStyle: "solid",
+                        borderWidth: "1px",
+                      }}
+                    />
+                  );
+                },
+              },
+            ]).filter(Boolean);
 
 
           setOtherTemplateColumn(updatedHeader);
