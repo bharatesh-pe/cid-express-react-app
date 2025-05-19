@@ -2591,15 +2591,105 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
           </Box>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-            <Tabs value={selectedTab} onChange={handleTabChange} aria-label="Progress Report Tabs">
-              <Tab label="General Info" />
-              <Tab label="Action Item" />
-              <Tab label="Monthwise PDF" />
-              <Tab label="Final PDF" />
-            </Tabs>
+          <Tabs 
+            value={selectedTab} 
+            onChange={handleTabChange} 
+            aria-label="Progress Report Tabs"
+            sx={{
+              // backgroundColor: '#f4f5fa',
+              '& .MuiTabs-indicator': {
+                backgroundColor: '#1f1dac',
+              },
+            }}
+          >
+            <Tab 
+              label="General Info" 
+              sx={{
+                ...(selectedTab === 0 && {
+                  color: '#1f1dac',
+                  borderBottom: `3px solid #1f1dac`, 
+                  backgroundColor: 'transparent',
+                }),
+                '&:hover': {
+                  // backgroundColor: selectedTab !== 0 ? '#d0e1ff' : '',
+                },
+                '&.Mui-selected': {
+                  color: '#1f1dac', 
+                  backgroundColor: 'transparent',
+                },
+                padding: '10px 20px',
+                transition: 'background-color 0.3s ease',
+                borderRadius: '0px', 
+              }} 
+            />
+            
+            <Tab 
+              label="Action Item" 
+              sx={{
+                ...(selectedTab === 1 && {
+                  color: '#1f1dac',
+                  borderBottom: `3px solid #1f1dac`,
+                  backgroundColor: 'transparent',
+                }),
+                '&:hover': {
+                  // backgroundColor: selectedTab !== 1 ? '#d0e1ff' : '', 
+                },
+                '&.Mui-selected': {
+                  color: '#1f1dac',
+                  backgroundColor: 'transparent',
+                },
+                padding: '10px 20px',
+                transition: 'background-color 0.3s ease',
+                borderRadius: '0px',
+              }} 
+            />
+            
+            <Tab 
+              label="Monthwise PDF" 
+              sx={{
+                ...(selectedTab === 2 && {
+                  color: '#1f1dac',
+                  borderBottom: `3px solid #1f1dac`,
+                  backgroundColor: 'transparent',
+                }),
+                '&:hover': {
+                  // backgroundColor: selectedTab !== 2 ? '#d0e1ff' : '',
+                },
+                '&.Mui-selected': {
+                  color: '#1f1dac',
+                  backgroundColor: 'transparent',
+                },
+                padding: '10px 20px',
+                transition: 'background-color 0.3s ease',
+                borderRadius: '0px',
+              }} 
+            />
+            
+            <Tab 
+              label="Final PDF" 
+              sx={{
+                ...(selectedTab === 3 && {
+                  color: '#1f1dac',
+                  borderBottom: `3px solid #1f1dac`,
+                  backgroundColor: 'transparent',
+                }),
+                '&:hover': {
+                  // backgroundColor: selectedTab !== 3 ? '#d0e1ff' : '',
+                },
+                '&.Mui-selected': {
+                  color: '#1f1dac',
+                  backgroundColor: 'transparent',
+                },
+                padding: '10px 20px',
+                transition: 'background-color 0.3s ease',
+                borderRadius: '0px',
+              }} 
+            />
+          </Tabs>
+
 
             {selectedTab === 0 && (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px' }}>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, marginBottom: '10px', marginTop: '30px' }}>
                 {aoFields.length > 0 ? (
                   <Grid container spacing={2}>
                     {aoFields.slice(0, 6).map((field, index) => (
