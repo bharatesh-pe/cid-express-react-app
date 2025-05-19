@@ -4673,235 +4673,6 @@ exports.getUploadedFiles = async (req, res) => {
   }
 };
 
-// exports.appendToLastLineOfPDF = async (req, res) => {
-//   const { ui_case_id, appendText, transaction_id, selected_row_id } = req.body;
-
-//   if (!ui_case_id || !appendText || !selected_row_id) {
-//     return res.status(400).json({ success: false, message: "Missing required fields." });
-//   }
-
-//   const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-//   if (fs.existsSync(dirPath)) {
-//     return res.status(400).json({ success: false, message: "Duplicate transaction detected." });
-//   }
-//   fs.mkdirSync(dirPath, { recursive: true });
-
-//   try {
-//     const latestFile = await UiProgressReportFileStatus.findOne({
-//       where: { ui_case_id, is_pdf: true },
-//       order: [["created_at", "DESC"]],
-//     });
-
-//     if (!latestFile) {
-//       return res.status(404).json({ success: false, message: "No PDF file found for the given case ID." });
-//     }
-
-//     const pdfPath = path.join(__dirname, "../public", latestFile.file_path);
-//     const outputPath = path.join(__dirname, "../public/files", `updated_${latestFile.file_name}`);
-//     const existingPdfBytes = fs.readFileSync(pdfPath);
-//     const pdfDoc = await PDFDocument.load(existingPdfBytes);
-//     const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-//     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-
-//     const pageWidth = 595.276;
-//     const pageHeight = 841.89;
-//     const dataArray = JSON.parse(appendText);
-
-//     const formatDate = (isoDate) => {
-//       const date = new Date(isoDate);
-//       const month = (date.getMonth() + 1).toString().padStart(2, "0");
-//       const day = date.getDate().toString().padStart(2, "0");
-//       const year = date.getFullYear();
-//       return `${month}/${day}/${year}`;
-//     };
-
-//     const formatLabel = (label) => {
-//       label = label.startsWith("field_") ? label.slice(6) : label;
-//       label = label.replace(/_/g, " ");
-//       return label.replace(/\b\w/g, (char) => char.toUpperCase());
-//     };
-
-//     const breakLongWords = (text, font, fontSize, maxWidth) => {
-//       let result = '';
-//       let currentLine = '';
-
-//       for (let char of text) {
-//         const testLine = currentLine + char;
-//         const width = font.widthOfTextAtSize(testLine, fontSize);
-//         if (width > maxWidth) {
-//           result += currentLine + '\n';
-//           currentLine = char;
-//         } else {
-//           currentLine += char;
-//         }
-//       }
-//       result += currentLine;
-//       return result;
-//     };
-
-//     for (let data of dataArray) {
-//       let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
-//       const fontSize = 12;
-//       let currentY = pageHeight - 80;
-//       const minRowHeight = 30;
-//       const labelBoxWidth = 200;
-//       const valueBoxWidth = pageWidth - labelBoxWidth - 100;
-//       const startX = 50;
-
-//       if (data.field_date_created) data.field_date_created = formatDate(data.field_date_created);
-//       if (data.field_last_updated) data.field_last_updated = formatDate(data.field_last_updated);
-//       if (data.created_at) data.created_at = formatDate(data.created_at);
-//       if (data.field_due_date) data.field_due_date = formatDate(data.field_due_date)
-
-//       delete data.field_ui_case_id;
-//       delete data.ui_case_id;
-//       delete data.sys_status;
-//       delete data.updated_at;
-//       delete data.id;
-//       delete data.field_pt_case_id;
-//       delete data.field_evidence_file;
-//       delete data.field_pr_status;
-//       delete data.field_assigned_to_id;
-//       delete data.field_assigned_by_id;
-//       delete data.ReadStatus;
-//       delete data.hasFieldPrStatus;
-
-//       const { created_by, created_at, ...rest } = data;
-//       data = { ...rest, created_by, created_at };
-
-//       const entries = Object.entries(data);
-
-//       for (const [label, value] of entries) {
-//         const fieldLabel = formatLabel(label);
-//         const fieldValue = value ? value.toString() : "N/A";
-//         const lineWidthLimit = valueBoxWidth - 20;
-//         const rawLines = fieldValue.split("\n");
-//         const wrappedLines = [];
-
-//         for (let rawLine of rawLines) {
-//           rawLine = breakLongWords(rawLine, regularFont, fontSize, lineWidthLimit);
-//           const words = rawLine.trim().split(/\s+/);
-//           let currentLine = '';
-
-//           for (let word of words) {
-//             const testLine = currentLine ? `${currentLine} ${word}` : word;
-//             const testWidth = regularFont.widthOfTextAtSize(testLine, fontSize);
-//             if (testWidth <= lineWidthLimit) {
-//               currentLine = testLine;
-//             } else {
-//               if (currentLine) wrappedLines.push(currentLine);
-//               currentLine = word;
-//             }
-//           }
-//           if (currentLine) wrappedLines.push(currentLine);
-//         }
-
-//         let remainingLines = [...wrappedLines];
-
-//         while (remainingLines.length > 0) {
-//           const availableHeight = currentY - 50;
-//           const linesPerPage = Math.floor((availableHeight - 10) / (fontSize + 4));
-//           const linesToPrint = remainingLines.splice(0, linesPerPage);
-
-//           const valueHeight = linesToPrint.length * (fontSize + 4);
-//           const rowHeight = Math.max(minRowHeight, valueHeight + 10);
-
-//           newPage.drawRectangle({
-//             x: startX,
-//             y: currentY - rowHeight,
-//             width: labelBoxWidth,
-//             height: rowHeight,
-//             borderColor: rgb(0, 0, 0),
-//             borderWidth: 1,
-//           });
-
-//           newPage.drawRectangle({
-//             x: startX + labelBoxWidth,
-//             y: currentY - rowHeight,
-//             width: valueBoxWidth,
-//             height: rowHeight,
-//             borderColor: rgb(0, 0, 0),
-//             borderWidth: 1,
-//           });
-
-//           if (remainingLines.length + linesToPrint.length === wrappedLines.length) {
-//             newPage.drawText(fieldLabel, {
-//               x: startX + 10,
-//               y: currentY - 15,
-//               size: fontSize,
-//               font: boldFont,
-//               color: rgb(0, 0, 0),
-//             });
-//           }
-
-//           let textY = currentY - 15;
-//           for (let line of linesToPrint) {
-//             newPage.drawText(line, {
-//               x: startX + labelBoxWidth + 10,
-//               y: textY,
-//               size: fontSize,
-//               font: regularFont,
-//               color: rgb(0, 0, 0),
-//             });
-//             textY -= (fontSize + 4);
-//           }
-
-//           currentY -= rowHeight;
-
-//           if (remainingLines.length > 0 || currentY < 100) {
-//             newPage = pdfDoc.addPage([pageWidth, pageHeight]);
-//             currentY = pageHeight - 80;
-//           }
-//         }
-//       }
-//     }
-
-//     const pdfBytes = await pdfDoc.save();
-//     fs.writeFileSync(outputPath, pdfBytes);
-
-//     await UiProgressReportFileStatus.update(
-//       { file_path: path.join("files", `updated_${latestFile.file_name}`) },
-//       { where: { id: latestFile.id } }
-//     );
-
-//     const tableName = "cid_ui_case_progress_report";
-//     const Model = sequelize.define(
-//       tableName,
-//       {
-//         id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-//         field_pr_status: { type: Sequelize.DataTypes.STRING, allowNull: true },
-//         field_ui_case_id: { type: Sequelize.DataTypes.INTEGER, allowNull: false },
-//       },
-//       {
-//         freezeTableName: true,
-//         timestamps: true,
-//         createdAt: "created_at",
-//         updatedAt: "updated_at",
-//       }
-//     );
-
-//     await Model.update(
-//       { field_pr_status: "Yes" },
-//       { where: { id: selected_row_id } }
-//     );
-
-//     return res.status(200).json({
-//       success: true,
-//       message: "PDF updated successfully.",
-//       file_path: outputPath,
-//     });
-//   } catch (err) {
-//     console.error("Error appending to PDF:", err.message);
-//     return res.status(500).json({
-//       success: false,
-//       message: err.message || "Internal server error.",
-//     });
-//   } finally {
-//     if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
-//   }
-// };
-
-
 const formatDate = (isoDate) => {
   const date = new Date(isoDate);
   const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -4910,26 +4681,30 @@ const formatDate = (isoDate) => {
   return `${month}/${day}/${year}`;
 };
 
-// Get the current month and year in the format "month_year"
 const getCurrentMonthDateLabel = () => {
   const today = new Date();
-  const month = today.toLocaleString('default', { month: 'long' }).toLowerCase(); // "may" (lowercase)
-  const year = today.getFullYear(); // "2025"
+  const month = today.toLocaleString('default', { month: 'long' }).toLowerCase();
+  const year = today.getFullYear(); 
   return `${month}_${year}`;
 };
 
 const formatLabel = (label) => {
   label = label.startsWith('field_') ? label.slice(6) : label;
-  label = label.replace(/_/g, ' ');
-  return label.replace(/\b\w/g, (char) => char.toUpperCase());
+
+  return label
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 };
+
 
 const breakLongWords = (text, font, fontSize, maxWidth) => {
   let result = '';
   let currentLine = '';
+
   for (let char of text) {
     const testLine = currentLine + char;
     const width = font.widthOfTextAtSize(testLine, fontSize);
+
     if (width > maxWidth) {
       result += currentLine + '\n';
       currentLine = char;
@@ -4937,27 +4712,229 @@ const breakLongWords = (text, font, fontSize, maxWidth) => {
       currentLine += char;
     }
   }
+
   result += currentLine;
+
   return result;
 };
 
-exports.appendToLastLineOfPDF = async (req, res) => {
-  const { ui_case_id, created_by, appendText, transaction_id, selected_row_id } = req.body;
 
-  if (!ui_case_id || !appendText || !selected_row_id) {
-    return res.status(400).json({ success: false, message: 'Missing required fields.' });
+
+let lastPdfDocCaseId = null;
+let lastMonthPdfKey = null;
+
+let pdfDocGeneralInfoInserted = false;
+let monthPdfGeneralInfoInserted = false;
+
+function shouldInsertGeneralInfoForPdfDoc(currentCaseId) {
+  if (lastPdfDocCaseId !== currentCaseId) {
+    lastPdfDocCaseId = currentCaseId;
+    pdfDocGeneralInfoInserted = false;
+  }
+  return !pdfDocGeneralInfoInserted;
+}
+
+function shouldInsertGeneralInfoForMonthPdf(currentCaseId, currentMonth) {
+  const key = `${currentCaseId}_${currentMonth}`;
+  if (lastMonthPdfKey !== key) {
+    lastMonthPdfKey = key;
+    monthPdfGeneralInfoInserted = false;
+  }
+  return !monthPdfGeneralInfoInserted;
+}
+
+async function insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, target = 'pdfDoc') {
+  const alreadyInserted = target === 'pdfDoc' ? pdfDocGeneralInfoInserted : monthPdfGeneralInfoInserted;
+  if (alreadyInserted) {
+    return false;
   }
 
-  const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-  fs.mkdirSync(dirPath, { recursive: true });
+  const page = pdfDoc.addPage([pageWidth, pageHeight]);
+  const fontSize = 12;
+  let currentY = pageHeight - 80;
+  const startX = 50;
 
+  page.drawText("General Info", {
+    x: startX,
+    y: currentY,
+    size: fontSize + 2,
+    font: boldFont,
+    color: rgb(0, 0, 0),
+  });
+
+  currentY -= 20;
+
+  for (let [key, val] of Object.entries(aoFields)) {
+    const label = formatLabel(key);
+    const value = val?.toString() || 'N/A';
+
+    page.drawRectangle({ x: startX, y: currentY - 20, width: 200, height: 30, borderColor: rgb(0, 0, 0), borderWidth: 1 });
+    page.drawRectangle({ x: startX + 200, y: currentY - 20, width: pageWidth - 300, height: 30, borderColor: rgb(0, 0, 0), borderWidth: 1 });
+
+    page.drawText(label, { x: startX + 5, y: currentY - 5, size: fontSize, font: boldFont, color: rgb(0, 0, 0) });
+    page.drawText(value, { x: startX + 205, y: currentY - 5, size: fontSize, font: regularFont, color: rgb(0, 0, 0) });
+
+    currentY -= 40;
+  }
+
+  if (target === 'pdfDoc') pdfDocGeneralInfoInserted = true;
+  else monthPdfGeneralInfoInserted = true;
+
+  return true;
+}
+
+
+async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regularFont, boldFont) {
+
+  const omitKeys = [
+    'id',
+    'ReadStatus',
+    'field_pr_status',
+    'sys_status',
+    'updated_at',
+    'field_ui_case_id',
+    'ui_case_id',
+    'field_pt_case_id',
+    'field_evidence_file',
+    'field_assigned_to_id',
+    'field_assigned_by_id'
+  ];
+
+  const fontSize = 12;
+  const startX = 50;
+
+  for (let data of appendText) {
+    // Omit unwanted keys
+    omitKeys.forEach(key => delete data[key]);
+
+    // Reorder if needed
+    const { created_by, created_at, ...rest } = data;
+    data = { ...rest, created_by, created_at };
+
+    // Always start a fresh page for every record
+    let page = pdfDoc.addPage([pageWidth, pageHeight]);
+    let currentY = pageHeight - 80;
+
+    for (let [label, value] of Object.entries(data)) {
+      const fieldLabel = formatLabel(label);
+      let fieldValue = value ? value.toString() : 'N/A';
+
+      // Format date fields
+      if ((label === 'field_due_date' || label === 'created_at') && value) {
+        try {
+          const dateObj = new Date(value);
+          fieldValue = dateObj.toLocaleDateString('en-IN', {
+            year: 'numeric',
+            month: 'short',
+            day: '2-digit'
+          });
+        } catch (e) {
+          console.warn(`Invalid date for ${label}: ${value}`);
+        }
+      }
+
+      const rawLines = fieldValue.split('\n');
+      const wrappedLines = [];
+
+      for (let rawLine of rawLines) {
+        rawLine = breakLongWords(rawLine, regularFont, fontSize, pageWidth - 200);
+        const words = rawLine.trim().split(/\s+/);
+        let currentLine = '';
+
+        for (let word of words) {
+          const testLine = currentLine ? `${currentLine} ${word}` : word;
+          const width = regularFont.widthOfTextAtSize(testLine, fontSize);
+          if (width <= pageWidth - 200) {
+            currentLine = testLine;
+          } else {
+            wrappedLines.push(currentLine);
+            currentLine = word;
+          }
+        }
+
+        if (currentLine) wrappedLines.push(currentLine);
+      }
+
+      let remainingLines = [...wrappedLines];
+
+      while (remainingLines.length > 0) {
+        const availableHeight = currentY - 50;
+        const linesPerPage = Math.floor((availableHeight - 10) / (fontSize + 4));
+        const linesToPrint = remainingLines.splice(0, linesPerPage);
+        const valueHeight = linesToPrint.length * (fontSize + 4);
+        const rowHeight = Math.max(30, valueHeight + 10);
+
+        page.drawRectangle({
+          x: startX,
+          y: currentY - rowHeight,
+          width: 200,
+          height: rowHeight,
+          borderColor: rgb(0, 0, 0),
+          borderWidth: 1,
+        });
+
+        page.drawRectangle({
+          x: startX + 200,
+          y: currentY - rowHeight,
+          width: pageWidth - 300,
+          height: rowHeight,
+          borderColor: rgb(0, 0, 0),
+          borderWidth: 1,
+        });
+
+        page.drawText(fieldLabel, {
+          x: startX + 5,
+          y: currentY - 15,
+          size: fontSize,
+          font: boldFont,
+          color: rgb(0, 0, 0),
+        });
+
+        let textY = currentY - 15;
+        for (let line of linesToPrint) {
+          page.drawText(line, {
+            x: startX + 210,
+            y: textY,
+            size: fontSize,
+            font: regularFont,
+            color: rgb(0, 0, 0),
+          });
+          textY -= fontSize + 4;
+        }
+
+        currentY -= rowHeight;
+
+        if (remainingLines.length > 0 || currentY < 100) {
+          page = pdfDoc.addPage([pageWidth, pageHeight]);
+          currentY = pageHeight - 80;
+        }
+      }
+    }
+  }
+
+}
+
+
+exports.appendToLastLineOfPDF = async (req, res) => {
   try {
+    
+    const { ui_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields } = req.body;
+
+    if (!ui_case_id || !appendText || !selected_row_id || !aoFields) {
+      console.error("Missing required fields.");
+      return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
+
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+    fs.mkdirSync(dirPath, { recursive: true });
+
     const latestFile = await UiProgressReportFileStatus.findOne({
       where: { ui_case_id, is_pdf: true },
       order: [['created_at', 'DESC']],
     });
 
     if (!latestFile) {
+      console.error("No PDF file found.");
       return res.status(404).json({ success: false, message: 'No PDF file found.' });
     }
 
@@ -4980,10 +4957,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     fs.mkdirSync(path.dirname(monthwisePath), { recursive: true });
 
     const existingMonthwise = await UiProgressReportMonthWise.findOne({
-      where: {
-        ui_case_id,
-        monthwise_file_name: monthwiseFileName,
-      }
+      where: { ui_case_id, monthwise_file_name: monthwiseFileName }
     });
 
     const isNewMonthFile = !existingMonthwise;
@@ -4991,7 +4965,6 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
     if (isNewMonthFile) {
       monthPdf = await PDFDocument.create();
-
       const submissionPage = monthPdf.addPage([pageWidth, pageHeight]);
       const fontSize = 24;
       const centerX = 50;
@@ -5023,148 +4996,24 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       monthPdf = await PDFDocument.load(existingMonthPdfBytes);
     }
 
-    const dataArray = JSON.parse(appendText);
+    let generalInfoAddedMain = false;
+    let generalInfoAddedMonth = false;
 
-    const originalPageCount = pdfDoc.getPageCount();
-
-    for (let data of dataArray) {
-      let newPage = pdfDoc.addPage([pageWidth, pageHeight]);
-      let currentY = pageHeight - 80;
-      const fontSize = 12;
-      const labelBoxWidth = 200;
-      const valueBoxWidth = pageWidth - labelBoxWidth - 100;
-      const minRowHeight = 30;
-      const startX = 50;
-
-      ['field_date_created', 'field_last_updated', 'created_at', 'field_due_date'].forEach(k => {
-        if (data[k]) data[k] = formatDate(data[k]);
-      });
-
-      const omitKeys = [
-        'field_ui_case_id', 'ui_case_id', 'sys_status', 'updated_at', 'id', 'field_pt_case_id',
-        'field_evidence_file', 'field_pr_status', 'field_assigned_to_id', 'field_assigned_by_id',
-        'ReadStatus', 'hasFieldPrStatus'
-      ];
-      omitKeys.forEach(k => delete data[k]);
-
-      const { created_by, created_at, ...rest } = data;
-      data = { ...rest, created_by, created_at };
-
-      const entries = Object.entries(data);
-
-      for (const [label, value] of entries) {
-        const fieldLabel = formatLabel(label);
-        const fieldValue = value ? value.toString() : 'N/A';
-        const rawLines = fieldValue.split('\n');
-        const wrappedLines = [];
-
-        for (let rawLine of rawLines) {
-          rawLine = breakLongWords(rawLine, regularFont, fontSize, valueBoxWidth - 20);
-          const words = rawLine.trim().split(/\s+/);
-          let currentLine = '';
-          for (let word of words) {
-            const testLine = currentLine ? `${currentLine} ${word}` : word;
-            const width = regularFont.widthOfTextAtSize(testLine, fontSize);
-            if (width <= valueBoxWidth - 20) {
-              currentLine = testLine;
-            } else {
-              wrappedLines.push(currentLine);
-              currentLine = word;
-            }
-          }
-          if (currentLine) wrappedLines.push(currentLine);
-        }
-
-        let remainingLines = [...wrappedLines];
-
-        while (remainingLines.length > 0) {
-          const availableHeight = currentY - 50;
-          const linesPerPage = Math.floor((availableHeight - 10) / (fontSize + 4));
-          const linesToPrint = remainingLines.splice(0, linesPerPage);
-          const valueHeight = linesToPrint.length * (fontSize + 4);
-          const rowHeight = Math.max(minRowHeight, valueHeight + 10);
-
-          newPage.drawRectangle({
-            x: startX,
-            y: currentY - rowHeight,
-            width: labelBoxWidth,
-            height: rowHeight,
-            borderColor: rgb(0, 0, 0),
-            borderWidth: 1,
-          });
-          newPage.drawRectangle({
-            x: startX + labelBoxWidth,
-            y: currentY - rowHeight,
-            width: valueBoxWidth,
-            height: rowHeight,
-            borderColor: rgb(0, 0, 0),
-            borderWidth: 1,
-          });
-
-          if (remainingLines.length + linesToPrint.length === wrappedLines.length) {
-            const labelWrapWidth = labelBoxWidth - 20;
-            const labelLines = [];
-
-            const rawLabelWords = fieldLabel.split(/\s+/);
-            let labelLine = '';
-            for (let word of rawLabelWords) {
-              const testLine = labelLine ? `${labelLine} ${word}` : word;
-              const width = boldFont.widthOfTextAtSize(testLine, fontSize);
-              if (width <= labelWrapWidth) {
-                labelLine = testLine;
-              } else {
-                labelLines.push(labelLine);
-                labelLine = word;
-              }
-            }
-            if (labelLine) labelLines.push(labelLine);
-
-            // Draw each wrapped label line
-            let labelTextY = currentY - 15;
-            for (let line of labelLines) {
-              newPage.drawText(line, {
-                x: startX + 10,
-                y: labelTextY,
-                size: fontSize,
-                font: boldFont,
-                color: rgb(0, 0, 0),
-              });
-              labelTextY -= fontSize + 4;
-            }
-          }
+    if (shouldInsertGeneralInfoForPdfDoc(ui_case_id)) {
+  await insertGeneralInfo(pdfDoc, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'pdfDoc');
+}
 
 
+   if (shouldInsertGeneralInfoForMonthPdf(ui_case_id, monthLabelRaw)) {
+  await insertGeneralInfo(monthPdf, aoFields, pageWidth, pageHeight, regularFont, boldFont, 'monthPdf');
+}
 
-          let textY = currentY - 15;
-          for (let line of linesToPrint) {
-            newPage.drawText(line, {
-              x: startX + labelBoxWidth + 10,
-              y: textY,
-              size: fontSize,
-              font: regularFont,
-              color: rgb(0, 0, 0),
-            });
-            textY -= fontSize + 4;
-          }
-          currentY -= rowHeight;
 
-          if (remainingLines.length > 0 || currentY < 100) {
-            newPage = pdfDoc.addPage([pageWidth, pageHeight]);
-            currentY = pageHeight - 80;
-          }
-        }
-      }
-    }
+    await appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regularFont, boldFont);
+    await appendTextToPdf(monthPdf, appendText, pageWidth, pageHeight, regularFont, boldFont);
 
-    const newPageCount = pdfDoc.getPageCount();
-    const newPagesToCopy = await monthPdf.copyPages(
-      pdfDoc,
-      Array.from({ length: newPageCount - originalPageCount }, (_, i) => originalPageCount + i)
-    );
-    newPagesToCopy.forEach(page => monthPdf.addPage(page));
-
-    const outputPath = path.join(__dirname, '../public/files', `updated_${latestFile.file_name}`);
     const updatedPdfBytes = await pdfDoc.save();
+    const outputPath = path.join(__dirname, '../public/files', `updated_${latestFile.file_name}`);
     fs.writeFileSync(outputPath, updatedPdfBytes);
 
     const monthwisePdfBytes = await monthPdf.save();
@@ -5186,7 +5035,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       });
     }
 
-    const tableName = "cid_ui_case_progress_report";
+const tableName = "cid_ui_case_progress_report";
     const Model = sequelize.define(
       tableName,
       {
@@ -5203,17 +5052,14 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     );
 
     await Model.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
-
-    return res.status(200).json({
-      success: true,
-      message: `PDF updated successfully. ${isNewMonthFile ? 'Monthwise file created.' : 'Appended to existing monthwise file.'}`
-    });
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: 'An error occurred.' });
+    return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
+  } catch (error) {
+    console.error('Error in appendToLastLineOfPDF:', error);
+    return res.status(500).json({ success: false, message: 'Internal server error.' });
   }
 };
+
+
 
 
 
