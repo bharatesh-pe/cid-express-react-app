@@ -1708,6 +1708,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
       if (response.success) {
         Swal.fire("Success", "File uploaded successfully.", "success");
+        setSelectedTab(1);
         checkPdfEntryStatus(caseId);
         getUploadedFiles(selectedRowData);
       } else {
