@@ -2,7 +2,6 @@ import {  useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
-import SaveIcon from '@mui/icons-material/Save';
 import api from "../services/api";
 import {  Chip, Tooltip } from "@mui/material";
 import {
@@ -11,10 +10,8 @@ import {
   FormControl,
   InputAdornment,
   Typography,
-  IconButton,
   Checkbox,
-  Grid,
-  TextField,
+  IconButton,
 } from "@mui/material";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
@@ -26,16 +23,20 @@ import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import MultiSelect from "../components/form/MultiSelect";
-import AutocompleteField from "../components/form/AutoComplete";
-import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+import ImportExportIcon from '@mui/icons-material/ImportExport';
+import dayjs from "dayjs";
 
-const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
+const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
 
+    const [exportableData, setExportableData] = useState([]);
+    const [showExportPopup, setShowExportPopup] = useState(false);
+    const [tabIndex, setTabIndex] = useState(0);
     const [aoFields, setAoFields] = useState([]);
     const [aoFieldId,setAoFieldId] = useState(selectedRowData);
     const [filterAoValues, setFilterAoValues] = useState({});
@@ -107,214 +108,115 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const [selectKey, setSelectKey] = useState(null);
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
+    const [selectedIds, setSelectedIds] = useState([]);
 
-    const loadValueField = async (rowData, editData, table_name) => {
-        if (!table_name || table_name === "") {
-          toast.warning("Please Check Table Name", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-          });
-          return;
-        }
-    
-        var viewTemplatePayload = {
-          table_name: table_name,
-          id: rowData.id,
-        };
-        setLoading(true);
-        try {
-          const viewTemplateData = await api.post(
-            "/templateData/viewTemplateData",
-            viewTemplatePayload
-          );
-          setLoading(false);
-    
-          if (viewTemplateData && viewTemplateData.success) {
-            const formValues = viewTemplateData.data ? viewTemplateData.data : {};
-    
-            setInitialData(formValues);
-            setFilterAoValues(formValues); 
-            setviewReadonly(!editData);
-            setEditTemplateData(editData);
-    
-            const viewTableData = {
-              table_name: table_name,
-            };
-    
-            setLoading(true);
-            try {
-              const viewTemplateResponse = await api.post(
-                "/templates/viewTemplate",
-                viewTableData
-              );
-              
-              setLoading(false);
-    
-              if (viewTemplateResponse && viewTemplateResponse.success) {
-    
-                console.log("viewtemplaterespose", viewTemplateResponse)
-              } else {
-                const errorMessage = viewTemplateResponse.message
-                  ? viewTemplateResponse.message
-                  : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-error",
-                });
-              }
-            } catch (error) {
-              setLoading(false);
-              if (error && error.response && error.response["data"]) {
-                toast.error(
-                  error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                  {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                  }
-                );
-              }
-            }
-          } else {
-            const errorMessage = viewTemplateData.message
-              ? viewTemplateData.message
-              : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-            });
-          }
-        } catch (error) {
-          setLoading(false);
-          if (error && error.response && error.response["data"]) {
-            toast.error(
-              error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-              {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-              }
-            );
-          }
-        }
-      };
-      
-    const loadAOFields = async () => {
-      setLoading(true);
-      try {
-        const response = await api.post("/templates/viewTemplate", {
-          table_name: "cid_under_investigation",
-        });
-    
-        if (response.success && response.data?.fields) {
-          let aoOnlyFields = response.data.fields.filter(
-            (field) =>
-              field.ao_field === true &&
-              field.hide_from_ux === false &&
-              field.name !== "field_act" &&
-              field.name !== "field_section"
-          );
-    
-          const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
-          const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
-    
-          if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
-          if (policeStationField && !aoOnlyFields.includes(policeStationField)) aoOnlyFields.push(policeStationField);
-    
-          for (const field of aoOnlyFields) {
-            if (field && field.api) {
-              const payloadApi = field.api;
-              const apiPayload = {}; // Define this as needed
-    
-              try {
-                const res = await api.post(payloadApi, apiPayload);
-                if (!res.data) continue;
-    
-                const updatedOptions = res.data.map((item) => {
-                    const nameKey = Object.keys(item).find((key) => !["id", "created_at", "updated_at"].includes(key));
-                    var headerName = nameKey;
-                    var headerId = 'id';
-    
-                    if(field.table === "users"){
-                        headerName = "name"
-                        headerId =  "user_id"
-                    }else if(field.api !== "/templateData/getTemplateData"){
-                        headerName = field.table + "_name"
-                        headerId =  field.table + "_id"
-                    }
-    
-                    return {
-                        name: item[headerName],
-                        code: item[headerId],
-                    };
-                });
-    
-                field.options = updatedOptions;
-              } catch (err) {
-                console.error(`Error loading options for field ${field.name}`, err);
-              }
-            }
-          }
-    
-          setAoFields(aoOnlyFields);
-          loadValueField(aoFieldId, false, "cid_under_investigation");
-        }
-      } catch (error) {
-        toast.error("Failed to load AO fields", {
-          position: "top-right",
-          autoClose: 3000,
-          className: "toast-error",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    useEffect(() => {
-          loadAOFields();
-    }, []);
 
     useEffect(()=>{
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
     },[otherTemplatesPaginationCount]);
 
-    
+      const toggleSelectRow = (id) => {
+    setSelectedIds((prevSelectedIds) => {
+      const updated = prevSelectedIds.includes(id)
+        ? prevSelectedIds.filter((selectedId) => selectedId !== id)
+        : [...prevSelectedIds, id];
+
+      return updated;
+    });
+  };
+
 
     const onSaveTemplateError = (error) => {
         setIsValid(false);
     };
+
+      const exportToExcel = (data, fileName) => {
+      if (!data || data.length === 0) return;
+    
+      const excludedFields = [
+        "id",
+        "created_at",
+        "updated_at",
+        "created_by",
+        "sys_status",
+        "ReadStatus",
+      ];
+    
+      const formattedData = data.map((item, index) => {
+        const newItem = { "S.no": index + 1 };
+    
+        Object.entries(item).forEach(([key, val]) => {
+          if (!excludedFields.includes(key)) {
+            let cleanKey = key.startsWith("field_") ? key.slice(6) : key;
+    
+            cleanKey = cleanKey
+              .replace(/_/g, " ")
+              .replace(/\b\w/g, (char) => char.toUpperCase());
+    
+            const isDateField =
+              key.toLowerCase().includes("_date") ||
+              key.toLowerCase().endsWith("date");
+    
+            let formattedVal = val;
+    
+            if (
+              isDateField &&
+              typeof val === "string" &&
+              !isNaN(Date.parse(val))
+            ) {
+              formattedVal = dayjs(val).format("DD-MM-YYYY");
+            }
+    
+            newItem[cleanKey] = formattedVal;
+          }
+        });
+    
+        return newItem;
+      });
+    
+      const worksheet = XLSX.utils.json_to_sheet(formattedData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+    
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+    
+      const blob = new Blob([excelBuffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+    
+      saveAs(blob, `${fileName}.xlsx`);
+      setShowExportPopup(false);
+    };
+    const handleOpenExportPopup = async () => {
+      if (!selectedRowData || !selectedOtherTemplate) return;
+    
+      const payload = {
+        table_name: selectedOtherTemplate.table,
+        ui_case_id: selectedRowData.id,
+        pt_case_id: selectedRowData?.pt_case_id || null,
+        case_io_id: selectedRowData.field_io_name_id || "",
+      };
+    
+      try {
+        const res = await api.post('/templateData/getActionTemplateData', payload);
+        setExportableData(res.data || []);
+        setShowExportPopup(true);
+      } catch (err) {
+        console.error('Failed to fetch export data:', err);
+        toast.error(
+            err || "Please Try Again!",
+            {
+              position: "top-right",
+              autoClose: 3000,
+              className: "toast-error",
+            }
+          );
+      }
+    };
+    
 
     const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
@@ -501,7 +403,22 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         ];
 
                     
-                        const updatedHeader = ([                   
+                        const updatedHeader = ([    
+                            {
+                                field: "select",
+                                headerName: "",
+                                width: 50,
+                                renderCell: (params) => {
+                                const isPFUpdated = params.row.sys_status === 'PF';
+        
+                                return isPFUpdated ? (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                    <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                                </div>
+                                ) : null;
+        
+                                }
+                            }  ,             
                             ...Object.keys(getTemplateResponse.data[0]).filter(
                                 (key) =>
                                     !excludedKeys.includes(key) &&
@@ -2584,6 +2501,30 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                         Add
                                     </Button>
                                 )}
+                                <Button
+                                onClick={handleOpenExportPopup}
+                                sx={{
+                                    
+                                    height: 40,
+                                    px: 2.8,
+                                    fontWeight: 600,
+                                    fontSize: 14,
+                                    textTransform: 'none',
+                                    borderRadius: '8px',
+                                    backgroundColor: '#1976d2',
+                                    color: '#fff',
+                                    '&:hover': {
+                                    backgroundColor: '#115293',
+                                    },
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1.2,
+                                }}
+                                >
+                                <ImportExportIcon sx={{ fontSize: 18 }} />
+                                Export / Import
+                                </Button>
                                 {!showSubmitAPButton && (
                                     <Button
                                         variant="contained"
@@ -2596,89 +2537,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 )}
                             </Box>
                         </Box>
-                    </Box>
-
-                    {/* AO Fields & Table Section */}
-                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                        {aoFields.length > 0 ? (
-                            <Grid container spacing={2}>
-                                {aoFields.slice(0, 6).map((field, index) => (
-                                    <Grid item xs={12} md={4} key={index}>
-                                        {field.type === 'text' && (
-                                            <ShortText key={field.id} field={field} formData={filterAoValues} disabled />
-                                        )}
-                                        {field.type === 'multidropdown' && (
-                                            <MultiSelect
-                                                key={field.id}
-                                                field={field}
-                                                formData={filterAoValues}
-                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                                disabled
-                                            />
-                                        )}
-                                        {(field.type === 'dropdown' || field.type === 'autocomplete') && (
-                                            <AutocompleteField
-                                                key={field.id}
-                                                field={field}
-                                                formData={filterAoValues}
-                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
-                                                value={(() => {
-                                                    const fieldValue = filterAoValues?.[field.name];
-                                                    return field.options.find(opt => String(opt.code) === String(fieldValue)) || null;
-                                                })()}
-                                                disabled
-                                            />
-                                        )}
-                                    </Grid>
-                                ))}
-
-                                {/* Text Areas */}
-                                <Grid container item xs={12} spacing={2} alignItems="flex-start">
-                                    {aoFields
-                                        .slice(4)
-                                        .filter(f => f.type === 'textarea')
-                                        .map((field, index) => (
-                                            <Grid item xs={6} key={index}>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                    <Typography sx={{ fontWeight: 'bold', color: 'black', mr: 1 }}>
-                                                        {field.label}
-                                                    </Typography>
-                                                    <Tooltip title="Save">
-                                                        <SaveIcon
-                                                            onClick={() => onActionPlanUpdate("cid_under_investigation", filterAoValues)}
-                                                            sx={{
-                                                                color: '#1570EF',
-                                                                p: '0 1px',
-                                                                fontSize: '25px',
-                                                                cursor: 'pointer',
-                                                                mb: '2px'
-                                                            }}
-                                                        />
-                                                    </Tooltip>
-                                                </Box>
-                                                <TextField
-                                                    fullWidth
-                                                    multiline
-                                                    minRows={10}
-                                                    maxRows={10}
-                                                    variant="outlined"
-                                                    value={filterAoValues[field.name] || ""}
-                                                    onChange={(e) =>
-                                                        setFilterAoValues(prev => ({
-                                                            ...prev,
-                                                            [field.name]: e.target.value,
-                                                        }))
-                                                    }
-                                                />
-                                            </Grid>
-                                        ))}
-                                </Grid>
-                            </Grid>
-                        ) : (
-                            <Typography variant="body2" color="text.secondary">
-                                No AO Fields Available
-                            </Typography>
-                        )}
                     </Box>
 
                     {/* Data Table */}
@@ -2738,4 +2596,4 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     );    
 };
 
-export default ActionPlan;
+export default PropertyForm;

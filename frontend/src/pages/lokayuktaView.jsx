@@ -20,7 +20,8 @@ import AddIcon from "@mui/icons-material/Add";
 import DynamicForm from "../components/dynamic-form/DynamicForm";
 import ApprovalModal from "../components/dynamic-form/ApprovalModalForm";
 import ActionPlan from "./ActionPlan";
-
+import ProgressReport from "./ProgressReport";
+import PropertyForm from "./PropertyForm";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
@@ -821,8 +822,8 @@ const LokayuktaView = () => {
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
-                {
-                    activeSidebar && (activeSidebar?.table === "cid_ui_case_action_plan" || activeSidebar?.table === "cid_ui_case_progress_report") ?
+                {activeSidebar?.table === "cid_ui_case_action_plan" ? (
+
                     
                     <ActionPlan
                         templateName={template_name}
@@ -832,8 +833,30 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                     />
+               ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
+
+
+                     <ProgressReport
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                ) : activeSidebar?.table === "cid_ui_case_property_form" ? (
+
+
+                     <PropertyForm
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
                     
-                    :
+                 ) : (
                     
                     !tableViewFlag ?
                     <Box sx={{overflow: 'auto', height: '100vh'}}>
@@ -969,7 +992,7 @@ const LokayuktaView = () => {
                             />
                         </Box>
                     </Box>
-                }
+                )}
 
             </Box>
 

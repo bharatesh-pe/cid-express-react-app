@@ -90,6 +90,7 @@ import FileInput from "../components/form/FileInput";
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
+import { BorderTop } from "@mui/icons-material";
 
 const UnderInvestigation = () => {
   const location = useLocation();
@@ -182,6 +183,87 @@ const UnderInvestigation = () => {
   const [otherTablePagination, setOtherTablePagination] = useState(1);
 
   // for actions
+  const PageSize = 5;
+
+  const [monthwiseData, setMonthwiseData] = useState([]);
+  const [monthwiseTotalRecord, setMonthwiseTotalRecord] = useState(0);
+  const [monthwiseTotalPage, setMonthwiseTotalPage] = useState(1);
+  const [monthwisePaginationCount, setMonthwisePaginationCount] = useState(PageSize);
+  const [monthwiseCurrentPage, setMonthwiseCurrentPage] = useState(1); // renamed
+
+
+  const handleMonthwisePagination = (page) => {
+    getMonthWiseFile(selectedRow, page);
+  };
+
+const monthwiseColumns = [
+  {
+    headerName: "S.No",
+    field: "serial_no",
+    width: 70,
+    sortable: false,
+    filterable: false,
+    renderCell: (params) => {
+      const currentPage = monthwiseCurrentPage || 1;
+      const pageSize = PageSize || 5;
+      
+      if (!params.row) {
+        console.error("S.No - Row data is missing for serial number calculation.");
+        return "-";
+      }
+      const rowIndex = monthwiseData.indexOf(params.row);
+      const serialNumber = (currentPage - 1) * pageSize + rowIndex + 1;
+      return serialNumber;
+    },
+  },
+  {
+    headerName: "Submission Month",
+    field: "month_of_the_file",
+    width: 250,
+    renderCell: (params) => {
+      const fileName = params.row.month_of_the_file || "";
+      return fileName;
+    },
+  },
+  {
+    headerName: "File Name",
+    field: "monthwise_file_name",
+    width: 250,
+    renderCell: (params) => {
+      const fileName = params.row.monthwise_file_name || "";
+      return fileName;
+    },
+  },
+  {
+    headerName: "View",
+    field: "view",
+    width: 100,
+    sortable: false,
+    filterable: false,
+    renderCell: (params) => (
+      <Button
+        variant="outlined"
+        size="small"
+        onClick={() => {
+          const filePath = params.row.monthwise_file_path;
+          const url = `${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${filePath}`;
+          window.open(url, "_blank");
+        }}
+      >
+        View
+      </Button>
+    ),
+  },
+];
+
+
+
+
+
+
+
+
+
 
   const [selectedRow, setSelectedRow] = useState({});
   const [templateApproval, setTemplateApproval] = useState(false);
@@ -589,6 +671,7 @@ const UnderInvestigation = () => {
     setFurtherInvestigationSelectedValue,
   ] = useState(null);
   const [showReplacePdfButton, setShowReplacePdfButton] = useState(false);
+  const [isSubmitAllowed,setIsSubmitAllowed] = useState(false);
   const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
   const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false);
 
@@ -3512,115 +3595,63 @@ const loadChildMergedCasesData = async (page, caseId) => {
     );
     setTableSortKey(key);
   };
+
   const loadValueField = async (rowData, editData, table_name) => {
-    if (!table_name || table_name === "") {
-      toast.warning("Please Check Table Name", {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        className: "toast-warning",
-      });
-      return;
-    }
+  if (!table_name || table_name === "") {
+    toast.warning("Please Check Table Name", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      className: "toast-warning",
+    });
+    return null;
+  }
 
-    var viewTemplatePayload = {
-      table_name: table_name,
-      id: rowData.id,
-    };
-    setLoading(true);
-    try {
-      const viewTemplateData = await api.post(
-        "/templateData/viewTemplateData",
-        viewTemplatePayload
-      );
-      setLoading(false);
+  const viewTemplatePayload = {
+    table_name: table_name,
+    id: rowData.id,
+  };
 
-      if (viewTemplateData && viewTemplateData.success) {
-        const formValues = viewTemplateData.data ? viewTemplateData.data : {};
+  setLoading(true);
+  try {
+    const viewTemplateData = await api.post(
+      "/templateData/viewTemplateData",
+      viewTemplatePayload
+    );
+    setLoading(false);
 
-        setInitialData(formValues);
-        setFilterAoValues(formValues); 
-        setviewReadonly(!editData);
-        setEditTemplateData(editData);
+    if (viewTemplateData && viewTemplateData.success) {
+      const formValues = viewTemplateData.data ? viewTemplateData.data : {};
 
-        const viewTableData = {
-          table_name: table_name,
-        };
+      setInitialData(formValues);
+      setFilterAoValues(formValues);
+      setviewReadonly(!editData);
+      setEditTemplateData(editData);
 
-        setLoading(true);
-        try {
-          const viewTemplateResponse = await api.post(
-            "/templates/viewTemplate",
-            viewTableData
-          );
-          
-          setLoading(false);
+      const viewTableData = {
+        table_name: table_name,
+      };
 
-          if (viewTemplateResponse && viewTemplateResponse.success) {
+      setLoading(true);
+      try {
+        const viewTemplateResponse = await api.post(
+          "/templates/viewTemplate",
+          viewTableData
+        );
 
-            console.log("viewtemplaterespose", viewTemplateResponse)
-          } else {
-            const errorMessage = viewTemplateResponse.message
-              ? viewTemplateResponse.message
-              : "Failed to delete the template. Please try again.";
-            toast.error(errorMessage, {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-            });
-          }
-        } catch (error) {
-          setLoading(false);
-          if (error && error.response && error.response["data"]) {
-            toast.error(
-              error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-              {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-              }
-            );
-          }
-        }
-      } else {
-        const errorMessage = viewTemplateData.message
-          ? viewTemplateData.message
-          : "Failed to create the template. Please try again.";
-        toast.error(errorMessage, {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error && error.response && error.response["data"]) {
-        toast.error(
-          error.response["data"].message
-            ? error.response["data"].message
-            : "Please Try Again !",
-          {
+        setLoading(false);
+
+        if (viewTemplateResponse && viewTemplateResponse.success) {
+          console.log("viewTemplateResponse", viewTemplateResponse);
+        } else {
+          const errorMessage = viewTemplateResponse.message
+            ? viewTemplateResponse.message
+            : "Failed to delete the template. Please try again.";
+          toast.error(errorMessage, {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,
@@ -3629,12 +3660,71 @@ const loadChildMergedCasesData = async (page, caseId) => {
             draggable: true,
             progress: undefined,
             className: "toast-error",
-          }
-        );
+          });
+        }
+      } catch (error) {
+        setLoading(false);
+        if (error && error.response && error.response["data"]) {
+          toast.error(
+            error.response["data"].message
+              ? error.response["data"].message
+              : "Please Try Again !",
+            {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            }
+          );
+        }
       }
+
+      // Return formValues so caller can use AO field values
+      return formValues;
+    } else {
+      const errorMessage = viewTemplateData.message
+        ? viewTemplateData.message
+        : "Failed to create the template. Please try again.";
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return null;
     }
-  };
-  
+  } catch (error) {
+    setLoading(false);
+    if (error && error.response && error.response["data"]) {
+      toast.error(
+        error.response["data"].message
+          ? error.response["data"].message
+          : "Please Try Again !",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        }
+      );
+    }
+    return null;
+  }
+};
+
+
 const loadAOFields = async () => {
   setLoading(true);
   try {
@@ -3651,11 +3741,17 @@ const loadAOFields = async () => {
           field.name !== "field_section"
       );
 
-      const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
-      const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
+      const briefFactField = response.data.fields.find(
+        (f) => f.name === "field_breif_fact"
+      );
+      const policeStationField = response.data.fields.find(
+        (f) => f.name === "field_investigation_carried_out_by_the_police_station"
+      );
 
-      if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
-      if (policeStationField && !aoOnlyFields.includes(policeStationField)) aoOnlyFields.push(policeStationField);
+      if (briefFactField && !aoOnlyFields.includes(briefFactField))
+        aoOnlyFields.push(briefFactField);
+      if (policeStationField && !aoOnlyFields.includes(policeStationField))
+        aoOnlyFields.push(policeStationField);
 
       for (const field of aoOnlyFields) {
         if (field && field.api) {
@@ -3667,22 +3763,24 @@ const loadAOFields = async () => {
             if (!res.data) continue;
 
             const updatedOptions = res.data.map((item) => {
-                const nameKey = Object.keys(item).find((key) => !["id", "created_at", "updated_at"].includes(key));
-                var headerName = nameKey;
-                var headerId = 'id';
+              const nameKey = Object.keys(item).find(
+                (key) => !["id", "created_at", "updated_at"].includes(key)
+              );
+              var headerName = nameKey;
+              var headerId = "id";
 
-                if(field.table === "users"){
-                    headerName = "name"
-                    headerId =  "user_id"
-                }else if(field.api !== "/templateData/getTemplateData"){
-                    headerName = field.table + "_name"
-                    headerId =  field.table + "_id"
-                }
+              if (field.table === "users") {
+                headerName = "name";
+                headerId = "user_id";
+              } else if (field.api !== "/templateData/getTemplateData") {
+                headerName = field.table + "_name";
+                headerId = field.table + "_id";
+              }
 
-                return {
-                    name: item[headerName],
-                    code: item[headerId],
-                };
+              return {
+                name: item[headerName],
+                code: item[headerId],
+              };
             });
 
             field.options = updatedOptions;
@@ -3693,7 +3791,9 @@ const loadAOFields = async () => {
       }
 
       setAoFields(aoOnlyFields);
-      loadValueField(aoFieldId, false, "cid_under_investigation");
+
+      // You can await this and get AO field values if needed
+      await loadValueField(aoFieldId, false, "cid_under_investigation");
     }
   } catch (error) {
     toast.error("Failed to load AO fields", {
@@ -3705,6 +3805,7 @@ const loadAOFields = async () => {
     setLoading(false);
   }
 };
+
 
 useEffect(() => {
     if (selectedOtherTemplate?.table === "cid_ui_case_action_plan" || selectedOtherTemplate?.table === 'cid_ui_case_progress_report' ) {
@@ -4013,67 +4114,32 @@ useEffect(() => {
     }
   };
 
+const handleUpdatePdfClick = async ({
+  selectedOtherTemplate,
+  selectedRowData,
+  selectedIds,
+  prUpdatePdf,
+}) => {
+  const getTemplatePayload = {
+    table_name: selectedOtherTemplate?.table,
+    ui_case_id: selectedRowData?.id,
+  };
 
-  const handleUpdatePdfClick = async ({
-    selectedOtherTemplate,
-    selectedRowData,
-    selectedIds,
-    prUpdatePdf,
-  }) => {
-    const getTemplatePayload = {
-      table_name: selectedOtherTemplate?.table,
-      ui_case_id: selectedRowData?.id,
-    };
-  
-    setLoading(true);
-    try {
-      const getTemplateResponse = await api.post(
-        "/templateData/getTemplateData",
-        getTemplatePayload
+  setLoading(true);
+  try {
+    const getTemplateResponse = await api.post(
+      "/templateData/getTemplateData",
+      getTemplatePayload
+    );
+    setLoading(false);
+
+    if (getTemplateResponse && getTemplateResponse.success) {
+      const dataToAppend = getTemplateResponse.data.filter(
+        (item) => item.field_pr_status === "No"
       );
-      setLoading(false);
-  
-      if (getTemplateResponse && getTemplateResponse.success) {
-        const dataToAppend = getTemplateResponse.data.filter(
-          (item) => item.field_pr_status === "No"
-        );
-  
-        if (!selectedIds || selectedIds.length === 0) {
-          toast.error("Please choose a record to append.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-          });
-          return;
-        }
-  
-        const filteredDataToAppend = dataToAppend.filter(
-          (item) =>
-            selectedIds.includes(item.id) && item.field_pr_status === "No"
-        );
-  
-        if (filteredDataToAppend.length > 0) {
-          const appendText = JSON.stringify(filteredDataToAppend);
-          await prUpdatePdf({ appendText });
-        } else {
-          toast.error("Already this records are Updated to PDF", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-          });
-        }
-      } else {
-        toast.error("Failed to fetch template data. Please try again.", {
+
+      if (!selectedIds || selectedIds.length === 0) {
+        toast.error("Please choose a record to append.", {
           position: "top-right",
           autoClose: 3000,
           hideProgressBar: false,
@@ -4081,12 +4147,60 @@ useEffect(() => {
           pauseOnHover: true,
           draggable: true,
           progress: undefined,
-          className: "toast-error",
+          className: "toast-warning",
+        });
+        return;
+      }
+
+      let filteredDataToAppend = dataToAppend.filter(
+        (item) =>
+          selectedIds.includes(item.id) && item.field_pr_status === "No"
+      );
+
+      // Load AO fields separately
+      const aoFieldValues = await loadValueField(
+        selectedRowData,
+        false,
+        "cid_under_investigation"
+      );
+
+      const aoFieldsToInclude = [
+        "field_cid_crime_no./enquiry_no",
+        "field_crime_number_of_ps",
+        "field_name_of_the_police_station",
+        "field_referring_agency",
+        "field_dept_unit",
+        "field_division",
+      ];
+
+      const filteredAOFieldValues = {};
+      aoFieldsToInclude.forEach((key) => {
+        if (aoFieldValues[key] !== undefined) {
+          filteredAOFieldValues[key] = aoFieldValues[key];
+        }
+      });
+
+      if (filteredDataToAppend.length > 0) {
+        await prUpdatePdf({
+          appendText: JSON.stringify(filteredDataToAppend),
+          aoFields: JSON.stringify(filteredAOFieldValues),
+          selectedIds,
+          selectedRow: selectedRowData,
+        });
+      } else {
+        toast.error("Already this records are Updated to PDF", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-warning",
         });
       }
-    } catch (error) {
-      setLoading(false);
-      toast.error("Error fetching template data. Please try again.", {
+    } else {
+      toast.error("Failed to fetch template data. Please try again.", {
         position: "top-right",
         autoClose: 3000,
         hideProgressBar: false,
@@ -4097,48 +4211,62 @@ useEffect(() => {
         className: "toast-error",
       });
     }
-  };
-  
-  const prUpdatePdf = async (data) => {
-    try {
-      setLoading(true);
+  } catch (error) {
+    setLoading(false);
+    toast.error("Error fetching template data. Please try again.", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      className: "toast-error",
+    });
+  }
+};
+const prUpdatePdf = async ({ appendText, aoFields, selectedIds, selectedRow }) => {
+  try {
+    setLoading(true);
 
-      const parsedAppendText = JSON.parse(data.appendText);
+    const parsedAppendText = JSON.parse(appendText);
+    const parsedAoFields = JSON.parse(aoFields);
 
-      const payload = {
-        selected_row_id: selectedIds,
-        ui_case_id: selectedRow.id,
-        appendText: JSON.stringify(parsedAppendText),
-      };
+    const payload = {
+      selected_row_id: selectedIds,
+      ui_case_id: selectedRow.id,
+      appendText: JSON.stringify(parsedAppendText),
+      aoFields: JSON.stringify(parsedAoFields),
+      created_by: localStorage.getItem('user_id'),
+    };
 
-      const saveTemplateData = await api.post(
-        "/templateData/appendToLastLineOfPDF",
-        payload
+    const saveTemplateData = await api.post(
+      "/templateData/appendToLastLineOfPDF",
+      payload
+    );
+
+    setLoading(false);
+
+    if (saveTemplateData && saveTemplateData.success) {
+      toast.success(
+        saveTemplateData.message || "Data appended successfully.",
+        {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+        }
       );
-
-      setLoading(false);
-
-      if (saveTemplateData && saveTemplateData.success) {
-        toast.success(
-          saveTemplateData.message || "Data appended successfully.",
-          {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-          }
-        );
-        setOtherTemplateModalOpen(false);
-        setSelectedIds([]);
-      } else {
-        const errorMessage =
-          saveTemplateData.message ||
-          "Failed to append data. Please try again.";
-        toast.error(errorMessage, {
+      setOtherTemplateModalOpen(false);
+      setSelectedIds([]);
+    } else {
+      toast.error(
+        saveTemplateData.message || "Failed to append data. Please try again.",
+        {
           position: "top-right",
           autoClose: 3000,
           hideProgressBar: false,
@@ -4147,24 +4275,25 @@ useEffect(() => {
           draggable: true,
           progress: undefined,
           className: "toast-error",
-        });
-      }
-    } catch (error) {
-      setLoading(false);
-      if (error?.response?.data) {
-        toast.error(error.response.data.message || "Please try again!", {
-          position: "top-right",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          className: "toast-error",
-        });
-      }
+        }
+      );
     }
-  };
+  } catch (error) {
+    setLoading(false);
+    toast.error(error?.response?.data?.message || "Please try again!", {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      className: "toast-error",
+    });
+  }
+};
+
+
 
 const handleSubmitPF = async ({ id, selectedIds }) => {
 
@@ -5840,6 +5969,39 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     }
   };
 
+  const getMonthWiseFile = async (ui_case_id, page = 1) => {
+  if (!ui_case_id) {
+    console.error("Invalid ui_case_id for file retrieval:", ui_case_id);
+    return;
+  }
+  try {
+    const response = await api.post("/templateData/getMonthWiseByCaseId", {
+      ui_case_id,
+      page,
+      limit: PageSize,
+    });
+
+    if (response && response.success) {
+      setMonthwiseData(response.data || []); // just set data as is
+      setMonthwiseTotalRecord(response.totalRecords || 0);
+      setMonthwiseTotalPage(Math.ceil((response.totalRecords || 0) / PageSize));
+      setMonthwisePaginationCount(PageSize);
+      setMonthwiseCurrentPage(page);
+    }
+  } catch (error) {
+    console.error("Error fetching monthwise files:", error);
+  }
+};
+
+
+    useEffect(() => {
+    if (selectedRow) {
+      getMonthWiseFile(selectedRow, 1);
+    }
+  }, [selectedRow]);
+
+
+
   const checkPdfEntryStatus = async (caseId) => {
     if (!caseId) {
       setHasPdfEntry(false);
@@ -6200,6 +6362,12 @@ const handleOpenExportPopup = async () => {
 
         const { meta } = getTemplateResponse;
     
+        const currentDate = meta?.currentDate;
+
+        const dayOfMonth = new Date(currentDate).getDate();
+        const isSubmitAllowed = dayOfMonth >= 15 && dayOfMonth <= 20;
+        setIsSubmitAllowed(isSubmitAllowed); 
+
         const totalPages = meta?.meta?.totalPages;
         const totalItems = meta?.meta?.totalItems;
         
@@ -6937,6 +7105,9 @@ const handleOpenExportPopup = async () => {
             if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
             await checkPdfEntryStatus(selectedRow.id);
                 await getUploadedFiles(selectedRow, options);
+            }
+            if (options.table === "cid_ui_case_progress_report") {
+                await getMonthWiseFile(selectedRow.id);
             }
 
             if(options.is_view_action === true){
@@ -10710,28 +10881,6 @@ const handleOpenExportPopup = async () => {
                       </Button>
                     )}
                     {/* )} */}
-                    <Button
-                        //   variant="outlined"
-                        onClick={() =>
-                            handleUpdatePdfClick({
-                            selectedOtherTemplate,
-                            selectedRowData,
-                            selectedIds,
-                            prUpdatePdf,
-                            })
-                        }
-                        variant="contained"
-                        // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
-                        sx={{
-                                marginLeft: "10px",
-                                height: '40px',
-                                backgroundColor: '#12B76A',
-                                color: 'white',
-                                textTransform: 'none',
-                        }}
-                    >
-                      Update PDF
-                    </Button>
                     {showReplacePdfButton && (
                       <Button variant="outlined" 
                       component="label"
@@ -10753,6 +10902,29 @@ const handleOpenExportPopup = async () => {
  
                   )}
 
+                  <Button
+                      //   variant="outlined"
+                      onClick={() =>
+                          handleUpdatePdfClick({
+                          selectedOtherTemplate,
+                          selectedRowData,
+                          selectedIds,
+                          prUpdatePdf,
+                          })
+                      }
+                      variant="contained"
+                      disabled={!isSubmitAllowed}
+                      // sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                      sx={{
+                              marginLeft: "10px",
+                              height: '40px',
+                              backgroundColor: '#12B76A',
+                              color: 'white',
+                              textTransform: 'none',
+                      }}
+                  >
+                    Submit
+                  </Button>
                   </Box>
                 )
               ) : ( 
@@ -11012,7 +11184,25 @@ const handleOpenExportPopup = async () => {
                           )}
  
                         </Box>
-                            <TableView
+                        <Box
+                          className = 'divider'
+                        />
+
+                              <TableView
+                                rows={monthwiseData}
+                                columns={monthwiseColumns}
+                                totalPage={monthwiseTotalPage}
+                                totalRecord={monthwiseTotalRecord}
+                                paginationCount={monthwiseCurrentPage}
+                                handlePagination={handleMonthwisePagination}
+                              />
+
+
+                        <Box
+                          className = 'divider'
+                        />
+
+                               <TableView
                                 rows={otherTemplateData}
                                 columns={otherTemplateColumn}
                                 totalPage={otherTemplatesTotalPage} 
@@ -11022,7 +11212,15 @@ const handleOpenExportPopup = async () => {
                                 handleRowClick={(row) => handleOthersTemplateDataView(row, false, selectedOtherTemplate?.table)}
                                 tableName={selectedOtherTemplate?.table}
                                 />
+
                         </Box>
+
+                        <Box
+                          className = 'divider'
+                        />
+
+
+
                         <Box
                           display="flex"
                           flexDirection="column"
