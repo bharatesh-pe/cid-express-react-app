@@ -146,7 +146,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       },
     },
     {
-      headerName: "Submission Month",
+      headerName: "Month of Submission",
       field: "month_of_the_file",
       width: 250,
       renderCell: (params) => {
