@@ -433,7 +433,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                 width: 50,
                                 renderCell: (params) => {
                                     const isPFUpdated = params.row.sys_status === 'PF';
-
                                     return isPFUpdated ? (
                                         <div onClick={(e) => e.stopPropagation()}>
                                             <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
@@ -466,17 +465,51 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     );
                                 }
                             },
+                            ...(Object.keys(getTemplateResponse.data[0] || {}).includes("field_pf#") ? [{
+                                field: "field_pf#",
+                                headerName: "Pf#",
+                                width: 200,
+                                resizable: true,
+                                renderHeader: () => (
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>Pf#</span>
+                                    </div>
+                                ),
+                                renderCell: (params) => {
+                                    const isEditAllowed = canEdit && !isViewAction && !(options.table === "cid_ui_case_property_form" && params.row.sys_status === 'submit');
+                                    return (
+                                        <span
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
+                                            }}
+                                            style={{
+                                                color: '#2563eb',
+                                                textDecoration: 'underline',
+                                                cursor: 'pointer',
+                                                fontWeight: 400,
+                                                fontSize: '14px'
+                                            }}
+                                        >
+                                            {params.value || 'View'}
+                                        </span>
+                                    );
+                                }
+                            }] : []),
+
                             ...Object.keys(getTemplateResponse.data[0] || {})
-                                .filter((key) => !excludedKeys.includes(key))
+                                .filter((key) =>
+                                    !excludedKeys.includes(key) &&
+                                    key !== "field_pf#" &&
+                                    key !== "created_at" &&
+                                    key !== "created_by"
+                                )
                                 .map((key) => {
                                     const updatedKeyName = key
                                         .replace(/^field_/, "")
                                         .replace(/_/g, " ")
                                         .toLowerCase()
                                         .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-                                    const isActionItem = key === "field_pf#";
-                                    const isPropertyForm = options.table === "cid_ui_case_property_form";
 
                                     return {
                                         field: key,
@@ -490,32 +523,37 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                                 </span>
                                             </div>
                                         ),
-                                        renderCell: isActionItem
-                                            ? (params) => {
-                                                const isEditAllowed = canEdit && !isViewAction && !(isPropertyForm && params.row.sys_status === 'submit');
-
-                                                return (
-                                                    <span
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
-                                                        }}
-                                                        style={{
-                                                            color: '#2563eb',
-                                                            textDecoration: 'underline',
-                                                            cursor: 'pointer',
-                                                            fontWeight: 400,
-                                                            fontSize: '14px'
-                                                        }}
-                                                    >
-                                                        {params.value || 'View'}
-                                                    </span>
-                                                );
-                                            }
-                                            : (params) => tableCellRender(key, params, params.value),
+                                        renderCell: (params) => tableCellRender(key, params, params.value),
                                     };
-                                })
+                                }),
+
+                            ...(Object.keys(getTemplateResponse.data[0] || {}).includes("created_by") ? [{
+                                field: "created_by",
+                                headerName: "Created By",
+                                width: 200,
+                                resizable: true,
+                                renderHeader: () => (
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>Created By</span>
+                                    </div>
+                                ),
+                                renderCell: (params) => tableCellRender("created_by", params, params.row.created_by)
+                            }] : []),
+
+                            ...(Object.keys(getTemplateResponse.data[0] || {}).includes("created_at") ? [{
+                                field: "created_at",
+                                headerName: "Created At",
+                                width: 200,
+                                resizable: true,
+                                renderHeader: () => (
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>Created At</span>
+                                    </div>
+                                ),
+                                renderCell: (params) => tableCellRender("created_at", params, params.row.created_at)
+                            }] : [])
                         ].filter(Boolean);
+
 
 
                         setOtherTemplateColumn(updatedHeader);
