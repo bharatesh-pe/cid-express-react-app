@@ -1,18 +1,27 @@
-import {  useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
 import api from "../services/api";
-import {  Chip, Tooltip } from "@mui/material";
+import { Chip, Tooltip } from "@mui/material";
 import {
-  Box,
-  Button,
-  FormControl,
-  InputAdornment,
-  Typography,
-  Checkbox,
-  IconButton,
+    Box,
+    Button,
+    FormControl,
+    InputAdornment,
+    Typography,
+    Checkbox,
+    IconButton,
 } from "@mui/material";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+} from "@mui/material";
+import DeleteIcon from '@mui/icons-material/Delete';
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -29,7 +38,7 @@ import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
 
-const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
+const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -38,11 +47,11 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
     const [showExportPopup, setShowExportPopup] = useState(false);
     const [tabIndex, setTabIndex] = useState(0);
     const [aoFields, setAoFields] = useState([]);
-    const [aoFieldId,setAoFieldId] = useState(selectedRowData);
+    const [aoFieldId, setAoFieldId] = useState(selectedRowData);
     const [filterAoValues, setFilterAoValues] = useState({});
-    const [viewModeOnly,setViewModeOnly] = useState(false);
+    const [viewModeOnly, setViewModeOnly] = useState(false);
     const [isFromEdit, setIsFromEdit] = useState(false);
-    const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
+    const [selectedApprovalEdit, setSelectedApprovalEdit] = useState(null);
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
     const templateActionAddFlag = useRef(false);
     const attachmentEditFlag = useRef(false);
@@ -53,7 +62,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
     const [fromDateValue, setFromDateValue] = useState(null);
     const [toDateValue, setToDateValue] = useState(null);
     const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
-    const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false); 
+    const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false);
     const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
     const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
     const [APIsSubmited, setAPIsSubmited] = useState(false);
@@ -66,7 +75,9 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
     const [othersFilterData, setOthersFilterData] = useState({});
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
-    }   
+    }
+    const [disableEditButtonFlag, setDisableEditButtonFlag] = useState(false);
+    const [showSubmitPFButton, setShowSubmitPFButton] = useState(false);
     const [paginationCount, setPaginationCount] = useState(pageCount ? pageCount : 1);
     const [tableSortOption, settableSortOption] = useState("DESC");
     const [tableSortKey, setTableSortKey] = useState("");
@@ -88,7 +99,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
     const [readFlag, setReadFlag] = useState(null);
     const [loading, setLoading] = useState(false); // State for loading indicator
     const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
-    { field: "sl_no", headerName: "S.No" },
+        { field: "sl_no", headerName: "S.No" },
     ]);
     const [otherTemplateModalOpen, setOtherTemplateModalOpen] = useState(false);
     const [selectedOtherTemplate, setselectedOtherTemplate] = useState(options);
@@ -99,7 +110,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
     const [otherRowId, setOtherRowId] = useState(null);
     const [otherTemplateId, setOtherTemplateId] = useState(null);
     const [otherTemplateColumn, setOtherTemplateColumn] = useState([
-    { field: "sl_no", headerName: "S.No" },
+        { field: "sl_no", headerName: "S.No" },
     ]);
     const [hoverTableOptions, setHoverTableOptions] = useState([]);
     const [otherTablePagination, setOtherTablePagination] = useState(1);
@@ -111,129 +122,129 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
     const [selectedIds, setSelectedIds] = useState([]);
 
 
-    useEffect(()=>{
+    useEffect(() => {
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
-    },[otherTemplatesPaginationCount]);
+    }, [otherTemplatesPaginationCount]);
 
-      const toggleSelectRow = (id) => {
-    setSelectedIds((prevSelectedIds) => {
-      const updated = prevSelectedIds.includes(id)
-        ? prevSelectedIds.filter((selectedId) => selectedId !== id)
-        : [...prevSelectedIds, id];
+    const toggleSelectRow = (id) => {
+        setSelectedIds((prevSelectedIds) => {
+            const updated = prevSelectedIds.includes(id)
+                ? prevSelectedIds.filter((selectedId) => selectedId !== id)
+                : [...prevSelectedIds, id];
 
-      return updated;
-    });
-  };
+            return updated;
+        });
+    };
 
 
     const onSaveTemplateError = (error) => {
         setIsValid(false);
     };
 
-      const exportToExcel = (data, fileName) => {
-      if (!data || data.length === 0) return;
-    
-      const excludedFields = [
-        "id",
-        "created_at",
-        "updated_at",
-        "created_by",
-        "sys_status",
-        "ReadStatus",
-      ];
-    
-      const formattedData = data.map((item, index) => {
-        const newItem = { "S.no": index + 1 };
-    
-        Object.entries(item).forEach(([key, val]) => {
-          if (!excludedFields.includes(key)) {
-            let cleanKey = key.startsWith("field_") ? key.slice(6) : key;
-    
-            cleanKey = cleanKey
-              .replace(/_/g, " ")
-              .replace(/\b\w/g, (char) => char.toUpperCase());
-    
-            const isDateField =
-              key.toLowerCase().includes("_date") ||
-              key.toLowerCase().endsWith("date");
-    
-            let formattedVal = val;
-    
-            if (
-              isDateField &&
-              typeof val === "string" &&
-              !isNaN(Date.parse(val))
-            ) {
-              formattedVal = dayjs(val).format("DD-MM-YYYY");
-            }
-    
-            newItem[cleanKey] = formattedVal;
-          }
+    const exportToExcel = (data, fileName) => {
+        if (!data || data.length === 0) return;
+
+        const excludedFields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "created_by",
+            "sys_status",
+            "ReadStatus",
+        ];
+
+        const formattedData = data.map((item, index) => {
+            const newItem = { "S.no": index + 1 };
+
+            Object.entries(item).forEach(([key, val]) => {
+                if (!excludedFields.includes(key)) {
+                    let cleanKey = key.startsWith("field_") ? key.slice(6) : key;
+
+                    cleanKey = cleanKey
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, (char) => char.toUpperCase());
+
+                    const isDateField =
+                        key.toLowerCase().includes("_date") ||
+                        key.toLowerCase().endsWith("date");
+
+                    let formattedVal = val;
+
+                    if (
+                        isDateField &&
+                        typeof val === "string" &&
+                        !isNaN(Date.parse(val))
+                    ) {
+                        formattedVal = dayjs(val).format("DD-MM-YYYY");
+                    }
+
+                    newItem[cleanKey] = formattedVal;
+                }
+            });
+
+            return newItem;
         });
-    
-        return newItem;
-      });
-    
-      const worksheet = XLSX.utils.json_to_sheet(formattedData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
-    
-      const excelBuffer = XLSX.write(workbook, {
-        bookType: "xlsx",
-        type: "array",
-      });
-    
-      const blob = new Blob([excelBuffer], {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-    
-      saveAs(blob, `${fileName}.xlsx`);
-      setShowExportPopup(false);
+
+        const worksheet = XLSX.utils.json_to_sheet(formattedData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1");
+
+        const excelBuffer = XLSX.write(workbook, {
+            bookType: "xlsx",
+            type: "array",
+        });
+
+        const blob = new Blob([excelBuffer], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        });
+
+        saveAs(blob, `${fileName}.xlsx`);
+        setShowExportPopup(false);
     };
     const handleOpenExportPopup = async () => {
-      if (!selectedRowData || !selectedOtherTemplate) return;
-    
-      const payload = {
-        table_name: selectedOtherTemplate.table,
-        ui_case_id: selectedRowData.id,
-        pt_case_id: selectedRowData?.pt_case_id || null,
-        case_io_id: selectedRowData.field_io_name_id || "",
-      };
-    
-      try {
-        const res = await api.post('/templateData/getActionTemplateData', payload);
-        setExportableData(res.data || []);
-        setShowExportPopup(true);
-      } catch (err) {
-        console.error('Failed to fetch export data:', err);
-        toast.error(
-            err || "Please Try Again!",
-            {
-              position: "top-right",
-              autoClose: 3000,
-              className: "toast-error",
-            }
-          );
-      }
+        if (!selectedRowData || !selectedOtherTemplate) return;
+
+        const payload = {
+            table_name: selectedOtherTemplate.table,
+            ui_case_id: selectedRowData.id,
+            pt_case_id: selectedRowData?.pt_case_id || null,
+            case_io_id: selectedRowData.field_io_name_id || "",
+        };
+
+        try {
+            const res = await api.post('/templateData/getActionTemplateData', payload);
+            setExportableData(res.data || []);
+            setShowExportPopup(true);
+        } catch (err) {
+            console.error('Failed to fetch export data:', err);
+            toast.error(
+                err || "Please Try Again!",
+                {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-error",
+                }
+            );
+        }
     };
-    
+
 
     const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
         const randomId = `random_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
         var disabledEditFlag = false;
-        var disabledDeleteFlag = false;  
+        var disabledDeleteFlag = false;
         setRandomApprovalId(randomId);
 
-        console.log("checking selectedRow",selectedRow);
+        console.log("checking selectedRow", selectedRow);
         var getTemplatePayload = {
             table_name: options.table,
             ui_case_id: selectedRow.id,
             case_io_id: selectedRow?.field_io_name || "",
             pt_case_id: selectedRow?.pt_case_id || null,
-            limit : 10,
-            page : !searchFlag ? otherTemplatesPaginationCount : 1,
-            search: !searchFlag ? otherSearchValue : "",        
+            limit: 10,
+            page: !searchFlag ? otherTemplatesPaginationCount : 1,
+            search: !searchFlag ? otherSearchValue : "",
             from_date: !searchFlag ? othersFromDate : null,
             to_date: !searchFlag ? othersToDate : null,
             filter: !searchFlag ? othersFilterData : {},
@@ -244,37 +255,37 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
 
             if (parsedPermissions && typeof parsedPermissions === 'object' && !Array.isArray(parsedPermissions)) {
 
-                if(parsedPermissions?.['add'].length > 0){
+                if (parsedPermissions?.['add'].length > 0) {
                     const hasAddPermission = parsedPermissions?.['add'].some(
                         (permission) => userPermissions?.[0]?.[permission] === true
                     );
-    
+
                     templateActionAddFlag.current = hasAddPermission;
-                }else{
+                } else {
                     templateActionAddFlag.current = true;
                 }
 
-                if(parsedPermissions?.['edit'].length > 0){
+                if (parsedPermissions?.['edit'].length > 0) {
                     const hasEditPermission = parsedPermissions?.['edit'].some(
                         (permission) => userPermissions?.[0]?.[permission] === true
                     );
 
                     disabledEditFlag = hasEditPermission
-                }else{
+                } else {
                     disabledEditFlag = true;
                 }
 
-                if(parsedPermissions?.['delete'].length > 0){
+                if (parsedPermissions?.['delete'].length > 0) {
                     const hasDeletePermission = parsedPermissions?.['delete'].some(
                         (permission) => userPermissions?.[0]?.[permission] === true
                     );
 
                     disabledDeleteFlag = hasDeletePermission
-                }else{
+                } else {
                     disabledDeleteFlag = true;
                 }
 
-            }else{
+            } else {
                 templateActionAddFlag.current = true;
                 disabledEditFlag = true;
                 disabledDeleteFlag = true;
@@ -286,7 +297,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
 
         try {
             const getTemplateResponse = await api.post("/templateData/getTemplateData", getTemplatePayload);
-            
+
             setLoading(false);
 
             if (getTemplateResponse && getTemplateResponse.success) {
@@ -294,15 +305,15 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                 const { meta } = getTemplateResponse;
                 const totalPages = meta?.meta?.totalPages;
                 const totalItems = meta?.meta?.totalItems;
-            
+
                 if (totalPages !== null && totalPages !== undefined) {
                     setOtherTemplatesTotalPage(totalPages);
                 }
-                
+
                 if (totalItems !== null && totalItems !== undefined) {
                     setOtherTemplatesTotalRecord(totalItems);
                 }
-            
+
                 if (getTemplateResponse.data && getTemplateResponse.data) {
 
                     const records = getTemplateResponse.data;
@@ -318,7 +329,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                             record => record.supervisior_designation_id == userDesigId
                         );
 
-                        
+
                         let allAPWithOutSupervisorSubmit = false;
 
 
@@ -326,7 +337,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                         // allAPWithOutSupervisorSubmit = supervisorRecords.length > 0 && supervisorRecords.every(
                         //     r => r.field_submit_status === "" || r.field_submit_status === null
                         // );
-                        
+
 
 
                         for (let i = 0; i < supervisorRecords.length; i++) {
@@ -335,36 +346,36 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                             console.log("supervisorRecords[i]", supervisorRecords[i]);
                             console.log("field_submit_status", status);
                             console.log("condition check", status === "" || status === null);
-                        
+
                             if (status === "" || status === null) {
                                 allAPWithOutSupervisorSubmit = true;
                                 console.log("Set allAPWithOutSupervisorSubmit to true");
                                 break;
                             }
                         }
-                    
+
                         // Get non-supervisor records with sys_status "ui_case"
                         const ioRecords = records.filter(
                             record =>
                                 record.sys_status === "ui_case" &&
                                 record.supervisior_designation_id != userDesigId
                         );
-                    
+
                         // Check if all IO records are NOT submitted
                         const allAPWithOutIOSubmit = ioRecords.length > 0 &&
                             ioRecords.every(
                                 record => record.field_submit_status === "" || record.field_submit_status === null
                             );
-                    
+
                         // Set flags accordingly
                         if (allAPWithOutSupervisorSubmit || allAPWithOutIOSubmit) {
                             anySubmitAP = false;
                         }
-                    
+
                         if (allAPWithOutSupervisorSubmit) {
                             isSuperivisor = true;
                         }
-                    
+
                         // APisSubmited logic with clear grouping
                         APisSubmited = records.every(record =>
                             record.sys_status === "ui_case" ||
@@ -374,181 +385,138 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                                 record.supervisior_designation_id != userDesigId
                             )
                         );
-                    
+
                     } else {
                         anySubmitAP = false;
                     }
 
-                    
-                    console.log('anySubmitAP',anySubmitAP);
 
-                    console.log('isSuperivisor',isSuperivisor)
+                    console.log('anySubmitAP', anySubmitAP);
+
+                    console.log('isSuperivisor', isSuperivisor)
                     setShowSubmitAPButton(anySubmitAP);
                     setIsImmediateSupervisior(isSuperivisor);
                     setAPIsSubmited(APisSubmited);
-                    
+
+                    let anySubmitPF = false;
+                    if (options.table === "cid_ui_case_property_form") {
+                        anySubmitPF = records.every(record => record.sys_status === "submit");
+                    }
+
+                    setShowSubmitPFButton(anySubmitPF);
+
                     if (getTemplateResponse.data[0]) {
                         var excludedKeys = [
-                        "updated_at",
-                        "id",
-                        "deleted_at",
-                        "attachments",
-                        "Starred",
-                        "ReadStatus",
-                        "linked_profile_info",
-                        "sys_status",
-                        "field_status",
-                        "field_submit_status",
-                        "supervisior_designation_id"
+                            "updated_at",
+                            "id",
+                            "deleted_at",
+                            "attachments",
+                            "Starred",
+                            "ReadStatus",
+                            "linked_profile_info",
+                            "sys_status",
+                            "field_status",
+                            "field_submit_status",
+                            "supervisior_designation_id"
                         ];
 
-                    
-                        const updatedHeader = ([    
+
+                        const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                        const canDelete = userPermissions[0]?.action_delete;
+                        const canEdit = userPermissions[0]?.action_edit;
+                        const isViewAction = options.is_view_action === true;
+
+                        const updatedHeader = [
                             {
                                 field: "select",
                                 headerName: "",
                                 width: 50,
                                 renderCell: (params) => {
-                                const isPFUpdated = params.row.sys_status === 'PF';
-        
-                                return isPFUpdated ? (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                    <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
-                                </div>
-                                ) : null;
-        
+                                    const isPFUpdated = params.row.sys_status === 'PF';
+
+                                    return isPFUpdated ? (
+                                        <div onClick={(e) => e.stopPropagation()}>
+                                            <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
+                                        </div>
+                                    ) : null;
                                 }
-                            }  ,             
-                            ...Object.keys(getTemplateResponse.data[0]).filter(
-                                (key) =>
-                                    !excludedKeys.includes(key) &&
-                                    key !== "field_pt_case_id" &&
-                                    key !== "field_ui_case_id" &&
-                                    key !== "field_pr_status" &&
-                                    key !== "field_evidence_file" &&
-                                    key !== "created_by" &&
-                                    key !== "field_last_updated" &&
-                                    key !== "field_date_created" &&
-                                    key !== "field_description" &&
-                                    key !== "field_assigned_to_id"&&
-                                    key !== "field_assigned_by_id"&&
-                                    key !== "field_served_or_unserved"&&
-                                    key !== "field_reappear"&&
-                                    key !== "hasFieldPrStatus"       
-                                ).map((key) => {
-                                    var updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+                            },
+                            {
+                                field: "sl_no",
+                                headerName: "S.No",
+                                resizable: false,
+                                width: 75,
+                                renderCell: (params) => {
+                                    const isPdfUpdated = params.row.field_pr_status === "Yes";
+                                    const isPropertyForm = options.table === "cid_ui_case_property_form" && params.row.sys_status === 'submit';
+
+                                    return (
+                                        <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                            {params.value}
+                                            {canDelete && !isPropertyForm && !isViewAction && !isPdfUpdated && (
+                                                <DeleteIcon
+                                                    sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        handleOthersDeleteTemplateData(params.row, options.table);
+                                                    }}
+                                                />
+                                            )}
+                                        </Box>
+                                    );
+                                }
+                            },
+                            ...Object.keys(getTemplateResponse.data[0] || {})
+                                .filter((key) => !excludedKeys.includes(key))
+                                .map((key) => {
+                                    const updatedKeyName = key
+                                        .replace(/^field_/, "")
+                                        .replace(/_/g, " ")
+                                        .toLowerCase()
+                                        .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+
+                                    const isActionItem = key === "field_pf#";
+                                    const isPropertyForm = options.table === "cid_ui_case_property_form";
 
                                     return {
                                         field: key,
-                                        headerName: updatedKeyName ? updatedKeyName : "",
-                                        width: 250,
+                                        headerName: updatedKeyName || "",
+                                        width: 200,
                                         resizable: true,
                                         renderHeader: () => (
-                                        <div
-                                            style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            width: "100%",
-                                            }}
-                                        >
-                                            <span
-                                            style={{
-                                                color: "#1D2939",
-                                                fontSize: "15px",
-                                                fontWeight: "500",
-                                            }}
-                                            >
-                                            {updatedKeyName ? updatedKeyName : "-"}
-                                            </span>
-                                        </div>
+                                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                                                <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
+                                                    {updatedKeyName || "-"}
+                                                </span>
+                                            </div>
                                         ),
-                                        renderCell: (params) => {
-                                        return tableCellRender(key, params, params.value);
-                                        },
+                                        renderCell: isActionItem
+                                            ? (params) => {
+                                                const isEditAllowed = canEdit && !isViewAction && !(isPropertyForm && params.row.sys_status === 'submit');
+
+                                                return (
+                                                    <span
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
+                                                        }}
+                                                        style={{
+                                                            color: '#2563eb',
+                                                            textDecoration: 'underline',
+                                                            cursor: 'pointer',
+                                                            fontWeight: 400,
+                                                            fontSize: '14px'
+                                                        }}
+                                                    >
+                                                        {params.value || 'View'}
+                                                    </span>
+                                                );
+                                            }
+                                            : (params) => tableCellRender(key, params, params.value),
                                     };
-                                }),
-                                {
-                                    field: "",
-                                    headerName: "Action",
-                                    width: 300,
-                                    renderCell: (params) => {
-                                    
-                                        const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-                                        const canEdit = userPermissions[0]?.action_edit;
-                                        const canDelete = userPermissions[0]?.action_delete;
-                                        const isViewAction = options.is_view_action === true
-                                        var isActionPlan = false;
+                                })
+                        ].filter(Boolean);
 
-                                        if(params.row.sys_status === 'IO' && params.row.supervisior_designation_id != localStorage.getItem('designation_id'))
-                                        {
-                                            isActionPlan =true;
-                                        }
-                                        else if((params.row.sys_status === 'IO' || params.row.sys_status === 'ui_case') && params.row.field_submit_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id'))
-                                        {
-                                            isActionPlan =false;
-                                        }
-                                        else if(params.row.field_submit_status === 'submit' || params.row.sys_status === 'IO' )
-                                        {
-                                            isActionPlan =true;
-                                        }
-                                        
-                                        return (
-                                            <Box
-                                                sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: "10px",
-                                                height: "100%",
-                                                }}
-                                            >
-                                                <Button
-                                                    variant="outlined"
-                                                    onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        handleOthersTemplateDataView(params.row, false, 'cid_ui_case_action_plan');
-                                                    }}
-                                                >
-                                                    View
-                                                </Button>
-                                    
-                                                {canEdit&& ( !isActionPlan && ( !isViewAction && (
-                                                    <Button
-                                                        variant="contained"
-                                                        color="primary"
-                                                        onClick={async (event) => {
-                                                        event.stopPropagation();
-                                                        setIsFromEdit(true);
-                                                        setSelectedApprovalEdit(params.row);
-                                                        if (options.is_approval) {
-                                                            // await showApprovalPage(params.row, options);
-                                                        } else {
-                                                            handleOthersTemplateDataView(params.row, true, options.table);
-                                                        }
-                                                        }}
-                                                    
-                                                    >
-                                                        Edit
-                                                    </Button>
-                                                )))}
-
-                                                {canDelete&& ( !isActionPlan && ( !isViewAction && ( 
-                                                    <Button
-                                                        variant="contained"
-                                                        color="error"
-                                                        onClick={(event) => {
-                                                        event.stopPropagation();
-                                                        handleOthersDeleteTemplateData(params.row, options.table);
-                                                        }}
-                                                    >
-                                                        Delete
-                                                    </Button>
-                                                )))}
-                                            </Box>
-                                        );
-                                    },
-                                }                
-                        ]).filter(Boolean);
 
                         setOtherTemplateColumn(updatedHeader);
                     } else {
@@ -566,9 +534,9 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
 
                         Object.keys(field).forEach((key) => {
                             if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                            updatedField[key] = formatDate(field[key]);
+                                updatedField[key] = formatDate(field[key]);
                             } else {
-                            updatedField[key] = field[key];
+                                updatedField[key] = field[key];
                             }
                         });
 
@@ -580,10 +548,10 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                     });
 
                     setOtherTemplateData(updatedTableData);
-                    if(options.is_view_action === true){
+                    if (options.is_view_action === true) {
                         setViewModeOnly(true)
                     }
-                    else{
+                    else {
                         setViewModeOnly(false)
                     }
                 }
@@ -609,21 +577,21 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
         } catch (error) {
             setLoading(false);
             if (error && error.response && error.response["data"]) {
-            toast.error(
-                error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-                {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-                }
-            );
+                toast.error(
+                    error.response["data"].message
+                        ? error.response["data"].message
+                        : "Please Try Again !",
+                    {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    }
+                );
             }
         }
     };
@@ -631,92 +599,11 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
     const handleOthersTemplateDataView = async (
         rowData,
         editData,
-        table_name
+        table_name,
+        disableEditButton
     ) => {
         if (!table_name || table_name === "") {
-        toast.warning("Please Check Table Name", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-        }
-    
-        var viewTemplatePayload = {
-        table_name: table_name,
-        id: rowData.id,
-        };
-    
-        setLoading(true);
-        try {
-        const viewTemplateData = await api.post(
-            "/templateData/viewTemplateData",
-            viewTemplatePayload
-        );
-        setLoading(false);
-    
-        if (viewTemplateData && viewTemplateData.success) {
-            setOtherInitialTemplateData(
-            viewTemplateData.data ? viewTemplateData.data : {}
-            );
-            setOtherReadOnlyTemplateData(!editData);
-            setOtherEditTemplateData(editData);
-            setOtherRowId(null);
-            setOtherTemplateId(null);
-    
-            const viewTableData = {
-            table_name: table_name,
-            };
-    
-            setLoading(true);
-            try {
-            const viewTemplateResponse = await api.post(
-                "/templates/viewTemplate",
-                viewTableData
-            );
-            setLoading(false);
-    
-            if (viewTemplateResponse && viewTemplateResponse.success) {
-                const templateData = viewTemplateResponse.data;
-                const rawFields = templateData.fields || [];
-        
-                const processedFields = rawFields.map((field) => {
-                if (
-                    field.name === "field_assigned_by" &&
-                    templateData.table_name === "cid_ui_case_progress_report"
-                ) {
-                    return {
-                    ...field,
-                    disabled: true,
-                    };
-                }
-                return field;
-                });
-                setOptionFormTemplateData(processedFields);
-    
-                setOtherFormOpen(true);
-                setOtherRowId(rowData.id);
-                setOtherTemplateId(viewTemplateResponse["data"].template_id);
-                if (
-                viewTemplateResponse.data.no_of_sections &&
-                viewTemplateResponse.data.no_of_sections > 0
-                ) {
-                setOptionStepperData(
-                    viewTemplateResponse.data.sections
-                    ? viewTemplateResponse.data.sections
-                    : []
-                );
-                }
-            } else {
-                const errorMessage = viewTemplateResponse.message
-                ? viewTemplateResponse.message
-                : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
+            toast.warning("Please Check Table Name", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -724,17 +611,116 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                 pauseOnHover: true,
                 draggable: true,
                 progress: undefined,
-                className: "toast-error",
-                });
-            }
-            } catch (error) {
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        var viewTemplatePayload = {
+            table_name: table_name,
+            id: rowData.id,
+        };
+
+        setLoading(true);
+        try {
+            const viewTemplateData = await api.post(
+                "/templateData/viewTemplateData",
+                viewTemplatePayload
+            );
             setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                {
+
+            if (viewTemplateData && viewTemplateData.success) {
+                setOtherInitialTemplateData(
+                    viewTemplateData.data ? viewTemplateData.data : {}
+                );
+                setOtherReadOnlyTemplateData(!editData);
+                setOtherEditTemplateData(editData);
+                setOtherRowId(null);
+                setOtherTemplateId(null);
+
+                const viewTableData = {
+                    table_name: table_name,
+                };
+
+                setLoading(true);
+                try {
+                    const viewTemplateResponse = await api.post(
+                        "/templates/viewTemplate",
+                        viewTableData
+                    );
+                    setLoading(false);
+
+                    if (viewTemplateResponse && viewTemplateResponse.success) {
+                        const templateData = viewTemplateResponse.data;
+                        const rawFields = templateData.fields || [];
+
+                        const processedFields = rawFields.map((field) => {
+                            if (
+                                field.name === "field_assigned_by" &&
+                                templateData.table_name === "cid_ui_case_progress_report"
+                            ) {
+                                return {
+                                    ...field,
+                                    disabled: true,
+                                };
+                            }
+                            return field;
+                        });
+                        setOptionFormTemplateData(processedFields);
+                        setDisableEditButtonFlag(disableEditButton);
+                        setOtherFormOpen(true);
+                        setOtherRowId(rowData.id);
+                        setOtherTemplateId(viewTemplateResponse["data"].template_id);
+                        if (
+                            viewTemplateResponse.data.no_of_sections &&
+                            viewTemplateResponse.data.no_of_sections > 0
+                        ) {
+                            setOptionStepperData(
+                                viewTemplateResponse.data.sections
+                                    ? viewTemplateResponse.data.sections
+                                    : []
+                            );
+                        }
+                    } else {
+                        const errorMessage = viewTemplateResponse.message
+                            ? viewTemplateResponse.message
+                            : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response["data"]) {
+                        toast.error(
+                            error.response["data"].message
+                                ? error.response["data"].message
+                                : "Please Try Again !",
+                            {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            }
+                        );
+                    }
+                }
+            } else {
+                const errorMessage = viewTemplateData.message
+                    ? viewTemplateData.message
+                    : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -743,66 +729,49 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                     draggable: true,
                     progress: undefined,
                     className: "toast-error",
-                }
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(
+                    error.response["data"].message
+                        ? error.response["data"].message
+                        : "Please Try Again !",
+                    {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    }
                 );
             }
-            }
-        } else {
-            const errorMessage = viewTemplateData.message
-            ? viewTemplateData.message
-            : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-            });
-        }
-        } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(
-            error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-            {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            }
-            );
-        }
         }
     };
 
-    const closeOtherForm = ()=>{
+    const closeOtherForm = () => {
         setOtherFormOpen(false)
-        if(selectedOtherTemplate?.table === "cid_ui_case_action_plan"){
+        if (selectedOtherTemplate?.table === "cid_ui_case_property_form") {
             handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
         }
     }
 
     const tableCellRender = (key, params, value, index, tableName) => {
-    
+
         let highlightColor = {};
         let onClickHandler = null;
-    
-        if (tableName && index !== null && index === 0 ) {
+
+        if (tableName && index !== null && index === 0) {
             highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
-    
-            onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName, hoverTableOptions)};
+
+            onClickHandler = (event) => { event.stopPropagation(); handleTemplateDataView(params.row, false, tableName, hoverTableOptions) };
         }
-    
-    
+
+
         return (
             <Tooltip title={value} placement="top">
                 {
@@ -810,7 +779,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                         <span className="io-alert-flashy">
                             <span className="flashy-dot"></span>
                             ASSIGN IO
-                        </span>                  
+                        </span>
                     ) : (
                         <span
                             style={highlightColor}
@@ -835,47 +804,187 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
             cancelButtonText: "No",
         }).then(async (result) => {
             if (result.isConfirmed) {
-            const deleteTemplateData = {
-                table_name: table_name,
-                where: { id: rowData.id },
-            };
-            setLoading(true);
+                const deleteTemplateData = {
+                    table_name: table_name,
+                    where: { id: rowData.id },
+                };
+                setLoading(true);
 
-            try {
-                const deleteTemplateDataResponse = await api.post(
-                "templateData/deleteTemplateData",
-                deleteTemplateData
-                );
-                setLoading(false);
+                try {
+                    const deleteTemplateDataResponse = await api.post(
+                        "templateData/deleteTemplateData",
+                        deleteTemplateData
+                    );
+                    setLoading(false);
 
-                if (
-                deleteTemplateDataResponse &&
-                deleteTemplateDataResponse.success
-                ) {
-                toast.success(
-                    deleteTemplateDataResponse.message
-                    ? deleteTemplateDataResponse.message
-                    : "Template Deleted Successfully",
-                    {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () =>
-                        handleOtherTemplateActions(
-                        selectedOtherTemplate,
-                        selectedRow
-                        ),
+                    if (
+                        deleteTemplateDataResponse &&
+                        deleteTemplateDataResponse.success
+                    ) {
+                        toast.success(
+                            deleteTemplateDataResponse.message
+                                ? deleteTemplateDataResponse.message
+                                : "Template Deleted Successfully",
+                            {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-success",
+                                onOpen: () =>
+                                    handleOtherTemplateActions(
+                                        selectedOtherTemplate,
+                                        selectedRow
+                                    ),
+                            }
+                        );
+                    } else {
+                        const errorMessage = deleteTemplateDataResponse.message
+                            ? deleteTemplateDataResponse.message
+                            : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
                     }
-                );
-                } else {
-                const errorMessage = deleteTemplateDataResponse.message
-                    ? deleteTemplateDataResponse.message
-                    : "Failed to delete the template. Please try again.";
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response["data"]) {
+                        toast.error(
+                            error.response["data"].message
+                                ? error.response["data"].message
+                                : "Please Try Again !",
+                            {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            }
+                        );
+                    }
+                }
+            } else {
+                console.log("Template deletion canceled.");
+            }
+        });
+    };
+
+    function isValidISODate(value) {
+        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
+    }
+
+    const handleTemplateDataView = async (rowData, editData, table_name) => {
+
+        if (!table_name || table_name === "") {
+            toast.warning("Please Check Table Name", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        var viewTemplatePayload = {
+            table_name: table_name,
+            id: rowData.id,
+        };
+
+        setLoading(true);
+
+        try {
+
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData && viewTemplateData.success) {
+
+                const viewTableData = {
+                    table_name: table_name,
+                };
+
+                setLoading(true);
+                try {
+                    const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+                    setLoading(false);
+
+                    if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                        var actionTemplateMenus = hoverTableOptionsRef.current.map((element) => {
+
+                            if (element?.icon && typeof element.icon === 'function') {
+                                element.icon = element?.icon();
+                            }
+
+                            return element;
+
+                        });
+
+                        var stateObj = {
+                            contentArray: JSON.stringify(actionTemplateMenus),
+                            headerDetails: rowData?.["field_cid_crime_no./enquiry_no"] || null,
+                            backNavigation: "/case/ui_case",
+                            paginationCount: paginationCount,
+                            sysStatus: sysStatus,
+                            rowData: viewTemplateData?.["data"] || {},
+                            tableFields: viewTemplateResponse?.["data"]?.["fields"] || [],
+                            stepperData: viewTemplateResponse?.["data"]?.no_of_sections > 0 && viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"].sections : [],
+                            template_id: viewTemplateResponse?.["data"]?.template_id,
+                            template_name: viewTemplateResponse?.["data"]?.template_name,
+                            table_name: table_name
+                        }
+
+                        navigate("/caseView", { state: stateObj });
+
+                    } else {
+                        const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response["data"]) {
+                        toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            } else {
+                const errorMessage = viewTemplateData.message
+                    ? viewTemplateData.message
+                    : "Failed to create the template. Please try again.";
                 toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
@@ -886,15 +995,11 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                     progress: undefined,
                     className: "toast-error",
                 });
-                }
-            } catch (error) {
-                setLoading(false);
-                if (error && error.response && error.response["data"]) {
-                toast.error(
-                    error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                    {
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -903,145 +1008,9 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                     draggable: true,
                     progress: undefined,
                     className: "toast-error",
-                    }
-                );
-                }
-            }
-            } else {
-            console.log("Template deletion canceled.");
-            }
-        });
-    };
-                
-    function isValidISODate(value) {
-        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
-    }
-
-    const handleTemplateDataView = async (rowData, editData, table_name) => {
-    
-            if (!table_name || table_name === "") {
-                toast.warning("Please Check Table Name", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-warning",
                 });
-                return;
             }
-    
-            var viewTemplatePayload = {
-                table_name: table_name,
-                id: rowData.id,
-            };
-    
-            setLoading(true);
-    
-            try {
-    
-                const viewTemplateData = await api.post("/templateData/viewTemplateData",viewTemplatePayload);
-                setLoading(false);
-    
-                if (viewTemplateData && viewTemplateData.success) {
-    
-                    const viewTableData = {
-                        table_name: table_name,
-                    };
-    
-                    setLoading(true);
-                    try {
-                        const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
-                        setLoading(false);
-    
-                        if (viewTemplateResponse && viewTemplateResponse.success) {
-    
-                            var actionTemplateMenus = hoverTableOptionsRef.current.map((element)=>{
-    
-                                if(element?.icon && typeof element.icon === 'function'){
-                                    element.icon = element?.icon();
-                                }
-    
-                                return element;
-    
-                            });
-    
-                            var stateObj = {
-                                contentArray: JSON.stringify(actionTemplateMenus),
-                                headerDetails: rowData?.["field_cid_crime_no./enquiry_no"] || null,
-                                backNavigation: "/case/ui_case",
-                                paginationCount: paginationCount,
-                                sysStatus: sysStatus,
-                                rowData: viewTemplateData?.["data"] || {},
-                                tableFields: viewTemplateResponse?.["data"]?.["fields"] || [],
-                                stepperData: viewTemplateResponse?.["data"]?.no_of_sections > 0 && viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"].sections : [],
-                                template_id : viewTemplateResponse?.["data"]?.template_id,
-                                template_name : viewTemplateResponse?.["data"]?.template_name,
-                                table_name: table_name
-                            }
-    
-                            navigate("/caseView", {state: stateObj});
-    
-                        } else {
-                            const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
-                            toast.error(errorMessage, {
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    } catch (error) {
-                        setLoading(false);
-                        if (error && error.response && error.response["data"]) {
-                            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                                position: "top-right",
-                                autoClose: 3000,
-                                hideProgressBar: false,
-                                closeOnClick: true,
-                                pauseOnHover: true,
-                                draggable: true,
-                                progress: undefined,
-                                className: "toast-error",
-                            });
-                        }
-                    }
-                } else {
-                    const errorMessage = viewTemplateData.message
-                    ? viewTemplateData.message
-                    : "Failed to create the template. Please try again.";
-                    toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                    });
-                }
-            } catch (error) {
-                setLoading(false);
-                if (error && error.response && error.response["data"]) {
-                    toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                }
-            }
+        }
     };
 
     const loadTableData = async (page) => {
@@ -1060,11 +1029,11 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
             to_date: toDateValue,
             filter: filterValues,
         };
-    
+
         setLoading(true);
-    
+
         try {
-            const getTemplateResponse = await api.post( "/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
+            const getTemplateResponse = await api.post("/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
             setLoading(false);
 
             if (getTemplateResponse?.success) {
@@ -1084,22 +1053,22 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                 if (meta?.table_name && meta?.template_name) {
                     setTable_name(meta.table_name);
                 }
-    
+
                 if (data?.length > 0) {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cid_crime_no./enquiry_no", "field_io_name", "field_io_name_id"
                     ];
-    
+
                     const generateReadableHeader = (key) =>
                         key
                             .replace(/^field_/, "")
                             .replace(/_/g, " ")
                             .toLowerCase()
                             .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-    
-        
+
+
                     const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
 
                     // {
@@ -1124,7 +1093,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                     //   },
 
                     const updatedHeader = [
-                        
+
                         {
                             field: "field_cid_crime_no./enquiry_no",
                             headerName: "Cid Crime No./Enquiry No",
@@ -1145,7 +1114,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                             renderHeader: (params) => (
                                 tableHeaderRender(params, "field_io_name")
                             ),
-                            renderCell: renderCellFunc("field_io_name", ),
+                            renderCell: renderCellFunc("field_io_name",),
                         },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
@@ -1158,20 +1127,20 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                                     tableHeaderRender(params, key)
                                 ),
                                 renderCell: renderCellFunc(key),
-                        })),
+                            })),
                     ];
-    
+
                     setviewTemplateTableData(updatedHeader);
-    
+
                     const formatDate = (value) => {
                         const parsed = Date.parse(value);
                         if (isNaN(parsed)) return value;
                         return new Date(parsed).toLocaleDateString("en-GB");
                     };
-    
+
                     const updatedTableData = data.map((field, index) => {
                         const updatedField = {};
-    
+
                         Object.keys(field).forEach((key) => {
                             if (field[key] && key !== 'id' && isValidISODate(field[key])) {
                                 updatedField[key] = formatDate(field[key]);
@@ -1179,16 +1148,16 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                                 updatedField[key] = field[key];
                             }
                         });
-    
+
                         return {
                             ...updatedField,
                             sl_no: (page - 1) * 10 + (index + 1),
                             ...(field.id ? {} : { id: "unique_id_" + index }),
                         };
                     });
-    
+
                     setTableData(updatedTableData);
-                }else{
+                } else {
                     setTableData([]);
                 }
 
@@ -1197,7 +1166,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                 setInitialData({});
                 setFormOpen(false);
                 setSelectedRow(null);
-    
+
             } else {
                 setLoading(false);
                 toast.error(getTemplateResponse.message || "Failed to load template data.", {
@@ -1226,9 +1195,9 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
         }
     };
 
-    const handleOthersFilter = async (selectedOptions)=>{
+    const handleOthersFilter = async (selectedOptions) => {
 
-        if(!selectedOptions?.table){
+        if (!selectedOptions?.table) {
             toast.error('Please Check The Template', {
                 position: "top-right",
                 autoClose: 3000,
@@ -1243,16 +1212,16 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
         }
 
         const viewTableData = { table_name: selectedOptions.table };
-        
+
         setLoading(true);
         try {
             const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
             setLoading(false);
-        
+
             if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
                 var templateFields = viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [];
                 var validFilterFields = ["dropdown", "autocomplete", "multidropdown"];
-        
+
                 var getOnlyDropdown = templateFields.filter((element) => validFilterFields.includes(element.type)).map((field) => {
                     const existingField = filterDropdownObj?.find(
                         (item) => item.name === field.name
@@ -1262,18 +1231,18 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                         history: false,
                         info: false,
                         required: false,
-                        ...(field.is_dependent === "true" && {options: existingField?.options ? [...existingField.options] : [] }),
+                        ...(field.is_dependent === "true" && { options: existingField?.options ? [...existingField.options] : [] }),
                     };
                 });
-        
+
                 // const today = dayjs().format("YYYY-MM-DD");
-        
+
                 getAllOptionsforFilter(getOnlyDropdown, true);
                 // if(fromDateValue == null || toDateValue === null){
                 //     setFromDateValue(today);
                 //     setToDateValue(today);
                 // }
-        
+
                 // setShowFilterModal(true);
                 setOthersFilterModal(true);
 
@@ -1294,7 +1263,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
         } catch (error) {
             setLoading(false);
             if (error && error.response && error.response["data"]) {
-                toast.error( error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -1308,7 +1277,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
         }
     };
 
-    const handleOtherClear = ()=>{
+    const handleOtherClear = () => {
         setOtherSearchValue('');
         setOtherTemplatesPaginationCount(1);
         setOthersFromDate(null);
@@ -1322,18 +1291,18 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
 
         if (!tableName || tableName === "") {
             toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
             });
             return;
         }
-        
+
 
         const viewTableData = {
             table_name: tableName,
@@ -1343,219 +1312,72 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
         setOtherEditTemplateData(false);
         try {
             const viewTemplateResponse = await api.post(
-            "/templates/viewTemplate",
-            viewTableData
+                "/templates/viewTemplate",
+                viewTableData
             );
             const ioUsers = await getIoUsers();
             const userId = localStorage.getItem("user_id");
             const userName = localStorage.getItem("username");
-            
+
             setLoading(false);
             if (viewTemplateResponse && viewTemplateResponse.success) {
-            var caseFields = [];
-            var getCaseIdFields = viewTemplateResponse.data["fields"].map(
-                (field) => {
-    
-                if (field.name === "field_assigned_by" && field.formType === "Dropdown") {
-    
-                    field.options = ioUsers.map(user => ({
-                    code: user.user_id,
-                    name: user.name
-                    }));
-        
-                    const matchedOption = field.options.find(opt => String(opt.code) === String(userId));
-                    if (!matchedOption) {
-                    field.options.push({ code: userId, name: userName || `User ${userId}` });
-                    }
-        
-                    field.defaultValue = userId;
-                    field.disabled = true;
-                }
-                
-        
-                if (field && field.table && field.table === table_name) {
-                    caseFields = field;
-                    field.disabled = true;
-                }
-    
-                return field;
-                }
-            );
-    
-            var initialData = {};
-            if (caseFields && caseFields["name"]) {
-                initialData = {
-                [caseFields["name"]]: selectedRowData.id,
-                };
-            }
-    
-            setOtherFormOpen(true);
-            setOtherInitialTemplateData(initialData);
-            setviewReadonly(false);
-            setEditTemplateData(false);
-            setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
-            if (
-                viewTemplateResponse.data.no_of_sections &&
-                viewTemplateResponse.data.no_of_sections > 0
-            ) {
-                setOptionStepperData(
-                viewTemplateResponse.data.sections
-                    ? viewTemplateResponse.data.sections
-                    : []
-                );
-            }
-            } else {
-            const errorMessage = viewTemplateResponse.message
-                ? viewTemplateResponse.message
-                : "Failed to delete the template. Please try again.";
-            toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-            toast.error(
-                error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-                {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-                }
-            );
-            }
-        }
-    };
+                var caseFields = [];
+                var getCaseIdFields = viewTemplateResponse.data["fields"].map(
+                    (field) => {
 
-    const handleAutocomplete = (field, selectedValue, othersFilter) => {
-        var updatedFormData = {}
-        var selectedFilterDropdown = []
-    
-        if(othersFilter){
-    
-            selectedFilterDropdown = othersFiltersDropdown
-            updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
-            
-            setOthersFilterData(updatedFormData);
-            
-        }else{
-    
-            selectedFilterDropdown = filterDropdownObj
-            updatedFormData = { ...filterValues, [field.name]: selectedValue };
-        
-            setFilterValues(updatedFormData);
-    
-        }
-    
-        if (field?.api && field?.table) {
-        var dependent_field = selectedFilterDropdown.filter((element) => {
-            return (
-            element.dependent_table &&
-            element.dependent_table.length > 0 &&
-            element.dependent_table.includes(field.table)
-            );
-        });
-    
-        if (dependent_field && dependent_field[0] && dependent_field[0].api) {
-            var apiPayload = {};
-            if (dependent_field[0].dependent_table.length === 1) {
-            const key = field.table === "users" ? "user_id" : `${field.table}_id`;
-            apiPayload = {
-                [key]: updatedFormData[field.name],
-            };
-            } else {
-            var dependentFields = selectedFilterDropdown.filter((element) => {
-                return dependent_field[0].dependent_table.includes(element.table);
-            });
-    
-            apiPayload = dependentFields.reduce((payload, element) => {
-                if (updatedFormData && updatedFormData[element.name]) {
-                const key =
-                    element.table === "users" ? "user_id" : `${element.table}_id`;
-                payload[key] = updatedFormData[element.name];
-                }
-                return payload;
-            }, {});
-            }
-    
-            const callApi = async () => {
-            setLoading(true);
-    
-            try {
-                var getOptionsValue = await api.post(
-                dependent_field[0].api,
-                apiPayload
+                        if (field.name === "field_assigned_by" && field.formType === "Dropdown") {
+
+                            field.options = ioUsers.map(user => ({
+                                code: user.user_id,
+                                name: user.name
+                            }));
+
+                            const matchedOption = field.options.find(opt => String(opt.code) === String(userId));
+                            if (!matchedOption) {
+                                field.options.push({ code: userId, name: userName || `User ${userId}` });
+                            }
+
+                            field.defaultValue = userId;
+                            field.disabled = true;
+                        }
+
+
+                        if (field && field.table && field.table === table_name) {
+                            caseFields = field;
+                            field.disabled = true;
+                        }
+
+                        return field;
+                    }
                 );
-                setLoading(false);
-    
-                var updatedOptions = [];
-    
-                if (getOptionsValue && getOptionsValue.data) {
-                updatedOptions = getOptionsValue.data.map((element, i) => {
-                    return {
-                    name: element[
-                        dependent_field[0].table === "users"
-                        ? "name"
-                        : dependent_field[0].table + "_name"
-                    ],
-                    code: element[
-                        dependent_field[0].table === "users"
-                        ? "user_id"
-                        : dependent_field[0].table + "_id"
-                    ],
+
+                var initialData = {};
+                if (caseFields && caseFields["name"]) {
+                    initialData = {
+                        [caseFields["name"]]: selectedRowData.id,
                     };
-                });
                 }
-    
-                var userUpdateFields = {
-                options: updatedOptions,
-                };
-    
-    
-                dependent_field.forEach((data) => {
-                    delete updatedFormData[data.name];
-                });
-    
-                if(othersFilter){
-                    setOthersFiltersDropdown(
-                        selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+
+                setOtherFormOpen(true);
+                setOtherInitialTemplateData(initialData);
+                setviewReadonly(false);
+                setEditTemplateData(false);
+                setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
+                if (
+                    viewTemplateResponse.data.no_of_sections &&
+                    viewTemplateResponse.data.no_of_sections > 0
+                ) {
+                    setOptionStepperData(
+                        viewTemplateResponse.data.sections
+                            ? viewTemplateResponse.data.sections
+                            : []
                     );
-                    dependent_field.map((data) => {
-                        delete othersFilterData[data.name];
-                    });
-    
-                    setOthersFilterData(updatedFormData);
-                }else{
-                    setfilterDropdownObj(
-                        selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element )
-                    );
-                    dependent_field.map((data) => {
-                        delete filterValues[data.name];
-                    });
-    
-                    setFilterValues(updatedFormData);
                 }
-    
-            } catch (error) {
-                setLoading(false);
-                if (error && error.response && error.response.data) {
-                toast.error(
-                    error.response?.data?.message || "Need dependent Fields",
-                    {
+            } else {
+                const errorMessage = viewTemplateResponse.message
+                    ? viewTemplateResponse.message
+                    : "Failed to delete the template. Please try again.";
+                toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -1564,14 +1386,161 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                     draggable: true,
                     progress: undefined,
                     className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(
+                    error.response["data"].message
+                        ? error.response["data"].message
+                        : "Please Try Again !",
+                    {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
                     }
                 );
-                return;
-                }
             }
-            };
-            callApi();
         }
+    };
+
+    const handleAutocomplete = (field, selectedValue, othersFilter) => {
+        var updatedFormData = {}
+        var selectedFilterDropdown = []
+
+        if (othersFilter) {
+
+            selectedFilterDropdown = othersFiltersDropdown
+            updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
+
+            setOthersFilterData(updatedFormData);
+
+        } else {
+
+            selectedFilterDropdown = filterDropdownObj
+            updatedFormData = { ...filterValues, [field.name]: selectedValue };
+
+            setFilterValues(updatedFormData);
+
+        }
+
+        if (field?.api && field?.table) {
+            var dependent_field = selectedFilterDropdown.filter((element) => {
+                return (
+                    element.dependent_table &&
+                    element.dependent_table.length > 0 &&
+                    element.dependent_table.includes(field.table)
+                );
+            });
+
+            if (dependent_field && dependent_field[0] && dependent_field[0].api) {
+                var apiPayload = {};
+                if (dependent_field[0].dependent_table.length === 1) {
+                    const key = field.table === "users" ? "user_id" : `${field.table}_id`;
+                    apiPayload = {
+                        [key]: updatedFormData[field.name],
+                    };
+                } else {
+                    var dependentFields = selectedFilterDropdown.filter((element) => {
+                        return dependent_field[0].dependent_table.includes(element.table);
+                    });
+
+                    apiPayload = dependentFields.reduce((payload, element) => {
+                        if (updatedFormData && updatedFormData[element.name]) {
+                            const key =
+                                element.table === "users" ? "user_id" : `${element.table}_id`;
+                            payload[key] = updatedFormData[element.name];
+                        }
+                        return payload;
+                    }, {});
+                }
+
+                const callApi = async () => {
+                    setLoading(true);
+
+                    try {
+                        var getOptionsValue = await api.post(
+                            dependent_field[0].api,
+                            apiPayload
+                        );
+                        setLoading(false);
+
+                        var updatedOptions = [];
+
+                        if (getOptionsValue && getOptionsValue.data) {
+                            updatedOptions = getOptionsValue.data.map((element, i) => {
+                                return {
+                                    name: element[
+                                        dependent_field[0].table === "users"
+                                            ? "name"
+                                            : dependent_field[0].table + "_name"
+                                    ],
+                                    code: element[
+                                        dependent_field[0].table === "users"
+                                            ? "user_id"
+                                            : dependent_field[0].table + "_id"
+                                    ],
+                                };
+                            });
+                        }
+
+                        var userUpdateFields = {
+                            options: updatedOptions,
+                        };
+
+
+                        dependent_field.forEach((data) => {
+                            delete updatedFormData[data.name];
+                        });
+
+                        if (othersFilter) {
+                            setOthersFiltersDropdown(
+                                selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                            );
+                            dependent_field.map((data) => {
+                                delete othersFilterData[data.name];
+                            });
+
+                            setOthersFilterData(updatedFormData);
+                        } else {
+                            setfilterDropdownObj(
+                                selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
+                            );
+                            dependent_field.map((data) => {
+                                delete filterValues[data.name];
+                            });
+
+                            setFilterValues(updatedFormData);
+                        }
+
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response.data) {
+                            toast.error(
+                                error.response?.data?.message || "Need dependent Fields",
+                                {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    hideProgressBar: false,
+                                    closeOnClick: true,
+                                    pauseOnHover: true,
+                                    draggable: true,
+                                    progress: undefined,
+                                    className: "toast-error",
+                                }
+                            );
+                            return;
+                        }
+                    }
+                };
+                callApi();
+            }
         }
     };
 
@@ -1603,56 +1572,56 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
 
     const getAllOptionsforFilter = async (dropdownFields, others) => {
         try {
-          setLoading(true);
-    
-          const apiCalls = dropdownFields
-            .filter(
-              (field) =>
-                field.api === "/templateData/getTemplateData" && field.table
-            )
-            .map(async (field) => {
-              try {
-                const response = await api.post(field.api, {
-                  table_name: field.table,
+            setLoading(true);
+
+            const apiCalls = dropdownFields
+                .filter(
+                    (field) =>
+                        field.api === "/templateData/getTemplateData" && field.table
+                )
+                .map(async (field) => {
+                    try {
+                        const response = await api.post(field.api, {
+                            table_name: field.table,
+                        });
+
+                        if (!response.data) return { id: field.id, options: [] };
+
+                        const updatedOptions = response.data.map((templateData) => {
+                            const nameKey = Object.keys(templateData).find(
+                                (key) => !["id", "created_at", "updated_at"].includes(key)
+                            );
+                            return {
+                                name: nameKey ? templateData[nameKey] : "",
+                                code: templateData.id,
+                            };
+                        });
+
+                        return { id: field.id, options: updatedOptions };
+                    } catch (error) {
+                        return { id: field.id, options: [] };
+                    }
                 });
-    
-                if (!response.data) return { id: field.id, options: [] };
-    
-                const updatedOptions = response.data.map((templateData) => {
-                  const nameKey = Object.keys(templateData).find(
-                    (key) => !["id", "created_at", "updated_at"].includes(key)
-                  );
-                  return {
-                    name: nameKey ? templateData[nameKey] : "",
-                    code: templateData.id,
-                  };
-                });
-    
-                return { id: field.id, options: updatedOptions };
-              } catch (error) {
-                return { id: field.id, options: [] };
-              }
+
+            const results = await Promise.all(apiCalls);
+
+            setLoading(false);
+            var updatedFieldsDropdown = dropdownFields.map((field) => {
+                const updatedField = results.find((res) => res.id === field.id);
+                return updatedField
+                    ? { ...field, options: updatedField.options }
+                    : field;
             });
-    
-          const results = await Promise.all(apiCalls);
-    
-          setLoading(false);
-          var updatedFieldsDropdown = dropdownFields.map((field) => {
-            const updatedField = results.find((res) => res.id === field.id);
-            return updatedField
-              ? { ...field, options: updatedField.options }
-              : field;
-          });
-    
-            if(others){
+
+            if (others) {
                 setOthersFiltersDropdown(updatedFieldsDropdown)
-            }else{
+            } else {
                 setfilterDropdownObj(updatedFieldsDropdown);
             }
-    
+
         } catch (error) {
-          setLoading(false);
-          console.error("Error fetching template data:", error);
+            setLoading(false);
+            console.error("Error fetching template data:", error);
         }
     };
 
@@ -1661,77 +1630,10 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
         return res?.data || [];
     };
 
-    const handleSubmitAp = async ({ id }) => {
-    
+    const handleSubmitPF = async ({ id, selectedIds }) => {
+
         if (!id || id.length === 0) {
-          toast.error("Please select at least one record to submit.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-          });
-          return;
-        }
-        var result ;
-        if(isImmediateSupervisior)
-        {
-            result = await Swal.fire({
-              title: 'Are you sure?',
-              text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
-              icon: 'question',
-              showCancelButton: true,
-              confirmButtonText: 'Yes, submit it!',
-              cancelButtonText: 'Cancel',
-            });
-        }
-        else
-        {
-            result = await Swal.fire({
-                title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, submit it!',
-                cancelButtonText: 'Cancel',
-              });
-        }
-      
-        if (result.isConfirmed) {
-          const payload = {
-            transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
-            ui_case_id: id,
-            isSupervisior : isImmediateSupervisior
-          };
-      
-          try {
-            setLoading(true);
-            const response = await api.post('/templateData/submitActionPlanPR', payload);
-      
-            if (response.success) {
-              toast.success("The Action Plan has been submitted", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-success",
-                onOpen: () => {
-                  
-                    if(!selectedOtherTemplate?.field){
-                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
-                    }else{
-                        loadTableData(paginationCount);
-                    }
-                },
-            });
-            } else {
-              toast.error(response.message || 'Something went wrong.', {
+            toast.error("Please select at least one record to submit.", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -1741,192 +1643,180 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                 progress: undefined,
                 className: "toast-error",
             });
+            return;
+        }
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you want to submit this Property Form? Once submitted, the selected record will be move to the FSL.",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, submit it!',
+            cancelButtonText: 'Cancel',
+        });
+
+        if (result.isConfirmed) {
+            const payload = {
+                transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
+                ui_case_id: id,
+                row_ids: selectedIds
+            };
+
+            try {
+                setLoading(true);
+                const response = await api.post('/templateData/submitPropertyFormFSL', payload);
+
+                if (response.success) {
+                    toast.success("The Property Form has been submitted", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => {
+                            if (!selectedOtherTemplate?.field) {
+                                handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
+                            } else {
+                                loadTableData(paginationCount);
+                            }
+                        },
+                    });
+                    setSelectedIds([]);
+                } else {
+                    toast.error(response.message || 'Something went wrong.', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            } catch (error) {
+                toast.error(error.message || 'Submission failed.', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            } finally {
+                setLoading(false);
             }
-          } catch (error) {
-            toast.error(error.message || 'Submission failed.', {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-          });
-          }finally{
-            setLoading(false);
-          }
         }
     };
 
-    const onActionPlanUpdate = async (table_name, data) => {
-    
-        if (!table_name || table_name === "") {
-            toast.warning("Please Check The Template");
-            return;
-        }
-        
-        if (!data || Object.keys(data).length === 0) {
-            toast.warning("Data Is Empty Please Check Once");
-            return;
-        }
-    
-        const formData = new FormData();
-        formData.append("table_name", table_name);
-        
-        let normalData = {};
-        
-        const allowedFields = [
-            "field_breif_fact",
-            "field_investigation_carried_out_by_the_police_station"
-        ];
-    
-        allowedFields.forEach((key) => {
-            const value = data[key];
-            if (value !== undefined && value !== null && value !== "") {
-            normalData[key] = value;
-            }
-        });
-        
-        formData.append("id", data.id);
-        formData.append("data", JSON.stringify(normalData));
-    
-        try {
-            setLoading(true);
-            const saveTemplateData = await api.post(
-            "/templateData/updateTemplateData",
-            formData
-            );
-            setLoading(false);
-        
-            if (saveTemplateData && saveTemplateData.success) {
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-success",
-                onOpen: () => {
-                    handleOtherTemplateActions("cid_ui_case_action_plan");
-                },
-            });
-            } else {
-            toast.error(saveTemplateData.message || "Failed to update the data.");
-            }
-        } catch (error) {
-            setLoading(false);
-            toast.error(
-            error?.response?.data?.message || "Update failed. Please try again."
-            );
-        }
-    };
 
     const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
-    
+
         if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
-          toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-warning",
-          });
-          return;
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                className: "toast-warning",
+            });
+            return;
         }
-      
+
         if (Object.keys(data).length === 0) {
-          toast.warning("Data Is Empty Please Check Once", {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-warning",
-          });
-          return;
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                className: "toast-warning",
+            });
+            return;
         }
 
         const formData = new FormData();
         const normalData = {};
-      
+
         optionFormTemplateData.forEach((field) => {
-          const val = data[field.name];
-          if (val !== undefined && val !== null && val !== "") {
-            if (field.type === "file" || field.type === "profilepicture") {
-              if (field.type === "file") {
-                if (Array.isArray(val)) {
-                  const validFiles = val.filter(f => f.filename instanceof File);
-                  validFiles.forEach(file => formData.append(field.name, file.filename));
-                  const filteredMeta = validFiles.map(f => ({
-                    ...f,
-                    filename: f.filename.name,
-                  }));
-                  formData.append("folder_attachment_ids", JSON.stringify(filteredMeta));
+            const val = data[field.name];
+            if (val !== undefined && val !== null && val !== "") {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(val)) {
+                            const validFiles = val.filter(f => f.filename instanceof File);
+                            validFiles.forEach(file => formData.append(field.name, file.filename));
+                            const filteredMeta = validFiles.map(f => ({
+                                ...f,
+                                filename: f.filename.name,
+                            }));
+                            formData.append("folder_attachment_ids", JSON.stringify(filteredMeta));
+                        }
+                    } else {
+                        formData.append(field.name, val);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(val) ? val.join(",") : val
                 }
-              } else {
-                formData.append(field.name, val);
-              }
-            } else {
-              normalData[field.name] = Array.isArray(val) ? val.join(",") : val
             }
-          }
         });
-      
-        
-        normalData.sys_status = isImmediateSupervisior ? "IO" : "ui_case";
+
+
+        normalData.sys_status = "PF"
         normalData.field_submit_status = "";
         normalData["ui_case_id"] = selectedRowData.id;
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
-      
+
         setLoading(true);
-      
+
         try {
-          const response = await api.post("/templateData/saveActionPlan", formData);
-          setLoading(false);
-      
-          if (response?.success) {
-            toast.success(response.message || "Case Updated Successfully", {
-              position: "top-right",
-              autoClose: 3000,
-              className: "toast-success",
-            });
-      
-            setOtherFormOpen(false);
-      
-            if (selectedOtherTemplate?.field) {
-              const combinedData = {
-                id: selectedRowData.id,
-                [selectKey.name]: selectedOtherFields.code,
-              };
-              onUpdateTemplateData(combinedData);
+            const response = await api.post("/templateData/saveActionPlan", formData);
+            setLoading(false);
+
+            if (response?.success) {
+                toast.success(response.message || "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-success",
+                });
+
+                setOtherFormOpen(false);
+
+                if (selectedOtherTemplate?.field) {
+                    const combinedData = {
+                        id: selectedRowData.id,
+                        [selectKey.name]: selectedOtherFields.code,
+                    };
+                    onUpdateTemplateData(combinedData);
+                }
+                if (saveNewAction) {
+                    await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                    showOptionTemplate(selectedOtherTemplate.table);
+                } else {
+                    handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                }
+
+            } else {
+                toast.error(response.message || "Failed to change the status. Please try again.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-error",
+                });
             }
-            if(saveNewAction){
-              await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);   
-              showOptionTemplate('cid_ui_case_action_plan');
-            }else{
-              handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
-            }
-    
-          } else {
-            toast.error(response.message || "Failed to change the status. Please try again.", {
-              position: "top-right",
-              autoClose: 3000,
-              className: "toast-error",
-            });
-          }
         } catch (error) {
-          setLoading(false);
-          toast.error(error?.response?.data?.message || "Please Try Again!", {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-error",
-          });
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                className: "toast-error",
+            });
         }
     };
-    
+
     const otherTemplateSaveFunc = async (data, saveNewAction) => {
-    
+
         if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
             toast.warning("Please Check The Template", {
                 position: "top-right",
@@ -1940,7 +1830,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
             });
             return;
         }
-    
+
         if (Object.keys(data).length === 0) {
             toast.warning("Data Is Empty Please Check Once", {
                 position: "top-right",
@@ -1954,74 +1844,74 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
             });
             return;
         }
-    
-    
+
+
         const formData = new FormData();
-    
+
         var normalData = {}; // Non-file upload fields
-    
+
         optionFormTemplateData.forEach((field) => {
-          if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-              // Append file fields to formData
-              if (field.type === "file") {
-                if (Array.isArray(data[field.name])) {
-                  const hasFileInstance = data[field.name].some(
-                    (file) => file.filename instanceof File
-                  );
-                  var filteredArray = data[field.name].filter(
-                    (file) => file.filename instanceof File
-                  );
-                  if (hasFileInstance) {
-                    data[field.name].forEach((file) => {
-                      if (file.filename instanceof File) {
-                        formData.append(field.name, file.filename);
-                      }
-                    });
-    
-                    filteredArray = filteredArray.map((obj) => {
-                      return {
-                        ...obj,
-                        filename: obj.filename["name"],
-                      };
-                    });
-    
-                    formData.append(
-                      "folder_attachment_ids",
-                      JSON.stringify(filteredArray)
-                    );
-                  }
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    // Append file fields to formData
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(
+                                (file) => file.filename instanceof File
+                            );
+                            var filteredArray = data[field.name].filter(
+                                (file) => file.filename instanceof File
+                            );
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+
+                                formData.append(
+                                    "folder_attachment_ids",
+                                    JSON.stringify(filteredArray)
+                                );
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    // Add non-file fields to normalData
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
                 }
-              } else {
-                formData.append(field.name, data[field.name]);
-              }
-            } else {
-              // Add non-file fields to normalData
-              normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
             }
-          }
         });
         normalData.sys_status = "ui_case";
         normalData["ui_case_id"] = selectedRowData.id;
-    
+
         var othersData = {};
-    
-    
+
+
         formData.append("table_name", selectedOtherTemplate.table);
         formData.append("data", JSON.stringify(normalData));
         formData.append("others_data", JSON.stringify(othersData));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
-    
+
         setLoading(true);
-    
+
         try {
-            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
-    
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
+
             setLoading(false);
-    
+
             if (overallSaveData && overallSaveData.success) {
-    
+
                 toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
                     position: "top-right",
                     autoClose: 3000,
@@ -2032,33 +1922,33 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                     progress: undefined,
                     className: "toast-success",
                 });
-    
-               if(saveNewAction){
-                  await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
-                  showOptionTemplate('cid_ui_case_action_plan');
-                }else{
-                  handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
+
+                if (saveNewAction) {
+                    await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
+                    showOptionTemplate(selectedOtherTemplate.table);
+                } else {
+                    handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
                 }
-    
+
                 setOtherFormOpen(false);
-    
-                if(selectedOtherTemplate?.field){
+
+                if (selectedOtherTemplate?.field) {
                     var combinedData = {
                         id: selectedRowData.id,
                         [selectKey.name]: selectedOtherFields.code,
                     };
-            
+
                     // update func
                     onUpdateTemplateData(combinedData);
-    
+
                     setSelectKey(null);
                     setSelectedRow(null);
                     setSelectedOtherFields(null);
                     setselectedOtherTemplate(null);
-                }else{
+                } else {
                     return;
                 }
-    
+
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
                 toast.error(errorMessage, {
@@ -2075,7 +1965,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
         } catch (error) {
             setLoading(false);
             if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -2091,273 +1981,7 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
 
     const otherTemplateUpdateFunc = async (data) => {
         if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
-          toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-          });
-          return;
-        }
-      
-        if (Object.keys(data).length === 0) {
-          toast.warning("Data Is Empty Please Check Once", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-          });
-          return;
-        }
-      
-        const formData = new FormData();
-        let normalData = {};
-        let filteredFileArray = [];
-      
-        optionFormTemplateData.forEach((field) => {
-          if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-              if (field.type === "file" && Array.isArray(data[field.name])) {
-                const hasFileInstance = data[field.name].some(
-                  (file) => file.filename instanceof File
-                );
-                filteredFileArray = data[field.name].filter(
-                  (file) => file.filename instanceof File
-                );
-      
-                if (hasFileInstance) {
-                  data[field.name].forEach((file) => {
-                    if (file.filename instanceof File) {
-                      formData.append(field.name, file.filename);
-                    }
-                  });
-      
-                  const folderInfo = filteredFileArray.map((file) => ({
-                    ...file,
-                    filename: file.filename.name,
-                  }));
-      
-                  formData.append(
-                    "folder_attachment_ids",
-                    JSON.stringify(folderInfo)
-                  );
-                }
-              } else {
-                formData.append(field.name, data[field.name]);
-              }
-            } else {
-              normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
-            }
-          }
-        });
-    
-        if(selectedOtherTemplate.table === "cid_ui_case_progress_report"){
-            normalData["field_pr_status"] = "No";
-        }
-      
-        formData.append("table_name", selectedOtherTemplate.table);
-        formData.append("id", data.id);
-        formData.append("data", JSON.stringify(normalData));
-        formData.append("transaction_id", randomApprovalId);
-        formData.append( "user_designation_id", localStorage.getItem("designation_id") || null);
-      
-        let othersData = {};
-      
-        setLoading(true);
-      
-        try {
-          const updateRes = await api.post(
-            "/templateData/updateDataWithApprovalToTemplates",
-            formData
-          );
-          setLoading(false);
-      
-          if (updateRes && updateRes.success) {
-            toast.success(updateRes.message || "Data Updated Successfully", {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-success",
-              onOpen: () =>
-                handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
-            });
-      
-            setOtherEditTemplateData(false);
-            setOtherReadOnlyTemplateData(false);
-          } else {
-            const errorMessage =
-              updateRes.message || "Failed to update. Please try again.";
-            toast.error(errorMessage, {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-            });
-          }
-        } catch (error) {
-          setLoading(false);
-          toast.error(
-            error?.response?.data?.message || "Update failed. Please try again.",
-            {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-            }
-          );
-        }
-    };
-
-    const onUpdateTemplateData = async (data) => {
-    
-        if (!table_name || table_name === "") {
-          toast.warning("Please Check The Template", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-          });
-          return;
-        }
-    
-        if (Object.keys(data).length === 0) {
-          toast.warning("Data Is Empty Please Check Once", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-          });
-          return;
-        }
-    
-        const formData = new FormData();
-    
-        formData.append("table_name", table_name);
-        var normalData = {}; // Non-file upload fields
-    
-        formTemplateData.forEach((field) => {
-          if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-              // Append file fields to formData
-              if (field.type === "file") {
-                if (Array.isArray(data[field.name])) {
-                  const hasFileInstance = data[field.name].some(
-                    (file) => file.filename instanceof File
-                  );
-                  var filteredArray = data[field.name].filter(
-                    (file) => file.filename instanceof File
-                  );
-                  if (hasFileInstance) {
-                    data[field.name].forEach((file) => {
-                      if (file.filename instanceof File) {
-                        formData.append(field.name, file.filename);
-                      }
-                    });
-    
-                    filteredArray = filteredArray.map((obj) => {
-                      return {
-                        ...obj,
-                        filename: obj.filename["name"],
-                      };
-                    });
-                    formData.append(
-                      "folder_attachment_ids",
-                      JSON.stringify(filteredArray)
-                    );
-                  }
-                }
-              } else {
-                formData.append(field.name, data[field.name]);
-              }
-            } else {
-              // Add non-file fields to normalData
-              normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
-            }
-          }
-        });
-        setLoading(true);
-        formData.append("id", data.id);
-        formData.append("data", JSON.stringify(normalData));
-    
-        try {
-          const saveTemplateData = await api.post(
-            "/templateData/updateTemplateData",
-            formData
-          );
-          setLoading(false);
-    
-          if (saveTemplateData && saveTemplateData.success) {
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-success",
-              onOpen: () => {
-                  loadTableData(paginationCount);
-              },
-            });
-    
-            setSelectKey(null);
-            setSelectedRow([]);
-            setSelectedOtherFields(null);
-            setselectedOtherTemplate(null);
-            setSelectedRowIds([]);
-    
-          } else {
-            const errorMessage = saveTemplateData.message
-              ? saveTemplateData.message
-              : "Failed to create the profile. Please try again.";
-            toast.error(errorMessage, {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-            });
-          }
-        } catch (error) {
-          setLoading(false);
-          if (error && error.response && error.response["data"]) {
-            toast.error(
-              error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-              {
+            toast.warning("Please Check The Template", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -2365,235 +1989,731 @@ const PropertyForm = ({templateName, headerDetails, rowId, options, selectedRowD
                 pauseOnHover: true,
                 draggable: true,
                 progress: undefined,
-                className: "toast-error",
-              }
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+        let normalData = {};
+        let filteredFileArray = [];
+
+        optionFormTemplateData.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file" && Array.isArray(data[field.name])) {
+                        const hasFileInstance = data[field.name].some(
+                            (file) => file.filename instanceof File
+                        );
+                        filteredFileArray = data[field.name].filter(
+                            (file) => file.filename instanceof File
+                        );
+
+                        if (hasFileInstance) {
+                            data[field.name].forEach((file) => {
+                                if (file.filename instanceof File) {
+                                    formData.append(field.name, file.filename);
+                                }
+                            });
+
+                            const folderInfo = filteredFileArray.map((file) => ({
+                                ...file,
+                                filename: file.filename.name,
+                            }));
+
+                            formData.append(
+                                "folder_attachment_ids",
+                                JSON.stringify(folderInfo)
+                            );
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+
+        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+            normalData["field_pr_status"] = "No";
+        }
+
+        formData.append("table_name", selectedOtherTemplate.table);
+        formData.append("id", data.id);
+        formData.append("data", JSON.stringify(normalData));
+        formData.append("transaction_id", randomApprovalId);
+        formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
+
+        let othersData = {};
+
+        setLoading(true);
+
+        try {
+            const updateRes = await api.post(
+                "/templateData/updateDataWithApprovalToTemplates",
+                formData
             );
-          }
+            setLoading(false);
+
+            if (updateRes && updateRes.success) {
+                toast.success(updateRes.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () =>
+                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
+                });
+
+                setOtherEditTemplateData(false);
+                setOtherReadOnlyTemplateData(false);
+            } else {
+                const errorMessage =
+                    updateRes.message || "Failed to update. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(
+                error?.response?.data?.message || "Update failed. Please try again.",
+                {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                }
+            );
         }
     };
 
- 
+    const onUpdateTemplateData = async (data) => {
+
+        if (!table_name || table_name === "") {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("table_name", table_name);
+        var normalData = {}; // Non-file upload fields
+
+        formTemplateData.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    // Append file fields to formData
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(
+                                (file) => file.filename instanceof File
+                            );
+                            var filteredArray = data[field.name].filter(
+                                (file) => file.filename instanceof File
+                            );
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+                                formData.append(
+                                    "folder_attachment_ids",
+                                    JSON.stringify(filteredArray)
+                                );
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    // Add non-file fields to normalData
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+        setLoading(true);
+        formData.append("id", data.id);
+        formData.append("data", JSON.stringify(normalData));
+
+        try {
+            const saveTemplateData = await api.post(
+                "/templateData/updateTemplateData",
+                formData
+            );
+            setLoading(false);
+
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        loadTableData(paginationCount);
+                    },
+                });
+
+                setSelectKey(null);
+                setSelectedRow([]);
+                setSelectedOtherFields(null);
+                setselectedOtherTemplate(null);
+                setSelectedRowIds([]);
+
+            } else {
+                const errorMessage = saveTemplateData.message
+                    ? saveTemplateData.message
+                    : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(
+                    error.response["data"].message
+                        ? error.response["data"].message
+                        : "Please Try Again !",
+                    {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    }
+                );
+            }
+        }
+    };
+
+
     return (
         <>
-        <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
-                <Box
-                    sx={{
-                        width: '100%',
-                        p: 2,
-                        bgcolor: 'background.paper',
-                        borderRadius: 2,
-                        boxShadow: 2,
-                        zIndex: 1,
-                    }}
-                >
-                    {/* Header Section */}
+            <Box sx={{ overflow: 'auto', height: '100vh' }}>
+                <Box pb={1} px={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', }}>
                     <Box
                         sx={{
-                            display: "flex",
-                            alignItems: "start",
-                            justifyContent: "space-between",
-                            mb: 2
+                            width: '100%',
+                            p: 2,
+                            bgcolor: 'background.paper',
+                            borderRadius: 2,
+                            boxShadow: 2,
+                            zIndex: 1,
                         }}
                     >
-                        <Box 
-                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
-                            onClick={() => backNavigation()}
+                        {/* Header Section */}
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "start",
+                                justifyContent: "space-between",
+                                mb: 2
+                            }}
                         >
-                            <WestIcon />
-                            <Typography variant="body1" fontWeight={500}>
-                                {selectedOtherTemplate?.name}
-                            </Typography>
+                            <Box
+                                sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
+                                onClick={() => backNavigation()}
+                            >
+                                <WestIcon />
+                                <Typography variant="body1" fontWeight={500}>
+                                    {selectedOtherTemplate?.name}
+                                </Typography>
 
-                            {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                                <Chip
-                                    label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                                    color="primary"
-                                    variant="outlined"
-                                    size="small"
-                                    sx={{ fontWeight: 500, mt: '2px' }}
-                                />
-                            )}
+                                {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                                    <Chip
+                                        label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                        color="primary"
+                                        variant="outlined"
+                                        size="small"
+                                        sx={{ fontWeight: 500, mt: '2px' }}
+                                    />
+                                )}
 
-                            <Box className="totalRecordCaseStyle">
-                                {otherTemplatesTotalRecord} Records
+                                <Box className="totalRecordCaseStyle">
+                                    {otherTemplatesTotalRecord} Records
+                                </Box>
+
+                                {APIsSubmited && (
+                                    <Box className="notifyAtTopCaseStyle">
+                                        Submission request in progress. Awaiting SP approval.
+                                    </Box>
+                                )}
                             </Box>
 
-                            {APIsSubmited && (
-                                <Box className="notifyAtTopCaseStyle">
-                                    Submission request in progress. Awaiting SP approval.
-                                </Box>
-                            )}
-                        </Box>
+                            {/* Actions Section */}
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
+                                    <Box></Box>
 
-                        {/* Actions Section */}
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
-                                <Box></Box>
-
-                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
-                                    <TextFieldInput
-                                        InputProps={{
-                                            startAdornment: (
-                                                <InputAdornment position="start">
-                                                    <SearchIcon sx={{ color: "#475467" }} />
-                                                </InputAdornment>
-                                            ),
-                                            endAdornment: (
-                                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                                                    <IconButton
-                                                        sx={{ px: 1, borderRadius: 0 }}
-                                                        onClick={() => handleOthersFilter(selectedOtherTemplate)}
-                                                    >
-                                                        <FilterListIcon sx={{ color: "#475467" }} />
-                                                    </IconButton>
-                                                </Box>
-                                            ),
-                                        }}
-                                        onInput={(e) => setOtherSearchValue(e.target.value)}
-                                        value={otherSearchValue}
-                                        id="tableSearch"
-                                        size="small"
-                                        placeholder="Search anything"
-                                        variant="outlined"
-                                        className="profileSearchClass"
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                e.preventDefault();
-                                                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
-                                            }
-                                        }}
-                                        sx={{
-                                            width: '350px',
-                                            borderRadius: '6px',
-                                            '& .MuiInputBase-input::placeholder': {
-                                                color: '#475467',
-                                                opacity: 1,
-                                                fontSize: '14px',
-                                                fontWeight: 400,
-                                                fontFamily: 'Roboto',
-                                            },
-                                        }}
-                                    />
-                                    {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
-                                        <Typography
-                                            onClick={handleOtherClear}
-                                            sx={{
-                                                fontSize: "13px",
-                                                fontWeight: "500",
-                                                textDecoration: "underline",
-                                                cursor: "pointer",
-                                                mt: 1,
+                                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
+                                        <TextFieldInput
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <SearchIcon sx={{ color: "#475467" }} />
+                                                    </InputAdornment>
+                                                ),
+                                                endAdornment: (
+                                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                                        <IconButton
+                                                            sx={{ px: 1, borderRadius: 0 }}
+                                                            onClick={() => handleOthersFilter(selectedOtherTemplate)}
+                                                        >
+                                                            <FilterListIcon sx={{ color: "#475467" }} />
+                                                        </IconButton>
+                                                    </Box>
+                                                ),
                                             }}
-                                        >
-                                            Clear Filter
-                                        </Typography>
-                                    )}
-                                </Box>
+                                            onInput={(e) => setOtherSearchValue(e.target.value)}
+                                            value={otherSearchValue}
+                                            id="tableSearch"
+                                            size="small"
+                                            placeholder="Search anything"
+                                            variant="outlined"
+                                            className="profileSearchClass"
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    e.preventDefault();
+                                                    handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                                                }
+                                            }}
+                                            sx={{
+                                                width: '350px',
+                                                borderRadius: '6px',
+                                                '& .MuiInputBase-input::placeholder': {
+                                                    color: '#475467',
+                                                    opacity: 1,
+                                                    fontSize: '14px',
+                                                    fontWeight: 400,
+                                                    fontFamily: 'Roboto',
+                                                },
+                                            }}
+                                        />
+                                        {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
+                                            <Typography
+                                                onClick={handleOtherClear}
+                                                sx={{
+                                                    fontSize: "13px",
+                                                    fontWeight: "500",
+                                                    textDecoration: "underline",
+                                                    cursor: "pointer",
+                                                    mt: 1,
+                                                }}
+                                            >
+                                                Clear Filter
+                                            </Typography>
+                                        )}
+                                    </Box>
 
-                               
-                                {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
+
+                                    {!viewModeOnly && (
+                                        <Button
+                                            variant="outlined"
+                                            sx={{ height: '40px' }}
+                                            onClick={() => showOptionTemplate(selectedOtherTemplate?.table)}
+                                        >
+                                            Add
+                                        </Button>
+                                    )}
                                     <Button
-                                        variant="outlined"
-                                        sx={{ height: '40px' }}
-                                        onClick={() => showOptionTemplate('cid_ui_case_action_plan')}
+                                        onClick={handleOpenExportPopup}
+                                        sx={{
+
+                                            height: 40,
+                                            px: 2.8,
+                                            fontWeight: 600,
+                                            fontSize: 14,
+                                            textTransform: 'none',
+                                            borderRadius: '8px',
+                                            backgroundColor: '#1976d2',
+                                            color: '#fff',
+                                            '&:hover': {
+                                                backgroundColor: '#115293',
+                                            },
+                                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1.2,
+                                        }}
                                     >
-                                        Add
+                                        <ImportExportIcon sx={{ fontSize: 18 }} />
+                                        Export / Import
                                     </Button>
-                                )}
-                                <Button
-                                onClick={handleOpenExportPopup}
-                                sx={{
-                                    
-                                    height: 40,
-                                    px: 2.8,
-                                    fontWeight: 600,
-                                    fontSize: 14,
-                                    textTransform: 'none',
-                                    borderRadius: '8px',
-                                    backgroundColor: '#1976d2',
-                                    color: '#fff',
-                                    '&:hover': {
-                                    backgroundColor: '#115293',
-                                    },
-                                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1.2,
-                                }}
-                                >
-                                <ImportExportIcon sx={{ fontSize: 18 }} />
-                                Export / Import
-                                </Button>
-                                {!showSubmitAPButton && (
                                     <Button
                                         variant="contained"
                                         color="success"
-                                        onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
-                                        disabled={otherTemplatesTotalRecord === 0}
+                                        onClick={() => {
+                                            handleSubmitPF({ id: selectedRowData?.id, selectedIds });
+                                        }}
+                                        disabled={showSubmitPFButton}
                                     >
                                         Submit
                                     </Button>
-                                )}
+                                </Box>
                             </Box>
                         </Box>
-                    </Box>
 
-                    {/* Data Table */}
-                    <TableView
-                        rows={otherTemplateData}
-                        columns={otherTemplateColumn}
-                        totalPage={otherTemplatesTotalPage}
-                        totalRecord={otherTemplatesTotalRecord}
-                        paginationCount={otherTemplatesPaginationCount}
-                        handlePagination={handleOtherPagination}
-                        tableName={selectedOtherTemplate?.table}
-                    />
+                        {/* Data Table */}
+                        <TableView
+                            rows={otherTemplateData}
+                            columns={otherTemplateColumn}
+                            totalPage={otherTemplatesTotalPage}
+                            totalRecord={otherTemplatesTotalRecord}
+                            paginationCount={otherTemplatesPaginationCount}
+                            handlePagination={handleOtherPagination}
+                            tableName={selectedOtherTemplate?.table}
+                        />
+                    </Box>
                 </Box>
             </Box>
-        </Box>
 
-        {otherFormOpen && (
-            <Dialog
-                open={otherFormOpen}
-                onClose={() => closeOtherForm}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-                maxWidth="xl"
-                fullWidth
-            >
-            <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
-                <DialogContentText id="alert-dialog-description">
-                <FormControl fullWidth>
-                    <NormalViewForm
-                    table_row_id={otherRowId}
-                    template_id={otherTemplateId}
-                    template_name={ selectedOtherTemplate?.name}
-                    table_name={selectedOtherTemplate?.table}
-                    readOnly={otherReadOnlyTemplateData}
-                    editData={otherEditTemplateData}
-                    initialData={otherInitialTemplateData}
-                    formConfig={optionFormTemplateData}
-                    stepperData={optionStepperData}
-                    onSubmit={otherAPPRTemplateSaveFunc}
-                    onUpdate={otherTemplateUpdateFunc}
-                    disableEditButton={true}
-                    onError={onSaveTemplateError}
-                    closeForm={closeOtherForm}
-                    headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
-                    />
-                </FormControl>
-                </DialogContentText>
-            </DialogContent>
-            <DialogActions sx={{ padding: "12px 24px" }}>
-                <Button onClick={closeOtherForm}>
-                    Cancel
-                </Button>
-            </DialogActions>
-            </Dialog>
-        )}
+            {otherFormOpen && (
+                <Dialog
+                    open={otherFormOpen}
+                    onClose={() => closeOtherForm}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    maxWidth="xl"
+                    fullWidth
+                >
+                    <DialogContent sx={{ minWidth: "400px", padding: '0' }}>
+                        <DialogContentText id="alert-dialog-description">
+                            <FormControl fullWidth>
+                                <NormalViewForm
+                                    table_row_id={otherRowId}
+                                    template_id={otherTemplateId}
+                                    template_name={selectedOtherTemplate?.name}
+                                    table_name={selectedOtherTemplate?.table}
+                                    readOnly={otherReadOnlyTemplateData}
+                                    editData={otherEditTemplateData}
+                                    initialData={otherInitialTemplateData}
+                                    formConfig={optionFormTemplateData}
+                                    stepperData={optionStepperData}
+                                    onSubmit={otherAPPRTemplateSaveFunc}
+                                    onUpdate={otherTemplateUpdateFunc}
+                                    disableEditButton={disableEditButtonFlag}
+                                    onError={onSaveTemplateError}
+                                    closeForm={closeOtherForm}
+                                    headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                                />
+                            </FormControl>
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: "12px 24px" }}>
+                        <Button onClick={closeOtherForm}>
+                            Cancel
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
+
+            {showExportPopup && (
+                <Dialog
+                    open={showExportPopup}
+                    onClose={() => setShowExportPopup(false)}
+                    maxWidth="md"
+                    fullWidth
+                    PaperProps={{
+                        sx: {
+                            p: 3,
+                            borderRadius: 3,
+                            bgcolor: "#f9fafb",
+                            boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
+                            minHeight: 400,
+                            maxHeight: "80vh",
+                            display: "flex",
+                            flexDirection: "column",
+                        },
+                    }}
+                >
+                    {/* Tabs */}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 1.5,
+                            justifyContent: "center",
+                            mb: 2,
+                        }}
+                    >
+                        {[0, 1].map((idx) => (
+                            <Button
+                                key={idx}
+                                variant={tabIndex === idx ? "contained" : "outlined"}
+                                color="primary"
+                                onClick={() => setTabIndex(idx)}
+                                sx={{
+                                    borderRadius: "20px",
+                                    textTransform: "none",
+                                    px: 3,
+                                    py: 1,
+                                    fontWeight: 600,
+                                    fontSize: 15,
+                                    minWidth: 110,
+                                }}
+                            >
+                                {idx === 0 ? "Export" : "Import"}
+                            </Button>
+                        ))}
+                    </Box>
+
+                    {/* Main Content */}
+                    <Box
+                        sx={{
+                            bgcolor: "white",
+                            borderRadius: 2,
+                            boxShadow: "0 3px 10px rgba(0,0,0,0.05)",
+                            p: 3,
+                            flexGrow: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                            overflow: "hidden",
+                        }}
+                    >
+                        {/* Export Content */}
+                        {tabIndex === 0 && (
+                            <>
+                                <Typography variant="h6" sx={{ fontSize: 17, fontWeight: 600, mb: 2 }}>
+                                    Exported Data
+                                </Typography>
+
+                                {exportableData.length === 0 ? (
+                                    <Typography
+                                        sx={{
+                                            textAlign: "center",
+                                            mt: 6,
+                                            color: "#777",
+                                            fontSize: 15,
+                                            flexGrow: 1,
+                                        }}
+                                    >
+                                        No data available to export.
+                                    </Typography>
+                                ) : (
+                                    <Box sx={{ overflowX: "auto", flexGrow: 1 }}>
+                                        <Table size="small" stickyHeader>
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell sx={{ fontWeight: 700, minWidth: 40, py: 1 }}>S.no</TableCell>
+                                                    {Object.keys(exportableData[0])
+                                                        .filter(
+                                                            (col) =>
+                                                                ![
+                                                                    "id",
+                                                                    "created_at",
+                                                                    "updated_at",
+                                                                    "created_by",
+                                                                    "sys_status",
+                                                                    "ReadStatus",
+                                                                ].includes(col)
+                                                        )
+                                                        .map((col) => {
+                                                            let display = col.startsWith("field_") ? col.slice(6) : col;
+                                                            display = display
+                                                                .replace(/_/g, " ")
+                                                                .split(" ")
+                                                                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                                                                .join(" ");
+                                                            return (
+                                                                <TableCell key={col} sx={{ fontWeight: 600, minWidth: 110, py: 1 }}>
+                                                                    {display}
+                                                                </TableCell>
+                                                            );
+                                                        })}
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {exportableData.map((row, idx) => (
+                                                    <TableRow key={idx} hover>
+                                                        <TableCell sx={{ py: 0.8 }}>{idx + 1}</TableCell>
+                                                        {Object.keys(row)
+                                                            .filter(
+                                                                (col) =>
+                                                                    ![
+                                                                        "id",
+                                                                        "created_at",
+                                                                        "updated_at",
+                                                                        "created_by",
+                                                                        "sys_status",
+                                                                        "ReadStatus",
+                                                                    ].includes(col)
+                                                            )
+                                                            .map((col) => {
+                                                                let val = row[col];
+                                                                const isDateField =
+                                                                    col.toLowerCase().includes("_date") || col.toLowerCase().endsWith("date");
+
+                                                                if (
+                                                                    isDateField &&
+                                                                    typeof val === "string" &&
+                                                                    !isNaN(Date.parse(val)) &&
+                                                                    dayjs(val).isValid()
+                                                                ) {
+                                                                    val = dayjs(val).format("DD-MM-YYYY");
+                                                                }
+                                                                return (
+                                                                    <TableCell key={col} sx={{ py: 0.8, fontSize: 13 }}>
+                                                                        {val}
+                                                                    </TableCell>
+                                                                );
+                                                            })}
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </Box>
+                                )}
+                            </>
+                        )}
+
+                        {/* Import Content */}
+                        {tabIndex === 1 && (
+                            <Box
+                                sx={{
+                                    flexGrow: 1,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 3,
+                                }}
+                            >
+                                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: 18 }}>
+                                    Upload Excel to Import Data
+                                </Typography>
+                                <Box
+                                    sx={{
+                                        border: "1px dashed #ccc",
+                                        borderRadius: 2,
+                                        padding: "20px 30px",
+                                        backgroundColor: "#f5f5f5",
+                                        width: "100%",
+                                        maxWidth: 400,
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    <input type="file" accept=".xlsx,.xls,.csv" style={{ width: "100%" }} />
+                                </Box>
+                            </Box>
+                        )}
+                    </Box>
+
+                    {/* Footer Buttons */}
+                    <Box
+                        sx={{
+                            mt: 3,
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            alignItems: "center",
+                            gap: 1.5,
+                        }}
+                    >
+                        {tabIndex === 0 && (
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                disabled={exportableData.length === 0}
+                                onClick={() =>
+                                    exportToExcel(
+                                        exportableData,
+                                        (selectedOtherTemplate?.name || "Exported_Data").replace(/\s+/g, "_")
+                                    )
+                                }
+                            >
+                                Download Excel
+                            </Button>
+                        )}
+
+                        {tabIndex === 1 && (
+                            <Button variant="contained" color="primary">
+                                Import Data
+                            </Button>
+                        )}
+
+                        <Button variant="outlined" color="secondary" onClick={() => setShowExportPopup(false)}>
+                            Close
+                        </Button>
+                    </Box>
+
+                </Dialog>
+            )}
         </>
-    );    
+    );
 };
 
 export default PropertyForm;
