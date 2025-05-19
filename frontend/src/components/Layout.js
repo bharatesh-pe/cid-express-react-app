@@ -30,6 +30,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import userImg from "../Images/userImg.png";
 import Navbar from "./navbar";
+import HomeIcon from '@mui/icons-material/Home';
 
 const icons = {
   dashboard: (
@@ -421,7 +422,7 @@ const Layout = ({ children }) => {
         {/* Sidebar */}
         <Box
           sx={{
-            display: { xs: "none", md: "block" },
+            display: localStorage.getItem("user_id") === "1" ? "block" : "none",
             width: "253px",
             minWidth: "253px",
             overflow: "hidden",
@@ -692,11 +693,100 @@ const Layout = ({ children }) => {
 
         {/* Main Content */}
         <Box flex={4} sx={{ overflow: "hidden" }}>
-          <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none", overflow: 'auto' }}>
-            {/* Render nested route (e.g., Dashboard, Profile) */}
-            {/* <Outlet /> */}
-            {children}
-          </Paper>
+            {localStorage.getItem("user_id") !== "1" && location.pathname !== "/dashboard" && (
+            <Box
+                component="header"
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    height: 60,
+                    px: 2,
+                    bgcolor: "#FFFFFF",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                    position: "relative",
+                    top: 0,
+                    zIndex: 99,
+                }}
+            >
+
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <img
+                        src={`${LogoText}?w=150&fit=crop&auto=format`}
+                        alt="CID Logo"
+                        loading="lazy"
+                        style={{ height: 55, marginRight: 10, cursor: "pointer" }}
+                        onClick={() => navigate("/dashboard")}
+                    />
+                    <Box sx={{ cursor: "pointer" }} onClick={() => navigate("/dashboard")}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: "bold", color: "#333", lineHeight: 1.2 }}>
+                            Case Management
+                            <br />
+                            System
+                        </Typography>
+                    </Box>
+                    <HomeIcon
+                        sx={{ cursor: "pointer", color: "#1D2939", fontSize: '30px', marginLeft: 2 }}
+                        onClick={() => navigate("/dashboard")}
+                    />
+                </Box>
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                    }}
+                >
+                    <Box onClick={() => setOpenUserDesignationDropdown(true)} sx={{ cursor: "pointer" }}>
+                        <Typography sx={{ fontWeight: 500, fontSize: 16, color: "#1D2939" }}>
+                            {userName || "UserName"}
+                        </Typography>
+                        <Typography
+                            noWrap
+                            sx={{
+                                fontWeight: 400,
+                                fontSize: 14,
+                                color: userOverallDesignation.length > 0 ? "#0000EE" : "#98A2B3",
+                                maxWidth: "160px",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                                textDecoration: userOverallDesignation.length > 0 ? "underline" : "none",
+                            }}
+                        >
+                            {designationName || ""}
+                        </Typography>
+                    </Box>
+
+                    <Box onClick={handleLogout} sx={{ cursor: "pointer" }}>
+                        <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                        >
+                        <path
+                            d="M4 15C4 15.93 4 16.395 4.10222 16.7765C4.37962 17.8117 5.18827 18.6204 6.22354 18.8978C6.60504 19 7.07003 19 8 19H14.2C15.8802 19 16.7202 19 17.362 18.673C17.9265 18.3854 18.3854 17.9265 18.673 17.362C19 16.7202 19 15.8802 19 14.2V5.8C19 4.11984 19 3.27976 18.673 2.63803C18.3854 2.07354 17.9265 1.6146 17.362 1.32698C16.7202 1 15.8802 1 14.2 1H8C7.07003 1 6.60504 1 6.22354 1.10222C5.18827 1.37962 4.37962 2.18827 4.10222 3.22354C4 3.60504 4 4.07003 4 5M10 6L14 10M14 10L10 14M14 10H1"
+                            stroke="#1D2939"
+                            strokeWidth="1.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                        />
+                        </svg>
+                    </Box>
+
+                </Box>
+            </Box>
+            )}
+            <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none", overflow: 'auto', bgcolor: location.pathname === "/dashboard" && '#e5e7eb' }}>
+                {/* Render nested route (e.g., Dashboard, Profile) */}
+                {/* <Outlet /> */}
+                <Box pb={3}>
+                    {children}
+                </Box>
+            </Paper>
         </Box>
       </Stack>
       {loading && (
