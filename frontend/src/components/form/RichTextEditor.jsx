@@ -33,7 +33,7 @@ const RichTextEditor = ({ formData, onChange, field, disabled, errors, onHistory
                         selector: `#${textEditorId}`,
                         height: 300,
                         plugins: "lists link image code",
-                        toolbar: readonlyFlag ? false : "undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | link image | code",
+                        toolbar: readonlyFlag ? false : "undo redo | formatselect | bold italic | alignleft aligncenter alignright | bullist numlist outdent indent | code",
                         readOnly: readonlyFlag ? 1 : 0,
                         menubar: !(readonlyFlag),
                         setup: (editor) => {
