@@ -6083,7 +6083,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 					}
 				}
 
-                 if(!recordId) {
+        if(!recordId) {
 					await t.rollback();
 					return userSendResponse(res, 400, false, "Record ID is required.");
 				}
