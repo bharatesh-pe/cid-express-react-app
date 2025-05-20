@@ -20,6 +20,7 @@ import TabsComponents from "../form/Tabs";
 import ProfilePicture from "../form/ProfilePicture";
 import api from "../../services/api";
 import TableView from "../table-view/TableView";
+import RichTextEditor from "../form/RichTextEditor";
 
 import "./DynamicForm.css";
 import NumberField from "../form/NumberField";
@@ -1360,6 +1361,14 @@ const DynamicForm = ({
         });
     };
 
+    
+    const handleTextEditorChange = (fieldName, value) => {
+        setFormData((prevData) => ({
+            ...prevData,
+            [fieldName]: value,
+        }));
+    };
+
   //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
   //   console.log(stepperData, "stepperData stepperData")    
   return (
@@ -1781,6 +1790,19 @@ const DynamicForm = ({
                         </div>
                       </Grid>
                     );
+                    case "texteditor":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <RichTextEditor
+                                    field={field}
+                                    formData={formData}
+                                    errors={errors}
+                                    onChange={(html) => handleTextEditorChange(field?.name, html)}
+                                    onHistory={() => showHistory(field.name)}
+                                    readOnly={readOnlyData}
+                                />
+                            </Grid>
+                        );
 
                   case "email":
                     return (
