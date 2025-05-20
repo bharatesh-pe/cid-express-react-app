@@ -1479,3 +1479,7 @@ div::first-letter {
     .sidebarChildContainer .sidebarChildItem.active:last-child::after {
         left: -24px;
     }
+
+    .tox-promotion, .tox-statusbar__branding{
+        display: none !important;
+    }

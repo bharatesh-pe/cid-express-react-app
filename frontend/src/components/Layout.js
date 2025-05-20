@@ -779,7 +779,7 @@ const Layout = ({ children }) => {
                 </Box>
             </Box>
             )}
-            <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none", overflow: 'auto', bgcolor: location.pathname === "/dashboard" && '#e5e7eb' }}>
+            <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none", overflow: 'auto', bgcolor: location.pathname === "/dashboard" && localStorage.getItem("user_id") !== "1" && '#e5e7eb' }}>
                 {/* Render nested route (e.g., Dashboard, Profile) */}
                 {/* <Outlet /> */}
                 <Box pb={3}>
