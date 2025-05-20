@@ -370,5 +370,21 @@
         "type": "tabs",
         "name": "tabs",
         "formType": "Tabs"
+    },
+    {
+        "field_id": 17,
+        "field_name": "texteditor",
+        "created_at": "2025-01-29T06:27:17.102Z",
+        "updated_at": "2025-02-19T11:30:17.756Z",
+        "label": "",
+        "kannada": "",
+        "name": "",
+        "info": "",
+        "required": "",
+        "history": "",
+        "table_display_content": true,
+        "disabled": "",
+        "type": "texteditor",
+        "formType": "texteditor"
     }
 ]

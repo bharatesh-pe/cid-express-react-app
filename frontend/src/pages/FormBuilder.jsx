@@ -14,6 +14,7 @@ import FileInput from '../components/form/FileInput';
 import ProfilePicture from '../components/form/ProfilePicture';
 import AutocompleteField from '../components/form/AutoComplete';
 import TabsComponents from '../components/form/Tabs';
+import RichTextEditor from '../components/form/RichTextEditor';
 
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -77,7 +78,7 @@ const Formbuilder = () => {
     const [fields, setFields] = useState([]);
     const [selectedField, setSelectedField] = useState(null);
     const [selectedDropdwonField, setSelectedDropdownField] = useState(null);
-    const [formData, setFormData] = useState([]);
+    const [formData, setFormData] = useState({});
     const [previewFormData, setPreviewFormData] = useState([]);
     const [selectedLength, setSelectedLength] = useState(0);
     const [loadingRender, setLoadingRender] = useState(false);
@@ -594,6 +595,13 @@ const Formbuilder = () => {
         }
     };
 
+    const handleTextEditorChange = (fieldName, value) => {
+        setFormData((prevData) => ({
+            ...prevData,
+            [fieldName]: value,
+        }));
+    };
+
 
     const reorder = (list, startIndex, endIndex) => {
         const result = Array.from(list);
@@ -657,6 +665,25 @@ const Formbuilder = () => {
                             errors=""
                             onChange={handleChange} // Handle changes
                             onFocus={(e) => { setSelectedField(field) }}
+                            isFocused={field.label == selectedField.label}
+                        />
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
+                    </div>
+                );
+            case "texteditor":
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                        <RichTextEditor
+                            key={field.id}
+                            field={field}
+                            formData={formData}
+                            errors=""
+                            onChange={(html) => handleTextEditorChange(field?.name, html)}
+                            onFocus={(currentField) => { setSelectedField(currentField) }}
                             isFocused={field.label == selectedField.label}
                         />
                         {!existingData &&
