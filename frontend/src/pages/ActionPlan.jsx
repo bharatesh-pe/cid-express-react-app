@@ -514,11 +514,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     const isViewAction = options.is_view_action === true;
                                     let isActionPlan = false;
 
-                                    if (params.row.sys_status === 'IO' && params.row.supervisior_designation_id !== localStorage.getItem('designation_id')) {
+                                    if (params.row.sys_status === 'IO' && params.row.supervisior_designation_id != localStorage.getItem('designation_id')) {
                                         isActionPlan = true;
-                                    } else if ((params.row.sys_status === 'IO' || params.row.sys_status === 'ui_case') &&
-                                        params.row.field_submit_status === '' &&
-                                        params.row.supervisior_designation_id === localStorage.getItem('designation_id')) {
+                                    } else if ((params.row.sys_status === 'IO' || params.row.sys_status === 'ui_case') && params.row.field_submit_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id')) {
                                         isActionPlan = false;
                                     } else if (params.row.field_submit_status === 'submit' || params.row.sys_status === 'IO') {
                                         isActionPlan = true;
@@ -582,12 +580,12 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                             const isViewAction = options.is_view_action === true;
                                             let isActionPlan = false;
 
-                                            if (params.row.sys_status === "IO" && params.row.supervisior_designation_id !== localStorage.getItem("designation_id")) {
+                                            if (params.row.sys_status === "IO" && params.row.supervisior_designation_id != localStorage.getItem("designation_id")) {
                                                 isActionPlan = true;
                                             } else if (
                                                 (params.row.sys_status === "IO" || params.row.sys_status === "ui_case") &&
                                                 params.row.field_submit_status === "" &&
-                                                params.row.supervisior_designation_id === localStorage.getItem("designation_id")
+                                                params.row.supervisior_designation_id == localStorage.getItem("designation_id")
                                             ) {
                                                 isActionPlan = false;
                                             } else if (params.row.field_submit_status === "submit" || params.row.sys_status === "IO") {
