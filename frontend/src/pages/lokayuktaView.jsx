@@ -175,7 +175,9 @@ const LokayuktaView = () => {
         if (tableName && index !== null && index === 0 ) {
             highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
-            onClickHandler = (event) => {event.stopPropagation()};
+            // onClickHandler = (event) => {event.stopPropagation()};
+            onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName)};
+
         }
 
 
@@ -190,6 +192,82 @@ const LokayuktaView = () => {
                 </span>
             </Tooltip>
         );
+    };
+
+
+    const handleTemplateDataView = async (rowData, editData, table_name) => {
+        if (!table_name || table_name === "") {
+            toast.warning("Please Check Table Name", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const viewTemplatePayload = { table_name, id: rowData.id };
+        setLoading(true);
+
+        try {
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData && viewTemplateData.success) {
+                const viewTemplateResponse = await api.post("/templates/viewTemplate", { table_name });
+                if (viewTemplateResponse && viewTemplateResponse.success) {
+
+                    setSelectedRowId(rowData.id);
+                    setSelectedTemplateId(viewTemplateResponse.data.template_id);
+                    setSelectedTemplateName(viewTemplateResponse.data.template_name);
+                    setSelectedTableName(table_name);
+                    setFormFields(viewTemplateResponse.data.fields || []);
+                    setFormStepperData(viewTemplateResponse.data.sections || []);
+                    setInitialFormData(viewTemplateData.data || {});
+                    setReadonlyForm(true);
+                    setEditOnlyForm(editData || false);
+                    setFormOpen(true);
+                } else {
+                    toast.error(viewTemplateResponse.message || "Failed to fetch template.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            } else {
+                toast.error(viewTemplateData.message || "Failed to fetch data.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
     };
 
     const getTableData = async (options, reOpen, noFilters) => {
