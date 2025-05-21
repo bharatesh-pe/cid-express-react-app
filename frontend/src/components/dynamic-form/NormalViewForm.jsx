@@ -480,6 +480,20 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
       setNewFormConfig(updatedFormConfig);
     }
 
+    if (field.name === "field_used_as_evidence") {
+      const updatedFormConfig = newFormConfig.map((fld) => {
+        if (fld.name === "field_reason") {
+          if (selectedValue === "No") {
+            return { ...fld, hide_from_ux: false, required: true };
+          } else if (selectedValue === "Yes") {
+            return { ...fld, hide_from_ux: true, required: false };
+          }
+        }
+        return fld;
+      });
+      setNewFormConfig(updatedFormConfig);
+    }
+
     setFormData(updatedFormData);
 
   }
