@@ -455,50 +455,48 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
   };
 
   const handleAutocomplete = (field, selectedValue) => {
-  let updatedFormData = { ...formData, [field.name]: selectedValue };
-  setSelectedField(field);
 
-  if (field.table) {
-    const updatedFormConfig = newFormConfig.map((data) => {
-      if (
-        data &&
-        data.dependent_table &&
-        data.dependent_table.length > 0 &&
-        data.dependent_table.includes(field.table)
-      ) {
-        if (updatedFormData[data.name] && !data?.disabled) {
-          updatedFormData[data.name] = '';
-        }
-        if (data.options) {
-          return { ...data, options: [] };
+    let updatedFormData = { ...formData, [field.name]: selectedValue };
+    setSelectedField(field);
+
+    if (field.table) {
+      var updatedFormConfig = newFormConfig.map((data) => {
+        if (data && data.dependent_table && data.dependent_table.length > 0 && data.dependent_table.includes(field.table)) {
+
+          if (updatedFormData[data.name] && !data?.disabled) {
+            updatedFormData[data.name] = '';
+          }
+
+          if (data.options) {
+            return { ...data, options: [] };
+          } else {
+            return { ...data };
+          }
+
         } else {
           return { ...data };
         }
-      } else {
-        return { ...data };
-      }
-    });
-    setNewFormConfig(updatedFormConfig);
-  }
+      });
+      setNewFormConfig(updatedFormConfig);
+    }
 
-  if (field.name === "field_used_as_evidence") {
-    const updatedFormConfig = newFormConfig.map((fld) => {
-      if (fld.name === "field_reason") {
-        if (selectedValue === "No") {
-          return { ...fld, hide_from_ux: false, required: true };
-        } else if (selectedValue === "Yes") {
-          return { ...fld, hide_from_ux: true, required: false };
+    if (field.name === "field_used_as_evidence") {
+      const updatedFormConfig = newFormConfig.map((fld) => {
+        if (fld.name === "field_reason") {
+          if (selectedValue === "No") {
+            return { ...fld, hide_from_ux: false, required: true };
+          } else if (selectedValue === "Yes") {
+            return { ...fld, hide_from_ux: true, required: false };
+          }
         }
-      }
-      return fld;
-    });
-    setNewFormConfig(updatedFormConfig);
+        return fld;
+      });
+      setNewFormConfig(updatedFormConfig);
+    }
+
+    setFormData(updatedFormData);
+
   }
-
-  setFormData(updatedFormData);
-};
-
-
 
   const handleCheckBoxChange = (fieldName, fieldCode, selectedValue) => {
     setFormData(prevData => {
