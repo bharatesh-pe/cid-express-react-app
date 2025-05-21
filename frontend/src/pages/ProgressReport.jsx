@@ -142,7 +142,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         }
         const rowIndex = monthwiseData.indexOf(params.row);
         const serialNumber = (currentPage - 1) * pageSize + rowIndex + 1;
-        return serialNumber;
+        return "PR" + serialNumber;
       },
     },
     {
