@@ -12,6 +12,9 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
 import HistoryIcon from '@mui/icons-material/History';
 import SaveIcon from '@mui/icons-material/Save';
+import AssignmentLateIcon from '@mui/icons-material/AssignmentLate';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
+
 import {
   Table,
   TableBody,
@@ -9821,6 +9824,14 @@ const handleOpenExportPopup = async () => {
         setShowFileAttachments(true);
     }
 
+    const setUnAssignedIo = ()=>{
+        setFilterValues(prev => ({
+            ...(prev || {}),
+            field_io_name: ""
+        }));
+        setForceTableLoad((prev) => !prev);
+    }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -9993,6 +10004,29 @@ const handleOpenExportPopup = async () => {
               </>
             )}
 
+            <Button
+                variant="outlined"
+                startIcon={<PersonOffIcon />}
+                onClick={setUnAssignedIo}
+                sx={{
+                    borderColor: '#B0C4DE',
+                    backgroundColor: '#F0F4FF',
+                    color: '#3A4A6B',
+                    height: 38,
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    '&:hover': {
+                        borderColor: '#5B7DB1',
+                        backgroundColor: '#E0ECFF',
+                        color: '#2C3E75'
+                    },
+                    '& .MuiSvgIcon-root': {
+                        color: '#3A4A6B'
+                    }
+                }}
+            >
+                Unassigned IO
+            </Button>
             {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && (
                 <Button
                     onClick={() => getTemplate(table_name)}

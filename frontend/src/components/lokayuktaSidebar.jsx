@@ -10,6 +10,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import HomeIcon from '@mui/icons-material/Home';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
+import Navbar from "./navbar";
 
 const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) => {
 
@@ -22,6 +23,7 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
     const [openRegister, setOpenRegister] = useState(true);
     const [openInvestigation, setOpenInvestigation] = useState(true);
 
+    const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
 
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
@@ -113,8 +115,8 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
             <Box
                 sx={{
                     display: { xs: "none", md: "block" },
-                    width: "253px",
-                    minWidth: "253px",
+                    width: "280px",
+                    minWidth: "280px",
                     overflow: "hidden",
                 }}
             >
@@ -146,9 +148,10 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                         </p>
 
                         <HomeIcon
-                            sx={{ cursor: "pointer", color: "#1D2939", fontSize: '30px', marginLeft: 2 }}
+                            sx={{ cursor: "pointer", color: "#1D2939", fontSize: '30px' }}
                             onClick={() => navigate("/dashboard")}
                         />
+                        <Navbar unreadNotificationCount={notificationCount} />
                     </Box>
 
                     

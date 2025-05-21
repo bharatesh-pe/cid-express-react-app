@@ -267,7 +267,7 @@ export default function Navbar({ unreadNotificationCount }) {
 
         { showAlertPage &&
             <>
-                <Box sx={{ position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0, 0, 0, 0.5)', zIndex: '98', }} />
+                <Box sx={{ position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0, 0, 0, 0.5)', zIndex: '999', }} />
                 <Slide direction="left" in={showAlertPage} mountOnEnter unmountOnExit>
                     <Box
                         inert={loading ? true : false} 
@@ -278,7 +278,7 @@ export default function Navbar({ unreadNotificationCount }) {
                             height: '100%',
                             width: 'calc(100% - 920px)',
                             background: '#F5F5F5',
-                            zIndex: 98,
+                            zIndex: 999,
                             overflow: 'hidden',
                         }}
                     >
