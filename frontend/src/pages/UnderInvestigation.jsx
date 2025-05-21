@@ -1369,6 +1369,9 @@ const monthwiseColumns = [
         }
 
         normalData['ui_case_id'] = selectedRowData.id;
+        if(!approvedByCourt){
+            normalData['sys_status'] = "pt_case";
+        }
         
         formData.append("table_name", ptCaseTableName);
         formData.append("data", JSON.stringify(normalData));
