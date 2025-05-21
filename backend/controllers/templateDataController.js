@@ -8561,6 +8561,25 @@ exports.submitActionPlanPR = async (req, res) => {
             //     action: `Status Updated`,
             //     transaction: t
             // });
+
+            try {
+                // First, update existing matching alerts to "completed"
+                await CaseAlerts.update(
+                    { status: "completed" },
+                    {
+                        where: {
+                            module: "ui_case",
+                            record_id: ui_case_id,
+                            alert_type: "Action Plan IO Submission",
+                            status: "pending"
+                        },
+                        transaction: t
+                    }
+                );
+            }
+            catch (error) {
+                console.error('Error inserting case alert:', error);
+            }
         }
 
 		await t.commit();
