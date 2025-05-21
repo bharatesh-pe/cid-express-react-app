@@ -8440,8 +8440,9 @@ exports.submitActionPlanPR = async (req, res) => {
             const created_by = userId || null;
             const send_to_type = "user";
             const division_id = user_divisio_id|| null;
-            const designation_id = user_designation_id || null;
+            const designation_id = immediate_supervisior_id || null;
             const assigned_io = userId || null;
+            const userID = userId || null;
             
             try {
                 await CaseAlerts.create({
@@ -8460,7 +8461,7 @@ exports.submitActionPlanPR = async (req, res) => {
                 division_id,
                 designation_id,
                 assigned_io,
-                user_id: immediate_supervisior_id || null,
+                user_id:userID,
                 transaction: t 
                 });
             } catch (error) {

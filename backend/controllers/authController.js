@@ -948,7 +948,7 @@ const fetch_dash_count = async (req, res) => {
         const case_modules = ["ui_case", "pt_case", "eq_case"];
         const dashboard_count_details = {};
     
-        const whereClause = {
+        const ioWhereClause = {
             module: { [Op.in]: case_modules },
             status: "pending",
         };
@@ -957,15 +957,15 @@ const fetch_dash_count = async (req, res) => {
         const normalizedUserIds = normalizeValues(allowedUserIds, "string");
     
         if (getDataBasesOnUsers && normalizedUserIds.length > 0) {
-            whereClause[Op.or] = [
+            ioWhereClause[Op.or] = [
             { assigned_io: { [Op.in]: normalizedUserIds } },
             { user_id: { [Op.in]: normalizedUserIds } },
             ];
         } else if (!getDataBasesOnUsers && normalizedDivisionIds.length > 0) {
-            whereClause.division_id = { [Op.in]: normalizedDivisionIds };
+            ioWhereClause.division_id = { [Op.in]: normalizedDivisionIds };
         }
     
-        const no_assign_io = await CaseAlerts.findAll({ where: whereClause });
+        const no_assign_io = await CaseAlerts.findAll({ where: ioWhereClause });
         
         // IO_ALLOCATION_PENDING
         // ACTION_PLAN_PENDING
@@ -1001,6 +1001,26 @@ const fetch_dash_count = async (req, res) => {
             }
             }
         }
+
+        const APWhereClause = {
+            module: 'ui_case',
+            status: "pending",
+            alert_type: "Action Plan IO Submission",
+            send_to_type: "user",
+        };
+        
+        APWhereClause[Op.or] = [
+            { designation_id: { [Op.in]: [String(user_designation_id)] } },
+            { user_id: { [Op.in]: [String(user_id)] } },
+        ];
+        
+        console.log("String(user_id):", String(user_id));
+        
+        const action_plan_pending = await CaseAlerts.findAll({ where: APWhereClause });
+        
+        dashboard_count_details["ACTION_PLAN_PENDING"] = {
+            total_count: action_plan_pending.length,
+        };
     
         return res.status(200).json({
             success: true,
