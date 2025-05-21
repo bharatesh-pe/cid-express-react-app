@@ -966,7 +966,22 @@ const fetch_dash_count = async (req, res) => {
         }
     
         const no_assign_io = await CaseAlerts.findAll({ where: whereClause });
-    
+        
+        // IO_ALLOCATION_PENDING
+        // ACTION_PLAN_PENDING
+        // ACTION_PLAN_OVERDUE
+        // PROGRESS_REPORT_PENDING
+        // PROGRESS_REPORT_OVERDUE
+        // FSL_PF_ALERT
+        // FSL_PF_CRITICAL
+        // FSL_PF_OVERDUE
+        // FSL_OVERDUE_TODAY
+        // CUSTODIAL_CS_ALERT
+        // CUSTODIAL_CS_CRITICAL
+        // CC_PENDENCY
+        // TRIAL_TODAY
+        // NOTICE_41A_PENDING
+
         dashboard_count_details["IO_ALLOCATION_PENDING"] = {
             total_count: no_assign_io.length,
             today_assign_io_count: 0,

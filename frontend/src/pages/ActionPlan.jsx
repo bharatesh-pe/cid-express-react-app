@@ -2491,7 +2491,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 {otherTemplatesTotalRecord} Records
                             </Box>
 
-                            {APIsSubmited && (
+                            {APIsSubmited && !isImmediateSupervisior && (
                                 <Box className="notifyAtTopCaseStyle">
                                     Submission request in progress. Awaiting SP approval.
                                 </Box>
