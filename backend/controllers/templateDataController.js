@@ -3086,7 +3086,18 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     if (filter && typeof filter === "object") {
       Object.entries(filter).forEach(([key, value]) => {
         if (fields[key]) {
-          whereClause[key] = value; // Direct match for foreign key fields
+
+          if (key === "field_io_name" && filter[key] == "") {
+              whereClause[key] = {
+                  [Op.or]: [
+                      '',
+                      { [Op.is]: null }
+                  ]
+              };
+          }
+          else{
+            whereClause[key] = value; // Direct match for foreign key fields
+          }
         }
       });
     }
@@ -3328,9 +3339,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     let progressReportModel = {};
     if(table_name == "cid_under_investigation")
     {
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before fetch progress report execute  UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
         progressReportTableData =  await Template.findOne({ where:{ table_name: "cid_ui_case_progress_report" } });
     
         if (!progressReportTableData) {
@@ -3391,9 +3399,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
                 continue;
             }
             
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before Sequelize progress report execute  UV");
-            console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-
             const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
     
             progressReportModelAttributes[columnName] = {
@@ -3417,9 +3422,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             }
         }
 
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before sequelize.define progress report execute  UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-    
         // Define the model
         progressReportModel = sequelize.define("cid_ui_case_progress_report", progressReportModelAttributes, {
             freezeTableName: true,
@@ -3428,9 +3430,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             updatedAt: "updated_at",
         });
 
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> Before Define association progress report execute  UV");
-        console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
-    
         // Define association (read status)
         progressReportModel.hasOne(db.TemplateUserStatus, {
         foreignKey: 'table_row_id',
@@ -4421,14 +4420,27 @@ exports.caseSysStatusUpdation = async (req, res) => {
     });
 
     let userName = userData?.kgidDetails?.name || null;
-
-    await CaseHistory.create({
-        template_id: tableData.template_id,
-        table_row_id: recordId,
-        user_id: userId,
-        actor_name: userName,
-        action: `Status Updated`,
-    });
+    
+    if (Array.isArray(recordId)) {
+        const historyRecords = recordId.map(id => ({
+            template_id: tableData.template_id,
+            table_row_id: id,
+            user_id: userId,
+            actor_name: userName,
+            action: `Status Updated`,
+        }));
+    
+        await CaseHistory.bulkCreate(historyRecords);
+    } else {
+        await CaseHistory.create({
+            template_id: tableData.template_id,
+            table_row_id: recordId,
+            user_id: userId,
+            actor_name: userName,
+            action: `Status Updated`,
+        });
+    }
+    
 
     if (updatedCount === 0) {
       return userSendResponse(
@@ -8183,11 +8195,6 @@ exports.saveActionPlan = async (req, res) => {
 		});
 
 		let userName = userData?.kgidDetails?.name || null;
-
-        let insertedData = null ;
-        let insertedDataPR = null ;
-        let insertedIO = null;
-        let tableData = null;
 
         console.log(data)
 

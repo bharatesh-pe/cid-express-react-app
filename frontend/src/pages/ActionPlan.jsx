@@ -54,6 +54,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const [toDateValue, setToDateValue] = useState(null);
     const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
     const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false); 
+    const [ImmediateSupervisiorId, setImmediateSupervisiorId] = useState(0); 
     const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
     const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
     const [APIsSubmited, setAPIsSubmited] = useState(false);
@@ -409,7 +410,6 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     let anySubmitAP = true;
                     let isSuperivisor = false;
                     const userDesigId = localStorage.getItem('designation_id');
-
                     if (records && records.length > 0) {
 
                         // Get supervisor-specific records
@@ -417,24 +417,15 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             record => record.supervisior_designation_id == userDesigId
                         );
 
+                        // Assign the first matched supervisor_designation_id (if available)
+                        if (supervisorRecords.length > 0) {
+                            setImmediateSupervisiorId(supervisorRecords[0].supervisior_designation_id);
+                        }
                         
                         let allAPWithOutSupervisorSubmit = false;
 
-
-                        // Check if all supervisor records are NOT submitted
-                        // allAPWithOutSupervisorSubmit = supervisorRecords.length > 0 && supervisorRecords.every(
-                        //     r => r.field_submit_status === "" || r.field_submit_status === null
-                        // );
-                        
-
-
                         for (let i = 0; i < supervisorRecords.length; i++) {
                             const status = supervisorRecords[i]['field_submit_status'];
-                            console.log("checking the loop", i);
-                            console.log("supervisorRecords[i]", supervisorRecords[i]);
-                            console.log("field_submit_status", status);
-                            console.log("condition check", status === "" || status === null);
-                        
                             if (status === "" || status === null) {
                                 allAPWithOutSupervisorSubmit = true;
                                 console.log("Set allAPWithOutSupervisorSubmit to true");
@@ -1950,6 +1941,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         formData.append("data", JSON.stringify(normalData));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
+        formData.append("immediate_supervisior_id", ImmediateSupervisiorId || null);
       
         setLoading(true);
       
@@ -2491,7 +2483,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 {otherTemplatesTotalRecord} Records
                             </Box>
 
-                            {APIsSubmited && (
+                            {APIsSubmited && !isImmediateSupervisior && (
                                 <Box className="notifyAtTopCaseStyle">
                                     Submission request in progress. Awaiting SP approval.
                                 </Box>

@@ -15,6 +15,7 @@ const {
   AlertViewStatus,
   DesignationDivision,
   DesignationDepartment,
+  CaseAlerts,
 } = require("../models");
 const crypto = require("crypto");
 const moment = require("moment");
@@ -932,6 +933,88 @@ const set_user_hierarchy = async (req, res) => {
     }
 };
 
+const fetch_dash_count = async (req, res) => {
+    try {
+        const { user_id, role_id } = req.user;
+        const {
+            user_designation_id,
+            user_division_id,
+            allowedUserIds = [],
+            getDataBasesOnUsers = false,
+            allowedDivisionIds = [],
+            allowedDepartmentIds = [],
+        } = req.body;
+    
+        const case_modules = ["ui_case", "pt_case", "eq_case"];
+        const dashboard_count_details = {};
+    
+        const whereClause = {
+            module: { [Op.in]: case_modules },
+            status: "pending",
+        };
+    
+        const normalizedDivisionIds = normalizeValues(allowedDivisionIds, "string");
+        const normalizedUserIds = normalizeValues(allowedUserIds, "string");
+    
+        if (getDataBasesOnUsers && normalizedUserIds.length > 0) {
+            whereClause[Op.or] = [
+            { assigned_io: { [Op.in]: normalizedUserIds } },
+            { user_id: { [Op.in]: normalizedUserIds } },
+            ];
+        } else if (!getDataBasesOnUsers && normalizedDivisionIds.length > 0) {
+            whereClause.division_id = { [Op.in]: normalizedDivisionIds };
+        }
+    
+        const no_assign_io = await CaseAlerts.findAll({ where: whereClause });
+        
+        // IO_ALLOCATION_PENDING
+        // ACTION_PLAN_PENDING
+        // ACTION_PLAN_OVERDUE
+        // PROGRESS_REPORT_PENDING
+        // PROGRESS_REPORT_OVERDUE
+        // FSL_PF_ALERT
+        // FSL_PF_CRITICAL
+        // FSL_PF_OVERDUE
+        // FSL_OVERDUE_TODAY
+        // CUSTODIAL_CS_ALERT
+        // CUSTODIAL_CS_CRITICAL
+        // CC_PENDENCY
+        // TRIAL_TODAY
+        // NOTICE_41A_PENDING
+
+        dashboard_count_details["IO_ALLOCATION_PENDING"] = {
+            total_count: no_assign_io.length,
+            today_assign_io_count: 0,
+            overdue_aggign_io_count: 0,
+        };
+    
+        const today = new Date().toDateString();
+    
+        for (const row of no_assign_io) {
+            if (row.due_date) {
+            const dueDateStr = new Date(row.due_date).toDateString();
+    
+            if (dueDateStr === today) {
+                dashboard_count_details["IO_ALLOCATION_PENDING"].today_assign_io_count++;
+            } else if (new Date(row.due_date) < new Date()) {
+                dashboard_count_details["IO_ALLOCATION_PENDING"].overdue_aggign_io_count++;
+            }
+            }
+        }
+    
+        return res.status(200).json({
+            success: true,
+            data: dashboard_count_details,
+        });
+    } catch (error) {
+        console.error("Error retrieving dashboard count:", error.message);
+        return res
+            .status(500)
+            .json({ success: false, message: "Internal server error" });
+    }
+};
+  
+
 module.exports = {
   generate_OTP,
   verify_OTP,
@@ -942,4 +1025,16 @@ module.exports = {
   update_pin,
   get_supervisor_id,
   set_user_hierarchy,
+  fetch_dash_count,
 };
+
+
+function normalizeValues(values, expectedType) {
+    return values
+        .filter((v) => v !== null && v !== undefined)
+        .map((v) => {
+        if (expectedType === 'string') return String(v);
+        if (expectedType === 'int') return Number(v);
+        return v;
+        });
+}

@@ -8,6 +8,7 @@ import LogoText from "../Images/cid_logo.png";
 
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import HomeIcon from '@mui/icons-material/Home';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 
 const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) => {
@@ -144,7 +145,10 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                             System
                         </p>
 
-                        <Divider sx={{ marginTop: 1 }} />
+                        <HomeIcon
+                            sx={{ cursor: "pointer", color: "#1D2939", fontSize: '30px', marginLeft: 2 }}
+                            onClick={() => navigate("/dashboard")}
+                        />
                     </Box>
 
                     
