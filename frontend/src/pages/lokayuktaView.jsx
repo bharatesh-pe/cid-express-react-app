@@ -84,6 +84,7 @@ const LokayuktaView = () => {
     // for approval data
 
     const [showApprovalModal, setShowApprovalModal] = useState(false);
+    const [showCaseApprovalModal, setShowCaseApprovalModal] = useState(false);
     const [approvalItemsData, setApprovalItemsData] = useState([]);
     const [readonlyApprovalItems, setReadonlyApprovalItems] = useState(false);
     const [approvalDesignationData, setApprovalDesignationData] = useState([]);
@@ -198,7 +199,6 @@ const LokayuktaView = () => {
 
     const handleTemplateDataView = async (rowData, editData, table_name) => {
 
-        console.log("rowdataaaa", rowData)
         if (!table_name || table_name === "") {
             toast.warning("Please Check Table Name", {
                 position: "top-right",
@@ -285,7 +285,7 @@ const LokayuktaView = () => {
         }
 
         var getTemplatePayload = {
-            table_name: options.table,
+            table_name: options.table || options,
             ui_case_id: ui_case_id,
             case_io_id: rowData?.field_io_name_id || "",
             pt_case_id: pt_case_id,
@@ -405,6 +405,7 @@ const LokayuktaView = () => {
 
                 setFormOpen(false);
                 setShowApprovalModal(false);
+                setShowCaseApprovalModal(false);
 
                 if(reOpen){
                     showAddNewForm();
@@ -541,7 +542,6 @@ const LokayuktaView = () => {
 
     const showAddNewForm = async ()=>{
         
-        console.log("activesidevarr", activeSidebar)
         if(!activeSidebar?.table){
             toast.error("Please Check The Template !", {
                 position: "top-right",
@@ -659,61 +659,152 @@ const LokayuktaView = () => {
         return;
     }
 
-    const showCaseApprovalPage = async (isSave)=>{
-        
-        console.log("active side bar for approval", activeSidebar)
-        setLoading(true);
-        try {
-            const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
-            setLoading(false);
+    const showCaseApprovalPage = async (isSave) => {
+    setLoading(true);
 
-            if (getActionsDetails && getActionsDetails.success) {
+    try {
+        const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
+        setLoading(false);
 
-                setApprovalItemsData(getActionsDetails.data['approval_item']);
-                setApprovalDesignationData(getActionsDetails.data['designation']);
+        if (getActionsDetails && getActionsDetails.success) {
+            const approvalItemsList = getActionsDetails.data['approval_item'] || [];
+            const designationList = getActionsDetails.data['designation'] || [];
 
-                setApprovalFormData({})
+            setApprovalItemsData(approvalItemsList);
+            setApprovalDesignationData(designationList);
+            setApprovalFormData({});
 
-                if(activeSidebar?.approval_items){
-                    caseApprovalOnChange('approval_item', Number(activeSidebar?.approval_items));
-                    setReadonlyApprovalItems(true);
-                }else{
-                    caseApprovalOnChange('approval_item', null);
-                    setReadonlyApprovalItems(false);
-                } 
+            let selectedApprovalItemId = null;
 
-                setShowApprovalModal(true);
+            if (activeSidebar?.approval_items) {
+                selectedApprovalItemId = Number(activeSidebar.approval_items);
+                setReadonlyApprovalItems(true);
             } else {
-    
-                const errorMessage = getActionsDetails.message ? getActionsDetails.message : "Failed to create the template. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
+                const sidebarName = activeSidebar?.name?.trim().toLowerCase();
+
+                if (sidebarName === 'crime investigation') {
+                    const caseUpdationItem = approvalItemsList.find(
+                        item => item.name?.trim().toLowerCase() === 'case updation'
+                    );
+
+                    if (caseUpdationItem) {
+                        selectedApprovalItemId = caseUpdationItem.approval_item_id;
+                    }
+                }
+
+                setReadonlyApprovalItems(false);
             }
-    
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response['data']) {
-                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !',{
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
+            if (selectedApprovalItemId !== null) {
+                caseApprovalOnChange('approval_item', selectedApprovalItemId);
+            } 
+
+            setShowApprovalModal(true);
+        } else {
+            const errorMessage = getActionsDetails.message
+                ? getActionsDetails.message
+                : "Failed to create the template. Please try again.";
+            toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
         }
+    } catch (error) {
+        setLoading(false);
+        const errMsg = error?.response?.data?.message || 'Please Try Again !';
+        toast.error(errMsg, {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
     }
+    };
+
+
+
+    const showMainCaseApprovalPage = async (isSave) => {
+    setLoading(true);
+
+    try {
+        const getActionsDetails = await api.post("/ui_approval/get_ui_case_approvals");
+        setLoading(false);
+
+        if (getActionsDetails && getActionsDetails.success) {
+            const approvalItemsList = getActionsDetails.data['approval_item'] || [];
+            const designationList = getActionsDetails.data['designation'] || [];
+
+            setApprovalItemsData(approvalItemsList);
+            setApprovalDesignationData(designationList);
+            setApprovalFormData({});
+
+            let selectedApprovalItemId = null;
+
+            if (activeSidebar?.approval_items) {
+                selectedApprovalItemId = Number(activeSidebar.approval_items);
+                setReadonlyApprovalItems(true);
+            } else {
+                const sidebarName = activeSidebar?.name?.trim().toLowerCase();
+
+                if (sidebarName === 'crime investigation') {
+
+                    const caseUpdationItem = approvalItemsList.find(
+                        item => item.name?.trim().toLowerCase() === 'case updation'
+                    );
+
+                    if (caseUpdationItem) {
+                        selectedApprovalItemId = caseUpdationItem.approval_item_id;
+                    } 
+                }
+
+                setReadonlyApprovalItems(false);
+            }
+
+            if (selectedApprovalItemId !== null) {
+                caseApprovalOnChange('approval_item', selectedApprovalItemId);
+            } 
+
+            setShowCaseApprovalModal(true);
+        } else {
+            const errorMessage = getActionsDetails.message
+                ? getActionsDetails.message
+                : "Failed to create the template. Please try again.";
+            toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    } catch (error) {
+        setLoading(false);
+        const errMsg = error?.response?.data?.message || 'Please Try Again !';
+        toast.error(errMsg, {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+    }
+    };
+
 
     const caseApprovalOnChange = (name, value)=>{
         setApprovalFormData((prev)=>{
@@ -978,8 +1069,6 @@ const LokayuktaView = () => {
     };
 
     const formUpdate = async (data, formOpen) => {
-        console.log("table_name", table_name)
-        console.log("activesidebar", activeSidebar)
     if (!activeSidebar.table || activeSidebar.table === "") {
         toast.warning("Please Check The Template", {
             position: "top-right",
@@ -1226,8 +1315,6 @@ const LokayuktaView = () => {
     };
 
     const formCaseUpdate = async (data, formOpen) => {
-        console.log("table_name", table_name)
-        console.log("activesidebar", activeSidebar)
     if (!table_name) {
         toast.warning("Please Check The Template", {
             position: "top-right",
@@ -1258,8 +1345,143 @@ const LokayuktaView = () => {
 
     setApprovalSaveCaseData(data);
     setReOpenAddCase(formOpen);
-    showCaseApprovalPage(true);
+    showMainCaseApprovalPage(true);
     };
+
+
+    const handleCaseApprovalWithUpdate = async () => {
+
+        if (!approvalFormData?.approval_item) {
+            toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        if (!approvalFormData?.approved_by) {
+            toast.error("Please Select Designation !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        if (!approvalFormData?.approval_date) {
+            toast.error("Please Select Approval Date !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        if (!approvalFormData?.remarks) {
+            toast.error("Please Enter Comments !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        const formData = new FormData();
+
+        const approvalItems = {
+            module_name: 'Under Investigation',
+            action: activeSidebar.name,
+            id: rowData.id,
+        };
+
+        const approvalData = {
+            approval: approvalFormData,
+            approval_details: approvalItems,
+        };
+
+        formData.append("table_name", table_name);
+
+        const normalData = {};
+        templateFields.forEach((field) => {
+            if (approvalSaveCaseData.hasOwnProperty(field.name)) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (Array.isArray(approvalSaveCaseData[field.name])) {
+                        const files = approvalSaveCaseData[field.name].filter(file => file.filename instanceof File);
+                        files.forEach(file => {
+                            formData.append(field.name, file.filename);
+                        });
+
+                        const fileMeta = files.map(file => ({
+                            ...file,
+                            filename: file.filename.name
+                        }));
+                        formData.append("folder_attachment_ids", JSON.stringify(fileMeta));
+                    }
+                } else {
+                    const value = approvalSaveCaseData[field.name];
+                    normalData[field.name] = Array.isArray(value) ? value.join(",") : value;
+                }
+            }
+        });
+
+        normalData.sys_status = "ui_case";
+        normalData["ui_case_id"] = rowData.id;
+
+        formData.append("data", JSON.stringify(normalData));
+        formData.append("id", tableRowId);
+        formData.append("others_data", JSON.stringify(approvalData));
+        formData.append("transaction_id", `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+        formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
+
+        setLoading(true);
+        try {
+            const response = await api.post("/templateData/updateDataWithApprovalToTemplates", formData);
+            setLoading(false);
+
+            if (response?.success) {
+                toast.success(response.message || "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-success",
+                    onOpen: () => { getTableData(table_name, reOpenAddCase); }
+                });
+                setApprovalSource(null);
+                setRowValueId({});
+            } else {
+                toast.error(response.message || "Failed to update case.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            console.error("Error while updating:", error);
+            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                position: "top-right",
+                autoClose: 3000,
+                className: "toast-error",
+            });
+        }
+    };
+
     const formError = (error)=>{
         console.log(error,"error");
     }
@@ -1485,6 +1707,22 @@ const LokayuktaView = () => {
                 onChange={caseApprovalOnChange}
             />
 
+            <ApprovalModal
+                open={showCaseApprovalModal}
+                onClose={() => {
+                    setShowCaseApprovalModal(false);
+                    setApprovalSource(null);
+                }}
+                onSave={handleCaseApprovalWithUpdate}
+                
+                approvalItem={approvalItemsData}
+                disabledApprovalItems={readonlyApprovalItems}
+        
+                designationData={approvalDesignationData}
+                
+                formData={approvalFormData}
+                onChange={caseApprovalOnChange}
+            />
             {loading && (
                 <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
                     <CircularProgress size={100} />
