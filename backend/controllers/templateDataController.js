@@ -4421,14 +4421,27 @@ exports.caseSysStatusUpdation = async (req, res) => {
     });
 
     let userName = userData?.kgidDetails?.name || null;
-
-    await CaseHistory.create({
-        template_id: tableData.template_id,
-        table_row_id: recordId,
-        user_id: userId,
-        actor_name: userName,
-        action: `Status Updated`,
-    });
+    
+    if (Array.isArray(recordId)) {
+        const historyRecords = recordId.map(id => ({
+            template_id: tableData.template_id,
+            table_row_id: id,
+            user_id: userId,
+            actor_name: userName,
+            action: `Status Updated`,
+        }));
+    
+        await CaseHistory.bulkCreate(historyRecords);
+    } else {
+        await CaseHistory.create({
+            template_id: tableData.template_id,
+            table_row_id: recordId,
+            user_id: userId,
+            actor_name: userName,
+            action: `Status Updated`,
+        });
+    }
+    
 
     if (updatedCount === 0) {
       return userSendResponse(
