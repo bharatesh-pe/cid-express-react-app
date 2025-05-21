@@ -389,7 +389,7 @@ const Dashboard = () => {
                     ))}
                 </Tabs>
 
-                <Box sx={{width: '100px'}}>
+                <Box>
                     <Box
                         sx={{
                             display: "flex",
