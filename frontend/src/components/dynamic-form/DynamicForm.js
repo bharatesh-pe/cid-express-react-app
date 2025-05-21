@@ -95,6 +95,7 @@ const DynamicForm = ({
   ]);
 
   const saveNewRef = useRef(false);
+  const orderCopyFieldMandatory = useRef(false);
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -256,16 +257,7 @@ const DynamicForm = ({
     
     const makeOrderCopyShow = (value) => {
 
-        setNewFormConfig((prevFormConfig) => {
-            const updatedFormConfig = prevFormConfig.map((data) => {
-                if(data.name === "field_order_copy_(_17a_done_)"){
-                    return {...data, hide_from_ux : value }
-                }else{
-                    return data;
-                }
-            });
-            return updatedFormConfig;
-        });
+        orderCopyFieldMandatory.current = value
 
         if (value) {
             delete formData["field_order_copy_(_17a_done_)"];
@@ -346,6 +338,20 @@ const DynamicForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!formData || Object.keys(formData).length === 0) {
+        toast.error("Data is empty", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+        return;
+    }
+
     if(table_name === "cid_under_investigation"){
         var errorActFlag = false;
     
@@ -367,6 +373,22 @@ const DynamicForm = ({
                 className: "toast-error",
             });
             return
+        }
+    }
+
+    if (orderCopyFieldMandatory.current === true) {
+        const result = await Swal.fire({
+            title: 'Order Copy is Empty',
+            text: 'Do you want to proceed without uploading the order copy?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, Proceed',
+            cancelButtonText: 'No, Cancel',
+            reverseButtons: true
+        });
+
+        if (!result.isConfirmed) {
+            return;
         }
     }
 
