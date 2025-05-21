@@ -352,7 +352,9 @@ const DynamicForm = ({
         return;
     }
 
-    if(table_name === "cid_under_investigation"){
+    const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
+
+    if(roleTitle === "admin organization" && table_name === "cid_under_investigation"){
         var errorActFlag = false;
     
         tableActRow.map((element)=>{
@@ -376,7 +378,7 @@ const DynamicForm = ({
         }
     }
 
-    if (orderCopyFieldMandatory.current === true) {
+    if (roleTitle === "admin organization" && orderCopyFieldMandatory.current === true && !formData?.["field_order_copy_(_17a_done_)"]) {
         const result = await Swal.fire({
             title: 'Order Copy is Empty',
             text: 'Do you want to proceed without uploading the order copy?',
