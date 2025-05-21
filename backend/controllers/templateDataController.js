@@ -8163,7 +8163,7 @@ exports.deMergeCaseData = async (req, res) => {
 
 exports.saveActionPlan = async (req, res) => {
 
-    const { table_name, data, others_data , transaction_id } = req.body;
+    const { table_name, data , transaction_id } = req.body;
 
 	// if (user_designation_id === undefined || user_designation_id === null) {
 	// 	return userSendResponse(res, 400, false, "user_designation_id is required.", null);
@@ -8374,7 +8374,7 @@ exports.saveActionPlan = async (req, res) => {
 
 
 exports.submitActionPlanPR = async (req, res) => {
-	const { transaction_id, ui_case_id , isSupervisior } = req.body;
+	const { transaction_id, ui_case_id , isSupervisior , user_divisio_id , user_designation_id , immediate_supervisior_id} = req.body;
 	const { user_id: userId } = req.user;
 
 	if (!transaction_id || !ui_case_id) {
@@ -8428,6 +8428,45 @@ exports.submitActionPlanPR = async (req, res) => {
                     transaction: t,
                 }
             );
+
+            const main_table = "cid_ui_case_action_plan";
+            const record_id = ui_case_id || null;
+            const module = "ui_case";
+            const alert_type = "Action Plan IO Submission";
+            const alert_level = "low";
+            const alert_message = "Please check the action plan and approver it.";
+            const triggered_on = new Date();
+            const status = "pending";
+            const created_by = userId || null;
+            const send_to_type = "user";
+            const division_id = user_divisio_id|| null;
+            const designation_id = immediate_supervisior_id || null;
+            const assigned_io = userId || null;
+            const userID = userId || null;
+            
+            try {
+                await CaseAlerts.create({
+                module,
+                main_table,
+                record_id,
+                alert_type,
+                alert_level,
+                alert_message,
+                triggered_on,
+                resolved_on: null,
+                status,
+                created_by,
+                created_at: new Date(),
+                send_to_type,
+                division_id,
+                designation_id,
+                assigned_io,
+                user_id:userID,
+                transaction: t 
+                });
+            } catch (error) {
+                console.error('Error inserting case alert:', error);
+            }
 
         }
         else
