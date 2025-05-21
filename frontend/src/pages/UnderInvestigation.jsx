@@ -3128,7 +3128,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                 var extraActions = [
                     {
-                        name: "Crime Investigation",
+                        name: "UI Case",
                         caseView : true,
                         viewAction : true
                     },
@@ -8650,7 +8650,8 @@ const handleOpenExportPopup = async () => {
                             stepperData: viewTemplateResponse?.["data"]?.no_of_sections > 0 && viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"].sections : [],
                             template_id : viewTemplateResponse?.["data"]?.template_id,
                             template_name : viewTemplateResponse?.["data"]?.template_name,
-                            table_name: table_name
+                            table_name: table_name,
+                            module : "ui_case"
                         }
 
                         navigate("/caseView", {state: stateObj});

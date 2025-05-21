@@ -107,8 +107,11 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
     };
 
     const validSidebarItems = contentArray?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
-    const registerItem = validSidebarItems.find(item => item.name === "Crime Investigation");
-    const investigationItems = validSidebarItems.filter(item => item.name !== "Crime Investigation");
+
+    const registerItemArray = ["UI Case", "PT Case", "Enquiries"];
+
+    const registerItem = validSidebarItems.find(item => registerItemArray.includes(item.name));
+    const investigationItems = validSidebarItems.filter(item => !registerItemArray.includes(item.name));
 
     return (
         <>
@@ -177,7 +180,7 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                     <List component="div" disablePadding className="sidebarChildContainer">
 
                                         {registerItem ? (
-                                            <Tooltip title={templateName ? templateName : "FIR"} arrow placement="right" key={templateName ? templateName : "FIR"}>
+                                            <Tooltip title={registerItem.name ? registerItem.name : "FIR"} arrow placement="right" key={registerItem.name ? registerItem.name : "FIR"}>
                                                 <ListItem
                                                     sx={{ cursor: "pointer", borderRadius: '4px' }}
                                                     className={`sidebarChildItem lokayuktaSidebarMenus menuColor_1 ${activeSidebar?.name === registerItem.name ? "active" : ""}`}
@@ -201,7 +204,7 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                                             </svg>
                                                         </span>
                                                     )}
-                                                    <ListItemText primary={templateName ? templateName : "FIR"} />
+                                                    <ListItemText primary={registerItem.name ? registerItem.name : "FIR"} />
                                                 </ListItem>
                                             </Tooltip>
                                         ) : (
