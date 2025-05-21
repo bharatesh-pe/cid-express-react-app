@@ -9,6 +9,7 @@ const {
   update_pin,
   get_supervisor_id,
   set_user_hierarchy,
+  fetch_dash_count,
 } = require("../controllers/authController");
 const { validate_token } = require("../helper/validations");
 
@@ -24,5 +25,6 @@ router.post("/verify_OTP_without_pin", verify_OTP_without_pin);
 router.post("/update_pin", update_pin);
 router.post("/get_supervisor_id", [validate_token], get_supervisor_id);
 router.post("/set_user_hierarchy", set_user_hierarchy);
+router.post("/fetch_dash_count" , [validate_token], fetch_dash_count);
 
 module.exports = router;
