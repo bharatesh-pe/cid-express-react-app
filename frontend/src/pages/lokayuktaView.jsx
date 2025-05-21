@@ -115,6 +115,7 @@ const LokayuktaView = () => {
         }
 
         setActiveSidebar(item);
+        setFormOpen(false);
         if(item?.viewAction){
             setTableViewFlag(false);
             setTemplateId(template_id);

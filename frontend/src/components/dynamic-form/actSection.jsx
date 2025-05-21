@@ -147,7 +147,7 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
             showSectionNames.includes(name)
         );
         
-        showOrderCopy(!isMatching)
+        showOrderCopy(isMatching)
     }
 
     useEffect(() => {
