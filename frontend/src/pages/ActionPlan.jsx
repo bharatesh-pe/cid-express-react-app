@@ -421,6 +421,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                         if (supervisorRecords.length > 0) {
                             setImmediateSupervisiorId(supervisorRecords[0].supervisior_designation_id);
                         }
+
                         
                         let allAPWithOutSupervisorSubmit = false;
 
@@ -439,7 +440,11 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                 record.sys_status === "ui_case" &&
                                 record.supervisior_designation_id != userDesigId
                         );
-                    
+
+                        if (ioRecords.length > 0) {
+                            setImmediateSupervisiorId(ioRecords[0].supervisior_designation_id);
+                        }
+
                         // Check if all IO records are NOT submitted
                         const allAPWithOutIOSubmit = ioRecords.length > 0 &&
                             ioRecords.every(
@@ -1725,6 +1730,9 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     };
 
     const handleSubmitAp = async ({ id }) => {
+
+        const user_divisio_id = localStorage.getItem("division_id") || null;
+        const user_designation_id = localStorage.getItem("designation_id") || null;
     
         if (!id || id.length === 0) {
           toast.error("Please select at least one record to submit.", {
@@ -1767,7 +1775,10 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
           const payload = {
             transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
             ui_case_id: id,
-            isSupervisior : isImmediateSupervisior
+            isSupervisior : isImmediateSupervisior,
+            user_designation_id : user_designation_id,
+            user_divisio_id : user_divisio_id,
+            immediate_supervisior_id : ImmediateSupervisiorId || null
           };
       
           try {
