@@ -292,6 +292,7 @@ const Layout = ({ children }) => {
 
         if (data && data.success && data.unreadNotificationCount !== null && data.unreadNotificationCount !== undefined) {
             setNotificationCount(data.unreadNotificationCount);
+            localStorage.setItem("unreadNotificationCount",data.unreadNotificationCount);
         } else {
             setNotificationCount(0);
         }        
@@ -728,6 +729,7 @@ const Layout = ({ children }) => {
                         sx={{ cursor: "pointer", color: "#1D2939", fontSize: '30px', marginLeft: 2 }}
                         onClick={() => navigate("/dashboard")}
                     />
+                    <Navbar unreadNotificationCount={notificationCount} />
                 </Box>
 
                 <Box

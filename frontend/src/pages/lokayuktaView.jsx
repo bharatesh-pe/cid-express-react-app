@@ -1446,26 +1446,25 @@ const LokayuktaView = () => {
             </Box>
 
             {formOpen && (
-                <Box sx={{overflow: 'auto', height: '100vh'}}>
-                <NormalViewForm
-                    table_row_id={selectedRowId}
-                    template_id={selectedTemplateId}
-                    table_name={selectedTableName}
-                    template_name={selectedTemplateName}
-                    readOnly={readonlyForm}
-                    editData={editOnlyForm}
-                    formConfig={formFields}
-                    initialData={initalFormData}
-                    stepperData={formStepperData}
-                    onSubmit={formSubmit}
-                    onUpdate={formUpdate}
-                    onError={formError}
-                    closeForm={closeAddForm}
-                    noPadding={true}
+                <Box sx={{overflow: 'auto', height: '100vh', width: '100%'}}>
+                    <NormalViewForm
+                        table_row_id={selectedRowId}
+                        template_id={selectedTemplateId}
+                        table_name={selectedTableName}
+                        template_name={selectedTemplateName}
+                        readOnly={readonlyForm}
+                        editData={editOnlyForm}
+                        formConfig={formFields}
+                        initialData={initalFormData}
+                        stepperData={formStepperData}
+                        onSubmit={formSubmit}
+                        onUpdate={formUpdate}
+                        onError={formError}
+                        closeForm={closeAddForm}
+                        noPadding={true}
 
-                />
-            </Box>
-
+                    />
+                </Box>
             )}
 
             <ApprovalModal

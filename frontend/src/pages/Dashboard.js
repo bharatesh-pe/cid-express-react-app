@@ -21,6 +21,7 @@ import LogoText from "../Images/cid_logo.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Navbar from "../components/navbar";
 
     const tabLabels = [
         { label: "UI Case", route: "/case/ui_case" },
@@ -254,6 +255,7 @@ const Dashboard = () => {
     const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
     const userName = localStorage.getItem("username");
     const designationName = localStorage.getItem("designation_name");
+    const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
     
     const [loading, setLoading] = useState(false);
     
@@ -366,6 +368,8 @@ const Dashboard = () => {
                         <br />
                         System
                     </Typography>
+
+                    <Navbar unreadNotificationCount={notificationCount} />
                 </Box>
 
                 <Tabs
