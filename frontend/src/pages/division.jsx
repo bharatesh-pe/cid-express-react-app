@@ -200,7 +200,7 @@ const Division = () => {
     };
 
     const divisionColumnData = [
-        { field: 'department', headerName: 'Department', width: 300 },
+        { field: 'department', headerName: 'Wing', width: 300 },
         { field: 'name', headerName: 'Division', width: 200 },
         // { field: 'description', headerName: 'Description', width: 300 },
         {
@@ -401,7 +401,7 @@ const Division = () => {
             error_flag = true;
             setErrorRoleData((prevData) => ({
                 ...prevData,
-                department_id: 'Department selection is required'
+                department_id: 'Wing selection is required'
             }));
         }
 
@@ -517,7 +517,7 @@ const Division = () => {
             error_flag = true;
             setErrorRoleData((prevData) => ({
                 ...prevData,
-                department_id: 'Department selection is required',
+                department_id: 'Wing selection is required',
             }));
         }
 
@@ -801,7 +801,7 @@ const Division = () => {
                         <FormControl fullWidth>
                             <Box sx={{ marginY: "8px" }}>
                             <h4 className="form-field-heading" style={{ color: !!errorRoleData.department_id && '#d32f2f' }}>
-                                    Department
+                                    Wing
                                 </h4>
                                 <Autocomplete
                                     options={departments}
@@ -813,7 +813,7 @@ const Division = () => {
                                         setSelectedRole((prev) => ({ ...prev, department_id: departmentId }));
                                         setAddRoleData((prev) => ({ ...prev, department_id: departmentId }));
                                     }}
-                                    renderInput={(params) => <TextField {...params} label="Select Department" variant="outlined" />}
+                                    renderInput={(params) => <TextField {...params} label="Select Wing" variant="outlined" />}
                                 />                </Box>
 
                             <Box sx={{ marginY: '18px' }}>

@@ -128,7 +128,7 @@ const UserManagement = () => {
     },
     {
       field: "department",
-      headerName: "Department",
+      headerName: "Wing",
       width: 150,
       sortable: true,
       renderCell: (params) => tableCellRender(params, "department"),
@@ -166,7 +166,7 @@ const UserManagement = () => {
         },
         {
             field: "departmentName",
-            headerName: "Departments",
+            headerName: "Wing",
             width: 300,
             sortable: true,
             renderCell: (params) => tableCellRender(params, "departmentName"),
@@ -596,7 +596,7 @@ const UserManagement = () => {
     }
 
     if (!newUser.department || newUser.department.length === 0) {
-        toast.error("Please Check The Department", {
+        toast.error("Please Check The Wing", {
             position: "top-right",
             autoClose: 3000,
             hideProgressBar: false,

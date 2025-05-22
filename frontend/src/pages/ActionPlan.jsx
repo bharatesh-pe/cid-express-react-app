@@ -462,12 +462,12 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     
                         // APisSubmited logic with clear grouping
                         APisSubmited = records.every(record =>
-                            record.sys_status === "ui_case" ||
-                            (
+                            // record.sys_status === "ui_case" ||
+                            // (
                                 record.sys_status === "IO" &&
                                 (record.field_submit_status === "" || record.field_submit_status === null) &&
                                 record.supervisior_designation_id != userDesigId
-                            )
+                            // )
                         );
                     
                     } else {
