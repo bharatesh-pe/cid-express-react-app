@@ -42,6 +42,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import ActTable from './actSection';
+import RichTextEditor from '../form/RichTextEditor';
 
 const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -1267,6 +1268,13 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
         });
     };
 
+    const handleTextEditorChange = (fieldName, value) => {
+        setFormData((prevData) => ({
+            ...prevData,
+            [fieldName]: value,
+        }));
+    };
+
 //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
 //   console.log(stepperData, "stepperData stepperData")
   return (
@@ -1468,6 +1476,19 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                           />
                         </div>
                       </Grid>
+                    );
+                    case "texteditor":
+                    return (
+                        <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                            <RichTextEditor
+                                field={field}
+                                formData={formData}
+                                errors={errors}
+                                onChange={(html) => handleTextEditorChange(field?.name, html)}
+                                onHistory={() => showHistory(field.name)}
+                                readOnly={readOnlyData}
+                            />
+                        </Grid>
                     );
 
                   case 'email':
