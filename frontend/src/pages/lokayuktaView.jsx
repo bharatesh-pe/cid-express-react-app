@@ -680,20 +680,6 @@ const LokayuktaView = () => {
             if (activeSidebar?.approval_items) {
                 selectedApprovalItemId = Number(activeSidebar.approval_items);
                 setReadonlyApprovalItems(true);
-            } else {
-                const sidebarName = activeSidebar?.name?.trim().toLowerCase();
-
-                if (sidebarName === 'crime investigation') {
-                    const caseUpdationItem = approvalItemsList.find(
-                        item => item.name?.trim().toLowerCase() === 'case updation'
-                    );
-
-                    if (caseUpdationItem) {
-                        selectedApprovalItemId = caseUpdationItem.approval_item_id;
-                    }
-                }
-
-                setReadonlyApprovalItems(false);
             }
             if (selectedApprovalItemId !== null) {
                 caseApprovalOnChange('approval_item', selectedApprovalItemId);
@@ -754,9 +740,6 @@ const LokayuktaView = () => {
                 selectedApprovalItemId = Number(activeSidebar.approval_items);
                 setReadonlyApprovalItems(true);
             } else {
-                const sidebarName = activeSidebar?.name?.trim().toLowerCase();
-
-                if (sidebarName === 'crime investigation') {
 
                     const caseUpdationItem = approvalItemsList.find(
                         item => item.name?.trim().toLowerCase() === 'case updation'
@@ -765,7 +748,6 @@ const LokayuktaView = () => {
                     if (caseUpdationItem) {
                         selectedApprovalItemId = caseUpdationItem.approval_item_id;
                     } 
-                }
 
                 setReadonlyApprovalItems(false);
             }
