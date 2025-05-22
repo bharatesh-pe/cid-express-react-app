@@ -236,7 +236,7 @@ import Navbar from "../components/navbar";
             "actions" : [
                 "Day 10–20",
                 "Day 20–30",
-                "Beyond Day 30"
+                "Beyond 30 Days"
             ]
         },
         "Custodial Cases for Chargesheet": {
