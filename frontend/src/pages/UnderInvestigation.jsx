@@ -2894,7 +2894,8 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
+                        "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -2991,14 +2992,58 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         {
                           field: "field_io_name",
                           headerName: "Assign To IO",
-                          width: 200,
+                          width: 150,
                           resizable: true,
                           cellClassName: 'justify-content-start',
                           renderHeader: (params) => (
                               tableHeaderRender(params, "field_io_name")
                           ),
                           renderCell: renderCellFunc("field_io_name", ),
-                      },
+                        },
+                        {
+                            field: "field_name_of_the_police_station",
+                            headerName: "Police Station",
+                            width: 200,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_name_of_the_police_station")
+                            ),
+                            renderCell: renderCellFunc("field_name_of_the_police_station", ),
+                        },
+                        {
+                            field: "field_division",
+                            headerName: "Divisions",
+                            width: 200,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_division")
+                            ),
+                            renderCell: renderCellFunc("field_division", ),
+                        },
+                        {
+                            field: "field_case/enquiry_keyword",
+                            headerName: "Keyword",
+                            width: 200,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_case/enquiry_keyword")
+                            ),
+                            renderCell: renderCellFunc("field_case/enquiry_keyword", ),
+                        },
+                        {
+                            field: "field_date_of_taking_over_by_cid",
+                            headerName: "CID Take over date",
+                            width: 200,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_date_of_taking_over_by_cid")
+                            ),
+                            renderCell: renderCellFunc("field_date_of_taking_over_by_cid", ),
+                        },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -8651,7 +8696,8 @@ const handleOpenExportPopup = async () => {
                             template_id : viewTemplateResponse?.["data"]?.template_id,
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
-                            module : "ui_case"
+                            module : "ui_case",
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false
                         }
 
                         navigate("/caseView", {state: stateObj});
@@ -10013,19 +10059,19 @@ const handleOpenExportPopup = async () => {
                 startIcon={<PersonOffIcon />}
                 onClick={setUnAssignedIo}
                 sx={{
-                    borderColor: '#B0C4DE',
-                    backgroundColor: '#F0F4FF',
-                    color: '#3A4A6B',
+                    borderColor: '#eb2f06',
+                    backgroundColor: '#FFF5F5',
+                    color: '#eb2f06',
                     height: 38,
                     fontWeight: 500,
                     textTransform: 'uppercase',
                     '&:hover': {
-                        borderColor: '#5B7DB1',
-                        backgroundColor: '#E0ECFF',
-                        color: '#2C3E75'
+                        borderColor: '#e55039',
+                        backgroundColor: '#FFE8E8',
+                        color: '#e55039'
                     },
                     '& .MuiSvgIcon-root': {
-                        color: '#3A4A6B'
+                        color: '#eb2f06'
                     }
                 }}
             >
@@ -10214,7 +10260,7 @@ const handleOpenExportPopup = async () => {
                   }}
                   mt={1}
                 >
-                  Clear Filter
+                  View All / Clear Filter
                 </Typography>
               )}
             </Box>
@@ -10897,7 +10943,7 @@ const handleOpenExportPopup = async () => {
                             }}
                             mt={1}
                         >
-                            Clear Filter
+                            View All / Clear Filter
                         </Typography>
                     )}
                     </Box>
@@ -11025,7 +11071,7 @@ const handleOpenExportPopup = async () => {
                             }}
                             mt={1}
                         >
-                            Clear Filter
+                            View All / Clear Filter
                         </Typography>
                     )}
                     </Box>
@@ -12230,7 +12276,7 @@ const handleOpenExportPopup = async () => {
                                             }}
                                             mt={1}
                                         >
-                                            Clear Filter
+                                            View All / Clear Filter
                                         </Typography>
                                     )}
                                 </Box>

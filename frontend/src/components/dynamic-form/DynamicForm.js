@@ -380,7 +380,7 @@ const DynamicForm = ({
 
     if (roleTitle === "admin organization" && orderCopyFieldMandatory.current === true && !formData?.["field_order_copy_(_17a_done_)"]) {
         const result = await Swal.fire({
-            title: 'Order Copy is Empty',
+            title: 'Order copy has not been uploaded',
             text: 'Do you want to proceed without uploading the order copy?',
             icon: 'warning',
             showCancelButton: true,
@@ -1557,26 +1557,28 @@ const DynamicForm = ({
                     >
                         {["cid_under_investigation", "cid_pending_trail" , "cid_enquiries"].includes(table_name) ? "Register Case" : "Save"}
                     </Button>
-                    <Button
-                        onClick={() =>{
-                            saveNewRef.current = true;
-                            formButtonRef &&
-                            formButtonRef.current &&
-                            formButtonRef.current.click()
-                        }}
-                        sx={{
-                            background: "#0167F8",
-                            borderRadius: "8px",
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            color: "#FFFFFF",
-                            padding: "6px 16px",
-                        }}
-                        className="Roboto GreenFillBtn"
-                        variant="contained"
-                    >
-                        Save & New
-                    </Button>
+                    {!["cid_under_investigation", "cid_pending_trail" , "cid_enquiry"].includes(table_name) &&
+                        <Button
+                            onClick={() =>{
+                                saveNewRef.current = true;
+                                formButtonRef &&
+                                formButtonRef.current &&
+                                formButtonRef.current.click()
+                            }}
+                            sx={{
+                                background: "#0167F8",
+                                borderRadius: "8px",
+                                fontSize: "14px",
+                                fontWeight: "500",
+                                color: "#FFFFFF",
+                                padding: "6px 16px",
+                            }}
+                            className="Roboto GreenFillBtn"
+                            variant="contained"
+                        >
+                            Save & New
+                        </Button>
+                    }
                 </>
               )
             )}

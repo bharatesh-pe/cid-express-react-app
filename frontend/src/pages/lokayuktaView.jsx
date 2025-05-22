@@ -26,7 +26,7 @@ const LokayuktaView = () => {
 
     const navigate = useNavigate();
     const { state } = useLocation();
-    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module } = state || {};
+    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly } = state || {};
     const [loading, setLoading] = useState(false);
     
     const [activeSidebar, setActiveSidebar] = useState(null);
@@ -112,6 +112,22 @@ const LokayuktaView = () => {
 
         if(!item){
             return false;
+        }
+                
+        if (overAllReadonly) {
+
+            const registerItemArray = ["UI Case", "PT Case", "Enquiries"];
+
+            if(registerItemArray.includes(item.name)){
+                return;
+            }
+
+            Swal.fire({
+                text: 'IO not found. You are not allowed to perform any actions.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
         }
 
         setActiveSidebar(item);
