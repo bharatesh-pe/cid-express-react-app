@@ -2321,7 +2321,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                 display: "flex",
                                 alignItems: "start",
                                 justifyContent: "space-between",
-                                mb: 2
+                                mb: 2,
                             }}
                         >
                             <Box
@@ -2392,7 +2392,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                                 }
                                             }}
                                             sx={{
-                                                width: '350px',
+                                                width: '250px',
                                                 borderRadius: '6px',
                                                 '& .MuiInputBase-input::placeholder': {
                                                     color: '#475467',
@@ -2420,6 +2420,15 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     </Box>
 
 
+                                    <Box
+                                    sx={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: 1.5,
+                                        justifyContent: 'flex-end',
+                                        marginLeft: 'auto',
+                                    }}
+                                    >
                                     {!viewModeOnly && (
                                         <Button
                                             variant="outlined"
@@ -2460,10 +2469,15 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                             handleSubmitPF({ id: selectedRowData?.id, selectedIds });
                                         }}
                                         disabled={showSubmitPFButton}
+                                        sx={{
+                                            marginLeft: 'auto',
+                                            mr: 3,
+                                            }}
                                     >
                                         Submit
                                     </Button>
                                 </Box>
+                                </Box>     
                             </Box>
                         </Box>
 
