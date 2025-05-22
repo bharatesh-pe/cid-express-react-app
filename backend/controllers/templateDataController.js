@@ -8443,6 +8443,8 @@ exports.submitActionPlanPR = async (req, res) => {
             const designation_id = immediate_supervisior_id || null;
             const assigned_io = userId || null;
             const userID = userId || null;
+            const due_date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
             
             try {
                 await CaseAlerts.create({
@@ -8452,6 +8454,7 @@ exports.submitActionPlanPR = async (req, res) => {
                 alert_type,
                 alert_level,
                 alert_message,
+                due_date,
                 triggered_on,
                 resolved_on: null,
                 status,

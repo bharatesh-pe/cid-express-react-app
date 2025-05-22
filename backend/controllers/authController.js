@@ -982,25 +982,40 @@ const fetch_dash_count = async (req, res) => {
         // TRIAL_TODAY
         // NOTICE_41A_PENDING
 
-        dashboard_count_details["IO_ALLOCATION_PENDING"] = {
+        dashboard_count_details["IO_ALLOCATION"] = {
+            label: "Case IO Allocation",
+            divider: 2,
+            divider_details: {
+                "24_hrs": {
+                    name: "24 hrs",
+                    count: 0,
+                    record_id:[]
+                },
+                "over_due": {
+                    name: "Over Due",
+                    count: 0,
+                    record_id:[]
+                }
+            },
             total_count: no_assign_io.length,
-            today_assign_io_count: 0,
-            overdue_aggign_io_count: 0,
         };
-    
-        const today = new Date().toDateString();
-    
+        
+        const todayStr = new Date().toDateString();
         for (const row of no_assign_io) {
             if (row.due_date) {
-            const dueDateStr = new Date(row.due_date).toDateString();
-    
-            if (dueDateStr === today) {
-                dashboard_count_details["IO_ALLOCATION_PENDING"].today_assign_io_count++;
-            } else if (new Date(row.due_date) < new Date()) {
-                dashboard_count_details["IO_ALLOCATION_PENDING"].overdue_aggign_io_count++;
-            }
+                const dueDate = new Date(row.due_date);
+                const dueDateStr = dueDate.toDateString();
+        
+                if (dueDateStr === todayStr) {
+                    dashboard_count_details["IO_ALLOCATION"].divider_details['24_hrs'].count++;
+                    dashboard_count_details["IO_ALLOCATION"].divider_details['24_hrs'].record_id.push(row.record_id);
+                } else if (dueDate < new Date()) {
+                    dashboard_count_details["IO_ALLOCATION"].divider_details['over_due'].count++;
+                    dashboard_count_details["IO_ALLOCATION"].divider_details['over_due'].record_id.push(row.record_id);
+                }
             }
         }
+        
 
         const APWhereClause = {
             module: 'ui_case',
@@ -1017,10 +1032,41 @@ const fetch_dash_count = async (req, res) => {
         console.log("String(user_id):", String(user_id));
         
         const action_plan_pending = await CaseAlerts.findAll({ where: APWhereClause });
-        
-        dashboard_count_details["ACTION_PLAN_PENDING"] = {
+
+        dashboard_count_details["ACTION_PLAN"] = {
+            label: "Action Plan",
+            divider: 2,
+            divider_details: {
+                "need_to_approve": {
+                    name: "Need to Approve",
+                    count: 0,
+                    record_id:[]
+                    
+                },
+                "over_due": {
+                    name: "Over Due",
+                    count: 0,
+                    record_id:[]
+                }
+            },
             total_count: action_plan_pending.length,
         };
+
+        for (const row of action_plan_pending) {
+            if (row.due_date) {
+                const dueDate = new Date(row.due_date);
+                const dueDateStr = dueDate.toDateString();
+        
+                if (dueDate > new Date()) {
+                    dashboard_count_details["ACTION_PLAN"].divider_details['need_to_approve'].count++;
+                    dashboard_count_details["ACTION_PLAN"].divider_details['need_to_approve'].record_id.push(row.record_id);
+                }   
+                else if (dueDate < new Date()) {
+                    dashboard_count_details["ACTION_PLAN"].divider_details['over_due'].count++;
+                    dashboard_count_details["ACTION_PLAN"].divider_details['over_due'].record_id.push(row.record_id);
+                }
+            }
+        }
     
         return res.status(200).json({
             success: true,
