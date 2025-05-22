@@ -108,6 +108,10 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
                     return null
                 }
 
+                if((!option?.field && option?.table) || option?.caseView){
+                    return null
+                }
+
                 return (
                     <MenuItem key={index} className='actionHoverOnTable' onClick={() => handleHoverOptionClick(option)} sx={{display: 'flex', alignItems: 'start', height: '40px'}}
                     disabled={selectedRow?.field_io_name == null && option?.name.toLowerCase() !== "assign to io"}

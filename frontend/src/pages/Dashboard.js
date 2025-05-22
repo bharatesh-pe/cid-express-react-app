@@ -35,7 +35,7 @@ import Navbar from "../components/navbar";
 
     const jobData = [
         {
-            title: "Case IO Allocation Pending",
+            title: "Case IO Allocation",
             totalcase:100,
             stages: [
                 { days: "30", count: 87 },
@@ -45,7 +45,7 @@ import Navbar from "../components/navbar";
             ],
         },
         {
-            title: "Action Plans Approval Pending",
+            title: "Action Plans Approval",
             totalcase:67,
             stages: [
                 { days: "30", count: 87 },
@@ -55,7 +55,7 @@ import Navbar from "../components/navbar";
             ],
         },
         {
-            title: "Progress Reports Pending",
+            title: "Progress Reports",
             totalcase:22,
             stages: [
                 { days: "30", count: 87 },
@@ -95,7 +95,7 @@ import Navbar from "../components/navbar";
             ],
         },
         {
-            title: "41A Notice Approvals Pending", 
+            title: "41A Notice Approvals", 
             totalcase:70,
             stages: [
                 { days: "30", count: 87 },
@@ -135,7 +135,7 @@ import Navbar from "../components/navbar";
             ],
         },
         {
-            title: "PF Pendency to FSL", 
+            title: "PF Send to FSL", 
             totalcase:70,
             stages: [
                 { days: "30", count: 87 },
@@ -217,23 +217,30 @@ import Navbar from "../components/navbar";
 
 
     const bottomActions = {
+        "Case IO Allocation" : {
+            "actions" : [
+                "24 Hrs",
+                "Over Due"
+            ]
+        },
         "Overdue Actions" : {
             "colorCode" : true,
             "actions" : [
-                "AP Pending",
-                "PR Pending",
+                "Action Plan",
+                "Progress Report",
                 "Due Date Missed"
             ]
         },
-        "PF Pendency to FSL" : {
+        "PF Send to FSL" : {
             "colorCode" : true,
             "actions" : [
-                "Beyond Day 30",
+                "Day 10–20",
                 "Day 20–30",
-                "Day 10–20"
+                "Beyond Day 30"
             ]
         },
         "Custodial Cases for Chargesheet": {
+            "colorCode" : true,
             "actions" : [
                 "30th Day from Arrest",
                 "45th Day"
@@ -459,7 +466,7 @@ const Dashboard = () => {
                     elevation={6}
                     onClick={() => navigate(tabLabels?.[activeTab]?.route)}
                     sx={{
-                        width: bottomActions && bottomActions?.[job.title]?.actions ? 405 : 300,
+                        width: bottomActions && bottomActions?.[job.title]?.colorCode ? 405 : 300,
                         maxHeight: 130,
                         minHeight: 130,
                         borderRadius: 3,
