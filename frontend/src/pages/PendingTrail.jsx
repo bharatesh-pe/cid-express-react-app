@@ -1333,7 +1333,8 @@ const UnderInvestigation = () => {
                     const excludedKeys = [
                         "created_at", "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no", "field_io_name"
+                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cc_no./sc_no", "field_io_name",
+                        "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -1399,17 +1400,50 @@ const UnderInvestigation = () => {
                             ),
                             renderCell: renderCellFunc("field_cc_no./sc_no", 0),
                         },
-                        {
-                          field: "field_io_name",
-                          headerName: "IO Name",
-                          width: 130,
-                          resizable: true,
-                          cellClassName: 'justify-content-start',
-                          renderHeader: (params) => (
-                              tableHeaderRender(params, "field_io_name")
-                          ),
-                          renderCell: renderCellFunc("field_io_name", 0),
-                      },
+                            {
+                                field: "field_io_name",
+                                headerName: "IO Name",
+                                width: 130,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_io_name")
+                                ),
+                                renderCell: renderCellFunc("field_io_name"),
+                            },
+                            {
+                                field: "field_name_of_the_police_station",
+                                headerName: "Police Station",
+                                width: 200,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_name_of_the_police_station")
+                                ),
+                                renderCell: renderCellFunc("field_name_of_the_police_station"),
+                            },
+                            {
+                                field: "field_division",
+                                headerName: "Divisions",
+                                width: 200,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_division")
+                                ),
+                                renderCell: renderCellFunc("field_division"),
+                            },
+                            {
+                                field: "field_case/enquiry_keyword",
+                                headerName: "Keyword",
+                                width: 200,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_case/enquiry_keyword")
+                                ),
+                                renderCell: renderCellFunc("field_case/enquiry_keyword"),
+                            },
                         ...Object.keys(data[0])
                             .filter((key) => !excludedKeys.includes(key))
                             .map((key) => ({
@@ -7094,7 +7128,7 @@ const UnderInvestigation = () => {
                   }}
                   mt={1}
                 >
-                  Clear Filter
+                  View All / Clear Filter
                 </Typography>
               )}
             </Box>
@@ -7450,7 +7484,7 @@ const UnderInvestigation = () => {
                             }}
                             mt={1}
                         >
-                            Clear Filter
+                            View All / Clear Filter
                         </Typography>
                     )}
                     </Box>
@@ -7528,7 +7562,7 @@ const UnderInvestigation = () => {
                             }}
                             mt={1}
                         >
-                            Clear Filter
+                            View All / Clear Filter
                         </Typography>
                     )}
                     </Box>
@@ -8212,7 +8246,7 @@ const UnderInvestigation = () => {
                                             }}
                                             mt={1}
                                         >
-                                            Clear Filter
+                                            View All / Clear Filter
                                         </Typography>
                                     )}
                                 </Box>
