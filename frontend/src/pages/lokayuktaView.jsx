@@ -860,9 +860,9 @@ const LokayuktaView = () => {
         const formData = new FormData();
 
         var approvalItems = {
-            module_name : 'Under Investigation',
+            module_name : template_name,
             action :activeSidebar.name,
-            type: 'ui_case'
+            type:  module ? module : "ui_case"
         }
 
         var approvalData = {
@@ -912,8 +912,18 @@ const LokayuktaView = () => {
             }
         });
 
-        normalData.sys_status = "ui_case";
-        normalData["ui_case_id"] = rowData.id;
+        normalData.sys_status = module ? module : "ui_case";
+        
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        normalData["ui_case_id"] = ui_case_id;
+        normalData["pt_case_id"] = pt_case_id;
 
         formData.append("data", JSON.stringify(normalData));
         formData.append("others_data", JSON.stringify(approvalData));
@@ -994,8 +1004,19 @@ const LokayuktaView = () => {
             }
         });
 
-        normalData.sys_status = "ui_case";
-        normalData["ui_case_id"] = rowData.id;
+        normalData.sys_status = module ? module : "ui_case";
+
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        normalData["ui_case_id"] = ui_case_id;
+        normalData["pt_case_id"] = pt_case_id;
+
         var othersData = {};
         formData.append("table_name", activeSidebar.table);
         formData.append("data", JSON.stringify(normalData));
@@ -1148,7 +1169,7 @@ const LokayuktaView = () => {
         const formData = new FormData();
 
         const approvalItems = {
-            module_name: 'Under Investigation',
+            module_name: template_name,
             action: activeSidebar.name,
             id: rowData.id,
         };
@@ -1182,8 +1203,18 @@ const LokayuktaView = () => {
             }
         });
 
-        normalData.sys_status = "ui_case";
-        normalData["ui_case_id"] = rowData.id;
+        normalData.sys_status = module ? module : "ui_case";
+
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        normalData["ui_case_id"] = ui_case_id;
+        normalData["pt_case_id"] = pt_case_id;
 
         formData.append("data", JSON.stringify(normalData));
         formData.append("id",rowValueId.id);
@@ -1260,8 +1291,18 @@ const LokayuktaView = () => {
             }
         });
 
-        normalData.sys_status = "ui_case";
-        normalData["ui_case_id"] = rowData.id;
+        normalData.sys_status = module ? module : "ui_case";
+        
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        normalData["ui_case_id"] = ui_case_id;
+        normalData["pt_case_id"] = pt_case_id;
 
         formData.append("table_name", activeSidebar.table);
         formData.append("data", JSON.stringify(normalData));
@@ -1389,7 +1430,7 @@ const LokayuktaView = () => {
         const formData = new FormData();
 
         const approvalItems = {
-            module_name: 'Under Investigation',
+            module_name: template_name,
             action: activeSidebar.name,
             id: rowData.id,
         };
@@ -1424,8 +1465,18 @@ const LokayuktaView = () => {
             }
         });
 
-        normalData.sys_status = "ui_case";
-        normalData["ui_case_id"] = rowData.id;
+        normalData.sys_status = module ? module : "ui_case";
+
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
+        normalData["ui_case_id"] = ui_case_id;
+        normalData["pt_case_id"] = pt_case_id;
 
         formData.append("data", JSON.stringify(normalData));
         formData.append("id", tableRowId);
