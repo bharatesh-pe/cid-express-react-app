@@ -5344,7 +5344,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 const main_table = table_name;
                 const record_id = insertedId;
                 const module = insertedType;
-                const alert_type = "Assign IO";
+                const alert_type = "IO_ALLOCATION";
                 const alert_level = "low";
                 const alert_message = "Please assign an IO to this case";
               
@@ -8432,7 +8432,7 @@ exports.submitActionPlanPR = async (req, res) => {
             const main_table = "cid_ui_case_action_plan";
             const record_id = ui_case_id || null;
             const module = "ui_case";
-            const alert_type = "Action Plan IO Submission";
+            const alert_type = "ACTION_PLAN";
             const alert_level = "low";
             const alert_message = "Please check the action plan and approver it.";
             const triggered_on = new Date();
@@ -8573,7 +8573,7 @@ exports.submitActionPlanPR = async (req, res) => {
                         where: {
                             module: "ui_case",
                             record_id: ui_case_id,
-                            alert_type: "Action Plan IO Submission",
+                            alert_type: "ACTION_PLAN",
                             status: "pending"
                         },
                         transaction: t
