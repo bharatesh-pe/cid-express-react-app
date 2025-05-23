@@ -5595,6 +5595,33 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						{ where: { id: recordId }, transaction: t }
 					);
 
+                  
+                    if(otherParsedData.field_updation) {
+                        const updates = {};
+                        for (const [key, value] of Object.entries(otherParsedData.field_updation)) {
+                            updates[key] = value;
+                        }
+                    
+                        const [fieldUpdateCount] = await OtherModel.update(
+                            updates,
+                            { where: { id: recordId }, transaction: t }
+                        );
+                    
+                        if (fieldUpdateCount === 0) {
+                            await t.rollback();
+                            return userSendResponse(res, 400, false, "Field update failed or no fields were changed.");
+                        }
+                    
+                        // await CaseHistory.create({
+                        //     template_id: otherTableData.template_id,
+                        //     table_row_id: recordId,
+                        //     user_id: userId,
+                        //     actor_name: userName,
+                        //     action: `Field(s) Updated: ${Object.keys(updates).join(", ")}`,
+                        //     transaction: t
+                        // });
+                    }
+
                     await CaseHistory.create({
                         template_id: otherTableData.template_id,
                         table_row_id: recordId,
@@ -5603,6 +5630,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                         action: `Status Updated`,
                         transaction: t
                     });
+                    
 
 					if (updatedCount === 0) {
 						await t.rollback();
