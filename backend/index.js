@@ -6,6 +6,7 @@ const path = require("path");
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
+require('./controllers/monthlyAlertCronJob');  // Load cron jobs
 
 const routes = require('./routes/index');
 //const redisClient = require('./config/redisConfig');

@@ -1,14 +1,17 @@
 const cron = require("node-cron");
 const runMonthlyAlertCron = require("./cron-progress-report-alert");
 
-// cron.schedule("* * * * *", async () => {
-//     console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
-//     await runMonthlyAlertCron();
-// }, {
-//     scheduled: true,
-//     timezone: "Asia/Kolkata"
-// });
 
+//To run the cron every single minute
+cron.schedule("* * * * *", async () => {
+    console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
+    await runMonthlyAlertCron.runMonthlyAlertCronAP();
+}, {
+    scheduled: true,
+    timezone: "Asia/Kolkata"
+});
+
+//sample time set 
 // cron.schedule("0 9 * * *", async () => {
 //     console.log("Running Daily 9 AM Alert Cron Job at", new Date().toISOString());
 //     await runMonthlyAlertCron();
@@ -26,11 +29,20 @@ const runMonthlyAlertCron = require("./cron-progress-report-alert");
 // │ │ │ │ │
 // 0  9  * * *
 
-cron.schedule("08 12 * * *", async () => {
-    console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
-    await runMonthlyAlertCron();
-}, {
-    scheduled: true,
-    timezone: "Asia/Kolkata"
-});
+// cron.schedule("0 0 * * *", async () => {
+//     console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
+//     await runMonthlyAlertCronPR();
+// }, {
+//     scheduled: true,
+//     timezone: "Asia/Kolkata"
+// });
+
+
+// cron.schedule("0 0 * * *", async () => {
+//     console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
+//     await runMonthlyAlertCronAP();
+// }, {
+//     scheduled: true,
+//     timezone: "Asia/Kolkata"
+// });
 
