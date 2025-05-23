@@ -27,6 +27,13 @@ const LokayuktaView = () => {
     const navigate = useNavigate();
     const { state } = useLocation();
     const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly } = state || {};
+
+    useEffect(()=>{
+        if(!rowData){
+            navigate("/dashboard");
+        }
+    },[]);
+
     const [loading, setLoading] = useState(false);
     
     const [activeSidebar, setActiveSidebar] = useState(null);
