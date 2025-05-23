@@ -3,13 +3,13 @@ const runMonthlyAlertCron = require("./cron-progress-report-alert");
 
 
 //To run the cron every single minute
-cron.schedule("* * * * *", async () => {
-    console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
-    await runMonthlyAlertCron.runMonthlyAlertCronAP();
-}, {
-    scheduled: true,
-    timezone: "Asia/Kolkata"
-});
+// cron.schedule("* * * * *", async () => {
+//     console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
+//     await runMonthlyAlertCron.runMonthlyAlertCronAP();
+// }, {
+//     scheduled: true,
+//     timezone: "Asia/Kolkata"
+// });
 
 //sample time set 
 // cron.schedule("0 9 * * *", async () => {
