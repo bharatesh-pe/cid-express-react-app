@@ -5344,7 +5344,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 const main_table = table_name;
                 const record_id = insertedId;
                 const module = insertedType;
-                const alert_type = "Assign IO";
+                const alert_type = "IO_ALLOCATION";
                 const alert_level = "low";
                 const alert_message = "Please assign an IO to this case";
               
@@ -8432,7 +8432,7 @@ exports.submitActionPlanPR = async (req, res) => {
             const main_table = "cid_ui_case_action_plan";
             const record_id = ui_case_id || null;
             const module = "ui_case";
-            const alert_type = "Action Plan IO Submission";
+            const alert_type = "ACTION_PLAN";
             const alert_level = "low";
             const alert_message = "Please check the action plan and approver it.";
             const triggered_on = new Date();
@@ -8443,6 +8443,8 @@ exports.submitActionPlanPR = async (req, res) => {
             const designation_id = immediate_supervisior_id || null;
             const assigned_io = userId || null;
             const userID = userId || null;
+            const due_date = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
             
             try {
                 await CaseAlerts.create({
@@ -8452,6 +8454,7 @@ exports.submitActionPlanPR = async (req, res) => {
                 alert_type,
                 alert_level,
                 alert_message,
+                due_date,
                 triggered_on,
                 resolved_on: null,
                 status,
@@ -8570,7 +8573,7 @@ exports.submitActionPlanPR = async (req, res) => {
                         where: {
                             module: "ui_case",
                             record_id: ui_case_id,
-                            alert_type: "Action Plan IO Submission",
+                            alert_type: "ACTION_PLAN",
                             status: "pending"
                         },
                         transaction: t

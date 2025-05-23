@@ -21,7 +21,7 @@ const crypto = require("crypto");
 const moment = require("moment");
 const { generateUserToken } = require("../helper/validations");
 const e = require("express");
-const { Op } = require("sequelize");
+const { Op , fn, col, literal } = require("sequelize");
 const fs = require("fs");
 const path = require("path");
 const get_module = async (req, res) => {
@@ -933,6 +933,294 @@ const set_user_hierarchy = async (req, res) => {
     }
 };
 
+// const fetch_dash_count = async (req, res) => {
+//     try {
+//         const { user_id, role_id } = req.user;
+//         const {
+//             user_designation_id,
+//             user_division_id,
+//             allowedUserIds = [],
+//             getDataBasesOnUsers = false,
+//             allowedDivisionIds = [],
+//             allowedDepartmentIds = [],
+//             case_modules,
+//         } = req.body;
+    
+//         // const case_modules = ["ui_case", "pt_case", "eq_case"];
+//         const dashboard_count_details = {};
+    
+//         const ioWhereClause = {
+//             module: case_modules ,
+//             status: "pending",
+//         };
+    
+//         const normalizedDivisionIds = normalizeValues(allowedDivisionIds, "string");
+//         const normalizedUserIds = normalizeValues(allowedUserIds, "string");
+    
+//         if (getDataBasesOnUsers && normalizedUserIds.length > 0) {
+//             ioWhereClause[Op.or] = [
+//             { assigned_io: { [Op.in]: normalizedUserIds } },
+//             { user_id: { [Op.in]: normalizedUserIds } },
+//             ];
+//         } else if (!getDataBasesOnUsers && normalizedDivisionIds.length > 0) {
+//             ioWhereClause.division_id = { [Op.in]: normalizedDivisionIds };
+//         }
+
+//         ioWhereClause.alert_type = "IO_ALLOCATION";
+
+//         const APWhereClause = {
+//             module: case_modules,
+//             status: "pending",
+//             alert_type: "ACTION_PLAN",
+//             send_to_type: "user",
+//         };
+        
+//         APWhereClause[Op.or] = [
+//             { designation_id: { [Op.in]: [String(user_designation_id)] } },
+//             { user_id: { [Op.in]: [String(user_id)] } },
+//         ];
+
+
+        
+//         const action_plan_pending = await CaseAlerts.findAll({ where: APWhereClause });
+    
+//         const no_assign_io = await CaseAlerts.findAll({ where: ioWhereClause });
+        
+//         /*alert types */
+//         //{
+//         // IO_ALLOCATION_PENDING
+//         // ACTION_PLAN_PENDING
+//         // ACTION_PLAN_OVERDUE
+//         // PROGRESS_REPORT_PENDING
+//         // PROGRESS_REPORT_OVERDUE
+//         // FSL_PF_ALERT
+//         // FSL_PF_CRITICAL
+//         // FSL_PF_OVERDUE
+//         // FSL_OVERDUE_TODAY
+//         // CUSTODIAL_CS_ALERT
+//         // CUSTODIAL_CS_CRITICAL
+//         // CC_PENDENCY
+//         // TRIAL_TODAY
+//         // NOTICE_41A_PENDING
+//         //}
+
+//         //get Aggigned IO 
+//         dashboard_count_details["IO_ALLOCATION"] = {
+//             label: "Case IO Allocation",
+//             divider: 2,
+//             divider_details: {
+//                 "low": {
+//                     name: "24 hrs",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"low",
+//                 },
+//                 "high": {
+//                     name: "Over Due",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"high",
+//                 }
+//             },
+//             total_count: 0,
+//         };
+
+//         //get Action plan 
+//         dashboard_count_details["ACTION_PLAN"] = {
+//             label: "Action Plan",
+//             divider: 2,
+//             divider_details: {
+//                 "low": {
+//                     name: "Approval",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"low",
+                    
+//                 },
+//                 "high": {
+//                     name: "Over Due",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"high",
+//                 }
+//             },
+//             total_count: 0,
+//         };
+
+//         //get progress report count
+//         dashboard_count_details["PROGRESS_REPORT"] = {
+//             label: "Progress Report",
+//             divider: 2,
+//             divider_details: {
+//                 "low": {
+//                     name: "1 to 5 Days",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"low",
+                    
+//                 },
+//                 "high": {
+//                     name: "Over Due",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"high",
+//                 }
+//             },
+//             total_count: 0,
+//         };
+
+//         //get Property form
+//         dashboard_count_details["FSL_PF"] = {
+//             label: "Property Form Send to FSL",
+//             divider: 3,
+//             divider_details: {
+//                 "low": {
+//                     name: "10 - 20 Days",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"low",
+                    
+//                 },
+//                 "medium": {
+//                     name: "20 - 30 Days",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"medium",
+                    
+//                 },
+//                 "high": {
+//                     name: "Beyond 30 Days",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"high",
+//                 }
+//             },
+//             total_count: 0,
+//         };
+
+//         //get FSL
+//         dashboard_count_details["FSL"] = {
+//             label: "FSL Due Today",
+//             total_count: 0,
+//         };
+
+//         //get accused 
+//         dashboard_count_details["CUSTODIAL"] = {
+//             label: "Custodial Cases for Chargesheet",
+//             divider: 2,
+//             divider_details: {
+//                 "low": {
+//                     name: "30 - 45 Days",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"low",
+                    
+//                 },
+//                 "high": {
+//                     name: "Above 45 Days",
+//                     count: 0,
+//                     record_id:[],
+//                     level:"high",
+                    
+//                 },
+//             },
+//             total_count: 0,
+//         };
+
+//         // dashboard_count_details["NATURE_OF_DISPOSAL"] = {
+//         //     label: "Charge Sheet (CC) Pendency",
+//         //     divider: 3,
+//         //     divider_details: {
+//         //         "60": {
+//         //             name: "60 - 90 Days",
+//         //             count: 0,
+//         //             record_id:[],
+//         //             level:"low",                    
+//         //         },
+//         //         "90": {
+//         //             name: "DIG Extension",
+//         //             count: 0,
+//         //             record_id:[],
+//         //             level:"medium",
+//         //             only:""
+                    
+//         //         },
+//         //         "150": {
+//         //             name: "150 - 180 Days",
+//         //             count: 0,
+//         //             record_id:[],
+//         //             level:"high",
+//         //         },
+//         //         "180": {
+//         //             name: "ADGP Extension",
+//         //             count: 0,
+//         //             record_id:[],
+//         //             level:"medium",
+                    
+//         //         },
+//         //         "360": {
+//         //             name: "180 - 360 Days",
+//         //             count: 0,
+//         //             record_id:[],
+//         //             level:"high",
+//         //         },
+//         //         "above_360": {
+//         //             name: "DGP Extension",
+//         //             count: 0,
+//         //             record_id:[],
+//         //             level:"high",
+//         //         },
+
+//         //     },
+//         //     total_count: 0,
+//         // };
+
+        
+//         const todayStr = new Date().toDateString();
+//         for (const row of no_assign_io) {
+//             if (row.due_date) {
+//                 const dueDate = new Date(row.due_date);
+//                 const dueDateStr = dueDate.toDateString();
+        
+//                 if (dueDateStr >= todayStr) {
+//                     dashboard_count_details["IO_ALLOCATION"].divider_details['low'].count++;
+//                     dashboard_count_details["IO_ALLOCATION"].divider_details['high'].record_id.push(row.record_id);
+//                 } else if (dueDate < new Date()) {
+//                     dashboard_count_details["IO_ALLOCATION"].divider_details['low'].count++;
+//                     dashboard_count_details["IO_ALLOCATION"].divider_details['high'].record_id.push(row.record_id);
+//                 }
+//             }
+//         }
+        
+       
+//         for (const row of action_plan_pending) {
+//             if (row.due_date) {
+//                 const dueDate = new Date(row.due_date);
+//                 const dueDateStr = dueDate.toDateString();
+        
+//                 if (dueDate > new Date()) {
+//                     dashboard_count_details["ACTION_PLAN"].divider_details['need_to_approve'].count++;
+//                     dashboard_count_details["ACTION_PLAN"].divider_details['need_to_approve'].record_id.push(row.record_id);
+//                 }   
+//                 else if (dueDate < new Date()) {
+//                     dashboard_count_details["ACTION_PLAN"].divider_details['over_due'].count++;
+//                     dashboard_count_details["ACTION_PLAN"].divider_details['over_due'].record_id.push(row.record_id);
+//                 }
+//             }
+//         }
+    
+//         return res.status(200).json({
+//             success: true,
+//             data: dashboard_count_details,
+//         });
+//     } catch (error) {
+//         console.error("Error retrieving dashboard count:", error.message);
+//         return res
+//             .status(500)
+//             .json({ success: false, message: "Internal server error" });
+//     }
+// };
+
 const fetch_dash_count = async (req, res) => {
     try {
         const { user_id, role_id } = req.user;
@@ -943,94 +1231,155 @@ const fetch_dash_count = async (req, res) => {
             getDataBasesOnUsers = false,
             allowedDivisionIds = [],
             allowedDepartmentIds = [],
+            case_modules,
         } = req.body;
-    
-        const case_modules = ["ui_case", "pt_case", "eq_case"];
-        const dashboard_count_details = {};
-    
-        const ioWhereClause = {
-            module: { [Op.in]: case_modules },
-            status: "pending",
-        };
-    
+
         const normalizedDivisionIds = normalizeValues(allowedDivisionIds, "string");
         const normalizedUserIds = normalizeValues(allowedUserIds, "string");
-    
+
+        const baseWhereClause = {
+            module: case_modules,
+            status: "pending",
+        };
+
         if (getDataBasesOnUsers && normalizedUserIds.length > 0) {
-            ioWhereClause[Op.or] = [
-            { assigned_io: { [Op.in]: normalizedUserIds } },
-            { user_id: { [Op.in]: normalizedUserIds } },
+            baseWhereClause[Op.or] = [
+                { assigned_io: { [Op.in]: normalizedUserIds } },
+                { user_id: { [Op.in]: normalizedUserIds } },
             ];
         } else if (!getDataBasesOnUsers && normalizedDivisionIds.length > 0) {
-            ioWhereClause.division_id = { [Op.in]: normalizedDivisionIds };
-        }
-    
-        const no_assign_io = await CaseAlerts.findAll({ where: ioWhereClause });
-        
-        // IO_ALLOCATION_PENDING
-        // ACTION_PLAN_PENDING
-        // ACTION_PLAN_OVERDUE
-        // PROGRESS_REPORT_PENDING
-        // PROGRESS_REPORT_OVERDUE
-        // FSL_PF_ALERT
-        // FSL_PF_CRITICAL
-        // FSL_PF_OVERDUE
-        // FSL_OVERDUE_TODAY
-        // CUSTODIAL_CS_ALERT
-        // CUSTODIAL_CS_CRITICAL
-        // CC_PENDENCY
-        // TRIAL_TODAY
-        // NOTICE_41A_PENDING
-
-        dashboard_count_details["IO_ALLOCATION_PENDING"] = {
-            total_count: no_assign_io.length,
-            today_assign_io_count: 0,
-            overdue_aggign_io_count: 0,
-        };
-    
-        const today = new Date().toDateString();
-    
-        for (const row of no_assign_io) {
-            if (row.due_date) {
-            const dueDateStr = new Date(row.due_date).toDateString();
-    
-            if (dueDateStr === today) {
-                dashboard_count_details["IO_ALLOCATION_PENDING"].today_assign_io_count++;
-            } else if (new Date(row.due_date) < new Date()) {
-                dashboard_count_details["IO_ALLOCATION_PENDING"].overdue_aggign_io_count++;
-            }
-            }
+            baseWhereClause.division_id = { [Op.in]: normalizedDivisionIds };
         }
 
-        const APWhereClause = {
-            module: 'ui_case',
-            status: "pending",
-            alert_type: "Action Plan IO Submission",
-            send_to_type: "user",
+        const roleFilter = {
+            [Op.or]: [
+                { designation_id: String(user_designation_id) },
+                { user_id: String(user_id) },
+            ]
         };
-        
-        APWhereClause[Op.or] = [
-            { designation_id: { [Op.in]: [String(user_designation_id)] } },
-            { user_id: { [Op.in]: [String(user_id)] } },
-        ];
-        
-        console.log("String(user_id):", String(user_id));
-        
-        const action_plan_pending = await CaseAlerts.findAll({ where: APWhereClause });
-        
-        dashboard_count_details["ACTION_PLAN_PENDING"] = {
-            total_count: action_plan_pending.length,
+
+        const whereClause = {
+            ...baseWhereClause,
+            [Op.or]: [
+                { alert_type: "ACTION_PLAN", send_to_type: "user", ...roleFilter },
+                { alert_type: { [Op.in]: [
+                    "IO_ALLOCATION",
+                    "PROGRESS_REPORT",
+                    "FSL_PF",
+                    "FSL",
+                    "CUSTODIAL",
+                    "CC_PENDENCY",
+                    "TRIAL_TODAY",
+                    "NOTICE_41A_PENDING"
+                ] } }
+            ]
         };
-    
+
+        const groupedAlerts = await CaseAlerts.findAll({
+            attributes: [
+                "alert_type",
+                "alert_level",
+                [fn("COUNT", col("id")), "count"],
+                [literal("array_agg(record_id)"), "record_ids"],
+            ],
+            where: whereClause,
+            group: ["alert_type", "alert_level"],
+            raw: true,
+        });
+
+        const alertTemplates = {
+            IO_ALLOCATION: {
+                label: "Case IO Allocation",
+                divider: 2,
+                divider_details: {
+                    low: { name: "24 hrs", count: 0, record_id: [], level: "low" },
+                    high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                },
+                total_count: 0
+            },
+            ACTION_PLAN: {
+                label: "Action Plan",
+                divider: 2,
+                divider_details: {
+                    low: { name: "Approval", count: 0, record_id: [], level: "low" },
+                    high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                },
+                total_count: 0
+            },
+            PROGRESS_REPORT: {
+                label: "Progress Report",
+                divider: 2,
+                divider_details: {
+                    low: { name: "1 to 5 Days", count: 0, record_id: [], level: "low" },
+                    high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                },
+                total_count: 0
+            },
+            FSL_PF: {
+                label: "Property Form Send to FSL",
+                divider: 3,
+                divider_details: {
+                    low: { name: "10 - 20 Days", count: 0, record_id: [], level: "low" },
+                    medium: { name: "20 - 30 Days", count: 0, record_id: [], level: "medium" },
+                    high: { name: "Beyond 30 Days", count: 0, record_id: [], level: "high" }
+                },
+                total_count: 0
+            },
+            FSL: {
+                label: "FSL Due Today",
+                total_count: 0
+            },
+            CUSTODIAL: {
+                label: "Custodial Cases for Chargesheet",
+                divider: 2,
+                divider_details: {
+                    low: { name: "30 - 45 Days", count: 0, record_id: [], level: "low" },
+                    high: { name: "Above 45 Days", count: 0, record_id: [], level: "high" }
+                },
+                total_count: 0
+            },
+            CC_PENDENCY: {
+                label: "Charge Sheet Pendency",
+                total_count: 0
+            },
+            TRIAL_TODAY: {
+                label: "Trial Today",
+                total_count: 0
+            },
+            NOTICE_41A_PENDING: {
+                label: "Notice 41A Pending",
+                total_count: 0
+            }
+        };
+
+        const dashboard_count_details = JSON.parse(JSON.stringify(alertTemplates));
+
+        for (const row of groupedAlerts) {
+            const alertType = row.alert_type;
+            const level = row.alert_level?.toLowerCase();
+            const count = parseInt(row.count);
+            const recordIds = row.record_ids;
+
+            if (dashboard_count_details[alertType]) {
+                if (
+                    dashboard_count_details[alertType].divider_details &&
+                    dashboard_count_details[alertType].divider_details[level]
+                ) {
+                    dashboard_count_details[alertType].divider_details[level].count = count;
+                    dashboard_count_details[alertType].divider_details[level].record_id = recordIds;
+                }
+                dashboard_count_details[alertType].total_count += count;
+            }
+        }
+
         return res.status(200).json({
             success: true,
             data: dashboard_count_details,
+            "groupedAlerts":groupedAlerts
         });
     } catch (error) {
         console.error("Error retrieving dashboard count:", error.message);
-        return res
-            .status(500)
-            .json({ success: false, message: "Internal server error" });
+        return res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
   
