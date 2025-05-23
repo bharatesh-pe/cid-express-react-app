@@ -25,12 +25,12 @@ import Navbar from "../components/navbar";
 import api from "../services/api";
 
     const tabLabels = [
-        { label: "UI Module", route: "/case/ui_case" },
-        { label: "Court Module", route: "/case/pt_case" },
-        { label: "Crime Intelligence", route: "/case/ui_case" },
-        { label: "Enquiries", route: "/case/enquiry" },
-        { label: "Crime Analytics", route: "/case/ui_case" },
-        { label: "Orders & Circulars", route: "/repository/judgements" },
+        { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
+        { label: "Court Module", route: "/case/pt_case", key: "pt_case" },
+        { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
+        { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
+        { label: "Crime Analytics", route: "/case/ui_case", key: "crime_analytics" },
+        { label: "Orders & Circulars", route: "/repository/judgements", key: "order_circulars" },
     ];
 
 
@@ -252,6 +252,7 @@ const Dashboard = () => {
     const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
     
     const [loading, setLoading] = useState(false);
+    const [dashboardMenu, setDashboardMenu] = useState({});
     
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
@@ -349,15 +350,17 @@ const Dashboard = () => {
     };
 
     useEffect(() => {
-        getDashboardTiles()
-    }, []);
+        if(tabLabels?.[activeTab]?.key){
+            getDashboardTiles()
+        }
+    }, [activeTab]);
 
     const getDashboardTiles = async () => {
         const userDesignationId = localStorage.getItem('designation_id');
         
         const payload = {
             user_designation_id: userDesignationId || null,
-            case_modules: "ui_case"
+            case_modules: tabLabels?.[activeTab]?.key
         };
 
         setLoading(true);
@@ -367,7 +370,21 @@ const Dashboard = () => {
             setLoading(false);
 
             if (response?.success) {
-                console.log("Dashboard Data:", response);
+                if(response?.data){
+                    const sortedEntries = Object.entries(response.data).sort(([_, a], [__, b]) => {
+                    const aDiv = a?.divider ?? 0;
+                    const bDiv = b?.divider ?? 0;
+
+                    if (aDiv >= 3 && bDiv < 3) return 1;
+                    if (aDiv < 3 && bDiv >= 3) return -1;
+                        return 0;
+                    });
+
+                    const sortedObject = Object.fromEntries(sortedEntries);
+                    setDashboardMenu(sortedObject);
+                }else{
+                    setDashboardMenu({});
+                }
             } else {
                 const errorMessage = response?.message || "Failed to fetch dashboard data. Please try again.";
                 toast.error(errorMessage, {
@@ -380,6 +397,7 @@ const Dashboard = () => {
                     progress: undefined,
                     className: "toast-error"
                 });
+                setDashboardMenu({});
             }
         } catch (error) {
             setLoading(false);
@@ -394,6 +412,7 @@ const Dashboard = () => {
                 progress: undefined,
                 className: "toast-error"
             });
+            setDashboardMenu({});
         }
     }
 
@@ -512,17 +531,16 @@ const Dashboard = () => {
                     pb: 1,
                 }}
             >
-                {jobData.map((job, idx) => (
-                    <Card
-                    key={idx}
-                    elevation={6}
+            {Object.entries(dashboardMenu).map(([key, value], index) => (
+                <Card
+                    key={key}
                     onClick={() => navigate(tabLabels?.[activeTab]?.route)}
                     sx={{
-                        width: bottomActions && bottomActions?.[job.title]?.colorCode ? 405 : 300,
+                        width: value.divider >= 3 ? 410 : 300,
                         maxHeight: 130,
                         minHeight: 130,
                         borderRadius: 3,
-                        background: cardBackgrounds[idx] || "#fff",
+                        background: cardBackgrounds[index] || "#fff",
                         flexShrink: 0,
                         boxShadow: "0 2px 2px rgba(0, 0, 0, 0.12), 0 6px 6px rgba(0, 0, 0, 0.08)",
                         transition: "transform 0.3s ease",
@@ -531,51 +549,28 @@ const Dashboard = () => {
                         flexDirection: "column",
                         justifyContent: "space-between",
                         '&:hover': {
-                            background: cardHoverBackgrounds[idx] || cardBackgrounds[idx],
+                            background: cardHoverBackgrounds[index] || cardBackgrounds[index],
                             transform: 'translateY(-4px)'
                         }
                     }}
-                    >
-                    {/* Header */}
-                    <Box sx={{ textAlign: "center", p: 1, borderRadius: 3 , background: cardTitleBackgrounds[idx] || "#fff", }}>
+                >
+                    <Box sx={{ textAlign: "center", p: 1, borderRadius: 3, background: cardTitleBackgrounds[index] || "#fff" }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#FFFFFF" }}>
-                        {job.title}
+                            {value.label}
                         </Typography>
                     </Box>
 
-                    {/* Total Count */}
-                    {/* <Box sx={{ textAlign: "center", p: 2 }}>
-                        <Typography variant="h4" sx={{ fontWeight: 800, color: "#FFFFFF" }}>
-                        {job.totalcase}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "#FFFFFF" }}>
-                        Total Cases
-                        </Typography>
-                    </Box> */}
-
-                    {/* Bottom Sections */}
-                    <Box
-                        sx={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        flex: 1,
-                        }}
-                    >
-                        {
-                        bottomActions && bottomActions?.[job.title]?.actions ?
-                            bottomActions?.[job.title]?.actions.map((daysKey, i) => {
-                            const match = job.stages.find((s) => s.days === daysKey);
-                            return (
-                                <Tooltip title={daysKey}>
+                    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+                        {value.divider_details && Object.keys(value.divider_details).length > 0 ? (
+                            Object.entries(value.divider_details).map(([dividerKey, dividerValue], idx) => (
+                                <Tooltip title={dividerValue.name} key={dividerKey}>
                                     <Box
-                                        key={daysKey}
-                                        sx={{ 
+                                        sx={{
                                             minWidth: 0,
                                             flex: "1 1 0",
                                             p: 1,
-                                            textAlign: "center", 
-                                            borderLeft: i !== 0 ? "1px solid rgba(255, 255, 255, 0.3)" : "none", 
+                                            textAlign: "center",
+                                            borderLeft: idx !== 0 ? "1px solid rgba(255, 255, 255, 0.3)" : "none"
                                         }}
                                     >
                                         <Typography
@@ -588,29 +583,28 @@ const Dashboard = () => {
                                                 display: "-webkit-box",
                                                 WebkitLineClamp: 2,
                                                 WebkitBoxOrient: "vertical",
-                                                maxHeight: "2.8em", // optional: ensures the box doesn't grow more than 2 lines
-                                                lineHeight: "1.4em", // adjust line height as needed
+                                                maxHeight: "2.8em",
+                                                lineHeight: "1.4em"
                                             }}
                                         >
-                                            {daysKey}
+                                            {dividerValue.name}
                                         </Typography>
-                                        <GradientBadge gradient={getAvatarColor(i)}>
-                                            {match ? match.count : 0}
+                                        <GradientBadge gradient={getAvatarColor(idx)}>
+                                            {dividerValue.count}
                                         </GradientBadge>
                                     </Box>
                                 </Tooltip>
-                            );
-                            })
-                        :
+                            ))
+                        ) : (
                             <Box sx={{ textAlign: "center", p: 2 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 500, color: "#FFFFFF", textAlign: 'center' }}>
-                                    10
+                                    {value.total_count}
                                 </Typography>
                             </Box>
-                        }
+                        )}
                     </Box>
-                    </Card>
-                ))}
+                </Card>
+            ))}
             </Box>
 
             {openUserDesignationDropdown && userOverallDesignation?.length > 0 && (
