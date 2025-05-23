@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Box,
     Tabs,
@@ -22,14 +22,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Navbar from "../components/navbar";
+import api from "../services/api";
 
     const tabLabels = [
-        { label: "UI Case", route: "/case/ui_case" },
-        { label: "PT Case", route: "/case/pt_case" },
+        { label: "UI Module", route: "/case/ui_case" },
+        { label: "Court Module", route: "/case/pt_case" },
+        { label: "Crime Intelligence", route: "/case/ui_case" },
         { label: "Enquiries", route: "/case/enquiry" },
-        { label: "Government Order", route: "/repository/gn_order" },
-        { label: "Judgements", route: "/repository/judgements" },
-        { label: "Circular", route: "/repository/circular" },
+        { label: "Crime Analytics", route: "/case/ui_case" },
+        { label: "Orders & Circulars", route: "/repository/judgements" },
     ];
 
 
@@ -146,20 +147,6 @@ import Navbar from "../components/navbar";
         },
     ];
 
-    const getAvatarColor = (days) => {
-        const dayValue = Number(days);
-
-        if (dayValue === 0) {
-            return "linear-gradient(135deg, #4caf50, #81c784)";
-        } else if (dayValue === 1) {
-            return "linear-gradient(135deg, #ff9800, #fb8c00)";
-        } else if (dayValue === 2) {
-            return "linear-gradient(135deg, #f44336, #e53935)";
-        } else {
-            return "linear-gradient(135deg, #4caf50, #81c784)";
-        }
-    };
-
     const GradientBadge = styled(Box)(({ gradient }) => ({
         background: gradient,
         color: '#fff',
@@ -174,45 +161,45 @@ import Navbar from "../components/navbar";
     }));
 
     const cardBackgrounds = [
-    "linear-gradient(135deg, #569bd0, #5c5ee0)",  // 1 - darker blue
-    "linear-gradient(135deg, #a5a6d9, #8a4fd1)",  // 2 - darker lavender
-    "linear-gradient(135deg, #8c8dc7, #2c38c4)",  // 3 - deeper indigo
-    "linear-gradient(135deg, #a5a6d9, #3d3fd0)",  // 4 - deeper violet
-    "linear-gradient(135deg, #65bda3, #4a8c73)",  // 5 - teal green
-    "linear-gradient(135deg, #e2a37e, #cf5d3f)",  // 6 - burnt orange
-    "linear-gradient(135deg, #dc87b1, #b24f91)",  // 7 - rose pink
-    "linear-gradient(135deg, #f0c95e, #e09826)",  // 8 - amber gold
-    "linear-gradient(135deg, #9fa3b0, #727681)",  // 9 - slate grey
-    "linear-gradient(135deg, #97a7f7, #5c6be5)",  // 10 - soft periwinkle
-    "linear-gradient(135deg, #7cc6fe, #3b95e4)"   // 11 - sky blue
+        "linear-gradient(135deg, #569bd0, #5c5ee0)",  // 1 - darker blue
+        "linear-gradient(135deg, #a5a6d9, #8a4fd1)",  // 2 - darker lavender
+        "linear-gradient(135deg, #8c8dc7, #2c38c4)",  // 3 - deeper indigo
+        "linear-gradient(135deg, #a5a6d9, #3d3fd0)",  // 4 - deeper violet
+        "linear-gradient(135deg, #65bda3, #4a8c73)",  // 5 - teal green
+        "linear-gradient(135deg, #e2a37e, #cf5d3f)",  // 6 - burnt orange
+        "linear-gradient(135deg, #dc87b1, #b24f91)",  // 7 - rose pink
+        "linear-gradient(135deg, #f0c95e, #e09826)",  // 8 - amber gold
+        "linear-gradient(135deg, #9fa3b0, #727681)",  // 9 - slate grey
+        "linear-gradient(135deg, #97a7f7, #5c6be5)",  // 10 - soft periwinkle
+        "linear-gradient(135deg, #7cc6fe, #3b95e4)"   // 11 - sky blue
     ];
 
     const cardHoverBackgrounds = [
-    "linear-gradient(135deg, #467fb0, #484ad0)",  // 1
-    "linear-gradient(135deg, #8e8fc2, #743ebf)",  // 2
-    "linear-gradient(135deg, #6f70a9, #1f2cae)",  // 3
-    "linear-gradient(135deg, #8e8fc2, #2d2fbf)",  // 4
-    "linear-gradient(135deg, #519c8c, #35775f)",  // 5
-    "linear-gradient(135deg, #cb8d6c, #b04c30)",  // 6
-    "linear-gradient(135deg, #c27399, #94396e)",  // 7
-    "linear-gradient(135deg, #deb648, #c37d15)",  // 8
-    "linear-gradient(135deg, #868b9b, #5a5f6a)",  // 9
-    "linear-gradient(135deg, #7b8cdd, #4553d1)",  // 10
-    "linear-gradient(135deg, #66b1f0, #2a7fd1)"   // 11
+        "linear-gradient(135deg, #467fb0, #484ad0)",  // 1
+        "linear-gradient(135deg, #8e8fc2, #743ebf)",  // 2
+        "linear-gradient(135deg, #6f70a9, #1f2cae)",  // 3
+        "linear-gradient(135deg, #8e8fc2, #2d2fbf)",  // 4
+        "linear-gradient(135deg, #519c8c, #35775f)",  // 5
+        "linear-gradient(135deg, #cb8d6c, #b04c30)",  // 6
+        "linear-gradient(135deg, #c27399, #94396e)",  // 7
+        "linear-gradient(135deg, #deb648, #c37d15)",  // 8
+        "linear-gradient(135deg, #868b9b, #5a5f6a)",  // 9
+        "linear-gradient(135deg, #7b8cdd, #4553d1)",  // 10
+        "linear-gradient(135deg, #66b1f0, #2a7fd1)"   // 11
     ];
 
     const cardTitleBackgrounds = [
-    "#6b9ddf",  // 1 - bright blue
-    "#b5aaf0",  // 2 - soft lavender
-    "#9295dc",  // 3 - light indigo
-    "#a2a5f2",  // 4 - light violet
-    "#7ecdb7",  // 5 - mint green
-    "#ee9f76",  // 6 - orange coral
-    "#e58fb4",  // 7 - rose pink
-    "#f5d97b",  // 8 - warm yellow
-    "#adb2c0",  // 9 - slate grey
-    "#a2b4fc",  // 10 - pastel periwinkle
-    "#8dcfff"   // 11 - light sky blue
+        "#6b9ddf",  // 1 - bright blue
+        "#b5aaf0",  // 2 - soft lavender
+        "#9295dc",  // 3 - light indigo
+        "#a2a5f2",  // 4 - light violet
+        "#7ecdb7",  // 5 - mint green
+        "#ee9f76",  // 6 - orange coral
+        "#e58fb4",  // 7 - rose pink
+        "#f5d97b",  // 8 - warm yellow
+        "#adb2c0",  // 9 - slate grey
+        "#a2b4fc",  // 10 - pastel periwinkle
+        "#8dcfff"   // 11 - light sky blue
     ];
 
 
@@ -266,44 +253,45 @@ const Dashboard = () => {
     
     const [loading, setLoading] = useState(false);
     
-    if (userId === "1") return null;
+    const handleLogout = async () => {
+        const token = localStorage.getItem("auth_token");
+        setLoading(true);
 
-        const handleLogout = async () => {
-            const token = localStorage.getItem("auth_token");
-            setLoading(true);
-            try {
-                const serverURL = process.env.REACT_APP_SERVER_URL;
-                const response = await fetch(`${serverURL}/auth/logout`, {
-                    method: "POST",
-                    headers: {
+        try {
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(`${serverURL}/auth/logout`, {
+                method: "POST",
+                headers: {
                     "Content-Type": "application/json",
                     token: token,
-                    },
-                });
-            
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message);
-                }
-                setLoading(false);
-                localStorage.removeItem("auth_token");
-                localStorage.removeItem("username");
-                localStorage.removeItem("authAdmin");
-                localStorage.removeItem("kgid");
-                localStorage.removeItem("user_permissions");
-                localStorage.removeItem("designation_id");
-                localStorage.removeItem("designation_name");
-                localStorage.removeItem("user_id");
-                localStorage.removeItem("division_id");
-                localStorage.removeItem("division_name");
-                localStorage.removeItem("allowedUserIds");
-                localStorage.removeItem("getDataBasesOnUsers");
-                localStorage.removeItem("allowedDepartmentIds");
-                localStorage.removeItem("allowedDivisionIds");
-                localStorage.removeItem("role_id");
-                localStorage.removeItem("role_title");
-                navigate("/");
-            } catch (err) {
+                },
+            });
+        
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            setLoading(false);
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("username");
+            localStorage.removeItem("authAdmin");
+            localStorage.removeItem("kgid");
+            localStorage.removeItem("user_permissions");
+            localStorage.removeItem("designation_id");
+            localStorage.removeItem("designation_name");
+            localStorage.removeItem("user_id");
+            localStorage.removeItem("division_id");
+            localStorage.removeItem("division_name");
+            localStorage.removeItem("allowedUserIds");
+            localStorage.removeItem("getDataBasesOnUsers");
+            localStorage.removeItem("allowedDepartmentIds");
+            localStorage.removeItem("allowedDivisionIds");
+            localStorage.removeItem("role_id");
+            localStorage.removeItem("role_title");
+            navigate("/");
+
+        } catch (err) {
             var errMessage = "Something went wrong. Please try again.";
             if (err && err.message) {
                 errMessage = err.message;
@@ -340,12 +328,76 @@ const Dashboard = () => {
                 className: "toast-warning",
             });
             return;
-            }
-            finally {
-                setLoading(false);
-            }
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+
+    const getAvatarColor = (days) => {
+        const dayValue = Number(days);
+
+        if (dayValue === 0) {
+            return "linear-gradient(135deg, #4caf50, #81c784)";
+        } else if (dayValue === 1) {
+            return "linear-gradient(135deg, #ff9800, #fb8c00)";
+        } else if (dayValue === 2) {
+            return "linear-gradient(135deg, #f44336, #e53935)";
+        } else {
+            return "linear-gradient(135deg, #4caf50, #81c784)";
+        }
+    };
+
+    useEffect(() => {
+        getDashboardTiles()
+    }, []);
+
+    const getDashboardTiles = async () => {
+        const userDesignationId = localStorage.getItem('designation_id');
+        
+        const payload = {
+            user_designation_id: userDesignationId || null,
+            case_modules: "ui_case"
         };
 
+        setLoading(true);
+
+        try {
+            const response = await api.post("/auth/fetch_dash_count", payload);
+            setLoading(false);
+
+            if (response?.success) {
+                console.log("Dashboard Data:", response);
+            } else {
+                const errorMessage = response?.message || "Failed to fetch dashboard data. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error"
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            const message = error?.response?.data?.message || "Something went wrong. Please try again.";
+            toast.error(message, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error"
+            });
+        }
+    }
+
+    if (userId === "1") return null;
     return (
         <Box sx={{ bgcolor: "#e5e7eb", minHeight: "100vh" }}>
 
