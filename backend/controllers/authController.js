@@ -988,15 +988,15 @@ const set_user_hierarchy = async (req, res) => {
         
 //         /*alert types */
 //         //{
-//         // IO_ALLOCATION_PENDING
-//         // ACTION_PLAN_PENDING
-//         // ACTION_PLAN_OVERDUE
-//         // PROGRESS_REPORT_PENDING
-//         // PROGRESS_REPORT_OVERDUE
-//         // FSL_PF_ALERT
-//         // FSL_PF_CRITICAL
-//         // FSL_PF_OVERDUE
-//         // FSL_OVERDUE_TODAY
+//         // IO_ALLOCATION_PENDING - ON creation
+//         // ACTION_PLAN_PENDING - Cron
+//         // ACTION_PLAN_OVERDUE - Cron
+//         // PROGRESS_REPORT_PENDING - Cron
+//         // PROGRESS_REPORT_OVERDUE - Cron
+//         // FSL_PF_ALERT - Cron
+//         // FSL_PF_CRITICAL - Cron
+//         // FSL_PF_OVERDUE - Cron
+//         // FSL_OVERDUE_TODAY - Cron
 //         // CUSTODIAL_CS_ALERT
 //         // CUSTODIAL_CS_CRITICAL
 //         // CC_PENDENCY
@@ -1127,53 +1127,53 @@ const set_user_hierarchy = async (req, res) => {
 //             total_count: 0,
 //         };
 
-//         // dashboard_count_details["NATURE_OF_DISPOSAL"] = {
-//         //     label: "Charge Sheet (CC) Pendency",
-//         //     divider: 3,
-//         //     divider_details: {
-//         //         "60": {
-//         //             name: "60 - 90 Days",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"low",                    
-//         //         },
-//         //         "90": {
-//         //             name: "DIG Extension",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"medium",
-//         //             only:""
+        // dashboard_count_details["NATURE_OF_DISPOSAL"] = {
+        //     label: "Charge Sheet (CC) Pendency",
+        //     divider: 3,
+        //     divider_details: {
+        //         "60": {
+        //             name: "60 - 90 Days",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"low",                    
+        //         },
+        //         "90": {
+        //             name: "DIG Extension",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"medium",
+        //             only:""
                     
-//         //         },
-//         //         "150": {
-//         //             name: "150 - 180 Days",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"high",
-//         //         },
-//         //         "180": {
-//         //             name: "ADGP Extension",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"medium",
+        //         },
+        //         "150": {
+        //             name: "150 - 180 Days",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"high",
+        //         },
+        //         "180": {
+        //             name: "ADGP Extension",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"medium",
                     
-//         //         },
-//         //         "360": {
-//         //             name: "180 - 360 Days",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"high",
-//         //         },
-//         //         "above_360": {
-//         //             name: "DGP Extension",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"high",
-//         //         },
+        //         },
+        //         "360": {
+        //             name: "180 - 360 Days",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"high",
+        //         },
+        //         "above_360": {
+        //             name: "DGP Extension",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"high",
+        //         },
 
-//         //     },
-//         //     total_count: 0,
-//         // };
+        //     },
+        //     total_count: 0,
+        // };
 
         
 //         const todayStr = new Date().toDateString();

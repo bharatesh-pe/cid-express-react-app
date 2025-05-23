@@ -13,6 +13,7 @@ const {
 
 const runMonthlyAlertCron = async () => {
     try {
+        console.log("checking yuvaraj cron")
         const today = moment();
         const currentDate = today.date();
         const monthStart = today.clone().startOf("month").toDate();
