@@ -14,7 +14,7 @@ cron.schedule("* * * * *", async () => {
 //sample time set 
 // cron.schedule("0 9 * * *", async () => {
 //     console.log("Running Daily 9 AM Alert Cron Job at", new Date().toISOString());
-//     await runMonthlyAlertCron();
+//     await runMonthlyAlertCron.runMonthlyAlertCronAP();
 // }, {
 //     scheduled: true,
 //     timezone: "Asia/Kolkata"
@@ -31,7 +31,7 @@ cron.schedule("* * * * *", async () => {
 
 // cron.schedule("0 0 * * *", async () => {
 //     console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
-//     await runMonthlyAlertCronPR();
+//     await runMonthlyAlertCron.runMonthlyAlertCronPR();
 // }, {
 //     scheduled: true,
 //     timezone: "Asia/Kolkata"
@@ -40,7 +40,15 @@ cron.schedule("* * * * *", async () => {
 
 // cron.schedule("0 0 * * *", async () => {
 //     console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
-//     await runMonthlyAlertCronAP();
+//     await runMonthlyAlertCron.runMonthlyAlertCronAP();
+// }, {
+//     scheduled: true,
+//     timezone: "Asia/Kolkata"
+// });
+
+// cron.schedule("0 0 * * *", async () => {
+//     console.log("Running Monthly Alert Cron Job at", new Date().toISOString());
+//     await runMonthlyAlertCron.runMonthlyAlertCronFSL_PF();
 // }, {
 //     scheduled: true,
 //     timezone: "Asia/Kolkata"

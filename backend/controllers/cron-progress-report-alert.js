@@ -192,7 +192,7 @@ exports.runMonthlyAlertCronAP = async () => {
         const APtableData = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
     
         if (!APtableData) {
-            console.error(`Table cid_ui_case_action_plan does not exist.`);
+            console.error(`Table Action Plan does not exist.`);
             return;
         }
     
@@ -273,7 +273,7 @@ exports.runMonthlyAlertCronAP = async () => {
         // Common alert fields
         const alert_type = "ACTION_PLAN";
         const created_by = 0;
-        const module = "ActionPlan";
+        const module = "ui_case";
         const main_table = "cid_ui_case_action_plan";
 
         for (const caseId of over_due) {
@@ -294,7 +294,6 @@ exports.runMonthlyAlertCronAP = async () => {
                 alert_type,
                 alert_level: "high",
                 alert_message: `Case ID ${caseId} is overdue for action plan submission.`,
-                due_date: today.toDate(),
                 triggered_on: new Date(),
                 status: "Pending",
                 created_by,
@@ -320,7 +319,6 @@ exports.runMonthlyAlertCronAP = async () => {
                 alert_type,
                 alert_level: "low",
                 alert_message: `Case ID ${caseId} is pending action plan submission.`,
-                due_date: today.toDate(),
                 triggered_on: new Date(),
                 status: "Pending",
                 created_by,
@@ -335,6 +333,112 @@ exports.runMonthlyAlertCronAP = async () => {
       console.error("Error running Monthly Alert Cron for Action Plan:", error);
     } finally {
       await sequelize.close();
-      console.log("🔌 Database connection closed.");
+      console.log("Database connection closed.");
     }
-  };
+};
+
+//cron for FSL_PF
+exports.runMonthlyAlertCronFSL_PF = async () => {
+    try {
+        const today = moment();
+        console.log("Fetching CID Under Investigation template...");
+        
+        const template = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+        if (!template) return console.error("Template not found.");
+        const tableName = template.table_name;
+
+        const [allCases] = await sequelize.query(`SELECT id FROM ${tableName} WHERE id IS NOT NULL`);
+        const allIds = allCases.map(row => row.id);
+        console.log(`Found ${allIds.length} cases.`);
+
+        const FSLtableData = await Template.findOne({ where: { table_name: "cid_ui_case_forensic_science_laboratory" } });
+        if (!FSLtableData) return console.error(`Table FSL does not exist.`);
+
+        const schema = typeof FSLtableData.fields === "string" ? JSON.parse(FSLtableData.fields) : FSLtableData.fields;
+        schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+
+        const FSLmodelAttributes = {
+            id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+            created_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
+            updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
+            created_by: { type: Sequelize.DataTypes.STRING, allowNull: true },
+        };
+
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            FSLmodelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+
+        const FSLModel = sequelize.define(FSLtableData.table_name, FSLmodelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await FSLModel.sync();
+
+        const FSLRecords = await FSLModel.findAll({
+            where: { ui_case_id: { [Op.in]: allIds } },
+        });
+
+        const alert_type = "FSL_PF";
+        const created_by = 0;
+        const module = "ui_case";
+        const main_table = "cid_ui_case_forensic_science_laboratory";
+        
+        if(FSLRecords && FSLRecords.length > 0)
+        {
+            // Delete all alerts of this type and level regardless of case
+            await CaseAlerts.destroy({
+                where: {
+                    alert_type,
+                    alert_level: { [Op.in]: ["low", "medium", "high"] },
+                },
+            });
+       
+            for (const FSLEntry of FSLRecords) {
+                const case_id = FSLEntry.ui_case_id;
+                const sent_to_fsl = FSLEntry.field_sent_to_fsl;
+                const fsl_seizure_date = FSLEntry.field_seizure_date;
+                const FSL_report_number = FSLEntry.field_fsl_report_number;
+    
+                if (sent_to_fsl === "no" && fsl_seizure_date) {
+                    const seizureDate = moment(fsl_seizure_date);
+                    const daysDiff = today.diff(seizureDate, "days");
+    
+                    let alert_level = "low";
+                    if (daysDiff > 30) alert_level = "high";
+                    else if (daysDiff > 20) alert_level = "medium";
+    
+                    // Insert updated alert
+                    await CaseAlerts.create({
+                        module,
+                        main_table,
+                        record_id: case_id,
+                        alert_type,
+                        alert_level,
+                        alert_message: `FSL Report number ${FSL_report_number} is not yet sent to FSL.`,
+                        triggered_on: new Date(),
+                        status: "Pending",
+                        created_by,
+                        created_at: new Date(),
+                    });
+                }
+            }
+        }
+
+        console.log("Monthly Alert Cron completed for PF sent to FSL.");
+    } catch (error) {
+        console.error("Error running Monthly Alert Cron for PF sent to FSL:", error);
+    } finally {
+        await sequelize.close();
+        console.log("Database connection closed.");
+    }
+};
+
