@@ -9,6 +9,7 @@ import { Chip, Tooltip } from "@mui/material";
 import { Box , Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Autocomplete, TextField} from "@mui/material";
 import TextFieldInput from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle"
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
@@ -120,6 +121,8 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
   const [selectKey, setSelectKey] = useState(null);
   const [randomApprovalId, setRandomApprovalId] = useState(0);
   const hoverTableOptionsRef = useRef([]);
+  const [submissionDateDialogOpen, setSubmissionDateDialogOpen] = useState(false);
+  const [submissionDate, setSubmissionDate] = useState(null);
 
   const handleMonthwisePagination = (page) => {
     getMonthWiseFile(selectedRow, page);
@@ -2260,7 +2263,44 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
-  const handleUpdatePdfClick = async ({ selectedOtherTemplate, rowId, selectedIds, prUpdatePdf }) => {
+  const isSubmissionForCurrentMonth = (data) => {
+    const now = new Date();
+    return data.some(item => {
+      const date = new Date(item.submission_date);
+      return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+    });
+  };
+
+  const handleSubmitClick = async () => {
+    try {
+      const response = await api.post("/templateData/getMonthWiseByCaseId", {
+        ui_case_id: rowId,
+        page: 1,
+        limit: PageSize,
+      });
+
+      if (response?.success) {
+        const hasCurrentMonthSubmission = isSubmissionForCurrentMonth(response.data || []);
+        if (hasCurrentMonthSubmission) {
+          handleUpdatePdfClick({
+            selectedOtherTemplate,
+            rowId,
+            selectedIds,
+            prUpdatePdf,
+            submissionDate: null,
+          });
+        } else {
+          setSubmissionDateDialogOpen(true);
+        }
+      } else {
+        console.error("Failed to fetch month-wise data.");
+      }
+    } catch (err) {
+      console.error("Error checking submission date:", err);
+    }
+  };
+
+  const handleUpdatePdfClick = async ({ selectedOtherTemplate, rowId, selectedIds, prUpdatePdf ,submissionDate}) => {
     const getTemplatePayload = {
       table_name: selectedOtherTemplate?.table,
       ui_case_id: rowId,
@@ -2345,6 +2385,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         aoFields: filteredAOFieldValues,
         selectedIds,
         selectedRow: rowId,
+        submissionDate
       });
 
     } catch (error) {
@@ -2369,6 +2410,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         appendText,
         aoFields,
         created_by: localStorage.getItem("user_id"),
+        submission_date: submissionDate, 
       };
 
       const saveTemplateData = await api.post(
@@ -2588,14 +2630,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                         )}
 
                         <Button
-                            onClick={() =>
-                            handleUpdatePdfClick({
-                                selectedOtherTemplate,
-                                rowId,
-                                selectedIds,
-                                prUpdatePdf,
-                            })
-                            }
+                            onClick={handleSubmitClick}
                             variant="contained"
                             disabled={!isSubmitAllowed}
                             sx={{
@@ -2855,6 +2890,45 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
           </DialogActions>
         </Dialog>
       )}
+
+      <Dialog 
+        open={submissionDateDialogOpen} 
+        onClose={() => setSubmissionDateDialogOpen(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>Select Submission Date</DialogTitle>
+        <DialogContent>
+          <TextField
+            type="date"
+            fullWidth
+            value={submissionDate || ""}
+            onChange={(e) => setSubmissionDate(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSubmissionDateDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              setSubmissionDateDialogOpen(false);
+              handleUpdatePdfClick({
+                selectedOtherTemplate,
+                rowId,
+                selectedIds,
+                prUpdatePdf,
+                submissionDate
+              });
+            }}
+            variant="contained"
+            disabled={!submissionDate}
+          >
+            Submit
+          </Button>
+        </DialogActions>
+      </Dialog>
+
 
       {loading && (
         <div className="parent_spinner" tabIndex="-1" aria-hidden="true">

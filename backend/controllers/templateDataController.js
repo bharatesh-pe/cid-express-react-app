@@ -4998,7 +4998,7 @@ async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regula
 exports.appendToLastLineOfPDF = async (req, res) => {
   try {
     
-    const { ui_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields } = req.body;
+    const { ui_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields, submission_date } = req.body;
 
     if (!ui_case_id || !appendText || !selected_row_id || !aoFields) {
       console.error("Missing required fields.");
@@ -5111,7 +5111,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
         month_of_the_file: monthOfTheFile,
         monthwise_file_name: monthwiseFileName,
         monthwise_file_path: path.join('files', 'monthwise_reports', monthwiseFileName),
-        submission_date: new Date(),
+        submission_date: submission_date || new Date(),
       });
     }
 
