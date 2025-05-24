@@ -10,7 +10,7 @@ import { KeyboardArrowDown, KeyboardArrowUp } from "@mui/icons-material";
 import SettingsSuggestIcon from '@mui/icons-material/SettingsSuggest';
 
 
-export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord,getRowClassName, tableName }) {
+export default function TableView({rows, columns, checkboxSelection,getRowId, backBtn, nextBtn, handleNext, handleBack,handleRowClick, hoverTable, hoverTableOptions, hoverActionFuncHandle, totalPage, paginationCount, handlePagination, totalRecord,getRowClassName, tableName, highLightedRow }) {
 
     const [anchorEl, setAnchorEl] = React.useState(null);
     const [selectedRow, setSelectedRow] = React.useState(null);
@@ -69,6 +69,15 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         }
     };
 
+    const getRowClassNameInternal = (params) => {
+        
+        if (highLightedRow && typeof highLightedRow === "function" && highLightedRow(params.row)) {
+            return 'red-row';
+        }
+
+        return getRowClassName;
+    };
+
     const pageSize = 10;
 
     const startRecord = rows.length === 0 ? 0 : (paginationCount - 1) * pageSize + 1;
@@ -95,7 +104,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         sx={{ border: 0 }}
         stickyHeader
         onRowClick={(params) => handleRowClick && handleRowClick(params.row)}
-        getRowClassName = {getRowClassName}
+        getRowClassName={getRowClassNameInternal}
         />
     </Paper>
 

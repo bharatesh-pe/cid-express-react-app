@@ -6591,24 +6591,20 @@ exports.checkAccusedDataStatus = async (req, res) => {
 
 		for(const accused of AccusedData)
         {
-            var gov_served = accused.field_government_servent;
-            var accused_in_charge_sheet = accused.field_status_of_accused_in_charge_sheet;
-            var pc_act_order = accused._19_pc_act_order;
+            var gov_served = accused?.["field_government_servent"];
+            var accused_in_charge_sheet = accused?.["field_status_of_accused_in_charge_sheet"];
+            var pc_act_order = accused?.["field_pso_&_19_pc_act_order"];
 
             if ( String(gov_served).toLowerCase() === "yes" && (String(accused_in_charge_sheet).toLowerCase() === "dropped" || String(accused_in_charge_sheet).toLowerCase() === "charge sheet") && (!pc_act_order || pc_act_order === "")) {
                 data.invalid_accused = true;
             }
             
-            if (String(accused_in_charge_sheet).toLowerCase() === "pendind") {
+            if (String(accused_in_charge_sheet).toLowerCase() === "pending") {
                 data.pending_case = true;
-            }
-              
+            }              
 
         }
 
-		if (!data.length) {
-			return res.status(404).json({ success: false, message: "No records found." });
-		}
 		return res.status(200).json({ success: true, data });
 	} catch (error) {
 		console.error("Error fetching records:", error);
