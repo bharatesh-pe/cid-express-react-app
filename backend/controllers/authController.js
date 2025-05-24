@@ -1348,18 +1348,14 @@ const fetch_dash_count = async (req, res) => {
 
         baseWhereClause["record_id"] = { [Op.in]: onlyCaseIds };
 
-        const ioAllocationCondition = {
-            alert_type : "IO_ALLOCATION",
-            due_date
-        }
        
 
         const whereClause = {
             ...baseWhereClause,
             [Op.or]: [
-                { alert_type: "ACTION_PLAN", send_to_type: "user" },
                 { alert_type: { [Op.in]: [
                     "IO_ALLOCATION",
+                    "ACTION_PLAN",
                     "PROGRESS_REPORT",
                     "FSL_PF",
                     "FSL",
@@ -1475,7 +1471,7 @@ const fetch_dash_count = async (req, res) => {
         });
     } catch (error) {
         console.error("Error retrieving dashboard count:", error.message);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({ success: false, message: "Internal server error"+error });
     }
 };
   

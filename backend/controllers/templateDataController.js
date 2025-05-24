@@ -6468,6 +6468,153 @@ exports.getAccusedWitness = async (req, res) => {
 };
 
 
+exports.checkAccusedDataStatus = async (req, res) => {
+	try {
+		const {  table_name , ui_case_id , pt_case_id } = req.body;
+
+		if (!table_name) {
+			return userSendResponse(res, 400, false, "Missing required table name.");
+		}
+
+
+		// Fetch the template metadata
+		const tableData = await Template.findOne({ where: { table_name } });
+
+		if (!tableData) {
+		const message = `Table ${table_name} does not exist.`;
+		return userSendResponse(res, 400, false, message, null);
+		}
+
+		// Parse the schema fields from Template
+		const schema = typeof tableData.fields === "string"	? JSON.parse(tableData.fields) : tableData.fields;
+
+		const fields = {};
+
+		const relevantSchema  = schema;
+
+		// Define model attributes based on filtered schema
+		const modelAttributes = {
+            id: {
+                type: Sequelize.DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            created_at: {
+                type: Sequelize.DataTypes.DATE,
+                allowNull: false,
+            },
+            updated_at: {
+                type: Sequelize.DataTypes.DATE,
+                allowNull: false,
+            },
+            created_by: {
+                type: Sequelize.DataTypes.STRING,
+                allowNull: true,  
+            } 
+		};
+
+		for (const field of relevantSchema) {
+            const {
+                name: columnName,
+                data_type,
+                not_null,
+                default_value,
+                table,
+                forign_key,
+                attributes,
+            } = field;
+
+            if (!columnName || !data_type) {
+                console.warn(
+                `Missing required attributes for field ${columnName}. Using default type STRING.`
+                );
+                modelAttributes[columnName] = {
+                type: Sequelize.DataTypes.STRING,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+                };
+                continue;
+            }
+
+            // Handle data_type mapping to Sequelize types
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+		
+            modelAttributes[columnName] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+
+            fields[columnName] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+		}
+
+		// Define and sync the dynamic model
+		const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+		});
+
+		await Model.sync();
+
+		let whereClause = {};
+		if (ui_case_id && ui_case_id != "" && pt_case_id && pt_case_id != "") {
+            whereClause = {
+                [Op.or]: [{ ui_case_id }, { pt_case_id }],
+            };
+		} else if (ui_case_id && ui_case_id != "") {
+			whereClause = { ui_case_id };
+		} else if (pt_case_id && pt_case_id != "") {
+			whereClause = { pt_case_id };
+		}
+
+		let attributes = ["id","field_government_servent" , "field_pso_&_19_pc_act_order" , "field_status_of_accused_in_charge_sheet"];
+
+
+		const AccusedData = await Model.findAll({
+			where: whereClause,
+			attributes: attributes,
+		});
+
+        data = {
+            table_name,
+            ui_case_id,
+            pt_case_id,
+            pending_case : false,
+            invalid_accused : false,
+        }
+
+		for(const accused of AccusedData)
+        {
+            var gov_served = accused.field_government_servent;
+            var accused_in_charge_sheet = accused.field_status_of_accused_in_charge_sheet;
+            var pc_act_order = accused._19_pc_act_order;
+
+            if ( String(gov_served).toLowerCase() === "yes" && (String(accused_in_charge_sheet).toLowerCase() === "dropped" || String(accused_in_charge_sheet).toLowerCase() === "charge sheet") && (!pc_act_order || pc_act_order === "")) {
+                data.invalid_accused = true;
+            }
+            
+            if (String(accused_in_charge_sheet).toLowerCase() === "pendind") {
+                data.pending_case = true;
+            }
+              
+
+        }
+
+		if (!data.length) {
+			return res.status(404).json({ success: false, message: "No records found." });
+		}
+		return res.status(200).json({ success: true, data });
+	} catch (error) {
+		console.error("Error fetching records:", error);
+		return res.status(500).json({ success: false, message: "Internal server error." });
+	}
+};
 
 exports.insertMergeData = async (req, res) => {
   const { table_name, data } = req.body;

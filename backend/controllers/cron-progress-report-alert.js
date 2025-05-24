@@ -171,56 +171,44 @@ exports.runMonthlyAlertCronPR = async () => {
 //cron for Action Plan
 exports.runDailyAlertCronIO = async () => {
     try {
-        const today = moment();
+        const today = moment().startOf("day");
         const case_modules = ["ui_case", "pt_case", "eq_case"];
 
         const ioAlertsData = await CaseAlerts.findAll({
             where: { 
                 alert_type: "IO_ALLOCATION",
-                module:{ [Op.in]: case_modules},
+                module: { [Op.in]: case_modules },
                 status: "pending",
-             },
+            },
             order: [["created_at", "DESC"]],
-            });
+        });
+
+        let updatedCount = 0;
 
         for (const ioCaseEntry of ioAlertsData) {
             const alert_record_id = ioCaseEntry.record_id;
-            const ioDueDate = moment(ioCaseEntry.due_date);
-            const createdAt = moment(ioCaseEntry.created_at);
-            
-            // Check if due date is in the past (overdue)
-            const isOverdue = ioDueDate.isBefore(today, "day");
-            
-            // Check if due date is in the future
-            const isUpcoming = ioDueDate.isAfter(today, "day");
-            
-            // Check if due date is exactly today
-            const isDueToday = ioDueDate.isSame(today, "day");
-           
-            if(isOverdue)
-            {
+            const ioDueDate = moment(ioCaseEntry.due_date).startOf("day");
+
+            if (ioDueDate.isBefore(today)) {
                 await CaseAlerts.update(
                     { alert_level: "high" },
                     {
                         where: {
                             alert_type: "IO_ALLOCATION",
                             record_id: alert_record_id,
-                            status: "Pending",
                         },
                     }
                 );
+                updatedCount++;
             }
         }
-  
-        console.log("Daily Alert Cron completed for IO Assign.");
+
+        console.log(`Daily Alert Cron completed for IO Assign. ${updatedCount} alerts updated.`);
     } catch (error) {
-      console.error("Error running Daily Alert Cron for IO Assign:", error);
-    } 
-    // finally {
-    //   await sequelize.close();
-    //   console.log("Database connection closed.");
-    // }
+        console.error("Error running Daily Alert Cron for IO Assign:", error);
+    }
 };
+
 
 //cron for Action Plan
 exports.runDailyAlertCronAP = async () => {
@@ -308,7 +296,7 @@ exports.runDailyAlertCronAP = async () => {
             });
     
             if (actionPlanRecord) {
-            if (actionPlanRecord.field_submit_status !== "submit") {
+            if (String(actionPlanRecord.field_submit_status).toLowerCase() !== "submit") {
                 if (isOlderThan7Days) {
                 over_due.push(ui_case_id);
                 } else {
@@ -463,7 +451,7 @@ exports.runDailyAlertCronFSL_PF = async () => {
                 const fsl_seizure_date = FSLEntry.field_seizure_date;
                 const FSL_report_number = FSLEntry.field_fsl_report_number;
     
-                if (sent_to_fsl === "no" && fsl_seizure_date) {
+                if (String(sent_to_fsl).toLowerCase() === "no" && fsl_seizure_date) {
                     const seizureDate = moment(fsl_seizure_date);
                     const daysDiff = today.diff(seizureDate, "days");
     
