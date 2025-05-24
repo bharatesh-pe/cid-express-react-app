@@ -169,7 +169,61 @@ exports.runMonthlyAlertCronPR = async () => {
 };
 
 //cron for Action Plan
-exports.runMonthlyAlertCronAP = async () => {
+exports.runDailyAlertCronIO = async () => {
+    try {
+        const today = moment();
+        const case_modules = ["ui_case", "pt_case", "eq_case"];
+
+        const ioAlertsData = await CaseAlerts.findAll({
+            where: { 
+                alert_type: "IO_ALLOCATION",
+                module:{ [Op.in]: case_modules},
+                status: "pending",
+             },
+            order: [["created_at", "DESC"]],
+            });
+
+        for (const ioCaseEntry of ioAlertsData) {
+            const alert_record_id = ioCaseEntry.record_id;
+            const ioDueDate = moment(ioCaseEntry.due_date);
+            const createdAt = moment(ioCaseEntry.created_at);
+            
+            // Check if due date is in the past (overdue)
+            const isOverdue = ioDueDate.isBefore(today, "day");
+            
+            // Check if due date is in the future
+            const isUpcoming = ioDueDate.isAfter(today, "day");
+            
+            // Check if due date is exactly today
+            const isDueToday = ioDueDate.isSame(today, "day");
+           
+            if(isOverdue)
+            {
+                await CaseAlerts.update(
+                    { alert_level: "high" },
+                    {
+                        where: {
+                            alert_type: "IO_ALLOCATION",
+                            record_id: alert_record_id,
+                            status: "Pending",
+                        },
+                    }
+                );
+            }
+        }
+  
+        console.log("Daily Alert Cron completed for IO Assign.");
+    } catch (error) {
+      console.error("Error running Daily Alert Cron for IO Assign:", error);
+    } 
+    // finally {
+    //   await sequelize.close();
+    //   console.log("Database connection closed.");
+    // }
+};
+
+//cron for Action Plan
+exports.runDailyAlertCronAP = async () => {
     try {
         const today = moment();
     
@@ -326,19 +380,20 @@ exports.runMonthlyAlertCronAP = async () => {
             });
         }
   
-        console.log("Monthly Alert Cron completed for Action Plan.");
+        console.log("Daily Alert Cron completed for Action Plan.");
         // console.log("Overdue Cases:", over_due);
         // console.log("Approval Pending Cases:", approval);
     } catch (error) {
-      console.error("Error running Monthly Alert Cron for Action Plan:", error);
-    } finally {
-      await sequelize.close();
-      console.log("Database connection closed.");
-    }
+      console.error("Error running Daily Alert Cron for Action Plan:", error);
+    } 
+    // finally {
+    //   await sequelize.close();
+    //   console.log("Database connection closed.");
+    // }
 };
 
 //cron for FSL_PF
-exports.runMonthlyAlertCronFSL_PF = async () => {
+exports.runDailyAlertCronFSL_PF = async () => {
     try {
         const today = moment();
         console.log("Fetching CID Under Investigation template...");
@@ -433,12 +488,13 @@ exports.runMonthlyAlertCronFSL_PF = async () => {
             }
         }
 
-        console.log("Monthly Alert Cron completed for PF sent to FSL.");
+        console.log("Daily Alert Cron completed for PF sent to FSL.");
     } catch (error) {
-        console.error("Error running Monthly Alert Cron for PF sent to FSL:", error);
-    } finally {
-        await sequelize.close();
-        console.log("Database connection closed.");
-    }
+        console.error("Error running Daily Alert Cron for PF sent to FSL:", error);
+    } 
+    // finally {
+    //     await sequelize.close();
+    //     console.log("Database connection closed.");
+    // }
 };
 

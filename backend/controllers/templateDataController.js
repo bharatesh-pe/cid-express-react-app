@@ -1564,6 +1564,19 @@ exports.getTemplateData = async (req, res, next) => {
             });
         }
 
+        // Fetch attachments related to this row
+        const attachments = await ProfileAttachment.findAll({
+            where: {
+                template_id: tableData.template_id,
+                table_row_id: data.id,
+            },
+            order: [["created_at", "DESC"]],
+        });
+
+        if (attachments.length) {
+            filteredData.attachments = attachments.map((att) => att.toJSON());
+        }
+
         return filteredData;
       })
     );
