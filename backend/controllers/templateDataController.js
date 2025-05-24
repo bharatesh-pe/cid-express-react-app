@@ -5306,8 +5306,8 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             insertedIO = insertedData.field_io_name || null;
             const fileUpdates = {};
     
-            if(folder_attachment_ids)
-            {
+            // if(folder_attachment_ids)
+            // {
                 if (req.files && req.files.length > 0) {
                     const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
         
@@ -5351,7 +5351,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                     }
               
                 }
-            }
+            // }
 
             if (table_name === "cid_under_investigation") {
                 const main_table = table_name;
@@ -5650,7 +5650,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						return userSendResponse(res, 400, false, "No changes detected or update failed.");
 					}
 
-                    if(others_folder_attachment_ids) {
+                    // if(others_folder_attachment_ids) {
                     
                         var otherFileUpdates = {};
                         if (req.files && req.files.length > 0) {
@@ -5695,7 +5695,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                 );
                             }
                         }
-                    }
+                    // }
 				}
 
 				if(!recordId) {
