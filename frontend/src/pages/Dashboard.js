@@ -357,6 +357,18 @@ const Dashboard = () => {
 
     const getDashboardTiles = async () => {
         const userDesignationId = localStorage.getItem('designation_id');
+        const userDesignationName = localStorage.getItem('designation_name');
+        const userRole = localStorage.getItem('role_title');
+        var userDesignation = "";
+
+        if(userRole == "Investigation officer")
+        {
+            userDesignation = "IO"
+        }
+        // else{
+        //     if(userDesignationName)
+        // }
+
         
         const payload = {
             user_designation_id: userDesignationId || null,

@@ -5637,7 +5637,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 					);
 
                   
-                    if(otherParsedData.field_updation) {
+                    if ( otherParsedData.field_updation && typeof otherParsedData.field_updation === 'object' && !Array.isArray(otherParsedData.field_updation) && Object.keys(otherParsedData.field_updation).length > 0 ){
                         const updates = {};
                         for (const [key, value] of Object.entries(otherParsedData.field_updation)) {
                             updates[key] = value;

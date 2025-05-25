@@ -28,6 +28,7 @@ const e = require("express");
 const { Op , fn, col, literal } = require("sequelize");
 const fs = require("fs");
 const path = require("path");
+const { pdfDocEncodingDecode } = require("pdf-lib");
 const get_module = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -1363,9 +1364,6 @@ const fetch_dash_count = async (req, res) => {
                     "ACTION_PLAN",
                     "PROGRESS_REPORT",
                     "FSL_PF",
-                    "FSL",
-                    "CUSTODIAL",
-                    "CC_PENDENCY",
                     "TRIAL_TODAY",
                     "NOTICE_41A_PENDING"
                 ]
@@ -1383,7 +1381,18 @@ const fetch_dash_count = async (req, res) => {
             group: ["alert_type", "alert_level"],
             raw: true,
         });
-        
+
+        const NatureOfDisposalWhereClause = {
+            ...baseWhereClause,
+            alert_type: "NATURE_OF_DISPOSAL"
+        };
+
+        //pending list
+        // 5. Cases for Trial Today - > TRIAL_TODAY
+        // 6.3 Any Due Date Missed across modules ->
+        // 9. 41A Notice Approval Pending  -> NOTICE_41A_PENDING
+        // 10. CUSTODIAL
+
         const alertTemplates = {
             IO_ALLOCATION: {
                 label: "Case IO Allocation",
@@ -1412,6 +1421,14 @@ const fetch_dash_count = async (req, res) => {
                 },
                 total_count: 0
             },
+            EXTENSION: {
+                label: "Investigation Extension",
+                total_count: 0
+            },
+            TRIAL_TODAY: {
+                label: "Trial Today",
+                total_count: 0
+            },
             FSL_PF: {
                 label: "Property Form Send to FSL",
                 divider: 3,
@@ -1426,6 +1443,10 @@ const fetch_dash_count = async (req, res) => {
                 label: "FSL Due Today",
                 total_count: 0
             },
+            NOTICE_41A_PENDING: {
+                label: "Notice 41A Pending",
+                total_count: 0
+            },
             CUSTODIAL: {
                 label: "Custodial Cases for Chargesheet",
                 divider: 2,
@@ -1435,18 +1456,10 @@ const fetch_dash_count = async (req, res) => {
                 },
                 total_count: 0
             },
-            CC_PENDENCY: {
-                label: "Charge Sheet Pendency",
+            NATURE_OF_DISPOSAL: {
+                label: "Charge Sheet (CC) Pendency",
                 total_count: 0
             },
-            TRIAL_TODAY: {
-                label: "Trial Today",
-                total_count: 0
-            },
-            NOTICE_41A_PENDING: {
-                label: "Notice 41A Pending",
-                total_count: 0
-            }
         };
 
         const dashboard_count_details = JSON.parse(JSON.stringify(alertTemplates));
