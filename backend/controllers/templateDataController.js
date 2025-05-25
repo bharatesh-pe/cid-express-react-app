@@ -3112,6 +3112,11 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             whereClause[key] = value; // Direct match for foreign key fields
           }
         }
+        if (key === "record_ids" && Array.isArray(value) && value.length > 0) {
+            whereClause[id] = {
+                [Op.in]: value
+            };
+        }        
       });
     }
 
@@ -3176,7 +3181,10 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
           );
 
           if (matchingOption) {
-            searchConditions.push({ [search_field]: matchingOption.code });
+            if(search_field === "field_division")
+                searchConditions.push({ [search_field]: String(matchingOption.code) });
+            else
+                searchConditions.push({ [search_field]: matchingOption.code });
           }
         }
 
@@ -3245,7 +3253,10 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             );
 
             if (matchingOption) {
-              searchConditions.push({ [field]: matchingOption.code });
+                // if(field === "field_division")
+                    searchConditions.push({ [field]: String(matchingOption.code) });
+                // else
+                //     searchConditions.push({ [field]: matchingOption.code });
             }
           }
 
@@ -5399,30 +5410,30 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                   }
 
 
-                  try {
-                    await CaseAlerts.create({
-                      module,
-                      main_table,
-                      record_id,
-                      alert_type:"NATURE_OF_DISPOSAL",
-                      alert_level,
-                      alert_message : "Alert for IO",
-                      due_date :new Date(createdAt.getTime() + 60 * 24 * 60 * 60 * 1000),
-                      triggered_on,
-                      resolved_on: null,
-                      status,
-                      created_by,
-                      created_at: new Date(),
-                      send_to_type,
-                      division_id,
-                      designation_id,
-                      assigned_io,
-                      user_id: null,
-                      transaction: t 
-                    });
-                  } catch (error) {
-                    console.error('Error inserting case alert:', error);
-                  }
+                //   try {
+                //     await CaseAlerts.create({
+                //       module,
+                //       main_table,
+                //       record_id,
+                //       alert_type:"NATURE_OF_DISPOSAL",
+                //       alert_level,
+                //       alert_message : "Alert for IO",
+                //       due_date :new Date(createdAt.getTime() + 60 * 24 * 60 * 60 * 1000),
+                //       triggered_on,
+                //       resolved_on: null,
+                //       status,
+                //       created_by,
+                //       created_at: new Date(),
+                //       send_to_type,
+                //       division_id,
+                //       designation_id,
+                //       assigned_io,
+                //       user_id: null,
+                //       transaction: t 
+                //     });
+                //   } catch (error) {
+                //     console.error('Error inserting case alert:', error);
+                //   }
 
             }
               
