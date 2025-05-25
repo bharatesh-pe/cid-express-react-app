@@ -3109,7 +3109,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
               };
           }
           else{
-            whereClause[key] = value; // Direct match for foreign key fields
+            whereClause[key] = String(value); // Direct match for foreign key fields
           }
         }
         if (key === "record_ids" && Array.isArray(value) && value.length > 0) {
@@ -3181,10 +3181,10 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
           );
 
           if (matchingOption) {
-            if(search_field === "field_division")
+            // if(search_field === "field_division")
                 searchConditions.push({ [search_field]: String(matchingOption.code) });
-            else
-                searchConditions.push({ [search_field]: matchingOption.code });
+            // else
+            //     searchConditions.push({ [search_field]: matchingOption.code });
           }
         }
 
