@@ -6923,7 +6923,7 @@ exports.getMergeParentData = async (req, res) =>
         if (filter && typeof filter === "object") {
         Object.entries(filter).forEach(([key, value]) => {
             if (fields[key]) {
-            whereClause[key] = value; // Direct match for foreign key fields
+            whereClause[key] = String(value); // Direct match for foreign key fields
             }
         });
         }
@@ -6989,7 +6989,7 @@ exports.getMergeParentData = async (req, res) =>
             );
 
             if (matchingOption) {
-                searchConditions.push({ [search_field]: matchingOption.code });
+                searchConditions.push({ [search_field]: String(matchingOption.code) });
             }
             }
 
@@ -7058,7 +7058,7 @@ exports.getMergeParentData = async (req, res) =>
                 );
 
                 if (matchingOption) {
-                searchConditions.push({ [field]: matchingOption.code });
+                searchConditions.push({ [field]: String(matchingOption.code) });
                 }
             }
 
@@ -7666,7 +7666,7 @@ exports.getMergeChildData = async (req, res) =>
         if (filter && typeof filter === "object") {
         Object.entries(filter).forEach(([key, value]) => {
             if (fields[key]) {
-            whereClause[key] = value; // Direct match for foreign key fields
+            whereClause[key] = String(value); // Direct match for foreign key fields
             }
         });
         }
