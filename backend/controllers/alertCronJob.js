@@ -5,7 +5,7 @@ const runDailyAlertCron = require("./cron-progress-report-alert");
 //To run the cron every single minute
 // cron.schedule("* * * * *", async () => {
 //     console.log("Running Daily Alert Cron Job at", new Date().toISOString());
-//     await runDailyAlertCron.runDailyAlertCronAP();
+//     await runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL();
 // }, {
 //     scheduled: true,
 //     timezone: "Asia/Kolkata"

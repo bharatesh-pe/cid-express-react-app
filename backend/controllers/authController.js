@@ -28,6 +28,7 @@ const e = require("express");
 const { Op , fn, col, literal } = require("sequelize");
 const fs = require("fs");
 const path = require("path");
+const { pdfDocEncodingDecode } = require("pdf-lib");
 const get_module = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -281,7 +282,7 @@ const verify_OTP = async (req, res) => {
                         where: { designation_id: { [Op.in]: officerDesignationIds } },
                         attributes: ["user_id"],
                     });
-                    subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+                    subordinateUserIds = subordinateUsers.map((ud) => String(ud.user_id));
                 }
             } 
             else {
@@ -299,7 +300,7 @@ const verify_OTP = async (req, res) => {
                     })
 
                     if(usersBelongToDivisions.length > 0) {
-                        const userIds = usersBelongToDivisions.map((ud) => ud.user_id);
+                        const userIds = usersBelongToDivisions.map((ud) => String(ud.user_id));
                         subordinateUserIds = [...subordinateUserIds, ...userIds];
                     }
                 }
@@ -307,7 +308,7 @@ const verify_OTP = async (req, res) => {
 
 
             // Combine userId with subordinates and remove duplicates
-            const allowedUserIds = Array.from(new Set([userId, ...subordinateUserIds]));
+            const allowedUserIds = Array.from(new Set([String(userId), ...subordinateUserIds]));
 
 
           return res.status(200).json({
@@ -912,10 +913,10 @@ const set_user_hierarchy = async (req, res) => {
                     attributes: ["user_id"],
                 });
                 
-                subordinateUserIds = subordinateUsers.map((ud) => ud.user_id);
+                subordinateUserIds = subordinateUsers.map((ud) => String(ud.user_id));
             }
             // Combine userId with subordinates and remove duplicates
-            var allowedUserIds = Array.from(new Set([user_id, ...subordinateUserIds]));
+            var allowedUserIds = Array.from(new Set([String(user_id), ...subordinateUserIds]));
             data ={
                 allowedUserIds : allowedUserIds,
                 getDataBasesOnUsers: true,
@@ -1236,6 +1237,7 @@ const fetch_dash_count = async (req, res) => {
             allowedDivisionIds = [],
             allowedDepartmentIds = [],
             case_modules,
+            user_designation,
         } = req.body;
 
         const normalizedDivisionIds = normalizeValues(allowedDivisionIds, "string");
@@ -1363,9 +1365,6 @@ const fetch_dash_count = async (req, res) => {
                     "ACTION_PLAN",
                     "PROGRESS_REPORT",
                     "FSL_PF",
-                    "FSL",
-                    "CUSTODIAL",
-                    "CC_PENDENCY",
                     "TRIAL_TODAY",
                     "NOTICE_41A_PENDING"
                 ]
@@ -1383,7 +1382,46 @@ const fetch_dash_count = async (req, res) => {
             group: ["alert_type", "alert_level"],
             raw: true,
         });
-        
+
+        var alert_message = "Alert for";
+        if(user_designation != "")
+        {
+            if(user_designation == "IO")  
+                alert_message = "Alert for IO";
+            else if(user_designation == "DIG")  
+                alert_message = "Alert for DIG"; 
+            else if(user_designation == "ADGP")  
+                alert_message = "Alert for ADGP";
+            else if(user_designation == "DGP")  
+                alert_message = "Alert for DGP"; 
+
+        }
+            
+        const NatureOfDisposalWhereClause = {
+            ...baseWhereClause,
+            alert_type: "NATURE_OF_DISPOSAL",
+            alert_message
+
+        };
+
+        const groupedNatureOfDisposalAlerts = await CaseAlerts.findAll({
+            attributes: [
+                "alert_type",
+                "alert_level",
+                [fn("COUNT", col("id")), "count"],
+                [literal("array_agg(record_id)"), "record_ids"],
+            ],
+            where: NatureOfDisposalWhereClause,
+            group: ["alert_type", "alert_level"],
+            raw: true,
+        });
+
+        //pending list
+        // 5. Cases for Trial Today - > TRIAL_TODAY
+        // 6.3 Any Due Date Missed across modules ->
+        // 9. 41A Notice Approval Pending  -> NOTICE_41A_PENDING
+        // 10. CUSTODIAL
+
         const alertTemplates = {
             IO_ALLOCATION: {
                 label: "Case IO Allocation",
@@ -1412,6 +1450,14 @@ const fetch_dash_count = async (req, res) => {
                 },
                 total_count: 0
             },
+            EXTENSION: {
+                label: "Investigation Extension",
+                total_count: 0
+            },
+            TRIAL_TODAY: {
+                label: "Trial Today",
+                total_count: 0
+            },
             FSL_PF: {
                 label: "Property Form Send to FSL",
                 divider: 3,
@@ -1426,6 +1472,10 @@ const fetch_dash_count = async (req, res) => {
                 label: "FSL Due Today",
                 total_count: 0
             },
+            NOTICE_41A_PENDING: {
+                label: "Notice 41A Pending",
+                total_count: 0
+            },
             CUSTODIAL: {
                 label: "Custodial Cases for Chargesheet",
                 divider: 2,
@@ -1435,18 +1485,10 @@ const fetch_dash_count = async (req, res) => {
                 },
                 total_count: 0
             },
-            CC_PENDENCY: {
-                label: "Charge Sheet Pendency",
+            NATURE_OF_DISPOSAL: {
+                label: "Charge Sheet (CC) Pendency",
                 total_count: 0
             },
-            TRIAL_TODAY: {
-                label: "Trial Today",
-                total_count: 0
-            },
-            NOTICE_41A_PENDING: {
-                label: "Notice 41A Pending",
-                total_count: 0
-            }
         };
 
         const dashboard_count_details = JSON.parse(JSON.stringify(alertTemplates));
@@ -1457,16 +1499,87 @@ const fetch_dash_count = async (req, res) => {
             const count = parseInt(row.count);
             const recordIds = row.record_ids;
             if (dashboard_count_details[alertType]) {
-                if (
-                    dashboard_count_details[alertType].divider_details &&
-                    dashboard_count_details[alertType].divider_details[level]
-                ) {
+                if ( dashboard_count_details[alertType].divider_details && dashboard_count_details[alertType].divider_details[level] ) {
                     dashboard_count_details[alertType].divider_details[level].count = count;
                     dashboard_count_details[alertType].divider_details[level].record_id = recordIds;
                 }
+
+                dashboard_count_details[alertType].total_count += count;
+
+                if(alertType == "FSL_PF" && level == "high" )
+                    dashboard_count_details["FSL"].total_count += count;
+            }
+        }
+
+        for (const rowData of groupedNatureOfDisposalAlerts) {
+            const alertType = rowData.alert_type;
+            const level = rowData.alert_level?.toLowerCase();
+            const count = parseInt(rowData.count);
+            const recordIds = rowData.record_ids;
+            if (dashboard_count_details[alertType]) {
+                if(user_designation != "IO" || user_designation != "DGP")  
+                {
+                    dashboard_count_details[alertType].divider = 2;
+                    dashboard_count_details[alertType].divider_details = {};
+                    dashboard_count_details[alertType].divider_details.level = {};
+
+                    dashboard_count_details[alertType].divider_details.level['name'] = "" ;
+                    dashboard_count_details[alertType].divider_details.level['count'] = 0 ;
+                    dashboard_count_details[alertType].divider_details.level['record_id'] = [] ;
+                    dashboard_count_details[alertType].divider_details.level['level'] = level  ;
+
+                    if(user_designation == "DIG")
+                    {
+                        if(level == "low")
+                        {
+                            dashboard_count_details[alertType].divider_details.level['name'] = "90 - 150 Days" ;
+                        }
+                        else{
+                            dashboard_count_details[alertType].divider_details.level['name'] = "150 - 180 Days" ;
+                        }
+                    }
+
+                    if(user_designation == "ADGP")
+                    {
+                        if(level == "low")
+                        {
+                            dashboard_count_details[alertType].divider_details.level['name'] = "180 - 240 Days" ;
+                        }
+                        else{
+                            dashboard_count_details[alertType].divider_details.level['name'] = "240 - 360 Days" ;
+                        }
+                    }
+                }
+                else{
+                    dashboard_count_details[alertType].divider = 1;
+                    dashboard_count_details[alertType].divider_details = {};
+                    dashboard_count_details[alertType].divider_details.level = {};
+
+                    dashboard_count_details[alertType].divider_details.level['name'] = "Above 360 Days" ;
+                    dashboard_count_details[alertType].divider_details.level['count'] = 0 ;
+                    dashboard_count_details[alertType].divider_details.level['record_id'] = [] ;
+                    dashboard_count_details[alertType].divider_details.level['level'] = level  ;
+
+                    if(user_designation == "IO")
+                    {
+                        dashboard_count_details[alertType].divider_details.level['name'] = "60 - 90 Days" ;
+                    }
+
+                }
+
+                if ( dashboard_count_details[alertType].divider_details && dashboard_count_details[alertType].divider_details[level] ) {
+                    dashboard_count_details[alertType].divider_details[level].count = count;
+                    dashboard_count_details[alertType].divider_details[level].record_id = recordIds;
+                }
+
                 dashboard_count_details[alertType].total_count += count;
             }
         }
+
+        if(user_designation != "IO")
+            dashboard_count_details["EXTENSION"].total_count = dashboard_count_details["NATURE_OF_DISPOSAL"].total_count;
+
+
 
         return res.status(200).json({
             success: true,
