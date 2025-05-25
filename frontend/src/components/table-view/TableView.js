@@ -102,48 +102,86 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
     {/* Hover Menu */}
     {hoverTable &&   
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-            {hoverTableOptions.map((option, index) => {
+        {[
+        ...(hoverTableOptions || []).map((option) => {
+            const isCaseExtension = option.name?.toLowerCase() === "case extension";
+            const shouldDisable =
+            selectedRow?.isDisabled &&
+            !(isCaseExtension && selectedRow?.allowCaseExtension);
 
-                if(selectedRow?.field_io_name !== null && selectedRow?.field_io_name !== "" && option?.name.toLowerCase() === "assign to io"){
-                    return null
-                }
+            return {
+            ...option,
+            disabled: shouldDisable,
+            };
+        }),
+        ...(selectedRow?.extraHoverOptions || []),
+        ].map((option, index) => {
+        if (
+            selectedRow?.field_io_name !== null &&
+            selectedRow?.field_io_name !== "" &&
+            option?.name?.toLowerCase() === "assign to io"
+        ) {
+            return null;
+        }
 
-                if((!option?.field && option?.table) || option?.caseView){
-                    return null
-                }
+        if ((!option?.field && option?.table) || option?.caseView) {
+            return null;
+        }
 
-                return (
-                    <MenuItem key={index} className='actionHoverOnTable' onClick={() => handleHoverOptionClick(option)} sx={{display: 'flex', alignItems: 'start', height: '40px'}}
-                    disabled={selectedRow?.field_io_name == null && option?.name.toLowerCase() !== "assign to io"}
-                    >
-                        {option?.icon ? (
-                            typeof option.icon === 'function' ? (
-                                option.icon()
-                            ) : (
-                                <span
-                                    className="tableActionIcon"
-                                    dangerouslySetInnerHTML={{ __html: option.icon }}
-                                />
-                            )
-                        ) : (
-                            <span className="tableActionIcon">
-                                <svg width="50" height="50" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <circle cx="12" cy="12" r="12" fill="" />
-                                    <mask id="mask0_1120_40651" style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
-                                        <rect x="4" y="4" width="16" height="16" fill="" />
-                                    </mask>
-                                    <g mask="url(#mask0_1120_40651)">
-                                        <path d="M7.80523 17.2667C7.51045 17.2667 7.25812 17.1618 7.04823 16.9519C6.83834 16.742 6.7334 16.4897 6.7334 16.1949V7.80523C6.7334 7.51045 6.83834 7.25812 7.04823 7.04823C7.25812 6.83834 7.51045 6.7334 7.80523 6.7334H16.1949C16.4897 6.7334 16.742 6.83834 16.9519 7.04823C17.1618 7.25812 17.2667 7.51045 17.2667 7.80523V13.3629L13.3629 17.2667H7.80523ZM13.2001 16.4001L16.4001 13.2001H13.2001V16.4001ZM9.0949 13.0206H12.0001V12.1539H9.0949V13.0206ZM9.0949 10.6334H14.9052V9.76673H9.0949V10.6334Z" fill="" />
-                                    </g>
-                                </svg>
-                            </span>
-                        )}
-                        <span style={{marginTop:'3px'}}>
-                            {option?.name}
-                        </span> 
-                    </MenuItem>
+        return (
+            <MenuItem
+            key={index}
+            className="actionHoverOnTable"
+            onClick={() => {
+                if (!option.disabled) handleHoverOptionClick(option);
+            }}
+            sx={{ display: "flex", alignItems: "start", height: "40px" }}
+            disabled={selectedRow?.field_io_name == null && option?.name.toLowerCase() !== "assign to io" || option.disabled === true}
+            >
+            {option?.icon ? (
+                typeof option.icon === "function" ? (
+                option.icon()
+                ) : (
+                <span
+                    className="tableActionIcon"
+                    dangerouslySetInnerHTML={{ __html: option.icon }}
+                />
                 )
-            })}
+            ) : (
+                <span className="tableActionIcon">
+                <svg
+                    width="50"
+                    height="50"
+                    viewBox="0 0 34 34"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                >
+                    <circle cx="12" cy="12" r="12" fill="" />
+                    <mask
+                    id="mask0_1120_40651"
+                    style={{ maskType: "alpha" }}
+                    maskUnits="userSpaceOnUse"
+                    x="4"
+                    y="4"
+                    width="16"
+                    height="16"
+                    >
+                    <rect x="4" y="4" width="16" height="16" fill="" />
+                    </mask>
+                    <g mask="url(#mask0_1120_40651)">
+                    <path
+                        d="M7.80523 17.2667C7.51045 17.2667 7.25812 17.1618 7.04823 16.9519C6.83834 16.742 6.7334 16.4897 6.7334 16.1949V7.80523C6.7334 7.51045 6.83834 7.25812 7.04823 7.04823C7.25812 6.83834 7.51045 6.7334 7.80523 6.7334H16.1949C16.4897 6.7334 16.742 6.83834 16.9519 7.04823C17.1618 7.25812 17.2667 7.51045 17.2667 7.80523V13.3629L13.3629 17.2667H7.80523ZM13.2001 16.4001L16.4001 13.2001H13.2001V16.4001ZM9.0949 13.0206H12.0001V12.1539H9.0949V13.0206ZM9.0949 10.6334H14.9052V9.76673H9.0949V10.6334Z"
+                        fill=""
+                    />
+                    </g>
+                </svg>
+                </span>
+            )}
+            <span style={{ marginTop: "3px" }}>{option?.name}</span>
+            </MenuItem>
+        );
+        })}
+
         </Menu>
     }
 
