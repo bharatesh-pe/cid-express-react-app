@@ -3329,7 +3329,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     ];
 
     // Add default fields
-    attributesArray.push("id", "created_by", "ui_case_id", "pt_case_id");
+    attributesArray.push("id", "created_by", "created_at", "ui_case_id", "pt_case_id");
 
     // Ensure valid sort order
     const sortOrder = ["ASC", "DESC"].includes(order?.toUpperCase()) ? order.toUpperCase() : "DESC";
