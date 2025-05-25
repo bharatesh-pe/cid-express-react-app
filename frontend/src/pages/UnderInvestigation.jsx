@@ -887,16 +887,31 @@ const [selectedFieldName, setSelectedFieldName] = useState('');
         showNewApprovalPage("B Report");
     }
 
+    const [showAccusedTable, setShowAccusedTable] = useState(false);
+    const [accusedTableHeaderData, setAccusedTableHeaderData] = useState([]);
+    const [accusedTableRowData, setAccusedTableRowData] = useState([]);
+
+    const [accusedTableSearchData, setAccusedTableSearchData] = useState("");
+    const [accusedTableCurrentPage, setAccusedTableCurrentPage] = useState(1);
+    const [accusedTableTotalPage, setAccusedTableTotalPage] = useState(0);
+    const [accusedTableTotalRecord, setAccusedTableTotalRecord] = useState(0);
+    const [accusedTableTrigger, setAccusedTableTrigger] = useState(false)
+
+    const [accusedFromDate, setAccusedFromDate] = useState(null);
+    const [accusedToDate, setAccusedToDate] = useState(null);
+    const [accusedFilterData, setAccusedFilterData] = useState({});
+
+    const [accusedFormOpen, setAccusedFormOpen] = useState(false);
     const handleNatureOfDisposalSubmit = () => {
         if (natureOfDisposalValue) {
             
             if(natureOfDisposalValue?.code){
                 switch (natureOfDisposalValue?.code) {
                     case "disposal":
-                        showMorethenOneTemplate("cid_ui_case_charge_sheet");
+                        showAccusedTableView(accusedTableCurrentPage);
                         break;
                     case "178_cases":
-                        showPtCaseTemplate();
+                        showAccusedTableView(accusedTableCurrentPage);
                         break;
                     case "b_Report":
                         natureOfDisposalSysStatus("b_Report");
@@ -919,6 +934,658 @@ const [selectedFieldName, setSelectedFieldName] = useState('');
             setNatureOfDisposalValue(null);
         }
     };
+
+    const setAccusedCurrentPagination = (page) => {
+        setAccusedTableCurrentPage(page);
+        showAccusedTableView(page);
+    }
+
+    const showAccusedTableView = async (page, searchFlag)=>{
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
+            toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
+            toast.error("Please Select Designation !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
+            toast.error("Please Select Approval Date !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
+
+            toast.error("Please Enter Comments !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const viewTableData = {
+            table_name: "cid_ui_case_accused",
+        };
+        
+        setLoading(true);
+    
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+        
+            setLoading(false);
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+            
+                    const getTemplatePayload = {
+                        table_name: "cid_ui_case_accused",
+                        ui_case_id: selectedRowData?.id,
+                        pt_case_id: selectedRowData?.pt_case_id || null,
+                        limit : 10,
+                        page : !searchFlag ? page : 1,
+                        search: !searchFlag ? accusedTableSearchData : "",        
+                        from_date: !searchFlag ? accusedFromDate : null,
+                        to_date: !searchFlag ? accusedToDate : null,
+                        filter: !searchFlag ? accusedFilterData : {},
+                    };
+
+                    setLoading(true);
+                    try {
+
+                        const getTemplateResponse = await api.post("/templateData/getTemplateData",getTemplatePayload);
+                        setLoading(false);
+
+                        const { meta } = getTemplateResponse;
+
+                        const totalPages = meta?.meta?.totalPages;
+                        const totalItems = meta?.meta?.totalItems;
+                        
+                        if (totalPages !== null && totalPages !== undefined) {
+                            setAccusedTableTotalPage(totalPages);
+                        }
+                        
+                        if (totalItems !== null && totalItems !== undefined) {
+                            setAccusedTableTotalRecord(totalItems);
+                        }
+
+                        const renderCellFunc = (key, count) => (params) => accusedTableCellRender(key, params, params.value, count, "cid_ui_case_accused");
+
+                        // var tableHeader = viewTemplateResponse?.['data']?.['fields'].map((element, index)=>{
+                        //     return {
+                        //         field: element?.name,
+                        //         headerName: element?.label,
+                        //         width: element?.label.length < 15 ? 100 : 200,
+                        //         resizable: true,
+                        //         cellClassName: 'justify-content-start',
+                        //         renderHeader: (params) => (
+                        //             tableHeaderRender(params, element?.name)
+                        //         ),
+                        //         renderCell: renderCellFunc(element?.name),
+                        //     }
+                        // });
+
+                        var tableHeader = [
+                            {
+                                field: "sl_no",
+                                headerName: "S. No",
+                                width: 70,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "sl_no")
+                                ),
+                                renderCell: renderCellFunc("sl_no"),
+                            },
+                            {
+                                field: "field_name",
+                                headerName: "Name",
+                                width: 200,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_name")
+                                ),
+                                renderCell: renderCellFunc("field_name", 0),
+                            },
+                            {
+                                field: "field_aadhar_no",
+                                headerName: "Aadhar No",
+                                width: 200,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_aadhar_no")
+                                ),
+                                renderCell: renderCellFunc("field_aadhar_no"),
+                            },
+                            {
+                                field: "field_government_servent",
+                                headerName: "Government Servent",
+                                width: 300,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_government_servent")
+                                ),
+                                renderCell: renderCellFunc("field_government_servent"),
+                            },
+                            {
+                                field: "field_status_of_accused_in_charge_sheet",
+                                headerName: "Status of Accused in Charge Sheet",
+                                flex: 1,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_status_of_accused_in_charge_sheet")
+                                ),
+                                renderCell: renderCellFunc("field_status_of_accused_in_charge_sheet"),
+                            },
+                            {
+                                field: "field_pso_&_19_pc_act_order",
+                                headerName: "PSO & 19 PC ACT Order",
+                                width: 300,
+                                resizable: true,
+                                cellClassName: 'justify-content-start',
+                                renderHeader: (params) => (
+                                    tableHeaderRender(params, "field_pso_&_19_pc_act_order")
+                                ),
+                                renderCell: renderCellFunc("field_pso_&_19_pc_act_order"),
+                            },
+                        ];
+
+                        const formatDate = (value) => {
+                            const parsed = Date.parse(value);
+                            if (isNaN(parsed)) return value;
+                            return new Date(parsed).toLocaleDateString("en-GB");
+                        };
+
+                        const updatedRowData = getTemplateResponse.data.map((field, index) => {
+                            const updatedField = {};
+
+                            Object.keys(field).forEach((key) => {
+                                if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                                updatedField[key] = formatDate(field[key]);
+                                } else {
+                                updatedField[key] = field[key];
+                                }
+                            });
+
+                            return {
+                                ...updatedField,
+                                sl_no: (page - 1) * 10 + (index + 1),
+                                ...(field.id ? {} : { id: "unique_id_" + index }),
+                            };
+                        });
+
+                        setAccusedTableHeaderData(tableHeader);
+                        setAccusedTableRowData(updatedRowData);
+                        setShowAccusedTable(true);
+                        setAccusedFormOpen(false);
+
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response["data"]) {
+                            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                    }
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const nextAccusedStage = async ()=>{
+
+        var pendingRecord = false;
+        var droppedRecord = false;
+        var invalidAccused = false;
+
+        const accusedPayload = {
+            table_name: "cid_ui_case_accused",
+            ui_case_id : selectedRowData.id || "",
+            pt_case_id : selectedRowData.pt_case_id || "",
+        };
+
+        setLoading(true);
+        try {
+            const checkAccusedData = await api.post("/templateData/checkAccusedDataStatus",accusedPayload);
+            setLoading(false);
+
+            if (checkAccusedData && checkAccusedData.success && checkAccusedData.data) {
+
+                if(checkAccusedData.data?.['invalid_accused']){
+                    invalidAccused = checkAccusedData.data?.['invalid_accused']
+                }
+
+                if(checkAccusedData.data?.['pending_case']){
+                    pendingRecord = checkAccusedData.data?.['pending_case']
+                }
+
+                if(checkAccusedData.data?.['droppedRecord']){
+                    droppedRecord = checkAccusedData.data?.['droppedRecord']
+                }
+
+            } else {
+                const errorMessage = checkAccusedData.message ? checkAccusedData.message : "Failed to check accused. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+            return;
+        }
+
+        if(invalidAccused){
+            Swal.fire({
+                title: 'Missing Attachment',
+                text: 'Some accused are marked as Government Servant with Chargesheeted/Dropped status, but the PSO & 19 PC ACT Order is not uploaded.',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+            });
+            return;
+        }
+
+        if (droppedRecord) {
+            Swal.fire({
+                title: 'Dropped Case Found',
+                text: 'Please update whether the accused is being treated as a witness.',
+                icon: 'info',
+                confirmButtonText: 'OK',
+            });
+            return;
+        }
+
+
+        if(pendingRecord){
+            setNatureOfDisposalValue((prev) => ({
+                ...prev,
+                code: "178_cases"
+            }));
+        }else{
+            setNatureOfDisposalValue((prev) => ({
+                ...prev,
+                code: "disposal"
+            }));
+        }
+
+        showPtCaseTemplate();
+    }
+
+    const accusedTableCellRender = (key, params, value, index, tableName) => {
+        
+        if (params?.row?.attachments) {
+            var attachmentField = params.row.attachments.find(
+                (data) => data.field_name === key
+            );
+            
+            if (attachmentField) {
+                return fileUploadTableView(key, params, params.value);
+            }
+        }
+
+        let highlightColor = {};
+        let onClickHandler = null;
+
+        if (tableName && index !== null && index === 0 ) {
+            highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
+            onClickHandler = (event) => {event.stopPropagation();handleViewAccused(params?.row, true, "cid_ui_case_accused")};
+        }
+
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    style={highlightColor}
+                    onClick={onClickHandler}
+                    className={`tableValueTextView Roboto`}
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
+        );
+    };
+
+    const accusedShouldHighlightRowRed = (row) => {
+
+        const isGovServant = row?.field_government_servent === "Yes" || row?.field_government_servent == null;
+        const chargeSheetStatus = row?.field_status_of_accused_in_charge_sheet;
+        const isChargedOrDropped = ["Charge Sheet", "Dropped"].includes(chargeSheetStatus) || !chargeSheetStatus;
+        const hasPSOAttachment = row?.attachments?.some(att => att.field_name === "field_pso_&_19_pc_act_order");
+
+        return isGovServant && isChargedOrDropped && !hasPSOAttachment;
+    };
+
+    const handleViewAccused = async (rowData, editData, table_name) => {
+
+        if (!table_name || table_name === "") {
+            toast.warning("Please Check Table Name", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        var viewTemplatePayload = {
+            table_name: table_name,
+            id: rowData.id,
+        };
+
+        setLoading(true);
+
+        try {
+
+            const viewTemplateData = await api.post("/templateData/viewTemplateData",viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData && viewTemplateData.success) {
+
+                setInitialData(viewTemplateData.data ? viewTemplateData.data : {});
+                setviewReadonly(true);
+                setEditTemplateData(false);
+                setSelectedRowId(null);
+                setSelectedTemplateId(null);
+
+                const viewTableData = {
+                    table_name: table_name,
+                };
+
+                setLoading(true);
+                try {
+                    const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+                    setLoading(false);
+
+                    if (viewTemplateResponse && viewTemplateResponse.success) {
+                        
+                        setAccusedFormOpen(true);
+                        setSelectedRowId(rowData.id);
+                        setSelectedTemplateId(viewTemplateResponse["data"].template_id);
+                        setFormTemplateData( viewTemplateResponse.data["fields"] ? viewTemplateResponse.data["fields"] : [] );
+                        if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0 ) {
+                            setstepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                        }
+
+                    } else {
+                        const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to delete the template. Please try again.";
+                        toast.error(errorMessage, {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response["data"]) {
+                        toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            } else {
+                const errorMessage = viewTemplateData.message
+                ? viewTemplateData.message
+                : "Failed to create the template. Please try again.";
+                toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+    const accusedUpdateTable = async (data) => {
+
+        const table_name = "cid_ui_case_accused";
+
+        if (!table_name || table_name === "") {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("table_name", table_name);
+        var normalData = {}; // Non-file upload fields
+
+        formTemplateData.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some((file) => file.filename instanceof File);
+
+                            var filteredArray = data[field.name].filter((file) => file.filename instanceof File);
+
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+                                formData.append("folder_attachment_ids",JSON.stringify(filteredArray));
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+
+        normalData["id"] = selectedRowId;
+        formData.append("id", selectedRowId);
+        formData.append("data", JSON.stringify(normalData));
+        
+        setLoading(true);
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData",formData);
+            setLoading(false);
+
+            if (saveTemplateData && saveTemplateData.success) {
+
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        showAccusedTableView(accusedTableCurrentPage);
+                    },
+                });
+
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+
+    const accusedCloseForm = ()=>{
+        setAccusedFormOpen(false);
+    }
 
     const showMorethenOneTemplate = async (table)=>{
         const viewTableData = {
@@ -1134,6 +1801,7 @@ const [selectedFieldName, setSelectedFieldName] = useState('');
 
         var othersData = { 
             "sys_status" : othersUpdateData,
+            "field_updation": { "field_nature_of_disposal" : natureOfDisposalValue?.name},
             "others_table_name" : table_name
         }
 
@@ -1185,6 +1853,8 @@ const [selectedFieldName, setSelectedFieldName] = useState('');
                 setOtherFormOpen(false);
                 setNatureOfDisposalValue(null);
                 setNatureOfDisposalFileUpload({});
+                setShowAccusedTable(false);
+                setAccusedFormOpen(false);
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -1227,6 +1897,7 @@ const [selectedFieldName, setSelectedFieldName] = useState('');
         
         var othersData = { 
             "sys_status" : othersUpdateData,
+            "field_updation": { "field_nature_of_disposal" : natureOfDisposalValue?.name},
             "others_table_name" : table_name
         }
 
@@ -2017,6 +2688,7 @@ const [selectedFieldName, setSelectedFieldName] = useState('');
         }
 
         if(natureOfDisposalModal){
+            setShowAccusedTable(false);
             handleNatureOfDisposalSubmit();
             return
         }
@@ -5711,6 +6383,11 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
   }
 
   const onCaseUpdateTemplateData = async (data) => {
+
+    if(natureOfDisposalModal){
+        accusedUpdateTable(data)
+        return;
+    }
 
     if (!table_name || table_name === "") {
       toast.warning("Please Check The Template", {
@@ -10810,8 +11487,8 @@ const handleOpenExportPopup = async () => {
           template_id={selectedTemplateId}
           linkToLeader={linkLeader}
           linkToOrganization={linkOrganization}
-          table_name={table_name}
-          template_name={template_name}
+          table_name={natureOfDisposalModal ? "cid_ui_case_accused" : table_name}
+          template_name={natureOfDisposalModal ? "Accused" : template_name}
           readOnly={viewReadonly}
           editData={editTemplateData}
           onUpdate={onCaseUpdateTemplateData}
@@ -10823,6 +11500,46 @@ const handleOpenExportPopup = async () => {
           closeForm={closeAddForm}
         />
       )}
+
+    {accusedFormOpen && (
+        <Dialog
+            open={accusedFormOpen}
+            onClose={() => setAccusedFormOpen(false)}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            maxWidth="xl"
+            fullWidth
+        >
+            <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                <DialogContentText id="alert-dialog-description">
+                    <FormControl fullWidth>
+                        <NormalViewForm
+                            table_row_id={selectedRowId}
+                            template_id={selectedTemplateId}
+                            linkToLeader={linkLeader}
+                            linkToOrganization={linkOrganization}
+                            table_name={"cid_ui_case_accused"}
+                            template_name={"Accused"}
+                            readOnly={viewReadonly}
+                            editData={editTemplateData}
+                            onUpdate={onCaseUpdateTemplateData}
+                            formConfig={formTemplateData}
+                            stepperData={stepperData}
+                            initialData={initialData}
+                            onSubmit={onSaveTemplateData}
+                            onError={onSaveTemplateError}
+                            closeForm={accusedCloseForm}
+                        />
+                    </FormControl>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ padding: "12px 24px" }}>
+                <Button onClick={() => setAccusedFormOpen(false)}>
+                    Cancel
+                </Button>
+            </DialogActions>
+        </Dialog>
+    )}
 
       <Dialog
         open={showMergeModal}
@@ -13625,6 +14342,75 @@ const handleOpenExportPopup = async () => {
                     </DialogContent>
                 </Dialog>
           }
+
+        {
+            showAccusedTable && 
+            <Dialog
+                open={showAccusedTable}
+                onClose={() => setShowAccusedTable(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                fullScreen
+                fullWidth
+                sx={{ zIndex: "1", marginLeft: '50px' }}
+              >
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "start",
+                        justifyContent: "space-between",
+                    }}
+                >
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                        onClick={() => { setShowAccusedTable(false)}}
+                    >
+
+                        <WestIcon />
+
+                        <Typography variant="body1" fontWeight={500}>
+                            Accused Data
+                        </Typography>
+
+                        {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                            <Chip
+                                label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                                sx={{ fontWeight: 500, marginTop: '2px' }}
+                            />
+                        )}
+
+                    </Box>
+
+                    <Button
+                        variant="contained"
+                        sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                        onClick={() => {nextAccusedStage()}}
+                    >
+                        Submit
+                    </Button>
+
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        <Box sx={{ width: '100%'}}>
+                            <TableView 
+                                rows={accusedTableRowData} 
+                                columns={accusedTableHeaderData}
+                                totalPage={accusedTableTotalPage} 
+                                totalRecord={accusedTableTotalRecord} 
+                                paginationCount={accusedTableCurrentPage} 
+                                handlePagination={setAccusedCurrentPagination} 
+                                highLightedRow={accusedShouldHighlightRowRed}
+                            />
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
+        }
 
     </Box>
   );

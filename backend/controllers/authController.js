@@ -16,6 +16,7 @@ const {
   DesignationDivision,
   DesignationDepartment,
   CaseAlerts,
+  Template,
 } = require("../models");
 const crypto = require("crypto");
 const moment = require("moment");
@@ -988,15 +989,15 @@ const set_user_hierarchy = async (req, res) => {
         
 //         /*alert types */
 //         //{
-//         // IO_ALLOCATION_PENDING
-//         // ACTION_PLAN_PENDING
-//         // ACTION_PLAN_OVERDUE
-//         // PROGRESS_REPORT_PENDING
-//         // PROGRESS_REPORT_OVERDUE
-//         // FSL_PF_ALERT
-//         // FSL_PF_CRITICAL
-//         // FSL_PF_OVERDUE
-//         // FSL_OVERDUE_TODAY
+//         // IO_ALLOCATION_PENDING - ON creation
+//         // ACTION_PLAN_PENDING - Cron
+//         // ACTION_PLAN_OVERDUE - Cron
+//         // PROGRESS_REPORT_PENDING - Cron
+//         // PROGRESS_REPORT_OVERDUE - Cron
+//         // FSL_PF_ALERT - Cron
+//         // FSL_PF_CRITICAL - Cron
+//         // FSL_PF_OVERDUE - Cron
+//         // FSL_OVERDUE_TODAY - Cron
 //         // CUSTODIAL_CS_ALERT
 //         // CUSTODIAL_CS_CRITICAL
 //         // CC_PENDENCY
@@ -1127,53 +1128,53 @@ const set_user_hierarchy = async (req, res) => {
 //             total_count: 0,
 //         };
 
-//         // dashboard_count_details["NATURE_OF_DISPOSAL"] = {
-//         //     label: "Charge Sheet (CC) Pendency",
-//         //     divider: 3,
-//         //     divider_details: {
-//         //         "60": {
-//         //             name: "60 - 90 Days",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"low",                    
-//         //         },
-//         //         "90": {
-//         //             name: "DIG Extension",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"medium",
-//         //             only:""
+        // dashboard_count_details["NATURE_OF_DISPOSAL"] = {
+        //     label: "Charge Sheet (CC) Pendency",
+        //     divider: 3,
+        //     divider_details: {
+        //         "60": {
+        //             name: "60 - 90 Days",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"low",                    
+        //         },
+        //         "90": {
+        //             name: "DIG Extension",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"medium",
+        //             only:""
                     
-//         //         },
-//         //         "150": {
-//         //             name: "150 - 180 Days",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"high",
-//         //         },
-//         //         "180": {
-//         //             name: "ADGP Extension",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"medium",
+        //         },
+        //         "150": {
+        //             name: "150 - 180 Days",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"high",
+        //         },
+        //         "180": {
+        //             name: "ADGP Extension",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"medium",
                     
-//         //         },
-//         //         "360": {
-//         //             name: "180 - 360 Days",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"high",
-//         //         },
-//         //         "above_360": {
-//         //             name: "DGP Extension",
-//         //             count: 0,
-//         //             record_id:[],
-//         //             level:"high",
-//         //         },
+        //         },
+        //         "360": {
+        //             name: "180 - 360 Days",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"high",
+        //         },
+        //         "above_360": {
+        //             name: "DGP Extension",
+        //             count: 0,
+        //             record_id:[],
+        //             level:"high",
+        //         },
 
-//         //     },
-//         //     total_count: 0,
-//         // };
+        //     },
+        //     total_count: 0,
+        // };
 
         
 //         const todayStr = new Date().toDateString();
@@ -1237,33 +1238,124 @@ const fetch_dash_count = async (req, res) => {
         const normalizedDivisionIds = normalizeValues(allowedDivisionIds, "string");
         const normalizedUserIds = normalizeValues(allowedUserIds, "string");
 
+        const caseWhereClause = {};
+
         const baseWhereClause = {
             module: case_modules,
             status: "pending",
         };
-
-        if (getDataBasesOnUsers && normalizedUserIds.length > 0) {
-            baseWhereClause[Op.or] = [
-                { assigned_io: { [Op.in]: normalizedUserIds } },
-                { user_id: { [Op.in]: normalizedUserIds } },
-            ];
-        } else if (!getDataBasesOnUsers && normalizedDivisionIds.length > 0) {
-            baseWhereClause.division_id = { [Op.in]: normalizedDivisionIds };
+        
+        
+        if (!getDataBasesOnUsers) {
+            if (allowedDivisionIds.length > 0) {
+                if (["ui_case", "pt_case", "eq_case"].includes(case_modules)) {
+                    caseWhereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
+                } else {
+                    caseWhereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                }
+            }
+        } else {
+            if (allowedUserIds.length > 0) {
+                if (["ui_case", "pt_case", "eq_case"].includes(case_modules)) {
+                    caseWhereClause[Op.or] = [
+                        { created_by_id: { [Op.in]: normalizedUserIds } },
+                        { field_io_name: { [Op.in]: normalizedUserIds } },
+                    ];
+                } else {
+                    caseWhereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                }
+            }
         }
 
-        const roleFilter = {
-            [Op.or]: [
-                { designation_id: String(user_designation_id) },
-                { user_id: String(user_id) },
-            ]
-        };
+        // Fetch the template using template_module to get the table_name
+        const caseTableTemplate = await Template.findOne({ where: { case_modules } });
+        if (!caseTableTemplate) {
+            return userSendResponse(res, 400, false, "Template not found", null);
+        }
+        const caseTableName = caseTableTemplate.table_name;
+        const caseTemplateName = caseTableTemplate.template_name;
+    
+        if (!caseTableName) {
+            return userSendResponse(res, 404, false, `Table ${caseTemplateName} does not exist.`, null );
+        }
+
+        let caseFieldsArray;
+        try {
+            caseFieldsArray = typeof caseTableTemplate.fields === "string" ? JSON.parse(caseTableTemplate.fields) : caseTableTemplate.fields;
+        } catch (err) {
+            console.error("Error parsing fields:", err);
+            return userSendResponse( res, 500, false, "Invalid table schema format.",null);
+        }
+    
+        if (!Array.isArray(caseFieldsArray)) {
+            return userSendResponse(res, 500, false, "Fields must be an array in the table schema.", null);
+        }
+
+        const caseFields = {};
+        const caseFieldConfigs = {};
+
+        for (const field of caseFieldsArray) {
+            var {
+                name: columnName,
+                data_type,
+                max_length,
+                not_null,
+                default_value,
+                table,
+                forign_key,
+                attributes,
+                options,
+                type,
+                table_display_content,
+            } = field;
+        
+            if (!table_display_content) continue; // Filter out fields not marked for display
+        
+            // Store the complete field configuration for reference
+            caseFieldConfigs[columnName] = field;
+        
+            const sequelizeType =
+            data_type?.toUpperCase() === "VARCHAR" && max_length
+                ? Sequelize.DataTypes.STRING(max_length)
+                : Sequelize.DataTypes[data_type?.toUpperCase()] ||
+                Sequelize.DataTypes.STRING;
+        
+            caseFields[columnName] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+                displayContent: table_display_content,
+            };
+        
+        }
+        
+        const CaseDynamicTable = sequelize.define(caseTableName, caseFields, {
+            freezeTableName: true,
+            timestamps: true,
+        });
+        
+        // Build base attributes array (only getting IDs)
+        const caseAttributesArray = ["id"];
+        
+        const caseResult = await CaseDynamicTable.findAndCountAll({
+            where: caseWhereClause,
+            attributes: caseAttributesArray,
+        });
+        
+        const onlyCaseIds = caseResult.rows.map(row => row.id);
+        
+        console.log("only get the case id in array", onlyCaseIds);
+
+        baseWhereClause["record_id"] = { [Op.in]: onlyCaseIds };
+
+       
 
         const whereClause = {
             ...baseWhereClause,
             [Op.or]: [
-                { alert_type: "ACTION_PLAN", send_to_type: "user", ...roleFilter },
                 { alert_type: { [Op.in]: [
                     "IO_ALLOCATION",
+                    "ACTION_PLAN",
                     "PROGRESS_REPORT",
                     "FSL_PF",
                     "FSL",
@@ -1379,7 +1471,7 @@ const fetch_dash_count = async (req, res) => {
         });
     } catch (error) {
         console.error("Error retrieving dashboard count:", error.message);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({ success: false, message: "Internal server error"+error });
     }
 };
   

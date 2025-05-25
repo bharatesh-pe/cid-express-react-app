@@ -1564,6 +1564,19 @@ exports.getTemplateData = async (req, res, next) => {
             });
         }
 
+        // Fetch attachments related to this row
+        const attachments = await ProfileAttachment.findAll({
+            where: {
+                template_id: tableData.template_id,
+                table_row_id: data.id,
+            },
+            order: [["created_at", "DESC"]],
+        });
+
+        if (attachments.length) {
+            filteredData.attachments = attachments.map((att) => att.toJSON());
+        }
+
         return filteredData;
       })
     );
@@ -5293,8 +5306,8 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
             insertedIO = insertedData.field_io_name || null;
             const fileUpdates = {};
     
-            if(folder_attachment_ids)
-            {
+            // if(folder_attachment_ids)
+            // {
                 if (req.files && req.files.length > 0) {
                     const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
         
@@ -5338,7 +5351,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                     }
               
                 }
-            }
+            // }
 
             if (table_name === "cid_under_investigation") {
                 const main_table = table_name;
@@ -5595,6 +5608,33 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						{ where: { id: recordId }, transaction: t }
 					);
 
+                  
+                    if(otherParsedData.field_updation) {
+                        const updates = {};
+                        for (const [key, value] of Object.entries(otherParsedData.field_updation)) {
+                            updates[key] = value;
+                        }
+                    
+                        const [fieldUpdateCount] = await OtherModel.update(
+                            updates,
+                            { where: { id: recordId }, transaction: t }
+                        );
+                    
+                        if (fieldUpdateCount === 0) {
+                            await t.rollback();
+                            return userSendResponse(res, 400, false, "Field update failed or no fields were changed.");
+                        }
+                    
+                        // await CaseHistory.create({
+                        //     template_id: otherTableData.template_id,
+                        //     table_row_id: recordId,
+                        //     user_id: userId,
+                        //     actor_name: userName,
+                        //     action: `Field(s) Updated: ${Object.keys(updates).join(", ")}`,
+                        //     transaction: t
+                        // });
+                    }
+
                     await CaseHistory.create({
                         template_id: otherTableData.template_id,
                         table_row_id: recordId,
@@ -5603,13 +5643,14 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                         action: `Status Updated`,
                         transaction: t
                     });
+                    
 
 					if (updatedCount === 0) {
 						await t.rollback();
 						return userSendResponse(res, 400, false, "No changes detected or update failed.");
 					}
 
-                    if(others_folder_attachment_ids) {
+                    // if(others_folder_attachment_ids) {
                     
                         var otherFileUpdates = {};
                         if (req.files && req.files.length > 0) {
@@ -5654,7 +5695,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                 );
                             }
                         }
-                    }
+                    // }
 				}
 
 				if(!recordId) {
@@ -6427,6 +6468,149 @@ exports.getAccusedWitness = async (req, res) => {
 };
 
 
+exports.checkAccusedDataStatus = async (req, res) => {
+	try {
+		const {  table_name , ui_case_id , pt_case_id } = req.body;
+
+		if (!table_name) {
+			return userSendResponse(res, 400, false, "Missing required table name.");
+		}
+
+
+		// Fetch the template metadata
+		const tableData = await Template.findOne({ where: { table_name } });
+
+		if (!tableData) {
+		const message = `Table ${table_name} does not exist.`;
+		return userSendResponse(res, 400, false, message, null);
+		}
+
+		// Parse the schema fields from Template
+		const schema = typeof tableData.fields === "string"	? JSON.parse(tableData.fields) : tableData.fields;
+
+		const fields = {};
+
+		const relevantSchema  = schema;
+
+		// Define model attributes based on filtered schema
+		const modelAttributes = {
+            id: {
+                type: Sequelize.DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            created_at: {
+                type: Sequelize.DataTypes.DATE,
+                allowNull: false,
+            },
+            updated_at: {
+                type: Sequelize.DataTypes.DATE,
+                allowNull: false,
+            },
+            created_by: {
+                type: Sequelize.DataTypes.STRING,
+                allowNull: true,  
+            } 
+		};
+
+		for (const field of relevantSchema) {
+            const {
+                name: columnName,
+                data_type,
+                not_null,
+                default_value,
+                table,
+                forign_key,
+                attributes,
+            } = field;
+
+            if (!columnName || !data_type) {
+                console.warn(
+                `Missing required attributes for field ${columnName}. Using default type STRING.`
+                );
+                modelAttributes[columnName] = {
+                type: Sequelize.DataTypes.STRING,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+                };
+                continue;
+            }
+
+            // Handle data_type mapping to Sequelize types
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+		
+            modelAttributes[columnName] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+
+            fields[columnName] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+		}
+
+		// Define and sync the dynamic model
+		const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+		});
+
+		await Model.sync();
+
+		let whereClause = {};
+		if (ui_case_id && ui_case_id != "" && pt_case_id && pt_case_id != "") {
+            whereClause = {
+                [Op.or]: [{ ui_case_id }, { pt_case_id }],
+            };
+		} else if (ui_case_id && ui_case_id != "") {
+			whereClause = { ui_case_id };
+		} else if (pt_case_id && pt_case_id != "") {
+			whereClause = { pt_case_id };
+		}
+
+		let attributes = ["id","field_government_servent" , "field_pso_&_19_pc_act_order" , "field_status_of_accused_in_charge_sheet"];
+
+
+		const AccusedData = await Model.findAll({
+			where: whereClause,
+			attributes: attributes,
+		});
+
+        data = {
+            table_name,
+            ui_case_id,
+            pt_case_id,
+            pending_case : false,
+            invalid_accused : false,
+        }
+
+		for(const accused of AccusedData)
+        {
+            var gov_served = accused?.["field_government_servent"];
+            var accused_in_charge_sheet = accused?.["field_status_of_accused_in_charge_sheet"];
+            var pc_act_order = accused?.["field_pso_&_19_pc_act_order"];
+
+            if ( String(gov_served).toLowerCase() === "yes" && (String(accused_in_charge_sheet).toLowerCase() === "dropped" || String(accused_in_charge_sheet).toLowerCase() === "charge sheet") && (!pc_act_order || pc_act_order === "")) {
+                data.invalid_accused = true;
+            }
+            
+            if (String(accused_in_charge_sheet).toLowerCase() === "pending") {
+                data.pending_case = true;
+            }              
+
+        }
+
+		return res.status(200).json({ success: true, data });
+	} catch (error) {
+		console.error("Error fetching records:", error);
+		return res.status(500).json({ success: false, message: "Internal server error." });
+	}
+};
 
 exports.insertMergeData = async (req, res) => {
   const { table_name, data } = req.body;

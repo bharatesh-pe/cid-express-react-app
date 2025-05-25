@@ -1483,3 +1483,7 @@ div::first-letter {
     .tox-promotion, .tox-statusbar__branding{
         display: none !important;
     }
+
+    .red-row {
+        background-color: #ffe0e0 !important;
+    }

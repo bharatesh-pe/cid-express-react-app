@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
     Box,
     Tabs,
@@ -22,14 +22,15 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Navbar from "../components/navbar";
+import api from "../services/api";
 
     const tabLabels = [
-        { label: "UI Case", route: "/case/ui_case" },
-        { label: "PT Case", route: "/case/pt_case" },
-        { label: "Enquiries", route: "/case/enquiry" },
-        { label: "Government Order", route: "/repository/gn_order" },
-        { label: "Judgements", route: "/repository/judgements" },
-        { label: "Circular", route: "/repository/circular" },
+        { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
+        { label: "Court Module", route: "/case/pt_case", key: "pt_case" },
+        { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
+        { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
+        { label: "Crime Analytics", route: "/case/ui_case", key: "crime_analytics" },
+        { label: "Orders & Circulars", route: "/repository/judgements", key: "order_circulars" },
     ];
 
 
@@ -146,20 +147,6 @@ import Navbar from "../components/navbar";
         },
     ];
 
-    const getAvatarColor = (days) => {
-        const dayValue = Number(days);
-
-        if (dayValue === 0) {
-            return "linear-gradient(135deg, #4caf50, #81c784)";
-        } else if (dayValue === 1) {
-            return "linear-gradient(135deg, #ff9800, #fb8c00)";
-        } else if (dayValue === 2) {
-            return "linear-gradient(135deg, #f44336, #e53935)";
-        } else {
-            return "linear-gradient(135deg, #4caf50, #81c784)";
-        }
-    };
-
     const GradientBadge = styled(Box)(({ gradient }) => ({
         background: gradient,
         color: '#fff',
@@ -174,45 +161,45 @@ import Navbar from "../components/navbar";
     }));
 
     const cardBackgrounds = [
-    "linear-gradient(135deg, #569bd0, #5c5ee0)",  // 1 - darker blue
-    "linear-gradient(135deg, #a5a6d9, #8a4fd1)",  // 2 - darker lavender
-    "linear-gradient(135deg, #8c8dc7, #2c38c4)",  // 3 - deeper indigo
-    "linear-gradient(135deg, #a5a6d9, #3d3fd0)",  // 4 - deeper violet
-    "linear-gradient(135deg, #65bda3, #4a8c73)",  // 5 - teal green
-    "linear-gradient(135deg, #e2a37e, #cf5d3f)",  // 6 - burnt orange
-    "linear-gradient(135deg, #dc87b1, #b24f91)",  // 7 - rose pink
-    "linear-gradient(135deg, #f0c95e, #e09826)",  // 8 - amber gold
-    "linear-gradient(135deg, #9fa3b0, #727681)",  // 9 - slate grey
-    "linear-gradient(135deg, #97a7f7, #5c6be5)",  // 10 - soft periwinkle
-    "linear-gradient(135deg, #7cc6fe, #3b95e4)"   // 11 - sky blue
+        "linear-gradient(135deg, #569bd0, #5c5ee0)",  // 1 - darker blue
+        "linear-gradient(135deg, #a5a6d9, #8a4fd1)",  // 2 - darker lavender
+        "linear-gradient(135deg, #8c8dc7, #2c38c4)",  // 3 - deeper indigo
+        "linear-gradient(135deg, #a5a6d9, #3d3fd0)",  // 4 - deeper violet
+        "linear-gradient(135deg, #65bda3, #4a8c73)",  // 5 - teal green
+        "linear-gradient(135deg, #e2a37e, #cf5d3f)",  // 6 - burnt orange
+        "linear-gradient(135deg, #dc87b1, #b24f91)",  // 7 - rose pink
+        "linear-gradient(135deg, #f0c95e, #e09826)",  // 8 - amber gold
+        "linear-gradient(135deg, #9fa3b0, #727681)",  // 9 - slate grey
+        "linear-gradient(135deg, #97a7f7, #5c6be5)",  // 10 - soft periwinkle
+        "linear-gradient(135deg, #7cc6fe, #3b95e4)"   // 11 - sky blue
     ];
 
     const cardHoverBackgrounds = [
-    "linear-gradient(135deg, #467fb0, #484ad0)",  // 1
-    "linear-gradient(135deg, #8e8fc2, #743ebf)",  // 2
-    "linear-gradient(135deg, #6f70a9, #1f2cae)",  // 3
-    "linear-gradient(135deg, #8e8fc2, #2d2fbf)",  // 4
-    "linear-gradient(135deg, #519c8c, #35775f)",  // 5
-    "linear-gradient(135deg, #cb8d6c, #b04c30)",  // 6
-    "linear-gradient(135deg, #c27399, #94396e)",  // 7
-    "linear-gradient(135deg, #deb648, #c37d15)",  // 8
-    "linear-gradient(135deg, #868b9b, #5a5f6a)",  // 9
-    "linear-gradient(135deg, #7b8cdd, #4553d1)",  // 10
-    "linear-gradient(135deg, #66b1f0, #2a7fd1)"   // 11
+        "linear-gradient(135deg, #467fb0, #484ad0)",  // 1
+        "linear-gradient(135deg, #8e8fc2, #743ebf)",  // 2
+        "linear-gradient(135deg, #6f70a9, #1f2cae)",  // 3
+        "linear-gradient(135deg, #8e8fc2, #2d2fbf)",  // 4
+        "linear-gradient(135deg, #519c8c, #35775f)",  // 5
+        "linear-gradient(135deg, #cb8d6c, #b04c30)",  // 6
+        "linear-gradient(135deg, #c27399, #94396e)",  // 7
+        "linear-gradient(135deg, #deb648, #c37d15)",  // 8
+        "linear-gradient(135deg, #868b9b, #5a5f6a)",  // 9
+        "linear-gradient(135deg, #7b8cdd, #4553d1)",  // 10
+        "linear-gradient(135deg, #66b1f0, #2a7fd1)"   // 11
     ];
 
     const cardTitleBackgrounds = [
-    "#6b9ddf",  // 1 - bright blue
-    "#b5aaf0",  // 2 - soft lavender
-    "#9295dc",  // 3 - light indigo
-    "#a2a5f2",  // 4 - light violet
-    "#7ecdb7",  // 5 - mint green
-    "#ee9f76",  // 6 - orange coral
-    "#e58fb4",  // 7 - rose pink
-    "#f5d97b",  // 8 - warm yellow
-    "#adb2c0",  // 9 - slate grey
-    "#a2b4fc",  // 10 - pastel periwinkle
-    "#8dcfff"   // 11 - light sky blue
+        "#6b9ddf",  // 1 - bright blue
+        "#b5aaf0",  // 2 - soft lavender
+        "#9295dc",  // 3 - light indigo
+        "#a2a5f2",  // 4 - light violet
+        "#7ecdb7",  // 5 - mint green
+        "#ee9f76",  // 6 - orange coral
+        "#e58fb4",  // 7 - rose pink
+        "#f5d97b",  // 8 - warm yellow
+        "#adb2c0",  // 9 - slate grey
+        "#a2b4fc",  // 10 - pastel periwinkle
+        "#8dcfff"   // 11 - light sky blue
     ];
 
 
@@ -265,45 +252,47 @@ const Dashboard = () => {
     const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
     
     const [loading, setLoading] = useState(false);
+    const [dashboardMenu, setDashboardMenu] = useState({});
     
-    if (userId === "1") return null;
+    const handleLogout = async () => {
+        const token = localStorage.getItem("auth_token");
+        setLoading(true);
 
-        const handleLogout = async () => {
-            const token = localStorage.getItem("auth_token");
-            setLoading(true);
-            try {
-                const serverURL = process.env.REACT_APP_SERVER_URL;
-                const response = await fetch(`${serverURL}/auth/logout`, {
-                    method: "POST",
-                    headers: {
+        try {
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(`${serverURL}/auth/logout`, {
+                method: "POST",
+                headers: {
                     "Content-Type": "application/json",
                     token: token,
-                    },
-                });
-            
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.message);
-                }
-                setLoading(false);
-                localStorage.removeItem("auth_token");
-                localStorage.removeItem("username");
-                localStorage.removeItem("authAdmin");
-                localStorage.removeItem("kgid");
-                localStorage.removeItem("user_permissions");
-                localStorage.removeItem("designation_id");
-                localStorage.removeItem("designation_name");
-                localStorage.removeItem("user_id");
-                localStorage.removeItem("division_id");
-                localStorage.removeItem("division_name");
-                localStorage.removeItem("allowedUserIds");
-                localStorage.removeItem("getDataBasesOnUsers");
-                localStorage.removeItem("allowedDepartmentIds");
-                localStorage.removeItem("allowedDivisionIds");
-                localStorage.removeItem("role_id");
-                localStorage.removeItem("role_title");
-                navigate("/");
-            } catch (err) {
+                },
+            });
+        
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            setLoading(false);
+            localStorage.removeItem("auth_token");
+            localStorage.removeItem("username");
+            localStorage.removeItem("authAdmin");
+            localStorage.removeItem("kgid");
+            localStorage.removeItem("user_permissions");
+            localStorage.removeItem("designation_id");
+            localStorage.removeItem("designation_name");
+            localStorage.removeItem("user_id");
+            localStorage.removeItem("division_id");
+            localStorage.removeItem("division_name");
+            localStorage.removeItem("allowedUserIds");
+            localStorage.removeItem("getDataBasesOnUsers");
+            localStorage.removeItem("allowedDepartmentIds");
+            localStorage.removeItem("allowedDivisionIds");
+            localStorage.removeItem("role_id");
+            localStorage.removeItem("role_title");
+            navigate("/");
+
+        } catch (err) {
             var errMessage = "Something went wrong. Please try again.";
             if (err && err.message) {
                 errMessage = err.message;
@@ -340,12 +329,94 @@ const Dashboard = () => {
                 className: "toast-warning",
             });
             return;
-            }
-            finally {
-                setLoading(false);
-            }
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+
+    const getAvatarColor = (days) => {
+        const dayValue = Number(days);
+
+        if (dayValue === 0) {
+            return "linear-gradient(135deg, #4caf50, #81c784)";
+        } else if (dayValue === 1) {
+            return "linear-gradient(135deg, #ff9800, #fb8c00)";
+        } else if (dayValue === 2) {
+            return "linear-gradient(135deg, #f44336, #e53935)";
+        } else {
+            return "linear-gradient(135deg, #4caf50, #81c784)";
+        }
+    };
+
+    useEffect(() => {
+        if(tabLabels?.[activeTab]?.key){
+            getDashboardTiles()
+        }
+    }, [activeTab]);
+
+    const getDashboardTiles = async () => {
+        const userDesignationId = localStorage.getItem('designation_id');
+        
+        const payload = {
+            user_designation_id: userDesignationId || null,
+            case_modules: tabLabels?.[activeTab]?.key
         };
 
+        setLoading(true);
+
+        try {
+            const response = await api.post("/auth/fetch_dash_count", payload);
+            setLoading(false);
+
+            if (response?.success) {
+                if(response?.data){
+                    const sortedEntries = Object.entries(response.data).sort(([_, a], [__, b]) => {
+                    const aDiv = a?.divider ?? 0;
+                    const bDiv = b?.divider ?? 0;
+
+                    if (aDiv >= 3 && bDiv < 3) return 1;
+                    if (aDiv < 3 && bDiv >= 3) return -1;
+                        return 0;
+                    });
+
+                    const sortedObject = Object.fromEntries(sortedEntries);
+                    setDashboardMenu(sortedObject);
+                }else{
+                    setDashboardMenu({});
+                }
+            } else {
+                const errorMessage = response?.message || "Failed to fetch dashboard data. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error"
+                });
+                setDashboardMenu({});
+            }
+        } catch (error) {
+            setLoading(false);
+            const message = error?.response?.data?.message || "Something went wrong. Please try again.";
+            toast.error(message, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error"
+            });
+            setDashboardMenu({});
+        }
+    }
+
+    if (userId === "1") return null;
     return (
         <Box sx={{ bgcolor: "#e5e7eb", minHeight: "100vh" }}>
 
@@ -460,17 +531,16 @@ const Dashboard = () => {
                     pb: 1,
                 }}
             >
-                {jobData.map((job, idx) => (
-                    <Card
-                    key={idx}
-                    elevation={6}
+            {Object.entries(dashboardMenu).map(([key, value], index) => (
+                <Card
+                    key={key}
                     onClick={() => navigate(tabLabels?.[activeTab]?.route)}
                     sx={{
-                        width: bottomActions && bottomActions?.[job.title]?.colorCode ? 405 : 300,
+                        width: value.divider >= 3 ? 410 : 300,
                         maxHeight: 130,
                         minHeight: 130,
                         borderRadius: 3,
-                        background: cardBackgrounds[idx] || "#fff",
+                        background: cardBackgrounds[index] || "#fff",
                         flexShrink: 0,
                         boxShadow: "0 2px 2px rgba(0, 0, 0, 0.12), 0 6px 6px rgba(0, 0, 0, 0.08)",
                         transition: "transform 0.3s ease",
@@ -479,51 +549,28 @@ const Dashboard = () => {
                         flexDirection: "column",
                         justifyContent: "space-between",
                         '&:hover': {
-                            background: cardHoverBackgrounds[idx] || cardBackgrounds[idx],
+                            background: cardHoverBackgrounds[index] || cardBackgrounds[index],
                             transform: 'translateY(-4px)'
                         }
                     }}
-                    >
-                    {/* Header */}
-                    <Box sx={{ textAlign: "center", p: 1, borderRadius: 3 , background: cardTitleBackgrounds[idx] || "#fff", }}>
+                >
+                    <Box sx={{ textAlign: "center", p: 1, borderRadius: 3, background: cardTitleBackgrounds[index] || "#fff" }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#FFFFFF" }}>
-                        {job.title}
+                            {value.label}
                         </Typography>
                     </Box>
 
-                    {/* Total Count */}
-                    {/* <Box sx={{ textAlign: "center", p: 2 }}>
-                        <Typography variant="h4" sx={{ fontWeight: 800, color: "#FFFFFF" }}>
-                        {job.totalcase}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: "#FFFFFF" }}>
-                        Total Cases
-                        </Typography>
-                    </Box> */}
-
-                    {/* Bottom Sections */}
-                    <Box
-                        sx={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        flex: 1,
-                        }}
-                    >
-                        {
-                        bottomActions && bottomActions?.[job.title]?.actions ?
-                            bottomActions?.[job.title]?.actions.map((daysKey, i) => {
-                            const match = job.stages.find((s) => s.days === daysKey);
-                            return (
-                                <Tooltip title={daysKey}>
+                    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
+                        {value.divider_details && Object.keys(value.divider_details).length > 0 ? (
+                            Object.entries(value.divider_details).map(([dividerKey, dividerValue], idx) => (
+                                <Tooltip title={dividerValue.name} key={dividerKey}>
                                     <Box
-                                        key={daysKey}
-                                        sx={{ 
+                                        sx={{
                                             minWidth: 0,
                                             flex: "1 1 0",
                                             p: 1,
-                                            textAlign: "center", 
-                                            borderLeft: i !== 0 ? "1px solid rgba(255, 255, 255, 0.3)" : "none", 
+                                            textAlign: "center",
+                                            borderLeft: idx !== 0 ? "1px solid rgba(255, 255, 255, 0.3)" : "none"
                                         }}
                                     >
                                         <Typography
@@ -536,29 +583,28 @@ const Dashboard = () => {
                                                 display: "-webkit-box",
                                                 WebkitLineClamp: 2,
                                                 WebkitBoxOrient: "vertical",
-                                                maxHeight: "2.8em", // optional: ensures the box doesn't grow more than 2 lines
-                                                lineHeight: "1.4em", // adjust line height as needed
+                                                maxHeight: "2.8em",
+                                                lineHeight: "1.4em"
                                             }}
                                         >
-                                            {daysKey}
+                                            {dividerValue.name}
                                         </Typography>
-                                        <GradientBadge gradient={getAvatarColor(i)}>
-                                            {match ? match.count : 0}
+                                        <GradientBadge gradient={getAvatarColor(idx)}>
+                                            {dividerValue.count}
                                         </GradientBadge>
                                     </Box>
                                 </Tooltip>
-                            );
-                            })
-                        :
+                            ))
+                        ) : (
                             <Box sx={{ textAlign: "center", p: 2 }}>
                                 <Typography variant="h6" sx={{ fontWeight: 500, color: "#FFFFFF", textAlign: 'center' }}>
-                                    10
+                                    {value.total_count}
                                 </Typography>
                             </Box>
-                        }
+                        )}
                     </Box>
-                    </Card>
-                ))}
+                </Card>
+            ))}
             </Box>
 
             {openUserDesignationDropdown && userOverallDesignation?.length > 0 && (
