@@ -5365,37 +5365,65 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 const due_date = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000); // Add 24 hours
               
                 const triggered_on = insertedData.created_at;
-                const status = "pending";
+                const status = "Pending";
                 const created_by = userId;
                 const send_to_type = "designation";
                 const division_id = insertedData.field_division || null;
                 const designation_id = user_designation_id || null;
                 const assigned_io = insertedData.field_io_name || null;
               
+
                 try {
-                  await CaseAlerts.create({
-                    module,
-                    main_table,
-                    record_id,
-                    alert_type,
-                    alert_level,
-                    alert_message,
-                    due_date,
-                    triggered_on,
-                    resolved_on: null,
-                    status,
-                    created_by,
-                    created_at: new Date(),
-                    send_to_type,
-                    division_id,
-                    designation_id,
-                    assigned_io,
-                    user_id: null,
-                    transaction: t 
-                  });
-                } catch (error) {
-                  console.error('Error inserting case alert:', error);
-                }
+                    await CaseAlerts.create({
+                      module,
+                      main_table,
+                      record_id,
+                      alert_type,
+                      alert_level,
+                      alert_message,
+                      due_date,
+                      triggered_on,
+                      resolved_on: null,
+                      status,
+                      created_by,
+                      created_at: new Date(),
+                      send_to_type,
+                      division_id,
+                      designation_id,
+                      assigned_io,
+                      user_id: null,
+                      transaction: t 
+                    });
+                  } catch (error) {
+                    console.error('Error inserting case alert:', error);
+                  }
+
+
+                  try {
+                    await CaseAlerts.create({
+                      module,
+                      main_table,
+                      record_id,
+                      alert_type:"NATURE_OF_DISPOSAL",
+                      alert_level,
+                      alert_message : "Alert for IO",
+                      due_date :new Date(createdAt.getTime() + 60 * 24 * 60 * 60 * 1000),
+                      triggered_on,
+                      resolved_on: null,
+                      status,
+                      created_by,
+                      created_at: new Date(),
+                      send_to_type,
+                      division_id,
+                      designation_id,
+                      assigned_io,
+                      user_id: null,
+                      transaction: t 
+                    });
+                  } catch (error) {
+                    console.error('Error inserting case alert:', error);
+                  }
+
             }
               
         }
@@ -6599,7 +6627,7 @@ exports.checkAccusedDataStatus = async (req, res) => {
                 data.invalid_accused = true;
             }
             
-            if (String(accused_in_charge_sheet).toLowerCase() === "pendind") {
+            if (String(accused_in_charge_sheet).toLowerCase() === "pending") {
                 data.pending_case = true;
             }
               
@@ -8624,7 +8652,7 @@ exports.submitActionPlanPR = async (req, res) => {
             const alert_level = "low";
             const alert_message = "Please check the action plan and approver it.";
             const triggered_on = new Date();
-            const status = "pending";
+            const status = "Pending";
             const created_by = userId || null;
             const send_to_type = "user";
             const division_id = user_divisio_id|| null;

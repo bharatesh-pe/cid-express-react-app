@@ -18,6 +18,9 @@ const {
   CaseAlerts,
   Template,
 } = require("../models");
+const Sequelize = require("sequelize");
+const db = require("../models");
+const sequelize = db.sequelize;
 const crypto = require("crypto");
 const moment = require("moment");
 const { generateUserToken } = require("../helper/validations");
@@ -1240,12 +1243,6 @@ const fetch_dash_count = async (req, res) => {
 
         const caseWhereClause = {};
 
-        const baseWhereClause = {
-            module: case_modules,
-            status: "pending",
-        };
-        
-        
         if (!getDataBasesOnUsers) {
             if (allowedDivisionIds.length > 0) {
                 if (["ui_case", "pt_case", "eq_case"].includes(case_modules)) {
@@ -1268,7 +1265,7 @@ const fetch_dash_count = async (req, res) => {
         }
 
         // Fetch the template using template_module to get the table_name
-        const caseTableTemplate = await Template.findOne({ where: { case_modules } });
+        const caseTableTemplate = await Template.findOne({ where: { template_module : case_modules } });
         if (!caseTableTemplate) {
             return userSendResponse(res, 400, false, "Template not found", null);
         }
@@ -1346,14 +1343,22 @@ const fetch_dash_count = async (req, res) => {
         
         console.log("only get the case id in array", onlyCaseIds);
 
-        baseWhereClause["record_id"] = { [Op.in]: onlyCaseIds };
-
-       
-
+        if (!onlyCaseIds || onlyCaseIds.length === 0) {
+            return []; // Or return empty response early
+        }
+        
+        const baseWhereClause = {
+            record_id: { [Op.in]: onlyCaseIds },
+            module: case_modules,
+            status: {
+                [Op.iLike]: "%pending%" 
+            }
+        };
+        
         const whereClause = {
             ...baseWhereClause,
-            [Op.or]: [
-                { alert_type: { [Op.in]: [
+            alert_type: {
+                [Op.in]: [   
                     "IO_ALLOCATION",
                     "ACTION_PLAN",
                     "PROGRESS_REPORT",
@@ -1363,10 +1368,10 @@ const fetch_dash_count = async (req, res) => {
                     "CC_PENDENCY",
                     "TRIAL_TODAY",
                     "NOTICE_41A_PENDING"
-                ] } }
-            ]
+                ]
+            }
         };
-
+        
         const groupedAlerts = await CaseAlerts.findAll({
             attributes: [
                 "alert_type",
@@ -1378,7 +1383,7 @@ const fetch_dash_count = async (req, res) => {
             group: ["alert_type", "alert_level"],
             raw: true,
         });
-
+        
         const alertTemplates = {
             IO_ALLOCATION: {
                 label: "Case IO Allocation",
@@ -1451,7 +1456,6 @@ const fetch_dash_count = async (req, res) => {
             const level = row.alert_level?.toLowerCase();
             const count = parseInt(row.count);
             const recordIds = row.record_ids;
-
             if (dashboard_count_details[alertType]) {
                 if (
                     dashboard_count_details[alertType].divider_details &&
