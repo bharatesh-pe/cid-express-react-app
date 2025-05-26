@@ -73,6 +73,11 @@ const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+    const { record_id, dashboardName } = location.state || {};
+
+    const [dashboardTileName, setDashboardTileName] = useState(dashboardName ? dashboardName : "");
+    const [dashboardRecordId, setDashboardRecordId] = useState(record_id ? JSON.parse(record_id) : []);
+
     const [saveNew, setSaveNew] = useState(null);
 
   const [showOptionModal, setShowOptionModal] = useState(false);
@@ -1193,7 +1198,9 @@ const UnderInvestigation = () => {
                             template_id : viewTemplateResponse?.["data"]?.template_id,
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
-                            module : "pt_case"
+                            module : "pt_case",
+                            record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
+                            dashboardName : dashboardTileName
                         }
 
                         navigate("/caseView", {state: stateObj});
@@ -6887,7 +6894,7 @@ const UnderInvestigation = () => {
             >
               {/* <img src='./arrow-left.svg' /> */}
               <Typography variant="h1" align="left" className="ProfileNameText">
-                {template_name
+                {dashboardTileName ? dashboardTileName : template_name
                   ? template_name
                       .toLowerCase()
                       .replace(/\b\w/g, (c) => c.toUpperCase())
