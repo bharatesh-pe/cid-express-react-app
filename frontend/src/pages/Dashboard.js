@@ -357,9 +357,28 @@ const Dashboard = () => {
 
     const getDashboardTiles = async () => {
         const userDesignationId = localStorage.getItem('designation_id');
+        const userDesignationName = localStorage.getItem('designation_name');
+        const userRole = localStorage.getItem('role_title');
+        const userRoleId = localStorage.getItem('role_id');
+        var userDesignation = "";
+
+        if(userRole == "Investigation officer" || userRoleId == 6)
+        {
+            userDesignation = "IO"
+        }
+        else{
+            if(userDesignationName.includes("DIG"))
+                 userDesignation = "DIG"
+            else if(userDesignationName.includes("ADG") || userDesignationName.includes("ADGP"))
+                 userDesignation = "ADGP"
+            else if(userDesignationName.includes("DGP"))
+                 userDesignation = "DGP"
+        }
+
         
         const payload = {
             user_designation_id: userDesignationId || null,
+            user_designation : userDesignation ,
             case_modules: tabLabels?.[activeTab]?.key
         };
 
