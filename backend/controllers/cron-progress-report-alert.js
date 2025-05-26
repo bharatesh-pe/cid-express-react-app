@@ -1017,7 +1017,6 @@ exports.runDailyAlertCronNATURE_OF_DISPOSAL = async () => {
     } 
 };
 
-
 //cron for Action Plan
 // exports.runDailyAlertCronAccused = async () => {
 //     try {
