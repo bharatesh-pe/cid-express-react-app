@@ -1473,6 +1473,10 @@ const fetch_dash_count = async (req, res) => {
                     label: "Investigation Extension",
                     total_count: 0
                 },
+                TRIAL_TODAY: {
+                    label: "Trial Today",
+                    total_count: 0
+                },
                 FSL_PF: {
                     label: "Property Form Send to FSL",
                     divider: 3,
@@ -1508,8 +1512,12 @@ const fetch_dash_count = async (req, res) => {
         }
         else if (case_modules === "pt_case") {
             alertTemplates = {
-                TRIAL_TODAY: {
-                    label: "Trial Today",
+                TRIAL_cOURTS: {
+                    label: "Trail Courts",
+                    total_count: 0
+                },
+                OTHER_COURTS: {
+                    label: "Other Courts",
                     total_count: 0
                 },
             };
