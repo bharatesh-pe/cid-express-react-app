@@ -1245,28 +1245,12 @@ exports.getTemplateData = async (req, res, next) => {
     const pending = 'Pending';
     
     if (module && tab && table_name === 'cid_ui_case_accused') {
-      if (module === "ui_case" && tab === "178_cases") {
-        whereClause.field_status_of_accused_in_charge_sheet = {
-          [Op.iLike]: `%${pending}%`,
-        };
-      } else if (module === "pt_case") {
-        whereClause[Op.and] = [
-          {
-            field_status_of_accused_in_charge_sheet: {
-              [Op.notILike]: `%${pending}%`,
-            },
-          },
-          {
-            ui_case_id: {
-              [Op.not]: null,
-            },
-          },
-        ];
-      }
+        if (module === "ui_case" && tab === "178_cases") {
+            whereClause.field_status_of_accused_in_charge_sheet = { [Op.iLike]: `%${pending}%` };
+        } else if (module === "pt_case") {
+            whereClause.field_status_of_accused_in_charge_sheet = { [Op.notILike]: `%${pending}%` };
+        }
     }
-    
-    
-
 
 	// Apply field filters if provided
     if (filter && typeof filter === "object") {
