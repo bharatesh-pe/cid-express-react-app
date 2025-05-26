@@ -61,9 +61,9 @@ exports.runMonthlyAlertCronPR = async () => {
                     { status: "Completed" },
                     {
                         where: {
-                            module: "ProgressReport",
+                            module: "ui_case",
                             record_id: ui_case_id,
-                            alert_type: "MonthlySubmission",
+                            alert_type: "PROGRESS_REPORT",
                             alert_level: "low",
                             status: {
                                 [Op.iLike]: "%pending%" 
@@ -94,9 +94,9 @@ exports.runMonthlyAlertCronPR = async () => {
             if (currentDate <= 5) {
                 const existingAlert = await CaseAlerts.findOne({
                     where: {
-                        module: "ProgressReport",
+                        module: "ui_case",
                         record_id: ui_case_id,
-                        alert_type: "MonthlySubmission",
+                        alert_type: "PROGRESS_REPORT",
                         alert_level: "low",
                         due_date: today.clone().startOf("day").toDate(),
                     },
@@ -108,10 +108,10 @@ exports.runMonthlyAlertCronPR = async () => {
                 } else {
                     console.log(`Creating new alert for case ${ui_case_id}`);
                     await CaseAlerts.create({
-                        module: "ProgressReport",
+                        module: "ui_case",
                         main_table: "ui_progress_report_month",
                         record_id: ui_case_id,
-                        alert_type: "MonthlySubmission",
+                        alert_type: "PROGRESS_REPORT",
                         alert_level: "low",
                         alert_message: alertMessage,
                         due_date: today.toDate(),
@@ -126,9 +126,9 @@ exports.runMonthlyAlertCronPR = async () => {
             if (currentDate === 6) {
                 const pendingLowAlerts = await CaseAlerts.findAll({
                     where: {
-                        module: "ProgressReport",
+                        module: "ui_case",
                         record_id: ui_case_id,
-                        alert_type: "MonthlySubmission",
+                        alert_type: "PROGRESS_REPORT",
                         alert_level: "low",
                         status: {
                             [Op.iLike]: "%pending%" 
@@ -147,10 +147,10 @@ exports.runMonthlyAlertCronPR = async () => {
                     await alert.update({ status: "Not Completed" });
 
                     await CaseAlerts.create({
-                        module: "ProgressReport",
+                        module: "ui_case",
                         main_table: "ui_progress_report_month",
                         record_id: ui_case_id,
-                        alert_type: "MonthlySubmission",
+                        alert_type: "PROGRESS_REPORT",
                         alert_level: "high",
                         alert_message: "Missed deadline: Monthly Progress Report not submitted.",
                         due_date: today.toDate(),
@@ -166,10 +166,7 @@ exports.runMonthlyAlertCronPR = async () => {
         console.log("Monthly Alert Cron completed for Progress Report, Successfully.");
     } catch (error) {
         console.error("Error running Monthly Alert Cron for Progress report:", error);
-    } finally {
-        await sequelize.close();
-        console.log("Database connection closed.");
-    }
+    } 
 };
 
 //cron for Action Plan

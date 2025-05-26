@@ -26,7 +26,7 @@ const LokayuktaView = () => {
 
     const navigate = useNavigate();
     const { state } = useLocation();
-    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id } = state || {};
+    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
 
     useEffect(()=>{
         if(!rowData){
@@ -139,6 +139,21 @@ const LokayuktaView = () => {
 
             Swal.fire({
                 text: 'IO not found. You are not allowed to perform any actions.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        if(caseExtension){
+            const registerItemArray = ["UI Case", "PT Case", "Enquiries"];
+
+            if(registerItemArray.includes(item.name)){
+                return;
+            }
+
+            Swal.fire({
+                text: 'Case Extension not Done. You are not allowed to perform any actions.',
                 icon: 'warning',
                 confirmButtonText: 'OK'
             });
