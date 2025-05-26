@@ -44,7 +44,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
 
   const [formData, setFormData] = useState({});
@@ -1354,7 +1354,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             }
 
             {
-                (readOnlyTemplate && userPermissions[0]?.edit_case && !disableEditButton) && 
+                (readOnlyTemplate && userPermissions[0]?.edit_case && !disableEditButton && !overAllReadonly) && 
                 <Button
                     onClick={templateEdit}
                     sx={{
