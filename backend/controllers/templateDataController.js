@@ -1075,7 +1075,7 @@ exports.getTemplateData = async (req, res, next) => {
     is_read = "",
     case_io_id = "",
   } = req.body;
-  const {  ui_case_id, pt_case_id } = req.body;
+  const {  ui_case_id, pt_case_id , module , tab } = req.body;
   const { filter = {}, from_date = null, to_date = null } = req.body;
   const fields = {};
   const offset = (page - 1) * limit;
@@ -1240,6 +1240,22 @@ exports.getTemplateData = async (req, res, next) => {
     } else if (pt_case_id && pt_case_id != "") {
       whereClause = { pt_case_id };
     }
+
+
+    const pending = 'Pending';
+
+    if (module && tab && table_name === 'cid_ui_case_accused') {
+        if (module === "ui_case" && tab === "178_cases") {
+            whereClause = {
+                field_status_of_accused_in_charge_sheet: { [Op.iLike]: `%${pending}%` },
+            };
+        } else if (module === "pt_case" && tab === "178_cases") {
+            whereClause = {
+                field_status_of_accused_in_charge_sheet: { [Op.notILike]: `%${pending}%` },
+            };
+        }
+    }
+
 
 	// Apply field filters if provided
     if (filter && typeof filter === "object") {
