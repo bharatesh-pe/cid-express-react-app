@@ -1356,20 +1356,34 @@ const fetch_dash_count = async (req, res) => {
                 [Op.iLike]: "%pending%" 
             }
         };
+
+        var whereClause = {};
+        if(case_modules === "ui_case") {
+
+            whereClause = {
+                ...baseWhereClause,
+                alert_type: {
+                    [Op.in]: [   
+                        "IO_ALLOCATION",
+                        "ACTION_PLAN",
+                        "PROGRESS_REPORT",
+                        "FSL_PF",
+                        "NOTICE_41A_PENDING"
+                    ]
+                }
+            };
+        }
+        else if(case_modules === "pt_case") {
+            whereClause = {
+                ...baseWhereClause,
+                alert_type: {
+                    [Op.in]: [   
+                        "TRIAL_TODAY",
+                    ]
+                }
+            };
+        }
         
-        const whereClause = {
-            ...baseWhereClause,
-            alert_type: {
-                [Op.in]: [   
-                    "IO_ALLOCATION",
-                    "ACTION_PLAN",
-                    "PROGRESS_REPORT",
-                    "FSL_PF",
-                    "TRIAL_TODAY",
-                    "NOTICE_41A_PENDING"
-                ]
-            }
-        };
         
         const groupedAlerts = await CaseAlerts.findAll({
             attributes: [
@@ -1382,39 +1396,42 @@ const fetch_dash_count = async (req, res) => {
             group: ["alert_type", "alert_level"],
             raw: true,
         });
+        var groupedNatureOfDisposalAlerts = ""
+        if(case_modules === "ui_case") {
 
-        var alert_message = "Alert for";
-        if(user_designation != "")
-        {
-            if(user_designation == "IO")  
-                alert_message = "Alert for IO";
-            else if(user_designation == "DIG")  
-                alert_message = "Alert for DIG"; 
-            else if(user_designation == "ADGP")  
-                alert_message = "Alert for ADGP";
-            else if(user_designation == "DGP")  
-                alert_message = "Alert for DGP"; 
+            var alert_message = "Alert for";
+            if(user_designation != "")
+            {
+                if(user_designation == "IO")  
+                    alert_message = "Alert for IO";
+                else if(user_designation == "DIG")  
+                    alert_message = "Alert for DIG"; 
+                else if(user_designation == "ADGP")  
+                    alert_message = "Alert for ADGP";
+                else if(user_designation == "DGP")  
+                    alert_message = "Alert for DGP"; 
 
+            }
+                
+            const NatureOfDisposalWhereClause = {
+                ...baseWhereClause,
+                alert_type: "NATURE_OF_DISPOSAL",
+                alert_message
+
+            };
+
+            groupedNatureOfDisposalAlerts = await CaseAlerts.findAll({
+                attributes: [
+                    "alert_type",
+                    "alert_level",
+                    [fn("COUNT", col("id")), "count"],
+                    [literal("array_agg(record_id)"), "record_ids"],
+                ],
+                where: NatureOfDisposalWhereClause,
+                group: ["alert_type", "alert_level"],
+                raw: true,
+            });
         }
-            
-        const NatureOfDisposalWhereClause = {
-            ...baseWhereClause,
-            alert_type: "NATURE_OF_DISPOSAL",
-            alert_message
-
-        };
-
-        const groupedNatureOfDisposalAlerts = await CaseAlerts.findAll({
-            attributes: [
-                "alert_type",
-                "alert_level",
-                [fn("COUNT", col("id")), "count"],
-                [literal("array_agg(record_id)"), "record_ids"],
-            ],
-            where: NatureOfDisposalWhereClause,
-            group: ["alert_type", "alert_level"],
-            raw: true,
-        });
 
         //pending list
         // 5. Cases for Trial Today - > TRIAL_TODAY
@@ -1422,74 +1439,81 @@ const fetch_dash_count = async (req, res) => {
         // 9. 41A Notice Approval Pending  -> NOTICE_41A_PENDING
         // 10. CUSTODIAL
 
-        const alertTemplates = {
-            IO_ALLOCATION: {
-                label: "Case IO Allocation",
-                divider: 2,
-                divider_details: {
-                    low: { name: "24 hrs", count: 0, record_id: [], level: "low" },
-                    high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+        var alertTemplates = {}
+        if(case_modules === "ui_case") {
+            alertTemplates = {
+                IO_ALLOCATION: {
+                    label: "Case IO Allocation",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "24 hrs", count: 0, record_id: [], level: "low" },
+                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
                 },
-                total_count: 0
-            },
-            ACTION_PLAN: {
-                label: "Action Plan",
-                divider: 2,
-                divider_details: {
-                    low: { name: "Approval", count: 0, record_id: [], level: "low" },
-                    high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                ACTION_PLAN: {
+                    label: "Action Plan",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "Approval", count: 0, record_id: [], level: "low" },
+                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
                 },
-                total_count: 0
-            },
-            PROGRESS_REPORT: {
-                label: "Progress Report",
-                divider: 2,
-                divider_details: {
-                    low: { name: "1 to 5 Days", count: 0, record_id: [], level: "low" },
-                    high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                PROGRESS_REPORT: {
+                    label: "Progress Report",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "1 to 5 Days", count: 0, record_id: [], level: "low" },
+                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
                 },
-                total_count: 0
-            },
-            EXTENSION: {
-                label: "Investigation Extension",
-                total_count: 0
-            },
-            TRIAL_TODAY: {
-                label: "Trial Today",
-                total_count: 0
-            },
-            FSL_PF: {
-                label: "Property Form Send to FSL",
-                divider: 3,
-                divider_details: {
-                    low: { name: "10 - 20 Days", count: 0, record_id: [], level: "low" },
-                    medium: { name: "20 - 30 Days", count: 0, record_id: [], level: "medium" },
-                    high: { name: "Beyond 30 Days", count: 0, record_id: [], level: "high" }
+                EXTENSION: {
+                    label: "Investigation Extension",
+                    total_count: 0
                 },
-                total_count: 0
-            },
-            FSL: {
-                label: "FSL Due Today",
-                total_count: 0
-            },
-            NOTICE_41A_PENDING: {
-                label: "Notice 41A Pending",
-                total_count: 0
-            },
-            CUSTODIAL: {
-                label: "Custodial Cases for Chargesheet",
-                divider: 2,
-                divider_details: {
-                    low: { name: "30 - 45 Days", count: 0, record_id: [], level: "low" },
-                    high: { name: "Above 45 Days", count: 0, record_id: [], level: "high" }
+                FSL_PF: {
+                    label: "Property Form Send to FSL",
+                    divider: 3,
+                    divider_details: {
+                        low: { name: "10 - 20 Days", count: 0, record_id: [], level: "low" },
+                        medium: { name: "20 - 30 Days", count: 0, record_id: [], level: "medium" },
+                        high: { name: "Beyond 30 Days", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
                 },
-                total_count: 0
-            },
-            NATURE_OF_DISPOSAL: {
-                label: "Charge Sheet (CC) Pendency",
-                total_count: 0
-            },
-        };
+                FSL: {
+                    label: "FSL Due Today",
+                    total_count: 0
+                },
+                NOTICE_41A_PENDING: {
+                    label: "Notice 41A Pending",
+                    total_count: 0
+                },
+                CUSTODIAL: {
+                    label: "Custodial Cases for Chargesheet",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "30 - 45 Days", count: 0, record_id: [], level: "low" },
+                        high: { name: "Above 45 Days", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
+                },
+                NATURE_OF_DISPOSAL: {
+                    label: "Charge Sheet (CC) Pendency",
+                    total_count: 0
+                },
+            };
+        }
+        else if (case_modules === "pt_case") {
+            alertTemplates = {
+                TRIAL_TODAY: {
+                    label: "Trial Today",
+                    total_count: 0
+                },
+            };
+        }
 
         const dashboard_count_details = JSON.parse(JSON.stringify(alertTemplates));
 
@@ -1511,74 +1535,76 @@ const fetch_dash_count = async (req, res) => {
             }
         }
 
-        for (const rowData of groupedNatureOfDisposalAlerts) {
-            const alertType = rowData.alert_type;
-            const level = rowData.alert_level?.toLowerCase();
-            const count = parseInt(rowData.count);
-            const recordIds = rowData.record_ids;
-            if (dashboard_count_details[alertType]) {
-                if(user_designation != "IO" || user_designation != "DGP")  
-                {
-                    dashboard_count_details[alertType].divider = 2;
-                    dashboard_count_details[alertType].divider_details = {};
-                    dashboard_count_details[alertType].divider_details.level = {};
+        if(case_modules === "ui_case") {
 
-                    dashboard_count_details[alertType].divider_details.level['name'] = "" ;
-                    dashboard_count_details[alertType].divider_details.level['count'] = 0 ;
-                    dashboard_count_details[alertType].divider_details.level['record_id'] = [] ;
-                    dashboard_count_details[alertType].divider_details.level['level'] = level  ;
-
-                    if(user_designation == "DIG")
+            for (const rowData of groupedNatureOfDisposalAlerts) {
+                const alertType = rowData.alert_type;
+                const level = rowData.alert_level?.toLowerCase();
+                const count = parseInt(rowData.count);
+                const recordIds = rowData.record_ids;
+                if (dashboard_count_details[alertType]) {
+                    if(user_designation != "IO" || user_designation != "DGP")  
                     {
-                        if(level == "low")
+                        dashboard_count_details[alertType].divider = 2;
+                        dashboard_count_details[alertType].divider_details = {};
+                        dashboard_count_details[alertType].divider_details.level = {};
+
+                        dashboard_count_details[alertType].divider_details.level['name'] = "" ;
+                        dashboard_count_details[alertType].divider_details.level['count'] = 0 ;
+                        dashboard_count_details[alertType].divider_details.level['record_id'] = [] ;
+                        dashboard_count_details[alertType].divider_details.level['level'] = level  ;
+
+                        if(user_designation == "DIG")
                         {
-                            dashboard_count_details[alertType].divider_details.level['name'] = "90 - 150 Days" ;
+                            if(level == "low")
+                            {
+                                dashboard_count_details[alertType].divider_details.level['name'] = "90 - 150 Days" ;
+                            }
+                            else{
+                                dashboard_count_details[alertType].divider_details.level['name'] = "150 - 180 Days" ;
+                            }
                         }
-                        else{
-                            dashboard_count_details[alertType].divider_details.level['name'] = "150 - 180 Days" ;
-                        }
-                    }
 
-                    if(user_designation == "ADGP")
-                    {
-                        if(level == "low")
+                        if(user_designation == "ADGP")
                         {
-                            dashboard_count_details[alertType].divider_details.level['name'] = "180 - 240 Days" ;
-                        }
-                        else{
-                            dashboard_count_details[alertType].divider_details.level['name'] = "240 - 360 Days" ;
+                            if(level == "low")
+                            {
+                                dashboard_count_details[alertType].divider_details.level['name'] = "180 - 240 Days" ;
+                            }
+                            else{
+                                dashboard_count_details[alertType].divider_details.level['name'] = "240 - 360 Days" ;
+                            }
                         }
                     }
-                }
-                else{
-                    dashboard_count_details[alertType].divider = 1;
-                    dashboard_count_details[alertType].divider_details = {};
-                    dashboard_count_details[alertType].divider_details.level = {};
+                    else{
+                        dashboard_count_details[alertType].divider = 1;
+                        dashboard_count_details[alertType].divider_details = {};
+                        dashboard_count_details[alertType].divider_details.level = {};
 
-                    dashboard_count_details[alertType].divider_details.level['name'] = "Above 360 Days" ;
-                    dashboard_count_details[alertType].divider_details.level['count'] = 0 ;
-                    dashboard_count_details[alertType].divider_details.level['record_id'] = [] ;
-                    dashboard_count_details[alertType].divider_details.level['level'] = level  ;
+                        dashboard_count_details[alertType].divider_details.level['name'] = "Above 360 Days" ;
+                        dashboard_count_details[alertType].divider_details.level['count'] = 0 ;
+                        dashboard_count_details[alertType].divider_details.level['record_id'] = [] ;
+                        dashboard_count_details[alertType].divider_details.level['level'] = level  ;
 
-                    if(user_designation == "IO")
-                    {
-                        dashboard_count_details[alertType].divider_details.level['name'] = "60 - 90 Days" ;
+                        if(user_designation == "IO")
+                        {
+                            dashboard_count_details[alertType].divider_details.level['name'] = "60 - 90 Days" ;
+                        }
+
                     }
 
-                }
+                    if ( dashboard_count_details[alertType].divider_details && dashboard_count_details[alertType].divider_details[level] ) {
+                        dashboard_count_details[alertType].divider_details[level].count = count;
+                        dashboard_count_details[alertType].divider_details[level].record_id = recordIds;
+                    }
 
-                if ( dashboard_count_details[alertType].divider_details && dashboard_count_details[alertType].divider_details[level] ) {
-                    dashboard_count_details[alertType].divider_details[level].count = count;
-                    dashboard_count_details[alertType].divider_details[level].record_id = recordIds;
+                    dashboard_count_details[alertType].total_count += count;
                 }
-
-                dashboard_count_details[alertType].total_count += count;
             }
+
+            if(user_designation != "IO")
+                dashboard_count_details["EXTENSION"].total_count = dashboard_count_details["NATURE_OF_DISPOSAL"].total_count;
         }
-
-        if(user_designation != "IO")
-            dashboard_count_details["EXTENSION"].total_count = dashboard_count_details["NATURE_OF_DISPOSAL"].total_count;
-
 
 
         return res.status(200).json({
