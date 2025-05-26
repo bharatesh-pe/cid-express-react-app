@@ -26,7 +26,7 @@ const LokayuktaView = () => {
 
     const navigate = useNavigate();
     const { state } = useLocation();
-    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly } = state || {};
+    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id } = state || {};
 
     useEffect(()=>{
         if(!rowData){
@@ -109,6 +109,14 @@ const LokayuktaView = () => {
             var stateObj = {
                 pageCount: paginationCount,
                 systemStatus: sysStatus
+            }
+
+            if(dashboardName){
+                stateObj["dashboardName"] = dashboardName
+            }
+
+            if(record_id){
+                stateObj["record_id"] = record_id
             }
 
             navigate(backNavigation, {state : stateObj});

@@ -98,7 +98,10 @@ import { BorderTop } from "@mui/icons-material";
 const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
-    const { pageCount, systemStatus } = location.state || {};
+    const { pageCount, systemStatus, record_id, dashboardName } = location.state || {};
+    
+    const [dashboardTileName, setDashboardTileName] = useState(dashboardName ? dashboardName : "");
+    const [dashboardRecordId, setDashboardRecordId] = useState(record_id ? JSON.parse(record_id) : []);
     const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
     const [historyData, setHistoryData] = useState([]);
 
@@ -3546,6 +3549,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             from_date: fromDateValue,
             to_date: toDateValue,
             filter: filterValues,
+            record_id : dashboardRecordId
         };
     
         setLoading(true);
@@ -9885,7 +9889,9 @@ const handleOpenExportPopup = async () => {
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
                             module : "ui_case",
-                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
+                            dashboardName : dashboardTileName
                         }
 
                         navigate("/caseView", {state: stateObj});
