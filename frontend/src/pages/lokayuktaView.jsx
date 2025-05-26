@@ -1603,6 +1603,7 @@ const LokayuktaView = () => {
                             onError={formError}
                             headerDetails={headerDetails || "Case Details"}
                             closeForm={backToForm}
+                            overAllReadonly={overAllReadonly}
                             noPadding={true}
                         />
                     </Box>
