@@ -54,3 +54,29 @@ const runDailyAlertCron = require("./cron-progress-report-alert");
 //     timezone: "Asia/Kolkata"
 // });
 
+exports.refreshAlertCron = async (req, res) => {
+    try {
+        await Promise.all([
+            runDailyAlertCron.runDailyAlertCronIO(),
+            runDailyAlertCron.runDailyAlertCronAP(),
+            runDailyAlertCron.runDailyAlertCronFSL_PF(),
+            runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL()
+        ]);
+
+        const currentTime = new Date().toISOString(); // e.g., "2025-05-26T08:34:12.000Z"
+
+        res.status(200).json({
+            message: 'Alert cron refreshed successfully',
+            refreshedAt: currentTime
+        });
+    } catch (error) {
+        console.error('Error refreshing alert cron:', error);
+        res.status(500).json({
+            message: 'Failed to refresh alert cron',
+            error: error.message,
+            failedAt: new Date().toISOString()
+        });
+    }
+};
+
+

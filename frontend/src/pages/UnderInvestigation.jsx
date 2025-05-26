@@ -4105,6 +4105,10 @@ const loadChildMergedCasesData = async (page, caseId) => {
     let highlightColor = {};
     let onClickHandler = null;
 
+    if(params?.row?.field_nature_of_disposal === "Pending Acceptance" && sysStatus === "ui_case"){
+        highlightColor = { color: '#0652DD'};
+    }
+
     if (tableName && index !== null && index === 0 ) {
         highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
@@ -11637,6 +11641,7 @@ const handleOpenExportPopup = async () => {
                   onError={onSaveTemplateError}
                   closeForm={closeOtherForm}
                   headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                  disableSaveNew={true}
                 />
               </FormControl>
             </DialogContentText>
