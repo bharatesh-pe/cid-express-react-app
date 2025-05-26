@@ -252,7 +252,6 @@ const Dashboard = () => {
 
                     const sortedObject = Object.fromEntries(sortedEntries);
                     setDashboardMenu(sortedObject);
-                    localStorage.setItem("refreshData", Date.now());
                 }else{
                     setDashboardMenu({});
                 }
@@ -288,7 +287,7 @@ const Dashboard = () => {
     }
 
     const formatDateTime = (timestamp) => {
-        const date = new Date(parseInt(timestamp));
+        const date = new Date(timestamp); // no parseInt
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
@@ -303,6 +302,47 @@ const Dashboard = () => {
 
         return `${day}/${month}/${year} ${hours}:${minutes}:${seconds} ${ampm}`;
     };
+
+    const getDashboardData = async ()=>{
+        
+        setLoading(true);
+        try {
+            const response = await api.post("/refresh_alert_cron");
+
+            setLoading(false);
+
+            if (response?.refreshedAt) {
+                
+                localStorage.setItem("refreshData", response?.refreshedAt);
+
+            } else {
+                const errorMessage = response?.message || "Failed to fetch dashboard data. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error"
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            const message = error?.response?.data?.message || "Something went wrong. Please try again.";
+            toast.error(message, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error"
+            });
+        }
+    }
 
     const storedTime = localStorage.getItem("refreshData");
 
@@ -414,7 +454,7 @@ const Dashboard = () => {
                 <Typography variant="subtitle1" sx={{ fontWeight: 400, color: '#1E88E5' }}>
                     Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
                 </Typography>
-                <Tooltip title="Refresh Dashboard" onClick={getDashboardTiles}>
+                <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
                     <IconButton>
                         <RefreshIcon sx={{color: '#1E88E5', fontWeight: 400}} />
                     </IconButton>
