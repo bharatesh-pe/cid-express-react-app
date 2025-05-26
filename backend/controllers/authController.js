@@ -1545,6 +1545,42 @@ const fetch_dash_count = async (req, res) => {
 
         if(case_modules === "ui_case") {
 
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider = 0;
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details = {};
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low = {};
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.high = {};
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['name'] = "" ;
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['count'] = 0 ;
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['record_id'] = [] ;
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['level'] = "low" ;
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.high['name'] = "" ;
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.high['count'] = 0 ;
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.high['record_id'] = [] ;
+            dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.high['level'] = "high" ;
+
+            if(user_designation == "DIG")
+            {
+                dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['name'] = "90 - 150 Days" ;
+                dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.high['name'] = "150 - 180 Days" ;
+            }
+
+            if(user_designation == "ADGP")
+            {
+                dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['name'] = "180 - 240 Days" ;
+                dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.high['name'] = "240 - 360 Days" ;
+            }
+
+            if(user_designation == "DGP")
+            {
+                dashboard_count_details[alertType].divider_details.high['name'] = "Above 360 Days" ;
+            }
+
+            if(user_designation == "IO")
+            {
+                dashboard_count_details[alertType].divider_details.low['name'] = "60 - 90 Days" ;
+            }
+
+
             for (const rowData of groupedNatureOfDisposalAlerts) {
                 const alertType = rowData.alert_type;
                 const level = rowData.alert_level?.toLowerCase();
@@ -1554,13 +1590,6 @@ const fetch_dash_count = async (req, res) => {
                     if(user_designation != "IO" || user_designation != "DGP")  
                     {
                         dashboard_count_details[alertType].divider = 2;
-                        dashboard_count_details[alertType].divider_details = {};
-                        dashboard_count_details[alertType].divider_details.level = {};
-
-                        dashboard_count_details[alertType].divider_details.level['name'] = "" ;
-                        dashboard_count_details[alertType].divider_details.level['count'] = 0 ;
-                        dashboard_count_details[alertType].divider_details.level['record_id'] = [] ;
-                        dashboard_count_details[alertType].divider_details.level['level'] = level  ;
 
                         if(user_designation == "DIG")
                         {
@@ -1586,13 +1615,8 @@ const fetch_dash_count = async (req, res) => {
                     }
                     else{
                         dashboard_count_details[alertType].divider = 1;
-                        dashboard_count_details[alertType].divider_details = {};
-                        dashboard_count_details[alertType].divider_details.level = {};
 
                         dashboard_count_details[alertType].divider_details.level['name'] = "Above 360 Days" ;
-                        dashboard_count_details[alertType].divider_details.level['count'] = 0 ;
-                        dashboard_count_details[alertType].divider_details.level['record_id'] = [] ;
-                        dashboard_count_details[alertType].divider_details.level['level'] = level  ;
 
                         if(user_designation == "IO")
                         {
