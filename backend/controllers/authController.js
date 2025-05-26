@@ -1572,12 +1572,12 @@ const fetch_dash_count = async (req, res) => {
 
             if(user_designation == "DGP")
             {
-                dashboard_count_details[alertType].divider_details.high['name'] = "Above 360 Days" ;
+                dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.high['name'] = "Above 360 Days" ;
             }
 
             if(user_designation == "IO")
             {
-                dashboard_count_details[alertType].divider_details.low['name'] = "60 - 90 Days" ;
+                dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['name'] = "60 - 90 Days" ;
             }
 
 
