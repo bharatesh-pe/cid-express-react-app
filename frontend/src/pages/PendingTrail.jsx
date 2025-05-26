@@ -73,7 +73,7 @@ const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-    const { record_id, dashboardName } = location.state || {};
+    const { record_id, dashboardName, actionKey } = location.state || {};
 
     const [dashboardTileName, setDashboardTileName] = useState(dashboardName ? dashboardName : "");
     const [dashboardRecordId, setDashboardRecordId] = useState(record_id ? JSON.parse(record_id) : []);
@@ -3825,7 +3825,7 @@ const UnderInvestigation = () => {
 
     const getActions = async () => {
         var payloadObj = {
-            module: "pt_case",
+            module: actionKey ? actionKey : "pt_case",
             tab: sysStatus,
         };
 

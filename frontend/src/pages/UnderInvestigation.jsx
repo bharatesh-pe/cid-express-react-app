@@ -672,7 +672,7 @@ const [selectedFieldName, setSelectedFieldName] = useState('');
   // filter states
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filterDropdownObj, setfilterDropdownObj] = useState([]);
-  const [filterValues, setFilterValues] = useState({});
+  const [filterValues, setFilterValues] = useState(record_id ? {"record_id": JSON.parse(record_id)} : {});
   const [fromDateValue, setFromDateValue] = useState(null);
   const [toDateValue, setToDateValue] = useState(null);
   const [forceTableLoad, setForceTableLoad] = useState(false);
@@ -3549,7 +3549,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
             from_date: fromDateValue,
             to_date: toDateValue,
             filter: filterValues,
-            record_id : dashboardRecordId
         };
     
         setLoading(true);
