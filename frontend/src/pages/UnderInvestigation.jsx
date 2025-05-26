@@ -4112,6 +4112,10 @@ const fetchFieldHistory = async (field_name, table_row_id) => {
     let highlightColor = {};
     let onClickHandler = null;
 
+    if(params?.row?.field_nature_of_disposal === "Pending Acceptance" && sysStatus === "ui_case"){
+        highlightColor = { color: '#0652DD'};
+    }
+
     if (tableName && index !== null && index === 0 ) {
         highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
 
