@@ -1,7 +1,15 @@
 const cron = require("node-cron");
 const runDailyAlertCron = require("./cron-progress-report-alert");
 
-
+cron.schedule('59 23 * * *', async () => {
+    await Promise.all([
+        runDailyAlertCron.runDailyAlertCronIO(),
+        runDailyAlertCron.runDailyAlertCronAP(),
+        runDailyAlertCron.runDailyAlertCronFSL_PF(),
+        runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL()
+    ]);
+    console.log("Running Daily Alert Cron Job at", new Date().toISOString());
+})
 //To run the cron every single minute
 // cron.schedule("* * * * *", async () => {
 //     console.log("Running Daily Alert Cron Job at", new Date().toISOString());
