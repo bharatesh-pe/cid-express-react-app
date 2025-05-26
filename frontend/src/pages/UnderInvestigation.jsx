@@ -205,74 +205,73 @@ const UnderInvestigation = () => {
     getMonthWiseFile(selectedRow, page);
   };
 
-const monthwiseColumns = [
-  {
-    headerName: "S.No",
-    field: "serial_no",
-    width: 70,
-    sortable: false,
-    filterable: false,
-    renderCell: (params) => {
-      const currentPage = monthwiseCurrentPage || 1;
-      const pageSize = PageSize || 5;
-      
-      if (!params.row) {
-        console.error("S.No - Row data is missing for serial number calculation.");
-        return "-";
-      }
-      const rowIndex = monthwiseData.indexOf(params.row);
-      const serialNumber = (currentPage - 1) * pageSize + rowIndex + 1;
-      return serialNumber;
+    const monthwiseColumns = [
+    {
+        headerName: "S.No",
+        field: "serial_no",
+        width: 70,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => {
+        const currentPage = monthwiseCurrentPage || 1;
+        const pageSize = PageSize || 5;
+        
+        if (!params.row) {
+            console.error("S.No - Row data is missing for serial number calculation.");
+            return "-";
+        }
+        const rowIndex = monthwiseData.indexOf(params.row);
+        const serialNumber = (currentPage - 1) * pageSize + rowIndex + 1;
+        return serialNumber;
+        },
     },
-  },
-  {
-    headerName: "Submission Month",
-    field: "month_of_the_file",
-    width: 250,
-    renderCell: (params) => {
-      const fileName = params.row.month_of_the_file || "";
-      return fileName;
+    {
+        headerName: "Submission Month",
+        field: "month_of_the_file",
+        width: 250,
+        renderCell: (params) => {
+        const fileName = params.row.month_of_the_file || "";
+        return fileName;
+        },
     },
-  },
-  {
-    headerName: "File Name",
-    field: "monthwise_file_name",
-    width: 250,
-    renderCell: (params) => {
-      const fileName = params.row.monthwise_file_name || "";
-      return fileName;
+    {
+        headerName: "File Name",
+        field: "monthwise_file_name",
+        width: 250,
+        renderCell: (params) => {
+        const fileName = params.row.monthwise_file_name || "";
+        return fileName;
+        },
     },
-  },
-  {
-    headerName: "View",
-    field: "view",
-    width: 100,
-    sortable: false,
-    filterable: false,
-    renderCell: (params) => (
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={() => {
-          const filePath = params.row.monthwise_file_path;
-          const url = `${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${filePath}`;
-          window.open(url, "_blank");
-        }}
-      >
-        View
-      </Button>
-    ),
-  },
-];
+    {
+        headerName: "View",
+        field: "view",
+        width: 100,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => (
+        <Button
+            variant="outlined"
+            size="small"
+            onClick={() => {
+            const filePath = params.row.monthwise_file_path;
+            const url = `${process.env.REACT_APP_SERVER_URL_FILE_VIEW}/${filePath}`;
+            window.open(url, "_blank");
+            }}
+        >
+            View
+        </Button>
+        ),
+    },
+    ];
 
-
-
-
-
-
-
-
-
+    const [historyRows, setHistoryRows] = useState([]);
+    const historyColumns = [
+    { field: 'user', headerName: 'Changed By', flex: 1 },
+    { field: 'old_value', headerName: 'Previous Value', flex: 1 },
+    { field: 'updated_value', headerName: 'New Value', flex: 1 },
+    { field: 'changed_at', headerName: 'Changed At', flex: 1 }
+    ];
 
   const [selectedRow, setSelectedRow] = useState({});
   const [templateApproval, setTemplateApproval] = useState(false);
@@ -339,8 +338,9 @@ const monthwiseColumns = [
       const [showCaseExtensionModal, setShowCaseExtensionModal] = useState(false);
       const [formData, setFormData] = useState({});
       const [extensionFields, setExtensionFields] = useState([]);
-const [showHistoryDialog, setShowHistoryDialog] = useState(false);
-const [selectedFieldName, setSelectedFieldName] = useState('');
+      const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+      const [selectedFieldName, setSelectedFieldName] = useState('');
+      const [selectTemplateId, setSelectTemplateId] = useState(null);
 
     const permissionStr = localStorage.getItem("user_permissions");
     let user_role_name = '';
@@ -3582,7 +3582,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                          "updated_at", "id", "deleted_at", "attachments",
                         "Starred", "ReadStatus", "linked_profile_info",
                         "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
-                        "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid"
+                        "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date"
                     ];
     
                     const generateReadableHeader = (key) =>
@@ -3603,19 +3603,16 @@ const loadChildMergedCasesData = async (page, caseId) => {
                     //     renderHeader: (params) => (
                     //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
                     //     ),
-                    //     renderCell: (params) => {
-                    //       const isDisabled = !params?.row?.["field_io_name"];
-                    //       return (
+                    //     renderCell: (params) => (
                     //         <Badge
                     //             badgeContent={params?.row?.['task_unread_count']}
                     //             color="primary"
                     //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
                     //         >
-                    //             <Tooltip title="Add Task"><AddTaskIcon onClick={isDisabled ? undefined : () => handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                    //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
                     //         </Badge>
-                    //     )},
-                    //   },
-
+                    //     ),
+                    // },
                     const updatedHeader = [
                         
                         {
@@ -3624,7 +3621,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             width: 50,
                             resizable: false,
                             renderCell: (params) => {
-                                const isDisabled = !params?.row?.["field_io_name"];
+                                const isDisabled = params.row.isDisabled || !params?.row?.["field_io_name"];
                                 return (
                                 <Box display="flex" justifyContent="center" alignItems="center" width="100%">
                                     <Checkbox
@@ -3645,7 +3642,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
                             ),                            
                             renderCell: (params) => {
-                              const isDisabled = !params?.row?.["field_io_name"];
+                              const isDisabled = !params?.row?.["field_io_name"] || params.row.isDisabled;
                               return(
                                 <Button
                                     variant="contained"
@@ -3753,23 +3750,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         return new Date(parsed).toLocaleDateString("en-GB");
                     };
   
-                    // const updatedTableData = data.map((field, index) => {
-                    //     const updatedField = {};
-    
-                    //     Object.keys(field).forEach((key) => {
-                    //         if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                    //           updatedField[key] = formatDate(field[key]);
-                    //         } else {
-                    //           updatedField[key] = field[key];
-                    //         }
-                    //     });
-    
-                    //     return {
-                    //         ...updatedField,
-                    //         sl_no: (page - 1) * 10 + (index + 1),
-                    //         ...(field.id ? {} : { id: "unique_id_" + index }),
-                    //     };
-                    // });
                     const updatedTableData = data.map((field, index) => {
                       const updatedField = {};
 
@@ -3785,29 +3765,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
                       const createdAtDate = new Date(field["created_at"]);
                       const currentDate = new Date();
                       const extensionDate = field["field_extension_date"] ? new Date(field["field_extension_date"]) : null;
-
                       const diffTime = currentDate - createdAtDate;
                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-                      const role_title = localStorage.getItem("role_title") || "";
                       const designation = localStorage.getItem("designation_name") || "";
-
                       const isOlderThan90Days = diffDays > 90 && diffDays <= 180;
                       const isOlderThan180to360Days = diffDays > 180 && diffDays <= 360;
                       const isOlderThan360Days = diffDays > 360;
-
-                      console.log(`\n[Row ${index + 1}]`);
-                      console.log("Case ID:", field.id);
-                      console.log("Created At:", createdAtDate.toISOString());
-                      console.log("Today:", currentDate.toISOString());
-                      console.log("Days Since Created:", diffDays);
-                      console.log("Extension Date:", extensionDate?.toISOString() || "N/A");
-                      console.log("Nature of Disposal Empty:", isNatureOfDisposalEmpty);
-                      console.log("Designation:", designation);
-                      console.log("Role Title:", role_title);
-                      console.log("isOlderThan90Days:", isOlderThan90Days);
-                      console.log("isOlderThan180to360Days:", isOlderThan180to360Days);
-                      console.log("isOlderThan360Days:", isOlderThan360Days);
 
                       let isDisabledForOthers = false;
                       if (isNatureOfDisposalEmpty) {
@@ -3819,29 +3782,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         }
                       }
 
-                      console.log("isDisabledForOthers:", isDisabledForOthers);
-
-                      const isDIGEligibleForCaseExtension =
-                        isNatureOfDisposalEmpty &&
-                        isOlderThan90Days &&
-                        designation.includes("DIG") &&
-                        (!extensionDate || currentDate > extensionDate);
-
-                      const isADGEligibleForCaseExtension =
-                        isNatureOfDisposalEmpty &&
-                        isOlderThan180to360Days &&
-                        designation.includes("ADG") &&
-                        (!extensionDate || currentDate > extensionDate);
-
-                      const isDGPEligibleForCaseExtension =
-                        isNatureOfDisposalEmpty &&
-                        isOlderThan360Days &&
-                        designation.includes("DGP") &&
-                        (!extensionDate || currentDate > extensionDate);
-
-                      console.log("isDIGEligibleForCaseExtension:", isDIGEligibleForCaseExtension);
-                      console.log("isADGEligibleForCaseExtension:", isADGEligibleForCaseExtension);
-                      console.log("isDGPEligibleForCaseExtension:", isDGPEligibleForCaseExtension);
+                      const isDIGEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan90Days && designation.includes("DIG") && (!extensionDate || currentDate > extensionDate);
+                      const isADGEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan180to360Days && designation.includes("ADG") && (!extensionDate || currentDate > extensionDate);
+                      const isDGPEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan360Days && designation.includes("DGP") && (!extensionDate || currentDate > extensionDate);
 
                       let extraHoverOptions = [];
 
@@ -3864,11 +3807,6 @@ const loadChildMergedCasesData = async (page, caseId) => {
                               maxDate = null;
                             }
 
-                            console.log("Case Extension Modal Opened");
-                            console.log("Base Created At:", baseDate.format("YYYY-MM-DD"));
-                            console.log("minDate:", minDate ? minDate.format("YYYY-MM-DD") : "null");
-                            console.log("maxDate:", maxDate ? maxDate.format("YYYY-MM-DD") : "null");
-
                             setFormData({
                               id: selectedRow.id,
                               minDate: minDate?.toISOString(),
@@ -3885,10 +3823,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         sl_no: (page - 1) * 10 + (index + 1),
                         ...(field.id ? {} : { id: "unique_id_" + index }),
                         isDisabled: isDisabledForOthers,
-                        allowCaseExtension:
-                          isDIGEligibleForCaseExtension ||
-                          isADGEligibleForCaseExtension ||
-                          isDGPEligibleForCaseExtension,
+                        allowCaseExtension: isDIGEligibleForCaseExtension || isADGEligibleForCaseExtension || isDGPEligibleForCaseExtension,
                         extraHoverOptions: extraHoverOptions,
                       };
                     });
@@ -3934,24 +3869,82 @@ const loadChildMergedCasesData = async (page, caseId) => {
     };
 
 
-const fetchFieldHistory = async (field_name, table_row_id) => {
-  try {
-    const payload = { template_id: '73', field_name: field_name,
-      table_row_id: table_row_id, };
-    const getHistoryResponse = await api.post("/profileHistories/getProfileHistory", payload);
+    const fetchFieldHistory = async (field_name, table_row_id, template_id) => {
+    
+        setLoading(true);
+        try {
+            const payload = {
+            template_id,
+            field_name,
+            table_row_id,
+            };
+            const getHistoryResponse = await api.post("/profileHistories/getProfileHistory", payload);
+            setLoading(false);
+            if (getHistoryResponse.data) {
+            const rawData = getHistoryResponse.data || [];
 
-    if (getHistoryResponse.data) {
-      setHistoryData(getHistoryResponse.data || []);
-      setSelectedFieldName(field_name);
-      setShowHistoryDialog(true);
-    } else {
-      Swal.fire("No History", getHistoryResponse.data.message, "info");
-    }
-  } catch (error) {
-    console.error("Error fetching field history:", error);
-    Swal.fire("Error", "Failed to fetch field history.", "error");
-  }
-};
+            const transformedRows = rawData.map((item, index) => {
+                const formatDate = (dateStr) => {
+                    const date = new Date(dateStr);
+                    return date.toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                    });
+                };
+
+                const isOldValueDate = !isNaN(Date.parse(item.old_value));
+                const isUpdatedValueDate = !isNaN(Date.parse(item.updated_value));
+
+                return {
+                    id: index,
+                    user: item.userDetails?.user_firstname || 'N/A',
+                    old_value: isOldValueDate ? formatDate(item.old_value) : (item.old_value || 'N/A'),
+                    updated_value: isUpdatedValueDate ? formatDate(item.updated_value) : item.updated_value,
+                    changed_at: formatDate(item.created_at)
+                };
+            });
+
+            setHistoryData(rawData);
+            setHistoryRows(transformedRows);
+            setSelectedFieldName(field_name);
+            setShowHistoryDialog(true);
+            } else {
+            toast.info("No History", getHistoryResponse.data.message, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-info",
+            });
+            return;
+            }
+        } catch (error) {
+            console.error("Error fetching field history:", error);
+            toast.error("Failed to fetch field history.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    };
+
+    const formatFieldName = (field) => {
+    if (!field) return '';
+    return field
+        .replace(/^field_/, '')
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, c => c.toUpperCase());
+    };
 
 
     function isValidISODate(value) {
@@ -4712,6 +4705,8 @@ useEffect(() => {
         const filteredFields = response.data.fields.filter(
           (field) => allowedFieldNames.includes(field.name)
         );
+        const templatedata = response.data;
+        setSelectTemplateId(templatedata)
         setExtensionFields(filteredFields);
       }
     } catch (err) {
@@ -9083,7 +9078,7 @@ const handleOpenExportPopup = async () => {
                   setApprovalDesignationData(getActionsDetails.data['designation']);
   
                   var getFurtherInvestigationItems = getActionsDetails.data['approval_item'].filter((data)=>{
-                      if((data.name).toLowerCase() === 'nature of disposal extension'){
+                      if((data.name).toLowerCase() === 'case extension'){
                           return data;
                       }
                   });
@@ -9891,7 +9886,8 @@ const handleOpenExportPopup = async () => {
                             module : "ui_case",
                             overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
-                            dashboardName : dashboardTileName
+                            dashboardName : dashboardTileName,
+                            caseExtension :rowData?.isDisabled ?? false,
                         }
 
                         navigate("/caseView", {state: stateObj});
@@ -13119,9 +13115,11 @@ const handleOpenExportPopup = async () => {
         }}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
+        maxWidth="sm"
+        fullWidth
       >
         <DialogTitle id="alert-dialog-title">Case Extension</DialogTitle>
-        <DialogContent sx={{ width: "400px" }}>
+        <DialogContent>
           <DialogContentText id="alert-dialog-description">
             {extensionFields.length === 0 ? (
               <p>No extension fields available</p>
@@ -13142,7 +13140,7 @@ const handleOpenExportPopup = async () => {
                       onChange={(e) =>
                         setFormData({ ...formData, [field.name]: e.target.value })
                       }
-                      onHistory={() => fetchFieldHistory(field.name, formData.id)}
+                      onHistory={() => fetchFieldHistory(field.name, formData.id, selectTemplateId.template_id)}
                     />
                   ) : (
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -13162,7 +13160,7 @@ const handleOpenExportPopup = async () => {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                fetchFieldHistory(field.name, formData.id);
+                                fetchFieldHistory(field.name, formData.id, selectTemplateId.template_id);
                               }}
                               className="historyIcon"
                               sx={{
@@ -13214,22 +13212,19 @@ const handleOpenExportPopup = async () => {
           setHistoryData([]);
           setSelectedFieldName('');
         }}
+        maxWidth= 'md'
+        fullWidth
       >
-        <DialogTitle>Field History: {selectedFieldName}</DialogTitle>
-        <DialogContent sx={{ width: "400px" }}>
+        <DialogTitle>Field History: {formatFieldName(selectedFieldName)}</DialogTitle>
+        <DialogContent>
           {historyData.length === 0 ? (
             <p>No history available</p>
           ) : (
-            historyData.map((item, index) => (
-              <div key={index} style={{ marginBottom: '15px' }}>
-                <strong>Changed By:</strong> {item.userDetails?.user_firstname} ({item.userDetails?.kgid})<br />
-                <strong>Mobile:</strong> {item.userDetails?.mobile}<br />
-                <strong>Previous Value:</strong> {item.old_value || 'N/A'}<br />
-                <strong>New Value:</strong> {item.updated_value}<br />
-                <strong>Changed At:</strong> {new Date(item.created_at).toLocaleString()}
-                <hr />
-              </div>
-            ))
+        <TableView
+            rows={historyRows}
+            columns={historyColumns}
+            autoHeight
+        />
           )}
         </DialogContent>
         <DialogActions>
