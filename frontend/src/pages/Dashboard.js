@@ -344,6 +344,22 @@ const Dashboard = () => {
         }
     }
 
+    const navigateRouter = (details, divider)=>{
+
+        console.log(details,"details");
+        console.log(divider,"divider");
+               
+        var statePayload = {
+            "dashboardName" : details?.label
+        }
+
+        if(divider?.record_id){
+            statePayload["record_id"] = JSON.stringify(divider.record_id)
+        }
+
+        navigate(tabLabels?.[activeTab]?.route, {state: statePayload})
+    }
+
     const storedTime = localStorage.getItem("refreshData");
 
     if (userId === "1") return null;
@@ -473,7 +489,6 @@ const Dashboard = () => {
             {Object.entries(dashboardMenu).map(([key, value], index) => (
                 <Card
                     key={key}
-                    onClick={() => navigate(tabLabels?.[activeTab]?.route)}
                     sx={{
                         width: value.divider >= 3 ? 410 : 300,
                         maxHeight: 130,
@@ -504,10 +519,12 @@ const Dashboard = () => {
                             Object.entries(value.divider_details).map(([dividerKey, dividerValue], idx) => (
                                 <Tooltip title={dividerValue.name} key={dividerKey}>
                                     <Box
+                                        onClick={() => navigateRouter(value, dividerValue)}
                                         sx={{
                                             minWidth: 0,
                                             flex: "1 1 0",
                                             p: 1,
+                                            py: 3,
                                             textAlign: "center",
                                             borderLeft: idx !== 0 ? "1px solid rgba(255, 255, 255, 0.3)" : "none"
                                         }}
@@ -535,7 +552,10 @@ const Dashboard = () => {
                                 </Tooltip>
                             ))
                         ) : (
-                            <Box sx={{ textAlign: "center", p: 2 }}>
+                            <Box 
+                                onClick={() => navigateRouter(value)}
+                                sx={{ textAlign: "center", p: 2, width: '100%' }}
+                            >
                                 <Typography variant="h6" sx={{ fontWeight: 500, color: "#FFFFFF", textAlign: 'center' }}>
                                     {value.total_count}
                                 </Typography>
