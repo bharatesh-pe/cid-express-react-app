@@ -54,19 +54,29 @@ const runDailyAlertCron = require("./cron-progress-report-alert");
 //     timezone: "Asia/Kolkata"
 // });
 
-// New function to refresh the alert cron job, callable from the frontend
 exports.refreshAlertCron = async (req, res) => {
     try {
-        // Trigger the desired cron function. Adjust which function to call as needed.
-        // await runDailyAlertCron.runMonthlyAlertCronPR(); // example function call
-        await runDailyAlertCron.runDailyAlertCronIO(); // example function call
-        await runDailyAlertCron.runDailyAlertCronAP(); // example function call
-        await runDailyAlertCron.runDailyAlertCronFSL_PF(); // example function call
-        await runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL(); // example function call
-        res.status(200).json({ message: 'Alert cron refreshed successfully' });
+        await Promise.all([
+            runDailyAlertCron.runDailyAlertCronIO(),
+            runDailyAlertCron.runDailyAlertCronAP(),
+            runDailyAlertCron.runDailyAlertCronFSL_PF(),
+            runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL()
+        ]);
+
+        const currentTime = new Date().toISOString(); // e.g., "2025-05-26T08:34:12.000Z"
+
+        res.status(200).json({
+            message: 'Alert cron refreshed successfully',
+            refreshedAt: currentTime
+        });
     } catch (error) {
         console.error('Error refreshing alert cron:', error);
-        res.status(500).json({ message: 'Failed to refresh alert cron', error: error.message });
+        res.status(500).json({
+            message: 'Failed to refresh alert cron',
+            error: error.message,
+            failedAt: new Date().toISOString()
+        });
     }
 };
+
 
