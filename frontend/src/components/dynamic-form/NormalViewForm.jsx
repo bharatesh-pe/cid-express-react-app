@@ -44,7 +44,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
 
   const [formData, setFormData] = useState({});
@@ -1335,17 +1335,20 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     Save
                   </Button>
             
-                    <Button
-                    variant="contained" color="success"
-                    onClick={() =>{
-                        saveNewActionRef.current = true;
-                        formButtonRef &&
-                        formButtonRef.current &&
-                        formButtonRef.current.click()
-                    }}
-                    >
-                      Save & New
-                    </Button>
+                    {
+                        !disableSaveNew &&
+                        <Button
+                            variant="contained" color="success"
+                            onClick={() =>{
+                                saveNewActionRef.current = true;
+                                formButtonRef &&
+                                formButtonRef.current &&
+                                formButtonRef.current.click()
+                            }}
+                        >
+                            Save & New
+                        </Button>
+                    }
                 </>
               )
             }

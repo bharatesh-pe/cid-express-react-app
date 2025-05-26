@@ -15,6 +15,7 @@ import {
     DialogTitle,
     DialogContent,
     CircularProgress,
+    IconButton,
 } from "@mui/material";
 import { styled } from "@mui/system";
 import LogoText from "../Images/cid_logo.png";
@@ -23,6 +24,7 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Navbar from "../components/navbar";
 import api from "../services/api";
+import RefreshIcon from '@mui/icons-material/Refresh';
 
     const tabLabels = [
         { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
@@ -31,120 +33,6 @@ import api from "../services/api";
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
         { label: "Crime Analytics", route: "/case/ui_case", key: "crime_analytics" },
         { label: "Orders & Circulars", route: "/repository/judgements", key: "order_circulars" },
-    ];
-
-
-    const jobData = [
-        {
-            title: "Case IO Allocation",
-            totalcase:100,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "Action Plans Approval",
-            totalcase:67,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "Progress Reports",
-            totalcase:22,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "Investigation Extension Approvals", 
-            totalcase:70,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "Cases for Trial Today", 
-            totalcase:70,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "FSL Overdue Today", 
-            totalcase:70,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "41A Notice Approvals", 
-            totalcase:70,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "Charge Sheet (CC) Pendency", 
-            totalcase:70,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "Custodial Cases for Chargesheet", 
-            totalcase:70,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "Overdue Actions", 
-            totalcase:70,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
-        {
-            title: "PF Send to FSL", 
-            totalcase:70,
-            stages: [
-                { days: "30", count: 87 },
-                { days: "15", count: 52 },
-                { days: "10", count: 7 },
-                { days: "5", count: 1 },
-            ],
-        },
     ];
 
     const GradientBadge = styled(Box)(({ gradient }) => ({
@@ -202,42 +90,6 @@ import api from "../services/api";
         "#8dcfff"   // 11 - light sky blue
     ];
 
-
-    const bottomActions = {
-        "Case IO Allocation" : {
-            "actions" : [
-                "24 Hrs",
-                "Over Due"
-            ]
-        },
-        "Overdue Actions" : {
-            "colorCode" : true,
-            "actions" : [
-                "Action Plan",
-                "Progress Report",
-                "Due Date Missed"
-            ]
-        },
-        "PF Send to FSL" : {
-            "colorCode" : true,
-            "actions" : [
-                "Day 10–20",
-                "Day 20–30",
-                "Beyond 30 Days"
-            ]
-        },
-        "Custodial Cases for Chargesheet": {
-            "colorCode" : true,
-            "actions" : [
-                "30th Day from Arrest",
-                "45th Day"
-            ]
-        }
-    }
-
-    
-    
-    
 const Dashboard = () => {
     const [activeTab, setActiveTab] = useState(0);
     const navigate = useNavigate();
@@ -362,17 +214,16 @@ const Dashboard = () => {
         const userRoleId = localStorage.getItem('role_id');
         var userDesignation = "";
 
-        if(userRole == "Investigation officer" || userRoleId == 6)
-        {
+        if(userRole == "Investigation officer" || userRoleId == 6){
             userDesignation = "IO"
-        }
-        else{
-            if(userDesignationName.includes("DIG"))
-                 userDesignation = "DIG"
-            else if(userDesignationName.includes("ADG") || userDesignationName.includes("ADGP"))
-                 userDesignation = "ADGP"
-            else if(userDesignationName.includes("DGP"))
-                 userDesignation = "DGP"
+        }else{
+            if(userDesignationName.includes("DIG")){
+                userDesignation = "DIG"
+            }else if(userDesignationName.includes("ADG") || userDesignationName.includes("ADGP")){
+                userDesignation = "ADGP"
+            }else if(userDesignationName.includes("DGP")){
+                userDesignation = "DGP"
+            }
         }
 
         
@@ -401,6 +252,7 @@ const Dashboard = () => {
 
                     const sortedObject = Object.fromEntries(sortedEntries);
                     setDashboardMenu(sortedObject);
+                    localStorage.setItem("refreshData", Date.now());
                 }else{
                     setDashboardMenu({});
                 }
@@ -435,6 +287,25 @@ const Dashboard = () => {
         }
     }
 
+    const formatDateTime = (timestamp) => {
+        const date = new Date(parseInt(timestamp));
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+
+        let hours = date.getHours();
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        const seconds = String(date.getSeconds()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12 || 12;
+        hours = String(hours).padStart(2, '0');
+
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds} ${ampm}`;
+    };
+
+    const storedTime = localStorage.getItem("refreshData");
+
     if (userId === "1") return null;
     return (
         <Box sx={{ bgcolor: "#e5e7eb", minHeight: "100vh" }}>
@@ -444,7 +315,6 @@ const Dashboard = () => {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    mb: 5,
                     bgcolor: '#FFFFFF'
                 }}
                 p={1}
@@ -539,6 +409,16 @@ const Dashboard = () => {
     
                     </Box>
                 </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'end', mb: 1, px: 1.5}}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 400, color: '#1E88E5' }}>
+                    Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                </Typography>
+                <Tooltip title="Refresh Dashboard" onClick={getDashboardTiles}>
+                    <IconButton>
+                        <RefreshIcon sx={{color: '#1E88E5', fontWeight: 400}} />
+                    </IconButton>
+                </Tooltip>
             </Box>
 
             <Box
