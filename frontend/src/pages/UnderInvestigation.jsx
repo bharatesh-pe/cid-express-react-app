@@ -11641,6 +11641,7 @@ const handleOpenExportPopup = async () => {
                   onError={onSaveTemplateError}
                   closeForm={closeOtherForm}
                   headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                  disableSaveNew={true}
                 />
               </FormControl>
             </DialogContentText>
