@@ -1536,9 +1536,9 @@ exports.getTemplateData = async (req, res, next) => {
             });
             filteredData.field_division = division ? division.division_name : "Unknown";
           }
-        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form') {
+        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_41a_notices') {
             filteredData = { ...data };
-            if (table_name === 'cid_ui_case_action_plan' && case_io_id && case_io_id !== "") {
+            if (table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_41a_notices' && case_io_id && case_io_id !== "") {
                 const case_io_user_designation = await UserDesignation.findOne({
                     attributes: ["designation_id"],
                     where: { user_id: case_io_id },
@@ -1559,8 +1559,7 @@ exports.getTemplateData = async (req, res, next) => {
             }            
         }else if (table_name === "cid_ui_case_accused") {
           filteredData = { ...data };
-          console.log("filteredData", filteredData);    
-
+          console.log("filteredData", filteredData);
         } else {
           filteredData = {
             id: data.id,
