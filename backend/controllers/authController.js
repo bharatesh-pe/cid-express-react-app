@@ -1267,8 +1267,15 @@ const fetch_dash_count = async (req, res) => {
             }
         }
 
+        var temp_module = case_modules;
+        if(case_modules === "pt_trail_case" || case_modules === "pt_other_case")
+        {
+            temp_module = "pt_case";
+        }
+       
+
         // Fetch the template using template_module to get the table_name
-        const caseTableTemplate = await Template.findOne({ where: { template_module : case_modules } });
+        const caseTableTemplate = await Template.findOne({ where: { template_module : temp_module } });
         if (!caseTableTemplate) {
             return userSendResponse(res, 400, false, "Template not found", null);
         }
@@ -1471,7 +1478,7 @@ const fetch_dash_count = async (req, res) => {
         if(case_modules === "ui_case") {
             alertTemplates = {
                 IO_ALLOCATION: {
-                    label: "Case IO Allocation",
+                    label: "IO Allocation",
                     divider: 2,
                     divider_details: {
                         low: { name: "24 hrs", count: 0, record_id: [], level: "low" },
@@ -1496,17 +1503,11 @@ const fetch_dash_count = async (req, res) => {
                         high: { name: "Over Due", count: 0, record_id: [], level: "high" }
                     },
                     total_count: 0
-                },
-                EXTENSION: {
-                    label: "Investigation Extension",
+                },NOTICE_41A_PENDING: {
+                    label: "41A CrPC/35 (3) BNSS Notices",
                     total_count: 0
-                },
-                TRIAL_TODAY: {
-                    label: "Trial Today",
-                    total_count: 0
-                },
-                FSL_PF: {
-                    label: "Property Form Send to FSL",
+                },FSL_PF: {
+                    label: "FSL - Property to be send to FSL",
                     divider: 3,
                     divider_details: {
                         low: { name: "10 - 20 Days", count: 0, record_id: [], level: "low" },
@@ -1516,15 +1517,11 @@ const fetch_dash_count = async (req, res) => {
                     total_count: 0
                 },
                 FSL: {
-                    label: "FSL Due Today",
-                    total_count: 0
-                },
-                NOTICE_41A_PENDING: {
-                    label: "Notice 41A Pending",
+                    label: "FSL - Report due from FSL",
                     total_count: 0
                 },
                 CUSTODIAL: {
-                    label: "Custodial Cases for Chargesheet",
+                    label: "Accused - Custody Due for Charge Sheet",
                     divider: 2,
                     divider_details: {
                         low: { name: "30 - 45 Days", count: 0, record_id: [], level: "low" },
@@ -1532,8 +1529,13 @@ const fetch_dash_count = async (req, res) => {
                     },
                     total_count: 0
                 },
+		    EXTENSION: {
+                    label: "Investigation Extension",
+                    total_count: 0,
+                    record_id: []
+                },
                 NATURE_OF_DISPOSAL: {
-                    label: "Charge Sheet (CC) Pendency",
+                    label: "Charge Sheet (CC)",
                     total_count: 0
                 },
             };
@@ -1541,15 +1543,15 @@ const fetch_dash_count = async (req, res) => {
         else if (case_modules === "pt_trail_case") {
             alertTemplates = {
                 TRIAL_CASE_1: {
-                    label: "Trail Case 1",
+                    label: "Trial Case 1",
                     total_count: 0
                 },
                 TRIAL_CASE_2: {
-                    label: "Trail Case 2",
+                    label: "Trial Case 2",
                     total_count: 0
                 },
                 TRIAL_CASE_3: {
-                    label: "Trail Case 3",
+                    label: "Trial Case 3",
                     divider: 2,
                     divider_details: {
                         low: { name: "Pending", count: 0, record_id: [], level: "low" },
@@ -1663,7 +1665,6 @@ const fetch_dash_count = async (req, res) => {
                 dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['name'] = "60 - 90 Days" ;
             }
 
-
             for (const rowData of groupedNatureOfDisposalAlerts) {
                 const alertType = rowData.alert_type;
                 const level = rowData.alert_level?.toLowerCase();
@@ -1681,6 +1682,8 @@ const fetch_dash_count = async (req, res) => {
                     if ( dashboard_count_details[alertType].divider_details && dashboard_count_details[alertType].divider_details[level] ) {
                         dashboard_count_details[alertType].divider_details[level].count = count;
                         dashboard_count_details[alertType].divider_details[level].record_id = recordIds;
+                        if(alertType === "NATURE_OF_DISPOSAL" && user_designation != "IO")
+                            dashboard_count_details["EXTENSION"].record_id = recordIds;
                     }
 
                     dashboard_count_details[alertType].total_count += count;
@@ -1688,7 +1691,9 @@ const fetch_dash_count = async (req, res) => {
             }
 
             if(user_designation != "IO")
+            {
                 dashboard_count_details["EXTENSION"].total_count = dashboard_count_details["NATURE_OF_DISPOSAL"].total_count;
+            }
         }
 
 

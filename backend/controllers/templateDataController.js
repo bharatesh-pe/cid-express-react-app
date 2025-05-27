@@ -3332,8 +3332,20 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
-      whereClause["sys_status"] = sys_status;
+        let recordIdKey = null;
+    
+        if (filter && typeof filter === "object") {
+            const keys = Object.keys(filter);
+            // Find keys that include "record_id"
+            recordIdKey = keys.find(key => key.includes("record_id"));
+        }
+    
+        // Only add sys_status if no record_id key is found
+        if (!recordIdKey) {
+            whereClause["sys_status"] = sys_status;
+        }
     }
+    
 
     // Create base attributes array
     let attributesArray = [];
