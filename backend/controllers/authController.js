@@ -1394,6 +1394,17 @@ const fetch_dash_count = async (req, res) => {
                 }
             };
         }
+        else if(case_modules === "eq_case")
+        {
+            whereClause = {
+                ...baseWhereClause,
+                alert_type: {
+                    [Op.in]: [   
+                        "TRIAL_TODAY",
+                    ]
+                }
+            };
+        }
         
         
         const groupedAlerts = await CaseAlerts.findAll({
