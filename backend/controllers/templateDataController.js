@@ -3123,7 +3123,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             whereClause[key] = String(value); // Direct match for foreign key fields
           }
         }
-        if (key === "record_ids" && Array.isArray(value) && value.length > 0) {
+        if (key === "record_id" && Array.isArray(value) && value.length > 0) {
             whereClause[id] = {
                 [Op.in]: value
             };
