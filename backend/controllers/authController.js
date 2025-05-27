@@ -1664,7 +1664,6 @@ const fetch_dash_count = async (req, res) => {
                 dashboard_count_details["NATURE_OF_DISPOSAL"].divider_details.low['name'] = "60 - 90 Days" ;
             }
 
-            var extension_record_id = [];
             for (const rowData of groupedNatureOfDisposalAlerts) {
                 const alertType = rowData.alert_type;
                 const level = rowData.alert_level?.toLowerCase();
@@ -1682,7 +1681,8 @@ const fetch_dash_count = async (req, res) => {
                     if ( dashboard_count_details[alertType].divider_details && dashboard_count_details[alertType].divider_details[level] ) {
                         dashboard_count_details[alertType].divider_details[level].count = count;
                         dashboard_count_details[alertType].divider_details[level].record_id = recordIds;
-                        extension_record_id.push(recordIds)
+                        if(alertType === "NATURE_OF_DISPOSAL" && user_designation != "IO")
+                            dashboard_count_details["EXTENSION"].record_id = recordIds;
                     }
 
                     dashboard_count_details[alertType].total_count += count;
@@ -1692,7 +1692,6 @@ const fetch_dash_count = async (req, res) => {
             if(user_designation != "IO")
             {
                 dashboard_count_details["EXTENSION"].total_count = dashboard_count_details["NATURE_OF_DISPOSAL"].total_count;
-                dashboard_count_details["EXTENSION"].record_id = extension_record_id;
             }
         }
 
