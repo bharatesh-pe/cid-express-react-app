@@ -200,7 +200,7 @@ const DynamicForm = ({
 
         }
 
-        if(table_name === "cid_pending_trail" && formData?.['field_cc_pending']){
+        if(table_name === "cid_pending_trial" && formData?.['field_cc_pending']){
             
             var requiredStatus = false;
 
@@ -303,7 +303,7 @@ const DynamicForm = ({
             return null
         }
 
-        if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
+        if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
             const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
             if (roleTitle === "admin organization") {
@@ -1555,9 +1555,9 @@ const DynamicForm = ({
                         }}
                         className="Roboto blueButton"
                     >
-                        {["cid_under_investigation", "cid_pending_trail" , "cid_enquiries"].includes(table_name) ? "Register Case" : "Save"}
+                        {["cid_under_investigation", "cid_pending_trial" , "cid_enquiries"].includes(table_name) ? "Register Case" : "Save"}
                     </Button>
-                    {!["cid_under_investigation", "cid_pending_trail" , "cid_enquiry"].includes(table_name) &&
+                    {!["cid_under_investigation", "cid_pending_trial" , "cid_enquiry"].includes(table_name) &&
                         <Button
                             onClick={() =>{
                                 saveNewRef.current = true;
@@ -1588,7 +1588,7 @@ const DynamicForm = ({
                         readOnlyTemplate &&
                         userPermissions[0]?.edit_case &&
                         (table_name !== "cid_under_investigation" &&
-                        table_name !== "cid_pending_trail" &&
+                        table_name !== "cid_pending_trial" &&
                         table_name !== "cid_enquiries")
                     )
                     ||
@@ -1596,7 +1596,7 @@ const DynamicForm = ({
                         readOnlyTemplate &&
                         userPermissions[0]?.edit_case &&
                         (table_name === "cid_under_investigation" ||
-                        table_name === "cid_pending_trail" ||
+                        table_name === "cid_pending_trial" ||
                         table_name === "cid_enquiries") &&
                         formData['field_io_name'] &&
                         formData['field_io_name'] !== ""
@@ -1618,7 +1618,7 @@ const DynamicForm = ({
                         readOnlyTemplate &&
                         userPermissions[0]?.edit_case &&
                         (table_name !== "cid_under_investigation" &&
-                        table_name !== "cid_pending_trail" &&
+                        table_name !== "cid_pending_trial" &&
                         table_name !== "cid_enquiries")
                     )
                     ||
@@ -1626,7 +1626,7 @@ const DynamicForm = ({
                         readOnlyTemplate &&
                         userPermissions[0]?.edit_case &&
                         (table_name === "cid_under_investigation" ||
-                        table_name === "cid_pending_trail" ||
+                        table_name === "cid_pending_trial" ||
                         table_name === "cid_enquiries") &&
                         formData['field_io_name'] &&
                         formData['field_io_name'] !== ""
@@ -1765,7 +1765,7 @@ const DynamicForm = ({
 
                 var readOnlyData = readOnlyTemplate
 
-                if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
+                if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
                     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
                     if (roleTitle === "admin organization") {

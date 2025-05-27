@@ -287,22 +287,7 @@ const Dashboard = () => {
 
             if (response?.success) {
                 if(response?.data){
-                    const sortedEntries = Object.entries(response.data).sort(([_, a], [__, b]) => {
-                        const getPriority = (item) => {
-                            const div = item?.divider ?? 0;
-                            if (!item?.divider || div === 0) return 1;
-                            if (div === 1 || div === 2) return 2;
-                            return 3;
-                        };
-
-                        const aPriority = getPriority(a);
-                        const bPriority = getPriority(b);
-
-                        return aPriority - bPriority;
-                    });
-
-                    const sortedObject = Object.fromEntries(sortedEntries);
-                    setDashboardMenu(sortedObject);
+                    setDashboardMenu(response.data);
                 }else{
                     setDashboardMenu({});
                 }
