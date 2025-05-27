@@ -1543,15 +1543,15 @@ const fetch_dash_count = async (req, res) => {
         else if (case_modules === "pt_trail_case") {
             alertTemplates = {
                 TRIAL_CASE_1: {
-                    label: "Trail Case 1",
+                    label: "Trial Case 1",
                     total_count: 0
                 },
                 TRIAL_CASE_2: {
-                    label: "Trail Case 2",
+                    label: "Trial Case 2",
                     total_count: 0
                 },
                 TRIAL_CASE_3: {
-                    label: "Trail Case 3",
+                    label: "Trial Case 3",
                     divider: 2,
                     divider_details: {
                         low: { name: "Pending", count: 0, record_id: [], level: "low" },
