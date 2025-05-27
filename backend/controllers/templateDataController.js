@@ -4583,7 +4583,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
     }
 
     if (pt_case_id && sys_status === "178_cases") {
-      await handleInvestigationUpdate("cid_pending_trail", pt_case_id,"pt_case");
+      await handleInvestigationUpdate("cid_pending_trial", pt_case_id,"pt_case");
     }
 
     return userSendResponse(
@@ -5689,7 +5689,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
                         var fieldsUpdated = Object.keys(updates).join(", ");
 
-                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trail" && fieldsUpdated.includes("field_nature_of_disposal")) {
+                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trial" && fieldsUpdated.includes("field_nature_of_disposal")) {
                             var PFtableName = "cid_ui_case_property_form";
                             var PRtableName = "";
 

@@ -215,7 +215,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
         }
 
-        if(table_name === "cid_pending_trail" && formData?.['field_cc_pending']){
+        if(table_name === "cid_pending_trial" && formData?.['field_cc_pending']){
             
             var requiredStatus = false;
 
@@ -272,7 +272,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                 return null
             }
 
-            if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
+            if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
                 const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
                 if (roleTitle === "admin organization") {
@@ -1084,11 +1084,21 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
                             payloadApi = "templateData/getAccusedWitness"
 
-                            apiPayload = {
-                                "table_name": field.table,
-                                "ui_case_id": selectedRow?.['ui_case_id'] || null,
-                                "pt_case_id": selectedRow?.['id'] || null
+
+                            if(table_name === "cid_under_investigation"){
+                                apiPayload = {
+                                    "table_name": field.table,
+                                    "ui_case_id": selectedRow?.['id'] || "",
+                                    "pt_case_id": selectedRow?.['pt_case_id'] || "",
+                                }
+                            }else if(table_name === "cid_pending_trial"){
+                                apiPayload = {
+                                    "table_name": field.table,
+                                    "ui_case_id": selectedRow?.['ui_case_id'] || "",
+                                    "pt_case_id": selectedRow?.['id'] || "",
+                                }
                             }
+
                         }
 
                         const response = await api.post(payloadApi, apiPayload);
@@ -1427,7 +1437,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
                 var readOnlyData = readOnlyTemplate
 
-                if(table_name === "cid_under_investigation" || table_name === "cid_pending_trail" || table_name === "cid_enquiries"){
+                if(table_name === "cid_under_investigation" || table_name === "cid_pending_trial" || table_name === "cid_enquiries"){
 
                     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
     

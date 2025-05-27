@@ -1753,7 +1753,7 @@ const LokayuktaView = () => {
                     <NormalViewForm
                         table_row_id={selectedRowId}
                         template_id={selectedTemplateId}
-                        table_name={selectedTableName}
+                        table_name={table_name}
                         template_name={selectedTemplateName}
                         readOnly={readonlyForm}
                         editData={editOnlyForm}
@@ -1765,7 +1765,7 @@ const LokayuktaView = () => {
                         onError={formError}
                         closeForm={closeAddForm}
                         noPadding={true}
-
+                        selectedRow={rowData}
                     />
                 </Box>
             )}

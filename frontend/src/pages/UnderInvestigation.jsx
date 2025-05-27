@@ -2709,7 +2709,7 @@ const UnderInvestigation = () => {
                     cancelButtonText: "UI Case",
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        showActionsOptionsTemplate("cid_pending_trail");
+                        showActionsOptionsTemplate("cid_pending_trial");
                     } else {
                         natureOfDisposalSysStatus("ui_case")
                     }
