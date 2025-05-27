@@ -1,8 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     Box,
     Tabs,
     Tab,
+    Menu, 
+    MenuItem,
     Typography,
     Card,
     CardContent,
@@ -28,7 +30,14 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 
     const tabLabels = [
         { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
-        { label: "Court Module", route: "/case/pt_case", key: "pt_case" },
+        {   label: "Court Module", 
+            route: "/case/pt_case", 
+            key: "pt_case",
+            options : [
+                {label: "Trail Court", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case"},
+                {label: "Other Court", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
+            ]
+        },
         { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
         { label: "Crime Analytics", route: "/case/ui_case", key: "crime_analytics" },
@@ -105,6 +114,36 @@ const Dashboard = () => {
     
     const [loading, setLoading] = useState(false);
     const [dashboardMenu, setDashboardMenu] = useState({});
+
+    const [activeTabKey, setActiveTabKey] = useState("ui_case");
+    const selectedTab = useRef(tabLabels[0]);
+    const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
+    const [submenuItems, setSubmenuItems] = useState([]);
+    const [selectedSubKey, setSelectedSubKey] = useState("");
+
+    const handleTabClick = (event, tab) => {
+        selectedTab.current = tab;
+        if (tab.options) {
+            setSubmenuAnchorEl(event.currentTarget);
+            setSubmenuItems(tab.options);
+        } else {
+            setActiveTabKey(tab.key);
+            setSelectedSubKey("");
+        }
+    };
+
+    const handleMenuItemClick = (option) => {
+        selectedTab.current = option;
+        navigateRouter(option,false,true);
+        return
+        setSelectedSubKey(option.key);
+        setActiveTabKey(option.key);
+        setSubmenuAnchorEl(null);
+    };
+
+    const handleMenuClose = () => {
+        setSubmenuAnchorEl(null);
+    };
     
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
@@ -202,10 +241,10 @@ const Dashboard = () => {
     };
 
     useEffect(() => {
-        if(tabLabels?.[activeTab]?.key){
+        if(activeTabKey){
             getDashboardTiles()
         }
-    }, [activeTab]);
+    }, [activeTabKey]);
 
     const getDashboardTiles = async () => {
         const userDesignationId = localStorage.getItem('designation_id');
@@ -230,7 +269,7 @@ const Dashboard = () => {
         const payload = {
             user_designation_id: userDesignationId || null,
             user_designation : userDesignation ,
-            case_modules: tabLabels?.[activeTab]?.key
+            case_modules: activeTabKey
         };
 
         setLoading(true);
@@ -344,11 +383,8 @@ const Dashboard = () => {
         }
     }
 
-    const navigateRouter = (details, divider)=>{
+    const navigateRouter = (details, divider, menuOption)=>{
 
-        console.log(details,"details");
-        console.log(divider,"divider");
-               
         var statePayload = {
             "dashboardName" : details?.label
         }
@@ -357,7 +393,25 @@ const Dashboard = () => {
             statePayload["record_id"] = JSON.stringify(divider.record_id)
         }
 
-        navigate(tabLabels?.[activeTab]?.route, {state: statePayload})
+        if(details?.actionKey){
+            statePayload["actionKey"] = details?.actionKey
+        }
+
+        var router = ""
+
+        if(menuOption){
+            router = selectedTab?.current?.route || "";
+        }else{
+            var selectedTap = tabLabels.filter((element)=>{
+                return element.key === activeTabKey
+            });
+
+            if(selectedTap?.[0]?.route){
+                router = selectedTap?.[0]?.route
+            }
+        }
+
+        navigate(router, {state: statePayload})
     }
 
     const storedTime = localStorage.getItem("refreshData");
@@ -396,8 +450,7 @@ const Dashboard = () => {
                 </Box>
 
                 <Tabs
-                    value={activeTab}
-                    onChange={(e, val) => setActiveTab(val)}
+                    value={false}
                     variant="scrollable"
                     scrollButtons="auto"
                     sx={{
@@ -411,10 +464,38 @@ const Dashboard = () => {
                         },
                     }}
                 >
-                    {tabLabels.map((element, idx) => (
-                        <Tab key={idx} label={element?.label} />
-                    ))}
+                    {tabLabels.map((tab) => {
+                        const isSelected = activeTabKey === tab.key || tab.options?.some((opt) => opt.key === activeTabKey);
+
+                        return (
+                            <Tab
+                                key={tab.key}
+                                label={tab.label}
+                                onClick={(e) => handleTabClick(e, tab)}
+                                sx={{
+                                    color: isSelected ? "#1976d2 !important" : "#1d2939",
+                                    borderBottom: isSelected ? "2px solid #1976d2" : "none",
+                                }}
+                            />
+                        );
+                    })}
                 </Tabs>
+
+                <Menu
+                    anchorEl={submenuAnchorEl}
+                    open={Boolean(submenuAnchorEl)}
+                    onClose={handleMenuClose}
+                >
+                    {submenuItems.map((option) => (
+                        <MenuItem
+                            key={option.key}
+                            selected={selectedSubKey === option.key}
+                            onClick={() => handleMenuItemClick(option)}
+                        >
+                            {option.label}
+                        </MenuItem>
+                    ))}
+                </Menu>
 
                 <Box>
                     <Box

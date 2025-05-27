@@ -1075,7 +1075,7 @@ exports.getTemplateData = async (req, res, next) => {
     is_read = "",
     case_io_id = "",
   } = req.body;
-  const {  ui_case_id, pt_case_id } = req.body;
+  const {  ui_case_id, pt_case_id , module , tab } = req.body;
   const { filter = {}, from_date = null, to_date = null } = req.body;
   const fields = {};
   const offset = (page - 1) * limit;
@@ -1231,14 +1231,25 @@ exports.getTemplateData = async (req, res, next) => {
     await Model.sync();
 
     let whereClause = {};
-    if (ui_case_id && ui_case_id != "" && pt_case_id && pt_case_id != "") {
+
+    if (ui_case_id && ui_case_id !== "" && pt_case_id && pt_case_id !== "") {
       whereClause = {
         [Op.or]: [{ ui_case_id }, { pt_case_id }],
       };
-    } else if (ui_case_id && ui_case_id != "") {
+    } else if (ui_case_id && ui_case_id !== "") {
       whereClause = { ui_case_id };
-    } else if (pt_case_id && pt_case_id != "") {
+    } else if (pt_case_id && pt_case_id !== "") {
       whereClause = { pt_case_id };
+    }
+    
+    const pending = 'Pending';
+    
+    if (module && tab && table_name === 'cid_ui_case_accused') {
+        if (module === "ui_case" && tab === "178_cases") {
+            whereClause.field_status_of_accused_in_charge_sheet = { [Op.iLike]: `%${pending}%` };
+        } else if (module === "pt_case") {
+            whereClause.field_status_of_accused_in_charge_sheet = { [Op.notILike]: `%${pending}%` };
+        }
     }
 
 	// Apply field filters if provided
@@ -3112,8 +3123,8 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
             whereClause[key] = String(value); // Direct match for foreign key fields
           }
         }
-        if (key === "record_ids" && Array.isArray(value) && value.length > 0) {
-            whereClause[id] = {
+        if (key === "record_id" && Array.isArray(value) && value.length > 0) {
+            whereClause["id"] = {
                 [Op.in]: value
             };
         }        
@@ -5662,6 +5673,137 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                         if (fieldUpdateCount === 0) {
                             await t.rollback();
                             return userSendResponse(res, 400, false, "Field update failed or no fields were changed.");
+                        }
+
+                        var fieldsUpdated = Object.keys(updates).join(", ");
+
+                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trail" && fieldsUpdated.includes("field_nature_of_disposal")) {
+                            var PFtableName = "cid_ui_case_property_form";
+                            var PRtableName = "";
+
+                            if(PFtableName != "" && PRtableName != "") {
+                                // Fetch Action Plan template metadata
+                                const PFtableData = await Template.findOne({ where: { table_name: PFtableName } });
+                            
+                                if (!PFtableData) {
+                                    console.error(`Table Property Form does not exist.`);
+                                    return;
+                                }
+
+                                // Parse schema and build model
+                                const PFschema = typeof PFtableData.fields === "string" ? JSON.parse(PFtableData.fields) : PFtableData.fields;
+                                PFschema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+                                
+                                const PFmodelAttributes = {
+                                    id: {
+                                    type: Sequelize.DataTypes.INTEGER,
+                                    primaryKey: true,
+                                    autoIncrement: true,
+                                    },
+                                    created_at: {
+                                    type: Sequelize.DataTypes.DATE,
+                                    allowNull: false,
+                                    },
+                                    updated_at: {
+                                    type: Sequelize.DataTypes.DATE,
+                                    allowNull: false,
+                                    },
+                                    created_by: {
+                                    type: Sequelize.DataTypes.STRING,
+                                    allowNull: true,
+                                    },
+                                };
+                           
+                                for (const field of PFschema) {
+                                    const { name, data_type, not_null, default_value } = field;
+                                    const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                            
+                                    PFmodelAttributes[name] = {
+                                    type: sequelizeType,
+                                    allowNull: !not_null,
+                                    defaultValue: default_value || null,
+                                    };
+                                }
+                            
+                                const PFModel = sequelize.define(PFtableData.table_name, PFmodelAttributes, {
+                                    freezeTableName: true,
+                                    timestamps: true,
+                                    createdAt: "created_at",
+                                    updatedAt: "updated_at",
+                                });
+                            
+                                await PFModel.sync();  
+
+                                 // Fetch Action Plan template metadata
+                                 const PRtableData = await Template.findOne({ where: { table_name: PRtableName } });
+                            
+                                 if (!PRtableData) {
+                                     console.error(`Table ---- does not exist.`);
+                                     return;
+                                 }
+ 
+                                 // Parse schema and build model
+                                 const PRschema = typeof PRtableData.fields === "string" ? JSON.parse(PRtableData.fields) : PRtableData.fields;
+                                 PRschema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+                                 
+                                 const PRmodelAttributes = {
+                                     id: {
+                                     type: Sequelize.DataTypes.INTEGER,
+                                     primaryKey: true,
+                                     autoIncrement: true,
+                                     },
+                                     created_at: {
+                                     type: Sequelize.DataTypes.DATE,
+                                     allowNull: false,
+                                     },
+                                     updated_at: {
+                                     type: Sequelize.DataTypes.DATE,
+                                     allowNull: false,
+                                     },
+                                     created_by: {
+                                     type: Sequelize.DataTypes.STRING,
+                                     allowNull: true,
+                                     },
+                                 };
+                            
+                                 for (const field of PRschema) {
+                                     const { name, data_type, not_null, default_value } = field;
+                                     const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                             
+                                     PRmodelAttributes[name] = {
+                                     type: sequelizeType,
+                                     allowNull: !not_null,
+                                     defaultValue: default_value || null,
+                                     };
+                                 }
+                             
+                                 const PRModel = sequelize.define(PRtableData.table_name, PRmodelAttributes, {
+                                     freezeTableName: true,
+                                     timestamps: true,
+                                     createdAt: "created_at",
+                                     updatedAt: "updated_at",
+                                 });
+                             
+                                 await PRModel.sync();  
+
+                                //get all the records of the PF table and create a new record in the PR table.
+                                const PFRecords = await PFModel.findAll({
+                                    where: { ui_case_id: recordId },
+                                    transaction: t
+                                });
+                                if (PFRecords && PFRecords.length > 0) {
+                                    for (const record of PFRecords) {
+                                        const newRecordData = {
+                                            ...record.toJSON(),
+                                            created_by: userName,
+                                            created_by_id: userId,
+                                        };
+                                        await PRModel.create(newRecordData, { transaction: t });
+                                    }
+                                } else {
+                                    console.warn(`No records found in Property Form table for ui_case_id ${recordId}.`);
+                                }
+                            }     
                         }
                     
                         // await CaseHistory.create({
