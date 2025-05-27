@@ -1345,66 +1345,71 @@ const fetch_dash_count = async (req, res) => {
         
         console.log("only get the case id in array", onlyCaseIds);
 
-        if (!onlyCaseIds || onlyCaseIds.length === 0) {
-            return []; // Or return empty response early
-        }
-        
-        const baseWhereClause = {
-            record_id: { [Op.in]: onlyCaseIds },
-            module: case_modules,
-            status: {
-                [Op.iLike]: "%pending%" 
-            }
-        };
-
+        // if (!onlyCaseIds || onlyCaseIds.length === 0) {
+        //     return res.status(400).json({ success: false, message: "There is no cases for the module" });
+        // }
+        var baseWhereClause = {};
         var whereClause = {};
-        if(case_modules === "ui_case") {
 
-            whereClause = {
-                ...baseWhereClause,
-                alert_type: {
-                    [Op.in]: [   
-                        "IO_ALLOCATION",
-                        "ACTION_PLAN",
-                        "PROGRESS_REPORT",
-                        "FSL_PF",
-                        "NOTICE_41A_PENDING"
-                    ]
-                }
-            };
-        }
-        else if(case_modules === "pt_trail_case") {
-            whereClause = {
-                ...baseWhereClause,
-                alert_type: {
-                    [Op.in]: [   
-                        "TRIAL_TODAY",
-                    ]
-                }
-            };
-        }
-        else if(case_modules === "pt_other_case")
+        if(onlyCaseIds || onlyCaseIds.length != 0)
         {
-            whereClause = {
-                ...baseWhereClause,
-                alert_type: {
-                    [Op.in]: [   
-                        "TRIAL_TODAY",
-                    ]
+            baseWhereClause = {
+                record_id: { [Op.in]: onlyCaseIds },
+                module: case_modules,
+                status: {
+                    [Op.iLike]: "%pending%" 
                 }
             };
+            
+            if(case_modules === "ui_case") {
+    
+                whereClause = {
+                    ...baseWhereClause,
+                    alert_type: {
+                        [Op.in]: [   
+                            "IO_ALLOCATION",
+                            "ACTION_PLAN",
+                            "PROGRESS_REPORT",
+                            "FSL_PF",
+                            "NOTICE_41A_PENDING"
+                        ]
+                    }
+                };
+            }
+            else if(case_modules === "pt_trail_case") {
+                whereClause = {
+                    ...baseWhereClause,
+                    alert_type: {
+                        [Op.in]: [   
+                            "TRIAL_TODAY",
+                        ]
+                    }
+                };
+            }
+            else if(case_modules === "pt_other_case")
+            {
+                whereClause = {
+                    ...baseWhereClause,
+                    alert_type: {
+                        [Op.in]: [   
+                            "TRIAL_TODAY",
+                        ]
+                    }
+                };
+            }
+            else if(case_modules === "eq_case")
+            {
+                whereClause = {
+                    ...baseWhereClause,
+                    alert_type: {
+                        [Op.in]: [   
+                            "TRIAL_TODAY",
+                        ]
+                    }
+                };
+            }
         }
-        else if(case_modules === "eq_case")
-        {
-            whereClause = {
-                ...baseWhereClause,
-                alert_type: {
-                    [Op.in]: [   
-                        "TRIAL_TODAY",
-                    ]
-                }
-            };
-        }
+
         
         
         const groupedAlerts = await CaseAlerts.findAll({
@@ -1581,6 +1586,9 @@ const fetch_dash_count = async (req, res) => {
                     total_count: 0
                 },
             };
+        }
+        else{
+            return res.status(400).json({ success: false, message: "Please check the module it not exist in the DB" });
         }
 
         const dashboard_count_details = JSON.parse(JSON.stringify(alertTemplates));
