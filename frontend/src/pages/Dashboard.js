@@ -397,7 +397,7 @@ const Dashboard = () => {
 
     const navigateRouter = (details, divider, menuOption)=>{
 
-        var router = details?.route;
+        var router = selectedTab?.current?.route;
 
         var statePayload = {
             "dashboardName" : details?.label
