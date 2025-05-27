@@ -1247,7 +1247,7 @@ const fetch_dash_count = async (req, res) => {
 
         if (!getDataBasesOnUsers) {
             if (allowedDivisionIds.length > 0) {
-                if (["ui_case", "pt_case", "eq_case"].includes(case_modules)) {
+                if (["ui_case", "pt_case" , "pt_trail_case", "pt_other_case", "eq_case"].includes(case_modules)) {
                     caseWhereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
                 } else {
                     caseWhereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
@@ -1255,7 +1255,7 @@ const fetch_dash_count = async (req, res) => {
             }
         } else {
             if (allowedUserIds.length > 0) {
-                if (["ui_case", "pt_case", "eq_case"].includes(case_modules)) {
+                if (["ui_case", "pt_case" , "pt_trail_case", "pt_other_case", "eq_case"].includes(case_modules)) {
                     caseWhereClause[Op.or] = [
                         { created_by_id: { [Op.in]: normalizedUserIds } },
                         { field_io_name: { [Op.in]: normalizedUserIds } },
@@ -1373,7 +1373,18 @@ const fetch_dash_count = async (req, res) => {
                 }
             };
         }
-        else if(case_modules === "pt_case") {
+        else if(case_modules === "pt_trail_case") {
+            whereClause = {
+                ...baseWhereClause,
+                alert_type: {
+                    [Op.in]: [   
+                        "TRIAL_TODAY",
+                    ]
+                }
+            };
+        }
+        else if(case_modules === "pt_other_case")
+        {
             whereClause = {
                 ...baseWhereClause,
                 alert_type: {
@@ -1510,14 +1521,52 @@ const fetch_dash_count = async (req, res) => {
                 },
             };
         }
-        else if (case_modules === "pt_case") {
+        else if (case_modules === "pt_trail_case") {
             alertTemplates = {
-                TRIAL_cOURTS: {
-                    label: "Trail Courts",
+                TRIAL_CASE_1: {
+                    label: "Trail Case 1",
                     total_count: 0
                 },
-                OTHER_COURTS: {
-                    label: "Other Courts",
+                TRIAL_CASE_2: {
+                    label: "Trail Case 2",
+                    total_count: 0
+                },
+                TRIAL_CASE_3: {
+                    label: "Trail Case 3",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "Pending", count: 0, record_id: [], level: "low" },
+                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
+                },
+            };
+        }
+        else if (case_modules === "pt_other_case") {
+            alertTemplates = {
+                OTHER_CASE_1: {
+                    label: "Other Case 1",
+                    total_count: 0
+                },
+                OTHER_CASE_2: {
+                    label: "Other Case 2",
+                    total_count: 0
+                },
+                OTHER_CASE_3: {
+                    label: "Other Case 3",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "Pending", count: 0, record_id: [], level: "low" },
+                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
+                },
+            };
+        }
+        else if (case_modules === "eq_case") {
+            alertTemplates = {
+                ENQUIRIES: {
+                    label: "ENQUIRIES",
                     total_count: 0
                 },
             };
