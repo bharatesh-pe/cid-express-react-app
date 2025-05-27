@@ -231,7 +231,7 @@ exports.runDailyAlertCronAP = async () => {
         const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
         const allIds = allCases.map(row => row.id);
         console.log(`Found ${allIds.length} cases.`);
-    
+
         // Fetch Action Plan template metadata
         const APtableData = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
     
@@ -397,12 +397,12 @@ exports.runDailyAlertCronFSL_PF = async () => {
         const [allCases] = await sequelize.query(`SELECT id FROM ${tableName} WHERE id IS NOT NULL`);
         const allIds = allCases.map(row => row.id);
         console.log(`Found ${allIds.length} cases.`);
-
         const FSLtableData = await Template.findOne({ where: { table_name: "cid_ui_case_forensic_science_laboratory" } });
         if (!FSLtableData) return console.error(`Table FSL does not exist.`);
 
         const schema = typeof FSLtableData.fields === "string" ? JSON.parse(FSLtableData.fields) : FSLtableData.fields;
         schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+        schema.push({ name: "ui_case_id", data_type: "INTEGER", not_null: false });
 
         const FSLmodelAttributes = {
             id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -442,35 +442,54 @@ exports.runDailyAlertCronFSL_PF = async () => {
         if(FSLRecords && FSLRecords.length > 0)
         {
             // Delete all alerts of this type and level regardless of case
-            await CaseAlerts.destroy({
-                where: {
-                    alert_type,
-                    alert_level: { [Op.in]: ["low", "medium", "high"] },
-                },
-            });
+            // await CaseAlerts.destroy({
+            //     where: {
+            //         alert_type,
+            //         alert_level: { [Op.in]: ["low", "medium", "high"] },
+            //         status: "Pending",
+            //     },
+            // });
+
        
-            for (const FSLEntry of FSLRecords) {
-                const case_id = FSLEntry.ui_case_id;
-                const sent_to_fsl = FSLEntry.field_sent_to_fsl;
-                const fsl_seizure_date = FSLEntry.field_seizure_date;
-                const FSL_report_number = FSLEntry.field_fsl_report_number;
-    
-                if (String(sent_to_fsl).toLowerCase() === "no" && fsl_seizure_date) {
-                    const seizureDate = moment(fsl_seizure_date);
-                    const daysDiff = today.diff(seizureDate, "days");
-    
-                    let alert_level = "low";
-                    if (daysDiff > 30) alert_level = "high";
-                    else if (daysDiff > 20) alert_level = "medium";
-    
-                    // Insert updated alert
+        for (const FSLEntry of FSLRecords) {
+
+            const fsl_id = FSLEntry.id;
+            const case_id = FSLEntry.ui_case_id;
+            const sent_to_fsl = FSLEntry.field_sent_to_fsl;
+            const fsl_seizure_date = FSLEntry.field_seizure_date;
+            const FSL_report_number = FSLEntry.field_fsl_report_number;
+
+            const isSentToFSL = String(sent_to_fsl).toLowerCase() === "yes";
+
+            if (!isSentToFSL && fsl_seizure_date) {
+                const seizureDate = moment(fsl_seizure_date);
+                const daysDiff = today.diff(seizureDate, "days");
+
+                let alert_level = "low";
+                if (daysDiff > 30) alert_level = "high";
+                else if (daysDiff > 20) alert_level = "medium";
+
+                const alert_message = `FSL Report number ${FSL_report_number} (FSL ID: ${fsl_id}) is not yet sent to FSL.`;
+
+                const existingAlert = await CaseAlerts.findOne({
+                    where: {
+                        module,
+                        main_table,
+                        record_id: case_id,
+                        alert_type,
+                        alert_message,
+                        status: "Pending",
+                    },
+                });
+
+                if (!existingAlert) {
                     await CaseAlerts.create({
                         module,
                         main_table,
                         record_id: case_id,
                         alert_type,
                         alert_level,
-                        alert_message: `FSL Report number ${FSL_report_number} is not yet sent to FSL.`,
+                        alert_message,
                         triggered_on: new Date(),
                         status: "Pending",
                         created_by,
@@ -478,7 +497,26 @@ exports.runDailyAlertCronFSL_PF = async () => {
                     });
                 }
             }
+
+            if (isSentToFSL) {
+                const alert_message = `FSL Report number ${FSL_report_number} (FSL ID: ${fsl_id}) is not yet sent to FSL.`;
+
+                await CaseAlerts.update(
+                    { status: "Completed" },
+                    {
+                        where: {
+                            module,
+                            main_table,
+                            record_id: case_id,
+                            alert_type,
+                            alert_message, 
+                            status: "Pending",
+                        },
+                    }
+                );
+            }
         }
+    }
 
         console.log("Daily Alert Cron completed for PF sent to FSL.");
     } catch (error) {
