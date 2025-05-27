@@ -1471,7 +1471,7 @@ const fetch_dash_count = async (req, res) => {
         if(case_modules === "ui_case") {
             alertTemplates = {
                 IO_ALLOCATION: {
-                    label: "Case IO Allocation",
+                    label: "IO Allocation",
                     divider: 2,
                     divider_details: {
                         low: { name: "24 hrs", count: 0, record_id: [], level: "low" },
@@ -1496,18 +1496,11 @@ const fetch_dash_count = async (req, res) => {
                         high: { name: "Over Due", count: 0, record_id: [], level: "high" }
                     },
                     total_count: 0
-                },
-                EXTENSION: {
-                    label: "Investigation Extension",
-                    total_count: 0,
-                    record_id: []
-                },
-                TRIAL_TODAY: {
-                    label: "Trial Today",
+                },NOTICE_41A_PENDING: {
+                    label: "41A CrPC/35 (3) BNSS Notices",
                     total_count: 0
-                },
-                FSL_PF: {
-                    label: "Property Form Send to FSL",
+                },FSL_PF: {
+                    label: "FSL - Property to be send to FSL",
                     divider: 3,
                     divider_details: {
                         low: { name: "10 - 20 Days", count: 0, record_id: [], level: "low" },
@@ -1517,15 +1510,11 @@ const fetch_dash_count = async (req, res) => {
                     total_count: 0
                 },
                 FSL: {
-                    label: "FSL Due Today",
-                    total_count: 0
-                },
-                NOTICE_41A_PENDING: {
-                    label: "Notice 41A Pending",
+                    label: "FSL - Report due from FSL",
                     total_count: 0
                 },
                 CUSTODIAL: {
-                    label: "Custodial Cases for Chargesheet",
+                    label: "Accused - Custody Due for Charge Sheet",
                     divider: 2,
                     divider_details: {
                         low: { name: "30 - 45 Days", count: 0, record_id: [], level: "low" },
@@ -1533,8 +1522,13 @@ const fetch_dash_count = async (req, res) => {
                     },
                     total_count: 0
                 },
+		    EXTENSION: {
+                    label: "Investigation Extension",
+                    total_count: 0,
+                    record_id: []
+                },
                 NATURE_OF_DISPOSAL: {
-                    label: "Charge Sheet (CC) Pendency",
+                    label: "Charge Sheet (CC)",
                     total_count: 0
                 },
             };
