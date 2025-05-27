@@ -223,7 +223,7 @@ const CaseActions = () => {
         label: 'Choose how do you want to create your template',
         options: [
             { name: 'Under Investigation', code: 'ui_case' },
-            { name: 'Trail Courts', code: 'pt_trail_case' },
+            { name: 'Trial Courts', code: 'pt_trail_case' },
             { name: 'Other Courts', code: 'pt_other_case' },
             { name: 'Enquiries', code: 'eq_case' }
         ]
