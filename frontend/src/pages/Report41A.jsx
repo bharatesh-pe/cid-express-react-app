@@ -32,7 +32,7 @@ import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 
-const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
+const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, case_table_name}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -2795,6 +2795,9 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                     onError={onSaveTemplateError}
                     closeForm={closeOtherForm}
                     headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                    selectedRow={selectedRowData}
+                    investigationViewTable={case_table_name}
+
                     />
                 </FormControl>
                 </DialogContentText>

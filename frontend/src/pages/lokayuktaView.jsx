@@ -1618,6 +1618,7 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        case_table_name = {table_name}
                     />
                     
                  ) : (
