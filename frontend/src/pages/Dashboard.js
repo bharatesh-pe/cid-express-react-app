@@ -397,7 +397,7 @@ const Dashboard = () => {
 
     const navigateRouter = (details, divider, menuOption)=>{
 
-        var router = details?.route;
+        var router = selectedTab?.current?.route;
 
         var statePayload = {
             "dashboardName" : details?.label
@@ -558,39 +558,11 @@ const Dashboard = () => {
                     </Box>
                 </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', mb: 1, px: 5, py: 2}}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 4, py: 2}}>
                 <Box>
-                    <Typography
-                        sx={{ fontWeight: 600, fontSize: 16, color: '#1D2939', my: 1 }}
-                    >
+                    <Typography sx={{ fontWeight: 600, fontSize: 22, color: '#1D2939', my: 1 }}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
                     </Typography>
-                    <Box
-                        sx={{
-                            backgroundColor: '#F0F4FF',
-                            border: '1px solid #90CAF9',
-                            borderRadius: 2,
-                            padding: 1,
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: 1,
-                            mb: 2
-                        }}
-                    >
-                        <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
-                        <Box>
-                            <Typography
-                                sx={{
-                                    fontWeight: 400,
-                                    fontSize: 13,
-                                    color: '#344054',
-                                    mt: 0.5
-                                }}
-                            >
-                                Please <strong style={{ color: '#1976d2' }}>Click on the numbers</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
-                            </Typography>
-                        </Box>
-                    </Box>
                 </Box>
 
                 <Box sx={{display: 'flex', alignItems: 'end', flexDirection: 'column', }}>
@@ -615,19 +587,51 @@ const Dashboard = () => {
                         }}
                         onClick={ViewAllCases}
                     >
-                        View All
+                        View All Cases
                     </Button>
-                    <Box sx={{ display: 'flex', alignItems: 'center'}}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 400, color: '#1E88E5' }}>
-                            Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                </Box>
+            </Box>
+
+            <hr style={{borderWidth: 0.2, opacity: 0.4, margin: 0}} />
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',px: 4, py: 2}}>
+                <Box
+                    sx={{
+                        backgroundColor: '#F0F4FF',
+                        border: '1px solid #90CAF9',
+                        borderRadius: 2,
+                        padding: 1,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1,
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                    <Box>
+                        <Typography
+                            sx={{
+                                fontWeight: 400,
+                                fontSize: 13,
+                                color: '#344054',
+                                mt: 0.5
+                            }}
+                        >
+                            Please <strong style={{ color: '#1976d2' }}> click on statistics (numbers)</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
                         </Typography>
-                        <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
-                            <IconButton>
-                                <RefreshIcon sx={{color: '#1E88E5', fontWeight: 400}} />
-                            </IconButton>
-                        </Tooltip>
                     </Box>
                 </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
+                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                    </Typography>
+                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                        <IconButton>
+                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
             </Box>
 
             <Box
@@ -643,14 +647,14 @@ const Dashboard = () => {
                 <Card
                     key={key}
                     sx={{
-                        width: value.divider >= 3 ? 320 :220,
+                        width: 220,
                         height: 110,
                         borderRadius: 4,
                         padding: 2,
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
-                        background: `linear-gradient(135deg, #1976d2, #8c8dc7)`,
+                        background: `linear-gradient(135deg, #2196F3, #673ab7b5)`,
                         color: '#fff',
                         cursor: 'pointer',
                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
