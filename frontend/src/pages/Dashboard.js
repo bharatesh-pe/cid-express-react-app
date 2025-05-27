@@ -18,6 +18,7 @@ import {
     DialogContent,
     CircularProgress,
     IconButton,
+    Button,
 } from "@mui/material";
 import { styled } from "@mui/system";
 import LogoText from "../Images/cid_logo.png";
@@ -27,6 +28,9 @@ import "react-toastify/dist/ReactToastify.css";
 import Navbar from "../components/navbar";
 import api from "../services/api";
 import RefreshIcon from '@mui/icons-material/Refresh';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
     const tabLabels = [
         { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
@@ -34,8 +38,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
             route: "/case/pt_case", 
             key: "pt_case",
             options : [
-                {label: "Trail Court", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case"},
-                {label: "Other Court", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
+                {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case"},
+                {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
             ]
         },
         { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
@@ -134,8 +138,6 @@ const Dashboard = () => {
 
     const handleMenuItemClick = (option) => {
         selectedTab.current = option;
-        navigateRouter(option,false,true);
-        return
         setSelectedSubKey(option.key);
         setActiveTabKey(option.key);
         setSubmenuAnchorEl(null);
@@ -226,15 +228,20 @@ const Dashboard = () => {
         }
     };
 
-    const getAvatarColor = (days) => {
+    const getAvatarColor = (days, dividerCount) => {
+        
+        if(dividerCount === 2 && days === 1){
+            days = 2;
+        }
+
         const dayValue = Number(days);
 
         if (dayValue === 0) {
             return "linear-gradient(135deg, #4caf50, #81c784)";
         } else if (dayValue === 1) {
-            return "linear-gradient(135deg, #ff9800, #fb8c00)";
-        } else if (dayValue === 2) {
-            return "linear-gradient(135deg, #f44336, #e53935)";
+            return "linear-gradient(135deg, #ffb300, #ffca28)";
+        } else if (dayValue >= 2) {
+            return "linear-gradient(135deg, #e53935, #ef5350)";
         } else {
             return "linear-gradient(135deg, #4caf50, #81c784)";
         }
@@ -281,12 +288,17 @@ const Dashboard = () => {
             if (response?.success) {
                 if(response?.data){
                     const sortedEntries = Object.entries(response.data).sort(([_, a], [__, b]) => {
-                    const aDiv = a?.divider ?? 0;
-                    const bDiv = b?.divider ?? 0;
+                        const getPriority = (item) => {
+                            const div = item?.divider ?? 0;
+                            if (!item?.divider || div === 0) return 1;
+                            if (div === 1 || div === 2) return 2;
+                            return 3;
+                        };
 
-                    if (aDiv >= 3 && bDiv < 3) return 1;
-                    if (aDiv < 3 && bDiv >= 3) return -1;
-                        return 0;
+                        const aPriority = getPriority(a);
+                        const bPriority = getPriority(b);
+
+                        return aPriority - bPriority;
                     });
 
                     const sortedObject = Object.fromEntries(sortedEntries);
@@ -385,6 +397,8 @@ const Dashboard = () => {
 
     const navigateRouter = (details, divider, menuOption)=>{
 
+        var router = details?.route;
+
         var statePayload = {
             "dashboardName" : details?.label
         }
@@ -397,18 +411,15 @@ const Dashboard = () => {
             statePayload["actionKey"] = details?.actionKey
         }
 
-        var router = ""
+        navigate(router, {state: statePayload})
+    }
 
-        if(menuOption){
-            router = selectedTab?.current?.route || "";
-        }else{
-            var selectedTap = tabLabels.filter((element)=>{
-                return element.key === activeTabKey
-            });
+    const ViewAllCases = ()=>{
+        var router = selectedTab?.current?.route;
+        var statePayload = {};
 
-            if(selectedTap?.[0]?.route){
-                router = selectedTap?.[0]?.route
-            }
+        if(selectedTab?.current?.actionKey){
+            statePayload["actionKey"] = selectedTab?.current?.actionKey
         }
 
         navigate(router, {state: statePayload})
@@ -547,15 +558,76 @@ const Dashboard = () => {
                     </Box>
                 </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'end', mb: 1, px: 1.5}}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 400, color: '#1E88E5' }}>
-                    Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
-                </Typography>
-                <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
-                    <IconButton>
-                        <RefreshIcon sx={{color: '#1E88E5', fontWeight: 400}} />
-                    </IconButton>
-                </Tooltip>
+            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', mb: 1, px: 5, py: 2}}>
+                <Box>
+                    <Typography
+                        sx={{ fontWeight: 600, fontSize: 16, color: '#1D2939', my: 1 }}
+                    >
+                        PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
+                    </Typography>
+                    <Box
+                        sx={{
+                            backgroundColor: '#F0F4FF',
+                            border: '1px solid #90CAF9',
+                            borderRadius: 2,
+                            padding: 1,
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: 1,
+                            mb: 2
+                        }}
+                    >
+                        <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                        <Box>
+                            <Typography
+                                sx={{
+                                    fontWeight: 400,
+                                    fontSize: 13,
+                                    color: '#344054',
+                                    mt: 0.5
+                                }}
+                            >
+                                Please <strong style={{ color: '#1976d2' }}>Click on the numbers</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
+                            </Typography>
+                        </Box>
+                    </Box>
+                </Box>
+
+                <Box sx={{display: 'flex', alignItems: 'end', flexDirection: 'column', }}>
+                    <Button
+                        variant="outlined"
+                        size="medium"
+                        endIcon={<ArrowForwardIcon />}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            borderRadius: 1,
+                            color: '#fff',
+                            border: 'none',
+                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
+                            px: 2.5,
+                            mr: 1.5,
+                            background: '#FF7043',
+                            '&:hover': {
+                                filter: 'brightness(1.1)',
+                            }
+                        }}
+                        onClick={ViewAllCases}
+                    >
+                        View All
+                    </Button>
+                    <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                        <Typography variant="subtitle1" sx={{ fontWeight: 400, color: '#1E88E5' }}>
+                            Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                        </Typography>
+                        <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                            <IconButton>
+                                <RefreshIcon sx={{color: '#1E88E5', fontWeight: 400}} />
+                            </IconButton>
+                        </Tooltip>
+                    </Box>
+                </Box>
             </Box>
 
             <Box
@@ -567,84 +639,116 @@ const Dashboard = () => {
                     pb: 1,
                 }}
             >
-            {Object.entries(dashboardMenu).map(([key, value], index) => (
+                {Object.entries(dashboardMenu).map(([key, value], index) => (
                 <Card
                     key={key}
                     sx={{
-                        width: value.divider >= 3 ? 410 : 300,
-                        maxHeight: 130,
-                        minHeight: 130,
-                        borderRadius: 3,
-                        background: cardBackgrounds[index] || "#fff",
-                        flexShrink: 0,
-                        boxShadow: "0 2px 2px rgba(0, 0, 0, 0.12), 0 6px 6px rgba(0, 0, 0, 0.08)",
-                        transition: "transform 0.3s ease",
-                        cursor: "pointer",
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "space-between",
+                        width: value.divider >= 3 ? 320 :220,
+                        height: 110,
+                        borderRadius: 4,
+                        padding: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        background: `linear-gradient(135deg, #1976d2, #8c8dc7)`,
+                        color: '#fff',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
                         '&:hover': {
-                            background: cardHoverBackgrounds[index] || cardBackgrounds[index],
-                            transform: 'translateY(-4px)'
+                            transform: 'scale(1.03)',
+                            boxShadow: '0 8px 20px rgba(0,0,0,0.2)'
                         }
                     }}
                 >
-                    <Box sx={{ textAlign: "center", p: 1, borderRadius: 3, background: cardTitleBackgrounds[index] || "#fff" }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "#FFFFFF" }}>
-                            {value.label}
-                        </Typography>
+                    {/* Top section with icon and title */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid rgba(255,255,255,0.3)', pb: 1 }}>
+                        <Box sx={{
+                            background: 'rgba(255,255,255,0.2)',
+                            borderRadius: '50%',
+                            padding: 1,
+                            width: 20,
+                            height: 20,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            <DashboardIcon fontSize="medium" />
+                        </Box>
+                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Tooltip title={value.label} arrow>
+                                <Typography
+                                    variant="subtitle1"
+                                    sx={{
+                                        fontWeight: 'bold',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                    }}
+                                >
+                                    {value.label}
+                                </Typography>
+                            </Tooltip>
+                        </Box>
                     </Box>
 
-                    <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", flex: 1 }}>
-                        {value.divider_details && Object.keys(value.divider_details).length > 0 ? (
-                            Object.entries(value.divider_details).map(([dividerKey, dividerValue], idx) => (
-                                <Tooltip title={dividerValue.name} key={dividerKey}>
-                                    <Box
-                                        onClick={() => navigateRouter(value, dividerValue)}
-                                        sx={{
-                                            minWidth: 0,
-                                            flex: "1 1 0",
-                                            p: 1,
-                                            py: 3,
-                                            textAlign: "center",
-                                            borderLeft: idx !== 0 ? "1px solid rgba(255, 255, 255, 0.3)" : "none"
+                    {/* Divider section (optional details) */}
+                    {value.divider_details && Object.keys(value.divider_details).length > 0 ? (
+                        <Box sx={{ display: 'flex', gap: 1}}>
+                            {Object.entries(value.divider_details).map(([dividerKey, dividerValue], idx) => (
+                                <Box
+                                    key={dividerKey}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigateRouter(value, dividerValue);
+                                    }}
+                                    sx={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        flexDirection: 'column',
+                                        flex: 1,
+                                        borderRadius: 2,
+                                        padding: 1,
+                                        textAlign: 'center',
+                                        transition: 'background 0.2s',
+                                        color: '#fff',
+                                        cursor: 'pointer',
+                                        '&:hover': {
+                                            filter: 'brightness(1.1)',
+                                        },
+                                    }}
+                                >
+                                    <Typography 
+                                        variant="body2" 
+                                        sx={{ 
+                                            width: 30, 
+                                            height: 30,
+                                            borderRadius: "50%",
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontWeight: 600, 
+                                            background: getAvatarColor(idx, Object.keys(value.divider_details).length) 
                                         }}
                                     >
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                color: "#FFFFFF",
-                                                fontWeight: 500,
-                                                overflow: "hidden",
-                                                textOverflow: "ellipsis",
-                                                display: "-webkit-box",
-                                                WebkitLineClamp: 2,
-                                                WebkitBoxOrient: "vertical",
-                                                maxHeight: "2.8em",
-                                                lineHeight: "1.4em"
-                                            }}
-                                        >
-                                            {dividerValue.name}
-                                        </Typography>
-                                        <GradientBadge gradient={getAvatarColor(idx)}>
-                                            {dividerValue.count}
-                                        </GradientBadge>
-                                    </Box>
-                                </Tooltip>
-                            ))
-                        ) : (
-                            <Box 
-                                onClick={() => navigateRouter(value)}
-                                sx={{ textAlign: "center", p: 2, width: '100%' }}
-                            >
-                                <Typography variant="h6" sx={{ fontWeight: 500, color: "#FFFFFF", textAlign: 'center' }}>
-                                    {value.total_count}
-                                </Typography>
-                            </Box>
-                        )}
-                    </Box>
+                                        {dividerValue.count}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                                        {dividerValue.name}
+                                    </Typography>
+                                </Box>
+                            ))}
+                        </Box>
+                    ) : (
+                        <Box sx={{ textAlign: 'center', mb: 2 }} onClick={()=>navigateRouter(value)}>
+                            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                                {value.total_count}
+                            </Typography>
+                        </Box>
+                    )}
                 </Card>
-            ))}
+                ))}
             </Box>
 
             {openUserDesignationDropdown && userOverallDesignation?.length > 0 && (
