@@ -115,7 +115,7 @@ const LokayuktaView = () => {
                 stateObj["dashboardName"] = dashboardName
             }
 
-            if(record_id){
+            if(record_id?.length > 0){
                 stateObj["record_id"] = record_id
             }
 
@@ -1753,7 +1753,7 @@ const LokayuktaView = () => {
                     <NormalViewForm
                         table_row_id={selectedRowId}
                         template_id={selectedTemplateId}
-                        table_name={table_name}
+                        table_name={selectedTableName}
                         template_name={selectedTemplateName}
                         readOnly={readonlyForm}
                         editData={editOnlyForm}
@@ -1766,6 +1766,7 @@ const LokayuktaView = () => {
                         closeForm={closeAddForm}
                         noPadding={true}
                         selectedRow={rowData}
+                        investigationViewTable={table_name}
                     />
                 </Box>
             )}

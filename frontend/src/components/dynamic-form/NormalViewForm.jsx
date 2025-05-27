@@ -44,7 +44,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
 
   const [formData, setFormData] = useState({});
@@ -1085,13 +1085,13 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             payloadApi = "templateData/getAccusedWitness"
 
 
-                            if(table_name === "cid_under_investigation"){
+                            if(table_name === "cid_under_investigation" || investigationViewTable === "cid_under_investigation"){
                                 apiPayload = {
                                     "table_name": field.table,
                                     "ui_case_id": selectedRow?.['id'] || "",
                                     "pt_case_id": selectedRow?.['pt_case_id'] || "",
                                 }
-                            }else if(table_name === "cid_pending_trial"){
+                            }else if(table_name === "cid_pending_trial" || investigationViewTable === "cid_pending_trial"){
                                 apiPayload = {
                                     "table_name": field.table,
                                     "ui_case_id": selectedRow?.['ui_case_id'] || "",
