@@ -1267,8 +1267,15 @@ const fetch_dash_count = async (req, res) => {
             }
         }
 
+        var temp_module = case_modules;
+        if(case_modules === "pt_trail_case" || case_modules === "pt_other_case")
+        {
+            temp_module = "pt_case";
+        }
+       
+
         // Fetch the template using template_module to get the table_name
-        const caseTableTemplate = await Template.findOne({ where: { template_module : case_modules } });
+        const caseTableTemplate = await Template.findOne({ where: { template_module : temp_module } });
         if (!caseTableTemplate) {
             return userSendResponse(res, 400, false, "Template not found", null);
         }
