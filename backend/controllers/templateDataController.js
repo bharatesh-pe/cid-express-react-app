@@ -3124,7 +3124,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
           }
         }
         if (key === "record_id" && Array.isArray(value) && value.length > 0) {
-            whereClause[id] = {
+            whereClause["id"] = {
                 [Op.in]: value
             };
         }        
