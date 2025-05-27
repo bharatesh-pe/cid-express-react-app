@@ -22,6 +22,7 @@ import ApprovalModal from "../components/dynamic-form/ApprovalModalForm";
 import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
 import PropertyForm from "./PropertyForm";
+import Report41A from "./Report41A";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
@@ -1605,6 +1606,19 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                    />
+                    
+                ) : activeSidebar?.table === "cid_ui_case_41a_notices" ? (
+
+
+                     <Report41A
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                        case_table_name = {table_name}
                     />
                     
                  ) : (
