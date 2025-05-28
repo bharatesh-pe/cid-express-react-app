@@ -1736,11 +1736,6 @@ exports.viewTemplateData = async (req, res, next) => {
         ? JSON.parse(tableData.fields)
         : tableData.fields;
 
-    schema.push(
-        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-        { name: "pt_case_id", data_type: "INTEGER", not_null: false }
-    );
-
     const modelAttributes = {};
 
     for (const field of schema) {
@@ -2719,7 +2714,7 @@ exports.paginateTemplateData = async (req, res) => {
       order: [[validSortBy, order.toUpperCase()]],
       attributes: [
         "id",
-        ...Object.keys(fields).filter((field) => fields[field].table_display_content),
+        ...Object.keys(fields).filter((field) => fields[field].displayContent),
       ],
       include,
     });
