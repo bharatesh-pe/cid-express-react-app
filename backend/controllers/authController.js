@@ -1559,7 +1559,47 @@ const fetch_dash_count = async (req, res) => {
                         high: { name: "Over Due", count: 0, record_id: [], level: "high" }
                     },
                     total_count: 0
-                },
+                },full_stay_on_investigation: {
+                  label: "Full Stay on Investigation",
+                  total_count: 0
+                  },
+                  full_stay_on_trial: {
+                    label: "Full Stay on Trial",
+                    total_count: 0
+                  },
+                  full_stay_on_enquiries: {
+                    label: "Full Stay on Enquiries",
+                    total_count: 0
+                  },
+                  partial_stay_on_investigation: {
+                    label: "Partial Stay on Investigation",
+                    total_count: 0
+                  },
+                  partial_stay_on_trial: {
+                    label: "Partial Stay on Trial",
+                    total_count: 0
+                  },
+                  partial_stay_on_enquiries: {
+                    label: "Partial Stay on Enquiries",
+                    total_count: 0
+                  },
+                  pending_quash_petitions_in_hc: {
+                    label: "Pending Quash Petitions in HC",
+                    total_count: 0
+                  },
+                  pending_bail_petitions_in_hc: {
+                    label: "Pending Bail Petitions in HC",
+                    total_count: 0
+                  },
+                  pending_anticipatory_petitions_in_hc: {
+                    label: "Pending Anticipatory Petitions in HC",
+                    total_count: 0
+                  },
+                  cases_in_supreme_court: {
+                    label: "Cases in Supreme Court",
+                    total_count: 0
+                  }
+                
             };
         }
         else if (case_modules === "pt_other_case") {
@@ -1581,6 +1621,47 @@ const fetch_dash_count = async (req, res) => {
                     },
                     total_count: 0
                 },
+                full_stay_on_investigation: {
+                  label: "Full Stay on Investigation",
+                  total_count: 0
+                  },
+                  full_stay_on_trial: {
+                    label: "Full Stay on Trial",
+                    total_count: 0
+                  },
+                  full_stay_on_enquiries: {
+                    label: "Full Stay on Enquiries",
+                    total_count: 0
+                  },
+                  partial_stay_on_investigation: {
+                    label: "Partial Stay on Investigation",
+                    total_count: 0
+                  },
+                  partial_stay_on_trial: {
+                    label: "Partial Stay on Trial",
+                    total_count: 0
+                  },
+                  partial_stay_on_enquiries: {
+                    label: "Partial Stay on Enquiries",
+                    total_count: 0
+                  },
+                  pending_quash_petitions_in_hc: {
+                    label: "Pending Quash Petitions in HC",
+                    total_count: 0
+                  },
+                  pending_bail_petitions_in_hc: {
+                    label: "Pending Bail Petitions in HC",
+                    total_count: 0
+                  },
+                  pending_anticipatory_petitions_in_hc: {
+                    label: "Pending Anticipatory Petitions in HC",
+                    total_count: 0
+                  },
+                  cases_in_supreme_court: {
+                    label: "Cases in Supreme Court",
+                    total_count: 0
+                  }
+                
             };
         }
         else if (case_modules === "eq_case") {
