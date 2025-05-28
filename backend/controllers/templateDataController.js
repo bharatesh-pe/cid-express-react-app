@@ -2714,7 +2714,7 @@ exports.paginateTemplateData = async (req, res) => {
       order: [[validSortBy, order.toUpperCase()]],
       attributes: [
         "id",
-        ...Object.keys(fields).filter((field) => fields[field].displayContent),
+        ...Object.keys(fields).filter((field) => fields[field].table_display_content),
       ],
       include,
     });
