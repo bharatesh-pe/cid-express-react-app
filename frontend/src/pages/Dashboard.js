@@ -38,8 +38,8 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
             route: "/case/pt_case", 
             key: "pt_case",
             options : [
-                {label: "Trial Courts", route: "/case/pt_case", key: "pt_case", actionKey: "pt_trail_case"},
-                {label: "Other Courts", route: "/case/pt_case", key: "pt_case", actionKey: "pt_other_case"},
+                {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case"},
+                {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
             ]
         },
         { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
@@ -50,9 +50,9 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
             route: "/repository/judgements", 
             key: "order_circulars",
             options : [
-                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order"},
-                {label: "Judgement", route: "/repository/judgements", key: "judgements"},
-                {label: "Circular", route: "/repository/circular", key: "circular"},
+                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
+                {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
+                {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
             ]
         },
     ];
@@ -119,6 +119,9 @@ const Dashboard = () => {
     const userId = localStorage.getItem("user_id");
     
     const location = useLocation();
+    
+    const { tabActiveKey } = location.state || {};
+
     const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
     const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
     const userName = localStorage.getItem("username");
@@ -128,8 +131,26 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
     const [dashboardMenu, setDashboardMenu] = useState({});
 
-    const [activeTabKey, setActiveTabKey] = useState("ui_case");
-    const selectedTab = useRef(tabLabels[0]);
+    var preSelectTabLabels = tabLabels[0]
+    
+    if(tabActiveKey){
+        
+        localStorage.setItem("tabActiveKey", tabActiveKey);
+
+        tabLabels.map((tab)=>{
+            const isSelected = tabActiveKey === tab.key || tab.options?.filter(
+                (opt) => (opt?.actionKey ?? opt?.key) === tabActiveKey
+            );
+
+            if(isSelected?.length > 0 && !isSelected[0]?.directLoad){
+                preSelectTabLabels = isSelected[0];
+            }
+
+        })
+    }
+
+    const selectedTab = useRef(preSelectTabLabels);
+    const selectedActiveKey = useRef(preSelectTabLabels.key);
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
     const [submenuItems, setSubmenuItems] = useState([]);
     const [selectedSubKey, setSelectedSubKey] = useState("");
@@ -143,21 +164,31 @@ const Dashboard = () => {
             return;
         }
 
-        selectedTab.current = tab;
         if (tab.options) {
             setSubmenuAnchorEl(event.currentTarget);
             setSubmenuItems(tab.options);
         } else {
-            setActiveTabKey(tab.key);
+            localStorage.setItem("tabActiveKey", tab.key);
+            selectedTab.current = tab;
             setSelectedSubKey("");
+            selectedActiveKey.current = tab.key;
+            getDashboardTiles();
         }
     };
 
     const handleMenuItemClick = (option) => {
         selectedTab.current = option;
+
+        if(option?.directLoad){
+            ViewAllCases();
+            return;
+        }
+
         setSelectedSubKey(option.key);
-        setActiveTabKey(option?.actionKey || option.key);
+        localStorage.setItem("tabActiveKey", option?.actionKey || option.key);
         setSubmenuAnchorEl(null);
+        selectedActiveKey.current = option.key;
+        getDashboardTiles();
     };
 
     const handleMenuClose = () => {
@@ -264,12 +295,9 @@ const Dashboard = () => {
         }
     };
 
-    useEffect(() => {
-        if(activeTabKey){
-            localStorage.setItem("tabActiveKey",activeTabKey);
-            getDashboardTiles()
-        }
-    }, [activeTabKey]);
+    useEffect(()=>{
+        getDashboardTiles();
+    },[selectedActiveKey.current])
 
     const getDashboardTiles = async () => {
         const userDesignationId = localStorage.getItem('designation_id');
@@ -294,7 +322,7 @@ const Dashboard = () => {
         const payload = {
             user_designation_id: userDesignationId || null,
             user_designation : userDesignation ,
-            case_modules: activeTabKey
+            case_modules: selectedActiveKey.current
         };
 
         setLoading(true);
@@ -403,7 +431,8 @@ const Dashboard = () => {
         var router = selectedTab?.current?.route;
 
         var statePayload = {
-            "dashboardName" : details?.label
+            "dashboardName" : details?.label,
+            "navbarKey" : selectedTab?.current?.key
         }
 
         if(divider?.record_id){
@@ -414,19 +443,24 @@ const Dashboard = () => {
             statePayload["actionKey"] = details?.actionKey
         }
 
-        navigate(router, {state: statePayload})
+
+        localStorage.setItem("tabActiveKey",selectedTab?.current?.key)
+        handleMenuClose();
+        navigate(router, {state: statePayload});
     }
 
     const ViewAllCases = ()=>{
         var router = selectedTab?.current?.route;
-        var statePayload = {};
+        var statePayload = {
+            "navbarKey" : selectedTab?.current?.key,
+        };
 
         if(selectedTab?.current?.actionKey){
             statePayload["actionKey"] = selectedTab?.current?.actionKey
         }
 
         localStorage.setItem("tabActiveKey",selectedTab?.current?.key)
-         
+        handleMenuClose();
         navigate(router, {state: statePayload})
     }
 
@@ -481,8 +515,8 @@ const Dashboard = () => {
                     }}
                 >
                     {tabLabels.map((tab) => {
-                        const isSelected = activeTabKey === tab.key || tab.options?.some(
-                            (opt) => (opt?.actionKey ?? opt?.key) === activeTabKey
+                        const isSelected = selectedActiveKey.current === tab.key || tab.options?.some(
+                            (opt) => (opt?.actionKey ?? opt?.key) === selectedActiveKey.current
                         );
 
                         return (
@@ -565,9 +599,9 @@ const Dashboard = () => {
                     </Box>
                 </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 4, py: 2}}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 4, py: 1}}>
                 <Box>
-                    <Typography sx={{ fontWeight: 600, fontSize: 22, color: '#1D2939', my: 1 }}>
+                    <Typography sx={{ fontWeight: 600, fontSize: 22, color: '#1D2939'}}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
                     </Typography>
                 </Box>
@@ -599,9 +633,7 @@ const Dashboard = () => {
                 </Box>
             </Box>
 
-            <hr style={{borderWidth: 0.2, opacity: 0.4, margin: 0}} />
-
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',px: 4, py: 2}}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',px: 4, pt: 1, pb: 2}}>
                 <Box
                     sx={{
                         backgroundColor: '#F0F4FF',
