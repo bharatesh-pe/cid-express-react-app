@@ -9022,7 +9022,9 @@ exports.submitActionPlanPR = async (req, res) => {
                             module: "ui_case",
                             record_id: ui_case_id,
                             alert_type: "ACTION_PLAN",
-                            status: "Pending"
+                            status: {
+                                    [Op.iLike]: "%pending%" 
+                            }
                         },
                         transaction: t
                     }

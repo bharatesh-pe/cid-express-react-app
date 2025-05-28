@@ -1534,6 +1534,9 @@ const UnderInvestigation = () => {
         normalData["id"] = selectedRowId;
         formData.append("id", selectedRowId);
         formData.append("data", JSON.stringify(normalData));
+        const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transactionId);
+
         
         setLoading(true);
         try {
@@ -4751,6 +4754,8 @@ useEffect(() => {
     
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(normalData));
+    const transactionId = `actionUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
   
     try {
       setLoading(true);
@@ -4824,6 +4829,9 @@ useEffect(() => {
 
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(normalData));
+    const transactionId = `extensionUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
+
 
     try {
       setLoading(true);
@@ -6624,6 +6632,8 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     setLoading(true);
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(normalData));
+    const transactionId = `update_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
 
     try {
       const saveTemplateData = await api.post(
@@ -7025,6 +7035,8 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     formData.append("table_name", data.options.table);
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(updateFields));
+    const transactionId = `trialUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
   
     setLoading(true);
   
