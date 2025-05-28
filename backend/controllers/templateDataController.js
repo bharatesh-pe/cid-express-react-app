@@ -3413,9 +3413,7 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     
         // Only add sys_status if no record_id key is found
-        if (!recordIdKey) {
-            whereClause["sys_status"] = sys_status;
-        }
+        whereClause["sys_status"] = sys_status;
     }
     
 
