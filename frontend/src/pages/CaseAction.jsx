@@ -192,6 +192,10 @@ const CaseActions = () => {
                 return 'Under Investigation';
             case 'pt_case':
                 return 'Pending Trail';
+            case 'pt_other_case':
+                return 'Other Courts';   
+            case 'pt_trail_case':
+                return 'Trial Courts'; 
             case 'eq_case':
                 return 'Enquiries';
             case 'master':
