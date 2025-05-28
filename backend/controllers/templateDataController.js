@@ -5765,7 +5765,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
                         if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trial" && fieldsUpdated.includes("field_nature_of_disposal")) {
                             var PFtableName = "cid_ui_case_property_form";
-                            var PRtableName = "";
+                            var PRtableName = "cid_pt_case_pr";
 
                             if(PFtableName != "" && PRtableName != "") {
                                 // Fetch Action Plan template metadata
@@ -5883,6 +5883,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                             ...record.toJSON(),
                                             created_by: userName,
                                             created_by_id: userId,
+                                            ui_case_id: recordId,
                                         };
                                         await PRModel.create(newRecordData, { transaction: t });
                                     }
@@ -6877,7 +6878,7 @@ exports.checkAccusedDataStatus = async (req, res) => {
             data.accusedEmpty = true;
         }
 
-
+        
 
 
 		return res.status(200).json({ success: true, data });
