@@ -832,7 +832,9 @@ const Layout = ({ children }) => {
                     }}
                 >
                     {tabLabels.map((tab) => {
-                        const isSelected = activeTabKey === tab.key || tab.options?.some((opt) => opt.key === activeTabKey);
+                        const isSelected = activeTabKey === tab.key || tab.options?.some(
+                            (opt) => (opt?.actionKey ?? opt?.key) === activeTabKey
+                        );
 
                         return (
                             <Tab
