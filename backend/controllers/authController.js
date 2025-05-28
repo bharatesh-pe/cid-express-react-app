@@ -1543,23 +1543,24 @@ const fetch_dash_count = async (req, res) => {
         }
         else if (case_modules === "pt_trail_case") {
             alertTemplates = {
-                TRIAL_CASE_1: {
-                    label: "Trial Case 1",
-                    total_count: 0
-                },
-                TRIAL_CASE_2: {
-                    label: "Trial Case 2",
-                    total_count: 0
-                },
-                TRIAL_CASE_3: {
-                    label: "Trial Case 3",
-                    divider: 2,
-                    divider_details: {
-                        low: { name: "Pending", count: 0, record_id: [], level: "low" },
-                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
-                    },
-                    total_count: 0
-                },full_stay_on_investigation: {
+                // TRIAL_CASE_1: {
+                //     label: "Trial Case 1",
+                //     total_count: 0
+                // },
+                // TRIAL_CASE_2: {
+                //     label: "Trial Case 2",
+                //     total_count: 0
+                // },
+                // TRIAL_CASE_3: {
+                //     label: "Trial Case 3",
+                //     divider: 2,
+                //     divider_details: {
+                //         low: { name: "Pending", count: 0, record_id: [], level: "low" },
+                //         high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                //     },
+                //     total_count: 0
+                // },
+                full_stay_on_investigation: {
                   label: "Full Stay on Investigation",
                   total_count: 0
                   },
@@ -1604,23 +1605,23 @@ const fetch_dash_count = async (req, res) => {
         }
         else if (case_modules === "pt_other_case") {
             alertTemplates = {
-                OTHER_CASE_1: {
-                    label: "Other Case 1",
-                    total_count: 0
-                },
-                OTHER_CASE_2: {
-                    label: "Other Case 2",
-                    total_count: 0
-                },
-                OTHER_CASE_3: {
-                    label: "Other Case 3",
-                    divider: 2,
-                    divider_details: {
-                        low: { name: "Pending", count: 0, record_id: [], level: "low" },
-                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
-                    },
-                    total_count: 0
-                },
+                // OTHER_CASE_1: {
+                //     label: "Other Case 1",
+                //     total_count: 0
+                // },
+                // OTHER_CASE_2: {
+                //     label: "Other Case 2",
+                //     total_count: 0
+                // },
+                // OTHER_CASE_3: {
+                //     label: "Other Case 3",
+                //     divider: 2,
+                //     divider_details: {
+                //         low: { name: "Pending", count: 0, record_id: [], level: "low" },
+                //         high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                //     },
+                //     total_count: 0
+                // },
                 full_stay_on_investigation: {
                   label: "Full Stay on Investigation",
                   total_count: 0
