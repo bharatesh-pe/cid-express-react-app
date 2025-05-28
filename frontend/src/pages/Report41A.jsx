@@ -110,209 +110,11 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
 
-    const loadValueField = async (rowData, editData, table_name) => {
-        if (!table_name || table_name === "") {
-          toast.warning("Please Check Table Name", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-          });
-          return;
-        }
-    
-        var viewTemplatePayload = {
-          table_name: table_name,
-          id: rowData.id,
-        };
-        setLoading(true);
-        try {
-          const viewTemplateData = await api.post(
-            "/templateData/viewTemplateData",
-            viewTemplatePayload
-          );
-          setLoading(false);
-    
-          if (viewTemplateData && viewTemplateData.success) {
-            const formValues = viewTemplateData.data ? viewTemplateData.data : {};
-    
-            setInitialData(formValues);
-            setFilterAoValues(formValues); 
-            setviewReadonly(!editData);
-            setEditTemplateData(editData);
-    
-            const viewTableData = {
-              table_name: table_name,
-            };
-    
-            setLoading(true);
-            try {
-              const viewTemplateResponse = await api.post(
-                "/templates/viewTemplate",
-                viewTableData
-              );
-              
-              setLoading(false);
-    
-              if (viewTemplateResponse && viewTemplateResponse.success) {
-    
-                console.log("viewtemplaterespose", viewTemplateResponse)
-              } else {
-                const errorMessage = viewTemplateResponse.message
-                  ? viewTemplateResponse.message
-                  : "Failed to delete the template. Please try again.";
-                toast.error(errorMessage, {
-                  position: "top-right",
-                  autoClose: 3000,
-                  hideProgressBar: false,
-                  closeOnClick: true,
-                  pauseOnHover: true,
-                  draggable: true,
-                  progress: undefined,
-                  className: "toast-error",
-                });
-              }
-            } catch (error) {
-              setLoading(false);
-              if (error && error.response && error.response["data"]) {
-                toast.error(
-                  error.response["data"].message
-                    ? error.response["data"].message
-                    : "Please Try Again !",
-                  {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                  }
-                );
-              }
-            }
-          } else {
-            const errorMessage = viewTemplateData.message
-              ? viewTemplateData.message
-              : "Failed to create the template. Please try again.";
-            toast.error(errorMessage, {
-              position: "top-right",
-              autoClose: 3000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              className: "toast-error",
-            });
-          }
-        } catch (error) {
-          setLoading(false);
-          if (error && error.response && error.response["data"]) {
-            toast.error(
-              error.response["data"].message
-                ? error.response["data"].message
-                : "Please Try Again !",
-              {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-              }
-            );
-          }
-        }
-      };
-      
-    const loadAOFields = async () => {
-      setLoading(true);
-      try {
-        const response = await api.post("/templates/viewTemplate", {
-          table_name: "cid_under_investigation",
-        });
-    
-        if (response.success && response.data?.fields) {
-          let aoOnlyFields = response.data.fields.filter(
-            (field) =>
-              field.ao_field === true &&
-              field.hide_from_ux === false &&
-              field.name !== "field_act" &&
-              field.name !== "field_section"
-          );
-    
-          const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
-          const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
-    
-          if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
-          if (policeStationField && !aoOnlyFields.includes(policeStationField)) aoOnlyFields.push(policeStationField);
-    
-          for (const field of aoOnlyFields) {
-            if (field && field.api) {
-              const payloadApi = field.api;
-              const apiPayload = {}; // Define this as needed
-    
-              try {
-                const res = await api.post(payloadApi, apiPayload);
-                if (!res.data) continue;
-    
-                const updatedOptions = res.data.map((item) => {
-                    const nameKey = Object.keys(item).find((key) => !["id", "created_at", "updated_at"].includes(key));
-                    var headerName = nameKey;
-                    var headerId = 'id';
-    
-                    if(field.table === "users"){
-                        headerName = "name"
-                        headerId =  "user_id"
-                    }else if(field.api !== "/templateData/getTemplateData"){
-                        headerName = field.table + "_name"
-                        headerId =  field.table + "_id"
-                    }
-    
-                    return {
-                        name: item[headerName],
-                        code: item[headerId],
-                    };
-                });
-    
-                field.options = updatedOptions;
-              } catch (err) {
-                console.error(`Error loading options for field ${field.name}`, err);
-              }
-            }
-          }
-    
-          setAoFields(aoOnlyFields);
-          loadValueField(aoFieldId, false, "cid_under_investigation");
-        }
-      } catch (error) {
-        toast.error("Failed to load AO fields", {
-          position: "top-right",
-          autoClose: 3000,
-          className: "toast-error",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    useEffect(() => {
-          loadAOFields();
-    }, []);
 
     useEffect(()=>{
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
     },[otherTemplatesPaginationCount]);
 
-    
 
     const onSaveTemplateError = (error) => {
         setIsValid(false);
@@ -386,7 +188,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
 
         try {
             const getTemplateResponse = await api.post("/templateData/getTemplateData", getTemplatePayload);
-            
+
             setLoading(false);
 
             if (getTemplateResponse && getTemplateResponse.success) {
@@ -571,7 +373,6 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                             renderCell: (params) => {
                                                 const userDesigId = localStorage.getItem("designation_id");
                                                 const isImmediateSupervisor = params.row.supervisior_designation_id == userDesigId;
-                                                console.log("paramsssss", params.row)
                                                 const approvedBy = params.row.field_approved_by?.toLowerCase() || "";
 
                                                 if (approvedBy === "yes") {
