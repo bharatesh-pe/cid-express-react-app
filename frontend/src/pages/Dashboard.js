@@ -434,6 +434,10 @@ const Dashboard = () => {
             "navbarKey" : selectedTab?.current?.key
         }
 
+        if(details?.record_id){
+            statePayload["record_id"] = JSON.stringify(details.record_id)
+        }
+
         if(divider?.record_id){
             statePayload["record_id"] = JSON.stringify(divider.record_id)
         }
