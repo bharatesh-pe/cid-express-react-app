@@ -1518,7 +1518,8 @@ const fetch_dash_count = async (req, res) => {
                 },
                 FSL: {
                     label: "FSL - Report due from FSL",
-                    total_count: 0
+                    total_count: 0,
+                    record_id: []
                 },
                 CUSTODIAL: {
                     label: "Accused - Custody Due for Charge Sheet",
@@ -1529,7 +1530,7 @@ const fetch_dash_count = async (req, res) => {
                     },
                     total_count: 0
                 },
-		    EXTENSION: {
+		            EXTENSION: {
                     label: "Investigation Extension",
                     total_count: 0,
                     record_id: []
@@ -1609,8 +1610,10 @@ const fetch_dash_count = async (req, res) => {
 
                 dashboard_count_details[alertType].total_count += count;
 
-                if(alertType == "FSL_PF" && level == "high" )
+                if(alertType == "FSL_PF" && level == "high" ){
                     dashboard_count_details["FSL"].total_count += count;
+                  dashboard_count_details["FSL"].record_id = recordIds;  
+                }
             }
         }
 
