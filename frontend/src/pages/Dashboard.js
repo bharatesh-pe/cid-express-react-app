@@ -38,14 +38,23 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
             route: "/case/pt_case", 
             key: "pt_case",
             options : [
-                {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case"},
-                {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
+                {label: "Trial Courts", route: "/case/pt_case", key: "pt_case", actionKey: "pt_trail_case"},
+                {label: "Other Courts", route: "/case/pt_case", key: "pt_case", actionKey: "pt_other_case"},
             ]
         },
         { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
         { label: "Crime Analytics", route: "/case/ui_case", key: "crime_analytics" },
-        { label: "Orders & Circulars", route: "/repository/judgements", key: "order_circulars" },
+        { 
+            label: "Orders & Circulars", 
+            route: "/repository/judgements", 
+            key: "order_circulars",
+            options : [
+                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order"},
+                {label: "Judgement", route: "/repository/judgements", key: "judgements"},
+                {label: "Circular", route: "/repository/circular", key: "circular"},
+            ]
+        },
     ];
 
     const GradientBadge = styled(Box)(({ gradient }) => ({
@@ -249,6 +258,7 @@ const Dashboard = () => {
 
     useEffect(() => {
         if(activeTabKey){
+            localStorage.setItem("tabActiveKey",activeTabKey);
             getDashboardTiles()
         }
     }, [activeTabKey]);
@@ -407,6 +417,8 @@ const Dashboard = () => {
             statePayload["actionKey"] = selectedTab?.current?.actionKey
         }
 
+        localStorage.setItem("tabActiveKey",selectedTab?.current?.key)
+         
         navigate(router, {state: statePayload})
     }
 

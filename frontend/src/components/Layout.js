@@ -15,6 +15,10 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  Tabs,
+  Tab,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
@@ -185,6 +189,86 @@ const Layout = ({ children }) => {
 
     const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
     const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
+
+        
+    const tabLabels = [
+        { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
+        {   label: "Court Module", 
+            route: "/case/pt_case", 
+            key: "pt_case",
+            options : [
+                {label: "Trial Courts", route: "/case/pt_case", key: "pt_case", actionKey: "pt_trail_case"},
+                {label: "Other Courts", route: "/case/pt_case", key: "pt_case", actionKey: "pt_other_case"},
+            ]
+        },
+        { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
+        { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
+        { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
+        { 
+            label: "Orders & Circulars", 
+            route: "/repository/judgements", 
+            key: "order_circulars",
+            options : [
+                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order"},
+                {label: "Judgement", route: "/repository/judgements", key: "judgements"},
+                {label: "Circular", route: "/repository/circular", key: "circular"},
+            ]
+        },
+    ];
+
+    const [activeTabKey, setActiveTabKey] = useState(localStorage.getItem("tabActiveKey") ? localStorage.getItem("tabActiveKey") : "ui_case");
+    const selectedTab = useRef();
+    const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
+    const [submenuItems, setSubmenuItems] = useState([]);
+    const [selectedSubKey, setSelectedSubKey] = useState("");
+
+    const handleTabClick = (event, tab) => {
+        selectedTab.current = tab
+        if (tab.options) {
+            setSubmenuAnchorEl(event.currentTarget);
+            setSubmenuItems(tab.options);
+        }else{
+            navigateTabs();
+        }
+    };
+
+    const handleMenuItemClick = (option) => {
+        selectedTab.current = option
+        navigateTabs();
+    };
+
+    const handleMenuClose = () => {
+        setSubmenuAnchorEl(null);
+    };
+
+    const navigateTabs = ()=>{
+
+        var router = selectedTab?.current?.route;
+
+        var statePayload = {
+            "dashboardName" : selectedTab?.current?.label
+        }
+
+        if(selectedTab?.current?.actionKey){
+            statePayload["actionKey"] = selectedTab?.current?.actionKey
+        }
+
+        localStorage.setItem("tabActiveKey", selectedTab?.current?.key)
+
+        navigate(router, {state: statePayload});
+        
+        if (location.pathname === router) {
+            window.location.reload();
+        }
+
+        handleMenuClose();
+    }
+
+    useEffect(()=>{
+        if(selectedTab?.current?.key){
+            setActiveTabKey(selectedTab?.current?.key);
+        }
+    },[selectedTab?.current])
 
   // for toggle sidebar dropdowns
   const handleDropdownToggle = (index) => {
@@ -731,6 +815,54 @@ const Layout = ({ children }) => {
                     />
                     <Navbar unreadNotificationCount={notificationCount} />
                 </Box>
+
+                <Tabs
+                    value={false}
+                    variant="scrollable"
+                    scrollButtons="auto"
+                    sx={{
+                        ".MuiTab-root": {
+                            fontWeight: 600,
+                            textTransform: "none",
+                            color: "#1d2939",
+                        },
+                        ".Mui-selected": {
+                            color: "#1976d2",
+                        },
+                    }}
+                >
+                    {tabLabels.map((tab) => {
+                        const isSelected = activeTabKey === tab.key || tab.options?.some((opt) => opt.key === activeTabKey);
+
+                        return (
+                            <Tab
+                                key={tab.key}
+                                label={tab.label}
+                                onClick={(e) => handleTabClick(e, tab)}
+                                sx={{
+                                    color: isSelected ? "#1976d2 !important" : "#1d2939",
+                                    borderBottom: isSelected ? "2px solid #1976d2" : "none",
+                                }}
+                            />
+                        );
+                    })}
+                </Tabs>
+
+                <Menu
+                    anchorEl={submenuAnchorEl}
+                    open={Boolean(submenuAnchorEl)}
+                    onClose={handleMenuClose}
+                >
+                    {submenuItems.map((option) => (
+                        <MenuItem
+                            key={option.key}
+                            selected={selectedSubKey === option.key}
+                            onClick={() => handleMenuItemClick(option)}
+                        >
+                            {option.label}
+                        </MenuItem>
+                    ))}
+                </Menu>
 
                 <Box
                     sx={{
