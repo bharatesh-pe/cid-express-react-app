@@ -6854,7 +6854,9 @@ exports.checkAccusedDataStatus = async (req, res) => {
             accusedEmpty : false
         }
 
-        if( AccusedData.length === 0) {
+        var accuseDatakeys = AccusedData.Object.keys(AccusedData);
+
+        if( accuseDatakeys.length === 0) {
             for(const accused of AccusedData)
             {
                 var gov_served = accused?.["field_government_servent"];
@@ -6875,6 +6877,8 @@ exports.checkAccusedDataStatus = async (req, res) => {
         {
             data.accusedEmpty = true;
         }
+
+
 
 
 		return res.status(200).json({ success: true, data });
