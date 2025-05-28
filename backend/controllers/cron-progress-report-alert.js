@@ -465,12 +465,13 @@ exports.runDailyAlertCronFSL_PF = async () => {
                 const seizureDate = moment(fsl_seizure_date);
                 const daysDiff = today.diff(seizureDate, "days");
 
-                let alert_level = "low";
-                if (daysDiff > 30) alert_level = "high";
-                else if (daysDiff > 20) alert_level = "medium";
+                let alert_level = "";
+                if (daysDiff >= 30) alert_level = "high";
+                else if (daysDiff >=20 && daysDiff <30) alert_level = "medium";
+                else if (daysDiff >= 10 && daysDiff <20) alert_level = "low";
 
+                if (!alert_level) continue;
                 const alert_message = `FSL Report number ${FSL_report_number} (FSL ID: ${fsl_id}) is not yet sent to FSL.`;
-
                 const existingAlert = await CaseAlerts.findOne({
                     where: {
                         module,
@@ -495,6 +496,20 @@ exports.runDailyAlertCronFSL_PF = async () => {
                         created_by,
                         created_at: new Date(),
                     });
+                } else {
+                    const levelPriority = { low: 1, medium: 2, high: 3 };
+                    
+                    if (
+                        levelPriority[alert_level] > levelPriority[existingAlert.alert_level]
+                    ) {
+                        await CaseAlerts.update(
+                            { alert_level },
+                            {
+                                where: { id: existingAlert.id },
+                            }
+                        );
+                        console.log(`Updated alert level for case ${case_id} to ${alert_level}`);
+                    }
                 }
             }
 
