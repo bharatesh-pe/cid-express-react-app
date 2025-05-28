@@ -44,7 +44,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
         },
         { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
-        { label: "Crime Analytics", route: "/case/ui_case", key: "crime_analytics" },
+        { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
         { 
             label: "Orders & Circulars", 
             route: "/repository/judgements", 
@@ -135,6 +135,14 @@ const Dashboard = () => {
     const [selectedSubKey, setSelectedSubKey] = useState("");
 
     const handleTabClick = (event, tab) => {
+
+        if(tab.key === "crime_analytics"){
+            localStorage.setItem("tabActiveKey", "crime_analytics");
+            navigate(tab?.route);
+            window.location.reload();
+            return;
+        }
+
         selectedTab.current = tab;
         if (tab.options) {
             setSubmenuAnchorEl(event.currentTarget);
@@ -148,7 +156,7 @@ const Dashboard = () => {
     const handleMenuItemClick = (option) => {
         selectedTab.current = option;
         setSelectedSubKey(option.key);
-        setActiveTabKey(option.key);
+        setActiveTabKey(option?.actionKey || option.key);
         setSubmenuAnchorEl(null);
     };
 
@@ -473,7 +481,9 @@ const Dashboard = () => {
                     }}
                 >
                     {tabLabels.map((tab) => {
-                        const isSelected = activeTabKey === tab.key || tab.options?.some((opt) => opt.key === activeTabKey);
+                        const isSelected = activeTabKey === tab.key || tab.options?.some(
+                            (opt) => (opt?.actionKey ?? opt?.key) === activeTabKey
+                        );
 
                         return (
                             <Tab
