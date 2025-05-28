@@ -343,6 +343,8 @@ const LokayuktaView = () => {
             from_date: noFilters ? null : tableFilterFromDate,
             to_date: noFilters ? null : tableFilterToDate,
             filter: noFilters ? {} : tableFilterOtherFilters,
+            module: module ? module : 'ui_case',
+            tab: sysStatus
         };
 
         setLoading(true);
