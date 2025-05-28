@@ -442,8 +442,8 @@ const Dashboard = () => {
             statePayload["record_id"] = JSON.stringify(divider.record_id)
         }
 
-        if(details?.actionKey){
-            statePayload["actionKey"] = details?.actionKey
+        if(selectedTab?.current?.actionKey){
+            statePayload["actionKey"] = selectedTab?.current?.actionKey
         }
 
 
