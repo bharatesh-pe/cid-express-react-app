@@ -47,6 +47,7 @@ import CaseActions from './pages/CaseAction';
 import TemplateMastersView from './pages/templateMasters';
 import LokayuktaView from './pages/lokayuktaView';
 import ActionPlan from './pages/ActionPlan';
+import IframePage from './pages/IframePage';
 
 import { ToastContainer } from 'react-toastify';
 function App() {
@@ -456,6 +457,17 @@ function App() {
                         <ActionPlan />
                     {/* </Layout> */}
                 </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/iframe"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <IframePage />
+                        </Layout>
+                    </ProtectedRoute>
                 }
             />
 

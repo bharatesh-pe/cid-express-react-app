@@ -44,8 +44,17 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
         },
         { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
-        { label: "Crime Analytics", route: "/case/ui_case", key: "crime_analytics" },
-        { label: "Orders & Circulars", route: "/repository/judgements", key: "order_circulars" },
+        { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
+        { 
+            label: "Orders & Circulars", 
+            route: "/repository/judgements", 
+            key: "order_circulars",
+            options : [
+                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
+                {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
+                {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
+            ]
+        },
     ];
 
     const GradientBadge = styled(Box)(({ gradient }) => ({
@@ -110,6 +119,9 @@ const Dashboard = () => {
     const userId = localStorage.getItem("user_id");
     
     const location = useLocation();
+    
+    const { tabActiveKey } = location.state || {};
+
     const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
     const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
     const userName = localStorage.getItem("username");
@@ -119,28 +131,63 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
     const [dashboardMenu, setDashboardMenu] = useState({});
 
-    const [activeTabKey, setActiveTabKey] = useState("ui_case");
-    const selectedTab = useRef(tabLabels[0]);
+    var preSelectTabLabels = tabLabels[0]
+    
+    if(tabActiveKey){
+        
+        tabLabels.forEach((tab) => {
+            const isMainMatch = tabActiveKey === tab.key;
+            
+            const matchedOption = tab.options?.find(
+                (opt) => (opt?.actionKey ?? opt?.key) === tabActiveKey
+            );
+
+            if (isMainMatch && !tab.directLoad) {
+                preSelectTabLabels = tab;
+            } else if (matchedOption && !matchedOption.directLoad) {
+                preSelectTabLabels = matchedOption;
+            }
+        });
+
+    }
+
+    const selectedTab = useRef(preSelectTabLabels);
+    const selectedActiveKey = useRef(preSelectTabLabels.key);
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
     const [submenuItems, setSubmenuItems] = useState([]);
     const [selectedSubKey, setSelectedSubKey] = useState("");
 
     const handleTabClick = (event, tab) => {
-        selectedTab.current = tab;
+
+        if(tab.key === "crime_analytics"){
+            navigate(tab?.route, {state: {"navbarKey" : "crime_analytics"}} );
+            window.location.reload();
+            return;
+        }
+
         if (tab.options) {
             setSubmenuAnchorEl(event.currentTarget);
             setSubmenuItems(tab.options);
         } else {
-            setActiveTabKey(tab.key);
+            selectedTab.current = tab;
             setSelectedSubKey("");
+            selectedActiveKey.current = tab.key;
+            getDashboardTiles();
         }
     };
 
     const handleMenuItemClick = (option) => {
         selectedTab.current = option;
+
+        if(option?.directLoad){
+            ViewAllCases(option);
+            return;
+        }
+
         setSelectedSubKey(option.key);
-        setActiveTabKey(option.key);
         setSubmenuAnchorEl(null);
+        selectedActiveKey.current = option.key;
+        getDashboardTiles();
     };
 
     const handleMenuClose = () => {
@@ -247,11 +294,9 @@ const Dashboard = () => {
         }
     };
 
-    useEffect(() => {
-        if(activeTabKey){
-            getDashboardTiles()
-        }
-    }, [activeTabKey]);
+    useEffect(()=>{
+        getDashboardTiles();
+    },[selectedActiveKey.current])
 
     const getDashboardTiles = async () => {
         const userDesignationId = localStorage.getItem('designation_id');
@@ -276,7 +321,7 @@ const Dashboard = () => {
         const payload = {
             user_designation_id: userDesignationId || null,
             user_designation : userDesignation ,
-            case_modules: activeTabKey
+            case_modules: selectedActiveKey.current
         };
 
         setLoading(true);
@@ -287,22 +332,7 @@ const Dashboard = () => {
 
             if (response?.success) {
                 if(response?.data){
-                    const sortedEntries = Object.entries(response.data).sort(([_, a], [__, b]) => {
-                        const getPriority = (item) => {
-                            const div = item?.divider ?? 0;
-                            if (!item?.divider || div === 0) return 1;
-                            if (div === 1 || div === 2) return 2;
-                            return 3;
-                        };
-
-                        const aPriority = getPriority(a);
-                        const bPriority = getPriority(b);
-
-                        return aPriority - bPriority;
-                    });
-
-                    const sortedObject = Object.fromEntries(sortedEntries);
-                    setDashboardMenu(sortedObject);
+                    setDashboardMenu(response.data);
                 }else{
                     setDashboardMenu({});
                 }
@@ -397,31 +427,44 @@ const Dashboard = () => {
 
     const navigateRouter = (details, divider, menuOption)=>{
 
-        var router = details?.route;
+        var router = selectedTab?.current?.route;
 
         var statePayload = {
-            "dashboardName" : details?.label
+            "dashboardName" : details?.label,
+            "navbarKey" : selectedTab?.current?.key
+        }
+
+        if(details?.record_id){
+            statePayload["record_id"] = JSON.stringify(details.record_id)
         }
 
         if(divider?.record_id){
             statePayload["record_id"] = JSON.stringify(divider.record_id)
         }
 
-        if(details?.actionKey){
-            statePayload["actionKey"] = details?.actionKey
+        if(selectedTab?.current?.actionKey){
+            statePayload["actionKey"] = selectedTab?.current?.actionKey
         }
 
-        navigate(router, {state: statePayload})
+
+        handleMenuClose();
+        navigate(router, {state: statePayload});
     }
 
-    const ViewAllCases = ()=>{
-        var router = selectedTab?.current?.route;
-        var statePayload = {};
+    const ViewAllCases = (options)=>{
+        var router = options?.route || selectedTab?.current?.route;
+
+        var navtabsKey = options?.key || selectedTab?.current?.key
+
+        var statePayload = {
+            "navbarKey" : navtabsKey
+        };
 
         if(selectedTab?.current?.actionKey){
             statePayload["actionKey"] = selectedTab?.current?.actionKey
         }
 
+        handleMenuClose();
         navigate(router, {state: statePayload})
     }
 
@@ -476,7 +519,9 @@ const Dashboard = () => {
                     }}
                 >
                     {tabLabels.map((tab) => {
-                        const isSelected = activeTabKey === tab.key || tab.options?.some((opt) => opt.key === activeTabKey);
+                        const isSelected = selectedActiveKey.current === tab.key || tab.options?.some(
+                            (opt) => (opt?.actionKey ?? opt?.key) === selectedActiveKey.current
+                        );
 
                         return (
                             <Tab
@@ -558,39 +603,11 @@ const Dashboard = () => {
                     </Box>
                 </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', mb: 1, px: 5, py: 2}}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 4, py: 1}}>
                 <Box>
-                    <Typography
-                        sx={{ fontWeight: 600, fontSize: 16, color: '#1D2939', my: 1 }}
-                    >
+                    <Typography sx={{ fontWeight: 600, fontSize: 22, color: '#1D2939'}}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
                     </Typography>
-                    <Box
-                        sx={{
-                            backgroundColor: '#F0F4FF',
-                            border: '1px solid #90CAF9',
-                            borderRadius: 2,
-                            padding: 1,
-                            display: 'flex',
-                            alignItems: 'flex-start',
-                            gap: 1,
-                            mb: 2
-                        }}
-                    >
-                        <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
-                        <Box>
-                            <Typography
-                                sx={{
-                                    fontWeight: 400,
-                                    fontSize: 13,
-                                    color: '#344054',
-                                    mt: 0.5
-                                }}
-                            >
-                                Please <strong style={{ color: '#1976d2' }}>Click on the numbers</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
-                            </Typography>
-                        </Box>
-                    </Box>
                 </Box>
 
                 <Box sx={{display: 'flex', alignItems: 'end', flexDirection: 'column', }}>
@@ -615,19 +632,49 @@ const Dashboard = () => {
                         }}
                         onClick={ViewAllCases}
                     >
-                        View All
+                        View All Cases
                     </Button>
-                    <Box sx={{ display: 'flex', alignItems: 'center'}}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 400, color: '#1E88E5' }}>
-                            Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                </Box>
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',px: 4, pt: 1, pb: 2}}>
+                <Box
+                    sx={{
+                        backgroundColor: '#F0F4FF',
+                        border: '1px solid #90CAF9',
+                        borderRadius: 2,
+                        padding: 1,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1,
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                    <Box>
+                        <Typography
+                            sx={{
+                                fontWeight: 400,
+                                fontSize: 13,
+                                color: '#344054',
+                                mt: 0.5
+                            }}
+                        >
+                            Please <strong style={{ color: '#1976d2' }}> click on statistics (numbers)</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
                         </Typography>
-                        <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
-                            <IconButton>
-                                <RefreshIcon sx={{color: '#1E88E5', fontWeight: 400}} />
-                            </IconButton>
-                        </Tooltip>
                     </Box>
                 </Box>
+                
+                <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
+                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                    </Typography>
+                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                        <IconButton>
+                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
             </Box>
 
             <Box
@@ -643,14 +690,14 @@ const Dashboard = () => {
                 <Card
                     key={key}
                     sx={{
-                        width: value.divider >= 3 ? 320 :220,
+                        width: 220,
                         height: 110,
                         borderRadius: 4,
                         padding: 2,
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
-                        background: `linear-gradient(135deg, #1976d2, #8c8dc7)`,
+                        background: `linear-gradient(135deg, #2196F3, #673ab7b5)`,
                         color: '#fff',
                         cursor: 'pointer',
                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',

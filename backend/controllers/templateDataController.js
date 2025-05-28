@@ -464,6 +464,19 @@ exports.updateTemplateData = async (req, res, next) => {
         );
       }
     }
+
+    if (parsedData.field_io_name) {
+      const ioId = id;
+      await CaseAlerts.update(
+        { status: "Completed" },
+        {
+          where: {
+            record_id: ioId,
+            status: "Pending",
+          },
+        }
+      );
+    }
     validData.sys_status = parsedData.sys_status;
     validData.updated_by = userName;
     validData.updated_by_id = userId;
@@ -1559,9 +1572,67 @@ exports.getTemplateData = async (req, res, next) => {
             }            
         }else if (table_name === "cid_ui_case_accused") {
           filteredData = { ...data };
-          console.log("filteredData", filteredData);    
+          console.log("filteredData", filteredData);
+        }else if (table_name === "cid_ui_case_41a_notices") {
+          console.log("🔍 Handling cid_ui_case_41a_notices");
 
-        } else {
+          filteredData = { ...data };
+
+          if (case_io_id && case_io_id !== "") {
+            const case_io_user_designation = await UserDesignation.findOne({
+              attributes: ["designation_id"],
+              where: { user_id: case_io_id },
+            });
+
+            let supervisorDesignationId = "";
+
+            if (case_io_user_designation?.designation_id) {
+              const immediate_supervisior = await UsersHierarchy.findOne({
+                attributes: ["supervisor_designation_id"],
+                where: { officer_designation_id: case_io_user_designation.designation_id },
+              });
+
+              supervisorDesignationId = immediate_supervisior?.supervisor_designation_id || "";
+            }
+
+            filteredData["supervisior_designation_id"] = supervisorDesignationId;
+          }
+
+          const accusedTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_accused" } });
+
+          const accusedMap = {};
+
+          if (accusedTemplate) {
+            const accusedFields = typeof accusedTemplate.fields === "string"
+              ? JSON.parse(accusedTemplate.fields)
+              : accusedTemplate.fields;
+
+            const displayField = accusedFields.find(f => f.name !== "id")?.name || "id";
+
+            const accusedData = await sequelize.query(
+              `SELECT id, ${displayField} FROM ${accusedTemplate.table_name} WHERE id IS NOT NULL`,
+              { type: sequelize.QueryTypes.SELECT }
+            );
+
+            accusedData.forEach((row) => {
+              accusedMap[row.id] = row[displayField];
+            });
+
+          }
+
+          // Replace 'field_accused_level' values with mapped names if possible
+          schema
+            .filter(field => field.is_primary_field === true || field.table_display_content === true)
+            .forEach(field => {
+              if (field.name === "field_accused_level") {
+                const mappedName = accusedMap[data[field.name]] || data[field.name];
+                filteredData[field.name] = mappedName;
+              } else {
+                filteredData[field.name] = data[field.name];
+              }
+            });
+
+        }else {
           filteredData = {
             id: data.id,
             created_at: data.created_at,
@@ -4583,7 +4654,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
     }
 
     if (pt_case_id && sys_status === "178_cases") {
-      await handleInvestigationUpdate("cid_pending_trail", pt_case_id,"pt_case");
+      await handleInvestigationUpdate("cid_pending_trial", pt_case_id,"pt_case");
     }
 
     return userSendResponse(
@@ -5689,7 +5760,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
                         var fieldsUpdated = Object.keys(updates).join(", ");
 
-                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trail" && fieldsUpdated.includes("field_nature_of_disposal")) {
+                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trial" && fieldsUpdated.includes("field_nature_of_disposal")) {
                             var PFtableName = "cid_ui_case_property_form";
                             var PRtableName = "";
 
@@ -8953,13 +9024,15 @@ exports.submitActionPlanPR = async (req, res) => {
             try {
                 // First, update existing matching alerts to "completed"
                 await CaseAlerts.update(
-                    { status: "completed" },
+                    { status: "Completed" },
                     {
                         where: {
                             module: "ui_case",
                             record_id: ui_case_id,
                             alert_type: "ACTION_PLAN",
-                            status: "pending"
+                            status: {
+                                    [Op.iLike]: "%pending%" 
+                            }
                         },
                         transaction: t
                     }

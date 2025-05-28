@@ -1534,6 +1534,9 @@ const UnderInvestigation = () => {
         normalData["id"] = selectedRowId;
         formData.append("id", selectedRowId);
         formData.append("data", JSON.stringify(normalData));
+        const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transactionId);
+
         
         setLoading(true);
         try {
@@ -1779,28 +1782,28 @@ const UnderInvestigation = () => {
             default_status : "ui_case"
         }
 
-        if(natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases"){
-            if (Array.isArray(natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'])) {
-                const hasFileInstance = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].some(file => file.filename instanceof File);
-                var filteredArray = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].filter(file => file.filename instanceof File);
-                if (hasFileInstance) {
-                    natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].forEach((file) => {
-                        if (file.filename instanceof File) {
-                            formData.append('field_19_prosecution_sanction_done', file.filename);
-                        }
-                    });
+        // if(natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases"){
+        //     if (Array.isArray(natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'])) {
+        //         const hasFileInstance = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].some(file => file.filename instanceof File);
+        //         var filteredArray = natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].filter(file => file.filename instanceof File);
+        //         if (hasFileInstance) {
+        //             natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].forEach((file) => {
+        //                 if (file.filename instanceof File) {
+        //                     formData.append('field_19_prosecution_sanction_done', file.filename);
+        //                 }
+        //             });
 
-                    filteredArray = filteredArray.map((obj) => {
-                        return {
-                            ...obj,
-                            filename: obj.filename['name']
-                        }
-                    });
+        //             filteredArray = filteredArray.map((obj) => {
+        //                 return {
+        //                     ...obj,
+        //                     filename: obj.filename['name']
+        //                 }
+        //             });
 
-                    formData.append('others_folder_attachment_ids', JSON.stringify(filteredArray));
-                }
-            }
-        }
+        //             formData.append('others_folder_attachment_ids', JSON.stringify(filteredArray));
+        //         }
+        //     }
+        // }
 
         var othersData = { 
             "sys_status" : othersUpdateData,
@@ -4751,6 +4754,8 @@ useEffect(() => {
     
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(normalData));
+    const transactionId = `actionUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
   
     try {
       setLoading(true);
@@ -4824,6 +4829,9 @@ useEffect(() => {
 
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(normalData));
+    const transactionId = `extensionUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
+
 
     try {
       setLoading(true);
@@ -6624,6 +6632,8 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     setLoading(true);
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(normalData));
+    const transactionId = `update_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
 
     try {
       const saveTemplateData = await api.post(
@@ -7025,6 +7035,8 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     formData.append("table_name", data.options.table);
     formData.append("id", data.id);
     formData.append("data", JSON.stringify(updateFields));
+    const transactionId = `trialUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
   
     setLoading(true);
   
@@ -14144,20 +14156,6 @@ const handleOpenExportPopup = async () => {
                                     />
                                 )}
                             />
-                            {
-                               ( natureOfDisposalValue?.code === "disposal" || natureOfDisposalValue?.code === "178_cases") &&
-                                <Box pt={2}>
-                                    <FileInput
-                                        field={{
-                                            name : 'field_19_prosecution_sanction_done',
-                                            required: true,
-                                            label : '19 Prosecution sanction Done',
-                                        }}
-                                        formData={natureOfDisposalFileUpload}
-                                        onChange={handleFileUploadChange}
-                                    />
-                                </Box>
-                            }
                         </FormControl>
                     </DialogContentText>
                 </DialogContent>
@@ -14178,21 +14176,6 @@ const handleOpenExportPopup = async () => {
                                     className: "toast-error",
                                 });
                                 return;
-                            }
-                            if (natureOfDisposalValue?.code === "disposal") {
-                                if(!natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'] || natureOfDisposalFileUpload?.['field_19_prosecution_sanction_done'].length === 0){
-                                    toast.error("Please Fill 19 Prosecution Sanction Field ",{
-                                        position: "top-right",
-                                        autoClose: 3000,
-                                        hideProgressBar: false,
-                                        closeOnClick: true,
-                                        pauseOnHover: true,
-                                        draggable: true,
-                                        progress: undefined,
-                                        className: "toast-error",
-                                    });
-                                    return;
-                                }
                             }
                             showNewApprovalPage();
                         }}

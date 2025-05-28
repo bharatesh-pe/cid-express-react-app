@@ -8,6 +8,7 @@ import api from "../services/api";
 import VerifiedIcon from '@mui/icons-material/Verified';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import HistoryIcon from '@mui/icons-material/History';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
 
 import {
   Box,
@@ -73,7 +74,7 @@ const UnderInvestigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-    const { record_id, dashboardName, actionKey } = location.state || {};
+    const { pageCount, record_id, dashboardName, actionKey } = location.state || {};
 
     const [dashboardTileName, setDashboardTileName] = useState(dashboardName ? dashboardName : "");
     const [dashboardRecordId, setDashboardRecordId] = useState(record_id ? JSON.parse(record_id) : []);
@@ -81,7 +82,7 @@ const UnderInvestigation = () => {
     const [saveNew, setSaveNew] = useState(null);
 
   const [showOptionModal, setShowOptionModal] = useState(false);
-  const [paginationCount, setPaginationCount] = useState(1);
+  const [paginationCount, setPaginationCount] = useState(pageCount ? pageCount : 1);
   const [tableSortOption, settableSortOption] = useState("DESC");
   const [tableSortKey, setTableSortKey] = useState("");
   const [isCheckboxSelected, setIsCheckboxSelected] = useState(false);
@@ -1199,6 +1200,7 @@ const UnderInvestigation = () => {
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
                             module : "pt_case",
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
                             dashboardName : dashboardTileName
                         }
@@ -1409,8 +1411,8 @@ const UnderInvestigation = () => {
                         },
                             {
                                 field: "field_io_name",
-                                headerName: "IO Name",
-                                width: 130,
+                                headerName: "Assign To IO",
+                                width: 150,
                                 resizable: true,
                                 cellClassName: 'justify-content-start',
                                 renderHeader: (params) => (
@@ -1557,10 +1559,10 @@ const UnderInvestigation = () => {
     return (
         <Tooltip title={value} placement="top">
             {
-                (key === "field_cc_no./sc_no" && (value === "" || !value)) ? (
+                (key === "field_io_name" && (value === "" || !value)) ? (
                     <span className="io-alert-flashy">
                         <span className="flashy-dot"></span>
-                        CC Pending
+                        ASSIGN IO
                     </span>                  
                 ) : (
                     <span
@@ -6866,6 +6868,14 @@ const UnderInvestigation = () => {
             setShowFileAttachments(true);
         }
 
+        const setUnAssignedIo = ()=>{
+            setFilterValues(prev => ({
+                ...(prev || {}),
+                field_io_name: ""
+            }));
+            setForceTableLoad((prev) => !prev);
+        }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -6976,6 +6986,30 @@ const UnderInvestigation = () => {
                 </Button>
               </>
             )}
+
+            <Button
+                variant="outlined"
+                startIcon={<PersonOffIcon />}
+                onClick={setUnAssignedIo}
+                sx={{
+                    borderColor: '#eb2f06',
+                    backgroundColor: '#FFF5F5',
+                    color: '#eb2f06',
+                    height: 38,
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    '&:hover': {
+                        borderColor: '#e55039',
+                        backgroundColor: '#FFE8E8',
+                        color: '#e55039'
+                    },
+                    '& .MuiSvgIcon-root': {
+                        color: '#eb2f06'
+                    }
+                }}
+            >
+                Unassigned IO
+            </Button>
 
             {JSON.parse(localStorage.getItem("user_permissions")) &&
               JSON.parse(localStorage.getItem("user_permissions"))[0]

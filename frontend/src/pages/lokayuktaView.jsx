@@ -22,6 +22,7 @@ import ApprovalModal from "../components/dynamic-form/ApprovalModalForm";
 import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
 import PropertyForm from "./PropertyForm";
+import Report41A from "./Report41A";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
@@ -115,7 +116,7 @@ const LokayuktaView = () => {
                 stateObj["dashboardName"] = dashboardName
             }
 
-            if(record_id){
+            if(record_id?.length > 0){
                 stateObj["record_id"] = record_id
             }
 
@@ -342,6 +343,8 @@ const LokayuktaView = () => {
             from_date: noFilters ? null : tableFilterFromDate,
             to_date: noFilters ? null : tableFilterToDate,
             filter: noFilters ? {} : tableFilterOtherFilters,
+            module: module ? module : 'ui_case',
+            tab: sysStatus
         };
 
         setLoading(true);
@@ -1607,6 +1610,19 @@ const LokayuktaView = () => {
                         backNavigation={backToForm}
                     />
                     
+                ) : activeSidebar?.table === "cid_ui_case_41a_notices" ? (
+
+
+                     <Report41A
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                        case_table_name = {table_name}
+                    />
+                    
                  ) : (
                     
                     !tableViewFlag ?
@@ -1765,7 +1781,8 @@ const LokayuktaView = () => {
                         onError={formError}
                         closeForm={closeAddForm}
                         noPadding={true}
-
+                        selectedRow={rowData}
+                        investigationViewTable={table_name}
                     />
                 </Box>
             )}
