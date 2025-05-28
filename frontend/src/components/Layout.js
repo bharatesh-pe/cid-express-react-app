@@ -221,34 +221,26 @@ const Layout = ({ children }) => {
 
     const selectedTab = useRef(tabLabels[0]);
     const selectedActiveKey = useRef(tabLabels[0]?.key);
-
-    useEffect(() => {
-        let foundTab = {};
-
-        if (navbarKey) {
-            for (const tab of tabLabels) {
-                if (tab.key === navbarKey) {
-                    foundTab = tab;
-                    break;
-                }
-
-                const matchedOption = tab.options?.find(
-                    (opt) => (opt?.actionKey ?? opt?.key) === navbarKey
-                );
-
-                if (matchedOption) {
-                    foundTab = matchedOption;
-                    break;
-                }
-            }
-            selectedTab.current = foundTab;
-            selectedActiveKey.current = foundTab.key;
-        }
-
-    }, [navbarKey, tabLabels]);
-
-    console.log(selectedActiveKey,"selectedActiveKey selectedActiveKey selectedActiveKey");
     
+    if(navbarKey){
+        localStorage.setItem("navbarKey", navbarKey);
+
+        tabLabels.forEach((tab) => {
+            const isMainMatch = navbarKey === tab.key;
+            
+            const matchedOption = tab.options?.find(
+                (opt) => (opt?.actionKey ?? opt?.key) === navbarKey
+            );
+
+            if (isMainMatch) {
+                selectedTab.current = tab;
+                selectedActiveKey.current = tab.key;
+            } else if (matchedOption) {
+                selectedTab.current = matchedOption;
+                selectedActiveKey.current = matchedOption.key;
+            }
+        });
+    }
 
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
     const [submenuItems, setSubmenuItems] = useState([]);
@@ -256,8 +248,7 @@ const Layout = ({ children }) => {
     const handleTabClick = (event, tab) => {
 
         if(tab.key === "crime_analytics"){
-            localStorage.setItem("tabActiveKey", "crime_analytics");
-            navigate(tab?.route);
+            navigate(tab?.route, {state: {"navbarKey" : "crime_analytics"}});
             window.location.reload();
             return;
         }
@@ -283,8 +274,6 @@ const Layout = ({ children }) => {
     };
 
     const navigateTabs = ()=>{
-
-        localStorage.setItem("tabActiveKey", selectedActiveKey.current )
 
         handleMenuClose();
 
@@ -837,7 +826,7 @@ const Layout = ({ children }) => {
                     </Box>
                     <HomeIcon
                         sx={{ cursor: "pointer", color: "#1D2939", fontSize: '30px', marginLeft: 2 }}
-                        onClick={() => navigate("/dashboard")}
+                        onClick={() => navigate("/dashboard", {state : {tabActiveKey: selectedActiveKey.current }})}
                     />
                     <Navbar unreadNotificationCount={notificationCount} />
                 </Box>
@@ -861,10 +850,6 @@ const Layout = ({ children }) => {
                         const isSelected = selectedActiveKey.current === tab.key || tab.options?.some(
                             (opt) => (opt?.actionKey ?? opt?.key) === selectedActiveKey.current
                         );
-
-                        console.log(selectedActiveKey.current,"current ");
-                        
-                        console.log(isSelected,"isSelected");
                         return (
                             <Tab
                                 key={tab.key}

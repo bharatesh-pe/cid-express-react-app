@@ -135,18 +135,20 @@ const Dashboard = () => {
     
     if(tabActiveKey){
         
-        localStorage.setItem("tabActiveKey", tabActiveKey);
-
-        tabLabels.map((tab)=>{
-            const isSelected = tabActiveKey === tab.key || tab.options?.filter(
+        tabLabels.forEach((tab) => {
+            const isMainMatch = tabActiveKey === tab.key;
+            
+            const matchedOption = tab.options?.find(
                 (opt) => (opt?.actionKey ?? opt?.key) === tabActiveKey
             );
 
-            if(isSelected?.length > 0 && !isSelected[0]?.directLoad){
-                preSelectTabLabels = isSelected[0];
+            if (isMainMatch && !tab.directLoad) {
+                preSelectTabLabels = tab;
+            } else if (matchedOption && !matchedOption.directLoad) {
+                preSelectTabLabels = matchedOption;
             }
+        });
 
-        })
     }
 
     const selectedTab = useRef(preSelectTabLabels);
@@ -158,8 +160,7 @@ const Dashboard = () => {
     const handleTabClick = (event, tab) => {
 
         if(tab.key === "crime_analytics"){
-            localStorage.setItem("tabActiveKey", "crime_analytics");
-            navigate(tab?.route);
+            navigate(tab?.route, {state: {"navbarKey" : "crime_analytics"}} );
             window.location.reload();
             return;
         }
@@ -168,7 +169,6 @@ const Dashboard = () => {
             setSubmenuAnchorEl(event.currentTarget);
             setSubmenuItems(tab.options);
         } else {
-            localStorage.setItem("tabActiveKey", tab.key);
             selectedTab.current = tab;
             setSelectedSubKey("");
             selectedActiveKey.current = tab.key;
@@ -180,12 +180,11 @@ const Dashboard = () => {
         selectedTab.current = option;
 
         if(option?.directLoad){
-            ViewAllCases();
+            ViewAllCases(option);
             return;
         }
 
         setSelectedSubKey(option.key);
-        localStorage.setItem("tabActiveKey", option?.actionKey || option.key);
         setSubmenuAnchorEl(null);
         selectedActiveKey.current = option.key;
         getDashboardTiles();
@@ -444,22 +443,23 @@ const Dashboard = () => {
         }
 
 
-        localStorage.setItem("tabActiveKey",selectedTab?.current?.key)
         handleMenuClose();
         navigate(router, {state: statePayload});
     }
 
-    const ViewAllCases = ()=>{
-        var router = selectedTab?.current?.route;
+    const ViewAllCases = (options)=>{
+        var router = options?.route || selectedTab?.current?.route;
+
+        var navtabsKey = options?.key || selectedTab?.current?.key
+
         var statePayload = {
-            "navbarKey" : selectedTab?.current?.key,
+            "navbarKey" : navtabsKey
         };
 
         if(selectedTab?.current?.actionKey){
             statePayload["actionKey"] = selectedTab?.current?.actionKey
         }
 
-        localStorage.setItem("tabActiveKey",selectedTab?.current?.key)
         handleMenuClose();
         navigate(router, {state: statePayload})
     }
