@@ -59,6 +59,7 @@ import ASC from "@mui/icons-material/North";
 import DESC from "@mui/icons-material/South";
 import GenerateProfilePdf from "./GenerateProfilePdf";
 import WestIcon from '@mui/icons-material/West';
+import PersonOffIcon from '@mui/icons-material/PersonOff';
 
 const Enquiries = () => {
   const location = useLocation();
@@ -1064,14 +1065,14 @@ const Enquiries = () => {
                         },
                         {
                             field: "field_io_name",
-                            headerName: "IO Name",
-                            width: 130,
+                            headerName: "Assign To IO",
+                            width: 150,
                             resizable: true,
                             cellClassName: 'justify-content-start',
                             renderHeader: (params) => (
-                                tableHeaderRender(params, "field_io_nmame")
+                                tableHeaderRender(params, "field_io_name")
                             ),
-                            renderCell: renderCellFunc("field_io_nmame"),
+                            renderCell: renderCellFunc("field_io_name"),
                         },
                         {
                             field: "field_name_of_the_ps/range",
@@ -1211,19 +1212,22 @@ const Enquiries = () => {
 
     return (
         <Tooltip title={value} placement="top">
-            <span
-                style={highlightColor}
-                onClick={onClickHandler}
-                className={`tableValueTextView Roboto ${
-                params?.row &&
-                !params.row["ReadStatus"] &&
-                localStorage.getItem("authAdmin") === "false"
-                    ? "unreadMsgText"
-                    : "read"
-                }`}
-            >
-                {value || "---"}
-            </span>
+            {
+                (key === "field_io_name" && (value === "" || !value)) ? (
+                    <span className="io-alert-flashy">
+                        <span className="flashy-dot"></span>
+                        ASSIGN IO
+                    </span>                  
+                ) : (
+                    <span
+                        style={highlightColor}
+                        onClick={onClickHandler}
+                        className={`tableValueTextView Roboto`}
+                    >
+                        {value || "-"}
+                    </span>
+                )
+            }
         </Tooltip>
     );
   };
@@ -4005,6 +4009,14 @@ const Enquiries = () => {
     }
   };
 
+    const setUnAssignedIo = ()=>{
+        setFilterValues(prev => ({
+            ...(prev || {}),
+            field_io_name: ""
+        }));
+        setForceTableLoad((prev) => !prev);
+    }
+
   return (
     <Box p={2} inert={loading ? true : false}>
       <>
@@ -4108,6 +4120,30 @@ const Enquiries = () => {
             </Box>
           </Box>
           <Box sx={{ display: "flex", alignItems: "start", gap: "12px" }}>
+
+            <Button
+                variant="outlined"
+                startIcon={<PersonOffIcon />}
+                onClick={setUnAssignedIo}
+                sx={{
+                    borderColor: '#eb2f06',
+                    backgroundColor: '#FFF5F5',
+                    color: '#eb2f06',
+                    height: 38,
+                    fontWeight: 500,
+                    textTransform: 'uppercase',
+                    '&:hover': {
+                        borderColor: '#e55039',
+                        backgroundColor: '#FFE8E8',
+                        color: '#e55039'
+                    },
+                    '& .MuiSvgIcon-root': {
+                        color: '#eb2f06'
+                    }
+                }}
+            >
+                Unassigned IO
+            </Button>
 
             {JSON.parse(localStorage.getItem("user_permissions")) &&
               JSON.parse(localStorage.getItem("user_permissions"))[0]
@@ -4275,7 +4311,7 @@ const Enquiries = () => {
                   }}
                   mt={1}
                 >
-                  Clear Filter
+                  View All / Clear Filter
                 </Typography>
               )}
             </Box>
@@ -4800,7 +4836,7 @@ const Enquiries = () => {
                             }}
                             mt={1}
                         >
-                            Clear Filter
+                            View All / Clear Filter
                         </Typography>
                     )}
                     </Box>
@@ -5232,7 +5268,7 @@ const Enquiries = () => {
                                             }}
                                             mt={1}
                                         >
-                                            Clear Filter
+                                            View All / Clear Filter
                                         </Typography>
                                     )}
                                 </Box>
