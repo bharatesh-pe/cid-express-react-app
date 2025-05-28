@@ -177,6 +177,9 @@ const icons = {
 const Layout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { navbarKey } = location.state || {}
+
   const userName = localStorage.getItem("username");
   const designationName = localStorage.getItem("designation_name");
   const [sidebarMenusObj, setSidebarMenusObj] = useState([]);
@@ -197,8 +200,8 @@ const Layout = ({ children }) => {
             route: "/case/pt_case", 
             key: "pt_case",
             options : [
-                {label: "Trial Courts", route: "/case/pt_case", key: "pt_case", actionKey: "pt_trail_case"},
-                {label: "Other Courts", route: "/case/pt_case", key: "pt_case", actionKey: "pt_other_case"},
+                {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case"},
+                {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
             ]
         },
         { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
@@ -209,31 +212,60 @@ const Layout = ({ children }) => {
             route: "/repository/judgements", 
             key: "order_circulars",
             options : [
-                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order"},
-                {label: "Judgement", route: "/repository/judgements", key: "judgements"},
-                {label: "Circular", route: "/repository/circular", key: "circular"},
+                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
+                {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
+                {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
             ]
         },
     ];
 
-    const [activeTabKey, setActiveTabKey] = useState(localStorage.getItem("tabActiveKey") ? localStorage.getItem("tabActiveKey") : "ui_case");
-    const selectedTab = useRef();
+    const selectedTab = useRef(tabLabels[0]);
+    const selectedActiveKey = useRef(tabLabels[0]?.key);
+    
+    if(navbarKey){
+        localStorage.setItem("navbarKey", navbarKey);
+
+        tabLabels.forEach((tab) => {
+            const isMainMatch = navbarKey === tab.key;
+            
+            const matchedOption = tab.options?.find(
+                (opt) => (opt?.actionKey ?? opt?.key) === navbarKey
+            );
+
+            if (isMainMatch) {
+                selectedTab.current = tab;
+                selectedActiveKey.current = tab.key;
+            } else if (matchedOption) {
+                selectedTab.current = matchedOption;
+                selectedActiveKey.current = matchedOption.key;
+            }
+        });
+    }
+
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
     const [submenuItems, setSubmenuItems] = useState([]);
-    const [selectedSubKey, setSelectedSubKey] = useState("");
-
+    const [selectedSubKey, setSelectedSubKey] = useState("");    
     const handleTabClick = (event, tab) => {
+
+        if(tab.key === "crime_analytics"){
+            navigate(tab?.route, {state: {"navbarKey" : "crime_analytics"}});
+            window.location.reload();
+            return;
+        }
+
         selectedTab.current = tab
         if (tab.options) {
             setSubmenuAnchorEl(event.currentTarget);
             setSubmenuItems(tab.options);
         }else{
+            selectedActiveKey.current = tab.key
             navigateTabs();
         }
     };
 
     const handleMenuItemClick = (option) => {
         selectedTab.current = option
+        selectedActiveKey.current = option.key
         navigateTabs();
     };
 
@@ -243,32 +275,15 @@ const Layout = ({ children }) => {
 
     const navigateTabs = ()=>{
 
-        var router = selectedTab?.current?.route;
-
-        var statePayload = {
-            "dashboardName" : selectedTab?.current?.label
-        }
-
-        if(selectedTab?.current?.actionKey){
-            statePayload["actionKey"] = selectedTab?.current?.actionKey
-        }
-
-        localStorage.setItem("tabActiveKey", selectedTab?.current?.key)
-
-        navigate(router, {state: statePayload});
-        
-        if (location.pathname === router) {
-            window.location.reload();
-        }
-
         handleMenuClose();
-    }
 
-    useEffect(()=>{
-        if(selectedTab?.current?.key){
-            setActiveTabKey(selectedTab?.current?.key);
+        if(selectedTab?.current?.directLoad){
+            navigate(selectedTab?.current?.route);
+            return;
         }
-    },[selectedTab?.current])
+
+        navigate("/dashboard", {state : {tabActiveKey: selectedActiveKey.current }});
+    }
 
   // for toggle sidebar dropdowns
   const handleDropdownToggle = (index) => {
@@ -811,7 +826,7 @@ const Layout = ({ children }) => {
                     </Box>
                     <HomeIcon
                         sx={{ cursor: "pointer", color: "#1D2939", fontSize: '30px', marginLeft: 2 }}
-                        onClick={() => navigate("/dashboard")}
+                        onClick={() => navigate("/dashboard", {state : {tabActiveKey: selectedActiveKey.current }})}
                     />
                     <Navbar unreadNotificationCount={notificationCount} />
                 </Box>
@@ -832,14 +847,14 @@ const Layout = ({ children }) => {
                     }}
                 >
                     {tabLabels.map((tab) => {
-                        const isSelected = activeTabKey === tab.key || tab.options?.some(
-                            (opt) => (opt?.actionKey ?? opt?.key) === activeTabKey
+                        const isSelected = selectedActiveKey.current === tab.key || tab.options?.some(
+                            (opt) => (opt?.actionKey ?? opt?.key) === selectedActiveKey.current
                         );
-
                         return (
                             <Tab
                                 key={tab.key}
                                 label={tab.label}
+                                value={tab.key} 
                                 onClick={(e) => handleTabClick(e, tab)}
                                 sx={{
                                     color: isSelected ? "#1976d2 !important" : "#1d2939",
