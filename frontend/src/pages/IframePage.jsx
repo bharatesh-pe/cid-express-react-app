@@ -5,7 +5,7 @@ import { useLocation } from "react-router-dom";
 const IframePage = () => {
     const location = useLocation();
 
-    const iframeSrc = location.state?.src || "";
+    const iframeSrc = location.state?.src || "https://app.powerbi.com/reportEmbed?reportId=d23e7528-61dc-497a-9634-ff6f4edcce7c&autoAuth=true&ctid=65106571-0237-463c-872f-93f62fdd586f";
 
     return (
         <Box p={2}>
