@@ -9016,13 +9016,13 @@ exports.submitActionPlanPR = async (req, res) => {
             try {
                 // First, update existing matching alerts to "completed"
                 await CaseAlerts.update(
-                    { status: "completed" },
+                    { status: "Completed" },
                     {
                         where: {
                             module: "ui_case",
                             record_id: ui_case_id,
                             alert_type: "ACTION_PLAN",
-                            status: "pending"
+                            status: "Pending"
                         },
                         transaction: t
                     }
