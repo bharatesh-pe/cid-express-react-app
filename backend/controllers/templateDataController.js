@@ -5880,6 +5880,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                             ...record.toJSON(),
                                             created_by: userName,
                                             created_by_id: userId,
+                                            ui_case_id: recordId,
                                         };
                                         await PRModel.create(newRecordData, { transaction: t });
                                     }
