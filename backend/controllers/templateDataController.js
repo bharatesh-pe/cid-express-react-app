@@ -464,6 +464,19 @@ exports.updateTemplateData = async (req, res, next) => {
         );
       }
     }
+
+    if (parsedData.field_io_name) {
+      const ioId = id;
+      await CaseAlerts.update(
+        { status: "Completed" },
+        {
+          where: {
+            record_id: ioId,
+            status: "Pending",
+          },
+        }
+      );
+    }
     validData.sys_status = parsedData.sys_status;
     validData.updated_by = userName;
     validData.updated_by_id = userId;
