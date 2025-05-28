@@ -6780,23 +6780,31 @@ exports.checkAccusedDataStatus = async (req, res) => {
             pt_case_id,
             pending_case : false,
             invalid_accused : false,
+            accusedEmpty : false
         }
 
-		for(const accused of AccusedData)
-        {
-            var gov_served = accused?.["field_government_servent"];
-            var accused_in_charge_sheet = accused?.["field_status_of_accused_in_charge_sheet"];
-            var pc_act_order = accused?.["field_pso_&_19_pc_act_order"];
-
-            if ( String(gov_served).toLowerCase() === "yes" && (String(accused_in_charge_sheet).toLowerCase() === "dropped" || String(accused_in_charge_sheet).toLowerCase() === "charge sheet") && (!pc_act_order || pc_act_order === "")) {
-                data.invalid_accused = true;
+        if( AccusedData.length === 0) {
+            for(const accused of AccusedData)
+            {
+                var gov_served = accused?.["field_government_servent"];
+                var accused_in_charge_sheet = accused?.["field_status_of_accused_in_charge_sheet"];
+                var pc_act_order = accused?.["field_pso_&_19_pc_act_order"];
+    
+                if ( (String(gov_served).toLowerCase() === "yes" || gov_served === null ) && (String(accused_in_charge_sheet).toLowerCase() === "dropped" || String(accused_in_charge_sheet).toLowerCase() === "charge sheet") && (!pc_act_order || pc_act_order === "")) {
+                    data.invalid_accused = true;
+                }
+                
+                if (String(accused_in_charge_sheet).toLowerCase() === "pending") {
+                    data.pending_case = true;
+                }              
+    
             }
-            
-            if (String(accused_in_charge_sheet).toLowerCase() === "pending") {
-                data.pending_case = true;
-            }              
-
         }
+        else
+        {
+            data.accusedEmpty = true;
+        }
+
 
 		return res.status(200).json({ success: true, data });
 	} catch (error) {
