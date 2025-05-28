@@ -1210,6 +1210,7 @@ const UnderInvestigation = () => {
         var pendingRecord = false;
         var droppedRecord = false;
         var invalidAccused = false;
+        var accusedEmpty = false;
 
         const accusedPayload = {
             table_name: "cid_ui_case_accused",
@@ -1226,6 +1227,10 @@ const UnderInvestigation = () => {
 
                 if(checkAccusedData.data?.['invalid_accused']){
                     invalidAccused = checkAccusedData.data?.['invalid_accused']
+                }
+
+                if(checkAccusedData.data?.['accusedEmpty']){
+                    accusedEmpty = checkAccusedData.data?.['accusedEmpty']
                 }
 
                 if(checkAccusedData.data?.['pending_case']){
@@ -1264,6 +1269,16 @@ const UnderInvestigation = () => {
                     className: "toast-error",
                 });
             }
+            return;
+        }
+
+        if(accusedEmpty){
+            Swal.fire({
+                title: 'No Accused Found',
+                text: 'Please add an accused before submitting nature of disposal.',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+            });
             return;
         }
 

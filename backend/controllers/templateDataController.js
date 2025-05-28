@@ -6854,7 +6854,7 @@ exports.checkAccusedDataStatus = async (req, res) => {
             accusedEmpty : false
         }
 
-        if( AccusedData.length == 0) {
+        if(AccusedData.length > 0) {
             for(const accused of AccusedData)
             {
                 var gov_served = accused?.["field_government_servent"];
@@ -6870,9 +6870,7 @@ exports.checkAccusedDataStatus = async (req, res) => {
                 }              
     
             }
-        }
-        else
-        {
+        }else{
             data.accusedEmpty = true;
         }
 
