@@ -52,7 +52,7 @@ exports.runMonthlyAlertCronPR = async () => {
         const childCaseIds = mergedCases.map(row => row.case_id);
 
         // Run raw SQL query to fetch cases that are not in the list of childCaseIds
-        const [allCases] = await sequelize.query(
+        const allCases = await sequelize.query(
             `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
             {
                 replacements: { childCaseIds },
@@ -262,7 +262,7 @@ exports.runDailyAlertCronAP = async () => {
         const childCaseIds = mergedCases.map(row => row.case_id);
 
         // Run raw SQL query to fetch cases that are not in the list of childCaseIds
-        const [allCases] = await sequelize.query(
+        const allCases = await sequelize.query(
             `SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
             {
                 replacements: { childCaseIds },
@@ -448,7 +448,7 @@ exports.runDailyAlertCronFSL_PF = async () => {
         const childCaseIds = mergedCases.map(row => row.case_id);
 
         // Run raw SQL query to fetch cases that are not in the list of childCaseIds
-        const [allCases] = await sequelize.query(
+        const allCases = await sequelize.query(
             `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
             {
                 replacements: { childCaseIds },
@@ -624,7 +624,7 @@ exports.runDailyAlertCronNATURE_OF_DISPOSAL = async () => {
         const childCaseIds = mergedCases.map(row => row.case_id);
 
         // Run raw SQL query to fetch cases that are not in the list of childCaseIds
-        const [allCases] = await sequelize.query(
+        const allCases = await sequelize.query(
             `SELECT id, field_nature_of_disposal, field_extension_date, created_at FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
             {
                 replacements: { childCaseIds },
@@ -1178,7 +1178,7 @@ exports.runDailyAlertCronAccused = async () => {
         const childCaseIds = mergedCases.map(row => row.case_id);
 
         // Run raw SQL query to fetch cases that are not in the list of childCaseIds
-        const [allCases] = await sequelize.query(
+        const allCases = await sequelize.query(
             `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
             {
                 replacements: { childCaseIds },
