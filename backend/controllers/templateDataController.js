@@ -7152,13 +7152,29 @@ exports.getMergeParentData = async (req, res) =>
         }
 
         // Apply field filters if provided
-        if (filter && typeof filter === "object") {
+      if (filter && typeof filter === "object") {
         Object.entries(filter).forEach(([key, value]) => {
-            if (fields[key]) {
-            whereClause[key] = String(value); // Direct match for foreign key fields
+          if (fields[key]) {
+
+            if (key === "field_io_name" && filter[key] == "") {
+                whereClause[key] = {
+                    [Op.or]: [
+                        '',
+                        { [Op.is]: null }
+                    ]
+                };
             }
+            else{
+              whereClause[key] = String(value); // Direct match for foreign key fields
+            }
+          }
+          if (key === "record_id" && Array.isArray(value) && value.length > 0) {
+              whereClause["id"] = {
+                  [Op.in]: value
+              };
+          }        
         });
-        }
+      }
 
         if (from_date || to_date) {
         whereClause["created_at"] = {};
