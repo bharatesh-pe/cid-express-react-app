@@ -17,7 +17,8 @@ const typeMapping = {
 const {
     UiProgressReportMonthWise,
     CaseAlerts,
-    Template
+    Template,
+    UiMergedCases
 } = db;
 
 //cron for Progress Report
@@ -39,7 +40,26 @@ exports.runMonthlyAlertCronPR = async () => {
         const tableName = template.table_name;
         console.log(`Using table: ${tableName}`);
 
-        const [allCases] = await sequelize.query(`SELECT id FROM ${tableName} WHERE id IS NOT NULL`);
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const [allCases] = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
         console.log(`Found ${allCases.length} cases.`);
 
         for (const caseEntry of allCases) {
@@ -228,7 +248,28 @@ exports.runDailyAlertCronAP = async () => {
         const tableName = template.table_name;
         console.log(`Using table: ${tableName}`);
     
-        const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+        // const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const [allCases] = await sequelize.query(
+            `SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
         const allIds = allCases.map(row => row.id);
         console.log(`Found ${allIds.length} cases.`);
 
@@ -394,7 +435,27 @@ exports.runDailyAlertCronFSL_PF = async () => {
         if (!template) return console.error("Template not found.");
         const tableName = template.table_name;
 
-        const [allCases] = await sequelize.query(`SELECT id FROM ${tableName} WHERE id IS NOT NULL`);
+        // const [allCases] = await sequelize.query(`SELECT id FROM ${tableName} WHERE id IS NOT NULL`);
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const [allCases] = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+        
         const allIds = allCases.map(row => row.id);
         console.log(`Found ${allIds.length} cases.`);
         const FSLtableData = await Template.findOne({ where: { table_name: "cid_ui_case_forensic_science_laboratory" } });
@@ -549,7 +610,27 @@ exports.runDailyAlertCronNATURE_OF_DISPOSAL = async () => {
         if (!template) return console.error("Template not found.");
         const tableName = template.table_name;
 
-        const [allCases] = await sequelize.query(`SELECT id, field_nature_of_disposal, field_extension_date, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+        // const [allCases] = await sequelize.query(`SELECT id, field_nature_of_disposal, field_extension_date, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const [allCases] = await sequelize.query(
+            `SELECT id, field_nature_of_disposal, field_extension_date, created_at FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
 
         const allIds = allCases.map(row => row.id);
 
@@ -1083,7 +1164,28 @@ exports.runDailyAlertCronAccused = async () => {
         const tableName = template.table_name;
         console.log(`Using table: ${tableName}`);
     
-        const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+        // const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const [allCases] = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
         const allIds = allCases.map(row => row.id);
         console.log(`Found ${allIds.length} cases.`);
     
