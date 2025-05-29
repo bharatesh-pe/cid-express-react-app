@@ -699,12 +699,12 @@ const LokayuktaView = () => {
         }
 
         setApprovalSaveCaseData(data);
-        setReOpenAddCase(formOpen);
-         if (activeSidebar?.is_approval === true) {
+        if (activeSidebar?.is_approval === true) {
+            setReOpenAddCase(formOpen);
             setApprovalSource('submit');
             showCaseApprovalPage(true);
         } else {
-            handleDirectCaseSave(data);
+            handleDirectCaseSave(data, formOpen);
         }
         return;
     }
@@ -1031,7 +1031,7 @@ const LokayuktaView = () => {
         }
     }
 
-    const handleDirectCaseSave = async (data) => {
+    const handleDirectCaseSave = async (data, formOpen) => {
         const formData = new FormData();
         let normalData = {};
 
@@ -1090,7 +1090,7 @@ const LokayuktaView = () => {
                     progress: undefined,
                     className: "toast-success",
                     onOpen: () => {
-                        getTableData(activeSidebar, reOpenAddCase);
+                        getTableData(activeSidebar, formOpen);
                     }
                 });
             } else {
