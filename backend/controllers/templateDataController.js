@@ -5874,11 +5874,13 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                 });
                                 if (PFRecords && PFRecords.length > 0) {
                                     for (const record of PFRecords) {
+                                      const { sys_status, ...rest } = record.toJSON();
                                         const newRecordData = {
-                                            ...record.toJSON(),
+                                            ...rest,
                                             created_by: userName,
                                             created_by_id: userId,
                                             ui_case_id: recordId,
+                                            sys_status : "PF"
                                         };
                                         await PRModel.create(newRecordData, { transaction: t });
                                     }
