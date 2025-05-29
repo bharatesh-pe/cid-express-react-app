@@ -15,6 +15,8 @@ const IframePage = () => {
                 width="100%"
                 height="600"
                 style={{ border: "1px solid #ccc" }}
+                allow="clipboard-write; encrypted-media; fullscreen; accelerometer; autoplay; camera; microphone; display-capture"
+                allowFullScreen
             />
         </Box>
     );
