@@ -21,6 +21,7 @@ import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import SearchIcon from "@mui/icons-material/Search";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from '@mui/icons-material/Delete';
 import TextFieldInput from "@mui/material/TextField";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
@@ -168,38 +169,48 @@ const CrimeIntelligence = () => {
         }
     };
 
-    // NormalViewForm logic (like handleTemplateDataView)
-    const handleTemplateDataView = async (sidebarItem) => {
-        if (!sidebarItem?.table) {
+    // Handle row click for view (hyperlink)
+    const handleTemplateDataView = async (rowData, editData, table_name) => {
+        if (!table_name || table_name === "") {
             toast.warning("Please Check Table Name", {
                 position: "top-right",
                 autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
                 className: "toast-warning",
             });
             return;
         }
-        const viewTemplatePayload = { table_name: sidebarItem.table, id: 1 }; // Replace id as needed
+        const viewTemplatePayload = { table_name, id: rowData.id };
         setLoading(true);
         try {
             const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
             setLoading(false);
             if (viewTemplateData && viewTemplateData.success) {
-                const viewTemplateResponse = await api.post("/templates/viewTemplate", { table_name: sidebarItem.table });
+                const viewTemplateResponse = await api.post("/templates/viewTemplate", { table_name });
                 if (viewTemplateResponse && viewTemplateResponse.success) {
-                    setSelectedRowId(1); // Replace as needed
+                    setSelectedRowId(rowData.id);
                     setSelectedTemplateId(viewTemplateResponse.data.template_id);
                     setSelectedTemplateName(viewTemplateResponse.data.template_name);
-                    setSelectedTableName(sidebarItem.table);
+                    setSelectedTableName(table_name);
                     setFormFields(viewTemplateResponse.data.fields || []);
                     setFormStepperData(viewTemplateResponse.data.sections || []);
                     setInitialFormData(viewTemplateData.data || {});
                     setReadonlyForm(true);
-                    setEditOnlyForm(false);
+                    setEditOnlyForm(editData || false);
                     setFormOpen(true);
                 } else {
                     toast.error(viewTemplateResponse.message || "Failed to fetch template.", {
                         position: "top-right",
                         autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
                         className: "toast-error",
                     });
                 }
@@ -207,6 +218,11 @@ const CrimeIntelligence = () => {
                 toast.error(viewTemplateData.message || "Failed to fetch data.", {
                     position: "top-right",
                     autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
                     className: "toast-error",
                 });
             }
@@ -215,6 +231,74 @@ const CrimeIntelligence = () => {
             toast.error(error?.response?.data?.message || "Please Try Again!", {
                 position: "top-right",
                 autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    };
+
+    // Delete handler for row
+    const handleActionDelete = async (row, options) => {
+        if (!row?.id || !options?.table) {
+            toast.error('Invalid Template ID', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        if (!window.confirm("Do you want to delete this data?")) return;
+        setLoading(true);
+        try {
+            const deleteTemplateData = {
+                table_name: options.table,
+                where: { id: row.id },
+            };
+            const deleteTemplateDataResponse = await api.post("templateData/deleteTemplateData", deleteTemplateData);
+            setLoading(false);
+            if (deleteTemplateDataResponse && deleteTemplateDataResponse.success) {
+                toast.success(deleteTemplateDataResponse.message || "Template Deleted Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => { getTableData(activeSidebar); }
+                });
+            } else {
+                toast.error(deleteTemplateDataResponse.message || "Failed to delete the template. Please try again.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
                 className: "toast-error",
             });
         }
@@ -663,7 +747,56 @@ const CrimeIntelligence = () => {
                         <Box sx={{ overflow: 'auto' }}>
                             <TableView
                                 rows={tableRowData}
-                                columns={tableColumnData}
+                                columns={
+                                    tableColumnData.length > 0
+                                        ? [
+                                            {
+                                                field: "sl_no",
+                                                headerName: "S.No",
+                                                resizable: false,
+                                                width: 65,
+                                                renderCell: (params) => (
+                                                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "end", gap: "8px" }}>
+                                                        {params.value}
+                                                        <DeleteIcon
+                                                            sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleActionDelete(params.row, activeSidebar);
+                                                            }}
+                                                        />
+                                                    </Box>
+                                                )
+                                            },
+                                            ...tableColumnData
+                                                .filter(col => col.field !== "sl_no")
+                                                .map((col, idx) => ({
+                                                    ...col,
+                                                    renderCell: (params) => {
+                                                        // Hyperlink on first column
+                                                        if (idx === 0) {
+                                                            return (
+                                                                <span
+                                                                    style={{
+                                                                        color: '#0167F8',
+                                                                        textDecoration: 'underline',
+                                                                        cursor: 'pointer'
+                                                                    }}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleTemplateDataView(params.row, false, activeSidebar?.table);
+                                                                    }}
+                                                                >
+                                                                    {params.value || "-"}
+                                                                </span>
+                                                            );
+                                                        }
+                                                        return params.value || "-";
+                                                    }
+                                                }))
+                                        ]
+                                        : []
+                                }
                                 totalPage={tableTotalPage}
                                 totalRecord={tableTotalRecord}
                                 paginationCount={tablePaginationCount.current}
