@@ -499,6 +499,7 @@ const Dashboard = () => {
                         srcSet={`${LogoText}?w=150&fit=crop&auto=format&dpr=2 4x`}
                         src={`${LogoText}?w=150&fit=crop&auto=format`}
                         alt="CID Logo"
+                        style={{ width: "44px", height: "44px" }}
                         loading="lazy"
                     />
                     <Typography
