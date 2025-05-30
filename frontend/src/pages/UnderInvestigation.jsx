@@ -12952,7 +12952,8 @@ const handleOpenExportPopup = async () => {
                     disableFutureDate: 'true',
                     info: 'Pick the date on which the approval is being granted.',
                     supportingText: 'Pick the date on which the approval is being granted.',
-                    supportingTextColor: 'green'
+                    supportingTextColor: 'green',
+                    selectTodayDate : true
                   }}
                   formData={approvalSaveData}
                   value={approvalSaveData["approval_date"] ? dayjs(approvalSaveData["approval_date"]) : null}
@@ -14103,7 +14104,8 @@ const handleOpenExportPopup = async () => {
                                           disableFutureDate: 'true',
                                           info: 'Pick the date on which the approval is being granted.',
                                           supportingText: 'Pick the date on which the approval is being granted.',
-                                          supportingTextColor: 'green'
+                                          supportingTextColor: 'green',
+                                          selectTodayDate : true
                                       }}
                                       formData={singleApiData?.approval || {}}
                                       value={singleApiData?.['approval']?.['approval_date'] ? dayjs(singleApiData?.['approval']?.['approval_date']) : null}       

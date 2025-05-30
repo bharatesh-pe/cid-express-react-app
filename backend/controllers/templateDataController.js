@@ -9241,3 +9241,88 @@ function normalizeValues(values, expectedType) {
 }
 
 
+exports.checkFinalSheet = async (req, res) => {
+  try {
+    const { ui_case_id } = req.body;
+    if (!ui_case_id) {
+      return res.status(400).json({ success: false, message: "ui_case_id is required." });
+    }
+
+    let accusedStatusOk = true;
+    const accusedRecords = await sequelize.query(
+      `SELECT field_status_of_accused_in_charge_sheet FROM cid_ui_case_accused WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+    if (accusedRecords.length === 0) {
+      accusedStatusOk = false;
+    } else {
+      for (const rec of accusedRecords) {
+        const status = (rec.field_status_of_accused_in_charge_sheet || '').toLowerCase();
+        if (status === 'pending') {
+          accusedStatusOk = false;
+          break;
+        }
+        if (status !== 'dropped' && status !== 'charge sheet') {
+          accusedStatusOk = false;
+          break;
+        }
+      }
+    }
+
+    let progressReportStatusOk = false;
+    const progressRecords = await sequelize.query(
+      `SELECT field_status FROM cid_ui_case_progress_report WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+    if (progressRecords.length > 0) {
+      progressReportStatusOk = progressRecords.some(rec => {
+        const status = (rec.field_status || '').toLowerCase();
+        return (
+          status === 'in progress' ||
+          status === 'completed' ||
+          status === 'no longer needed'
+        );
+      });
+    }
+
+    let fslStatusOk = false;
+    const fslRecords = await sequelize.query(
+      `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+    if (fslRecords.length > 0) {
+      for (const rec of fslRecords) {
+        if ((rec.field_used_as_evidence || '').toLowerCase() === 'yes') {
+          fslStatusOk = true;
+          break;
+        }
+        if ((rec.field_used_as_evidence || '').toLowerCase() === 'no') {
+          if (rec.field_reason && String(rec.field_reason).trim() !== '') {
+            fslStatusOk = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      accusedStatusOk,
+      progressReportStatusOk,
+      fslStatusOk,
+    });
+  } catch (error) {
+    console.error("Error in checkCaseStatusByUiCaseId:", error);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
+
