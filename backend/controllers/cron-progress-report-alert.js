@@ -17,9 +17,10 @@ const typeMapping = {
 const {
     UiProgressReportMonthWise,
     CaseAlerts,
-    Template
+    Template,
+    UiMergedCases
 } = db;
-
+const dayjs = require('dayjs');
 //cron for Progress Report
 exports.runMonthlyAlertCronPR = async () => {
     try {
@@ -39,7 +40,26 @@ exports.runMonthlyAlertCronPR = async () => {
         const tableName = template.table_name;
         console.log(`Using table: ${tableName}`);
 
-        const [allCases] = await sequelize.query(`SELECT id FROM ${tableName} WHERE id IS NOT NULL`);
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
         console.log(`Found ${allCases.length} cases.`);
 
         for (const caseEntry of allCases) {
@@ -228,7 +248,28 @@ exports.runDailyAlertCronAP = async () => {
         const tableName = template.table_name;
         console.log(`Using table: ${tableName}`);
     
-        const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+        // const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
         const allIds = allCases.map(row => row.id);
         console.log(`Found ${allIds.length} cases.`);
 
@@ -394,7 +435,27 @@ exports.runDailyAlertCronFSL_PF = async () => {
         if (!template) return console.error("Template not found.");
         const tableName = template.table_name;
 
-        const [allCases] = await sequelize.query(`SELECT id FROM ${tableName} WHERE id IS NOT NULL`);
+        // const [allCases] = await sequelize.query(`SELECT id FROM ${tableName} WHERE id IS NOT NULL`);
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+        
         const allIds = allCases.map(row => row.id);
         console.log(`Found ${allIds.length} cases.`);
         const FSLtableData = await Template.findOne({ where: { table_name: "cid_ui_case_forensic_science_laboratory" } });
@@ -541,531 +602,169 @@ exports.runDailyAlertCronFSL_PF = async () => {
 
 //cron for NATURE_OF_DISPOSAL
 exports.runDailyAlertCronNATURE_OF_DISPOSAL = async () => {
+  console.log('Fetching CID Under Investigation template...');
+  const template = await Template.findOne({
+    where: { table_name: 'cid_under_investigation' },
+  });
+
+  if (!template) {
+    console.log('Template not found for cid_under_investigation, exiting cron.');
+    return;
+  }
+
+  const table_name = template.table_name;
+
+  // Get merged child cases to exclude from alerting
+  const mergedCases = await UiMergedCases.findAll({
+    where: { merged_status: 'child' },
+    attributes: ['case_id'],
+  });
+  const mergedCaseIds = mergedCases.map((caseObj) => caseObj.case_id);
+
+  // Fetch records except merged cases
+  const records = await sequelize.query(
+    `SELECT id, field_nature_of_disposal, field_extension_date, created_at
+     FROM ${table_name}
+     WHERE id IS NOT NULL
+     AND id NOT IN (:mergedCaseIds)`,
+    {
+      replacements: { mergedCaseIds },
+      type: sequelize.QueryTypes.SELECT,
+    }
+  );
+
+  console.log(`Fetched ${records.length} records to process.`);
+
+  const alerts = [];
+  const today = dayjs();
+
+  function isBetweenDaysFromDate(baseDate, fromDays, toDays) {
+    const fromDate = baseDate.add(fromDays, 'day');
+    const toDate = baseDate.add(toDays, 'day');
+    return today.isAfter(fromDate) && today.isBefore(toDate);
+  }
+
+for (const record of records) {
+  const { id: record_id, field_nature_of_disposal, field_extension_date, created_at } = record;
+
+  if (!created_at) {
+    console.log(`Skipping case ${record_id}: missing created_at.`);
+    continue;
+  }
+
+  const today = dayjs();
+  const baseDate = field_extension_date ? dayjs(field_extension_date) : dayjs(created_at);
+
+  const daysSinceCreatedAt = today.diff(dayjs(created_at), 'day');
+  const extensionDate = field_extension_date ? dayjs(field_extension_date) : null;
+
+  let alert_level = null;
+  let alert_message = null;
+  let newStatus = null;
+
+  const existingAlert = await CaseAlerts.findOne({
+    where: {
+      main_table: table_name,
+      record_id,
+      alert_type: 'NATURE_OF_DISPOSAL',
+      status: { [Op.notILike]: '%completed%' },
+    },
+  });
+
+  if (field_nature_of_disposal) {
+    if (existingAlert && existingAlert.status !== 'Completed') {
+      await existingAlert.update({ status: 'Completed' });
+      console.log(`Marked alert as completed for case ${record_id}`);
+    }
+    continue;
+  }
+
+  if (extensionDate && extensionDate.isAfter(today)) {
+    alert_message = 'Case Extension Active';
+    newStatus = 'extended';
+    alert_level = 'Extension';
+  } else { 
+    if (daysSinceCreatedAt >60 && daysSinceCreatedAt <= 90) {
+        alert_message = 'Alert for IO';
+        alert_level = 'low';
+        newStatus = 'Pending';
+    }
+    else if (daysSinceCreatedAt > 90 && daysSinceCreatedAt <= 180) {
+      alert_message = 'Alert for DIG';
+      alert_level = 'low';
+      newStatus = 'Pending';
+    }else if (daysSinceCreatedAt > 150 && daysSinceCreatedAt <= 180) { 
+        alert_message = 'Alert for IO';
+        alert_level = 'high';
+        newStatus = 'Pending';
+    }
+    else if (daysSinceCreatedAt > 180 && daysSinceCreatedAt <= 360) {
+      alert_message = 'Alert for ADGP';
+      alert_level = 'low';
+      newStatus = 'Pending';
+    } else if (daysSinceCreatedAt > 360) {
+      alert_message = 'Alert for DGP';
+      alert_level = 'high';
+      newStatus = 'Pending';
+    } else {
+      if (existingAlert && existingAlert.status !== 'Completed') {
+        await existingAlert.update({ status: 'Completed' });
+        console.log(`Marked alert as completed for case ${record_id} (no alert condition)`);
+      }
+      continue;
+    }
+  }
+
+  if (existingAlert) {
+    if (existingAlert.status !== newStatus) {
+      await existingAlert.update({ status: newStatus, alert_message, alert_level });
+      console.log(`Updated alert status for case ${record_id} to ${newStatus}`);
+    } else {
+      console.log(`Alert for case ${record_id} already up-to-date with status ${newStatus}`);
+    }
+  } else {
+    // Create new alert record
+    await CaseAlerts.create({
+      module: 'ui_case',
+      main_table: table_name,
+      record_id,
+      alert_type: 'NATURE_OF_DISPOSAL',
+      alert_message,
+      alert_level,
+      status: newStatus,
+    });
+    console.log(`Created new alert for case ${record_id} with status ${newStatus}`);
+  }
+}
+
+  console.log(`Total alerts to process: ${alerts.length}`);
+
+  for (const alert of alerts) {
     try {
-        const today = moment();
-        console.log("Fetching CID Under Investigation template...");
-        
-        const template = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
-        if (!template) return console.error("Template not found.");
-        const tableName = template.table_name;
+      const existingAlert = await CaseAlerts.findOne({
+        where: {
+          module: alert.module,
+          main_table: alert.main_table,
+          record_id: alert.record_id,
+          alert_type: alert.alert_type,
+          status: { [Op.iLike]: '%pending%' },
+        },
+      });
 
-        const [allCases] = await sequelize.query(`SELECT id, field_nature_of_disposal, field_extension_date, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+      if (existingAlert) {
+        console.log(`Skipped alert for case ${alert.record_id} (already exists): ${alert.alert_message}`);
+      } else {
+        await CaseAlerts.create(alert);
+        console.log(`Created alert for case ${alert.record_id}: ${alert.alert_message}`);
+      }
+    } catch (err) {
+      console.error(`Error processing alert for case ${alert.record_id}:`, err);
+    }
+  }
 
-        const allIds = allCases.map(row => row.id);
-
-        const alert_type = "NATURE_OF_DISPOSAL";
-        const created_by = 0;
-        const module = "ui_case";
-        const main_table = "cid_under_investigation";
-        
-        for (const caseEntry of allCases) {
-            const ui_case_id = caseEntry.id;
-            const record_id = ui_case_id;
-            const createdAt = moment(caseEntry.created_at);
-            const field_nature_of_disposal = caseEntry.field_nature_of_disposal;
-            const field_extension_date = (caseEntry.field_extension_date && caseEntry.field_extension_date !== "")  ? moment(caseEntry.field_extension_date)  : null;
-            
-            if ((field_nature_of_disposal == "" || field_nature_of_disposal == null) && !field_extension_date)
-            {
-                const daysSinceCreated = today.diff(createdAt, "days");
-            
-                const isBetween60to90Days = daysSinceCreated >= 60 && daysSinceCreated < 90;
-                const isBetween90to180Days = daysSinceCreated >= 90 && daysSinceCreated < 180;
-                const isBetween180to360Days = daysSinceCreated >= 180 && daysSinceCreated < 360;
-                const isAbove360Days = daysSinceCreated >= 360;
-                var alert_level = "low";
-
-                if(isBetween60to90Days)
-                {
-                    const nature_of_disposal_io_alert = await CaseAlerts.findOne({
-                        where: { 
-                            module ,
-                            alert_type,
-                            main_table , 
-                            record_id ,
-                            alert_message : "Alert for IO",
-                            status: {
-                                [Op.iLike]: "%pending%" 
-                            }
-                        },
-                    });
-
-                    const io_alert_record_Id = nature_of_disposal_io_alert ? nature_of_disposal_io_alert.record_id : null;
-
-                    if (!io_alert_record_Id)
-                    {
-                        await CaseAlerts.create({
-                            module,
-                            main_table,
-                            record_id,
-                            alert_type:"NATURE_OF_DISPOSAL",
-                            alert_level:"low",
-                            alert_message : "Alert for IO",
-                            due_date : createdAt.clone().add(60, 'days').toDate(),
-                            triggered_on : new Date(),
-                            resolved_on: null,
-                            status:"Pending",
-                            created_by,
-                            created_at: caseEntry.created_at,
-                        });
-                    }
-                }
-                else if(isBetween90to180Days)
-                {
-                    await CaseAlerts.update(
-                        { status: "Not Completed" },
-                        {
-                            where: { 
-                                module ,
-                                alert_type,
-                                main_table , 
-                                record_id ,
-                                alert_message : "Alert for IO",
-                                alert_level: {
-                                    [Op.in]: ["low", "high"]
-                                },
-                                status: {
-                                    [Op.iLike]: "%pending%" 
-                                }
-                            },
-                        }
-                    );
-
-                    const isBetween150to180Days = daysSinceCreated >= 150 && daysSinceCreated < 180;
-                    var due_date =  createdAt.clone().add(150, 'days').toDate();
-                    if(isBetween150to180Days)
-                    {
-                        alert_level = "high"
-                        due_date =  createdAt.clone().add(180, 'days').toDate();
-                    }
-
-                    if(alert_level == "high")
-                    {
-                        await CaseAlerts.update(
-                            { status: "Not Completed" },
-                            {
-                                where: { 
-                                    module ,
-                                    alert_type,
-                                    main_table , 
-                                    record_id  ,
-                                    alert_message : "Alert for DIG",
-                                    alert_level: {
-                                        [Op.in]: ["low", "high"]
-                                    },
-                                    status: {
-                                        [Op.iLike]: "%pending%" 
-                                    }
-                                },
-                            }
-                        );
-                    }
-
-                    const nature_of_disposal_dig_alert = await CaseAlerts.findOne({
-                        where: { 
-                            module ,
-                            alert_type,
-                            main_table , 
-                            record_id ,
-                            alert_message : "Alert for DIG",
-                            alert_level,
-                            status: {
-                                [Op.iLike]: "%pending%" 
-                            }
-                        },
-                    });
-
-                    const dig_alert_record_Id = nature_of_disposal_dig_alert ? nature_of_disposal_dig_alert.record_id : null;
-
-                    if (!dig_alert_record_Id)
-                    {
-                        await CaseAlerts.create({
-                            module,
-                            main_table,
-                            record_id,
-                            alert_type:"NATURE_OF_DISPOSAL",
-                            alert_level,
-                            alert_message : "Alert for DIG",
-                            due_date,
-                            triggered_on : new Date(),
-                            resolved_on: null,
-                            status:"Pending",
-                            created_by,
-                            created_at: caseEntry.created_at,
-                        });
-                    }
-                }
-                else if(isBetween180to360Days)
-                {
-                    await CaseAlerts.update(
-                        { status: "Not Completed" },
-                        {
-                            where: { 
-                                module ,
-                                alert_type,
-                                main_table , 
-                                record_id ,
-                                alert_message : "Alert for DIG",
-                                alert_level : "low",
-                                status: {
-                                    [Op.iLike]: "%pending%" 
-                                }
-                            },
-                        }
-                    );
-
-                    const isBetween240to360Days = daysSinceCreated >= 240 && daysSinceCreated < 360;
-                    var due_date =  createdAt.clone().add(240, 'days').toDate();
-                    if(isBetween240to360Days)
-                    {
-                        alert_level = "high"
-                        due_date =  createdAt.clone().add(360, 'days').toDate();
-                    }
-
-                    if(alert_level == "high")
-                    {
-                        await CaseAlerts.update(
-                            { status: "Not Completed" },
-                            {
-                                where: { 
-                                    module ,
-                                    alert_type,
-                                    main_table , 
-                                    record_id ,
-                                    alert_message : "Alert for ADGP",
-                                    alert_level : "low",
-                                    status: {
-                                        [Op.iLike]: "%pending%" 
-                                    }
-                                },
-                            }
-                        );
-                    }
-
-                    const nature_of_disposal_adgp_alert = await CaseAlerts.findOne({
-                        where: { 
-                            module ,
-                            alert_type,
-                            main_table , 
-                            record_id  ,
-                            alert_message : "Alert for ADGP",
-                            alert_level,
-                            status: {
-                                [Op.iLike]: "%pending%" 
-                            }
-                        },
-                    });
-
-                    const adgp_alert_record_Id = nature_of_disposal_adgp_alert ? nature_of_disposal_adgp_alert.record_id : null;
-
-                    if(!adgp_alert_record_Id)
-                    {
-                        await CaseAlerts.create({
-                            module,
-                            main_table,
-                            record_id,
-                            alert_type:"NATURE_OF_DISPOSAL",
-                            alert_level,
-                            alert_message : "Alert for ADGP",
-                            due_date,
-                            triggered_on : new Date(),
-                            resolved_on: null,
-                            status:"Pending",
-                            created_by,
-                            created_at: caseEntry.created_at,
-                        });
-                    }
-                }
-                else if(isAbove360Days){
-                    await CaseAlerts.update(
-                        { status: "Not Completed" },
-                        {
-                            where: { 
-                                module ,
-                                alert_type,
-                                main_table , 
-                                record_id  ,
-                                alert_message : "Alert for ADGP",
-                                alert_level: {
-                                    [Op.in]: ["low", "high"]
-                                },
-                                status: {
-                                    [Op.iLike]: "%pending%" 
-                                }
-                            },
-                        }
-                    );
-
-                    const nature_of_disposal_dgp_alert = await CaseAlerts.findOne({
-                        where: { 
-                            module ,
-                            alert_type,
-                            main_table , 
-                            record_id ,
-                            alert_message : "Alert for DGP",
-                            alert_level : "high",
-                            status: {
-                                [Op.iLike]: "%pending%" 
-                            }
-                        },
-                    });
-
-                    const dgp_alert_record_Id = nature_of_disposal_dgp_alert ? nature_of_disposal_dgp_alert.record_id : null;
-
-                    if(!dgp_alert_record_Id)
-                    {
-                        await CaseAlerts.create({
-                            module,
-                            main_table,
-                            record_id,
-                            alert_type:"NATURE_OF_DISPOSAL",
-                            alert_level : "high",
-                            alert_message : "Alert for DGP",
-                            triggered_on : new Date(),
-                            resolved_on: null,
-                            status:"Pending",
-                            created_by,
-                            created_at: caseEntry.created_at,
-                        });
-                    }
-                }
-            }
-            else if ((field_nature_of_disposal == "" || field_nature_of_disposal == null) && field_extension_date) {
-                const daysSinceExtension = today.diff(field_extension_date, "days");
-            
-                const isBetween60to90Days = daysSinceExtension >= 60 && daysSinceExtension < 90;
-                const isBetween90to180Days = daysSinceExtension >= 90 && daysSinceExtension < 180;
-                const isBetween180to360Days = daysSinceExtension >= 180 && daysSinceExtension < 360;
-                const isAbove360Days = daysSinceExtension >= 360;
-                var alert_level = "low";
-            
-                if (isBetween60to90Days) {
-                    const nature_of_disposal_io_alert = await CaseAlerts.findOne({
-                        where: {
-                            module,
-                            alert_type,
-                            main_table,
-                            record_id,
-                            alert_message: "Alert for IO",
-                            status: { [Op.iLike]: "%pending%" }
-                        },
-                    });
-            
-                    const io_alert_record_Id = nature_of_disposal_io_alert ? nature_of_disposal_io_alert.record_id : null;
-            
-                    if (!io_alert_record_Id) {
-                        await CaseAlerts.create({
-                            module,
-                            main_table,
-                            record_id,
-                            alert_type: "NATURE_OF_DISPOSAL",
-                            alert_level: "low",
-                            alert_message: "Alert for IO",
-                            due_date: field_extension_date.clone().add(60, 'days').toDate(),
-                            triggered_on: new Date(),
-                            resolved_on: null,
-                            status: "Pending",
-                            created_by,
-                            created_at: caseEntry.created_at,
-                        });
-                    }
-                }
-                else if (isBetween90to180Days) {
-                    await CaseAlerts.update(
-                        { status: "Not Completed" },
-                        {
-                            where: {
-                                module,
-                                alert_type,
-                                main_table,
-                                record_id,
-                                alert_message: "Alert for IO",
-                                alert_level: { [Op.in]: ["low", "high"] },
-                                status: { [Op.iLike]: "%pending%" }
-                            },
-                        }
-                    );
-            
-                    const isBetween150to180Days = daysSinceExtension >= 150 && daysSinceExtension < 180;
-                    var due_date = field_extension_date.clone().add(150, 'days').toDate();
-                    if (isBetween150to180Days) {
-                        alert_level = "high";
-                        due_date = field_extension_date.clone().add(180, 'days').toDate();
-                    }
-            
-                    if (alert_level == "high") {
-                        await CaseAlerts.update(
-                            { status: "Not Completed" },
-                            {
-                                where: {
-                                    module,
-                                    alert_type,
-                                    main_table,
-                                    record_id,
-                                    alert_message: "Alert for DIG",
-                                    alert_level: { [Op.in]: ["low", "high"] },
-                                    status: { [Op.iLike]: "%pending%" }
-                                },
-                            }
-                        );
-                    }
-            
-                    const nature_of_disposal_dig_alert = await CaseAlerts.findOne({
-                        where: {
-                            module,
-                            alert_type,
-                            main_table,
-                            record_id,
-                            alert_message: "Alert for DIG",
-                            alert_level,
-                            status: { [Op.iLike]: "%pending%" }
-                        },
-                    });
-            
-                    const dig_alert_record_Id = nature_of_disposal_dig_alert ? nature_of_disposal_dig_alert.record_id : null;
-            
-                    if (!dig_alert_record_Id) {
-                        await CaseAlerts.create({
-                            module,
-                            main_table,
-                            record_id,
-                            alert_type: "NATURE_OF_DISPOSAL",
-                            alert_level,
-                            alert_message: "Alert for DIG",
-                            due_date,
-                            triggered_on: new Date(),
-                            resolved_on: null,
-                            status: "Pending",
-                            created_by,
-                            created_at: caseEntry.created_at,
-                        });
-                    }
-                }
-                else if (isBetween180to360Days) {
-                    await CaseAlerts.update(
-                        { status: "Not Completed" },
-                        {
-                            where: {
-                                module,
-                                alert_type,
-                                main_table,
-                                record_id,
-                                alert_message: "Alert for DIG",
-                                alert_level: "low",
-                                status: { [Op.iLike]: "%pending%" }
-                            },
-                        }
-                    );
-            
-                    const isBetween240to360Days = daysSinceExtension >= 240 && daysSinceExtension < 360;
-                    var due_date = field_extension_date.clone().add(240, 'days').toDate();
-                    if (isBetween240to360Days) {
-                        alert_level = "high";
-                        due_date = field_extension_date.clone().add(360, 'days').toDate();
-                    }
-            
-                    if (alert_level == "high") {
-                        await CaseAlerts.update(
-                            { status: "Not Completed" },
-                            {
-                                where: {
-                                    module,
-                                    alert_type,
-                                    main_table,
-                                    record_id,
-                                    alert_message: "Alert for ADGP",
-                                    alert_level: "low",
-                                    status: { [Op.iLike]: "%pending%" }
-                                },
-                            }
-                        );
-                    }
-            
-                    const nature_of_disposal_adgp_alert = await CaseAlerts.findOne({
-                        where: {
-                            module,
-                            alert_type,
-                            main_table,
-                            record_id,
-                            alert_message: "Alert for ADGP",
-                            alert_level,
-                            status: { [Op.iLike]: "%pending%" }
-                        },
-                    });
-            
-                    const adgp_alert_record_Id = nature_of_disposal_adgp_alert ? nature_of_disposal_adgp_alert.record_id : null;
-            
-                    if (!adgp_alert_record_Id) {
-                        await CaseAlerts.create({
-                            module,
-                            main_table,
-                            record_id,
-                            alert_type: "NATURE_OF_DISPOSAL",
-                            alert_level,
-                            alert_message: "Alert for ADGP",
-                            due_date,
-                            triggered_on: new Date(),
-                            resolved_on: null,
-                            status: "Pending",
-                            created_by,
-                            created_at: caseEntry.created_at,
-                        });
-                    }
-                }
-                else if(isAbove360Days) {
-                    await CaseAlerts.update(
-                        { status: "Not Completed" },
-                        {
-                            where: {
-                                module,
-                                alert_type,
-                                main_table,
-                                record_id,
-                                alert_message: "Alert for ADGP",
-                                alert_level: { [Op.in]: ["low", "high"] },
-                                status: { [Op.iLike]: "%pending%" }
-                            },
-                        }
-                    );
-            
-                    const nature_of_disposal_dgp_alert = await CaseAlerts.findOne({
-                        where: {
-                            module,
-                            alert_type,
-                            main_table,
-                            record_id,
-                            alert_message: "Alert for DGP",
-                            alert_level: "high",
-                            status: { [Op.iLike]: "%pending%" }
-                        },
-                    });
-            
-                    const dgp_alert_record_Id = nature_of_disposal_dgp_alert ? nature_of_disposal_dgp_alert.record_id : null;
-            
-                    if (!dgp_alert_record_Id) {
-                        await CaseAlerts.create({
-                            module,
-                            main_table,
-                            record_id,
-                            alert_type: "NATURE_OF_DISPOSAL",
-                            alert_level: "high",
-                            alert_message: "Alert for DGP",
-                            triggered_on: new Date(),
-                            resolved_on: null,
-                            status: "Pending",
-                            created_by,
-                            created_at: caseEntry.created_at,
-                        });
-                    }
-                }
-            }            
-        }
-
-        console.log("Daily Alert Cron completed for Nature Of Disposal.");
-    } catch (error) {
-        console.error("Error running Daily Alert Cron for Nature Of Disposal:", error);
-    } 
+  console.log('Daily Alert Cron completed for Nature Of Disposal.');
 };
+
 
 //cron for Action Plan
 exports.runDailyAlertCronAccused = async () => {
@@ -1083,7 +782,28 @@ exports.runDailyAlertCronAccused = async () => {
         const tableName = template.table_name;
         console.log(`Using table: ${tableName}`);
     
-        const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+        // const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
+
+        // Get all child cases from the merged cases table
+        const mergedCases = await UiMergedCases.findAll({
+            where: {
+                merged_status: "child",
+            },
+            attributes: ["case_id"],
+            raw: true,
+        });
+
+        const childCaseIds = mergedCases.map(row => row.case_id);
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            {
+                replacements: { childCaseIds },
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
         const allIds = allCases.map(row => row.id);
         console.log(`Found ${allIds.length} cases.`);
     

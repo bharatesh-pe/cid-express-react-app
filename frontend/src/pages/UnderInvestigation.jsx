@@ -3897,7 +3897,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
             };
             const getHistoryResponse = await api.post("/profileHistories/getProfileHistory", payload);
             setLoading(false);
-            if (getHistoryResponse.data) {
+           if (getHistoryResponse.data && getHistoryResponse.data.length > 0) {
             const rawData = getHistoryResponse.data || [];
 
             const transformedRows = rawData.map((item, index) => {
@@ -3927,31 +3927,40 @@ const loadChildMergedCasesData = async (page, caseId) => {
             setSelectedFieldName(field_name);
             setShowHistoryDialog(true);
             } else {
-            toast.info("No History", getHistoryResponse.data.message, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-info",
-            });
-            return;
+              toast.info("No records found for the specified filters.", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  className: "toast-info",
+              });
             }
         } catch (error) {
             console.error("Error fetching field history:", error);
-            toast.error("Failed to fetch field history.", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
+            setLoading(false);
+             if (error.response && error.response.status === 404) {
+                toast.error("No records found for the specified filters.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    className: "toast-error",
+                });
+            } else {
+                toast.error("Failed to fetch field history.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    className: "toast-error",
+                });
+            }
         }
     };
 

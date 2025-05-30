@@ -733,7 +733,7 @@ div::first-letter {
     }
 
     .MuiModal-root {
-        z-index: 98 !important;
+        z-index: 98;
     }
 
     .MuiPopover-root {

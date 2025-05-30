@@ -1736,11 +1736,6 @@ exports.viewTemplateData = async (req, res, next) => {
         ? JSON.parse(tableData.fields)
         : tableData.fields;
 
-    schema.push(
-        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-        { name: "pt_case_id", data_type: "INTEGER", not_null: false }
-    );
-
     const modelAttributes = {};
 
     for (const field of schema) {
@@ -5879,11 +5874,13 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                 });
                                 if (PFRecords && PFRecords.length > 0) {
                                     for (const record of PFRecords) {
+                                      const { sys_status, ...rest } = record.toJSON();
                                         const newRecordData = {
-                                            ...record.toJSON(),
+                                            ...rest,
                                             created_by: userName,
                                             created_by_id: userId,
                                             ui_case_id: recordId,
+                                            sys_status : "PF"
                                         };
                                         await PRModel.create(newRecordData, { transaction: t });
                                     }
@@ -7157,13 +7154,29 @@ exports.getMergeParentData = async (req, res) =>
         }
 
         // Apply field filters if provided
-        if (filter && typeof filter === "object") {
+      if (filter && typeof filter === "object") {
         Object.entries(filter).forEach(([key, value]) => {
-            if (fields[key]) {
-            whereClause[key] = String(value); // Direct match for foreign key fields
+          if (fields[key]) {
+
+            if (key === "field_io_name" && filter[key] == "") {
+                whereClause[key] = {
+                    [Op.or]: [
+                        '',
+                        { [Op.is]: null }
+                    ]
+                };
             }
+            else{
+              whereClause[key] = String(value); // Direct match for foreign key fields
+            }
+          }
+          if (key === "record_id" && Array.isArray(value) && value.length > 0) {
+              whereClause["id"] = {
+                  [Op.in]: value
+              };
+          }        
         });
-        }
+      }
 
         if (from_date || to_date) {
         whereClause["created_at"] = {};

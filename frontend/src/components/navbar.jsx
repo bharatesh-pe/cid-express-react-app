@@ -267,7 +267,7 @@ export default function Navbar({ unreadNotificationCount }) {
 
         { showAlertPage &&
             <>
-                <Box sx={{ position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0, 0, 0, 0.5)', zIndex: '999', }} />
+                <Box sx={{ position: 'fixed', top: '0', left: '0', right: '0', bottom: '0', background: 'rgba(0, 0, 0, 0.5)', zIndex: '99', }} />
                 <Slide direction="left" in={showAlertPage} mountOnEnter unmountOnExit>
                     <Box
                         inert={loading ? true : false} 
@@ -288,9 +288,30 @@ export default function Navbar({ unreadNotificationCount }) {
                                 Notification
                             </p>
 
-                            <IconButton size="small" aria-label="show help" color="inherit" onClick={closeAlertPage}>
-                                <CloseIcon sx={{color: '#212121', height: '25px', width: '25px'}} />
-                            </IconButton>
+
+                            <Box>
+                                <Button 
+                                    variant="outlined"
+                                    sx={{
+                                        textTransform: 'none',
+                                        fontSize: '13px',
+                                        fontWeight: 500,
+                                        color: '#1976d2',
+                                        borderColor: '#1976d2',
+                                        mr: 1,
+                                        textTransform: "uppercase",
+                                        '&:hover': {
+                                            backgroundColor: '#E3F2FD',
+                                            borderColor: '#1565c0',
+                                        },
+                                    }}
+                                >
+                                    Mark All as Read
+                                </Button>
+                                <IconButton size="small" aria-label="show help" color="inherit" onClick={closeAlertPage}>
+                                    <CloseIcon sx={{color: '#212121', height: '25px', width: '25px'}} />
+                                </IconButton>
+                            </Box>
 
                         </Box>
 
@@ -345,7 +366,6 @@ export default function Navbar({ unreadNotificationCount }) {
                 aria-describedby="alert-dialog-description"
                 maxWidth="sm"
                 fullWidth
-                sx={{zIndex:'1000'}}
             >
                 {/* <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between' }} >
 
