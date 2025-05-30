@@ -657,10 +657,9 @@ const CrimeIntelligence = () => {
                                                     mb: 0.5,
                                                     background: activeSidebar?.name === item.name
                                                         ? '#E0E7FF'
-                                                        : `rgba(31,29,172,0.07)`,
+                                                        : 'rgba(31,29,172,0.07)', // full background color when not active
                                                     color: activeSidebar?.name === item.name ? '#1F1DAC' : '#344054',
                                                     fontWeight: activeSidebar?.name === item.name ? 600 : 400,
-                                                    transition: 'background 0.2s',
                                                 }}
                                                 className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${idx + 2} ${activeSidebar?.name === item.name ? "active" : ""}`}
                                                 onClick={() => sidebarActive(item)}
