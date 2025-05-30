@@ -9241,7 +9241,7 @@ function normalizeValues(values, expectedType) {
 }
 
 
-exports.checkCaseStatusByUiCaseId = async (req, res) => {
+exports.checkFinalSheet = async (req, res) => {
   try {
     const { ui_case_id } = req.body;
     if (!ui_case_id) {

@@ -374,8 +374,8 @@ router.post('/submitActionPlanPR',[validate_token],
     templateDataController.submitActionPlanPR)
  router.post('/submitPropertyFormFSL',[validate_token],
     templateDataController.submitPropertyFormFSL)
-router.post('/checkCaseStatusByUiCaseId',[validate_token],
-   templateDataController.checkCaseStatusByUiCaseId)
+router.post('/checkFinalSheet',[validate_token],
+   templateDataController.checkFinalSheet)
    
         
 module.exports = router;
