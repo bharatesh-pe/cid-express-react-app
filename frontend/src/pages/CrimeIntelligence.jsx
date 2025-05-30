@@ -587,6 +587,7 @@ const CrimeIntelligence = () => {
                             stepperData={formStepperData}
                             onSubmit={formSubmit}
                             onUpdate={formCaseUpdate}
+                            closeForm={() => setFormOpen(false)}
                         />
                     </Box>
                 ) : (
