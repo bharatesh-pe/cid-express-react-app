@@ -419,6 +419,8 @@ router.post('/submitActionPlanPR',[validate_token],
     templateDataController.submitActionPlanPR)
  router.post('/submitPropertyFormFSL',[validate_token],
     templateDataController.submitPropertyFormFSL)
+router.post('/checkFinalSheet',[validate_token],
+   templateDataController.checkFinalSheet)
    
         
 module.exports = router;

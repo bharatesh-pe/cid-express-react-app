@@ -5780,10 +5780,14 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
                         var fieldsUpdated = Object.keys(updates).join(", ");
 
-                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trial" && fieldsUpdated.includes("field_nature_of_disposal")) {
+                        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ working or not ")
+                        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ wodefault_status ", default_status)
+                        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ table_name ", table_name)
+                        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ fieldsUpdated.includes field_nature_of_disposal ", fieldsUpdated.includes("field_nature_of_disposal"))
+                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trail" && fieldsUpdated.includes("field_nature_of_disposal")) {
                             var PFtableName = "cid_ui_case_property_form";
                             var PRtableName = "cid_pt_case_pr";
-
+console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ what happendef ")
                             if(PFtableName != "" && PRtableName != "") {
                                 // Fetch Action Plan template metadata
                                 const PFtableData = await Template.findOne({ where: { table_name: PFtableName } });
@@ -5848,6 +5852,8 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                  // Parse schema and build model
                                  const PRschema = typeof PRtableData.fields === "string" ? JSON.parse(PRtableData.fields) : PRtableData.fields;
                                  PRschema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+                                 PRschema.push({ name: "ui_case_id", data_type: "INTEGER", not_null: false });
+                                 PRschema.push({ name: "pt_case_id", data_type: "INTEGER", not_null: false });
                                  
                                  const PRmodelAttributes = {
                                      id: {
@@ -5888,12 +5894,16 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                  });
                              
                                  await PRModel.sync();  
+                                  
+                                 console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ recordId", recordId)
+
 
                                 //get all the records of the PF table and create a new record in the PR table.
                                 const PFRecords = await PFModel.findAll({
                                     where: { ui_case_id: recordId },
                                     transaction: t
                                 });
+                                console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ PFRecords", PFRecords)
                                 if (PFRecords && PFRecords.length > 0) {
                                     for (const record of PFRecords) {
                                       const { sys_status, ...rest } = record.toJSON();
@@ -9273,4 +9283,89 @@ function normalizeValues(values, expectedType) {
     });
 }
 
+
+exports.checkFinalSheet = async (req, res) => {
+  try {
+    const { ui_case_id } = req.body;
+    if (!ui_case_id) {
+      return res.status(400).json({ success: false, message: "ui_case_id is required." });
+    }
+
+    let accusedStatusOk = true;
+    const accusedRecords = await sequelize.query(
+      `SELECT field_status_of_accused_in_charge_sheet FROM cid_ui_case_accused WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+    if (accusedRecords.length === 0) {
+      accusedStatusOk = false;
+    } else {
+      for (const rec of accusedRecords) {
+        const status = (rec.field_status_of_accused_in_charge_sheet || '').toLowerCase();
+        if (status === 'pending') {
+          accusedStatusOk = false;
+          break;
+        }
+        if (status !== 'dropped' && status !== 'charge sheet') {
+          accusedStatusOk = false;
+          break;
+        }
+      }
+    }
+
+    let progressReportStatusOk = false;
+    const progressRecords = await sequelize.query(
+      `SELECT field_status FROM cid_ui_case_progress_report WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+    if (progressRecords.length > 0) {
+      progressReportStatusOk = progressRecords.some(rec => {
+        const status = (rec.field_status || '').toLowerCase();
+        return (
+          status === 'in progress' ||
+          status === 'completed' ||
+          status === 'no longer needed'
+        );
+      });
+    }
+
+    let fslStatusOk = false;
+    const fslRecords = await sequelize.query(
+      `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+    if (fslRecords.length > 0) {
+      for (const rec of fslRecords) {
+        if ((rec.field_used_as_evidence || '').toLowerCase() === 'yes') {
+          fslStatusOk = true;
+          break;
+        }
+        if ((rec.field_used_as_evidence || '').toLowerCase() === 'no') {
+          if (rec.field_reason && String(rec.field_reason).trim() !== '') {
+            fslStatusOk = true;
+            break;
+          }
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      accusedStatusOk,
+      progressReportStatusOk,
+      fslStatusOk,
+    });
+  } catch (error) {
+    console.error("Error in checkCaseStatusByUiCaseId:", error);
+    return res.status(500).json({ success: false, message: "Internal server error." });
+  }
+};
 

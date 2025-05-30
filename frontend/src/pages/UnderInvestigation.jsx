@@ -877,11 +877,32 @@ const UnderInvestigation = () => {
     const [aoFieldId,setAoFieldId] = useState([]);
     const [filterAoValues, setFilterAoValues] = useState({});
     
-    const showNatureOfDisposal = (selectedRow) => {
-        setSelectedRowData(selectedRow);
-        setNatureOfDisposalValue(null);
+    const showNatureOfDisposal = async (selectedRow) => {
+      console.log("showNatureOfDisposal called with selectedRow:", selectedRow);
+      setSelectedRowData(selectedRow);
+      setNatureOfDisposalValue(null);
+
+      try {
+        const response = await api.post('/templateData/checkCaseStatusByUiCaseId', {
+          ui_case_id: selectedRow.id
+        });
+
+        if (response.data.success) {
+          const { accusedStatusOk, progressReportStatusOk, fslStatusOk } = response.data;
+          const allowed = accusedStatusOk && progressReportStatusOk && fslStatusOk;
+          setIsAFinalSheetAllowed(allowed);
+        } else {
+          setIsAFinalSheetAllowed(false);
+        }
+
         setNatureOfDisposalModal(true);
+      } catch (err) {
+        console.error("Failed to check case status:", err);
+        setIsAFinalSheetAllowed(false);
+        setNatureOfDisposalModal(true);
+      }
     };
+
 
     const showOrderCopyCourt =  (selectedRow, tableName, approved)=> {
         setSelectedRowData(selectedRow);
@@ -889,6 +910,8 @@ const UnderInvestigation = () => {
         setShowOrderCopy(true);
         showNewApprovalPage("B Report");
     }
+
+    const [isAFinalSheetAllowed, setIsAFinalSheetAllowed] = useState(false);
 
     const [showAccusedTable, setShowAccusedTable] = useState(false);
     const [accusedTableHeaderData, setAccusedTableHeaderData] = useState([]);
@@ -12952,7 +12975,8 @@ const handleOpenExportPopup = async () => {
                     disableFutureDate: 'true',
                     info: 'Pick the date on which the approval is being granted.',
                     supportingText: 'Pick the date on which the approval is being granted.',
-                    supportingTextColor: 'green'
+                    supportingTextColor: 'green',
+                    selectTodayDate : true
                   }}
                   formData={approvalSaveData}
                   value={approvalSaveData["approval_date"] ? dayjs(approvalSaveData["approval_date"]) : null}
@@ -14103,7 +14127,8 @@ const handleOpenExportPopup = async () => {
                                           disableFutureDate: 'true',
                                           info: 'Pick the date on which the approval is being granted.',
                                           supportingText: 'Pick the date on which the approval is being granted.',
-                                          supportingTextColor: 'green'
+                                          supportingTextColor: 'green',
+                                          selectTodayDate : true
                                       }}
                                       formData={singleApiData?.approval || {}}
                                       value={singleApiData?.['approval']?.['approval_date'] ? dayjs(singleApiData?.['approval']?.['approval_date']) : null}       
@@ -14164,7 +14189,7 @@ const handleOpenExportPopup = async () => {
                         <FormControl fullWidth>
                             <Autocomplete
                                 options={[
-                                    { name: "A Final Charge Sheet", code: "disposal" },
+                                    ...(isAFinalSheetAllowed ? [{ name: "A Final Charge Sheet", code: "disposal" }] : []),
                                     { name: "A Preliminary Charge Sheet", code: "178_cases" },
                                     { name: "Pending Acceptance", code: "b_Report" },
                                     { name: "C Report", code: "c_Report" },
