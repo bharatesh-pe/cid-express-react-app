@@ -5758,10 +5758,14 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
                         var fieldsUpdated = Object.keys(updates).join(", ");
 
-                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trial" && fieldsUpdated.includes("field_nature_of_disposal")) {
+                        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ working or not ")
+                        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ wodefault_status ", default_status)
+                        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ table_name ", table_name)
+                        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ fieldsUpdated.includes field_nature_of_disposal ", fieldsUpdated.includes("field_nature_of_disposal"))
+                        if(sys_status === "disposal" && default_status === "ui_case" && table_name === "cid_pending_trail" && fieldsUpdated.includes("field_nature_of_disposal")) {
                             var PFtableName = "cid_ui_case_property_form";
                             var PRtableName = "cid_pt_case_pr";
-
+console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ what happendef ")
                             if(PFtableName != "" && PRtableName != "") {
                                 // Fetch Action Plan template metadata
                                 const PFtableData = await Template.findOne({ where: { table_name: PFtableName } });
@@ -5826,6 +5830,8 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                  // Parse schema and build model
                                  const PRschema = typeof PRtableData.fields === "string" ? JSON.parse(PRtableData.fields) : PRtableData.fields;
                                  PRschema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+                                 PRschema.push({ name: "ui_case_id", data_type: "INTEGER", not_null: false });
+                                 PRschema.push({ name: "pt_case_id", data_type: "INTEGER", not_null: false });
                                  
                                  const PRmodelAttributes = {
                                      id: {
@@ -5866,12 +5872,16 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                  });
                              
                                  await PRModel.sync();  
+                                  
+                                 console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ recordId", recordId)
+
 
                                 //get all the records of the PF table and create a new record in the PR table.
                                 const PFRecords = await PFModel.findAll({
                                     where: { ui_case_id: recordId },
                                     transaction: t
                                 });
+                                console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$ PFRecords", PFRecords)
                                 if (PFRecords && PFRecords.length > 0) {
                                     for (const record of PFRecords) {
                                       const { sys_status, ...rest } = record.toJSON();

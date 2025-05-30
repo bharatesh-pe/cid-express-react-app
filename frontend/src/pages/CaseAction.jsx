@@ -229,7 +229,8 @@ const CaseActions = () => {
             { name: 'Under Investigation', code: 'ui_case' },
             { name: 'Trial Courts', code: 'pt_trail_case' },
             { name: 'Other Courts', code: 'pt_other_case' },
-            { name: 'Enquiries', code: 'eq_case' }
+            { name: 'Enquiries', code: 'eq_case' },
+            { name: 'Crime Intelligence', code: 'ci_case' },
         ]
     };
 
@@ -869,6 +870,12 @@ const CaseActions = () => {
                 name : 'Disposal',
                 code : 'disposal'
             }
+        ],
+         "ci_case" : [
+            {
+                name : 'Crime Intelligence',
+                code : 'ci_case'
+            },
         ]
     }
     const icons = [
