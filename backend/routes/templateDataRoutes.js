@@ -50,49 +50,37 @@ const { S3Client } = require('@aws-sdk/client-s3');
 const multerS3 = require('multer-s3');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
 
 // Initialize Express Router
 const router = express.Router();
 
+    const localDir = path.join(__dirname, '../data/cases');
+    fs.mkdirSync(localDir, { recursive: true });
 
-
-// AWS S3 Configuration
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-    ...(process.env.S3_ENDPOINT && {
-        endpoint: process.env.S3_ENDPOINT,
-        forcePathStyle: true,
-    }),
-});
-
-// Multer Configuration
-const upload = multer({
-    storage: multerS3({
-        s3: s3Client,
-        bucket: process.env.S3_BUCKET_NAME,
-        contentType: (req, file, cb) => {
-            cb(null, file.mimetype); // Set correct MIME type
+    const storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, localDir);
         },
-        key: (req, file, cb) => {
+        filename: function (req, file, cb) {
             const fileExtension = path.extname(file.originalname);
-            const uniqueFileName = `template/${file.fieldname}_${Date.now()}_${uuidv4()}${fileExtension}`;
-            cb(null, uniqueFileName); // Generate unique key for S3
-        },
-    }),
-    fileFilter: (req, file, cb) => {
+            const uniqueFileName = `${file.fieldname}_${Date.now()}_${uuidv4()}${fileExtension}`;
+
+            cb(null, uniqueFileName);
+        }
+    });
+
+    // File filter
+    const fileFilter = (req, file, cb) => {
         const allowedExtensions = ['.jpg', '.png', '.pdf', '.docx', '.doc', '.xls', '.xlsx'];
         const allowedMimeTypes = [
             'image/jpeg',
             'image/png',
             'application/pdf',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',//docx
-            'application/msword', // .doc
-            'application/vnd.ms-excel', // .xls
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/msword',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ];
 
         if (!allowedExtensions.includes(path.extname(file.originalname))) {
@@ -104,9 +92,66 @@ const upload = multer({
             return cb(null, false);
         }
         cb(null, true);
-    },
-    limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10 MB
-});
+    };
+
+    // Multer Upload Instance
+    const upload = multer({
+        storage,
+        fileFilter,
+        limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+    });
+
+// AWS S3 Configuration
+// const s3Client = new S3Client({
+//     region: process.env.AWS_REGION,
+//     credentials: {
+//         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+//         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+//     },
+//     ...(process.env.S3_ENDPOINT && {
+//         endpoint: process.env.S3_ENDPOINT,
+//         forcePathStyle: true,
+//     }),
+// });
+
+// // Multer Configuration
+// const upload = multer({
+//     storage: multerS3({
+//         s3: s3Client,
+//         bucket: process.env.S3_BUCKET_NAME,
+//         contentType: (req, file, cb) => {
+//             cb(null, file.mimetype); // Set correct MIME type
+//         },
+//         key: (req, file, cb) => {
+//             const fileExtension = path.extname(file.originalname);
+//             const uniqueFileName = `template/${file.fieldname}_${Date.now()}_${uuidv4()}${fileExtension}`;
+//             cb(null, uniqueFileName); // Generate unique key for S3
+//         },
+//     }),
+//     fileFilter: (req, file, cb) => {
+//         const allowedExtensions = ['.jpg', '.png', '.pdf', '.docx', '.doc', '.xls', '.xlsx'];
+//         const allowedMimeTypes = [
+//             'image/jpeg',
+//             'image/png',
+//             'application/pdf',
+//             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',//docx
+//             'application/msword', // .doc
+//             'application/vnd.ms-excel', // .xls
+//             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+//         ];
+
+//         if (!allowedExtensions.includes(path.extname(file.originalname))) {
+//             req.fileValidationError = 'File extension is not allowed';
+//             return cb(null, false);
+//         }
+//         if (!allowedMimeTypes.includes(file.mimetype)) {
+//             req.fileValidationError = 'File type is not allowed';
+//             return cb(null, false);
+//         }
+//         cb(null, true);
+//     },
+//     limits: { fileSize: 10 * 1024 * 1024 }, // Limit file size to 10 MB
+// });
 
 
 
