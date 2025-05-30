@@ -219,7 +219,8 @@ exports.insertTemplateData = async (req, res, next) => {
         : []; // Parse if provided, else empty array
 
       for (const file of req.files) {
-        const { originalname, size, key, fieldname } = file;
+        const { originalname, size, key, fieldname, filename } = file;
+
         const fileExtension = path.extname(originalname);
 
         // Find matching folder_id from the payload (if any)
@@ -231,13 +232,15 @@ exports.insertTemplateData = async (req, res, next) => {
 
         const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
 
+        const s3Key = `../data/cases/${filename}`;
+
         await ProfileAttachment.create({
           template_id: tableData.template_id,
           table_row_id: insertedData.id,
           attachment_name: originalname,
           attachment_extension: fileExtension,
           attachment_size: size,
-          s3_key: key,
+          s3_key: s3Key,
           field_name: fieldname,
           folder_id: folderId, // Store NULL if no folder_id provided
         });
@@ -626,7 +629,7 @@ exports.updateTemplateData = async (req, res, next) => {
           : []; // Parse if provided, else empty array
 
         for (const file of req.files) {
-          const { originalname, size, key, fieldname } = file;
+          const { originalname, size, key, fieldname, filename } = file;
           const fileExtension = path.extname(originalname);
 
           // Find matching folder_id from the payload (if any)
@@ -638,13 +641,15 @@ exports.updateTemplateData = async (req, res, next) => {
 
           const folderId = matchingFolder ? matchingFolder.folder_id : null; // Store NULL if no folder_id provided
 
+            const s3Key = `../data/cases/${filename}`;
+
           await ProfileAttachment.create({
             template_id: tableData.template_id,
             table_row_id: id,
             attachment_name: originalname,
             attachment_extension: fileExtension,
             attachment_size: size,
-            s3_key: key,
+            s3_key: s3Key,
             field_name: fieldname,
             folder_id: folderId, // Store NULL if no folder_id provided
           });
@@ -3996,34 +4001,51 @@ exports.downloadDocumentAttachments = async (req, res) => {
       return userSendResponse(res, 404, false, `File does not exist.`, null);
     }
 
-    const params = {
-      Bucket: process.env.S3_BUCKET_NAME,
-      Key: profile_attachment.s3_key,
-    };
+    // const params = {
+    //   Bucket: process.env.S3_BUCKET_NAME,
+    //   Key: profile_attachment.s3_key,
+    // };
 
-    const command = new GetObjectCommand(params);
-    const data = await s3Client.send(command);
+    // const command = new GetObjectCommand(params);
+    // const data = await s3Client.send(command);
 
-    // Convert stream to buffer
-    const streamToBuffer = async (stream) => {
-      const chunks = [];
-      for await (let chunk of stream) {
-        chunks.push(chunk);
-      }
-      return Buffer.concat(chunks);
-    };
+    // // Convert stream to buffer
+    // const streamToBuffer = async (stream) => {
+    //   const chunks = [];
+    //   for await (let chunk of stream) {
+    //     chunks.push(chunk);
+    //   }
+    //   return Buffer.concat(chunks);
+    // };
 
-    const fileBuffer = await streamToBuffer(data.Body);
+    // const fileBuffer = await streamToBuffer(data.Body);
 
+    const fileRelativePath = path.join(profile_attachment.s3_key);
+
+    const filePath = path.join(__dirname, fileRelativePath);
+
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+    }
+
+    const mime = require('mime-types');
+    const contentType = mime.lookup(filePath) || 'application/octet-stream';
+
+    res.setHeader('Content-Type', contentType);
     res.setHeader(
-      "Content-Type",
-      data.ContentType || "application/octet-stream"
+        'Content-Disposition',
+        `inline; filename="${profile_attachment.attachment_name}"`
     );
-    res.setHeader(
-      "Content-Disposition",
-      `inline; filename="${profile_attachment.attachment_name}"`
-    );
-    res.send(fileBuffer);
+
+    const fileStream = fs.createReadStream(filePath);
+    fileStream.pipe(res);
+
+    // res.setHeader("Content-Type", data.ContentType || "application/octet-stream");
+    // res.setHeader(
+    //   "Content-Disposition",
+    //   `inline; filename="${profile_attachment.attachment_name}"`
+    // );
+    // res.send(fileBuffer);
   } catch (err) {
     if (process.env.APP_ENV === "development") {
       console.error(
@@ -5415,7 +5437,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                     const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids): []; // Parse if provided, else empty array
         
                     for (const file of req.files) {
-                        const { originalname, size, key, fieldname } = file;
+                        const { originalname, size, key, fieldname, filename } = file;
                         const fileExtension = path.extname(originalname);
         
                         // Find matching folder_id from the payload (if any)
@@ -5427,13 +5449,15 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
         
                         const folderId = matchingFolder ? matchingFolder.folder_id : null; // Set NULL if not found or missing folder_attachment_ids
         
+                        const s3Key = `../data/cases/${filename}`;
+
                         await ProfileAttachment.create({
                             template_id: tableData.template_id,
                             table_row_id: insertedData.id,
                             attachment_name: originalname,
                             attachment_extension: fileExtension,
                             attachment_size: size,
-                            s3_key: key,
+                            s3_key: s3Key,
                             field_name: fieldname,
                             folder_id: folderId, // Store NULL if no folder_id provided
                         });
@@ -5612,7 +5636,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 				const secondFolderAttachments = second_folder_attachment_ids ? JSON.parse(second_folder_attachment_ids): []; // Parse if provided, else empty array
 
 				for (const file of req.files) {
-					const { originalname, size, key, fieldname } = file;
+					const { originalname, size, key, fieldname, filename } = file;
 					const fileExtension = path.extname(originalname);
 
 					// Find matching folder_id from the payload (if any)
@@ -5624,13 +5648,15 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 
 					const folderId = seconsFileMatchingFolder ? seconsFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
 
+                    const s3Key = `../data/cases/${filename}`;
+
 					await ProfileAttachment.create({
 						template_id: secondTableData.template_id,
 						table_row_id: secondInsertedData.id,
 						attachment_name: originalname,
 						attachment_extension: fileExtension,
 						attachment_size: size,
-						s3_key: key,
+						s3_key: s3Key,
 						field_name: fieldname,
 						folder_id: folderId, // Store NULL if no folder_id provided
 					});
@@ -5932,7 +5958,7 @@ console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
                             const otherFolderAttachments = others_folder_attachment_ids ? JSON.parse(others_folder_attachment_ids): []; // Parse if provided, else empty array
 
                             for (const file of req.files) {
-                                const { originalname, size, key, fieldname } = file;
+                                const { originalname, size, key, fieldname, filename } = file;
                                 const fileExtension = path.extname(originalname);
 
                                 // Find matching folder_id from the payload (if any)
@@ -5944,13 +5970,15 @@ console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
                                 const folderId = othersFileMatchingFolder ? othersFileMatchingFolder.folder_id : null; // Set NULL if not found or missing second_folder_attachment_ids
 
+                                const s3Key = `../data/cases/${filename}`;
+
                                 await ProfileAttachment.create({
                                     template_id: otherTableData.template_id,
                                     table_row_id: recordId,
                                     attachment_name: originalname,
                                     attachment_extension: fileExtension,
                                     attachment_size: size,
-                                    s3_key: key,
+                                    s3_key: s3Key,
                                     field_name: fieldname,
                                     folder_id: folderId, // Store NULL if no folder_id provided
                                 });
@@ -6265,7 +6293,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                     const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : []; // Parse if provided, else empty array
 
                     for (const file of req.files) {
-                        const { originalname, size, key, fieldname } = file;
+                        const { originalname, size, key, fieldname, filename } = file;
                         const fileExtension = path.extname(originalname);
 
                         // Find matching folder_id from the payload (if any)
@@ -6277,13 +6305,15 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 
                         const folderId = matchingFolder ? matchingFolder.folder_id : null; // Store NULL if no folder_id provided
 
+                        const s3Key = `../data/cases/${filename}`;
+
                         await ProfileAttachment.create({
                             template_id: tableData.template_id,
                             table_row_id: id,
                             attachment_name: originalname,
                             attachment_extension: fileExtension,
                             attachment_size: size,
-                            s3_key: key,
+                            s3_key: s3Key,
                             field_name: fieldname,
                             folder_id: folderId, // Store NULL if no folder_id provided
                         }, { transaction: t });
@@ -6310,11 +6340,18 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                     }
 
                     // Update the model with the updated filenames
-                    for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+                    for (const [fieldname, filenames] of Object.entries(fileUpdates)) {       
+                        // await Model.update(
+                        //     { [fieldname]: filenames },
+                        //     { where: { id: singleId } },
+                        //     { transaction: t }
+                        // );
                         await Model.update(
                             { [fieldname]: filenames },
-                            { where: { id: singleId } },
-                            { transaction: t }
+                            {
+                                where: { id: singleId },
+                                transaction: t,
+                            }
                         );
                     }
                 }
