@@ -883,7 +883,7 @@ const UnderInvestigation = () => {
       setNatureOfDisposalValue(null);
 
       try {
-        const response = await api.post('/templateData/checkCaseStatusByUiCaseId', {
+        const response = await api.post('/templateData/checkFinalSheet', {
           ui_case_id: selectedRow.id
         });
 
