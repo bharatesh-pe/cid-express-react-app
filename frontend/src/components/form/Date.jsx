@@ -25,7 +25,12 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
         maxDate = dayjs().endOf('day'); 
     }
 
-   
+    var dateFieldValue = selectedDate;
+
+    if(field?.selectTodayDate && !formData?.[field?.name]){
+        dateFieldValue = today;
+        onChange(today.toDate());
+    }
 
     return (
         <div style={{width: '100%'}}>
@@ -91,7 +96,7 @@ export default function DateField({ field, formData, errors, onChange, onFocus, 
                         </div>
                     }
                     name={field.name}
-                    value={selectedDate}
+                    value={dateFieldValue}
                     onChange={(e) => {
                         onChange(e ? e.$d : null); // Send the selected date or null
                     }}
