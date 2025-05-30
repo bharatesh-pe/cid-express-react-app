@@ -42,7 +42,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
                 {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
             ]
         },
-        { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
+        { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
         { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
         { 
@@ -164,6 +164,11 @@ const Dashboard = () => {
             window.location.reload();
             return;
         }
+        if (tab.key === "crime_intelligence") {
+            navigate(tab?.route,);
+            window.location.reload();
+            return;
+        }    
 
         if (tab.options) {
             setSubmenuAnchorEl(event.currentTarget);
@@ -294,9 +299,13 @@ const Dashboard = () => {
         }
     };
 
-    useEffect(()=>{
+
+    useEffect(() => {
+        if (selectedActiveKey === "crime_intelligence") return;
         getDashboardTiles();
-    },[selectedActiveKey.current])
+        console.log("Selected Active Key:", selectedActiveKey);
+    }, [selectedActiveKey]);
+
 
     const getDashboardTiles = async () => {
         const userDesignationId = localStorage.getItem('designation_id');
