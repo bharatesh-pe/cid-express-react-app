@@ -159,8 +159,8 @@ const Dashboard = () => {
 
     const handleTabClick = (event, tab) => {
 
-        if(tab.key === "crime_analytics"){
-            navigate(tab?.route, {state: {"navbarKey" : "crime_analytics"}} );
+        if(tab.key === "crime_analytics" || tab.key === "crime_intelligence"){
+            navigate(tab?.route, {state: {"navbarKey" : tab.key}} );
             window.location.reload();
             return;
         }
