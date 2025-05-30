@@ -28,6 +28,7 @@ import TableView from "../components/table-view/TableView";
 import api from "../services/api";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import Swal from 'sweetalert2';
 
 const CrimeIntelligence = () => {
     const [investigationItems, setInvestigationItems] = useState([]);
@@ -78,6 +79,9 @@ const CrimeIntelligence = () => {
                 if (response.ok && data?.success && data?.data?.data) {
                     setInvestigationItems(data.data.data);
                     setActiveSidebar(data.data.data[0] || null);
+                    if(data.data.data[0]){
+                        getTableData(data.data.data[0]);
+                    }
                 } else {
                     setInvestigationItems([]);
                 }
@@ -241,7 +245,6 @@ const CrimeIntelligence = () => {
         }
     };
 
-    // Delete handler for row
     const handleActionDelete = async (row, options) => {
         if (!row?.id || !options?.table) {
             toast.error('Invalid Template ID', {
@@ -256,7 +259,20 @@ const CrimeIntelligence = () => {
             });
             return;
         }
-        if (!window.confirm("Do you want to delete this data?")) return;
+
+        const result = await Swal.fire({
+            title: 'Are you sure?',
+            text: "Do you want to delete this data?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel'
+        });
+
+        if (!result.isConfirmed) return;
+
         setLoading(true);
         try {
             const deleteTemplateData = {
@@ -275,8 +291,8 @@ const CrimeIntelligence = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => { getTableData(activeSidebar); }
                 });
+                getTableData(activeSidebar);
             } else {
                 toast.error(deleteTemplateDataResponse.message || "Failed to delete the template. Please try again.", {
                     position: "top-right",
@@ -291,7 +307,8 @@ const CrimeIntelligence = () => {
             }
         } catch (error) {
             setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again !", {
+            toast.error(
+                error?.response?.data?.message || "Please Try Again !", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -655,24 +672,20 @@ const CrimeIntelligence = () => {
                                                     cursor: "pointer",
                                                     borderRadius: '4px',
                                                     mb: 0.5,
-                                                    background: activeSidebar?.name === item.name
-                                                        ? '#E0E7FF'
-                                                        : 'rgba(31,29,172,0.07)', // full background color when not active
-                                                    color: activeSidebar?.name === item.name ? '#1F1DAC' : '#344054',
                                                     fontWeight: activeSidebar?.name === item.name ? 600 : 400,
                                                 }}
                                                 className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${idx + 2} ${activeSidebar?.name === item.name ? "active" : ""}`}
                                                 onClick={() => sidebarActive(item)}
                                             >
-                                                {item?.icon && item?.icon?.props && item?.icon?.props.dangerouslySetInnerHTML ? (
+                                                {item?.icon ? (
+                                                    typeof item.icon === "function" ? (
+                                                        item.icon()
+                                                    ) : (
                                                     <span
                                                         className="tableActionIcon"
-                                                        style={{
-                                                            marginRight: 12,
-                                                            color: activeSidebar?.name === item.name ? '#1F1DAC' : undefined
-                                                        }}
-                                                        dangerouslySetInnerHTML={{ __html: item?.icon?.props.dangerouslySetInnerHTML?.__html }}
+                                                        dangerouslySetInnerHTML={{ __html: item.icon }}
                                                     />
+                                                    )
                                                 ) : (
                                                     <span className="tableActionIcon" style={{ marginRight: 12 }}>
                                                         <svg width="24" height="24" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
