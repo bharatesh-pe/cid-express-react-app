@@ -878,7 +878,6 @@ const UnderInvestigation = () => {
     const [filterAoValues, setFilterAoValues] = useState({});
     
     const showNatureOfDisposal = async (selectedRow) => {
-      console.log("showNatureOfDisposal called with selectedRow:", selectedRow);
       setSelectedRowData(selectedRow);
       setNatureOfDisposalValue(null);
 
@@ -887,13 +886,17 @@ const UnderInvestigation = () => {
           ui_case_id: selectedRow.id
         });
 
-        if (response.data.success) {
-          const { accusedStatusOk, progressReportStatusOk, fslStatusOk } = response.data;
-          const allowed = accusedStatusOk && progressReportStatusOk && fslStatusOk;
-          setIsAFinalSheetAllowed(allowed);
-        } else {
-          setIsAFinalSheetAllowed(false);
-        }
+        if (
+        response?.success &&
+        response.accusedStatusOk &&
+        response.fslStatusOk &&
+        response.progressReportStatusOk
+          ) {
+            setIsAFinalSheetAllowed(true);
+          } else {
+            setIsAFinalSheetAllowed(false);
+          }
+
 
         setNatureOfDisposalModal(true);
       } catch (err) {
@@ -901,6 +904,7 @@ const UnderInvestigation = () => {
         setIsAFinalSheetAllowed(false);
         setNatureOfDisposalModal(true);
       }
+
     };
 
 
