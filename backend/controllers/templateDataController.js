@@ -4022,7 +4022,11 @@ exports.downloadDocumentAttachments = async (req, res) => {
 
     const fileRelativePath = path.join(profile_attachment.s3_key);
 
-    const filePath = path.join(__dirname, fileRelativePath); // ".." moves from controllers/ to backend/
+    const filePath = path.join(__dirname, fileRelativePath);
+
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: 'File not found' });
+    }
 
     const mime = require('mime-types');
     const contentType = mime.lookup(filePath) || 'application/octet-stream';
