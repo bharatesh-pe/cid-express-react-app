@@ -606,9 +606,23 @@ const CrimeIntelligence = () => {
                 }}
             >
                 <Paper sx={{ height: "100vh", borderRadius: "0", boxShadow: "none" }}>
-
+                    {/* Sidebar Header */}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderBottom: "1px solid #D0D5DD",
+                            height: "55.5px",
+                            padding: "3px",
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                            Crime Intelligence
+                        </Typography>
+                    </Box>
                     <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
-                        <Tooltip title={"Investigations"} arrow placement="right">
+                        <Tooltip title={"Investigations"} arrow placement="right" key={"Investigations"}>
                             <ListItem
                                 sx={{
                                     background: '#1F1DAC',
@@ -623,12 +637,12 @@ const CrimeIntelligence = () => {
                                 <ListItemIcon sx={{ color: '#FFFFFF', minWidth: '35px' }}>
                                     <DashboardCustomizeIcon />
                                 </ListItemIcon>
-                                <ListItemText primary="Investigations" />
+                                <ListItemText className="sidebarTextEllipsis" primary="Investigations" />
                                 {openInvestigation ? <ExpandLess /> : <ExpandMore />}
                             </ListItem>
                         </Tooltip>
                         <Collapse in={openInvestigation} timeout="auto" unmountOnExit>
-                            <List component="div" disablePadding>
+                            <List component="div" disablePadding className="sidebarChildContainer">
                                 {loading ? (
                                     <ListItem>
                                         <CircularProgress size={24} />
@@ -637,16 +651,47 @@ const CrimeIntelligence = () => {
                                     investigationItems.map((item, idx) => (
                                         <Tooltip title={item?.name} arrow placement="right" key={item?.name || idx}>
                                             <ListItem
-                                                sx={{ cursor: "pointer", borderRadius: '4px', pl: 4 }}
-                                                className={`sidebarChildItem menuColor_${idx + 2} ${activeSidebar?.name === item.name ? "active" : ""}`}
+                                                sx={{
+                                                    cursor: "pointer",
+                                                    borderRadius: '4px',
+                                                    mb: 0.5,
+                                                    background: activeSidebar?.name === item.name
+                                                        ? '#E0E7FF'
+                                                        : 'rgba(31,29,172,0.07)', // full background color when not active
+                                                    color: activeSidebar?.name === item.name ? '#1F1DAC' : '#344054',
+                                                    fontWeight: activeSidebar?.name === item.name ? 600 : 400,
+                                                }}
+                                                className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${idx + 2} ${activeSidebar?.name === item.name ? "active" : ""}`}
                                                 onClick={() => sidebarActive(item)}
                                             >
+                                                {item?.icon && item?.icon?.props && item?.icon?.props.dangerouslySetInnerHTML ? (
+                                                    <span
+                                                        className="tableActionIcon"
+                                                        style={{
+                                                            marginRight: 12,
+                                                            color: activeSidebar?.name === item.name ? '#1F1DAC' : undefined
+                                                        }}
+                                                        dangerouslySetInnerHTML={{ __html: item?.icon?.props.dangerouslySetInnerHTML?.__html }}
+                                                    />
+                                                ) : (
+                                                    <span className="tableActionIcon" style={{ marginRight: 12 }}>
+                                                        <svg width="24" height="24" viewBox="0 0 34 34" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                            <circle cx="12" cy="12" r="12" fill="" />
+                                                            <mask id={`mask0_${idx}`} style={{ maskType: 'alpha' }} maskUnits="userSpaceOnUse" x="4" y="4" width="16" height="16">
+                                                                <rect x="4" y="4" width="16" height="16" fill="" />
+                                                            </mask>
+                                                            <g mask={`url(#mask0_${idx})`}>
+                                                                <path d="M7.80523 17.2667C7.51045 17.2667 7.25812 17.1618 7.04823 16.9519C6.83834 16.742 6.7334 16.4897 6.7334 16.1949V7.80523C6.7334 7.51045 6.83834 7.25812 7.04823 7.04823C7.25812 6.83834 7.51045 6.7334 7.80523 6.7334H16.1949C16.4897 6.7334 16.742 6.83834 16.9519 7.04823C17.1618 7.25812 17.2667 7.51045 17.2667 7.80523V13.3629L13.3629 17.2667H7.80523ZM13.2001 16.4001L16.4001 13.2001H13.2001V16.4001ZM9.0949 13.0206H12.0001V12.1539H9.0949V13.0206ZM9.0949 10.6334H14.9052V9.76673H9.0949V10.6334Z" fill={activeSidebar?.name === item.name ? "#1F1DAC" : "#98A2B3"} />
+                                                            </g>
+                                                        </svg>
+                                                    </span>
+                                                )}
                                                 <ListItemText primary={item?.name} />
                                             </ListItem>
                                         </Tooltip>
                                     ))
                                 ) : (
-                                    <ListItem sx={{ textAlign: "center", pl: 4 }}>
+                                    <ListItem sx={{ cursor: "pointer", textAlign: "center", pl: 4 }} className="lokayuktaSidebarMenus menuColor_2">
                                         <ListItemText primary="No Actions Found" />
                                     </ListItem>
                                 )}
