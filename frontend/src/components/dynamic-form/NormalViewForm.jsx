@@ -1414,6 +1414,10 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                     return null
                 }
 
+                if (field?.hide_from_edit && editDataTemplate) {
+                    return null;
+                }
+
                 const allFields = (stepperData && stepperData.length > 0) ? stepperConfigData : newFormConfig;
                 
                 const allTabsFields = allFields.filter((f) => f.type === "tabs");
