@@ -40,12 +40,12 @@ app.get('/files/:filename', (req, res) => {
 });
 
 // Serve static files from the React app's build directory
-// app.use(express.static(path.join(__dirname, '../../cid-react/build')));
+app.use(express.static(path.join(__dirname, '../frontend/build')));
 
-// // Handle requests for React router  
-// app.get('*', (req, res) => {
-//     res.sendFile(path.join(__dirname, '../../cid-react/build', 'index.html'));
-// });
+// Handle requests for React router  
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+});
 
 app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", "*");

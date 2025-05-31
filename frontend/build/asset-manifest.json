@@ -1,0 +1,37 @@
+{
+  "files": {
+    "main.css": "/static/css/main.16802d8a.css",
+    "main.js": "/static/js/main.c765c57f.js",
+    "static/js/488.b7e8173d.chunk.js": "/static/js/488.b7e8173d.chunk.js",
+    "static/js/213.1be30502.chunk.js": "/static/js/213.1be30502.chunk.js",
+    "static/js/455.abdfc3a8.chunk.js": "/static/js/455.abdfc3a8.chunk.js",
+    "static/media/CMS_sample_pdf.pdf": "/static/media/CMS_sample_pdf.3ad7a9e752527ad1d2fe.pdf",
+    "static/media/cid_logo.png": "/static/media/cid_logo.6ba3093c770f28d99f9c.png",
+    "static/media/userImg.png": "/static/media/userImg.4501f82e0687999ab6f3.png",
+    "static/media/DummyImage.svg": "/static/media/DummyImage.796f79a621e28f8acc865341d9238716.svg",
+    "static/media/docIcon.svg": "/static/media/docIcon.620ff3e03bd4b569c9d1d83515097373.svg",
+    "static/media/jpgIcon.svg": "/static/media/jpgIcon.1c49bcb39e563534d27a3a396fdb97dd.svg",
+    "static/media/xlsIcon.svg": "/static/media/xlsIcon.4fc80bf4105f5a4d267b16b70a94f0ec.svg",
+    "static/media/pngIcon.svg": "/static/media/pngIcon.3d61cf10b156e56e250bf795c611464c.svg",
+    "static/media/pptIcon.svg": "/static/media/pptIcon.2bbc7378135ff203cd04b9d8d367ce90.svg",
+    "static/media/pdfIcon.svg": "/static/media/pdfIcon.395e40aadb78e5655a43e557ce1d97c4.svg",
+    "static/media/eye.svg": "/static/media/eye.a342592acba320eeea29d10339cb9d6b.svg",
+    "static/media/tableTrash.svg": "/static/media/tableTrash.55c2f6fb53076468167bc4eb47efce8f.svg",
+    "static/media/formbuilderDelete.svg": "/static/media/formbuilderDelete.2c24c1276bb4319bea2801a9fe83c3cc.svg",
+    "index.html": "/index.html",
+    "static/media/tableEdit.svg": "/static/media/tableEdit.b0213eae9a832025239c69111db4b731.svg",
+    "static/media/attachmentCancel.svg": "/static/media/attachmentCancel.60b1d28d0f2820ca8f0f2f17464ea32d.svg",
+    "static/media/filterLines.svg": "/static/media/filterLines.565048226bdb3696336da2ab61eddcae.svg",
+    "static/media/LeftArrow.svg": "/static/media/LeftArrow.0b91a846ae1340cc68623632d77a2a78.svg",
+    "static/media/RightArrow.svg": "/static/media/RightArrow.8c5682963b43d4725cd7b56880d97fed.svg",
+    "main.16802d8a.css.map": "/static/css/main.16802d8a.css.map",
+    "main.c765c57f.js.map": "/static/js/main.c765c57f.js.map",
+    "488.b7e8173d.chunk.js.map": "/static/js/488.b7e8173d.chunk.js.map",
+    "213.1be30502.chunk.js.map": "/static/js/213.1be30502.chunk.js.map",
+    "455.abdfc3a8.chunk.js.map": "/static/js/455.abdfc3a8.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.16802d8a.css",
+    "static/js/main.c765c57f.js"
+  ]
+}
