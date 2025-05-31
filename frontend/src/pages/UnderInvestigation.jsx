@@ -3686,7 +3686,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                                 <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
                             ),                            
                             renderCell: (params) => {
-                              const isDisabled = !params?.row?.["field_io_name"] || params.row.isDisabled;
+                              const isDisabled = !params?.row?.["field_io_name"];
                               return(
                                 <Button
                                     variant="contained"
