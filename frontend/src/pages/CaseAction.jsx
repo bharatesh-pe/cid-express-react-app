@@ -198,6 +198,8 @@ const CaseActions = () => {
                 return 'Trial Courts'; 
             case 'eq_case':
                 return 'Enquiries';
+            case 'ci_case':
+                return 'Crime Intelligence';
             case 'master':
                 return 'Masters';
             case 'circular':
