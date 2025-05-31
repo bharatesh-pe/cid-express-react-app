@@ -1560,12 +1560,12 @@ const UnderInvestigation = () => {
         <Tooltip title={value} placement="top">
             {
                 (key === "field_io_name" && (value === "" || !value)) ? (
-                    <span className="io-alert-flashy">
+                    <span className="io-alert-flashy" onClick={onClickHandler}>
                         <span className="flashy-dot"></span>
                         ASSIGN IO
                     </span>                  
                 ) : (key === "field_cc_no./sc_no" && (value === "" || !value)) ? (
-                    <span className="io-alert-flashy">
+                    <span className="io-alert-flashy" onClick={onClickHandler}>
                         <span className="flashy-dot"></span>
                         CC Pending
                     </span>
