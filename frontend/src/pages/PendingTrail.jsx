@@ -1564,6 +1564,11 @@ const UnderInvestigation = () => {
                         <span className="flashy-dot"></span>
                         ASSIGN IO
                     </span>                  
+                ) : (key === "field_cc_no./sc_no" && (value === "" || !value)) ? (
+                    <span className="io-alert-flashy">
+                        <span className="flashy-dot"></span>
+                        CC Pending
+                    </span>
                 ) : (
                     <span
                         style={highlightColor}
