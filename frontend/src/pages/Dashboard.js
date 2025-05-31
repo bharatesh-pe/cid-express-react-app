@@ -31,6 +31,8 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import CloseIcon from '@mui/icons-material/Close';
 
     const tabLabels = [
         { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
@@ -131,9 +133,14 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
     const [dashboardMenu, setDashboardMenu] = useState({});
 
+    const [videoOpen, setVideoOpen] = useState(false);
+
+    const handleVideoOpen = () => setVideoOpen(true);
+    const handleVideoClose = () => setVideoOpen(false);
+
     var preSelectTabLabels = tabLabels[0]
     
-    if(tabActiveKey){
+    if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics")){
         
         tabLabels.forEach((tab) => {
             const isMainMatch = tabActiveKey === tab.key;
@@ -164,11 +171,6 @@ const Dashboard = () => {
             window.location.reload();
             return;
         }
-        if (tab.key === "crime_intelligence") {
-            navigate(tab?.route,);
-            window.location.reload();
-            return;
-        }    
 
         if (tab.options) {
             setSubmenuAnchorEl(event.currentTarget);
@@ -303,7 +305,6 @@ const Dashboard = () => {
     useEffect(() => {
         if (selectedActiveKey === "crime_intelligence") return;
         getDashboardTiles();
-        console.log("Selected Active Key:", selectedActiveKey);
     }, [selectedActiveKey]);
 
 
@@ -498,6 +499,7 @@ const Dashboard = () => {
                         srcSet={`${LogoText}?w=150&fit=crop&auto=format&dpr=2 4x`}
                         src={`${LogoText}?w=150&fit=crop&auto=format`}
                         alt="CID Logo"
+                        style={{ width: "44px", height: "44px" }}
                         loading="lazy"
                     />
                     <Typography
@@ -562,7 +564,10 @@ const Dashboard = () => {
                     ))}
                 </Menu>
 
-                <Box>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
+                    <Tooltip title="Click for help" onClick={handleVideoOpen}>
+                        <HelpOutlineIcon sx={{fontSize: '26px', cursor: 'pointer'}} />
+                    </Tooltip>
                     <Box
                         sx={{
                             display: "flex",
@@ -970,6 +975,74 @@ const Dashboard = () => {
                     </DialogContent>
                 </Dialog>
             )}
+
+            <Dialog
+                open={videoOpen}
+                onClose={handleVideoClose}
+                fullWidth
+                maxWidth="lg"
+                scroll="paper"
+            >
+                <DialogTitle sx={{ m: 0, p: 2 }}>
+                    Videos
+                    <IconButton
+                        aria-label="close"
+                        onClick={handleVideoClose}
+                        sx={{
+                            position: 'absolute',
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
+                <DialogContent dividers>
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: '1fr',
+                                sm: '1fr 1fr',
+                                md: '1fr 1fr 1fr',
+                            },
+                            gap: 2,
+                        }}
+                    >
+                        <iframe 
+                            width="100%"
+                            height="250"
+                            src="https://www.youtube.com/embed/K4TOrB7at0Y?si=TwoP9V0PB-i1_fpV" 
+                            title="YouTube video player" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin" 
+                            allowfullscreen>    
+                        </iframe>
+                        <iframe
+                            width="100%"
+                            height="250"
+                            src="https://www.youtube.com/embed/b9hBHt317mw?si=PE7AmSJ_7GHiSNIp"
+                            title="Video 2"
+                            frameBorder="0"
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                        ></iframe>
+                        <iframe
+                            width="100%"
+                            height="250"
+                            src="https://www.youtube.com/embed/wDchsz8nmbo?si=od6PA4Xdw33cZd7Y"
+                            title="Video 3"
+                            frameBorder="0"
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                        ></iframe>
+                    </Box>
+                </DialogContent>
+            </Dialog>
+
             {loading && (
                 <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
                     <CircularProgress size={100} />
