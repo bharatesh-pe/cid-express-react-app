@@ -230,15 +230,17 @@ const Layout = ({ children }) => {
 
     const selectedTab = useRef(tabLabels[0]);
     const selectedActiveKey = useRef(tabLabels[0]?.key);
+
+    const gettingTabKey = navbarKey || localStorage.getItem("navbarKey") || null;
     
-    if(navbarKey){
-        localStorage.setItem("navbarKey", navbarKey);
+    if(gettingTabKey){
+        localStorage.setItem("navbarKey", gettingTabKey);
 
         tabLabels.forEach((tab) => {
-            const isMainMatch = navbarKey === tab.key;
+            const isMainMatch = gettingTabKey === tab.key;
             
             const matchedOption = tab.options?.find(
-                (opt) => (opt?.actionKey ?? opt?.key) === navbarKey
+                (opt) => (opt?.actionKey ?? opt?.key) === gettingTabKey
             );
 
             if (isMainMatch) {
