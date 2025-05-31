@@ -230,15 +230,17 @@ const Layout = ({ children }) => {
 
     const selectedTab = useRef(tabLabels[0]);
     const selectedActiveKey = useRef(tabLabels[0]?.key);
+
+    const gettingTabKey = navbarKey || localStorage.getItem("navbarKey") || null;
     
-    if(navbarKey){
-        localStorage.setItem("navbarKey", navbarKey);
+    if(gettingTabKey){
+        localStorage.setItem("navbarKey", gettingTabKey);
 
         tabLabels.forEach((tab) => {
-            const isMainMatch = navbarKey === tab.key;
+            const isMainMatch = gettingTabKey === tab.key;
             
             const matchedOption = tab.options?.find(
-                (opt) => (opt?.actionKey ?? opt?.key) === navbarKey
+                (opt) => (opt?.actionKey ?? opt?.key) === gettingTabKey
             );
 
             if (isMainMatch) {
@@ -1128,7 +1130,7 @@ const Layout = ({ children }) => {
         open={videoOpen}
         onClose={handleVideoClose}
         fullWidth
-        maxWidth="lg"
+        maxWidth="2xl"
         scroll="paper"
     >
         <DialogTitle sx={{ m: 0, p: 2 }}>
@@ -1161,7 +1163,7 @@ const Layout = ({ children }) => {
             >
                 <iframe 
                     width="100%"
-                    height="250"
+                    height="350"
                     src="https://www.youtube.com/embed/K4TOrB7at0Y?si=TwoP9V0PB-i1_fpV" 
                     title="YouTube video player" 
                     frameborder="0" 
@@ -1171,7 +1173,7 @@ const Layout = ({ children }) => {
                 </iframe>
                 <iframe
                     width="100%"
-                    height="250"
+                    height="350"
                     src="https://www.youtube.com/embed/b9hBHt317mw?si=PE7AmSJ_7GHiSNIp"
                     title="Video 2"
                     frameBorder="0"
@@ -1180,7 +1182,7 @@ const Layout = ({ children }) => {
                 ></iframe>
                 <iframe
                     width="100%"
-                    height="250"
+                    height="350"
                     src="https://www.youtube.com/embed/wDchsz8nmbo?si=od6PA4Xdw33cZd7Y"
                     title="Video 3"
                     frameBorder="0"
