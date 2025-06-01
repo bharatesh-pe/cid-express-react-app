@@ -84,7 +84,7 @@ import CloseIcon from '@mui/icons-material/Close';
 
     //   clipPath: 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)',
 
-    const SkewedCard = ({ label, bgGradient, isFirst }) => (
+    const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
         <Box
             sx={{
                 width: isFirst ? 150 : 180,
@@ -92,6 +92,7 @@ import CloseIcon from '@mui/icons-material/Close';
                 background: bgGradient,
                 color: '#fff',
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
                 borderRadius: 1,
@@ -108,6 +109,22 @@ import CloseIcon from '@mui/icons-material/Close';
         >
             <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
                 {label}
+            </Typography>
+            <Typography
+                sx={{
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    ml: 1,
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    borderRadius: '50%',
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                {number || 0}
             </Typography>
         </Box>
     );
@@ -704,7 +721,39 @@ const Dashboard = () => {
                 </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, pb: 1, pt: 1.5}}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',px: 10, py: 1}}>
+
+                  <Card
+                    key="view-all"
+                    sx={{
+                    width: 220,
+                    height: 70,
+                    borderRadius: 4,
+                    padding: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    background: 'linear-gradient(135deg, #ff9800, #f44336)',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    '&:hover': {
+                        transform: 'scale(1.05)',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                    }
+                    }}
+                    onClick={ViewAllCases}
+                >
+                    All {selectedTab?.current?.name || selectedTab?.current?.label || ""}
+                </Card>
+
+            </Box>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, py: 0.5}}>
                 <Box>
                     <Typography sx={{ fontWeight: 600, fontSize: 22, color: '#1D2939'}}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
@@ -736,38 +785,6 @@ const Dashboard = () => {
                         View All Cases
                     </Button>
                 </Box> */}
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',px: 10, pb: 1}}>
-
-                  <Card
-                    key="view-all"
-                    sx={{
-                    width: 220,
-                    height: 110,
-                    borderRadius: 4,
-                    padding: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    background: 'linear-gradient(135deg, #ff9800, #f44336)',
-                    color: '#fff',
-                    fontWeight: 'bold',
-                    fontSize: '1.1rem',
-                    cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                    '&:hover': {
-                        transform: 'scale(1.05)',
-                        boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
-                    }
-                    }}
-                    onClick={ViewAllCases}
-                >
-                    All {selectedTab?.current?.name || selectedTab?.current?.label || ""}
-                </Card>
-
             </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 12, py: 1}}>
@@ -945,6 +962,7 @@ const Dashboard = () => {
                             label={day}
                             bgGradient={`linear-gradient(135deg, #43cea2, #185a9d)`}
                             isFirst={index === 0}
+                            number={index + 1}
                         />
                     ))}
                 </Box>
