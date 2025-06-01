@@ -385,7 +385,9 @@ router.post('/getAccusedWitness',
 router.post('/checkAccusedDataStatus',
         // userAuthMiddleware,
         templateDataController.checkAccusedDataStatus)
-
+router.post('/checkCaseStatusCombined',
+        // userAuthMiddleware,
+        templateDataController.checkCaseStatusCombined)
 router.post('/insertMergeData',[validate_token],
     templateDataController.insertMergeData)
 

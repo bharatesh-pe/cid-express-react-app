@@ -9367,3 +9367,236 @@ exports.checkFinalSheet = async (req, res) => {
   }
 };
 
+exports.checkCaseStatusCombined = async (req, res) => {
+    try {
+        const { table_name, ui_case_id, pt_case_id } = req.body;
+
+        if (!table_name) {
+            return userSendResponse(res, 400, false, "Missing required table name.");
+        }
+
+        const tableData = await Template.findOne({ where: { table_name } });
+
+        if (!tableData) {
+            const message = `Table ${table_name} does not exist.`;
+            return userSendResponse(res, 400, false, message, null);
+        }
+
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+        const fields = {};
+        const relevantSchema = schema;
+
+        const modelAttributes = {
+            id: {
+                type: Sequelize.DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            created_at: {
+                type: Sequelize.DataTypes.DATE,
+                allowNull: false,
+            },
+            updated_at: {
+                type: Sequelize.DataTypes.DATE,
+                allowNull: false,
+            },
+            created_by: {
+                type: Sequelize.DataTypes.STRING,
+                allowNull: true,
+            } 
+        };
+
+        for (const field of relevantSchema) {
+            const {
+                name: columnName,
+                data_type,
+                not_null,
+                default_value,
+            } = field;
+
+            if (!columnName || !data_type) {
+                modelAttributes[columnName] = {
+                    type: Sequelize.DataTypes.STRING,
+                    allowNull: not_null ? false : true,
+                    defaultValue: default_value || null,
+                };
+                continue;
+            }
+
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+            modelAttributes[columnName] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+
+            fields[columnName] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await Model.sync();
+
+        let whereClause = {};
+        if (ui_case_id && ui_case_id != "" && pt_case_id && pt_case_id != "") {
+            whereClause = {
+                [Op.or]: [{ ui_case_id }, { pt_case_id }],
+            };
+        } else if (ui_case_id && ui_case_id != "") {
+            whereClause = { ui_case_id };
+        } else if (pt_case_id && pt_case_id != "") {
+            whereClause = { pt_case_id };
+        }
+
+        let attributes = ["id", "field_government_servent", "field_pso_&_19_pc_act_order", "field_status_of_accused_in_charge_sheet"];
+
+        const AccusedData = await Model.findAll({
+            where: whereClause,
+            attributes: attributes,
+        });
+
+        let data = {
+            table_name,
+            ui_case_id,
+            pt_case_id,
+            pending_case: false,
+            invalid_accused: false,
+            accusedEmpty: false
+        };
+
+        if (AccusedData.length > 0) {
+            for (const accused of AccusedData) {
+                var gov_served = accused?.["field_government_servent"];
+                var accused_in_charge_sheet = accused?.["field_status_of_accused_in_charge_sheet"];
+                var pc_act_order = accused?.["field_pso_&_19_pc_act_order"];
+
+                if ((String(gov_served).toLowerCase() === "yes" || gov_served === null) &&
+                    (String(accused_in_charge_sheet).toLowerCase() === "dropped" || String(accused_in_charge_sheet).toLowerCase() === "charge sheet") &&
+                    (!pc_act_order || pc_act_order === "")) {
+                    data.invalid_accused = true;
+                }
+
+                // if (String(accused_in_charge_sheet).toLowerCase() === "pending") {
+                //     data.pending_case = true;
+                // }
+            }
+        } else {
+            data.accusedEmpty = true;
+        }
+
+        let progressReportEmpty = false;
+        const progressRecordsEmpty = await sequelize.query(
+            `SELECT field_status FROM cid_ui_case_progress_report WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (!progressRecordsEmpty || progressRecordsEmpty.length === 0) {
+            progressReportEmpty = true;
+        }
+
+        let fslEmpty = false;
+        const fslRecordsEmpty = await sequelize.query(
+            `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (!fslRecordsEmpty || fslRecordsEmpty.length === 0) {
+            fslEmpty = true;
+        }
+
+        data.progressReportEmpty = progressReportEmpty;
+        data.fslEmpty = fslEmpty;
+
+        let accusedStatusOk = true;
+        const accusedRecords = await sequelize.query(
+            `SELECT field_status_of_accused_in_charge_sheet FROM cid_ui_case_accused WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (accusedRecords.length === 0) {
+            accusedStatusOk = false;
+        } else {
+            for (const rec of accusedRecords) {
+                const status = (rec.field_status_of_accused_in_charge_sheet || '').toLowerCase();
+                if (status === 'pending') {
+                    accusedStatusOk = false;
+                    break;
+                }
+                if (status !== 'dropped' && status !== 'charge sheet') {
+                    accusedStatusOk = false;
+                    break;
+                }
+            }
+        }
+
+        let progressReportStatusOk = false;
+        const progressRecords = await sequelize.query(
+            `SELECT field_status FROM cid_ui_case_progress_report WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (progressRecords.length > 0) {
+            progressReportStatusOk = progressRecords.some(rec => {
+                const status = (rec.field_status || '').toLowerCase();
+                return (
+                    status === 'in progress' ||
+                    status === 'completed' ||
+                    status === 'no longer needed'
+                );
+            });
+        }
+
+        let fslStatusOk = false;
+        const fslRecords = await sequelize.query(
+            `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (fslRecords.length > 0) {
+            for (const rec of fslRecords) {
+                if ((rec.field_used_as_evidence || '').toLowerCase() === 'yes') {
+                    fslStatusOk = true;
+                    break;
+                }
+                if ((rec.field_used_as_evidence || '').toLowerCase() === 'no') {
+                    if (rec.field_reason && String(rec.field_reason).trim() !== '') {
+                        fslStatusOk = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            ...data,
+            accusedStatusOk,
+            progressReportStatusOk,
+            fslStatusOk,
+        });
+    } catch (error) {
+        console.error("Error in checkCaseStatusCombined:", error);
+        return res.status(500).json({ success: false, message: "Internal server error." });
+    }
+};
