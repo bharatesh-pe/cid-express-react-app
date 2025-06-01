@@ -23,6 +23,8 @@ import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
 import PropertyForm from "./PropertyForm";
 import Report41A from "./Report41A";
+import PlanOfAction from "./PlanOfAction";
+import EqProgressReport from "./EqProgressReport";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
@@ -1621,6 +1623,29 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                         case_table_name = {table_name}
+                    />
+                    
+                ) : activeSidebar?.table === "cid_eq_case_plan_of_action" ? (
+
+
+                    <PlanOfAction
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                ) : activeSidebar?.table === "cid_eq_case_progress_report" ? (
+
+
+                    <EqProgressReport
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
                     />
                     
                  ) : (

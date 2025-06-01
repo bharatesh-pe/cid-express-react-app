@@ -1114,14 +1114,14 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form'
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form'
       ? schema
       : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
     
-    if(table_name === "cid_ui_case_progress_report")
+    if(table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report")
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
 
-    if(table_name === "cid_ui_case_action_plan")
+    if(table_name === "cid_ui_case_action_plan" || table_name === "cid_eq_case_plan_of_action")
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
     
     if(table_name === "cid_ui_case_property_form")
@@ -1487,7 +1487,7 @@ exports.getTemplateData = async (req, res, next) => {
         let filteredData;
 
         data.ReadStatus = data.ReadStatus ? true : false;
-        if (table_name === "cid_ui_case_progress_report" ) {
+        if (table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report") {
           filteredData = { ...data };
 
           if (data.field_assigned_to || data.field_assigned_by) {
@@ -1554,9 +1554,9 @@ exports.getTemplateData = async (req, res, next) => {
             });
             filteredData.field_division = division ? division.division_name : "Unknown";
           }
-        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form') {
+        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_eq_case_plan_of_action') {
             filteredData = { ...data };
-            if (table_name === 'cid_ui_case_action_plan' && case_io_id && case_io_id !== "") {
+            if (table_name === 'cid_ui_case_action_plan' || table_name === 'cid_eq_case_plan_of_action' && case_io_id && case_io_id !== "") {
                 const case_io_user_designation = await UserDesignation.findOne({
                     attributes: ["designation_id"],
                     where: { user_id: case_io_id },
@@ -4354,16 +4354,20 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
 
 
 exports.checkPdfEntry = async (req, res) => {
-  const { is_pdf, ui_case_id } = req.body;
+  const { is_pdf, ui_case_id , eq_case_id} = req.body;
 
   try {
-    if (!ui_case_id) {
+    if (!ui_case_id && !eq_case_id) {
       return userSendResponse(res, 400, false, "ui_case_id is required.", null);
     }
 
+    const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
     // Check if ui_case_id exists in the table
     const caseExists = await UiProgressReportFileStatus.findOne({
-      where: { ui_case_id },
+      where: whereClause,
     });
 
     console.log("caseExists", caseExists);
@@ -4377,9 +4381,16 @@ exports.checkPdfEntry = async (req, res) => {
       );
     }
 
+    const whereClause1 = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
     // Check if the PDF entry exists for this case ID
     const existingEntry = await UiProgressReportFileStatus.findOne({
-      where: { is_pdf, ui_case_id },
+      where: {
+        ...whereClause1,
+        is_pdf,
+      },
     });
 
     console.log("existingEntry", existingEntry);
@@ -4737,9 +4748,9 @@ exports.uploadFile = async (req, res) => {
     }
 
     try {
-      const { ui_case_id, created_by } = req.body;
+      const { ui_case_id, eq_case_id, created_by } = req.body;
 
-      if (!ui_case_id || !created_by) {
+      if (!ui_case_id && !eq_case_id || !created_by) {
         return res.status(400).json({
           success: false,
           message: "Missing required fields.",
@@ -4753,8 +4764,12 @@ exports.uploadFile = async (req, res) => {
         });
       }
 
+     const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
       const existing = await UiProgressReportFileStatus.findOne({
-        where: { ui_case_id },
+        where: whereClause,
       });
 
       if (existing) {
@@ -4771,6 +4786,7 @@ exports.uploadFile = async (req, res) => {
 
       await UiProgressReportFileStatus.create({
         ui_case_id,
+        eq_case_id,
         is_pdf: true,
         file_name,
         file_path,
@@ -4796,16 +4812,20 @@ exports.uploadFile = async (req, res) => {
 
 exports.getUploadedFiles = async (req, res) => {
   try {
-    const { ui_case_id } = req.body;
+    const { ui_case_id, eq_case_id } = req.body;
 
-    if (!ui_case_id) {
+    if (!ui_case_id && !eq_case_id) {
       return res
         .status(400)
         .json({ success: false, message: "Missing required ui_case_id." });
     }
 
+    const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
     const data = await UiProgressReportFileStatus.findAll({
-      where: { ui_case_id },
+      where: whereClause,
       attributes: ["id", "file_name", "file_path", "created_by", "created_at"],
     });
 
@@ -5136,9 +5156,9 @@ async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regula
 exports.appendToLastLineOfPDF = async (req, res) => {
   try {
     
-    const { ui_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields, submission_date } = req.body;
+    const { ui_case_id, eq_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields, submission_date } = req.body;
 
-    if (!ui_case_id || !appendText || !selected_row_id || !aoFields) {
+    if (!ui_case_id && !eq_case_id || !appendText || !selected_row_id || !aoFields) {
       console.error("Missing required fields.");
       return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
@@ -5146,11 +5166,18 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
     fs.mkdirSync(dirPath, { recursive: true });
 
+    
+    const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
     const latestFile = await UiProgressReportFileStatus.findOne({
-      where: { ui_case_id, is_pdf: true },
+      where: {
+        ...whereClause,
+        is_pdf: true,
+      },
       order: [['created_at', 'DESC']],
     });
-
     if (!latestFile) {
       console.error("No PDF file found.");
       return res.status(404).json({ success: false, message: 'No PDF file found.' });
@@ -5174,8 +5201,16 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
     fs.mkdirSync(path.dirname(monthwisePath), { recursive: true });
 
+    const existingMonthwiseWhere = {};
+    if (typeof ui_case_id !== 'undefined' && ui_case_id !== null) {
+      existingMonthwiseWhere.ui_case_id = ui_case_id;
+    } else if (typeof eq_case_id !== 'undefined' && eq_case_id !== null) {
+      existingMonthwiseWhere.ui_case_id = eq_case_id;
+    }
+    existingMonthwiseWhere.monthwise_file_name = monthwiseFileName;
+
     const existingMonthwise = await UiProgressReportMonthWise.findOne({
-      where: { ui_case_id, monthwise_file_name: monthwiseFileName }
+      where: existingMonthwiseWhere
     });
 
     const isNewMonthFile = !existingMonthwise;
@@ -5245,6 +5280,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     if (isNewMonthFile) {
       await UiProgressReportMonthWise.create({
         ui_case_id,
+        eq_case_id,
         created_by,
         month_of_the_file: monthOfTheFile,
         monthwise_file_name: monthwiseFileName,
@@ -5253,7 +5289,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       });
     }
 
-const tableName = "cid_ui_case_progress_report";
+    const tableName = "cid_ui_case_progress_report";
     const Model = sequelize.define(
       tableName,
       {
@@ -5270,6 +5306,24 @@ const tableName = "cid_ui_case_progress_report";
     );
 
     await Model.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
+    const tableName1 ="cid_eq_case_progress_report";
+    const Model1 = sequelize.define(
+      tableName1,
+      {
+        id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+        field_pr_status: { type: Sequelize.DataTypes.STRING, allowNull: true },
+        field_ui_case_id: { type: Sequelize.DataTypes.INTEGER, allowNull: false },
+      },
+      {
+        freezeTableName: true,
+        timestamps: true,
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+      }
+    );
+
+    await Model1.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
+
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
@@ -5285,18 +5339,23 @@ const tableName = "cid_ui_case_progress_report";
 exports.getMonthWiseByCaseId = async (req, res) => {
   try {
     const ui_case_id = req.query.ui_case_id || req.body.ui_case_id;
+    const eq_case_id = req.query.eq_case_id || req.body.eq_case_id;
     const page = parseInt(req.query.page || req.body.page, 10) || 1;
     const limit = parseInt(req.query.limit || req.body.limit, 10) || 10;
     const offset = (page - 1) * limit;
 
-    if (!ui_case_id) {
-      return res.status(400).json({ success: false, message: 'ui_case_id is required.' });
+    if (!ui_case_id && !eq_case_id) {
+      return res.status(400).json({ success: false, message: 'ui_case_id or eq_case_id is required.' });
     }
 
-    const totalRecords = await UiProgressReportMonthWise.count({ where: { ui_case_id } });
+    const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
+    const totalRecords = await UiProgressReportMonthWise.count({ where: whereClause });
 
     const records = await UiProgressReportMonthWise.findAll({
-      where: { ui_case_id },
+      where: whereClause,
       order: [['submission_date', 'DESC']],
       limit,
       offset,
@@ -8888,11 +8947,11 @@ exports.saveActionPlan = async (req, res) => {
 
 
 exports.submitActionPlanPR = async (req, res) => {
-	const { transaction_id, ui_case_id , isSupervisior , user_divisio_id , user_designation_id , immediate_supervisior_id} = req.body;
+	const { transaction_id, ui_case_id ,eq_case_id, isSupervisior , user_divisio_id , user_designation_id , immediate_supervisior_id} = req.body;
 	const { user_id: userId } = req.user;
 
-	if (!transaction_id || !ui_case_id) {
-		return userSendResponse(res, 400, false, "transaction_id and ui_case_id are required.", null);
+	if (!transaction_id || (!ui_case_id && !eq_case_id)) {
+		return userSendResponse(res, 400, false, "transaction_id and ui_case_id/eq_case_id are required.", null);
 	}
 
 	let t = await dbConfig.sequelize.transaction();
@@ -8912,17 +8971,21 @@ exports.submitActionPlanPR = async (req, res) => {
 		});
 		const userName = userData?.kgidDetails?.name || null;
 
+    const isUICase = !!ui_case_id;
+		const actionPlanTable = isUICase ? "cid_ui_case_action_plan" : "cid_eq_case_plan_of_action";
+		const actionPlanId = ui_case_id || eq_case_id;
+
 		// Validate action plan template
-		const apTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
+		const apTemplate = await Template.findOne({ where: { table_name: actionPlanTable } });
 		if (!apTemplate) {
 			return userSendResponse(res, 400, false, "Action Plan template not found.", null);
 		}
 
 		// Fetch Action Plan records
 		const actionPlanData = await sequelize.query(
-			`SELECT * FROM cid_ui_case_action_plan WHERE ui_case_id = :ui_case_id`,
+			`SELECT * FROM  ${actionPlanTable}  WHERE ui_case_id = :ui_case_id`,
 			{
-				replacements: { ui_case_id },
+				replacements: { ui_case_id: actionPlanId },
 				type: Sequelize.QueryTypes.SELECT,
 				transaction: t,
 			}
@@ -8935,17 +8998,17 @@ exports.submitActionPlanPR = async (req, res) => {
         {
             // Update field_status in Action Plan
             await sequelize.query(
-                `UPDATE cid_ui_case_action_plan SET sys_status = 'IO' WHERE ui_case_id = :ui_case_id`,
+                `UPDATE ${actionPlanTable}  SET sys_status = 'IO' WHERE ui_case_id = :ui_case_id`,
                 {
-                    replacements: { ui_case_id },
+                    replacements: { ui_case_id: actionPlanId },
                     type: Sequelize.QueryTypes.UPDATE,
                     transaction: t,
                 }
             );
 
-            const main_table = "cid_ui_case_action_plan";
-            const record_id = ui_case_id || null;
-            const module = "ui_case";
+            const main_table = actionPlanTable;
+            const record_id = actionPlanId || null;
+            const module = isUICase ? "ui_case" : "eq_case";
             const alert_type = "ACTION_PLAN";
             const alert_level = "low";
             const alert_message = "Please check the action plan and approver it.";
@@ -8990,16 +9053,17 @@ exports.submitActionPlanPR = async (req, res) => {
         {
             // Update field_status in Action Plan
             await sequelize.query(
-                `UPDATE cid_ui_case_action_plan SET field_submit_status = 'submit' WHERE ui_case_id = :ui_case_id`,
+                `UPDATE ${actionPlanTable} SET field_submit_status = 'submit' WHERE ui_case_id = :ui_case_id`,
                 {
-                    replacements: { ui_case_id },
+                    replacements: { ui_case_id: actionPlanId },
                     type: Sequelize.QueryTypes.UPDATE,
                     transaction: t,
                 }
             );
     
             // Load Progress Report template
-            const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
+            const prTableName = isUICase ? "cid_ui_case_progress_report" : "cid_eq_case_progress_report";
+            const prTemplate = await Template.findOne({ where: { table_name: prTableName } });
             if (!prTemplate) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Progress Report template not found.", null);
@@ -9041,7 +9105,7 @@ exports.submitActionPlanPR = async (req, res) => {
             const sampleData = actionPlanData[0];
             const modelAttributes = buildModelAttributes(progressSchema, sampleData);
     
-            const ProgressReportModel = sequelize.define("cid_ui_case_progress_report", modelAttributes, {
+            const ProgressReportModel = sequelize.define(prTableName, modelAttributes, {
                 freezeTableName: true,
                 timestamps: true,
                 createdAt: "created_at",
@@ -9086,7 +9150,7 @@ exports.submitActionPlanPR = async (req, res) => {
                     {
                         where: {
                             module: "ui_case",
-                            record_id: ui_case_id,
+                            record_id: actionPlanId,
                             alert_type: "ACTION_PLAN",
                             status: {
                                     [Op.iLike]: "%pending%" 
