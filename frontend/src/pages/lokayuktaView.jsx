@@ -21,6 +21,7 @@ import DynamicForm from "../components/dynamic-form/DynamicForm";
 import ApprovalModal from "../components/dynamic-form/ApprovalModalForm";
 import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
+import ChargeSheetInvestigation from "./ChargeSheetInvestigation";
 import PropertyForm from "./PropertyForm";
 import Report41A from "./Report41A";
 const LokayuktaView = () => {
@@ -1587,7 +1588,20 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                     />
-               ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
+               ) : activeSidebar?.chargeSheet === true ? (
+
+                     <ChargeSheetInvestigation
+                        overAllTemplateActions={contentArray}
+                        template_name={template_name}
+                        headerDetails={headerDetails}
+                        tableRowId={tableRowId}
+                        options={activeSidebar}
+                        rowData={rowData}
+                        module={module}
+                        backNavigation={backToForm}
+                    />
+
+                ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
 
 
                      <ProgressReport
