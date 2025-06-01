@@ -12,7 +12,11 @@ module.exports = (sequelize, DataTypes) => {
     {
       ui_case_id: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
+      },
+      eq_case_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
       },
       month_of_the_file:{
         type: DataTypes.STRING,

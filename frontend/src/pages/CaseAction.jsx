@@ -741,6 +741,7 @@ const CaseActions = () => {
             is_pdf: addActionFormData['is_pdf'] || false,
             permissions: addActionFormData['permissions'] ? JSON.stringify(addActionFormData['permissions']) : undefined,
             tab: addActionFormData['tab'] ? JSON.stringify(addActionFormData['tab']) : undefined,
+            transaction_id:  `insert_action_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
         };        
         console.log(payload, "Payload being sent to backend");
 
