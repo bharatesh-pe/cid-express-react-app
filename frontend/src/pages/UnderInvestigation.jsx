@@ -1408,7 +1408,7 @@ const UnderInvestigation = () => {
             onClickHandler = (event) => {
                 event.stopPropagation();
                 console.log("handleViewAccused called", { row: params?.row, tableName });
-                handleViewAccused(params?.row, true, tableName);
+                handleViewAccused(params?.row, false, tableName);
             };
         }
 
@@ -1478,8 +1478,8 @@ const UnderInvestigation = () => {
 
           if (viewTemplateData && viewTemplateData.success) {
               setInitialData(viewTemplateData.data ? viewTemplateData.data : {});
-              setviewReadonly(true);
-              setEditTemplateData(false);
+              setviewReadonly(false);
+              setEditTemplateData(true);
               setSelectedRowId(null);
               setSelectedTemplateId(null);
 
