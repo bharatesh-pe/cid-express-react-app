@@ -1124,13 +1124,11 @@ const UnderInvestigation = () => {
                         if (tableName === "cid_ui_case_accused") {
                            tableHeader = tableHeader.filter(
                                 (col) =>
-                                    col.field !== "field_aadhar_no" ||
-                                    col.field !== "field_accused_details" ||
-                                    col.field  !== "field_bank_account_details" ||
-                                    col.field !== "field_current_status" ||
-                                    col.field !== "field_evidences_(list)" ||
-                                    col.field  !== "field_phone_number"
-
+                                    col.field === "sl_no" ||
+                                    col.field  === "field_name" ||
+                                    col.field  === "field_status_of_accused_in_charge_sheet" ||
+                                    col.field  === "field_government_servent" ||
+                                    col.field === "field_pso_&_19_pc_act_order"
                             );
                         }
 
