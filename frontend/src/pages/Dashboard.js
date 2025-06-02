@@ -988,7 +988,7 @@ const Dashboard = () => {
                 <Box>
                     <Box>
                         <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939', textAlign: 'center'}}>
-                            Hearing Alerts
+                            Hearing Date Alerts
                         </Typography>
                     </Box>                    
                     <Box
