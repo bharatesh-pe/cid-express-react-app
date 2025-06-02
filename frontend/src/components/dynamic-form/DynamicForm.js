@@ -55,6 +55,7 @@ const DynamicForm = ({
   onUpdate,
   template_id,
   table_row_id,
+  hideEditBtn
 }) => {
 //   let storageFormData = localStorage.getItem(template_name + "-formData")
 //     ? JSON.parse(localStorage.getItem(template_name + "-formData"))
@@ -1585,7 +1586,7 @@ const DynamicForm = ({
             {
                  (
                     (
-                        readOnlyTemplate &&
+                        readOnlyTemplate && !hideEditBtn &&
                         userPermissions[0]?.edit_case &&
                         (table_name !== "cid_under_investigation" &&
                         table_name !== "cid_pending_trial" &&
@@ -1615,7 +1616,7 @@ const DynamicForm = ({
             {
                 (
                     (
-                        readOnlyTemplate &&
+                        readOnlyTemplate && !hideEditBtn &&
                         userPermissions[0]?.edit_case &&
                         (table_name !== "cid_under_investigation" &&
                         table_name !== "cid_pending_trial" &&
