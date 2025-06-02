@@ -10,6 +10,7 @@ import api from "../services/api";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import RichTextEditor from "../components/form/RichTextEditor";
+import DynamicForm from "../components/dynamic-form/DynamicForm";
 
 
 const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, options, rowData, module, backNavigation, overAllTemplateActions, cs_fir_cases_data }) => {
@@ -63,6 +64,14 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
 
     const [formData, setFormData] = useState({});
     const [alreadySaved, setAlreadySaved] = useState(false);
+
+    const [formOpen, setFormOpen] = useState(false);
+    const [formTemplateData, setFormTemplateData] = useState([])
+    const [initialData, setInitialData] = useState({});
+    const [selectedRowId, setSelectedRowId] = useState(null);
+    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
+    const [stepperData, setstepperData] = useState([]);
+    
 
     const handlePagination = (page) => {
         setInvestigationTablePagination(page)
@@ -157,6 +166,19 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
 
                     const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
 
+                    const firstKey = Object.keys(data[0]).find(
+                        (key) => !excludedKeys.includes(key)
+                    );
+
+                    const columns = firstKey ? 
+                        [{
+                            field: firstKey,
+                            headerName: generateReadableHeader(firstKey),
+                            width: generateReadableHeader(firstKey).length < 15 ? 100 : 200,
+                            resizable: true,
+                        }]
+                    : [];
+
                     const updatedHeader = [
                         {
                             field: "sl_no",
@@ -183,15 +205,26 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                             headerName: "Investigation Module",
                             width: 200,
                             resizable: true,
-                            cellClassName: 'justify-content-start',
+                            renderCell: (params) => {
+                                return (
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "start",
+                                            gap: "8px",
+                                            color: '#0167F8', 
+                                            textDecoration: 'underline', 
+                                            cursor: 'pointer'
+                                        }}
+                                        onClick={()=>viewInvestigationData(params?.row)}
+                                    >
+                                        {params.value}
+                                    </Box>
+                                );
+                            }
                         },
-                        ...Object.keys(data[0]).filter((key) => !excludedKeys.includes(key))
-                        .map((key, index) => ({
-                            field: key,
-                            headerName: generateReadableHeader(key),
-                            width: generateReadableHeader(key).length < 15 ? 100 : 200,
-                            resizable: true,
-                        })),
+                        ...columns
                     ]
 
                     const formatDate = (value) => {
@@ -236,6 +269,102 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
             setLoading(false);
             if (error && error.response && error.response["data"]) {
                 toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const viewInvestigationData = async (investigationData)=>{
+        
+        if(!investigationData?.id || !selectedInvestigation?.table){
+            toast.error("ID Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        };
+
+        var viewTemplatePayload = {
+            table_name: selectedInvestigation.table,
+            id: investigationData.id,
+        };
+
+        setLoading(true);
+
+        try {
+
+            const viewTemplateData = await api.post("/templateData/viewTemplateData",viewTemplatePayload);
+            setLoading(false);
+
+            if (viewTemplateData && viewTemplateData.success) {
+
+                setInitialData(viewTemplateData.data ? viewTemplateData.data : {});
+                setSelectedRowId(null);
+                setSelectedTemplateId(null);
+
+                const viewTableData = {
+                    table_name: selectedInvestigation.table,
+                };
+
+                setLoading(true);
+                try {
+                    const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+                    setLoading(false);
+
+                    setFormOpen(true);
+                    setSelectedRowId(rowData.id);
+                    setSelectedTemplateId(viewTemplateResponse['data'].template_id);
+                    setFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
+                    if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
+                        setstepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
+                    }
+
+                } catch (error) {
+                    setLoading(false);
+                    if (error && error.response && error.response["data"]) {
+                        toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            } else {
+                const errorMessage = viewTemplateData.message ? viewTemplateData.message : "Failed to get the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -587,6 +716,21 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
 
             <Box>
 
+                <Typography
+                    sx={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#0B5ED7',
+                        mb: 1,
+                        textAlign: 'center',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                    }}
+                    className="Roboto"
+                >
+                    Investigations
+                </Typography>
+
                 <TableView
                     rows={investigationViewTableRows} 
                     columns={investigationViewTableColumns}
@@ -598,11 +742,26 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
 
             </Box>
 
-            <Box>
+            <Typography
+                sx={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#0B5ED7',
+                    mb: 1,
+                    textAlign: 'center',
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                }}
+                className="Roboto"
+            >
+                Charge Sheet
+            </Typography>
+
+            <Box sx={{border: '1px solid #e0e0e0'}}>
                 <Table size="small">
                     <TableBody>
                     <TableRow>
-                        <TableCell colSpan={2}>ಕರ್ನಾಟಕ ರಾಜ್ಯ ಲೋಕಾಯುಕ್ತ ಪೊಲೀಸ್</TableCell>
+                        <TableCell colSpan={2}>ಕರ್ನಾಟಕ CID</TableCell>
                         <TableCell colSpan={2}>ದೋಷಾರೋಪಣ ಪತ್ರ</TableCell>
                         <TableCell colSpan={2}>[ ಆದೇಶ ಸಂಖ್ಯೆ: 1539 ಮತ್ತು 1540 ]</TableCell>
                         <TableCell rowSpan={4} style={{ width: 150, verticalAlign: 'top' }}>
@@ -756,7 +915,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     </TableBody>
                 </Table>
 
-                <Box mt={4}>
+                <Box mt={4} px={2}>
                     <Typography align="center">ಕಾಲಂ ನಂ 5 ಮುಂದುವರೆದಿದೆ</Typography>
                     <RichTextEditor
                         field={{
@@ -766,7 +925,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                         formData={formData}
                     />
                 </Box>
-                <Box mt={4}>
+                <Box mt={4} px={2}>
                     <Typography align="center">ಕಾಲಂ ನಂ 6 ಮುಂದುವರೆದಿದೆ</Typography>
                     <RichTextEditor
                         field={{
@@ -776,7 +935,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                         formData={formData}
                     />
                 </Box>
-                <Box mt={4}>
+                <Box mt={4} px={2}>
                     <Typography align="center">ಕಾಲಂ ನಂ 7 ಮುಂದುವರೆದಿದೆ</Typography>
                     <RichTextEditor
                         field={{
@@ -793,6 +952,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     alignItems="center"
                     gap={5}
                     my={5}
+                    px={2}
                 >
                     <Box display="flex" flexDirection="column" gap={3}>
 
@@ -831,6 +991,22 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 </Box>
    
                 </Box>
+
+            {formOpen &&
+                <DynamicForm
+                    table_row_id={selectedRowId}
+                    template_id={selectedTemplateId}
+                    table_name={selectedInvestigation?.table}
+                    template_name={selectedInvestigation?.table}
+                    readOnly={true}
+                    editData={false}
+                    formConfig={formTemplateData}
+                    stepperData={stepperData}
+                    initialData={initialData}
+                    closeForm={setFormOpen} 
+                    hideEditBtn={true}
+                />
+            }
 
             {loading && (
                 <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
