@@ -1784,11 +1784,6 @@ exports.viewTemplateData = async (req, res, next) => {
     // Create base attributes array
     let attributesArray = [];
 
-     // Add sys_status only if get_sys is true
-     if (get_sys) {
-         attributesArray.push("sys_status");
-     }
- 
     // Add other fields from fields object
      attributesArray = [
        ...attributesArray,
