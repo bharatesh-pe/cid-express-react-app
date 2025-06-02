@@ -741,7 +741,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                                            if(dependent_field[0]?.table === "users"){
                                                headerName = "name"
                                                headerId =  "user_id"
-                                           }else if(dependent_field[0]?.api !== "/templateData/getTemplateData"){
+                                           }else if(dependent_field[0].api !== "/templateData/getTemplateData"){
                                                headerName = dependent_field[0]?.table + "_name"
                                                headerId =  dependent_field[0]?.table + "_id"
                                            }
@@ -1346,7 +1346,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                   </Button>
             
                     {
-                        !disableSaveNew &&
+                        !disableSaveNew && table_name !== "cid_eq_case_closure_report" &&
                         <Button
                             variant="contained" color="success"
                             onClick={() =>{

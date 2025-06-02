@@ -26,6 +26,7 @@ import PropertyForm from "./PropertyForm";
 import Report41A from "./Report41A";
 import PlanOfAction from "./PlanOfAction";
 import EqProgressReport from "./EqProgressReport";
+import ClosureReport from "./ClosureReport";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
@@ -1661,6 +1662,17 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                     />
+                ) : activeSidebar?.table === "cid_eq_case_closure_report" ? (
+
+                    <ClosureReport
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+
                     
                  ) : (
                     
