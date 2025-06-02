@@ -5611,6 +5611,52 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 //   }
 
             }
+
+            if (table_name === "cid_enquiry") {
+                const main_table = table_name;
+                const record_id = insertedId;
+                const module = insertedType;
+                const alert_type = "IO_ALLOCATION";
+                const alert_level = "low";
+                const alert_message = "Please assign an IO to this case";
+                
+                const createdAt = new Date(insertedData.created_at);
+                const due_date = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000); // Add 24 hours
+                
+                const triggered_on = insertedData.created_at;
+                const status = "Pending";
+                const created_by = userId;
+                const send_to_type = "designation";
+                const division_id = insertedData.field_division || null;
+                const designation_id = user_designation_id || null;
+                const assigned_io = insertedData.field_io_name || null;
+            
+
+                try {
+                    await CaseAlerts.create({
+                        module,
+                        main_table,
+                        record_id,
+                        alert_type,
+                        alert_level,
+                        alert_message,
+                        due_date,
+                        triggered_on,
+                        resolved_on: null,
+                        status,
+                        created_by,
+                        created_at: new Date(),
+                        send_to_type,
+                        division_id,
+                        designation_id,
+                        assigned_io,
+                        user_id: null,
+                        transaction: t 
+                    });
+                } catch (error) {
+                  console.error('Error inserting case alert:', error);
+                }
+            }
               
         }
 
