@@ -11684,6 +11684,9 @@ const handleOpenExportPopup = async () => {
                                     ? formTemplateData
                                         .filter(
                                             (field) => {
+                                                if (field.required === true) {
+                                                    return true;
+                                                }
                                                 if (accusedDialogTab === "fsl") {
                                                     return (
                                                         field.name === "field_status_of_accused_in_charge_sheet" ||
@@ -11705,7 +11708,7 @@ const handleOpenExportPopup = async () => {
                                         )
                                         .map(field => ({
                                             ...field,
-                                            col: accusedDialogTab === "fsl" ? 12 : 6
+                                            col: 6
                                         }))
                                     : formTemplateData
                             }
