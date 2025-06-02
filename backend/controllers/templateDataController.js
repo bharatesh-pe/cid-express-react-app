@@ -1556,8 +1556,13 @@ exports.getTemplateData = async (req, res, next) => {
           }
         }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_eq_case_plan_of_action') {
             filteredData = { ...data };
-            if (table_name === 'cid_ui_case_action_plan' || table_name === 'cid_eq_case_plan_of_action' && case_io_id && case_io_id !== "") {
-                const case_io_user_designation = await UserDesignation.findOne({
+            if (
+                (table_name === 'cid_ui_case_action_plan' ||
+                 table_name === 'cid_eq_case_plan_of_action' ||
+                 table_name === 'cid_ui_case_cdr_ipdr') &&
+                case_io_id && case_io_id !== ""
+            ) {
+              const case_io_user_designation = await UserDesignation.findOne({
                     attributes: ["designation_id"],
                     where: { user_id: case_io_id },
                 });
