@@ -250,6 +250,11 @@ router.post('/getTemplateData',
     // userAuthMiddleware,
     [gwtDataValidation],[validate_token],
     templateDataController.getTemplateData)
+router.post('/getPrimaryTemplateData',
+    // eitherAuthMiddleware,
+    // userAuthMiddleware,
+    [gwtDataValidation],[validate_token],
+    templateDataController.getPrimaryTemplateData)
 
     router.post('/getActionTemplateData',
     // eitherAuthMiddleware,
