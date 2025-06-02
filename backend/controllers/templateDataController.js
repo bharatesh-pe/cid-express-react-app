@@ -2883,8 +2883,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const offset = (page - 1) * limit;
     const whereClause = {};
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> starting UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     // // Fetch designations for the logged-in user
     // const userDesignations = await UserDesignation.findAll({
@@ -2926,9 +2924,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     if (!getDataBasesOnUsers) {
         if (allowedDivisionIds.length > 0) {
             if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
-            whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
+                whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
             } else {
-            whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
     } else {
@@ -2944,9 +2942,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     }
 
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>After get the higher users UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     if (!template_module) {
       return userSendResponse( res, 400, false, "Template module is required", null );
@@ -2975,9 +2970,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     if (!Array.isArray(fieldsArray)) {
       return userSendResponse(res, 500, false, "Fields must be an array in the table schema.", null);
     }
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After get the template fields UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const fields = {};
     const associations = [];
