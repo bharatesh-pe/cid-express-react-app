@@ -635,6 +635,8 @@ const LokayuktaView = () => {
                 setInitialFormData({});
                 if (viewTemplateResponse?.["data"]?.no_of_sections && viewTemplateResponse?.["data"]?.no_of_sections > 0) {
                     setFormStepperData(viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"]?.sections: []);
+                }else{
+                    setFormStepperData([]);
                 }
 
                 setFormOpen(true);
