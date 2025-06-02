@@ -761,7 +761,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 <Table size="small">
                     <TableBody>
                     <TableRow>
-                        <TableCell colSpan={2}>ಕರ್ನಾಟಕ ರಾಜ್ಯ ಲೋಕಾಯುಕ್ತ ಪೊಲೀಸ್</TableCell>
+                        <TableCell colSpan={2}>ಕರ್ನಾಟಕ CID</TableCell>
                         <TableCell colSpan={2}>ದೋಷಾರೋಪಣ ಪತ್ರ</TableCell>
                         <TableCell colSpan={2}>[ ಆದೇಶ ಸಂಖ್ಯೆ: 1539 ಮತ್ತು 1540 ]</TableCell>
                         <TableCell rowSpan={4} style={{ width: 150, verticalAlign: 'top' }}>
