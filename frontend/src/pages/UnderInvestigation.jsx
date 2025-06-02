@@ -4194,6 +4194,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         ),
                         }
                     : null,
+                    {
+                        name: "Charge Sheet",
+                        caseView : true,
+                        viewAction : true,
+                        chargeSheet : true
+                    }
                 ].filter(Boolean);
     
                 setHoverTableOptions(extraActions);

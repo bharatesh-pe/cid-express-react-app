@@ -304,6 +304,12 @@ const Dashboard = () => {
         setSubmenuAnchorEl(null);
     };
     
+    const [courtTab, setCourtTab] = useState(0);
+
+    const handleCourtTabChange = (event, newValue) => {
+        setCourtTab(newValue);
+    };
+
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
         setLoading(true);
@@ -752,6 +758,22 @@ const Dashboard = () => {
                 </Card>
 
             </Box>
+
+            {
+                (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                    <Tabs
+                        value={courtTab}
+                        onChange={handleCourtTabChange}
+                        textColor="primary"
+                        indicatorColor="primary"
+                        sx={{ mb: 2 }}
+                    >
+                        <Tab label="High Court" />
+                        <Tab label="Supreme Court" />
+                    </Tabs>
+                </Box>
+            }
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, py: 0.5}}>
                 <Box>
