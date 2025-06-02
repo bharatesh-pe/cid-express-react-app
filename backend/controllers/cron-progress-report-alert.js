@@ -30,15 +30,25 @@ exports.runMonthlyAlertCronPR = async () => {
         const monthEnd = today.clone().endOf("month").toDate();
 
         console.log(" Fetching template");
-        const template = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+        const ui_template = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
 
-        if (!template) {
-            console.error("Template not found.");
+        if (!ui_template) {
+            console.error("UI Template not found.");
             return;
         }
 
-        const tableName = template.table_name;
-        console.log(`Using table: ${tableName}`);
+        const eq_template = await Template.findOne({ where: { table_name: "cid_enquiry" } });
+
+        if (!eq_template) {
+            console.error("Enquiry Template not found.");
+            return;
+        }
+
+        const uiTableName = ui_template.table_name;
+        console.log(`Using table: ${uiTableName}`);
+
+        const eqTableName = ui_template.table_name;
+        console.log(`Using table: ${eqTableName}`);
 
         // Get all child cases from the merged cases table
         const mergedCases = await UiMergedCases.findAll({
@@ -52,17 +62,23 @@ exports.runMonthlyAlertCronPR = async () => {
         const childCaseIds = mergedCases.map(row => row.case_id);
 
         // Run raw SQL query to fetch cases that are not in the list of childCaseIds
-        const allCases = await sequelize.query(
-            `SELECT id FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+        const uiAllCases = await sequelize.query(
+            `SELECT id FROM ${uiTableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
             {
                 replacements: { childCaseIds },
                 type: sequelize.QueryTypes.SELECT,
             }
         );
 
-        console.log(`Found ${allCases.length} cases.`);
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const eqAllCases = await sequelize.query(`SELECT id, created_at FROM ${eqTableName} WHERE id IS NOT NULL`);
 
-        for (const caseEntry of allCases) {
+
+
+        console.log(`Found ${uiAllCases.length} UI cases.`);
+        console.log(`Found ${eqAllCases.length} EQ cases.`);
+
+        for (const caseEntry of uiAllCases) {
             const ui_case_id = caseEntry.id;
             console.log(`Processing case ID: ${ui_case_id}`);
 
@@ -183,6 +199,127 @@ exports.runMonthlyAlertCronPR = async () => {
             }
         }
 
+        for (const caseEntry of eqAllCases) {
+            const eq_case_id = caseEntry.id;
+            console.log(`Processing case ID: ${eq_case_id}`);
+
+            const recordThisMonth = await UiProgressReportMonthWise.findOne({
+                where: {
+                    eq_case_id,
+                    created_at: {
+                        [Op.between]: [monthStart, monthEnd],
+                    },
+                },
+            });
+
+            if (recordThisMonth) {
+                console.log(`Progress report exists. Marking alert as Completed.`);
+                await CaseAlerts.update(
+                    { status: "Completed" },
+                    {
+                        where: {
+                            module: "eq_case",
+                            record_id: eq_case_id,
+                            alert_type: "PROGRESS_REPORT",
+                            alert_level: "low",
+                            status: {
+                                [Op.iLike]: "%pending%" 
+                            },
+                            due_date: {
+                                [Op.between]: [
+                                    today.clone().startOf("month").toDate(),
+                                    today.clone().date(5).endOf("day").toDate(),
+                                ],
+                            },
+                        },
+                    }
+                );
+                continue;
+            }
+
+            let alertMessage = "";
+            const daysLeft = 6 - currentDate;
+
+            if (currentDate >= 1 && currentDate <= 5) {
+                alertMessage = daysLeft > 1
+                    ? `${daysLeft} days left to submit Monthly Progress Report`
+                    : `Last day to submit Monthly Progress Report`;
+            } else if (currentDate === 6) {
+                alertMessage = "Monthly Progress Report Not Submitted!";
+            }
+
+            if (currentDate <= 5) {
+                const existingAlert = await CaseAlerts.findOne({
+                    where: {
+                        module: "eq_case",
+                        record_id: eq_case_id,
+                        alert_type: "PROGRESS_REPORT",
+                        alert_level: "low",
+                        due_date: today.clone().startOf("day").toDate(),
+                    },
+                });
+
+                if (existingAlert) {
+                    console.log(`Updating alert for case ${eq_case_id}`);
+                    await existingAlert.update({ alert_message: alertMessage });
+                } else {
+                    console.log(`Creating new alert for case ${eq_case_id}`);
+                    await CaseAlerts.create({
+                        module: "eq_case",
+                        main_table: "ui_progress_report_month",
+                        record_id: eq_case_id,
+                        alert_type: "PROGRESS_REPORT",
+                        alert_level: "low",
+                        alert_message: alertMessage,
+                        due_date: today.toDate(),
+                        triggered_on: new Date(),
+                        status: "Pending",
+                        created_by: 0,
+                        created_at: new Date(),
+                    });
+                }
+            }
+
+            if (currentDate === 6) {
+                const pendingLowAlerts = await CaseAlerts.findAll({
+                    where: {
+                        module: "eq_case",
+                        record_id: eq_case_id,
+                        alert_type: "PROGRESS_REPORT",
+                        alert_level: "low",
+                        status: {
+                            [Op.iLike]: "%pending%" 
+                        },
+                        due_date: {
+                            [Op.between]: [
+                                today.clone().startOf("month").toDate(),
+                                today.clone().date(5).endOf("day").toDate(),
+                            ],
+                        },
+                    },
+                });
+
+                for (const alert of pendingLowAlerts) {
+                    console.log(`Escalating missed alert for case ${eq_case_id}`);
+                    await alert.update({ status: "Not Completed" });
+
+                    await CaseAlerts.create({
+                        module: "eq_case",
+                        main_table: "ui_progress_report_month",
+                        record_id: eq_case_id,
+                        alert_type: "PROGRESS_REPORT",
+                        alert_level: "high",
+                        alert_message: "Missed deadline: Monthly Progress Report not submitted.",
+                        due_date: today.toDate(),
+                        triggered_on: new Date(),
+                        status: "Not Completed",
+                        created_by: 0,
+                        created_at: new Date(),
+                    });
+                }
+            }
+        }
+
         console.log("Monthly Alert Cron completed for Progress Report, Successfully.");
     } catch (error) {
         console.error("Error running Monthly Alert Cron for Progress report:", error);
@@ -222,7 +359,6 @@ exports.runDailyAlertCronIO = async () => {
                         },
                     }
                 );
-                updatedCount++;
             }
         }
 
@@ -273,6 +409,7 @@ exports.runDailyAlertCronIO = async () => {
         const uiAllIds = uiAllCases.map(row => row.id);
         const eqAllIds = eqAllCases.map(row => row.id);
 
+      
         for (const uiCaseEntry of uiAllCases) {
             const ui_case_id = uiCaseEntry.id;
             const field_io = uiCaseEntry.field_io_name;
@@ -286,8 +423,10 @@ exports.runDailyAlertCronIO = async () => {
                 alertLevel = "high";
                 alertMessage = "Please assign an IO to this case, it is overdue";
             }
-            try{
-                const createUIAlert = async () => {
+            if(field_io === null || field_io === "")
+            {
+                try{
+                    
                     const existingAlert = await CaseAlerts.findOne({
                         where: {
                             module: "ui_case",
@@ -301,10 +440,10 @@ exports.runDailyAlertCronIO = async () => {
                             }
                         },
                     });
-
+    
                     if (existingAlert) {
                         console.log(`Updating existing alert for case ${ui_case_id}`);
-                        await existingAlert.update({ alert_message: alertMessage });
+                        await existingAlert.update({ alert_message: alertMessage , alert_level: alertLevel });
                     } else {
                         console.log(`Creating new alert for case ${ui_case_id}`);
                         await CaseAlerts.create({
@@ -321,10 +460,10 @@ exports.runDailyAlertCronIO = async () => {
                         });
                     }
                 }
-            }
-            catch (error) {
-                console.error(`Error processing case ID ${ui_case_id}:`, error);
-                continue;
+                catch (error) {
+                    console.error(`Error processing case ID ${ui_case_id}:`, error);
+                    continue;
+                }
             }
         }
 
@@ -341,8 +480,10 @@ exports.runDailyAlertCronIO = async () => {
                 alertLevel = "high";
                 alertMessage = "Please assign an IO to this case, it is overdue";
             }
-            try{
-                const createEQAlert = async () => {
+
+            if(field_io === null || field_io === "")
+            {
+                try{
                     const existingAlert = await CaseAlerts.findOne({
                         where: {
                             module: "ui_case",
@@ -356,10 +497,10 @@ exports.runDailyAlertCronIO = async () => {
                             }
                         },
                     });
-
+    
                     if (existingAlert) {
                         console.log(`Updating existing alert for case ${eq_case_id}`);
-                        await existingAlert.update({ alert_message: alertMessage });
+                        await existingAlert.update({ alert_message: alertMessage , alert_level: alertLevel });
                     } else {
                         console.log(`Creating new alert for case ${eq_case_id}`);
                         await CaseAlerts.create({
@@ -376,10 +517,10 @@ exports.runDailyAlertCronIO = async () => {
                         });
                     }
                 }
-            }
-            catch (error) {
-                console.error(`Error processing case ID ${eq_case_id}:`, error);
-                continue;
+                catch (error) {
+                    console.error(`Error processing case ID ${eq_case_id}:`, error);
+                    continue;
+                }
             }
         }
 
@@ -395,15 +536,26 @@ exports.runDailyAlertCronAP = async () => {
         const today = moment();
     
         console.log("Fetching CID Under Investigation template...");
-        const template = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+        const ui_template = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+
+        const eq_template = await Template.findOne({ where: { table_name: "cid_enquiry" } });
+
     
-        if (!template) {
-            console.error("Template not found.");
+        if (!ui_template) {
+            console.error("UI Template not found.");
+            return;
+        }
+
+        if (!eq_template) {
+            console.error("Enquiry Template not found.");
             return;
         }
   
-        const tableName = template.table_name;
-        console.log(`Using table: ${tableName}`);
+        const uiTableName = ui_template.table_name;
+        console.log(`Using table: ${uiTableName}`);
+
+        const eqTableName = eq_template.table_name;
+        console.log(`Using table: ${eqTableName}`);
     
         // const [allCases] = await sequelize.query(`SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL`);
 
@@ -419,30 +571,69 @@ exports.runDailyAlertCronAP = async () => {
         const childCaseIds = mergedCases.map(row => row.case_id);
 
         // Run raw SQL query to fetch cases that are not in the list of childCaseIds
-        const allCases = await sequelize.query(
-            `SELECT id, created_at FROM ${tableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+        const uiAllCases = await sequelize.query(
+            `SELECT id, created_at FROM ${uiTableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
             {
                 replacements: { childCaseIds },
                 type: sequelize.QueryTypes.SELECT,
             }
         );
 
-        const allIds = allCases.map(row => row.id);
-        console.log(`Found ${allIds.length} cases.`);
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const eqAllCases = await sequelize.query(`SELECT id, created_at FROM ${eqTableName} WHERE id IS NOT NULL`);
+
+
+        const uiAllIds = uiAllCases.map(row => row.id);
+        console.log(`Found ${uiAllIds.length} cases.`);
+
+        const eqAllIds = eqAllCases.map(row => row.id);
+        console.log(`Found ${eqAllIds.length} cases.`);
 
         // Fetch Action Plan template metadata
-        const APtableData = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
+        const UIAPtableData = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
     
-        if (!APtableData) {
-            console.error(`Table Action Plan does not exist.`);
+        if (!UIAPtableData) {
+            console.error(`Table UI Action Plan does not exist.`);
             return;
         }
+
+         // Fetch Action Plan template metadata
+         const EQAPtableData = await Template.findOne({ where: { table_name: "cid_eq_case_action_plan" } });
+    
+         if (!EQAPtableData) {
+             console.error(`Table Enquiry Action Plan does not exist.`);
+             return;
+         }
     
         // Parse schema and build model
-        const schema = typeof APtableData.fields === "string" ? JSON.parse(APtableData.fields) : APtableData.fields;
-        schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+        const uiSchema = typeof UIAPtableData.fields === "string" ? JSON.parse(UIAPtableData.fields) : UIAPtableData.fields;
+        uiSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+
+        // Parse schema and build model
+        const eqSchema = typeof EQAPtableData.fields === "string" ? JSON.parse(EQAPtableData.fields) : EQAPtableData.fields;
+        eqSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
   
-        const APmodelAttributes = {
+        const UIAPmodelAttributes = {
+            id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            },
+            created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,
+            },
+        };
+
+        const EQAPmodelAttributes = {
             id: {
             type: Sequelize.DataTypes.INTEGER,
             primaryKey: true,
@@ -462,30 +653,52 @@ exports.runDailyAlertCronAP = async () => {
             },
         };
   
-        for (const field of schema) {
+        for (const field of uiSchema) {
             const { name, data_type, not_null, default_value } = field;
             const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
     
-            APmodelAttributes[name] = {
+            UIAPmodelAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+            defaultValue: default_value || null,
+            };
+        }
+
+        for (const field of eqSchema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            UIAPmodelAttributes[name] = {
             type: sequelizeType,
             allowNull: !not_null,
             defaultValue: default_value || null,
             };
         }
   
-        const APModel = sequelize.define(APtableData.table_name, APmodelAttributes, {
+        const UIAPModel = sequelize.define(UIAPtableData.table_name, UIAPmodelAttributes, {
             freezeTableName: true,
             timestamps: true,
             createdAt: "created_at",
             updatedAt: "updated_at",
         });
     
-        await APModel.sync();
+        await UIAPModel.sync();
+
+        const EQAPModel = sequelize.define(EQAPtableData.table_name, EQAPmodelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
     
-        const approval = [];
-        const over_due = [];
+        await EQAPModel.sync();
     
-        for (const caseEntry of allCases) {
+        const uiapproval = [];
+        const uiover_due = [];
+        const eqapproval = [];
+        const eqover_due = [];
+    
+        for (const caseEntry of uiAllCases) {
             const ui_case_id = caseEntry.id;
             const createdAt = moment(caseEntry.created_at);
             const isOlderThan7Days = today.diff(createdAt, "days") > 7;
@@ -498,16 +711,44 @@ exports.runDailyAlertCronAP = async () => {
             if (actionPlanRecord) {
             if (String(actionPlanRecord.field_submit_status).toLowerCase() !== "submit") {
                 if (isOlderThan7Days) {
-                over_due.push(ui_case_id);
+                uiover_due.push(ui_case_id);
                 } else {
-                approval.push(ui_case_id);
+                uiapproval.push(ui_case_id);
                 }
             }
             } else {
             if (isOlderThan7Days) {
-                over_due.push(ui_case_id);
+                uiover_due.push(ui_case_id);
             } else {
-                approval.push(ui_case_id);
+                uiapproval.push(ui_case_id);
+            }
+            }
+        }
+
+        
+        for (const caseEntry of eqAllCases) {
+            const eq_case_id = caseEntry.id;
+            const createdAt = moment(caseEntry.created_at);
+            const isOlderThan7Days = today.diff(createdAt, "days") > 7;
+    
+            const actionPlanRecord = await EQAPModel.findOne({
+            where: { eq_case_id },
+            order: [["created_at", "DESC"]],
+            });
+    
+            if (actionPlanRecord) {
+            if (String(actionPlanRecord.field_submit_status).toLowerCase() !== "submit") {
+                if (isOlderThan7Days) {
+                eqover_due.push(eq_case_id);
+                } else {
+                eqapproval.push(eq_case_id);
+                }
+            }
+            } else {
+            if (isOlderThan7Days) {
+                eqover_due.push(eq_case_id);
+            } else {
+                eqapproval.push(eq_case_id);
             }
             }
         }
@@ -515,15 +756,14 @@ exports.runDailyAlertCronAP = async () => {
         // Common alert fields
         const alert_type = "ACTION_PLAN";
         const created_by = 0;
-        const module = "ui_case";
-        const main_table = "cid_ui_case_action_plan";
 
-        for (const caseId of over_due) {
+        for (const caseId of uiover_due) {
             // Delete any existing alerts for this case (low or high level)
             await CaseAlerts.destroy({
                 where: {
                 record_id: caseId,
                 alert_type,
+                module:"ui_case",
                 alert_level: { [Op.in]: ["low", "high"] },
                 status: {
                     [Op.iLike]: "%pending%" 
@@ -533,8 +773,8 @@ exports.runDailyAlertCronAP = async () => {
 
             // Insert new high priority alert
             await CaseAlerts.create({
-                module,
-                main_table,
+                module :"ui_case",
+                main_table:"cid_ui_case_action_plan",
                 record_id: caseId,
                 alert_type,
                 alert_level: "high",
@@ -546,7 +786,7 @@ exports.runDailyAlertCronAP = async () => {
             });
         }
 
-        for (const caseId of approval) {
+        for (const caseId of uiapproval) {
             // Delete any existing low-level alert for this case
             await CaseAlerts.destroy({
                 where: {
@@ -561,8 +801,65 @@ exports.runDailyAlertCronAP = async () => {
 
             // Insert new low priority alert
             await CaseAlerts.create({
-                module,
-                main_table,
+                module :"ui_case",
+                main_table:"cid_ui_case_action_plan",
+                record_id: caseId,
+                alert_type,
+                alert_level: "low",
+                alert_message: `Case ID ${caseId} is pending action plan submission.`,
+                triggered_on: new Date(),
+                status: "Pending",
+                created_by,
+                created_at: new Date(),
+            });
+        }
+
+        for (const caseId of eqover_due) {
+            // Delete any existing alerts for this case (low or high level)
+            await CaseAlerts.destroy({
+                where: {
+                record_id: caseId,
+                alert_type,
+                module:"eq_case",
+                alert_level: { [Op.in]: ["low", "high"] },
+                status: {
+                    [Op.iLike]: "%pending%" 
+                }
+                },
+            });
+
+            // Insert new high priority alert
+            await CaseAlerts.create({
+                module :"eq_case",
+                main_table:"cid_eq_case_action_plan",
+                record_id: caseId,
+                alert_type,
+                alert_level: "high",
+                alert_message: `Case ID ${caseId} is overdue for action plan submission.`,
+                triggered_on: new Date(),
+                status: "Pending", 
+                created_by,
+                created_at: new Date(),
+            });
+        }
+
+        for (const caseId of eqapproval) {
+            // Delete any existing low-level alert for this case
+            await CaseAlerts.destroy({
+                where: {
+                    record_id: caseId,
+                    alert_type,
+                    alert_level: "low",
+                    status: {
+                        [Op.iLike]: "%pending%" 
+                    }
+                },
+            });
+
+            // Insert new low priority alert
+            await CaseAlerts.create({
+                module :"eq_case",
+                main_table:"cid_eq_case_action_plan",
                 record_id: caseId,
                 alert_type,
                 alert_level: "low",
@@ -575,8 +872,6 @@ exports.runDailyAlertCronAP = async () => {
         }
   
         console.log("Daily Alert Cron completed for Action Plan.");
-        // console.log("Overdue Cases:", over_due);
-        // console.log("Approval Pending Cases:", approval);
     } catch (error) {
       console.error("Error running Daily Alert Cron for Action Plan:", error);
     } 

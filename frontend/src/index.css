@@ -1593,3 +1593,7 @@ div::first-letter {
     .red-row {
         background-color: #ffe0e0 !important;
     }
+
+    .zIndex999{
+        z-index: 999 !important;
+    }
