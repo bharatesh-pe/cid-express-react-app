@@ -11667,11 +11667,50 @@ const handleOpenExportPopup = async () => {
                             linkToLeader={linkLeader}
                             linkToOrganization={linkOrganization}
                             table_name={"cid_ui_case_accused"}
-                            template_name={"Accused"}
+                            template_name={
+                              accusedDialogTab === "accused"
+                                  ? "Accused"
+                                  : accusedDialogTab === "progress_report"
+                                  ? "Progress Report"
+                                  : accusedDialogTab === "fsl"
+                                  ? "Forensic Science Laboratory"
+                                  : ""
+                            }
                             readOnly={viewReadonly}
                             editData={editTemplateData}
                             onUpdate={onCaseUpdateTemplateData}
-                            formConfig={formTemplateData}
+                            formConfig={
+                                Array.isArray(formTemplateData) && formTemplateData.length > 0
+                                    ? formTemplateData
+                                        .filter(
+                                            (field) => {
+                                                if (accusedDialogTab === "fsl") {
+                                                    return (
+                                                        field.name === "field_status_of_accused_in_charge_sheet" ||
+                                                        field.name === "field_government_servent" ||
+                                                        field.name === "field_pso_&_19_pc_act_order" ||
+                                                        field.name === 'field_used_as_evidence' ||
+                                                        field.name === "field_reason"
+                                                    );
+                                                }
+                                                return (
+                                                    field.name === "field_status_of_accused_in_charge_sheet" ||
+                                                    field.name === "field_government_servent" ||
+                                                    field.name === "field_pso_&_19_pc_act_order" ||
+                                                    field.name === 'field_used_as_evidence' ||
+                                                    field.name === "field_reason" ||
+                                                    field.name === "field_status"
+                                                );
+                                            }
+                                        )
+                                        .map(field => ({
+                                            ...field,
+                                            col: accusedDialogTab === "fsl" ? 12 : 6
+                                        }))
+                                    : formTemplateData
+                            }
+
+
                             stepperData={stepperData}
                             initialData={initialData}
                             onSubmit={onSaveTemplateData}
