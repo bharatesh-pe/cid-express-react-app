@@ -227,14 +227,23 @@ exports.runDailyAlertCronIO = async () => {
         }
 
         const ui_template = await Template.findOne({ where: { table_name: "cid_under_investigation" } });
+        const eq_template = await Template.findOne({ where: { table_name: "cid_enquiry" } });
     
         if (!ui_template) {
             console.error("UI Template not found.");
             return;
         }
+
+        if (!eq_template) {
+            console.error("Enquiry Template not found.");
+            return;
+        }
   
         const uiTableName = ui_template.table_name;
         console.log(`Using table: ${uiTableName}`);
+
+        const eqTableName = eq_template.table_name;
+        console.log(`Using table: ${eqTableName}`);
 
          // Get all child cases from the merged cases table
          const mergedCases = await UiMergedCases.findAll({
@@ -249,16 +258,22 @@ exports.runDailyAlertCronIO = async () => {
 
         // Run raw SQL query to fetch cases that are not in the list of childCaseIds
         const uiAllCases = await sequelize.query(
-            `SELECT id, created_at FROM ${uiTableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
+            `SELECT id, created_at, field_io_name FROM ${uiTableName} WHERE id IS NOT NULL AND id NOT IN (:childCaseIds)`,
             {
                 replacements: { childCaseIds },
                 type: sequelize.QueryTypes.SELECT,
             }
         );
 
-        const uiAllIds = uiAllCases.map(row => row.id);
 
-        for (const uiCaseEntry of uiAllIds) {
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const eqAllCases = await sequelize.query( `SELECT id, created_at , field_io_name FROM ${eqTableName} WHERE id IS NOT NULL`);
+
+
+        const uiAllIds = uiAllCases.map(row => row.id);
+        const eqAllIds = eqAllCases.map(row => row.id);
+
+        for (const uiCaseEntry of uiAllCases) {
             const ui_case_id = uiCaseEntry.id;
             const field_io = uiCaseEntry.field_io_name;
             const createdAt = moment(uiCaseEntry.created_at);
@@ -272,7 +287,7 @@ exports.runDailyAlertCronIO = async () => {
                 alertMessage = "Please assign an IO to this case, it is overdue";
             }
             try{
-                const createAlert = async () => {
+                const createUIAlert = async () => {
                     const existingAlert = await CaseAlerts.findOne({
                         where: {
                             module: "ui_case",
@@ -309,6 +324,61 @@ exports.runDailyAlertCronIO = async () => {
             }
             catch (error) {
                 console.error(`Error processing case ID ${ui_case_id}:`, error);
+                continue;
+            }
+        }
+
+        for (const eqCaseEntry of eqAllCases) {
+            const eq_case_id = eqCaseEntry.id;
+            const field_io = eqCaseEntry.field_io_name;
+            const createdAt = moment(eqCaseEntry.created_at);
+            const isOlderThan1Days = today.diff(createdAt, "days") > 1;
+            const isEqualToToday = today.isSame(createdAt, "day");
+            var alertLevel = "low";
+            var alertMessage = "Please assign an IO to this case";
+            if(isOlderThan1Days)
+            {
+                alertLevel = "high";
+                alertMessage = "Please assign an IO to this case, it is overdue";
+            }
+            try{
+                const createEQAlert = async () => {
+                    const existingAlert = await CaseAlerts.findOne({
+                        where: {
+                            module: "ui_case",
+                            main_table: uiTableName,
+                            record_id: eq_case_id,
+                            alert_type: "IO_ALLOCATION",
+                            alert_level: alertLevel,
+                            alert_message: alertMessage,
+                            status: {
+                                [Op.iLike]: "%pending%" 
+                            }
+                        },
+                    });
+
+                    if (existingAlert) {
+                        console.log(`Updating existing alert for case ${eq_case_id}`);
+                        await existingAlert.update({ alert_message: alertMessage });
+                    } else {
+                        console.log(`Creating new alert for case ${eq_case_id}`);
+                        await CaseAlerts.create({
+                            module: "ui_case",
+                            main_table: uiTableName,
+                            record_id: eq_case_id,
+                            alert_type: "IO_ALLOCATION",
+                            alert_level: alertLevel,
+                            alert_message: alertMessage,
+                            triggered_on: new Date(),
+                            status: "Pending",
+                            created_by: 0,
+                            created_at: new Date(),
+                        });
+                    }
+                }
+            }
+            catch (error) {
+                console.error(`Error processing case ID ${eq_case_id}:`, error);
                 continue;
             }
         }
