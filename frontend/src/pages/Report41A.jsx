@@ -590,6 +590,8 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
         formData.append("table_name", data.options.table);
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(updateFields));
+        var transitionId = `approve_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transitionId);
       
         setLoading(true);
       
