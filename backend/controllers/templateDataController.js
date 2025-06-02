@@ -1114,14 +1114,14 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form'
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_cdr_ipdr'
       ? schema
       : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
     
     if(table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report")
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
 
-    if(table_name === "cid_ui_case_action_plan" || table_name === "cid_eq_case_plan_of_action")
+    if(table_name === "cid_ui_case_action_plan" || table_name === "cid_eq_case_plan_of_action" || table_name === 'cid_ui_case_cdr_ipdr')
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
     
     if(table_name === "cid_ui_case_property_form")
@@ -1554,10 +1554,15 @@ exports.getTemplateData = async (req, res, next) => {
             });
             filteredData.field_division = division ? division.division_name : "Unknown";
           }
-        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_eq_case_plan_of_action') {
+        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_eq_case_plan_of_action' || table_name === 'cid_ui_case_cdr_ipdr') {
             filteredData = { ...data };
-            if (table_name === 'cid_ui_case_action_plan' || table_name === 'cid_eq_case_plan_of_action' && case_io_id && case_io_id !== "") {
-                const case_io_user_designation = await UserDesignation.findOne({
+            if (
+                (table_name === 'cid_ui_case_action_plan' ||
+                 table_name === 'cid_eq_case_plan_of_action' ||
+                 table_name === 'cid_ui_case_cdr_ipdr') &&
+                case_io_id && case_io_id !== ""
+            ) {
+              const case_io_user_designation = await UserDesignation.findOne({
                     attributes: ["designation_id"],
                     where: { user_id: case_io_id },
                 });
