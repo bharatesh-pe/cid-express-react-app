@@ -200,6 +200,8 @@ const CaseActions = () => {
                 return 'Enquiries';
             case 'ci_case':
                 return 'Crime Intelligence';
+            case 'repos_case':
+                return 'Orders & Repository';   
             case 'master':
                 return 'Masters';
             case 'circular':
@@ -233,6 +235,7 @@ const CaseActions = () => {
             { name: 'Other Courts', code: 'pt_other_case' },
             { name: 'Enquiries', code: 'eq_case' },
             { name: 'Crime Intelligence', code: 'ci_case' },
+            { name: 'Orders & Repository', code: 'repos_case' },
         ]
     };
 
@@ -879,7 +882,13 @@ const CaseActions = () => {
                 name : 'Crime Intelligence',
                 code : 'ci_case'
             },
-        ]
+        ],
+        "repos_case" : [
+            {
+                name : 'Orders & Repository',
+                code : 'repos_case'
+            },
+        ],
     }
     const icons = [
         {

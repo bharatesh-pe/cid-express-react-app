@@ -216,16 +216,17 @@ const Layout = ({ children }) => {
         { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
         { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
-        { 
-            label: "Orders & Circulars", 
-            route: "/repository/judgements", 
-            key: "order_circulars",
-            options : [
-                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
-                {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
-                {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
-            ]
-        },
+        { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" },
+        // { 
+        //     label: "Orders & Circulars", 
+        //     route: "/repository/judgements", 
+        //     key: "order_circulars",
+        //     options : [
+        //         {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
+        //         {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
+        //         {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
+        //     ]
+        // },
     ];
 
     const selectedTab = useRef(tabLabels[0]);
