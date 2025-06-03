@@ -13,7 +13,11 @@ module.exports = {
       },
       ui_case_id: {
         type: Sequelize.INTEGER,
-        allowNull: false,
+        allowNull: true,
+      },
+      eq_case_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
       },
       month_of_the_file:{
         type: Sequelize.STRING,

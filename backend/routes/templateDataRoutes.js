@@ -250,6 +250,11 @@ router.post('/getTemplateData',
     // userAuthMiddleware,
     [gwtDataValidation],[validate_token],
     templateDataController.getTemplateData)
+router.post('/getPrimaryTemplateData',
+    // eitherAuthMiddleware,
+    // userAuthMiddleware,
+    [gwtDataValidation],[validate_token],
+    templateDataController.getPrimaryTemplateData)
 
     router.post('/getActionTemplateData',
     // eitherAuthMiddleware,
@@ -385,7 +390,9 @@ router.post('/getAccusedWitness',
 router.post('/checkAccusedDataStatus',
         // userAuthMiddleware,
         templateDataController.checkAccusedDataStatus)
-
+router.post('/checkCaseStatusCombined',
+        // userAuthMiddleware,
+        templateDataController.checkCaseStatusCombined)
 router.post('/insertMergeData',[validate_token],
     templateDataController.insertMergeData)
 

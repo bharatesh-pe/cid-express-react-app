@@ -366,6 +366,7 @@ export default function Navbar({ unreadNotificationCount }) {
                 aria-describedby="alert-dialog-description"
                 maxWidth="sm"
                 fullWidth
+                className="zIndex999"
             >
                 {/* <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between' }} >
 

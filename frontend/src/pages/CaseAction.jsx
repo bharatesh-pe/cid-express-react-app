@@ -264,7 +264,7 @@ const CaseActions = () => {
 
         try {
 
-            const getOverallActionData = await api.get("/action/get_overall_actions", getTemplatePayload);
+            const getOverallActionData = await api.post("/action/get_overall_actions", getTemplatePayload);
             
             setLoading(false);
 
@@ -599,7 +599,7 @@ const CaseActions = () => {
 
         try {
 
-            const getOtherTemplateOnly = await api.get("/action/get_other_templates");
+            const getOtherTemplateOnly = await api.post("/action/get_other_templates");
 
             setLoading(false);
 
@@ -741,6 +741,7 @@ const CaseActions = () => {
             is_pdf: addActionFormData['is_pdf'] || false,
             permissions: addActionFormData['permissions'] ? JSON.stringify(addActionFormData['permissions']) : undefined,
             tab: addActionFormData['tab'] ? JSON.stringify(addActionFormData['tab']) : undefined,
+            transaction_id:  `insert_action_${Date.now()}_${Math.floor( Math.random() * 1000 )}`, 
         };        
         console.log(payload, "Payload being sent to backend");
 

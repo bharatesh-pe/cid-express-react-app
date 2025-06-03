@@ -304,6 +304,12 @@ const Dashboard = () => {
         setSubmenuAnchorEl(null);
     };
     
+    const [courtTab, setCourtTab] = useState(0);
+
+    const handleCourtTabChange = (event, newValue) => {
+        setCourtTab(newValue);
+    };
+
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
         setLoading(true);
@@ -721,13 +727,28 @@ const Dashboard = () => {
                 </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',px: 10, py: 1}}>
+            <Typography
+                sx={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#0B5ED7',
+                    mt: 1,
+                    textAlign: 'center',
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                }}
+                className="Roboto"
+            >
+                {selectedTab?.current?.label || ""}
+            </Typography>
 
-                  <Card
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',px: 10, py: 0.5}}>
+
+                <Card
                     key="view-all"
                     sx={{
                     width: 220,
-                    height: 70,
+                    height: (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") ? 50 : 70,
                     borderRadius: 4,
                     padding: 2,
                     display: 'flex',
@@ -753,9 +774,25 @@ const Dashboard = () => {
 
             </Box>
 
+            {
+                (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                    <Tabs
+                        value={courtTab}
+                        onChange={handleCourtTabChange}
+                        textColor="primary"
+                        indicatorColor="primary"
+                        sx={{ mb: 1 }}
+                    >
+                        <Tab label="Trial Court" />
+                        <Tab label="Sessions Court" />
+                    </Tabs>
+                </Box>
+            }
+
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, py: 0.5}}>
                 <Box>
-                    <Typography sx={{ fontWeight: 600, fontSize: 22, color: '#1D2939'}}>
+                    <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939'}}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
                     </Typography>
                 </Box>
@@ -841,7 +878,7 @@ const Dashboard = () => {
                     key={key}
                     sx={{
                         width: 220,
-                        height: 110,
+                        height: (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") ? 80 : 110,
                         borderRadius: 4,
                         p: 2,
                         display: 'flex',
@@ -948,23 +985,30 @@ const Dashboard = () => {
 
             {
                 (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
-                 <Box
-                    sx={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        justifyContent: 'center',
-                        mt: 2,
-                    }}
-                    >
-                    {days.map((day, index) => (
-                        <SkewedCard
-                            key={day}
-                            label={day}
-                            bgGradient={`linear-gradient(135deg, #43cea2, #185a9d)`}
-                            isFirst={index === 0}
-                            number={index + 1}
-                        />
-                    ))}
+                <Box>
+                    <Box>
+                        <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939', textAlign: 'center'}}>
+                            Hearing Date Alerts
+                        </Typography>
+                    </Box>                    
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            justifyContent: 'center',
+                            mt: 2,
+                        }}
+                        >
+                        {days.map((day, index) => (
+                            <SkewedCard
+                                key={day}
+                                label={day}
+                                bgGradient={`linear-gradient(135deg, #43cea2, #185a9d)`}
+                                isFirst={index === 0}
+                                number={index + 1}
+                            />
+                        ))}
+                    </Box>
                 </Box>
             }
 

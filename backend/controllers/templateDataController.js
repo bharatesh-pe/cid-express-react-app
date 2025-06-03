@@ -1114,14 +1114,14 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form'
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_cdr_ipdr'
       ? schema
       : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
     
-    if(table_name === "cid_ui_case_progress_report")
+    if(table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report")
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
 
-    if(table_name === "cid_ui_case_action_plan")
+    if(table_name === "cid_ui_case_action_plan" || table_name === "cid_eq_case_plan_of_action" || table_name === 'cid_ui_case_cdr_ipdr')
         relevantSchema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
     
     if(table_name === "cid_ui_case_property_form")
@@ -1487,7 +1487,7 @@ exports.getTemplateData = async (req, res, next) => {
         let filteredData;
 
         data.ReadStatus = data.ReadStatus ? true : false;
-        if (table_name === "cid_ui_case_progress_report" ) {
+        if (table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report") {
           filteredData = { ...data };
 
           if (data.field_assigned_to || data.field_assigned_by) {
@@ -1554,10 +1554,15 @@ exports.getTemplateData = async (req, res, next) => {
             });
             filteredData.field_division = division ? division.division_name : "Unknown";
           }
-        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form') {
+        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_eq_case_plan_of_action' || table_name === 'cid_ui_case_cdr_ipdr') {
             filteredData = { ...data };
-            if (table_name === 'cid_ui_case_action_plan' && case_io_id && case_io_id !== "") {
-                const case_io_user_designation = await UserDesignation.findOne({
+            if (
+                (table_name === 'cid_ui_case_action_plan' ||
+                 table_name === 'cid_eq_case_plan_of_action' ||
+                 table_name === 'cid_ui_case_cdr_ipdr') &&
+                case_io_id && case_io_id !== ""
+            ) {
+              const case_io_user_designation = await UserDesignation.findOne({
                     attributes: ["designation_id"],
                     where: { user_id: case_io_id },
                 });
@@ -1708,139 +1713,125 @@ exports.getTemplateData = async (req, res, next) => {
 };
 
 exports.viewTemplateData = async (req, res, next) => {
-  const { table_name, id , template_module  } = req.body;
-  const userId = req.user?.user_id || null;
-  // const userId = res.locals.user_id || null;
-  // const adminUserId = res.locals.admin_user_id || null;
-  // const actorId = userId || adminUserId;
-  // const adminUserName = await admin_user.findOne({
-  //     where: { admin_user_id: adminUserId },
-  //     attributes: ['full_name']
-  // });
+    const { table_name, id, template_module } = req.body;
+    const userId = req.user?.user_id || null;
+    const return_data = {};
+    try {
+        const tableData = await Template.findOne({ where: { table_name } });
 
-  // const userName = await user.findOne({
-  //     where: { user_id: userId },
-  //     attributes: ['user_firstname']
-  // });
-  // const actorName = adminUserName?.full_name || userName?.user_firstname;
-  // const actorName = "abc"
-  // if (!actorId) {
-  //     return userSendResponse(res, 403, false, "Unauthorized access.", null);
-  // }
-  const return_data = {};
-  try {
-    const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            const message = `Table ${table_name} does not exist.`;
+            return userSendResponse(res, 400, false, message, null);
+        }
 
-    if (!tableData) {
-      const message = `Table ${table_name} does not exist.`;
-      return userSendResponse(res, 400, false, message, null);
-    }
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
-    const schema =
-      typeof tableData.fields === "string"
-        ? JSON.parse(tableData.fields)
-        : tableData.fields;
+        const modelAttributes = {};
 
-    const modelAttributes = {};
+        for (const field of schema) {
+            const { name: columnName, data_type, not_null, default_value } = field;
 
-    for (const field of schema) {
-      const { name: columnName, data_type, not_null, default_value } = field;
+            if (!columnName || !data_type) {
+                console.warn(`Missing required attributes for field ${columnName}. Using default type STRING.`);
+                modelAttributes[columnName] = {
+                    type: Sequelize.DataTypes.STRING,
+                    allowNull: not_null ? false : true,
+                    defaultValue: default_value || null,
+                };
+                continue;
+            }
 
-      if (!columnName || !data_type) {
-        console.warn(
-          `Missing required attributes for field ${columnName}. Using default type STRING.`
-        );
-        modelAttributes[columnName] = {
-          type: Sequelize.DataTypes.STRING,
-          allowNull: not_null ? false : true,
-          defaultValue: default_value || null,
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[columnName] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+        }
+
+        // Always include ui_case_id and pt_case_id columns
+        modelAttributes["ui_case_id"] = {
+            type: Sequelize.DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null,
         };
-        continue;
-      }
 
-      const sequelizeType =
-        typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-      modelAttributes[columnName] = {
-        type: sequelizeType,
-        allowNull: not_null ? false : true,
-        defaultValue: default_value || null,
-      };
-    }
+        modelAttributes["pt_case_id"] = {
+            type: Sequelize.DataTypes.INTEGER,
+            allowNull: true,
+            defaultValue: null,
+        };
 
-    const Model = sequelize.define(table_name, modelAttributes, {
-      freezeTableName: true,
-      timestamps: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    });
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
 
-    await Model.sync();
+        await Model.sync();
 
-    const record = await Model.findOne({ where: { id } });
+        const record = await Model.findOne({ where: { id } });
 
-    if (!record) {
-      const message = `Record with ID ${id} not found in table ${table_name}.`;
-      return userSendResponse(res, 404, false, message, null);
-    }
+        if (!record) {
+            const message = `Record with ID ${id} not found in table ${table_name}.`;
+            return userSendResponse(res, 404, false, message, null);
+        }
 
-    const data = record.toJSON();
+        const data = record.toJSON();
 
-    delete data.deleted_at;
-    delete data.created_at;
-    delete data.updated_at;
+        // ui_case_id and pt_case_id will be present in data if available
+        // If not present, set as null for clarity
+        if (!("ui_case_id" in data)) data.ui_case_id = null;
+        if (!("pt_case_id" in data)) data.pt_case_id = null;
 
-    const attachments = await ProfileAttachment.findAll({
-      where: {
-        template_id: tableData.template_id,
-        table_row_id: id,
-      },
-      order: [["created_at", "DESC"]],
-    });
+        delete data.deleted_at;
+        delete data.created_at;
+        delete data.updated_at;
 
-    if (attachments.length) {
-      data.attachments = attachments.map((att) => att.toJSON());
-    }
-    if (userId) {
-        await TemplateUserStatus.findOrCreate({
+        const attachments = await ProfileAttachment.findAll({
             where: {
                 template_id: tableData.template_id,
                 table_row_id: id,
-                user_id: userId
             },
-            defaults: {
-                created_at: new Date(),
-                updated_at: new Date()
-            }
+            order: [["created_at", "DESC"]],
         });
+
+        if (attachments.length) {
+            data.attachments = attachments.map((att) => att.toJSON());
+        }
+        if (userId) {
+            await TemplateUserStatus.findOrCreate({
+                where: {
+                    template_id: tableData.template_id,
+                    table_row_id: id,
+                    user_id: userId,
+                },
+                defaults: {
+                    created_at: new Date(),
+                    updated_at: new Date(),
+                },
+            });
+        }
+
+        const template_module_data = {};
+        if (template_module && template_module != "") {
+            const template = await Template.findOne({ where: { template_module } });
+            if (!template) {
+                return userSendResponse(res, 400, false, "Template not found", null);
+            }
+
+            template_module_data["table_name"] = template.table_name;
+            template_module_data["template_name"] = template.template_name;
+        }
+        data.template_module_data = template_module_data;
+
+        const responseMessage = `Fetched record successfully from table ${table_name}.`;
+        return userSendResponse(res, 200, true, responseMessage, data);
+    } catch (error) {
+        console.error("Error fetching data by ID:", error);
+        return userSendResponse(res, 500, false, "Server error.", error);
     }
-
-    // await ActivityLog.create({
-    //     template_id: tableData.template_id,
-    //     table_row_id: id,
-    //     user_id: actorId,
-    //     actor_name: actorName,
-    //     activity: `Viewed `,
-    // });
-
-    const template_module_data = {};
-    if(template_module && template_module != "") {
-      // Fetch the template using template_module to get the table_name
-      const template = await Template.findOne({ where: { template_module } });
-      if (!template) {
-        return userSendResponse(res, 400, false, "Template not found", null);
-      }
-
-      template_module_data['table_name'] = template.table_name;
-      template_module_data["template_name"] = template.template_name;
-    }
-    data.template_module_data = template_module_data;
-
-    const responseMessage = `Fetched record successfully from table ${table_name}.`;
-    return userSendResponse(res, 200, true, responseMessage, data);
-  } catch (error) {
-    console.error("Error fetching data by ID:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
-  }
 };
 
 exports.viewMagazineTemplateData = async (req, res) => {
@@ -2892,8 +2883,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     const offset = (page - 1) * limit;
     const whereClause = {};
 
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> starting UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     // // Fetch designations for the logged-in user
     // const userDesignations = await UserDesignation.findAll({
@@ -2935,9 +2924,9 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     if (!getDataBasesOnUsers) {
         if (allowedDivisionIds.length > 0) {
             if (["ui_case", "pt_case", "eq_case"].includes(template_module)) {
-            whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
+                whereClause["field_division"] = { [Op.in]: normalizedDivisionIds };
             } else {
-            whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
+                whereClause["created_by_id"] = { [Op.in]: normalizedUserIds };
             }
         }
     } else {
@@ -2953,9 +2942,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     }
 
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>After get the higher users UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     if (!template_module) {
       return userSendResponse( res, 400, false, "Template module is required", null );
@@ -2984,9 +2970,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     if (!Array.isArray(fieldsArray)) {
       return userSendResponse(res, 500, false, "Fields must be an array in the table schema.", null);
     }
-
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> After get the template fields UV");
-    console.log(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>",new Date().toString());
 
     const fields = {};
     const associations = [];
@@ -4354,16 +4337,20 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
 
 
 exports.checkPdfEntry = async (req, res) => {
-  const { is_pdf, ui_case_id } = req.body;
+  const { is_pdf, ui_case_id , eq_case_id} = req.body;
 
   try {
-    if (!ui_case_id) {
+    if (!ui_case_id && !eq_case_id) {
       return userSendResponse(res, 400, false, "ui_case_id is required.", null);
     }
 
+    const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
     // Check if ui_case_id exists in the table
     const caseExists = await UiProgressReportFileStatus.findOne({
-      where: { ui_case_id },
+      where: whereClause,
     });
 
     console.log("caseExists", caseExists);
@@ -4377,9 +4364,16 @@ exports.checkPdfEntry = async (req, res) => {
       );
     }
 
+    const whereClause1 = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
     // Check if the PDF entry exists for this case ID
     const existingEntry = await UiProgressReportFileStatus.findOne({
-      where: { is_pdf, ui_case_id },
+      where: {
+        ...whereClause1,
+        is_pdf,
+      },
     });
 
     console.log("existingEntry", existingEntry);
@@ -4394,6 +4388,132 @@ exports.checkPdfEntry = async (req, res) => {
     return userSendResponse(res, 500, false, "Internal Server Error.", error);
   }
 };
+
+    exports.getPrimaryTemplateData = async (req, res, next) => {
+        const {
+            page = 1,
+            limit = 10,
+            sort_by = "created_at",
+            order = "DESC",
+            table_name,
+            from_date = null,
+            to_date = null,
+        } = req.body;
+
+        try {
+            const tableData = await Template.findOne({ where: { table_name } });
+
+            if (!tableData) {
+                const message = `Table ${table_name} does not exist.`;
+                return userSendResponse(res, 400, false, message, null);
+            }
+
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+            const filteredSchema = schema.filter(field => field.is_primary_field === true);
+
+            const modelAttributes = {
+                id: {
+                    type: Sequelize.DataTypes.INTEGER,
+                    primaryKey: true,
+                    autoIncrement: true
+                },
+                created_at: {
+                    type: Sequelize.DataTypes.DATE,
+                    allowNull: false,
+                },
+                updated_at: {
+                    type: Sequelize.DataTypes.DATE,
+                    allowNull: false,
+                }
+            };
+
+            for (const field of filteredSchema) {
+                const { name: columnName, data_type, not_null, default_value } = field;
+
+                if (!columnName || !data_type) {
+                    modelAttributes[columnName] = {
+                        type: Sequelize.DataTypes.STRING,
+                        allowNull: not_null ? false : true,
+                        defaultValue: default_value || null,
+                    };
+                    continue;
+                }
+
+                const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[columnName] = {
+                    type: sequelizeType,
+                    allowNull: not_null ? false : true,
+                    defaultValue: default_value || null,
+                };
+            }
+
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: 'created_at',
+                updatedAt: 'updated_at',
+            });
+
+            await Model.sync();
+
+            const offset = (page - 1) * limit;
+            const Op = Sequelize.Op;
+            let whereClause = {};
+
+            if (from_date || to_date) {
+                whereClause["created_at"] = {};
+                if (from_date) {
+                    whereClause["created_at"][Op.gte] = new Date(`${from_date}T00:00:00.000Z`);
+                }
+                if (to_date) {
+                    whereClause["created_at"][Op.lte] = new Date(`${to_date}T23:59:59.999Z`);
+                }
+            }
+
+            const allowedSortFields = ["id", "created_at", "updated_at", ...filteredSchema.map(f => f.name)];
+            const validSortBy = allowedSortFields.includes(sort_by) ? sort_by : "created_at";
+
+            const { rows: records, count: totalItems } = await Model.findAndCountAll({
+                where: whereClause,
+                limit,
+                offset,
+                order: [[Sequelize.col(validSortBy), order.toUpperCase()]],
+            });
+
+            const totalPages = Math.ceil(totalItems / limit);
+
+            const transformedRecords = records.map(record => {
+                const data = record.toJSON();
+                const filteredData = {
+                    id: data.id,
+                    created_at: data.created_at,
+                    updated_at: data.updated_at,
+                };
+
+                filteredSchema.forEach(field => {
+                    filteredData[field.name] = data[field.name];
+                });
+
+                return filteredData;
+            });
+
+            const meta = {
+                page,
+                limit,
+                totalItems,
+                totalPages,
+                sort_by: validSortBy,
+                order,
+            }
+
+            return userSendResponse(res, 200, true, `Fetched data successfully from table ${table_name}.`, transformedRecords, null, meta);
+
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            return userSendResponse(res, 500, false, "Server error.", null, error, null);
+        }
+    };
 
 // Cache for dynamically generated models
 const modelCache = {};
@@ -4737,9 +4857,9 @@ exports.uploadFile = async (req, res) => {
     }
 
     try {
-      const { ui_case_id, created_by } = req.body;
+      const { ui_case_id, eq_case_id, created_by } = req.body;
 
-      if (!ui_case_id || !created_by) {
+      if (!ui_case_id && !eq_case_id || !created_by) {
         return res.status(400).json({
           success: false,
           message: "Missing required fields.",
@@ -4753,8 +4873,12 @@ exports.uploadFile = async (req, res) => {
         });
       }
 
+     const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
       const existing = await UiProgressReportFileStatus.findOne({
-        where: { ui_case_id },
+        where: whereClause,
       });
 
       if (existing) {
@@ -4771,6 +4895,7 @@ exports.uploadFile = async (req, res) => {
 
       await UiProgressReportFileStatus.create({
         ui_case_id,
+        eq_case_id,
         is_pdf: true,
         file_name,
         file_path,
@@ -4796,16 +4921,20 @@ exports.uploadFile = async (req, res) => {
 
 exports.getUploadedFiles = async (req, res) => {
   try {
-    const { ui_case_id } = req.body;
+    const { ui_case_id, eq_case_id } = req.body;
 
-    if (!ui_case_id) {
+    if (!ui_case_id && !eq_case_id) {
       return res
         .status(400)
         .json({ success: false, message: "Missing required ui_case_id." });
     }
 
+    const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
     const data = await UiProgressReportFileStatus.findAll({
-      where: { ui_case_id },
+      where: whereClause,
       attributes: ["id", "file_name", "file_path", "created_by", "created_at"],
     });
 
@@ -5136,9 +5265,9 @@ async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regula
 exports.appendToLastLineOfPDF = async (req, res) => {
   try {
     
-    const { ui_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields, submission_date } = req.body;
+    const { ui_case_id, eq_case_id, created_by, appendText, transaction_id, selected_row_id, aoFields, submission_date } = req.body;
 
-    if (!ui_case_id || !appendText || !selected_row_id || !aoFields) {
+    if (!ui_case_id && !eq_case_id || !appendText || !selected_row_id || !aoFields) {
       console.error("Missing required fields.");
       return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
@@ -5146,11 +5275,18 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
     fs.mkdirSync(dirPath, { recursive: true });
 
+    
+    const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
     const latestFile = await UiProgressReportFileStatus.findOne({
-      where: { ui_case_id, is_pdf: true },
+      where: {
+        ...whereClause,
+        is_pdf: true,
+      },
       order: [['created_at', 'DESC']],
     });
-
     if (!latestFile) {
       console.error("No PDF file found.");
       return res.status(404).json({ success: false, message: 'No PDF file found.' });
@@ -5174,8 +5310,16 @@ exports.appendToLastLineOfPDF = async (req, res) => {
 
     fs.mkdirSync(path.dirname(monthwisePath), { recursive: true });
 
+    const existingMonthwiseWhere = {};
+    if (typeof ui_case_id !== 'undefined' && ui_case_id !== null) {
+      existingMonthwiseWhere.ui_case_id = ui_case_id;
+    } else if (typeof eq_case_id !== 'undefined' && eq_case_id !== null) {
+      existingMonthwiseWhere.ui_case_id = eq_case_id;
+    }
+    existingMonthwiseWhere.monthwise_file_name = monthwiseFileName;
+
     const existingMonthwise = await UiProgressReportMonthWise.findOne({
-      where: { ui_case_id, monthwise_file_name: monthwiseFileName }
+      where: existingMonthwiseWhere
     });
 
     const isNewMonthFile = !existingMonthwise;
@@ -5245,6 +5389,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     if (isNewMonthFile) {
       await UiProgressReportMonthWise.create({
         ui_case_id,
+        eq_case_id,
         created_by,
         month_of_the_file: monthOfTheFile,
         monthwise_file_name: monthwiseFileName,
@@ -5253,7 +5398,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
       });
     }
 
-const tableName = "cid_ui_case_progress_report";
+    const tableName = "cid_ui_case_progress_report";
     const Model = sequelize.define(
       tableName,
       {
@@ -5270,6 +5415,24 @@ const tableName = "cid_ui_case_progress_report";
     );
 
     await Model.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
+    const tableName1 ="cid_eq_case_progress_report";
+    const Model1 = sequelize.define(
+      tableName1,
+      {
+        id: { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+        field_pr_status: { type: Sequelize.DataTypes.STRING, allowNull: true },
+        field_ui_case_id: { type: Sequelize.DataTypes.INTEGER, allowNull: false },
+      },
+      {
+        freezeTableName: true,
+        timestamps: true,
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+      }
+    );
+
+    await Model1.update({ field_pr_status: "Yes" }, { where: { id: selected_row_id } });
+
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
@@ -5285,18 +5448,23 @@ const tableName = "cid_ui_case_progress_report";
 exports.getMonthWiseByCaseId = async (req, res) => {
   try {
     const ui_case_id = req.query.ui_case_id || req.body.ui_case_id;
+    const eq_case_id = req.query.eq_case_id || req.body.eq_case_id;
     const page = parseInt(req.query.page || req.body.page, 10) || 1;
     const limit = parseInt(req.query.limit || req.body.limit, 10) || 10;
     const offset = (page - 1) * limit;
 
-    if (!ui_case_id) {
-      return res.status(400).json({ success: false, message: 'ui_case_id is required.' });
+    if (!ui_case_id && !eq_case_id) {
+      return res.status(400).json({ success: false, message: 'ui_case_id or eq_case_id is required.' });
     }
 
-    const totalRecords = await UiProgressReportMonthWise.count({ where: { ui_case_id } });
+    const whereClause = {};
+    if (ui_case_id) whereClause.ui_case_id = ui_case_id;
+    if (eq_case_id) whereClause.eq_case_id = eq_case_id;
+
+    const totalRecords = await UiProgressReportMonthWise.count({ where: whereClause });
 
     const records = await UiProgressReportMonthWise.findAll({
-      where: { ui_case_id },
+      where: whereClause,
       order: [['submission_date', 'DESC']],
       limit,
       offset,
@@ -5551,6 +5719,52 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 //     console.error('Error inserting case alert:', error);
                 //   }
 
+            }
+
+            if (table_name === "cid_enquiry") {
+                const main_table = table_name;
+                const record_id = insertedId;
+                const module = insertedType;
+                const alert_type = "IO_ALLOCATION";
+                const alert_level = "low";
+                const alert_message = "Please assign an IO to this case";
+                
+                const createdAt = new Date(insertedData.created_at);
+                const due_date = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000); // Add 24 hours
+                
+                const triggered_on = insertedData.created_at;
+                const status = "Pending";
+                const created_by = userId;
+                const send_to_type = "designation";
+                const division_id = insertedData.field_division || null;
+                const designation_id = user_designation_id || null;
+                const assigned_io = insertedData.field_io_name || null;
+            
+
+                try {
+                    await CaseAlerts.create({
+                        module,
+                        main_table,
+                        record_id,
+                        alert_type,
+                        alert_level,
+                        alert_message,
+                        due_date,
+                        triggered_on,
+                        resolved_on: null,
+                        status,
+                        created_by,
+                        created_at: new Date(),
+                        send_to_type,
+                        division_id,
+                        designation_id,
+                        assigned_io,
+                        user_id: null,
+                        transaction: t 
+                    });
+                } catch (error) {
+                  console.error('Error inserting case alert:', error);
+                }
             }
               
         }
@@ -8888,11 +9102,11 @@ exports.saveActionPlan = async (req, res) => {
 
 
 exports.submitActionPlanPR = async (req, res) => {
-	const { transaction_id, ui_case_id , isSupervisior , user_divisio_id , user_designation_id , immediate_supervisior_id} = req.body;
+	const { transaction_id, ui_case_id ,eq_case_id, isSupervisior , user_divisio_id , user_designation_id , immediate_supervisior_id} = req.body;
 	const { user_id: userId } = req.user;
 
-	if (!transaction_id || !ui_case_id) {
-		return userSendResponse(res, 400, false, "transaction_id and ui_case_id are required.", null);
+	if (!transaction_id || (!ui_case_id && !eq_case_id)) {
+		return userSendResponse(res, 400, false, "transaction_id and ui_case_id/eq_case_id are required.", null);
 	}
 
 	let t = await dbConfig.sequelize.transaction();
@@ -8912,17 +9126,21 @@ exports.submitActionPlanPR = async (req, res) => {
 		});
 		const userName = userData?.kgidDetails?.name || null;
 
+    const isUICase = !!ui_case_id;
+		const actionPlanTable = isUICase ? "cid_ui_case_action_plan" : "cid_eq_case_plan_of_action";
+		const actionPlanId = ui_case_id || eq_case_id;
+
 		// Validate action plan template
-		const apTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_action_plan" } });
+		const apTemplate = await Template.findOne({ where: { table_name: actionPlanTable } });
 		if (!apTemplate) {
 			return userSendResponse(res, 400, false, "Action Plan template not found.", null);
 		}
 
 		// Fetch Action Plan records
 		const actionPlanData = await sequelize.query(
-			`SELECT * FROM cid_ui_case_action_plan WHERE ui_case_id = :ui_case_id`,
+			`SELECT * FROM  ${actionPlanTable}  WHERE ui_case_id = :ui_case_id`,
 			{
-				replacements: { ui_case_id },
+				replacements: { ui_case_id: actionPlanId },
 				type: Sequelize.QueryTypes.SELECT,
 				transaction: t,
 			}
@@ -8935,17 +9153,17 @@ exports.submitActionPlanPR = async (req, res) => {
         {
             // Update field_status in Action Plan
             await sequelize.query(
-                `UPDATE cid_ui_case_action_plan SET sys_status = 'IO' WHERE ui_case_id = :ui_case_id`,
+                `UPDATE ${actionPlanTable}  SET sys_status = 'IO' WHERE ui_case_id = :ui_case_id`,
                 {
-                    replacements: { ui_case_id },
+                    replacements: { ui_case_id: actionPlanId },
                     type: Sequelize.QueryTypes.UPDATE,
                     transaction: t,
                 }
             );
 
-            const main_table = "cid_ui_case_action_plan";
-            const record_id = ui_case_id || null;
-            const module = "ui_case";
+            const main_table = actionPlanTable;
+            const record_id = actionPlanId || null;
+            const module = isUICase ? "ui_case" : "eq_case";
             const alert_type = "ACTION_PLAN";
             const alert_level = "low";
             const alert_message = "Please check the action plan and approver it.";
@@ -8990,16 +9208,17 @@ exports.submitActionPlanPR = async (req, res) => {
         {
             // Update field_status in Action Plan
             await sequelize.query(
-                `UPDATE cid_ui_case_action_plan SET field_submit_status = 'submit' WHERE ui_case_id = :ui_case_id`,
+                `UPDATE ${actionPlanTable} SET field_submit_status = 'submit' WHERE ui_case_id = :ui_case_id`,
                 {
-                    replacements: { ui_case_id },
+                    replacements: { ui_case_id: actionPlanId },
                     type: Sequelize.QueryTypes.UPDATE,
                     transaction: t,
                 }
             );
     
             // Load Progress Report template
-            const prTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_progress_report" } });
+            const prTableName = isUICase ? "cid_ui_case_progress_report" : "cid_eq_case_progress_report";
+            const prTemplate = await Template.findOne({ where: { table_name: prTableName } });
             if (!prTemplate) {
                 await t.rollback();
                 return userSendResponse(res, 400, false, "Progress Report template not found.", null);
@@ -9041,7 +9260,7 @@ exports.submitActionPlanPR = async (req, res) => {
             const sampleData = actionPlanData[0];
             const modelAttributes = buildModelAttributes(progressSchema, sampleData);
     
-            const ProgressReportModel = sequelize.define("cid_ui_case_progress_report", modelAttributes, {
+            const ProgressReportModel = sequelize.define(prTableName, modelAttributes, {
                 freezeTableName: true,
                 timestamps: true,
                 createdAt: "created_at",
@@ -9086,7 +9305,7 @@ exports.submitActionPlanPR = async (req, res) => {
                     {
                         where: {
                             module: "ui_case",
-                            record_id: ui_case_id,
+                            record_id: actionPlanId,
                             alert_type: "ACTION_PLAN",
                             status: {
                                     [Op.iLike]: "%pending%" 
@@ -9367,3 +9586,236 @@ exports.checkFinalSheet = async (req, res) => {
   }
 };
 
+exports.checkCaseStatusCombined = async (req, res) => {
+    try {
+        const { table_name, ui_case_id, pt_case_id } = req.body;
+
+        if (!table_name) {
+            return userSendResponse(res, 400, false, "Missing required table name.");
+        }
+
+        const tableData = await Template.findOne({ where: { table_name } });
+
+        if (!tableData) {
+            const message = `Table ${table_name} does not exist.`;
+            return userSendResponse(res, 400, false, message, null);
+        }
+
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+        const fields = {};
+        const relevantSchema = schema;
+
+        const modelAttributes = {
+            id: {
+                type: Sequelize.DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            created_at: {
+                type: Sequelize.DataTypes.DATE,
+                allowNull: false,
+            },
+            updated_at: {
+                type: Sequelize.DataTypes.DATE,
+                allowNull: false,
+            },
+            created_by: {
+                type: Sequelize.DataTypes.STRING,
+                allowNull: true,
+            } 
+        };
+
+        for (const field of relevantSchema) {
+            const {
+                name: columnName,
+                data_type,
+                not_null,
+                default_value,
+            } = field;
+
+            if (!columnName || !data_type) {
+                modelAttributes[columnName] = {
+                    type: Sequelize.DataTypes.STRING,
+                    allowNull: not_null ? false : true,
+                    defaultValue: default_value || null,
+                };
+                continue;
+            }
+
+            const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+            modelAttributes[columnName] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+
+            fields[columnName] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await Model.sync();
+
+        let whereClause = {};
+        if (ui_case_id && ui_case_id != "" && pt_case_id && pt_case_id != "") {
+            whereClause = {
+                [Op.or]: [{ ui_case_id }, { pt_case_id }],
+            };
+        } else if (ui_case_id && ui_case_id != "") {
+            whereClause = { ui_case_id };
+        } else if (pt_case_id && pt_case_id != "") {
+            whereClause = { pt_case_id };
+        }
+
+        let attributes = ["id", "field_government_servent", "field_pso_&_19_pc_act_order", "field_status_of_accused_in_charge_sheet"];
+
+        const AccusedData = await Model.findAll({
+            where: whereClause,
+            attributes: attributes,
+        });
+
+        let data = {
+            table_name,
+            ui_case_id,
+            pt_case_id,
+            pending_case: false,
+            invalid_accused: false,
+            accusedEmpty: false
+        };
+
+        if (AccusedData.length > 0) {
+            for (const accused of AccusedData) {
+                var gov_served = accused?.["field_government_servent"];
+                var accused_in_charge_sheet = accused?.["field_status_of_accused_in_charge_sheet"];
+                var pc_act_order = accused?.["field_pso_&_19_pc_act_order"];
+
+                if ((String(gov_served).toLowerCase() === "yes" || gov_served === null) &&
+                    (String(accused_in_charge_sheet).toLowerCase() === "dropped" || String(accused_in_charge_sheet).toLowerCase() === "charge sheet") &&
+                    (!pc_act_order || pc_act_order === "")) {
+                    data.invalid_accused = true;
+                }
+
+                // if (String(accused_in_charge_sheet).toLowerCase() === "pending") {
+                //     data.pending_case = true;
+                // }
+            }
+        } else {
+            data.accusedEmpty = true;
+        }
+
+        let progressReportEmpty = false;
+        const progressRecordsEmpty = await sequelize.query(
+            `SELECT field_status FROM cid_ui_case_progress_report WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (!progressRecordsEmpty || progressRecordsEmpty.length === 0) {
+            progressReportEmpty = true;
+        }
+
+        let fslEmpty = false;
+        const fslRecordsEmpty = await sequelize.query(
+            `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (!fslRecordsEmpty || fslRecordsEmpty.length === 0) {
+            fslEmpty = true;
+        }
+
+        data.progressReportEmpty = progressReportEmpty;
+        data.fslEmpty = fslEmpty;
+
+        let accusedStatusOk = true;
+        const accusedRecords = await sequelize.query(
+            `SELECT field_status_of_accused_in_charge_sheet FROM cid_ui_case_accused WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (accusedRecords.length === 0) {
+            accusedStatusOk = false;
+        } else {
+            for (const rec of accusedRecords) {
+                const status = (rec.field_status_of_accused_in_charge_sheet || '').toLowerCase();
+                if (status === 'pending') {
+                    accusedStatusOk = false;
+                    break;
+                }
+                if (status !== 'dropped' && status !== 'charge sheet') {
+                    accusedStatusOk = false;
+                    break;
+                }
+            }
+        }
+
+        let progressReportStatusOk = false;
+        const progressRecords = await sequelize.query(
+            `SELECT field_status FROM cid_ui_case_progress_report WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (progressRecords.length > 0) {
+            progressReportStatusOk = progressRecords.some(rec => {
+                const status = (rec.field_status || '').toLowerCase();
+                return (
+                    status === 'in progress' ||
+                    status === 'completed' ||
+                    status === 'no longer needed'
+                );
+            });
+        }
+
+        let fslStatusOk = false;
+        const fslRecords = await sequelize.query(
+            `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (fslRecords.length > 0) {
+            for (const rec of fslRecords) {
+                if ((rec.field_used_as_evidence || '').toLowerCase() === 'yes') {
+                    fslStatusOk = true;
+                    break;
+                }
+                if ((rec.field_used_as_evidence || '').toLowerCase() === 'no') {
+                    if (rec.field_reason && String(rec.field_reason).trim() !== '') {
+                        fslStatusOk = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return res.status(200).json({
+            success: true,
+            ...data,
+            accusedStatusOk,
+            progressReportStatusOk,
+            fslStatusOk,
+        });
+    } catch (error) {
+        console.error("Error in checkCaseStatusCombined:", error);
+        return res.status(500).json({ success: false, message: "Internal server error." });
+    }
+};
