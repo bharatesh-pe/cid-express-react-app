@@ -383,7 +383,7 @@ const UserManagement = () => {
 
     setLoading(true);
     try {
-      const response = await api.get("/user/get_users", payload);
+      const response = await api.post("/user/get_users", payload);
       const users = response.users || response.data?.users;
 
         const { meta } = response;

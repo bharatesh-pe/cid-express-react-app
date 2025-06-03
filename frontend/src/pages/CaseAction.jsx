@@ -267,7 +267,7 @@ const CaseActions = () => {
 
         try {
 
-            const getOverallActionData = await api.get("/action/get_overall_actions", getTemplatePayload);
+            const getOverallActionData = await api.post("/action/get_overall_actions", getTemplatePayload);
             
             setLoading(false);
 
@@ -602,7 +602,7 @@ const CaseActions = () => {
 
         try {
 
-            const getOtherTemplateOnly = await api.get("/action/get_other_templates");
+            const getOtherTemplateOnly = await api.post("/action/get_other_templates");
 
             setLoading(false);
 
