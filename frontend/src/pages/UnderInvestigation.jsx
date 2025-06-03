@@ -904,6 +904,7 @@ const UnderInvestigation = () => {
     }
 
     const [showAccusedTable, setShowAccusedTable] = useState(false);
+    const [showPreliminaryAccusedTable, setShowPreliminaryAccusedTable] = useState(false);
     const [accusedTableHeaderData, setAccusedTableHeaderData] = useState([]);
     const [accusedTableRowData, setAccusedTableRowData] = useState([]);
 
@@ -927,7 +928,7 @@ const UnderInvestigation = () => {
                         showAccusedTableView(accusedTableCurrentPage);
                         break;
                     case "178_cases":
-                        showAccusedTableView(accusedTableCurrentPage);
+                        showPreliminaryAccusedTableView(accusedTableCurrentPage);
                         break;
                     case "b_Report":
                         natureOfDisposalSysStatus("b_Report");
@@ -956,6 +957,224 @@ const UnderInvestigation = () => {
         showAccusedTableView(page);
     }
 
+
+    const showPreliminaryAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused")=>{
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
+            toast.error("Please Select Approval Item !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
+            toast.error("Please Select Designation !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
+            toast.error("Please Select Approval Date !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
+
+            toast.error("Please Enter Comments !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const viewTableData = {
+            table_name: tableName,
+        };
+        
+        setLoading(true);
+    
+        try {
+            const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
+        
+            setLoading(false);
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse.data) {
+            
+                    const getTemplatePayload = {
+                        table_name: tableName,
+                        ui_case_id: selectedRowData?.id,
+                        pt_case_id: selectedRowData?.pt_case_id || null,
+                        limit : 10,
+                        page : !searchFlag ? page : 1,
+                        search: !searchFlag ? accusedTableSearchData : "",        
+                        from_date: !searchFlag ? accusedFromDate : null,
+                        to_date: !searchFlag ? accusedToDate : null,
+                        filter: !searchFlag ? accusedFilterData : {},
+                    };
+
+                    setLoading(true);
+                    try {
+
+                        const getTemplateResponse = await api.post("/templateData/getTemplateData",getTemplatePayload);
+                        setLoading(false);
+
+                        const { meta } = getTemplateResponse;
+
+                        const totalPages = meta?.meta?.totalPages;
+                        const totalItems = meta?.meta?.totalItems;
+                        
+                        if (totalPages !== null && totalPages !== undefined) {
+                            setAccusedTableTotalPage(totalPages);
+                        }
+                        
+                        if (totalItems !== null && totalItems !== undefined) {
+                            setAccusedTableTotalRecord(totalItems);
+                        }
+
+                        const renderCellFunc = (key, count) => (params) => accusedTableCellRender(key, params, params.value, count, tableName);
+
+                        var tableHeader = viewTemplateResponse?.['data']?.['fields'].map((element, index) => ({
+                            field: element?.name,
+                            headerName: element?.label,
+                            width: element?.label.length < 15 ? 100 : 200,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, element?.name)
+                            ),
+                            renderCell: renderCellFunc(element?.name, index),
+                        }));
+
+                        const formatDate = (value) => {
+                            const parsed = Date.parse(value);
+                            if (isNaN(parsed)) return value;
+                            return new Date(parsed).toLocaleDateString("en-GB");
+                        };
+
+                        const updatedRowData = getTemplateResponse.data.map((field, index) => {
+                            const updatedField = {};
+                            Object.keys(field).forEach((key) => {
+                                if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                                    updatedField[key] = formatDate(field[key]);
+                                } else {
+                                    updatedField[key] = field[key];
+                                }
+                            });
+                            return {
+                                ...updatedField,
+                                sl_no: (page - 1) * 10 + (index + 1),
+                                ...(field.id ? {} : { id: "unique_id_" + index }),
+                            };
+                        });
+
+                        if (tableHeader.length === 0 || tableHeader[0].field !== 'sl_no') {
+                            tableHeader = [
+                                {
+                                    field: 'sl_no',
+                                    headerName: 'S.No',
+                                    width: 70,
+                                    resizable: false,
+                                    cellClassName: 'justify-content-start',
+                                    renderCell: (params) => <span>{params.value}</span>
+                                },
+                                ...tableHeader
+                            ];
+                        }
+                        if (tableName === "cid_ui_case_accused") {
+                           tableHeader = tableHeader.filter(
+                                (col) =>
+                                    col.field === "sl_no" ||
+                                    col.field  === "field_name" ||
+                                    col.field  === "field_status_of_accused_in_charge_sheet" ||
+                                    col.field  === "field_government_servent" ||
+                                    col.field === "field_pso_&_19_pc_act_order"
+                            );
+                        }
+
+                        if (tableName === "cid_ui_case_accused") {
+                            if (totalPages !== null && totalPages !== undefined) setAccusedTableTotalPage(totalPages);
+                            if (totalItems !== null && totalItems !== undefined) setAccusedTableTotalRecord(totalItems);
+                            setAccusedTableHeaderData(tableHeader);
+                            setAccusedTableRowData(updatedRowData);
+                        } 
+
+                        setShowPreliminaryAccusedTable(true);
+                        setAccusedFormOpen(false);
+
+                    } catch (error) {
+                        setLoading(false);
+                        if (error && error.response && error.response["data"]) {
+                            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                            });
+                        }
+                    }
+
+            } else {
+                const errorMessage = viewTemplateResponse.message ? viewTemplateResponse.message : "Failed to get the template. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
     const showAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused")=>{
 
         if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
@@ -1209,6 +1428,88 @@ const UnderInvestigation = () => {
         }
     };
 
+
+
+   const nextPrelimnaryAccusedStage = async () => {
+    setLoading(true);
+    try {
+        const accusedPayload = {
+            table_name: "cid_ui_case_accused",
+            ui_case_id: selectedRowData.id || "",
+            pt_case_id: selectedRowData.pt_case_id || "",
+        };
+        const checkCaseStatus = await api.post("/templateData/checkAccusedDataStatus", accusedPayload);
+        setLoading(false);
+
+        if (checkCaseStatus && checkCaseStatus.data && checkCaseStatus.success) {
+            const data = checkCaseStatus.data;
+            console.log("data:", data);
+
+            if (data.accusedEmpty) {
+                Swal.fire({
+                    title: 'No Accused Found',
+                    text: 'Please add an accused before submitting nature of disposal.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                });
+                return;
+            }
+            if (data.invalid_accused) {
+                Swal.fire({
+                    title: 'Missing Attachment',
+                    text: 'Some accused are marked as Government Servant with Chargesheeted/Dropped status, but the PSO & 19 PC ACT Order is not uploaded.',
+                    icon: 'warning',
+                    confirmButtonText: 'OK',
+                });
+                return;
+            }
+            // if (data.pending_case) {
+            //     Swal.fire({
+            //         title: 'Pending Accused Found',
+            //         text: 'There are accused with status "Pending". Please update their status before submitting.',
+            //         icon: 'warning',
+            //         confirmButtonText: 'OK',
+            //     });
+            //     return;
+            // }
+
+            // If none of the above, proceed
+            setNatureOfDisposalValue((prev) => ({
+                ...prev,
+                code: data.pending_case ? "178_cases" : "disposal"
+            }));
+            showPtCaseTemplate();
+        } else {
+            const errorMessage = checkCaseStatus?.data?.message ? checkCaseStatus.data.message : "Failed to check case status. Please try again.";
+            toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    } catch (error) {
+        setLoading(false);
+        if (error && error.response && error.response["data"]) {
+            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+        return;
+    }
+  }
 
     const nextAccusedStage = async ()=>{
 
@@ -1567,142 +1868,146 @@ const UnderInvestigation = () => {
       }
   };
 
-const accusedUpdateTable = async (data, table_name) => {
-    if (!table_name || table_name === "") {
-        if (accusedDialogTab === "accused") {
-            table_name = "cid_ui_case_accused";
-        } else if (accusedDialogTab === "progress_report") {
-            table_name = "cid_ui_case_progress_report";
-        } else if (accusedDialogTab === "fsl") {
-            table_name = "cid_ui_case_forensic_science_laboratory";
-        } else {
-            toast.warning("Please Check The Template", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-    }
+  const accusedUpdateTable = async (data, table_name) => {
+      if (!table_name || table_name === "") {
+          if (accusedDialogTab === "accused") {
+              table_name = "cid_ui_case_accused";
+          } else if (accusedDialogTab === "progress_report") {
+              table_name = "cid_ui_case_progress_report";
+          } else if (accusedDialogTab === "fsl") {
+              table_name = "cid_ui_case_forensic_science_laboratory";
+          } else {
+              toast.warning("Please Check The Template", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-warning",
+              });
+              return;
+          }
+      }
 
 
-    if (Object.keys(data).length === 0) {
-        toast.warning("Data Is Empty Please Check Once", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-warning",
-        });
-        return;
-    }
+      if (Object.keys(data).length === 0) {
+          toast.warning("Data Is Empty Please Check Once", {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-warning",
+          });
+          return;
+      }
 
-    const formData = new FormData();
-    formData.append("table_name", table_name);
-    var normalData = {};
+      const formData = new FormData();
+      formData.append("table_name", table_name);
+      var normalData = {};
 
-    formTemplateData.forEach((field) => {
-        if (data[field.name]) {
-            if (field.type === "file" || field.type === "profilepicture") {
-                if (field.type === "file") {
-                    if (Array.isArray(data[field.name])) {
-                        const hasFileInstance = data[field.name].some((file) => file.filename instanceof File);
+      formTemplateData.forEach((field) => {
+          if (data[field.name]) {
+              if (field.type === "file" || field.type === "profilepicture") {
+                  if (field.type === "file") {
+                      if (Array.isArray(data[field.name])) {
+                          const hasFileInstance = data[field.name].some((file) => file.filename instanceof File);
 
-                        var filteredArray = data[field.name].filter((file) => file.filename instanceof File);
+                          var filteredArray = data[field.name].filter((file) => file.filename instanceof File);
 
-                        if (hasFileInstance) {
-                            data[field.name].forEach((file) => {
-                                if (file.filename instanceof File) {
-                                    formData.append(field.name, file.filename);
-                                }
-                            });
+                          if (hasFileInstance) {
+                              data[field.name].forEach((file) => {
+                                  if (file.filename instanceof File) {
+                                      formData.append(field.name, file.filename);
+                                  }
+                              });
 
-                            filteredArray = filteredArray.map((obj) => {
-                                return {
-                                    ...obj,
-                                    filename: obj.filename["name"],
-                                };
-                            });
-                            formData.append("folder_attachment_ids", JSON.stringify(filteredArray));
+                              filteredArray = filteredArray.map((obj) => {
+                                  return {
+                                      ...obj,
+                                      filename: obj.filename["name"],
+                                  };
+                              });
+                              formData.append("folder_attachment_ids", JSON.stringify(filteredArray));
+                          }
+                      }
+                  } else {
+                      formData.append(field.name, data[field.name]);
+                  }
+              } else {
+                  normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name];
+              }
+          }
+      });
+
+      normalData["id"] = selectedRowId;
+      formData.append("id", selectedRowId);
+      formData.append("data", JSON.stringify(normalData));
+      const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+      formData.append("transaction_id", transactionId);
+
+      setLoading(true);
+      try {
+          const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+          setLoading(false);
+
+          if (saveTemplateData && saveTemplateData.success) {
+              toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-success",
+                  onOpen: () => {
+                      if (table_name === "cid_ui_case_accused") {
+                        if (showPreliminaryAccusedTable) {
+                            showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                        } else {
+                            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
                         }
-                    }
-                } else {
-                    formData.append(field.name, data[field.name]);
-                }
-            } else {
-                normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name];
-            }
-        }
-    });
-
-    normalData["id"] = selectedRowId;
-    formData.append("id", selectedRowId);
-    formData.append("data", JSON.stringify(normalData));
-    const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    formData.append("transaction_id", transactionId);
-
-    setLoading(true);
-    try {
-        const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
-        setLoading(false);
-
-        if (saveTemplateData && saveTemplateData.success) {
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-success",
-                onOpen: () => {
-                    if (table_name === "cid_ui_case_accused") {
-                        showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
-                    } else if (table_name === "cid_ui_case_progress_report") {
-                        showAccusedTableView(1, false, "cid_ui_case_progress_report");
-                    } else if (table_name === "cid_ui_case_forensic_science_laboratory") {
-                        showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
-                    }
-                },
-            });
-        } else {
-            const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
-            toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-        }
-    } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-        }
-    }
-};
+                      }  else if (table_name === "cid_ui_case_progress_report") {
+                          showAccusedTableView(1, false, "cid_ui_case_progress_report");
+                      } else if (table_name === "cid_ui_case_forensic_science_laboratory") {
+                          showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
+                      }
+                  },
+              });
+          } else {
+              const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+              toast.error(errorMessage, {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+              });
+          }
+      } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+              toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+              });
+          }
+      }
+  };
 
 
     const accusedCloseForm = ()=>{
@@ -14626,6 +14931,79 @@ const handleOpenExportPopup = async () => {
                     </DialogContent>
                 </Dialog>
             }
+
+
+              {
+                showPreliminaryAccusedTable && 
+                <Dialog
+                    open={showPreliminaryAccusedTable}
+                    onClose={() => setShowPreliminaryAccusedTable(false)}
+                    aria-labelledby="alert-dialog-title"
+                    aria-describedby="alert-dialog-description"
+                    fullScreen
+                    fullWidth
+                    sx={{ zIndex: "1", marginLeft: '50px' }}
+                  >
+                    <DialogTitle
+                        id="alert-dialog-title"
+                        sx={{
+                            display: "flex",
+                            alignItems: "start",
+                            justifyContent: "space-between",
+                        }}
+                    >
+                        <Box
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                            onClick={() => { setShowPreliminaryAccusedTable(false)}}
+                        >
+    
+                            <WestIcon />
+    
+                            <Typography variant="body1" fontWeight={500}>
+                                Accused Data
+                            </Typography>
+    
+                            {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                                <Chip
+                                    label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                    color="primary"
+                                    variant="outlined"
+                                    size="small"
+                                    sx={{ fontWeight: 500, marginTop: '2px' }}
+                                />
+                            )}
+    
+                        </Box>
+    
+                        <Button
+                            variant="contained"
+                            sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                            onClick={() => {nextPrelimnaryAccusedStage()}}
+                        >
+                            Submit
+                        </Button>
+    
+                    </DialogTitle>
+                    <DialogContent>
+                        <DialogContentText>
+
+                            <Box sx={{ width: '100%' }}>
+                                    <TableView
+                                        rows={accusedTableRowData}
+                                        columns={
+                                          accusedTableHeaderData
+                                        }
+                                        totalPage={accusedTableTotalPage}
+                                        totalRecord={accusedTableTotalRecord}
+                                        paginationCount={accusedTableCurrentPage}
+                                        handlePagination={setAccusedCurrentPagination}
+                                        highLightedRow={accusedShouldHighlightRowRed}
+                                    />
+                            </Box>
+                        </DialogContentText>
+                    </DialogContent>
+                </Dialog>
+              }
     </Box>
   );
 };
