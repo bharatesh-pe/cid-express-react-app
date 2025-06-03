@@ -75,7 +75,13 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
 
     const handlePagination = (page) => {
         setInvestigationTablePagination(page)
-    }
+    };
+
+    useEffect(()=>{
+        if(selectedInvestigation && selectedInvestigation?.table){
+            getSelectedInvestigationData();
+        }
+    },[investigationTablePagination]);
 
     useEffect(()=>{
 
@@ -138,15 +144,15 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
         setLoading(true);
         try {
 
-            const getTemplateResponse = await api.post("/templateData/getTemplateData",getTemplatePayload);
+            const getTemplateResponse = await api.post("/templateData/getPrimaryTemplateData",getTemplatePayload);
             setLoading(false);
 
-            if (getTemplateResponse && getTemplateResponse.success) {
+            if (getTemplateResponse && getTemplateResponse.success && getTemplateResponse) {
 
                 const { meta, data } = getTemplateResponse;
             
-                const totalPages = meta?.meta?.totalPages;
-                const totalItems = meta?.meta?.totalItems;
+                const totalPages = meta?.totalPages;
+                const totalItems = meta?.totalItems;
                 
                 if (totalPages !== null && totalPages !== undefined) {
                     setInvestigationTableTotalPageCount(totalPages);
@@ -174,7 +180,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                         [{
                             field: firstKey,
                             headerName: generateReadableHeader(firstKey),
-                            width: generateReadableHeader(firstKey).length < 15 ? 100 : 200,
+                            flex: 1,
                             resizable: true,
                         }]
                     : [];
@@ -237,7 +243,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                         return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
                     }
 
-                    const updatedTableData = getTemplateResponse.data.map((field, index) => {
+                    const updatedTableData = data.map((field, index) => {
 
                         const updatedField = {};
 
