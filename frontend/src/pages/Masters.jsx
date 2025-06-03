@@ -93,7 +93,7 @@ const MastersView = () => {
     const fetchMasters = async () => {
         setLoading(true);
         try {
-            const response = await api.get("/master_meta/fetch_masters");
+            const response = await api.post("/master_meta/fetch_masters");
             if (response.success) {
                 setMasters(response.master);
             }
