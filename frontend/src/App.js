@@ -30,6 +30,7 @@ import UIView from './pages/cases/UIView';
 import Trail from './pages/trail';
 import Annexure from './pages/annexure'
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import SessionTimeoutHandler from './components/SessionTimeoutHandler';
 
 import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
@@ -55,6 +56,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <SessionTimeoutHandler />
         <Routes>
           <Route path="/" element={<Login />} />
           <Route
