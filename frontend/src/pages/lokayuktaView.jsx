@@ -21,8 +21,12 @@ import DynamicForm from "../components/dynamic-form/DynamicForm";
 import ApprovalModal from "../components/dynamic-form/ApprovalModalForm";
 import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
+import ChargeSheetInvestigation from "./ChargeSheetInvestigation";
 import PropertyForm from "./PropertyForm";
 import Report41A from "./Report41A";
+import PlanOfAction from "./PlanOfAction";
+import EqProgressReport from "./EqProgressReport";
+import ClosureReport from "./ClosureReport";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
@@ -631,6 +635,8 @@ const LokayuktaView = () => {
                 setInitialFormData({});
                 if (viewTemplateResponse?.["data"]?.no_of_sections && viewTemplateResponse?.["data"]?.no_of_sections > 0) {
                     setFormStepperData(viewTemplateResponse?.["data"]?.sections ? viewTemplateResponse?.["data"]?.sections: []);
+                }else{
+                    setFormStepperData([]);
                 }
 
                 setFormOpen(true);
@@ -699,12 +705,12 @@ const LokayuktaView = () => {
         }
 
         setApprovalSaveCaseData(data);
-        setReOpenAddCase(formOpen);
-         if (activeSidebar?.is_approval === true) {
+        if (activeSidebar?.is_approval === true) {
+            setReOpenAddCase(formOpen);
             setApprovalSource('submit');
             showCaseApprovalPage(true);
         } else {
-            handleDirectCaseSave(data);
+            handleDirectCaseSave(data, formOpen);
         }
         return;
     }
@@ -1031,7 +1037,7 @@ const LokayuktaView = () => {
         }
     }
 
-    const handleDirectCaseSave = async (data) => {
+    const handleDirectCaseSave = async (data, formOpen) => {
         const formData = new FormData();
         let normalData = {};
 
@@ -1090,7 +1096,7 @@ const LokayuktaView = () => {
                     progress: undefined,
                     className: "toast-success",
                     onOpen: () => {
-                        getTableData(activeSidebar, reOpenAddCase);
+                        getTableData(activeSidebar, formOpen);
                     }
                 });
             } else {
@@ -1587,7 +1593,20 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                     />
-               ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
+               ) : activeSidebar?.chargeSheet === true ? (
+
+                     <ChargeSheetInvestigation
+                        overAllTemplateActions={contentArray}
+                        template_name={template_name}
+                        headerDetails={headerDetails}
+                        tableRowId={tableRowId}
+                        options={activeSidebar}
+                        rowData={rowData}
+                        module={module}
+                        backNavigation={backToForm}
+                    />
+
+                ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
 
 
                      <ProgressReport
@@ -1622,6 +1641,40 @@ const LokayuktaView = () => {
                         backNavigation={backToForm}
                         case_table_name = {table_name}
                     />
+                    
+                ) : activeSidebar?.table === "cid_eq_case_plan_of_action" ? (
+
+
+                    <PlanOfAction
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                ) : activeSidebar?.table === "cid_eq_case_progress_report" ? (
+
+
+                    <EqProgressReport
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                ) : activeSidebar?.table === "cid_eq_case_closure_report" ? (
+
+                    <ClosureReport
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+
                     
                  ) : (
                     

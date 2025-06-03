@@ -1670,7 +1670,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
     const handleSubmitPF = async ({ id, selectedIds }) => {
 
-        if (!id || id.length === 0) {
+        if (!id || id.length === 0 || !selectedIds || selectedIds.length === 0) {
             toast.error("Please select at least one record to submit.", {
                 position: "top-right",
                 autoClose: 3000,

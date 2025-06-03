@@ -32,7 +32,7 @@ import AutocompleteField from "../components/form/AutoComplete";
 import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 
-const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, case_table_name}) => {
+const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -110,11 +110,209 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
 
+    const loadValueField = async (rowData, editData, table_name) => {
+        if (!table_name || table_name === "") {
+          toast.warning("Please Check Table Name", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-warning",
+          });
+          return;
+        }
+    
+        var viewTemplatePayload = {
+          table_name: table_name,
+          id: rowData.id,
+        };
+        setLoading(true);
+        try {
+          const viewTemplateData = await api.post(
+            "/templateData/viewTemplateData",
+            viewTemplatePayload
+          );
+          setLoading(false);
+    
+          if (viewTemplateData && viewTemplateData.success) {
+            const formValues = viewTemplateData.data ? viewTemplateData.data : {};
+    
+            setInitialData(formValues);
+            setFilterAoValues(formValues); 
+            setviewReadonly(!editData);
+            setEditTemplateData(editData);
+    
+            const viewTableData = {
+              table_name: table_name,
+            };
+    
+            setLoading(true);
+            try {
+              const viewTemplateResponse = await api.post(
+                "/templates/viewTemplate",
+                viewTableData
+              );
+              
+              setLoading(false);
+    
+              if (viewTemplateResponse && viewTemplateResponse.success) {
+    
+                console.log("viewtemplaterespose", viewTemplateResponse)
+              } else {
+                const errorMessage = viewTemplateResponse.message
+                  ? viewTemplateResponse.message
+                  : "Failed to delete the template. Please try again.";
+                toast.error(errorMessage, {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+                });
+              }
+            } catch (error) {
+              setLoading(false);
+              if (error && error.response && error.response["data"]) {
+                toast.error(
+                  error.response["data"].message
+                    ? error.response["data"].message
+                    : "Please Try Again !",
+                  {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                  }
+                );
+              }
+            }
+          } else {
+            const errorMessage = viewTemplateData.message
+              ? viewTemplateData.message
+              : "Failed to create the template. Please try again.";
+            toast.error(errorMessage, {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              className: "toast-error",
+            });
+          }
+        } catch (error) {
+          setLoading(false);
+          if (error && error.response && error.response["data"]) {
+            toast.error(
+              error.response["data"].message
+                ? error.response["data"].message
+                : "Please Try Again !",
+              {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+              }
+            );
+          }
+        }
+      };
+      
+    const loadAOFields = async () => {
+      setLoading(true);
+      try {
+        const response = await api.post("/templates/viewTemplate", {
+          table_name: "cid_enquiry",
+        });
+    
+        if (response.success && response.data?.fields) {
+          let aoOnlyFields = response.data.fields.filter(
+            (field) =>
+              field.ao_field === true &&
+              field.hide_from_ux === false &&
+              field.name !== "field_act" &&
+              field.name !== "field_section"
+          );
+    
+          const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
+          const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
+    
+          if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
+          if (policeStationField && !aoOnlyFields.includes(policeStationField)) aoOnlyFields.push(policeStationField);
+    
+          for (const field of aoOnlyFields) {
+            if (field && field.api) {
+              const payloadApi = field.api;
+              const apiPayload = {}; // Define this as needed
+    
+              try {
+                const res = await api.post(payloadApi, apiPayload);
+                if (!res.data) continue;
+    
+                const updatedOptions = res.data.map((item) => {
+                    const nameKey = Object.keys(item).find((key) => !["id", "created_at", "updated_at"].includes(key));
+                    var headerName = nameKey;
+                    var headerId = 'id';
+    
+                    if(field.table === "users"){
+                        headerName = "name"
+                        headerId =  "user_id"
+                    }else if(field.api !== "/templateData/getTemplateData"){
+                        headerName = field.table + "_name"
+                        headerId =  field.table + "_id"
+                    }
+    
+                    return {
+                        name: item[headerName],
+                        code: item[headerId],
+                    };
+                });
+    
+                field.options = updatedOptions;
+              } catch (err) {
+                console.error(`Error loading options for field ${field.name}`, err);
+              }
+            }
+          }
+    
+          setAoFields(aoOnlyFields);
+          loadValueField(aoFieldId, false, "cid_enquiry");
+        }
+      } catch (error) {
+        toast.error("Failed to load AO fields", {
+          position: "top-right",
+          autoClose: 3000,
+          className: "toast-error",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    useEffect(() => {
+          loadAOFields();
+    }, []);
 
     useEffect(()=>{
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
     },[otherTemplatesPaginationCount]);
 
+    
 
     const onSaveTemplateError = (error) => {
         setIsValid(false);
@@ -188,7 +386,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
 
         try {
             const getTemplateResponse = await api.post("/templateData/getTemplateData", getTemplatePayload);
-
+            
             setLoading(false);
 
             if (getTemplateResponse && getTemplateResponse.success) {
@@ -239,7 +437,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                         // Get non-supervisor records with sys_status "ui_case"
                         const ioRecords = records.filter(
                             record =>
-                                record.sys_status === "ui_case" &&
+                                record.sys_status === "eq_case" &&
                                 record.supervisior_designation_id != userDesigId
                         );
 
@@ -314,7 +512,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
 
                                     if (params.row.sys_status === 'IO' && params.row.supervisior_designation_id != localStorage.getItem('designation_id')) {
                                         isActionPlan = true;
-                                    } else if ((params.row.sys_status === 'IO' || params.row.sys_status === 'ui_case') && params.row.field_submit_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id')) {
+                                    } else if ((params.row.sys_status === 'IO' || params.row.sys_status === 'eq_case') && params.row.field_submit_status === '' && params.row.supervisior_designation_id == localStorage.getItem('designation_id')) {
                                         isActionPlan = false;
                                     } else if (params.row.field_submit_status === 'submit' || params.row.sys_status === 'IO') {
                                         isActionPlan = true;
@@ -337,8 +535,8 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                 },
                             },
 
-                            ...Object.keys(getTemplateResponse.data[0])
-                                .filter((key) =>
+                            ...Object.keys(getTemplateResponse.data[0]).filter(
+                                (key) =>
                                     !excludedKeys.includes(key) &&
                                     ![
                                         "field_pt_case_id",
@@ -356,139 +554,67 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                         "field_reappear",
                                         "hasFieldPrStatus"
                                     ].includes(key)
-                                )
-                                .map((key) => {
-                                    const updatedKeyName = key
-                                        .replace(/^field_/, "")
-                                        .replace(/_/g, " ")
-                                        .toLowerCase()
-                                        .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+                            ).map((key) => {
+                                const updatedKeyName = key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
 
-                                    if (key === "field_approved_by") {
-                                        return {
-                                            field: key,
-                                            headerName: "Approved By",
-                                            width: 200,
-                                            resizable: true,
-                                            renderCell: (params) => {
-                                                const userDesigId = localStorage.getItem("designation_id");
-                                                const isImmediateSupervisor = params.row.supervisior_designation_id == userDesigId;
-                                                const approvedBy = params.row.field_approved_by?.toLowerCase() || "";
+                                return {
+                                    field: key,
+                                    headerName: updatedKeyName || "",
+                                    width: 250,
+                                    resizable: true,
+                                    renderHeader: () => (
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                                            <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
+                                                {updatedKeyName || "-"}
+                                            </span>
+                                        </div>
+                                    ),
+                                    renderCell: (params) => {
+                                        if (key === "field_action_item") {
+                                            const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
+                                            const canEdit = userPermissions[0]?.action_edit;
+                                            const isViewAction = options.is_view_action === true;
+                                            let isActionPlan = false;
 
-                                                if (approvedBy === "yes") {
-                                                    return (
-                                                        <span style={{
-                                                            padding: "4px 8px",
-                                                            backgroundColor: "#bbf7d0",
-                                                            borderRadius: "4px",
-                                                            fontWeight: 500,
-                                                            color: "#166534",
-                                                        }}>
-                                                            Approved
-                                                        </span>
-                                                    );
-                                                }
-
-                                                if (isImmediateSupervisor && (approvedBy === "" || approvedBy === "no" || approvedBy === null)) {
-                                                    return (
-                                                        <button
-                                                            style={{
-                                                                padding: "6px 12px",
-                                                                backgroundColor: "#2563EB",
-                                                                color: "#fff",
-                                                                border: "none",
-                                                                borderRadius: "4px",
-                                                                cursor: "pointer",
-                                                            }}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                handleApproved(params.row, options);
-                                                            }}
-                                                        >
-                                                            Approve
-                                                        </button>
-                                                    );
-                                                }
-
-                                                return (
-                                                    <span style={{
-                                                        padding: "4px 8px",
-                                                        backgroundColor: "#fcd34d",
-                                                        borderRadius: "4px",
-                                                        fontWeight: 500,
-                                                        color: "#92400e",
-                                                    }}>
-                                                        Not Approved
-                                                    </span>
-                                                );
-                                            },
-                                        };
-                                    }
-
-                                    return {
-                                        field: key,
-                                        headerName: updatedKeyName || "",
-                                        width: 250,
-                                        resizable: true,
-                                        renderHeader: () => (
-                                            <div style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                justifyContent: "space-between",
-                                                width: "100%",
-                                            }}>
-                                                <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>
-                                                    {updatedKeyName || "-"}
-                                                </span>
-                                            </div>
-                                        ),
-                                        renderCell: (params) => {
-                                            if (key === "field_accused_level") {
-                                                const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
-                                                const canEdit = userPermissions[0]?.action_edit;
-                                                const isViewAction = options.is_view_action === true;
-                                                let isActionPlan = false;
-
-                                                if (params.row.sys_status === "IO" &&
-                                                    params.row.supervisior_designation_id != localStorage.getItem("designation_id")) {
-                                                    isActionPlan = true;
-                                                } else if (
-                                                    (params.row.sys_status === "IO" || params.row.sys_status === "ui_case") &&
-                                                    params.row.field_submit_status === "" &&
-                                                    params.row.supervisior_designation_id == localStorage.getItem("designation_id")
-                                                ) {
-                                                    isActionPlan = false;
-                                                } else if (params.row.field_submit_status === "submit" || params.row.sys_status === "IO") {
-                                                    isActionPlan = true;
-                                                }
-
-                                                const isEditAllowed = canEdit && !isViewAction && !isActionPlan;
-
-                                                return (
-                                                    <span
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
-                                                        }}
-                                                        style={{
-                                                            color: "#2563eb",
-                                                            textDecoration: "underline",
-                                                            cursor: "pointer",
-                                                            fontWeight: 400,
-                                                            fontSize: "14px",
-                                                        }}
-                                                    >
-                                                        {params.value || "View"}
-                                                    </span>
-                                                );
+                                            if (params.row.sys_status === "IO" && params.row.supervisior_designation_id != localStorage.getItem("designation_id")) {
+                                                isActionPlan = true;
+                                            } else if (
+                                                (params.row.sys_status === "IO" || params.row.sys_status === "eq_case") &&
+                                                params.row.field_submit_status === "" &&
+                                                params.row.supervisior_designation_id == localStorage.getItem("designation_id")
+                                            ) {
+                                                isActionPlan = false;
+                                            } else if (params.row.field_submit_status === "submit" || params.row.sys_status === "IO") {
+                                                isActionPlan = true;
                                             }
 
-                                            return tableCellRender(key, params, params.value);
-                                        },
-                                    };
-                                })
-                        ]).filter(Boolean);
+                                            const isEditAllowed = canEdit && !isViewAction && !isActionPlan;
 
+                                            return (
+                                                <span
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
+                                                    }}
+                                                    style={{
+                                                        color: "#2563eb",
+                                                        textDecoration: "underline",
+                                                        cursor: "pointer",
+                                                        fontWeight: 400,
+                                                        fontSize: "14px",
+                                                    }}
+                                                >
+                                                    {params.value || "View"}
+                                                </span>
+                                            );
+                                        }
+
+                                        return tableCellRender(key, params, params.value);
+                                    }
+                                };
+                            }),
+
+                        ]).filter(Boolean);
 
                         setOtherTemplateColumn(updatedHeader);
                     } else {
@@ -568,110 +694,6 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
         }
     };
 
-    const otherTemplateTrailUpdate = async (data) => {
-      
-        if (!data.id || !data.options?.table) {
-          toast.warning("Please Check the Template", {
-            position: "top-right",
-            autoClose: 3000,
-            className: "toast-warning",
-          });
-          return;
-        }
-      
-        const updateFields = {};
-      
-        if (data.hasOwnProperty("field_approved_by")) {
-          updateFields.field_approved_by = data.field_approved_by;
-        }
-                
-        
-        const formData = new FormData();
-        formData.append("table_name", data.options.table);
-        formData.append("id", data.id);
-        formData.append("data", JSON.stringify(updateFields));
-        var transitionId = `approve_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        formData.append("transaction_id", transitionId);
-      
-        setLoading(true);
-      
-        try {
-          const saveTemplateData = await api.post(
-            "/templateData/updateTemplateData",
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-        
-          setLoading(false);
-      
-          if (saveTemplateData && saveTemplateData.success) {
-            localStorage.removeItem(data.name + "-formData");
-      
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-              position: "top-right",
-              autoClose: 3000,
-              className: "toast-success",
-            });
-      
-            handleOtherTemplateActions(data.options, selectedRow);
-      
-            setOtherEditTemplateData(false);
-            setOtherReadOnlyTemplateData(false);
-          } else {
-            const errorMessage = saveTemplateData?.message || "Failed to update the template. Please try again.";
-            toast.error(errorMessage, {
-              position: "top-right",
-              autoClose: 3000,
-              className: "toast-error",
-            });
-          }
-        } catch (error) {
-          setLoading(false);
-          console.error("API Error:", error);
-      
-          toast.error(
-            error?.response?.data?.message || error?.message || "Please Try Again!",
-            {
-              position: "top-right",
-              autoClose: 3000,
-              className: "toast-error",
-            }
-          );
-        }
-      };
-      
-      const handleApproved = (row, options) => {
-        Swal.fire({
-          title: "Mark as Approved?",
-          text: "Do you want to mark this case as Approved?",
-          icon: "question",
-          showCancelButton: true,
-          confirmButtonText: "Approved",
-          cancelButtonText: "Not Approved",
-          reverseButtons: false,
-        }).then((result) => {
-          if (result.isConfirmed) {
-            const updatedRow = {
-              id: row.id,
-              options: options,
-              field_approved_by: "Yes",
-            };
-            otherTemplateTrailUpdate(updatedRow);
-          } else if (result.dismiss === Swal.DismissReason.cancel) {
-            const updatedRow = {
-              id: row.id,
-              options: options,
-              field_approved_by: "No",
-            };
-            otherTemplateTrailUpdate(updatedRow);
-          }
-        });
-      };  
-
     const handleOthersTemplateDataView = async (
         rowData,
         editData,
@@ -733,7 +755,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                 const processedFields = rawFields.map((field) => {
                 if (
                     field.name === "field_assigned_by" &&
-                    templateData.table_name === "cid_ui_case_progress_report"
+                    templateData.table_name === "cid_eq_case_plan_of_action"
                 ) {
                     return {
                     ...field,
@@ -832,7 +854,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
 
     const closeOtherForm = ()=>{
         setOtherFormOpen(false)
-        if(selectedOtherTemplate?.table === "cid_ui_case_41a_notices"){
+        if(selectedOtherTemplate?.table === "cid_eq_case_plan_of_action"){
             handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
         }
     }
@@ -1017,7 +1039,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                             var stateObj = {
                                 contentArray: JSON.stringify(actionTemplateMenus),
                                 headerDetails: rowData?.["field_cid_crime_no./enquiry_no"] || null,
-                                backNavigation: "/case/ui_case",
+                                backNavigation: "/case/enquiry",
                                 paginationCount: paginationCount,
                                 sysStatus: sysStatus,
                                 rowData: viewTemplateData?.["data"] || {},
@@ -1100,7 +1122,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
             table_name,
             is_starred: starFlag,
             is_read: readFlag,
-            template_module: "ui_case",
+            template_module: "eq_case",
             sys_status: sysStatus,
             from_date: fromDateValue,
             to_date: toDateValue,
@@ -1752,7 +1774,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
         if (result.isConfirmed) {
           const payload = {
             transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
-            ui_case_id: id,
+            eq_case_id: id,
             isSupervisior : isImmediateSupervisior,
             user_designation_id : user_designation_id,
             user_divisio_id : user_divisio_id,
@@ -1862,7 +1884,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                 progress: undefined,
                 className: "toast-success",
                 onOpen: () => {
-                    handleOtherTemplateActions("cid_ui_case_41a_notices");
+                    handleOtherTemplateActions("cid_eq_case_plan_of_action");
                 },
             });
             } else {
@@ -1923,7 +1945,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
         });
       
         
-        normalData.sys_status = isImmediateSupervisior ? "IO" : "ui_case";
+        normalData.sys_status = isImmediateSupervisior ? "IO" : "eq_case";
         normalData.field_submit_status = "";
         normalData["ui_case_id"] = selectedRowData.id;
         formData.append("table_name", selectedOtherTemplate.table);
@@ -1956,7 +1978,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
             }
             if(saveNewAction){
               await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);   
-              showOptionTemplate('cid_ui_case_41a_notices');
+              showOptionTemplate('cid_eq_case_plan_of_action');
             }else{
               handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
             }
@@ -2054,7 +2076,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
             }
           }
         });
-        normalData.sys_status = "ui_case";
+        normalData.sys_status = "eq_case";
         normalData["ui_case_id"] = selectedRowData.id;
     
         var othersData = {};
@@ -2088,7 +2110,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
     
                if(saveNewAction){
                   await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
-                  showOptionTemplate('cid_ui_case_41a_notices');
+                  showOptionTemplate('cid_eq_case_plan_of_action');
                 }else{
                   handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
                 }
@@ -2212,7 +2234,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
           }
         });
     
-        if(selectedOtherTemplate.table === "cid_ui_case_progress_report"){
+        if(selectedOtherTemplate.table === "cid_eq_case_plan_of_action"){
             normalData["field_pr_status"] = "No";
         }
       
@@ -2543,17 +2565,112 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                                         </Typography>
                                     )}
                                 </Box>
+
                                
+                                {!showSubmitAPButton && (
                                     <Button
                                         variant="outlined"
                                         sx={{ height: '40px' }}
-                                        onClick={() => showOptionTemplate('cid_ui_case_41a_notices')}
+                                        onClick={() => showOptionTemplate('cid_eq_case_plan_of_action')}
                                     >
                                         Add
                                     </Button>
-
+                                 )}
+                                {!showSubmitAPButton && (
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        onClick={() => handleSubmitAp({ id: selectedRowData?.id })}
+                                        disabled={otherTemplatesTotalRecord === 0}
+                                    >
+                                        Submit
+                                    </Button>
+                                )}
                             </Box>
                         </Box>
+                    </Box>
+
+                    {/* AO Fields & Table Section */}
+                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                        {aoFields.length > 0 ? (
+                            <Grid container spacing={2}>
+                                {aoFields.slice(0, 6).map((field, index) => (
+                                    <Grid item xs={12} md={4} key={index}>
+                                        {field.type === 'text' && (
+                                            <ShortText key={field.id} field={field} formData={filterAoValues} disabled />
+                                        )}
+                                        {field.type === 'multidropdown' && (
+                                            <MultiSelect
+                                                key={field.id}
+                                                field={field}
+                                                formData={filterAoValues}
+                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                disabled
+                                            />
+                                        )}
+                                        {(field.type === 'dropdown' || field.type === 'autocomplete') && (
+                                            <AutocompleteField
+                                                key={field.id}
+                                                field={field}
+                                                formData={filterAoValues}
+                                                onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
+                                                value={(() => {
+                                                    const fieldValue = filterAoValues?.[field.name];
+                                                    return field.options.find(opt => String(opt.code) === String(fieldValue)) || null;
+                                                })()}
+                                                disabled
+                                            />
+                                        )}
+                                    </Grid>
+                                ))}
+
+                                {/* Text Areas */}
+                                <Grid container item xs={12} spacing={2} alignItems="flex-start">
+                                    {aoFields
+                                        .slice(4)
+                                        .filter(f => f.type === 'textarea')
+                                        .map((field, index) => (
+                                            <Grid item xs={6} key={index}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                    <Typography sx={{ fontWeight: 'bold', color: 'black', mr: 1 }}>
+                                                        {field.label}
+                                                    </Typography>
+                                                    <Tooltip title="Save">
+                                                        <SaveIcon
+                                                            onClick={() => onActionPlanUpdate("cid_enquiry", filterAoValues)}
+                                                            sx={{
+                                                                color: '#1570EF',
+                                                                p: '0 1px',
+                                                                fontSize: '25px',
+                                                                cursor: 'pointer',
+                                                                mb: '2px'
+                                                            }}
+                                                        />
+                                                    </Tooltip>
+                                                </Box>
+                                                <TextField
+                                                    fullWidth
+                                                    multiline
+                                                    minRows={10}
+                                                    maxRows={10}
+                                                    variant="outlined"
+                                                    value={filterAoValues[field.name] || ""}
+                                                    onChange={(e) =>
+                                                        setFilterAoValues(prev => ({
+                                                            ...prev,
+                                                            [field.name]: e.target.value,
+                                                        }))
+                                                    }
+                                                />
+                                            </Grid>
+                                        ))}
+                                </Grid>
+                            </Grid>
+                        ) : (
+                            <Typography variant="body2" color="text.secondary">
+                                No AO Fields Available
+                            </Typography>
+                        )}
                     </Box>
 
                     {/* Data Table */}
@@ -2598,9 +2715,6 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
                     onError={onSaveTemplateError}
                     closeForm={closeOtherForm}
                     headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
-                    selectedRow={selectedRowData}
-                    investigationViewTable={case_table_name}
-
                     />
                 </FormControl>
                 </DialogContentText>
@@ -2616,4 +2730,4 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
     );    
 };
 
-export default Report41A;
+export default PlanOfAction;

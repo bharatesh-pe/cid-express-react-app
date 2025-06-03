@@ -1666,11 +1666,56 @@ const fetch_dash_count = async (req, res) => {
             };
         }
         else if (case_modules === "eq_case") {
+            // alertTemplates = {
+            //     ENQUIRIES: {
+            //         label: "ENQUIRIES",
+            //         total_count: 0
+            //     },
+            // };
+
             alertTemplates = {
-                ENQUIRIES: {
-                    label: "ENQUIRIES",
+                IO_ALLOCATION: {
+                    label: "IO Allocation",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "24 hrs", count: 0, record_id: [], level: "low" },
+                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                    },
                     total_count: 0
                 },
+                ACTION_PLAN: {
+                    label: "Action Plan",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "Approval", count: 0, record_id: [], level: "low" },
+                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
+                },
+                PROGRESS_REPORT: {
+                    label: "Progress Report",
+                    divider: 2,
+                    divider_details: {
+                        low: { name: "1 to 5 Days", count: 0, record_id: [], level: "low" },
+                        high: { name: "Over Due", count: 0, record_id: [], level: "high" }
+                    },
+                    total_count: 0
+                },
+                EXTENSION: {
+                    label: "Enquiries Extension",
+                    total_count: 0,
+                    record_id: []
+                },
+                FINAL_ENQUIRIES_REPORT: {
+                    label: "Final Enquiries Report",
+                    total_count: 0,
+                    record_id: []
+                },
+                CLOSURE_REPORT: {
+                    label: "Closure Report",
+                    total_count: 0,
+                    record_id: []
+                }
             };
         }
         else{

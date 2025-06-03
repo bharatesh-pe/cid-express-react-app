@@ -590,6 +590,7 @@ const CreateProfile = () => {
             { name: 'Under Investigation', code: 'ui_case' },
             { name: 'Pending Trail', code: 'pt_case' },
             { name: 'Enquiries', code: 'eq_case' },
+            { name: 'Crime Intelligence', code: 'ci_case' },
         ]
     };
 

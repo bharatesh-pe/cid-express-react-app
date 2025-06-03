@@ -19,6 +19,8 @@ import {
   Tab,
   Menu,
   MenuItem,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 
 import { ExpandLess, ExpandMore } from "@mui/icons-material";
@@ -35,6 +37,8 @@ import "react-toastify/dist/ReactToastify.css";
 import userImg from "../Images/userImg.png";
 import Navbar from "./navbar";
 import HomeIcon from '@mui/icons-material/Home';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import CloseIcon from '@mui/icons-material/Close';
 
 const icons = {
   dashboard: (
@@ -190,6 +194,11 @@ const Layout = ({ children }) => {
 
   const [loading, setLoading] = useState(false); // State for loading indicator
 
+    const [videoOpen, setVideoOpen] = useState(false);
+
+    const handleVideoOpen = () => setVideoOpen(true);
+    const handleVideoClose = () => setVideoOpen(false);
+
     const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
     const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
 
@@ -204,7 +213,7 @@ const Layout = ({ children }) => {
                 {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
             ]
         },
-        { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
+        { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
         { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
         { 
@@ -221,15 +230,17 @@ const Layout = ({ children }) => {
 
     const selectedTab = useRef(tabLabels[0]);
     const selectedActiveKey = useRef(tabLabels[0]?.key);
+
+    const gettingTabKey = navbarKey || localStorage.getItem("navbarKey") || null;
     
-    if(navbarKey){
-        localStorage.setItem("navbarKey", navbarKey);
+    if(gettingTabKey){
+        localStorage.setItem("navbarKey", gettingTabKey);
 
         tabLabels.forEach((tab) => {
-            const isMainMatch = navbarKey === tab.key;
+            const isMainMatch = gettingTabKey === tab.key;
             
             const matchedOption = tab.options?.find(
-                (opt) => (opt?.actionKey ?? opt?.key) === navbarKey
+                (opt) => (opt?.actionKey ?? opt?.key) === gettingTabKey
             );
 
             if (isMainMatch) {
@@ -247,8 +258,8 @@ const Layout = ({ children }) => {
     const [selectedSubKey, setSelectedSubKey] = useState("");    
     const handleTabClick = (event, tab) => {
 
-        if(tab.key === "crime_analytics"){
-            navigate(tab?.route, {state: {"navbarKey" : "crime_analytics"}});
+        if(tab.key === "crime_analytics" || tab.key === "crime_intelligence"){
+            navigate(tab?.route, {state: {"navbarKey" : tab.key}});
             window.location.reload();
             return;
         }
@@ -881,6 +892,10 @@ const Layout = ({ children }) => {
                     ))}
                 </Menu>
 
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
+                    <Tooltip title="Click for help" onClick={handleVideoOpen}>
+                        <HelpOutlineIcon sx={{fontSize: '26px', cursor: 'pointer'}} />
+                    </Tooltip>
                 <Box
                     sx={{
                         display: "flex",
@@ -927,6 +942,7 @@ const Layout = ({ children }) => {
                         </svg>
                     </Box>
 
+                </Box>
                 </Box>
             </Box>
             )}
@@ -1108,6 +1124,75 @@ const Layout = ({ children }) => {
             </DialogContent>
         </Dialog>
     )}
+
+    
+    <Dialog
+        open={videoOpen}
+        onClose={handleVideoClose}
+        fullWidth
+        maxWidth="2xl"
+        scroll="paper"
+    >
+        <DialogTitle sx={{ m: 0, p: 2 }}>
+            Videos
+            <IconButton
+                aria-label="close"
+                onClick={handleVideoClose}
+                sx={{
+                    position: 'absolute',
+                    right: 8,
+                    top: 8,
+                    color: (theme) => theme.palette.grey[500],
+                }}
+            >
+                <CloseIcon />
+            </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers>
+            <Box
+                sx={{
+                    display: 'grid',
+                    gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: '1fr 1fr',
+                        md: '1fr 1fr 1fr',
+                    },
+                    gap: 2,
+                }}
+            >
+                <iframe 
+                    width="100%"
+                    height="350"
+                    src="https://www.youtube.com/embed/K4TOrB7at0Y?si=TwoP9V0PB-i1_fpV" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    referrerpolicy="strict-origin-when-cross-origin" 
+                    allowfullscreen>    
+                </iframe>
+                <iframe
+                    width="100%"
+                    height="350"
+                    src="https://www.youtube.com/embed/b9hBHt317mw?si=PE7AmSJ_7GHiSNIp"
+                    title="Video 2"
+                    frameBorder="0"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                ></iframe>
+                <iframe
+                    width="100%"
+                    height="350"
+                    src="https://www.youtube.com/embed/wDchsz8nmbo?si=od6PA4Xdw33cZd7Y"
+                    title="Video 3"
+                    frameBorder="0"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                ></iframe>
+            </Box>
+        </DialogContent>
+    </Dialog>
+
     </Box>
   );
 };

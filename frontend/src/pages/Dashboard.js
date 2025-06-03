@@ -31,19 +31,21 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import CloseIcon from '@mui/icons-material/Close';
 
     const tabLabels = [
-        { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
+        { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" },
         {   label: "Court Module", 
             route: "/case/pt_case", 
             key: "pt_case",
             options : [
-                {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case"},
-                {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case"},
+                {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case", name: "PT Case"},
+                {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case", name: "PT Case"},
             ]
         },
-        { label: "Crime Intelligence", route: "/case/ui_case", key: "crime_intelligence" },
-        { label: "Enquiries", route: "/case/enquiry", key: "eq_case" },
+        { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
+        { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" },
         { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
         { 
             label: "Orders & Circulars", 
@@ -56,6 +58,109 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
             ]
         },
     ];
+
+    const days = [
+        "Hearing Today", "Hearing Tomorrow", "Hearing in 2 Days",
+        "Hearing in 3 Days", "Hearing in 4 Days", "Hearing in 5 Days",
+        "Hearing in 6-10 Days"
+    ];
+
+    // const gradients = [
+    //     "#2196F3", "#3f51b5", "#673ab7",
+    //     "#00bcd4", "#4caf50", "#ff9800",
+    //     "#f44336"
+    // ];
+
+    const gradients = [
+    'linear-gradient(135deg, #2196F3, #673ab7b5)',       // Blue to Purple (Day 1)
+    'linear-gradient(135deg, #00c6ff, #0072ff)',         // Light Blue to Deep Blue (Day 2)
+    'linear-gradient(135deg, #f7971e, #ffd200)',         // Orange to Yellow (Day 3)
+    'linear-gradient(135deg, #00b09b, #96c93d)',         // Teal to Green (Day 4)
+    'linear-gradient(135deg, #ff416c, #ff4b2b)',         // Pink to Red (Day 5)
+    'linear-gradient(135deg, #654ea3, #eaafc8)',         // Purple to Light Pink (Day 6)
+    'linear-gradient(135deg, #43cea2, #185a9d)',         // Aqua Green to Blue (Day 7–10)
+    ];
+
+
+    //   clipPath: 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)',
+
+    const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
+        <Box
+            sx={{
+                width: isFirst ? 150 : 180,
+                height: 70,
+                background: bgGradient,
+                color: '#fff',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 1,
+                boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease',
+                px: 1,
+                cursor: 'pointer',
+                clipPath: isFirst ? 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)' : 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 13% 50%)',
+                '&:hover': {
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+                }
+            }}
+        >
+            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                {label}
+            </Typography>
+            <Typography
+                sx={{
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    ml: 1,
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    borderRadius: '50%',
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                {number || 0}
+            </Typography>
+        </Box>
+    );
+
+    // const SkewedCard = ({ label, bgGradient }) => (
+    //     <Card
+    //         sx={{
+    //         width: 150,
+    //         height: 70,
+    //         transform: 'skew(-10deg)',
+    //         background: bgGradient,
+    //         color: '#fff',
+    //         display: 'flex',
+    //         alignItems: 'center',
+    //         justifyContent: 'center',
+    //         borderRadius: 2,
+    //         boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
+    //         transition: 'all 0.3s ease',
+    //         cursor: 'pointer',
+    //         '&:hover': {
+    //             transform: 'skew(-10deg) scale(1.05)',
+    //             boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+    //         }
+    //         }}
+    //     >
+    //         <Typography
+    //         sx={{
+    //             transform: 'skew(10deg)', // undo skew for text
+    //             fontWeight: 'bold',
+    //             fontSize: '0.9rem',
+    //         }}
+    //         >
+    //         {label}
+    //         </Typography>
+    //     </Card>
+    // );
 
     const GradientBadge = styled(Box)(({ gradient }) => ({
         background: gradient,
@@ -131,9 +236,14 @@ const Dashboard = () => {
     const [loading, setLoading] = useState(false);
     const [dashboardMenu, setDashboardMenu] = useState({});
 
+    const [videoOpen, setVideoOpen] = useState(false);
+
+    const handleVideoOpen = () => setVideoOpen(true);
+    const handleVideoClose = () => setVideoOpen(false);
+
     var preSelectTabLabels = tabLabels[0]
     
-    if(tabActiveKey){
+    if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics")){
         
         tabLabels.forEach((tab) => {
             const isMainMatch = tabActiveKey === tab.key;
@@ -159,8 +269,8 @@ const Dashboard = () => {
 
     const handleTabClick = (event, tab) => {
 
-        if(tab.key === "crime_analytics"){
-            navigate(tab?.route, {state: {"navbarKey" : "crime_analytics"}} );
+        if(tab.key === "crime_analytics" || tab.key === "crime_intelligence"){
+            navigate(tab?.route, {state: {"navbarKey" : tab.key}} );
             window.location.reload();
             return;
         }
@@ -194,6 +304,12 @@ const Dashboard = () => {
         setSubmenuAnchorEl(null);
     };
     
+    const [courtTab, setCourtTab] = useState(0);
+
+    const handleCourtTabChange = (event, newValue) => {
+        setCourtTab(newValue);
+    };
+
     const handleLogout = async () => {
         const token = localStorage.getItem("auth_token");
         setLoading(true);
@@ -294,9 +410,12 @@ const Dashboard = () => {
         }
     };
 
-    useEffect(()=>{
+
+    useEffect(() => {
+        if (selectedActiveKey === "crime_intelligence") return;
         getDashboardTiles();
-    },[selectedActiveKey.current])
+    }, [selectedActiveKey]);
+
 
     const getDashboardTiles = async () => {
         const userDesignationId = localStorage.getItem('designation_id');
@@ -489,6 +608,7 @@ const Dashboard = () => {
                         srcSet={`${LogoText}?w=150&fit=crop&auto=format&dpr=2 4x`}
                         src={`${LogoText}?w=150&fit=crop&auto=format`}
                         alt="CID Logo"
+                        style={{ width: "44px", height: "44px" }}
                         loading="lazy"
                     />
                     <Typography
@@ -553,7 +673,10 @@ const Dashboard = () => {
                     ))}
                 </Menu>
 
-                <Box>
+                <Box sx={{display: 'flex', alignItems: 'center', gap: 1.5}}>
+                    <Tooltip title="Click for help" onClick={handleVideoOpen}>
+                        <HelpOutlineIcon sx={{fontSize: '26px', cursor: 'pointer'}} />
+                    </Tooltip>
                     <Box
                         sx={{
                             display: "flex",
@@ -603,14 +726,78 @@ const Dashboard = () => {
                     </Box>
                 </Box>
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 4, py: 1}}>
+
+            <Typography
+                sx={{
+                    fontSize: '18px',
+                    fontWeight: '600',
+                    color: '#0B5ED7',
+                    mt: 1,
+                    textAlign: 'center',
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                }}
+                className="Roboto"
+            >
+                {selectedTab?.current?.label || ""}
+            </Typography>
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',px: 10, py: 0.5}}>
+
+                <Card
+                    key="view-all"
+                    sx={{
+                    width: 220,
+                    height: (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") ? 50 : 70,
+                    borderRadius: 4,
+                    padding: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    background: 'linear-gradient(135deg, #ff9800, #f44336)',
+                    color: '#fff',
+                    fontWeight: 'bold',
+                    fontSize: '1.1rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    '&:hover': {
+                        transform: 'scale(1.05)',
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                    }
+                    }}
+                    onClick={ViewAllCases}
+                >
+                    All {selectedTab?.current?.name || selectedTab?.current?.label || ""}
+                </Card>
+
+            </Box>
+
+            {
+                (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
+                <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                    <Tabs
+                        value={courtTab}
+                        onChange={handleCourtTabChange}
+                        textColor="primary"
+                        indicatorColor="primary"
+                        sx={{ mb: 1 }}
+                    >
+                        <Tab label="Trial Court" />
+                        <Tab label="Sessions Court" />
+                    </Tabs>
+                </Box>
+            }
+
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, py: 0.5}}>
                 <Box>
-                    <Typography sx={{ fontWeight: 600, fontSize: 22, color: '#1D2939'}}>
+                    <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939'}}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
                     </Typography>
                 </Box>
 
-                <Box sx={{display: 'flex', alignItems: 'end', flexDirection: 'column', }}>
+                {/* <Box sx={{display: 'flex', alignItems: 'end', flexDirection: 'column', }}>
                     <Button
                         variant="outlined"
                         size="medium"
@@ -634,10 +821,10 @@ const Dashboard = () => {
                     >
                         View All Cases
                     </Button>
-                </Box>
+                </Box> */}
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',px: 4, pt: 1, pb: 2}}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 12, py: 1}}>
                 <Box
                     sx={{
                         backgroundColor: '#F0F4FF',
@@ -663,7 +850,7 @@ const Dashboard = () => {
                         </Typography>
                     </Box>
                 </Box>
-                
+
                 <Box sx={{ display: 'flex', alignItems: 'center'}}>
                     <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
                         Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
@@ -691,9 +878,9 @@ const Dashboard = () => {
                     key={key}
                     sx={{
                         width: 220,
-                        height: 110,
+                        height: (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") ? 80 : 110,
                         borderRadius: 4,
-                        padding: 2,
+                        p: 2,
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
@@ -709,18 +896,18 @@ const Dashboard = () => {
                     }}
                 >
                     {/* Top section with icon and title */}
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid rgba(255,255,255,0.3)', pb: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, borderBottom: '1px solid rgba(255,255,255,0.3)', pb: 0.5 }}>
                         <Box sx={{
                             background: 'rgba(255,255,255,0.2)',
                             borderRadius: '50%',
-                            padding: 1,
+                            padding: 0.5,
                             width: 20,
                             height: 20,
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center'
                         }}>
-                            <DashboardIcon fontSize="medium" />
+                            <DashboardIcon fontSize="small" />
                         </Box>
                         <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                             <Tooltip title={value.label} arrow>
@@ -728,9 +915,7 @@ const Dashboard = () => {
                                     variant="subtitle1"
                                     sx={{
                                         fontWeight: 'bold',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        whiteSpace: 'nowrap'
+                                        fontSize: 13
                                     }}
                                 >
                                     {value.label}
@@ -797,6 +982,35 @@ const Dashboard = () => {
                 </Card>
                 ))}
             </Box>
+
+            {
+                (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
+                <Box>
+                    <Box>
+                        <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939', textAlign: 'center'}}>
+                            Hearing Date Alerts
+                        </Typography>
+                    </Box>                    
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            justifyContent: 'center',
+                            mt: 2,
+                        }}
+                        >
+                        {days.map((day, index) => (
+                            <SkewedCard
+                                key={day}
+                                label={day}
+                                bgGradient={`linear-gradient(135deg, #43cea2, #185a9d)`}
+                                isFirst={index === 0}
+                                number={index + 1}
+                            />
+                        ))}
+                    </Box>
+                </Box>
+            }
 
             {openUserDesignationDropdown && userOverallDesignation?.length > 0 && (
                 <Dialog
@@ -961,6 +1175,74 @@ const Dashboard = () => {
                     </DialogContent>
                 </Dialog>
             )}
+
+            <Dialog
+                open={videoOpen}
+                onClose={handleVideoClose}
+                fullWidth
+                maxWidth="2xl"
+                scroll="paper"
+            >
+                <DialogTitle sx={{ m: 0, p: 2 }}>
+                    Videos
+                    <IconButton
+                        aria-label="close"
+                        onClick={handleVideoClose}
+                        sx={{
+                            position: 'absolute',
+                            right: 8,
+                            top: 8,
+                            color: (theme) => theme.palette.grey[500],
+                        }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+
+                <DialogContent dividers>
+                    <Box
+                        sx={{
+                            display: 'grid',
+                            gridTemplateColumns: {
+                                xs: '1fr',
+                                sm: '1fr 1fr',
+                                md: '1fr 1fr 1fr',
+                            },
+                            gap: 2,
+                        }}
+                    >
+                        <iframe 
+                            width="100%"
+                            height="350"
+                            src="https://www.youtube.com/embed/K4TOrB7at0Y?si=TwoP9V0PB-i1_fpV" 
+                            title="YouTube video player" 
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin" 
+                            allowfullscreen>    
+                        </iframe>
+                        <iframe
+                            width="100%"
+                            height="350"
+                            src="https://www.youtube.com/embed/b9hBHt317mw?si=PE7AmSJ_7GHiSNIp"
+                            title="Video 2"
+                            frameBorder="0"
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                        ></iframe>
+                        <iframe
+                            width="100%"
+                            height="350"
+                            src="https://www.youtube.com/embed/wDchsz8nmbo?si=od6PA4Xdw33cZd7Y"
+                            title="Video 3"
+                            frameBorder="0"
+                            allow="autoplay; encrypted-media"
+                            allowFullScreen
+                        ></iframe>
+                    </Box>
+                </DialogContent>
+            </Dialog>
+
             {loading && (
                 <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
                     <CircularProgress size={100} />

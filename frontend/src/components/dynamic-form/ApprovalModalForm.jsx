@@ -172,7 +172,8 @@ export default function ApprovalModal({
                                 disableFutureDate: 'true',
                                 info: 'Pick the date on which the approval is being granted.',
                                 supportingText: 'Pick the date on which the approval is being granted.',
-                                supportingTextColor: 'green'
+                                supportingTextColor: 'green',
+                                selectTodayDate : true
                             }}
                             formData={formData}
                             value={

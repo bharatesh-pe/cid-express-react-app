@@ -32,7 +32,7 @@ import WestIcon from '@mui/icons-material/West';
 import { Tabs, Tab } from '@mui/material';
 import { CircularProgress } from "@mui/material";
 
-const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
+const EqProgressReport = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
 
   useEffect(() => {
     const fetchData = async () => {
@@ -231,7 +231,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     setLoading(true);
     try {
       const response = await api.post("/templates/viewTemplate", {
-        table_name: "cid_under_investigation",
+        table_name: "cid_enquiry",
       });
 
       if (response.success && response.data?.fields) {
@@ -285,7 +285,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         }
 
         setAoFields(aoOnlyFields);
-        loadValueField(aoFieldId, false, "cid_under_investigation");
+        loadValueField(aoFieldId, false, "cid_enquiry");
       }
     } catch (error) {
       toast.error("Failed to load AO fields", {
@@ -418,7 +418,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         // Show/hide Replace PDF Button
         let showReplacePdf = false;
-        if (selectedOtherTemplate?.table || options.table === "cid_ui_case_progress_report") {
+        if (selectedOtherTemplate?.table || options.table === "cid_eq_case_progress_report") {
           const anyHasPRStatus = records.some(record => record.field_pr_status === "Yes");
           if (!anyHasPRStatus) {
             showReplacePdf = true;
@@ -713,7 +713,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         setOtherTemplateData(updatedTableData);
 
-        if (options.table === "cid_ui_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
+        if (options.table === "cid_eq_case_progress_report" && options.is_pdf && !fromUploadedFiles) {
           await checkPdfEntryStatus(selectedRow.id);
           await getUploadedFiles(selectedRow, options);
         }
@@ -797,7 +797,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
             const processedFields = rawFields.map((field) => {
               if (
                 field.name === "field_assigned_by" &&
-                templateData.table_name === "cid_ui_case_progress_report"
+                templateData.table_name === "cid_eq_case_progress_report"
               ) {
                 return {
                   ...field,
@@ -1054,7 +1054,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
     try {
       const response = await api.post("/templateData/checkPdfEntry", {
-        ui_case_id: caseId,
+        eq_case_id: caseId,
         is_pdf: true,
       });
 
@@ -1077,7 +1077,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
     try {
       const response = await api.post("/templateData/getUploadedFiles", {
-        ui_case_id: selectedRow,
+        eq_case_id: selectedRow,
       });
 
       if (response && response.success) {
@@ -1089,14 +1089,14 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     }
   };
 
-  const getMonthWiseFile = async (ui_case_id, page = 1) => {
-    if (!ui_case_id) {
-      console.error("Invalid ui_case_id for file retrieval:", ui_case_id);
+  const getMonthWiseFile = async (eq_case_id, page = 1) => {
+    if (!eq_case_id) {
+      console.error("Invalid eq_case_id for file retrieval:", eq_case_id);
       return;
     }
     try {
       const response = await api.post("/templateData/getMonthWiseByCaseId", {
-        ui_case_id,
+        eq_case_id,
         page,
         limit: PageSize,
       });
@@ -1728,7 +1728,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("ui_case_id", caseId);
+    formData.append("eq_case_id", caseId);
     formData.append("created_by", "0");
 
     try {
@@ -1890,7 +1890,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       }
     });
 
-    if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+    if (selectedOtherTemplate.table === "cid_eq_case_progress_report") {
       normalData["field_pr_status"] = "No";
     }
 
@@ -2052,7 +2052,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
       }
     });
 
-    if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+    if (selectedOtherTemplate.table === "cid_eq_case_progress_report") {
       normalData["field_pr_status"] = "No";
     }
 
@@ -2324,13 +2324,18 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         throw new Error(getTemplateResponse.message || "Failed to fetch template data.");
       }
 
+      console.log("Template Data:", getTemplateResponse.data);
       const dataToAppend = getTemplateResponse.data.filter(
         (item) => item.field_pr_status === "No"
       );
 
+      console.log("Data to Append:", dataToAppend); 
+
       const filteredDataToAppend = dataToAppend.filter(
         (item) => selectedIds.includes(item.id)
       );
+
+      console.log("Filtered Data to Append:", filteredDataToAppend);
 
       if (filteredDataToAppend.length === 0) {
         toast.error("These records have already been updated to the PDF.", {
@@ -2341,13 +2346,13 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         return;
       }
 
-      const aoFieldValues = (await loadValueField(rowId, false, "cid_under_investigation")) || {};
+      const aoFieldValues = (await loadValueField(rowId, false, "cid_enquiry")) || {};
 
 
       const aoFieldsToInclude = [
         "field_cid_crime_no./enquiry_no",
-        "field_crime_number_of_ps",
-        "field_name_of_the_police_station",
+        // "field_crime_number_of_ps",
+        // "field_name_of_the_police_station",
         "field_referring_agency",
         "field_dept_unit",
         "field_division",
@@ -2406,7 +2411,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
     try {
       const payload = {
         selected_row_id: selectedIds,
-        ui_case_id: selectedRow,
+        eq_case_id: selectedRow,
         appendText,
         aoFields,
         created_by: localStorage.getItem("user_id"),
@@ -2427,7 +2432,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 
         setOtherTemplateModalOpen(false);
         setSelectedIds([]);
-        handleOtherTemplateActions("cid_ui_case_progress_report", selectedRow, true, true);
+        handleOtherTemplateActions("cid_eq_case_progress_report", selectedRow, true, true);
       } else {
         toast.error(saveTemplateData.message || "Failed to append data.", {
           position: "top-right",
@@ -2740,7 +2745,7 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
                                     </label>
                                     <Tooltip title="Save">
                                         <SaveIcon
-                                        onClick={() => onPR_FieldsUpdate("cid_under_investigation", filterAoValues)}
+                                        onClick={() => onPR_FieldsUpdate("cid_enquiry", filterAoValues)}
                                         sx={{
                                             color: '#1570EF',
                                             padding: '0 1px',
@@ -2942,4 +2947,4 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
 };
 
 
-export default ProgressReport;
+export default EqProgressReport;

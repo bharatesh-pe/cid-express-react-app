@@ -1354,6 +1354,112 @@ div::first-letter {
         fill: #4db6ac !important;
     }
 
+    .menuColor_16 {
+        background-color: #ffa2a2; /* red */
+        color: #fff;
+    }
+    .menuColor_16 .tableActionIcon svg {
+        fill: #ffa2a2 !important;
+    }
+    .menuColor_17 {
+        background-color: #a4f4cf; /* blue */
+        color: #fff;
+    }
+    .menuColor_17 .tableActionIcon svg {
+        fill: #a4f4cf !important;
+    }
+    .menuColor_18 {
+        background-color: #ffb86a; /* green */
+        color: #fff;
+    }
+    .menuColor_18 .tableActionIcon svg {
+        fill: #ffb86a !important;
+    }
+    .menuColor_19 {
+        background-color: #dab2ff; /* yellow */
+        color: #000;
+    }
+    .menuColor_19 .tableActionIcon svg {
+        fill: #dab2ff !important;
+    }
+    .menuColor_20 {
+        background-color: #a3b3ff; /* purple */
+        color: #fff;
+    }
+    .menuColor_20 .tableActionIcon svg {
+        fill: #a3b3ff !important;
+    }
+    .menuColor_21 {
+        background-color: #ffd230; /* teal */
+        color: #000;
+    }
+    .menuColor_21 .tableActionIcon svg {
+        fill: #ffd230 !important;
+    }
+    .menuColor_22 {
+        background-color: #bbf451; /* orange */
+        color: #000;
+    }
+    .menuColor_22 .tableActionIcon svg {
+        fill: #bbf451 !important;
+    }
+    .menuColor_23 {
+        background-color: #8d6bff; /* violet */
+        color: #fff;
+    }
+    .menuColor_23 .tableActionIcon svg {
+        fill: #8d6bff !important;
+    }
+    .menuColor_24 {
+        background-color: #6bffcb; /* mint */
+        color: #000;
+    }
+    .menuColor_24 .tableActionIcon svg {
+        fill: #6bffcb !important;
+    }
+    .menuColor_25 {
+        background-color: #ff6bb2; /* pink */
+        color: #fff;
+    }
+    .menuColor_25 .tableActionIcon svg {
+        fill: #ff6bb2 !important;
+    }
+    .menuColor_26 {
+        background-color: #00bfa5; /* aqua green */
+        color: #fff;
+    }
+    .menuColor_26 .tableActionIcon svg {
+        fill: #00bfa5 !important;
+    }
+    .menuColor_27 {
+        background-color: #ff8a65; /* coral */
+        color: #fff;
+    }
+    .menuColor_27 .tableActionIcon svg {
+        fill: #ff8a65 !important;
+    }
+    .menuColor_28 {
+        background-color: #ba68c8; /* lavender purple */
+        color: #fff;
+    }
+    .menuColor_28 .tableActionIcon svg {
+        fill: #ba68c8 !important;
+    }
+    .menuColor_29 {
+        background-color: #ffd54f; /* golden yellow */
+        color: #000;
+    }
+    .menuColor_29 .tableActionIcon svg {
+        fill: #ffd54f !important;
+    }
+    .menuColor_30 {
+        background-color: #4db6ac; /* turquoise */
+        color: #fff;
+    }
+    .menuColor_30 .tableActionIcon svg {
+        fill: #4db6ac !important;
+    }
+
     .lokayuktaSidebarMenus .MuiListItemIcon-root{
         min-width: 30px !important;
     }
@@ -1486,4 +1592,8 @@ div::first-letter {
 
     .red-row {
         background-color: #ffe0e0 !important;
+    }
+
+    .zIndex999{
+        z-index: 999 !important;
     }

@@ -1560,10 +1560,15 @@ const UnderInvestigation = () => {
         <Tooltip title={value} placement="top">
             {
                 (key === "field_io_name" && (value === "" || !value)) ? (
-                    <span className="io-alert-flashy">
+                    <span className="io-alert-flashy" onClick={onClickHandler}>
                         <span className="flashy-dot"></span>
                         ASSIGN IO
                     </span>                  
+                ) : (key === "field_cc_no./sc_no" && (value === "" || !value)) ? (
+                    <span className="io-alert-flashy" onClick={onClickHandler}>
+                        <span className="flashy-dot"></span>
+                        CC Pending
+                    </span>
                 ) : (
                     <span
                         style={highlightColor}
@@ -7942,7 +7947,8 @@ const UnderInvestigation = () => {
                           disableFutureDate: 'true',
                           info: 'Pick the date on which the approval is being granted.',
                           supportingText: 'Pick the date on which the approval is being granted.',
-                          supportingTextColor: 'green'
+                          supportingTextColor: 'green',
+                          selectTodayDate : true
                         }}
                         formData={approvalSaveData}
                         value={approvalSaveData["approval_date"] ? dayjs(approvalSaveData["approval_date"]) : null}

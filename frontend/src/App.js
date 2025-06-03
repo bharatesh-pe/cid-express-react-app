@@ -34,6 +34,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
 import Enquiries from './pages/Enquiries';
+import CrimeIntelligence from './pages/CrimeIntelligence';
 import MastersView from './pages/Masters';
 import Designation from './pages/designation';
 import KGID from './pages/kgid';
@@ -253,6 +254,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <Enquiries />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/case/ci_case"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <CrimeIntelligence />
                         </Layout>
                     </ProtectedRoute>
                 }
