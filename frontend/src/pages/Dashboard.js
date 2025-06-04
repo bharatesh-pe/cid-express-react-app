@@ -775,7 +775,7 @@ const Dashboard = () => {
             </Box>
 
             {
-                (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
+                selectedTab?.current?.key === "pt_trail_case" ?
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                     <Tabs
                         value={courtTab}
@@ -788,6 +788,20 @@ const Dashboard = () => {
                         <Tab label="Sessions Court" />
                     </Tabs>
                 </Box>
+                : selectedTab?.current?.key === "pt_other_case" ?
+                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
+                        <Tabs
+                            value={courtTab}
+                            onChange={handleCourtTabChange}
+                            textColor="primary"
+                            indicatorColor="primary"
+                            sx={{ mb: 1 }}
+                        >
+                            <Tab label="High Court" />
+                            <Tab label="Supreme Court" />
+                        </Tabs>
+                    </Box>
+                : null
             }
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, py: 0.5}}>
