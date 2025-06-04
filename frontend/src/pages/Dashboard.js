@@ -244,7 +244,7 @@ const Dashboard = () => {
 
     var preSelectTabLabels = tabLabels[0]
     
-    if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics")){
+    if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics" && tabActiveKey !== "repos_case")){
         
         tabLabels.forEach((tab) => {
             const isMainMatch = tabActiveKey === tab.key;
@@ -413,7 +413,7 @@ const Dashboard = () => {
 
 
     useEffect(() => {
-        if (selectedActiveKey === "crime_intelligence") return;
+        if (selectedActiveKey === "crime_intelligence" || selectedActiveKey === "repos_case") return;
         getDashboardTiles();
     }, [selectedActiveKey]);
 

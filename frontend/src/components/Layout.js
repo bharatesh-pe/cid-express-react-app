@@ -259,7 +259,7 @@ const Layout = ({ children }) => {
     const [selectedSubKey, setSelectedSubKey] = useState("");    
     const handleTabClick = (event, tab) => {
 
-        if(tab.key === "crime_analytics" || tab.key === "crime_intelligence"){
+        if(tab.key === "crime_analytics" || tab.key === "crime_intelligence" || tab.key === "repos_case"){
             navigate(tab?.route, {state: {"navbarKey" : tab.key}});
             window.location.reload();
             return;

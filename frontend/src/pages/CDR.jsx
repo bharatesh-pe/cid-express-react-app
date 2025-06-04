@@ -27,27 +27,21 @@ import Swal from "sweetalert2";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import FilterListIcon from "@mui/icons-material/FilterList";
-import MultiSelect from "../components/form/MultiSelect";
-import AutocompleteField from "../components/form/AutoComplete";
-import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import DialogTitle from "@mui/material/DialogTitle";
+import Autocomplete from "@mui/material/Autocomplete";
+import { Add } from "@mui/icons-material";
 
 const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
     const [disableEditButtonFlag, setDisableEditButtonFlag] = useState(false);
-    const [aoFields, setAoFields] = useState([]);
-    const [aoFieldId,setAoFieldId] = useState(selectedRowData);
-    const [filterAoValues, setFilterAoValues] = useState({});
     const [viewModeOnly,setViewModeOnly] = useState(false);
-    const [isFromEdit, setIsFromEdit] = useState(false);
-    const [selectedApprovalEdit,setSelectedApprovalEdit] = useState(null);
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
     const templateActionAddFlag = useRef(false);
-    const attachmentEditFlag = useRef(false);
     const [totalPage, setTotalPage] = useState(0);
     const [totalRecord, setTotalRecord] = useState(0);
     const [filterDropdownObj, setfilterDropdownObj] = useState([]);
@@ -86,7 +80,6 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
     const [selectedRowIds, setSelectedRowIds] = useState([]);
     const [otherFormOpen, setOtherFormOpen] = useState(false);
     const [otherFormOpenCDR, setOtherFormOpenCDR] = useState(false);
-    const [cdrSubmitSelectedIds, setCDRSubmitSelectedIds] = useState([]);
     const [optionStepperData, setOptionStepperData] = useState([]);
     const [optionFormTemplateData, setOptionFormTemplateData] = useState([]);
     const [starFlag, setStarFlag] = useState(null);
@@ -114,6 +107,15 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
     const [approveDropdownAnchorEl, setApproveDropdownAnchorEl] = useState(null);
+    const [cdrUpdateDialogOpen, setCdrUpdateDialogOpen] = useState(false);
+    const [cdrUpdateStatus, setCdrUpdateStatus] = useState("");
+    const [cdrUpdateFiles, setCdrUpdateFiles] = useState([]);
+    const [cdrUpdateId, setCdrUpdateId] = useState(null);
+    const [cdrUpdateStatusOptions] = useState([
+        { label: "Pending", value: "Pending" },
+        { label: "Provided", value: "Provided" },
+        { label: "Rejected", value: "Rejected" },
+    ]);
 
     useEffect(()=>{
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
@@ -665,14 +667,6 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
             handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
         }
     }
-
-        const closeOtherFormCDR = ()=>{
-        setOtherFormOpenCDR(false)
-        if(selectedOtherTemplate?.table === "cid_ui_case_cdr_ipdr"){
-            handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
-        }
-    }
-
 
     const tableCellRender = (key, params, value, index, tableName) => {
     
@@ -2048,7 +2042,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ sys_status: "IO" }));
+                        updateStatusForm.append("data", JSON.stringify({ field_submit_status: "SP CCD" }));
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2083,125 +2077,6 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
             }
         }
     };
-
-// Handler for SPCCD: Approve and Send to CDRCELL
-
-    // Handler for SPCCD: Approve and Send to CDRCELL
-const handleApproveAndSendToCDRCELL = async ({ id }) => {
-    const user_divisio_id = localStorage.getItem("division_id") || null;
-    const user_designation_id = localStorage.getItem("designation_id") || null;
-
-    if (!id || id.length === 0) {
-        toast.error("Please select at least one record to submit.", {
-            position: "top-right",
-            autoClose: 3000,
-        });
-        return;
-    }
-
-    setLoading(true);
-    try {
-        const viewTableData = { table_name: "cid_ui_case_cdr_ipdr" };
-        const viewTemplateResponse = await api.post("/templates/viewTemplate", viewTableData);
-        setLoading(false);
-
-        if (viewTemplateResponse?.success && viewTemplateResponse?.data) {
-            const allFields = viewTemplateResponse.data["fields"] || [];
-
-            // Filter for only the two required fields
-            const filteredFields = allFields.filter(
-                f => f.name === "field_upload_the_cdr_copy" || f.name === "field_status_update"
-            );
-
-            // Set form fields and initialize data
-            setOptionFormTemplateData(filteredFields);
-            setOtherInitialTemplateData({
-                field_upload_the_cdr_copy: "",
-                field_status_update: "",
-            });
-
-            setOtherFormOpenCDR(true); // open modal
-            setviewReadonly(false);
-            setEditTemplateData(false);
-            setOtherEditTemplateData(true); // allow editing
-            setOtherReadOnlyTemplateData(false);
-
-            // Store ID(s) temporarily in a state if needed for submission
-            setCDRSubmitSelectedIds(id); // you can create/use a state variable like: const [cdrSubmitSelectedIds, setCDRSubmitSelectedIds] = useState([]);
-        } else {
-            toast.error("Failed to fetch template fields.", {
-                position: "top-right",
-                autoClose: 3000,
-            });
-        }
-    } catch (error) {
-        setLoading(false);
-        toast.error(error.message || "Submission failed.", {
-            position: "top-right",
-            autoClose: 3000,
-        });
-    }
-};
-
-// Use this as the onUpdate handler for NormalViewForm in the CDR CDRCELL modal
-const handleCDRFormSubmit = async (formValues) => {
-    try {
-        const ids = cdrSubmitSelectedIds;
-        if (!ids || ids.length === 0) return;
-
-        setLoading(true);
-        const getAllRecordsRes = await api.post("/templateData/getTemplateData", {
-            table_name: "cid_ui_case_cdr_ipdr",
-            ui_case_id: selectedRowData?.id,
-        });
-
-        if (getAllRecordsRes?.success && Array.isArray(getAllRecordsRes.data)) {
-            for (const row of getAllRecordsRes.data) {
-                const updateStatusForm = new FormData();
-                updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
-                updateStatusForm.append("id", row.id);
-
-                const dataObj = { sys_status: "CDRCELL" };
-                if (formValues.field_status_update) {
-                    dataObj.field_status_update = formValues.field_status_update;
-                }
-
-                updateStatusForm.append("data", JSON.stringify(dataObj));
-
-                if (formValues.field_upload_the_cdr_copy) {
-                    if (Array.isArray(formValues.field_upload_the_cdr_copy)) {
-                        for (const fileObj of formValues.field_upload_the_cdr_copy) {
-                            if (fileObj && fileObj.filename instanceof File) {
-                                updateStatusForm.append("field_upload_the_cdr_copy", fileObj.filename);
-                            }
-                        }
-                    } else if (formValues.field_upload_the_cdr_copy instanceof File) {
-                        updateStatusForm.append("field_upload_the_cdr_copy", formValues.field_upload_the_cdr_copy);
-                    }
-                }
-
-                await api.post("/templateData/updateTemplateData", updateStatusForm);
-            }
-
-            toast.success("The Action Plan has been submitted", {
-                position: "top-right",
-                autoClose: 3000,
-            });
-
-            handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
-            setShowSubmitAPButton(true);
-            setOtherFormOpenCDR(false);
-        }
-    } catch (error) {
-
-        toast.error("Submission failed. Please try again.", {
-            position: "top-right",
-            autoClose: 3000,
-        });
-    } finally {
-        setLoading(false);
-    }
-};
 
     const handleReturnForReview = async ({ id }) => {
         const user_divisio_id = localStorage.getItem("division_id") || null;
@@ -2244,6 +2119,7 @@ const handleCDRFormSubmit = async (formValues) => {
         if (result.isConfirmed) {
             try {
                 setLoading(true);
+                // Get all records for this case in cid_ui_case_cdr_ipdr
                 const getAllRecordsPayload = {
                     table_name: "cid_ui_case_cdr_ipdr",
                     ui_case_id: selectedRowData?.id
@@ -2251,6 +2127,7 @@ const handleCDRFormSubmit = async (formValues) => {
                 const getAllRecordsRes = await api.post("/templateData/getTemplateData", getAllRecordsPayload);
 
                 if (getAllRecordsRes && getAllRecordsRes.success && Array.isArray(getAllRecordsRes.data)) {
+                    // Update sys_status to IO for all records
                     for (const row of getAllRecordsRes.data) {
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
@@ -2292,11 +2169,14 @@ const handleCDRFormSubmit = async (formValues) => {
     };
 
 
+
     const handleReject = async ({ id }) => {
         const user_divisio_id = localStorage.getItem("division_id") || null;
         const user_designation_id = localStorage.getItem("designation_id") || null;
 
         if (!id || id.length === 0) {
+           
+
             toast.error("Please select at least one record to submit.", {
                 position: "top-right",
                 autoClose: 3000,
@@ -2333,6 +2213,7 @@ const handleCDRFormSubmit = async (formValues) => {
         if (result.isConfirmed) {
             try {
                 setLoading(true);
+                // Get all records for this case in cid_ui_case_cdr_ipdr
                 const getAllRecordsPayload = {
                     table_name: "cid_ui_case_cdr_ipdr",
                     ui_case_id: selectedRowData?.id
@@ -2340,11 +2221,12 @@ const handleCDRFormSubmit = async (formValues) => {
                 const getAllRecordsRes = await api.post("/templateData/getTemplateData", getAllRecordsPayload);
 
                 if (getAllRecordsRes && getAllRecordsRes.success && Array.isArray(getAllRecordsRes.data)) {
+                    // Update sys_status to IO for all records
                     for (const row of getAllRecordsRes.data) {
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ sys_status: "REJECTED" }));
+                        updateStatusForm.append("data", JSON.stringify({ sys_status: "REJECT" }));
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2379,8 +2261,85 @@ const handleCDRFormSubmit = async (formValues) => {
             }
         }
     };
+
+// Handler for SPCCD: Approve and Send to CDRCELL
+const handleApproveAndSendToCDRCELL = async ({ id }) => {
+    setCdrUpdateId(id);
+    setCdrUpdateStatus("");
+    setCdrUpdateFiles([]);
+    setCdrUpdateDialogOpen(true);
+};
+
+// New function to handle update (similar to otherTemplateUpdateFunc)
+const handleCDRDialogUpdate = async () => {
+    if (!cdrUpdateId) return;
+    setLoading(true);
+    try {
+        // Fetch all rows for this ui_case_id in cid_ui_case_cdr_ipdr
+        const getAllRowsPayload = {
+            table_name: "cid_ui_case_cdr_ipdr",
+            ui_case_id: cdrUpdateId
+        };
+        const getAllRowsRes = await api.post("/templateData/getTemplateData", getAllRowsPayload);
+
+        if (getAllRowsRes && getAllRowsRes.success && Array.isArray(getAllRowsRes.data)) {
+            for (const row of getAllRowsRes.data) {
+                const updateStatusForm = new FormData();
+                updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
+                updateStatusForm.append("id", row.id);
+
+                const dataObj = { sys_status: "CDRCELL" };
+                if (cdrUpdateStatus) {
+                    dataObj.field_status_update = cdrUpdateStatus;
+                }
+                updateStatusForm.append("data", JSON.stringify(dataObj));
+
+                // Attach files
+                if (cdrUpdateFiles && cdrUpdateFiles.length > 0) {
+                    let filteredFileArray = [];
+                    let hasFileInstance = false;
+                    if (Array.isArray(cdrUpdateFiles)) {
+                        hasFileInstance = cdrUpdateFiles.some(file => file instanceof File);
+                        filteredFileArray = cdrUpdateFiles.filter(file => file instanceof File);
+                        for (const file of filteredFileArray) {
+                            updateStatusForm.append("field_upload_the_cdr_copy", file);
+                        }
+                        if (hasFileInstance) {
+                            const folderInfo = filteredFileArray.map(file => ({
+                                filename: file.name,
+                            }));
+                            updateStatusForm.append("folder_attachment_ids", JSON.stringify(folderInfo));
+                        }
+                    }
+                }
+
+                updateStatusForm.append("transaction_id", randomApprovalId);
+                updateStatusForm.append("user_designation_id", localStorage.getItem("designation_id") || null);
+
+                await api.post("/templateData/updateTemplateData", updateStatusForm);
+            }
+        }
+
+        toast.success("The Action Plan has been submitted", {
+            position: "top-right",
+            autoClose: 3000,
+        });
+
+        await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
+        setShowSubmitAPButton(true);
+        setCdrUpdateDialogOpen(false);
+    } catch (error) {
+        toast.error("Submission failed. Please try again.", {
+            position: "top-right",
+            autoClose: 3000,
+        });
+    } finally {
+        setLoading(false);
+    }
+};
+
     return (
-        <>
+    <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
             <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
                 <Box
@@ -2663,48 +2622,136 @@ const handleCDRFormSubmit = async (formValues) => {
             </Dialog>
         )}
 
-
-                {otherFormOpenCDR && (
+        {/* Replace NormalViewForm for CDR update with custom dialog */}
+        {cdrUpdateDialogOpen && (
             <Dialog
-                open={otherFormOpenCDR}
-                onClose={() => closeOtherFormCDR}
-                aria-labelledby="alert-dialog-title"
-                aria-describedby="alert-dialog-description"
-                maxWidth="xl"
+                open={cdrUpdateDialogOpen}
+                onClose={() => setCdrUpdateDialogOpen(false)}
+                aria-labelledby="cdr-update-dialog-title"
+                maxWidth="sm"
                 fullWidth
             >
-            <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
-                <DialogContentText id="alert-dialog-description">
-                <FormControl fullWidth>
-                    <NormalViewForm
-                    table_row_id={otherRowId}
-                    template_id={otherTemplateId}
-                    template_name={ selectedOtherTemplate?.name}
-                    table_name={selectedOtherTemplate?.table}
-                    readOnly={otherReadOnlyTemplateData}
-                    editData={otherEditTemplateData}
-                    initialData={otherInitialTemplateData}
-                    formConfig={optionFormTemplateData}
-                    stepperData={optionStepperData}
-                    // onSubmit={handleCDRFormSubmit}
-                    onUpdate={handleCDRFormSubmit}
-                    disableEditButton={disableEditButtonFlag}
-                    onError={onSaveTemplateError}
-                    closeForm={closeOtherFormCDR}
-                    headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                <DialogTitle id="cdr-update-dialog-title">
+                    Approve and Send to CDRCELL
+                </DialogTitle>
+<DialogContent>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 1 }}>
+        
+        {/* Status Update Label + Dropdown */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
+                Status Update
+            </Typography>
+            <Autocomplete
+                options={cdrUpdateStatusOptions}
+                value={cdrUpdateStatusOptions.find(opt => opt.value === cdrUpdateStatus) || null}
+                onChange={(_, val) => setCdrUpdateStatus(val ? val.value : "")}
+                getOptionLabel={option => option.label || ""}
+                isOptionEqualToValue={(option, value) => option.value === value.value}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        placeholder="Select status"
+                        fullWidth
                     />
-                </FormControl>
-                </DialogContentText>
-            </DialogContent>
-            <DialogActions sx={{ padding: "12px 24px" }}>
-                <Button onClick={closeOtherFormCDR}>
-                    Cancel
+                )}
+                sx={{ minWidth: 200 }}
+            />
+        </Box>
+
+        {/* Upload Label + Button + File Previews */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
+                Upload CDR Copy
+            </Typography>
+
+            <Tooltip title="Upload CDR Copy">
+                <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<Add />}
+                    sx={{
+                        minWidth: 220,
+                        maxWidth: 220,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis"
+                    }}
+                >
+                    Upload CDR Copy
+                    <input
+                        type="file"
+                        hidden
+                        multiple
+                        onChange={e => setCdrUpdateFiles(Array.from(e.target.files))}
+                    />
                 </Button>
-            </DialogActions>
+            </Tooltip>
+
+            {cdrUpdateFiles && cdrUpdateFiles.length > 0 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+                    {cdrUpdateFiles.map((file, idx) => (
+                        <Tooltip key={idx} title={file.name}>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    cursor: "pointer",
+                                    border: "1px solid #e0e0e0",
+                                    borderRadius: "4px",
+                                    px: 1,
+                                    py: 0.5,
+                                    bgcolor: "#f9f9f9",
+                                    width: "fit-content"
+                                }}
+                                onClick={() => {
+                                    const url = URL.createObjectURL(file);
+                                    window.open(url, "_blank", "noopener,noreferrer");
+                                }}
+                            >
+                                <Box sx={{ color: "#1976d2" }}>
+                                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zm1 7V3.5L20.5 9z"/>
+                                    </svg>
+                                </Box>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        fontSize: 13,
+                                        maxWidth: 200,
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis"
+                                    }}
+                                >
+                                    {file.name}
+                                </Typography>
+                            </Box>
+                        </Tooltip>
+                    ))}
+                </Box>
+            )}
+        </Box>
+    </Box>
+</DialogContent>
+
+                <DialogActions>
+                    <Button onClick={() => setCdrUpdateDialogOpen(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleCDRDialogUpdate}
+                        disabled={loading}
+                    >
+                        Update
+                    </Button>
+                </DialogActions>
             </Dialog>
         )}
-        </>
-    );    
-};
+    </>
+)};
 
 export default CDR;
