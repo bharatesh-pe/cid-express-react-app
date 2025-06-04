@@ -50,6 +50,7 @@ import TemplateMastersView from './pages/templateMasters';
 import LokayuktaView from './pages/lokayuktaView';
 import ActionPlan from './pages/ActionPlan';
 import IframePage from './pages/IframePage';
+import SettingsPage from './pages/SettingsPage';
 
 import { ToastContainer } from 'react-toastify';
 function App() {
@@ -479,6 +480,17 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <IframePage />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/settings"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <SettingsPage />
                         </Layout>
                     </ProtectedRoute>
                 }

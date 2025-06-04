@@ -372,6 +372,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },
+    settings: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
     action_template: {
       type: DataTypes.BOOLEAN,
       allowNull: true
