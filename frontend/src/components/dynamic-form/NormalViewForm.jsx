@@ -1,5 +1,7 @@
 // DynamicForm.js
 import React, { useState, useEffect, useRef } from 'react';
+import isEqual from 'lodash.isequal';
+
 // import formConfig from './formConfig.json';
 import { Button, Grid, Box, Typography, IconButton, Chip } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
@@ -45,7 +47,7 @@ import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
 import DropdownWithAdd from '../form/DropdownWithAdd';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
 
   const [formData, setFormData] = useState({});
@@ -68,8 +70,9 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     { field: 'date', headerName: 'Date & Time', flex: 1 }
   ]);
 
-  const saveNewActionRef = useRef(false);
+    const saveNewActionRef = useRef(false);
     const orderCopyFieldMandatory = useRef(false);
+    const changingFormField = useRef(false);
   
   
   useEffect(() => {
@@ -128,9 +131,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
         orderCopyFieldMandatory.current = value
 
-        if (value) {
-            delete formData["field_order_copy_(_17a_done_)"];
-        }
     };
 
 //   useEffect(() => {
@@ -337,6 +337,38 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             });
         }
 
+        const initialIsEmpty = !initialData || Object.keys(initialData).length === 0;
+        const formHasValues = formData && Object.keys(formData).length > 0 && Object.values(formData).some(val => val !== "" && val !== null && val !== undefined);;
+
+        const checkInitialData = {};
+        const checkFormData = {};
+
+        newFormConfig.forEach((config) => {
+            const name = config.name;
+
+            if (initialData.hasOwnProperty(name)) {
+                checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
+            }
+            if (formData.hasOwnProperty(name)) {
+                checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
+            }
+        });  
+
+        var changingFlag = false;
+
+        if (initialIsEmpty && formHasValues) {                        
+            changingFlag = true
+        } else if (!initialIsEmpty && !isEqual(checkInitialData, checkFormData)) {
+            changingFlag = true;
+        } else {
+            changingFlag = false;
+        }  
+
+        changingFormField.current = changingFlag
+
+        if(editedForm){
+            editedForm(changingFlag);
+        }
 
     },[formData]);
 
@@ -1060,9 +1092,29 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     }
   }
 
-  const CloseFormModal = () => {
+  const CloseFormModal = async () => {
     if (closeForm) {
-      closeForm(false);
+
+        if(changingFormField.current === true){
+            const result = await Swal.fire({
+                title: 'Unsaved Changes',
+                text: 'You have unsaved changes. Are you sure you want to leave?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Exit',
+                cancelButtonText: 'No',
+            });
+    
+            if (result.isConfirmed) {
+                if(editedForm){
+                    editedForm(false);
+                }
+                closeForm(false);
+            }
+        }else{
+            closeForm(false);
+        }
+
     }
   }
 
@@ -1245,10 +1297,15 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         if (updatedField) {
                             if (updatedField?.options.length === 1) {
                                 const onlyOption = updatedField.options[0];
-                                setFormData((prevData) => ({
-                                    ...prevData,
-                                    [field.name]: onlyOption.code
-                                }));
+
+                                const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                                if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
+                                    setFormData((prevData) => ({
+                                        ...prevData,
+                                        [field.name]: onlyOption.code
+                                    }));
+                                }
 
                                 optionUpdateFields.push(field);
                             }

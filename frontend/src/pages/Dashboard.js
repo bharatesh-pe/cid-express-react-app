@@ -63,126 +63,6 @@ import CloseIcon from '@mui/icons-material/Close';
         "Today", "Tomorrow", "This Week", "Next Week"
     ];
 
-    // const gradients = [
-    //     "#2196F3", "#3f51b5", "#673ab7",
-    //     "#00bcd4", "#4caf50", "#ff9800",
-    //     "#f44336"
-    // ];
-
-    const gradients = [
-    'linear-gradient(135deg, #2196F3, #673ab7b5)',       // Blue to Purple (Day 1)
-    'linear-gradient(135deg, #00c6ff, #0072ff)',         // Light Blue to Deep Blue (Day 2)
-    'linear-gradient(135deg, #f7971e, #ffd200)',         // Orange to Yellow (Day 3)
-    'linear-gradient(135deg, #00b09b, #96c93d)',         // Teal to Green (Day 4)
-    'linear-gradient(135deg, #ff416c, #ff4b2b)',         // Pink to Red (Day 5)
-    'linear-gradient(135deg, #654ea3, #eaafc8)',         // Purple to Light Pink (Day 6)
-    'linear-gradient(135deg, #43cea2, #185a9d)',         // Aqua Green to Blue (Day 7–10)
-    ];
-
-
-    //   clipPath: 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)',
-
-    const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
-        <Tooltip title={"click here"} arrow>
-        <Box
-            sx={{
-                width: isFirst ? 150 : 180,
-                height: 70,
-                background: 'linear-gradient(135deg, #00796B, #26A69A)',
-                color: '#fff',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 1,
-                boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
-                transition: 'all 0.3s ease',
-                px: 1,
-                cursor: 'pointer',
-                clipPath: isFirst ? 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)' : 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 13% 50%)',
-                '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
-                }
-            }}
-        >
-            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
-                {label}
-            </Typography>
-            <Typography
-                sx={{
-                    fontWeight: 'bold',
-                    fontSize: '1rem',
-                    ml: 1,
-                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                    borderRadius: '50%',
-                    width: 24,
-                    height: 24,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                {number || 0}
-            </Typography>
-        </Box>
-        </Tooltip>
-    );
-
-    const GradientBadge = styled(Box)(({ gradient }) => ({
-        background: gradient,
-        color: '#fff',
-        fontSize: 13,
-        fontWeight: 600,
-        padding: '4px 8px',
-        borderRadius: '999px',
-        display: 'inline-block',
-        minWidth: 32,
-        textAlign: 'center',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-    }));
-
-    const cardBackgrounds = [
-        "linear-gradient(135deg, #569bd0, #5c5ee0)",  // 1 - darker blue
-        "linear-gradient(135deg, #a5a6d9, #8a4fd1)",  // 2 - darker lavender
-        "linear-gradient(135deg, #8c8dc7, #2c38c4)",  // 3 - deeper indigo
-        "linear-gradient(135deg, #a5a6d9, #3d3fd0)",  // 4 - deeper violet
-        "linear-gradient(135deg, #65bda3, #4a8c73)",  // 5 - teal green
-        "linear-gradient(135deg, #e2a37e, #cf5d3f)",  // 6 - burnt orange
-        "linear-gradient(135deg, #dc87b1, #b24f91)",  // 7 - rose pink
-        "linear-gradient(135deg, #f0c95e, #e09826)",  // 8 - amber gold
-        "linear-gradient(135deg, #9fa3b0, #727681)",  // 9 - slate grey
-        "linear-gradient(135deg, #97a7f7, #5c6be5)",  // 10 - soft periwinkle
-        "linear-gradient(135deg, #7cc6fe, #3b95e4)"   // 11 - sky blue
-    ];
-
-    const cardHoverBackgrounds = [
-        "linear-gradient(135deg, #467fb0, #484ad0)",  // 1
-        "linear-gradient(135deg, #8e8fc2, #743ebf)",  // 2
-        "linear-gradient(135deg, #6f70a9, #1f2cae)",  // 3
-        "linear-gradient(135deg, #8e8fc2, #2d2fbf)",  // 4
-        "linear-gradient(135deg, #519c8c, #35775f)",  // 5
-        "linear-gradient(135deg, #cb8d6c, #b04c30)",  // 6
-        "linear-gradient(135deg, #c27399, #94396e)",  // 7
-        "linear-gradient(135deg, #deb648, #c37d15)",  // 8
-        "linear-gradient(135deg, #868b9b, #5a5f6a)",  // 9
-        "linear-gradient(135deg, #7b8cdd, #4553d1)",  // 10
-        "linear-gradient(135deg, #66b1f0, #2a7fd1)"   // 11
-    ];
-
-    const cardTitleBackgrounds = [
-        "#6b9ddf",  // 1 - bright blue
-        "#b5aaf0",  // 2 - soft lavender
-        "#9295dc",  // 3 - light indigo
-        "#a2a5f2",  // 4 - light violet
-        "#7ecdb7",  // 5 - mint green
-        "#ee9f76",  // 6 - orange coral
-        "#e58fb4",  // 7 - rose pink
-        "#f5d97b",  // 8 - warm yellow
-        "#adb2c0",  // 9 - slate grey
-        "#a2b4fc",  // 10 - pastel periwinkle
-        "#8dcfff"   // 11 - light sky blue
-    ];
 
 const Dashboard = () => {
     const [activeTab, setActiveTab] = useState(0);
@@ -225,7 +105,6 @@ const Dashboard = () => {
                 preSelectTabLabels = matchedOption;
             }
         });
-
     }
 
     const selectedTab = useRef(preSelectTabLabels);
@@ -233,6 +112,54 @@ const Dashboard = () => {
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
     const [submenuItems, setSubmenuItems] = useState([]);
     const [selectedSubKey, setSelectedSubKey] = useState("");
+
+    const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
+        <Tooltip title={"click here"} arrow>
+        <Box
+            sx={{
+                width: isFirst ? 150 : 180,
+                height: 70,
+                background: 'linear-gradient(135deg, #00796B, #26A69A)',
+                color: '#fff',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 1,
+                boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease',
+                px: 1,
+                cursor: 'pointer',
+                clipPath: isFirst ? 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)' : 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 13% 50%)',
+                '&:hover': {
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+                }
+            }}
+            onClick={ViewAllCases}
+        >
+            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                {label}
+            </Typography>
+            <Typography
+                sx={{
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    ml: 1,
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    borderRadius: '50%',
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                {number || 0}
+            </Typography>
+        </Box>
+        </Tooltip>
+    );
 
     const handleTabClick = (event, tab) => {
 

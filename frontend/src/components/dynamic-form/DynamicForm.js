@@ -1,5 +1,6 @@
 // DynamicForm.js
 import React, { useState, useEffect, useRef } from "react";
+import isEqual from 'lodash.isequal';
 // import formConfig from './formConfig.json';
 import { Button, Grid, Box, Typography, IconButton } from "@mui/material";
 import { Stepper, Step, StepLabel } from "@mui/material";
@@ -96,8 +97,9 @@ const DynamicForm = ({
     { field: "date", headerName: "Date & Time", flex: 1 },
   ]);
 
-  const saveNewRef = useRef(false);
-  const orderCopyFieldMandatory = useRef(false);
+    const saveNewRef = useRef(false);
+    const orderCopyFieldMandatory = useRef(false);
+    const changingFormField = useRef(false);
 
     const [dropdownInputValue, setDropdownInputValue] = useState({});
 
@@ -323,6 +325,35 @@ const DynamicForm = ({
             });
 
         }
+
+        const initialIsEmpty = !initialData || Object.keys(initialData).length === 0;
+        const formHasValues = formData && Object.keys(formData).length > 0 && Object.values(formData).some(val => val !== "" && val !== null && val !== undefined);;
+
+        const checkInitialData = {};
+        const checkFormData = {};
+
+        newFormConfig.forEach((config) => {
+            const name = config.name;
+
+            if (initialData.hasOwnProperty(name)) {
+                checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
+            }
+            if (formData.hasOwnProperty(name)) {
+                checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
+            }
+        });
+
+        var changingFlag = false;
+
+        if (initialIsEmpty && formHasValues) {                        
+            changingFlag = true
+        } else if (!initialIsEmpty && !isEqual(checkInitialData, checkFormData)) {
+            changingFlag = true;
+        } else {
+            changingFlag = false;
+        }
+
+        changingFormField.current = changingFlag
 
     },[formData]);
 
@@ -1098,11 +1129,28 @@ const DynamicForm = ({
     }
   };
 
-  const CloseFormModal = () => {
-    if (closeForm) {
-      closeForm(false);
+    const CloseFormModal = async () => {
+        if (closeForm) {
+
+            if(changingFormField.current === true){
+                const result = await Swal.fire({
+                    title: 'Unsaved Changes',
+                    text: 'You have unsaved changes. Are you sure you want to leave?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, Exit',
+                    cancelButtonText: 'No',
+                });
+        
+                if (result.isConfirmed) {
+                    closeForm(false);
+                }
+            }else{
+                closeForm(false);
+            }
+
+        }
     }
-  };
 
   useEffect(() => {
     if (stepperData && stepperData.length > 0) {
@@ -1350,10 +1398,15 @@ const DynamicForm = ({
                         if (updatedField) {
                             if (updatedField?.options.length === 1) {
                                 const onlyOption = updatedField.options[0];
-                                setFormData((prevData) => ({
-                                    ...prevData,
-                                    [field.name]: onlyOption.code
-                                }));
+
+                                const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                                if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
+                                    setFormData((prevData) => ({
+                                        ...prevData,
+                                        [field.name]: onlyOption.code
+                                    }));
+                                }
 
                                 optionUpdateFields.push(field);
                             }
