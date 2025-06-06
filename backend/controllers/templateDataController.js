@@ -4636,8 +4636,6 @@ exports.checkPdfEntry = async (req, res) => {
                 });
             }
 
-            console.log("before if condition");
-
             if (!table_name || !key || typeof value === "undefined") {
                 return userSendResponse(res, 400, false, "table_name, key, and value are required.", null);
             }
