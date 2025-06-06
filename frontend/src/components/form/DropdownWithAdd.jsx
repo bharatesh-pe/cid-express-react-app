@@ -1,6 +1,8 @@
 import React, { useState } from "react";
-import { Autocomplete, TextField, Popper, Box, styled, CircularProgress } from "@mui/material";
+import { Autocomplete, TextField, Popper, Box, styled, CircularProgress, FormHelperText, Tooltip } from "@mui/material";
 import { useEffect } from "react";
+import InfoIcon from '@mui/icons-material/Info';
+import HistoryIcon from '@mui/icons-material/History';
 
 const StyledPopper = styled(Popper)({
     "& .MuiAutocomplete-listbox": {
@@ -27,11 +29,21 @@ const FixedAddOption = styled(Box)(({ theme }) => ({
     transition: "background-color 0.2s ease",
 }));
 
-export default function DropdownWithAdd({ field, onChange, onAdd, dropdownInputValue, onChangeDropdownInputValue, formData, onFocus, errors }) {
-
-    console.log(dropdownInputValue,"dropdownInputValue");
-
-    const [value, setValue] = useState(formData?.[field.name] || null);
+export default function DropdownWithAdd(
+    { 
+        field, 
+        onChange, 
+        onAdd, 
+        dropdownInputValue, 
+        onChangeDropdownInputValue, 
+        formData, 
+        onFocus, 
+        errors,
+        readOnly,
+        disabled,
+        onHistory,
+        isFocused
+    }) {
 
     const handleAdd = async (val) => {
         if(!onAdd){
@@ -41,36 +53,27 @@ export default function DropdownWithAdd({ field, onChange, onAdd, dropdownInputV
         onAdd(val);
     };
 
-    useEffect(()=>{
-        if(value && onChange){
-            if(value?.code){
-                console.log(value?.code,"value?.code");
-                onChange(value?.code);
-            }
-        }
-    },[value]);
-
-    useEffect(() => {
-        setValue(formData?.[field.name] || null);
-    }, [formData?.[field.name]]);
-
     var inputValue = dropdownInputValue[field.name] || "";
 
     return (
-        <Autocomplete
-            onFocus={onFocus}
-            value={
-                field.options?.find((opt) => opt.code === value) || null
+        <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
+            {field.heading && 
+                <h4 className={`form-field-heading ${readOnly || disabled || field.disabled ? 'disabled' : ''}`}>
+                    {field.heading}
+                </h4>
             }
+        <Autocomplete
+            disabled={readOnly || disabled ||field.disabled === true}
             inputValue={inputValue}
             onInputChange={(event, newInputValue) =>
                 onChangeDropdownInputValue(newInputValue)
             }
+            value={field.options.find((option) => String(option.code) === String(formData?.[field.name])) || null} // FIX HERE
             onChange={(event, newValue) => {
                 if (newValue) {
-                    setValue(newValue.code);
+                    onChange(newValue.code);
                 } else {
-                    setValue(null);
+                    onChange(null);
                 }
             }}
             getOptionLabel={(option) =>
@@ -78,9 +81,68 @@ export default function DropdownWithAdd({ field, onChange, onAdd, dropdownInputV
             }
             options={field.options || []}
             renderInput={(params) => (
-                <TextField {...params} label={field?.label || ""} variant="outlined" />
+                <TextField 
+                    {...params} 
+                    className='selectHideHistory'
+                    error={errors && errors[field.name] && Boolean(errors[field.name])}
+                    label={
+                        <div style={{ display: 'flex', alignItems: 'center',color: errors && errors[field.name] && Boolean(errors[field.name]) ? '#F04438' : '' }}>
+                            <span>
+                                {field.label}
+                            </span>
+                            <span className="anekKannada" style={{ marginTop: '6px' }}>
+                                {field.kannada ? '/ ' + field.kannada + ' ' : ''}
+                            </span>
+                            {field.required && (
+                                <span
+                                    style={{
+                                        padding: '0px 0px 0px 5px', 
+                                        verticalAlign: 'middle'
+                                    }} 
+                                    className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
+                                >
+                                    {'*'}
+                                </span>
+                            )}
+                            {field.info && (
+                                <Tooltip title={field.info ? field.info : ''} arrow placement="top">
+                                    <InfoIcon className='infoIcon' sx={{
+                                        color: '#1570EF', 
+                                        padding: '0px 0px 0px 3px', 
+                                        fontSize: '20px',
+                                        verticalAlign: 'middle',
+                                        marginBottom:'3px'
+                                    }}/>
+                                </Tooltip>
+                            )}
+                            {field.history && (
+                                <HistoryIcon
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        if (onHistory) {
+                                            onHistory();
+                                        } else {
+                                            console.log("clicked");
+                                        }
+                                    }}
+                                    className='historyIcon' 
+                                    sx={{
+                                        color: '#1570EF', 
+                                        padding: '0 1px', 
+                                        fontSize: '20px',
+                                        verticalAlign: 'middle',
+                                        cursor: 'pointer',
+                                        pointerEvents: 'auto',
+                                        marginBottom:'3px'
+                                    }}
+                                />
+                            )}
+                        </div>
+                    }
+                    variant="outlined" 
+                />
             )}
-            sx={{ width: "100%" }}
             PopperComponent={(props) => (
                 <StyledPopper {...props}>
                     {props.children}
@@ -97,6 +159,28 @@ export default function DropdownWithAdd({ field, onChange, onAdd, dropdownInputV
                     {option.name}
                 </li>
             )}
+            sx={{
+                '& .MuiOutlinedInput-root': {
+                    // backgroundColor: '#fff', // Inner input background color
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                    borderWidth: isFocused ? '2px' : '1px', // Apply border width based on focus
+                    borderColor: isFocused ? '#1570EF' : errors && errors[field.name] && Boolean(errors[field.name]) ? '#F04438' : '#D0D5DD', // Apply border color based on focus
+                    boxShadow: isFocused ? '0px 0px 0px 3px #D1E9FF' : 'none', // Apply shadow based on focus
+                },
+            }}
+            onFocus={onFocus}
+            focused={isFocused || false}
         />
+            <FormHelperText
+                sx={{
+                    color: errors?.[field?.name]
+                    ? '#F04438 !important'
+                    : `${field?.supportingTextColor || ''} !important`,
+                }}
+            >
+                {errors?.[field?.name] || field?.supportingText || ''}
+            </FormHelperText>
+        </Box>
     );
 }

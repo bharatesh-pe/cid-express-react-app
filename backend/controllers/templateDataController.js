@@ -4605,13 +4605,7 @@ exports.checkPdfEntry = async (req, res) => {
         try {
             const { table_name, key, value, primaryTable, id } = req.body;
             
-            console.log("stated")
-            console.log(primaryTable,"primaryTable")
-            console.log(id,"id")
-
-            if (id && primaryTable) {
-                
-                console.log("here only");
+            if (id && primaryTable && !table_name) {
 
                 const template = await Template.findOne({ where: { table_name : primaryTable } });
                 if (!template) {

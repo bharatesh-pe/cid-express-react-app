@@ -1850,6 +1850,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                                     onChangeDropdownInputValue={(value) => 
                                         setDropdownInputValue({ ...dropdownInputValue, [field.name]: value })
                                     }
+                                    onHistory={() => showHistory(field.name)}
                                     dropdownInputValue={dropdownInputValue}
                                     readOnly={readOnlyData}
                                 />

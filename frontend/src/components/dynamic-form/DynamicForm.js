@@ -2188,6 +2188,7 @@ const DynamicForm = ({
                                     onChangeDropdownInputValue={(value) => 
                                         setDropdownInputValue({ ...dropdownInputValue, [field.name]: value })
                                     }
+                                    onHistory={() => showHistory(field.name)}
                                     dropdownInputValue={dropdownInputValue}
                                     readOnly={readOnlyData}
                                 />
