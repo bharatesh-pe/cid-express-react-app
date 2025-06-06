@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import DynamicForm from "../components/dynamic-form/DynamicForm";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
+import EditTableView from "../components/table-view/EditTableView";
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 
@@ -1175,6 +1176,49 @@ const UnderInvestigation = () => {
             }
         }
     }
+    
+    function enhanceTableHeader(header, fieldDefs) {
+  const fieldDefMap = {};
+  fieldDefs.forEach(f => { fieldDefMap[f.name] = f; });
+  return header.map((col) => {
+    const fieldDef = fieldDefMap[col.field];
+    if (!fieldDef) return col;
+    // Dropdowns/Autocomplete for any field with options
+    if (
+      fieldDef.type === "dropdown" ||
+      fieldDef.type === "autocomplete" ||
+      fieldDef.type === "singleselect" ||
+      (Array.isArray(fieldDef.options) && fieldDef.options.length > 0)
+    ) {
+      let valueOptions = [];
+      if (Array.isArray(fieldDef.options)) {
+        valueOptions = fieldDef.options.map(opt => {
+          if (typeof opt === "object") {
+            return {
+              label: opt.name ?? opt.label ?? opt.code ?? opt.value ?? String(opt),
+              value: opt.code ?? opt.value ?? opt.name ?? opt.label ?? String(opt)
+            };
+          }
+          return { label: String(opt), value: String(opt) };
+        });
+      }
+      return {
+        ...col,
+        type: "singleSelect",
+        valueOptions,
+        editable: true,
+      };
+    }
+    // File upload
+    if (fieldDef.type === "file" || fieldDef.type === "profilepicture") {
+      return {
+        ...col,
+        type: "file",
+      };
+    }
+    return col;
+  });
+}
     const showAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused")=>{
 
         if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
@@ -1288,7 +1332,29 @@ const UnderInvestigation = () => {
                             renderHeader: (params) => (
                                 tableHeaderRender(params, element?.name)
                             ),
-                            renderCell: renderCellFunc(element?.name, index),
+                                ...(tableName === "cid_ui_case_accused" && element?.name === "field_pso_&_19_pc_act_order"
+                                    ? {
+                                        renderCell: (params) => fileUploadTableView(element?.name, params, params.value),
+                                        editable: true
+                                    }
+                                    : {
+                                        renderCell: renderCellFunc(element?.name, index)
+                                    }),
+                            // Add type: "singleSelect" here if the field is a dropdown/autocomplete
+                            ...(Array.isArray(element?.options) && element.options.length > 0
+                                ? {
+                                    type: "singleSelect",
+                                    valueOptions: element.options.map(opt =>
+                                        typeof opt === "object"
+                                            ? {
+                                                label: opt.name ?? opt.label ?? opt.code ?? opt.value ?? String(opt),
+                                                value: opt.code ?? opt.value ?? opt.name ?? opt.label ?? String(opt)
+                                            }
+                                            : { label: String(opt), value: String(opt) }
+                                    ),
+                                    editable: true
+                                }
+                                : {})
                         }));
 
                         const formatDate = (value) => {
@@ -1330,6 +1396,7 @@ const UnderInvestigation = () => {
                             tableHeader = tableHeader.filter(
                                 (col) => col.field !== "field_due_date" && col.field !== "field_pr_status"
                             );
+                            tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
                         if (tableName === "cid_ui_case_forensic_science_laboratory") {
                             tableHeader = tableHeader.filter(
@@ -1339,16 +1406,19 @@ const UnderInvestigation = () => {
                                     col.field === "field_used_as_evidence" ||
                                     col.field === "field_reason"
                             );
+                            tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
                         if (tableName === "cid_ui_case_accused") {
-                           tableHeader = tableHeader.filter(
+                            tableHeader = tableHeader.filter(
                                 (col) =>
                                     col.field === "sl_no" ||
-                                    col.field  === "field_name" ||
-                                    col.field  === "field_status_of_accused_in_charge_sheet" ||
-                                    col.field  === "field_government_servent" ||
-                                    col.field === "field_pso_&_19_pc_act_order"
+                                    col.field === "field_name" ||
+                                    col.field === "field_status_of_accused_in_charge_sheet" ||
+                                    col.field === "field_government_servent" ||
+                                    col.field === "field_pso_&_19_pc_act_order" ||
+                                    col.field === "field_used_as_evidence" // <-- add this if you want it in accused table
                             );
+                            tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
 
                         if (tableName === "cid_ui_case_accused") {
@@ -1704,11 +1774,14 @@ const UnderInvestigation = () => {
         let highlightColor = {};
         let onClickHandler = null;
 
-        if (tableName && index !== null && index === 0) {
+        const shouldUnderline =
+          (index !== null && index === 0) ||
+          (tableName === "cid_ui_case_progress_report" && key === "field_action_item");
+
+        if (tableName && shouldUnderline) {
             highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
             onClickHandler = (event) => {
                 event.stopPropagation();
-                console.log("handleViewAccused called", { row: params?.row, tableName });
                 handleViewAccused(params?.row, false, tableName);
             };
         }
@@ -2009,7 +2082,129 @@ const UnderInvestigation = () => {
       }
   };
 
+const updateTemplateData = async (rowData, tableName) => {
+    let rowId = rowData && rowData.id && rowData.id !== "null" ? rowData.id : null;
+    if (!rowId && Array.isArray(accusedTableRowData)) {
+        const found = accusedTableRowData.find(r =>
+            (r.sl_no === rowData.sl_no) ||
+            (r.field_name === rowData.field_name)
+        );
+        if (found && found.id && found.id !== "null") {
+            rowId = found.id;
+        }
+    }
+    if (!rowId || rowId === "null") {
+        toast.error("Cannot update: Row ID is missing.", {
+            position: "top-right",
+            autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
+        });
+        return;
+    }
 
+    setSelectedRowId(rowId);
+
+    const formData = new FormData();
+    formData.append("table_name", tableName);
+    formData.append("id", rowId);
+
+    let normalData = {};
+    Object.keys(rowData).forEach((key) => {
+        if (
+            key !== "id" &&
+            key !== "sl_no" &&
+            key !== "isNew" &&
+            key !== "ReadStatus"
+        ) {
+            normalData[key] = Array.isArray(rowData[key])
+                ? rowData[key].join(",")
+                : rowData[key];
+        }
+    });
+    normalData["id"] = rowId;
+    formData.append("data", JSON.stringify(normalData));
+    const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
+
+    setLoading(true);
+    try {
+        const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+        setLoading(false);
+
+        if (saveTemplateData && saveTemplateData.success) {
+            toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-success",
+                onOpen: () => {
+                    if (tableName === "cid_ui_case_accused") {
+                        if (showPreliminaryAccusedTable) {
+                            showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                        } else {
+                            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                        }
+                    } else if (tableName === "cid_ui_case_progress_report") {
+                        showAccusedTableView(1, false, "cid_ui_case_progress_report");
+                    } else if (tableName === "cid_ui_case_forensic_science_laboratory") {
+                        showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
+                    }
+                },
+            });
+        } else {
+            const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to update the profile. Please try again.";
+            toast.error(errorMessage, {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    } catch (error) {
+        setLoading(false);
+        if (error && error.response && error.response["data"]) {
+            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+};
+
+    const handleEditTableRowUpdate = async (updatedRow, tableName) => {
+    let resolvedTableName = tableName;
+    if (!resolvedTableName) {
+        if (accusedDialogTab === "accused") {
+            resolvedTableName = "cid_ui_case_accused";
+        } else if (accusedDialogTab === "progress_report") {
+            resolvedTableName = "cid_ui_case_progress_report";
+        } else if (accusedDialogTab === "fsl") {
+            resolvedTableName = "cid_ui_case_forensic_science_laboratory";
+        }
+    }
+
+    await updateTemplateData(updatedRow, resolvedTableName);
+};
+                 
     const accusedCloseForm = ()=>{
         setAccusedFormOpen(false);
     }
@@ -14811,126 +15006,133 @@ const handleOpenExportPopup = async () => {
                 </Dialog>
           }
 
-              {
-                showAccusedTable && 
-                <Dialog
-                    open={showAccusedTable}
-                    onClose={() => setShowAccusedTable(false)}
-                    aria-labelledby="alert-dialog-title"
-                    aria-describedby="alert-dialog-description"
-                    fullScreen
-                    fullWidth
-                    sx={{ zIndex: "1", marginLeft: '50px' }}
-                  >
-                    <DialogTitle
-                        id="alert-dialog-title"
-                        sx={{
-                            display: "flex",
-                            alignItems: "start",
-                            justifyContent: "space-between",
-                        }}
-                    >
-                        <Box
-                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
-                            onClick={() => { setShowAccusedTable(false)}}
-                        >
-    
-                            <WestIcon />
-    
-                            <Typography variant="body1" fontWeight={500}>
-                                {accusedDialogTab === "accused" && "Accused Data"}
-                                {accusedDialogTab === "progress_report" && "Progress Report Data"}
-                                {accusedDialogTab === "fsl" && "FSL Data"}
-                            </Typography>
-    
-                            {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                                <Chip
-                                    label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                                    color="primary"
-                                    variant="outlined"
-                                    size="small"
-                                    sx={{ fontWeight: 500, marginTop: '2px' }}
-                                />
-                            )}
-    
-                        </Box>
-    
-                        <Button
-                            variant="contained"
-                            sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
-                            onClick={() => {nextAccusedStage()}}
-                        >
-                            Submit
-                        </Button>
-    
-                    </DialogTitle>
-                    <DialogContent>
-                        <DialogContentText>
-                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                          <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                            
-                            <Box className="parentFilterTabs">
-                                <Box
-                                    onClick={() => handleAccusedDialogTabChange("accused")}
-                                    className={`filterTabs ${accusedDialogTab === "accused" ? "Active" : ""}`}
-                                >
-                                    Accused
-                                </Box>
-                                <Box
-                                    onClick={() => handleAccusedDialogTabChange("progress_report")}
-                                    className={`filterTabs ${accusedDialogTab === "progress_report" ? "Active" : ""}`}
-                                >
-                                    Progress Report
-                                </Box>
-                                <Box
-                                    onClick={() => handleAccusedDialogTabChange("fsl")}
-                                    className={`filterTabs ${accusedDialogTab === "fsl" ? "Active" : ""}`}
-                                >
-                                    FSL
-                                </Box>
-                            </Box>
-                          </Box> </Box>
-                            <Box sx={{ width: '100%' }}>
-                                {accusedDialogTab === "accused" && (
-                                    <TableView
-                                        rows={accusedTableRowData}
-                                        columns={
-                                          accusedTableHeaderData
-                                        }
-                                        totalPage={accusedTableTotalPage}
-                                        totalRecord={accusedTableTotalRecord}
-                                        paginationCount={accusedTableCurrentPage}
-                                        handlePagination={setAccusedCurrentPagination}
-                                        highLightedRow={accusedShouldHighlightRowRed}
-                                    />
-                                )}
-                                {accusedDialogTab === "progress_report" && (
-                                    <TableView
-                                        rows={progressReportTableRowData}
-                                        columns={progressReportTableHeaderData}
-                                        totalPage={progressReportTableTotalPage}
-                                        totalRecord={progressReportTableTotalRecord}
-                                        paginationCount={1}
-                                        handlePagination={(page) => showAccusedTableView(page, false, "cid_ui_case_progress_report")}
-                                        highLightedRow={progressReportShouldHighlightRowRed}
-                                    />
-                                )}
-                                {accusedDialogTab === "fsl" && (
-                                    <TableView
-                                        rows={fslTableRowData}
-                                        columns={fslTableHeaderData}
-                                        totalPage={fslTableTotalPage}
-                                        totalRecord={fslTableTotalRecord}
-                                        paginationCount={1}
-                                        handlePagination={(page) => showAccusedTableView(page, false, "cid_ui_case_forensic_science_laboratory")}
-                                        highLightedRow={fslShouldHighlightRowRed}
-                                    />
-                                )}
-                            </Box>
-                        </DialogContentText>
-                    </DialogContent>
-                </Dialog>
-            }
+                           {
+                             showAccusedTable && 
+                             <Dialog
+                                 open={showAccusedTable}
+                                 onClose={() => setShowAccusedTable(false)}
+                                 aria-labelledby="alert-dialog-title"
+                                 aria-describedby="alert-dialog-description"
+                                 fullScreen
+                                 fullWidth
+                                 sx={{ zIndex: "1", marginLeft: '50px' }}
+                               >
+                                 <DialogTitle
+                                     id="alert-dialog-title"
+                                     sx={{
+                                         display: "flex",
+                                         alignItems: "start",
+                                         justifyContent: "space-between",
+                                     }}
+                                 >
+                                     <Box
+                                         sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                                         onClick={() => { setShowAccusedTable(false)}}
+                                     >
+                 
+                                         <WestIcon />
+                 
+                                         <Typography variant="body1" fontWeight={500}>
+                                             {accusedDialogTab === "accused" && "Accused Data"}
+                                             {accusedDialogTab === "progress_report" && "Progress Report Data"}
+                                             {accusedDialogTab === "fsl" && "FSL Data"}
+                                         </Typography>
+                 
+                                         {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                                             <Chip
+                                                 label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                                 color="primary"
+                                                 variant="outlined"
+                                                 size="small"
+                                                 sx={{ fontWeight: 500, marginTop: '2px' }}
+                                             />
+                                         )}
+                 
+                                     </Box>
+                 
+                                     <Button
+                                         variant="contained"
+                                         sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                                         onClick={() => {nextAccusedStage()}}
+                                     >
+                                         Submit
+                                     </Button>
+                 
+                                 </DialogTitle>
+                                 <DialogContent>
+                                     <DialogContentText>
+                                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                                       <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                                         
+                                         <Box className="parentFilterTabs">
+                                             <Box
+                                                 onClick={() => handleAccusedDialogTabChange("accused")}
+                                                 className={`filterTabs ${accusedDialogTab === "accused" ? "Active" : ""}`}
+                                             >
+                                                 Accused
+                                             </Box>
+                                             <Box
+                                                 onClick={() => handleAccusedDialogTabChange("progress_report")}
+                                                 className={`filterTabs ${accusedDialogTab === "progress_report" ? "Active" : ""}`}
+                                             >
+                                                 Progress Report
+                                             </Box>
+                                             <Box
+                                                 onClick={() => handleAccusedDialogTabChange("fsl")}
+                                                 className={`filterTabs ${accusedDialogTab === "fsl" ? "Active" : ""}`}
+                                             >
+                                                 FSL
+                                             </Box>
+                                         </Box>
+                                       </Box> </Box>
+                                         <Box sx={{ width: '100%' }}>
+                                             {accusedDialogTab === "accused" && (
+                                                 <EditTableView
+                                                     rows={accusedTableRowData}
+                                                     columns={
+                                                       accusedTableHeaderData
+                                                     }
+                                                     totalPage={accusedTableTotalPage}
+                                                     totalRecord={accusedTableTotalRecord}
+                                                     paginationCount={accusedTableCurrentPage}
+                                                     handlePagination={setAccusedCurrentPagination}
+                                                     highLightedRow={accusedShouldHighlightRowRed}
+                                                     onRowUpdate={handleEditTableRowUpdate}
+                                                     fieldDefinitions={formTemplateData} // <-- add this prop
+                                                 />
+                                             )}
+                                             {accusedDialogTab === "progress_report" && (
+                                                 <EditTableView
+                                                     rows={progressReportTableRowData}
+                                                     columns={progressReportTableHeaderData}
+                                                     totalPage={progressReportTableTotalPage}
+                                                     totalRecord={progressReportTableTotalRecord}
+                                                     paginationCount={1}
+                                                     handlePagination={(page) => showAccusedTableView(page, false, "cid_ui_case_progress_report")}
+                                                     highLightedRow={progressReportShouldHighlightRowRed}
+                                                     onRowUpdate={handleEditTableRowUpdate}
+                                                     fieldDefinitions={formTemplateData}
+                                                 />
+                                             )}
+                                             {accusedDialogTab === "fsl" && (
+                                                 <EditTableView
+                                                     rows={fslTableRowData}
+                                                     columns={fslTableHeaderData}
+                                                     totalPage={fslTableTotalPage}
+                                                     totalRecord={fslTableTotalRecord}
+                                                     paginationCount={1}
+                                                     handlePagination={(page) => showAccusedTableView(page, false, "cid_ui_case_forensic_science_laboratory")}
+                                                     highLightedRow={fslShouldHighlightRowRed}
+                                                     onRowUpdate={handleEditTableRowUpdate}
+                                                     fieldDefinitions={formTemplateData}
+                                                 />
+                                             )}
+                                         </Box>
+                                     </DialogContentText>
+                                 </DialogContent>
+                             </Dialog>
+                         }
+             
 
 
               {

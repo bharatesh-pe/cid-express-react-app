@@ -1451,7 +1451,7 @@ const showOptionTemplate = async (tableName, approved) => {
         if (isImmediateSupervisior) {
             result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+                text: "Do you want to submit this CDR/IPDR? Once submitted, you won't be able to Update the record.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, submit it!',
@@ -1460,7 +1460,7 @@ const showOptionTemplate = async (tableName, approved) => {
         } else {
             result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
+                text: "Do you want to submit this CDR/IPDR? Once submitted, you won't be able to Update the record.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, submit it!',
@@ -1981,7 +1981,7 @@ console.log("userDesignationId:", userDesignationId, "userRole:", userRole);
 // Fix: Remove quotes and trim for comparison
 const isIO = userRole.replace(/['"]+/g, '').trim() === "investigation officer";
 const isSPDivision = isImmediateSupervisior;
-const isSPCCD = userDesignationId === "SP CCD";
+const isSPCCD = userDesignationId === "CDR CELL" || userRole === "CDR CELL";
 
 console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:", showSubmitAPButton, "templateActionAddFlag.current:", templateActionAddFlag.current, "otherTemplatesTotalRecord:", otherTemplatesTotalRecord);
 
@@ -2009,7 +2009,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         if (isImmediateSupervisior) {
             result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+                text: "Do you want to Approve and Send To SP CCD ? Once submitted, you won't be able to Update the record. It will be move to the CDR CELL.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, submit it!',
@@ -2018,7 +2018,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         } else {
             result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
+                text: "Do you want to submit this Approve and Send To SP CCD? Once submitted, you won't be able to Update the record.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, submit it!',
@@ -2029,7 +2029,6 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         if (result.isConfirmed) {
             try {
                 setLoading(true);
-                // Get all records for this case in cid_ui_case_cdr_ipdr
                 const getAllRecordsPayload = {
                     table_name: "cid_ui_case_cdr_ipdr",
                     ui_case_id: selectedRowData?.id
@@ -2037,7 +2036,6 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                 const getAllRecordsRes = await api.post("/templateData/getTemplateData", getAllRecordsPayload);
 
                 if (getAllRecordsRes && getAllRecordsRes.success && Array.isArray(getAllRecordsRes.data)) {
-                    // Update sys_status to IO for all records
                     for (const row of getAllRecordsRes.data) {
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
@@ -2047,7 +2045,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                     }
                 }
 
-                toast.success("The Action Plan has been submitted", {
+                toast.success("The Approve and Send to SP CCD has been submitted", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -2099,7 +2097,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         if (isImmediateSupervisior) {
             result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+                text: "Do you want to Return this to Review? Once submitted, for IO it will get the Access to Edit.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, submit it!',
@@ -2108,7 +2106,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         } else {
             result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
+                text: "Do you want to Return this to Review? Once submitted, for IO it will get the Access to Edit.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, submit it!',
@@ -2119,7 +2117,6 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         if (result.isConfirmed) {
             try {
                 setLoading(true);
-                // Get all records for this case in cid_ui_case_cdr_ipdr
                 const getAllRecordsPayload = {
                     table_name: "cid_ui_case_cdr_ipdr",
                     ui_case_id: selectedRowData?.id
@@ -2127,7 +2124,6 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                 const getAllRecordsRes = await api.post("/templateData/getTemplateData", getAllRecordsPayload);
 
                 if (getAllRecordsRes && getAllRecordsRes.success && Array.isArray(getAllRecordsRes.data)) {
-                    // Update sys_status to IO for all records
                     for (const row of getAllRecordsRes.data) {
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
@@ -2137,7 +2133,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                     }
                 }
 
-                toast.success("The Action Plan has been submitted", {
+                toast.success("The CDR/IPDR has been sent to Review", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -2193,7 +2189,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         if (isImmediateSupervisior) {
             result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record. It will be move to the Progress Report.",
+                text: "Do you want to Reject this CDR/IPDR? Once Rejected, you won't be able to Update the record.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, submit it!',
@@ -2202,7 +2198,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         } else {
             result = await Swal.fire({
                 title: 'Are you sure?',
-                text: "Do you want to submit this Action Plan? Once submitted, you won't be able to Update the record.",
+                text: "Do you want to Reject this CDR/IPDR? Once Rejected, you won't be able to Update the record.",
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Yes, submit it!',
@@ -2213,7 +2209,6 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         if (result.isConfirmed) {
             try {
                 setLoading(true);
-                // Get all records for this case in cid_ui_case_cdr_ipdr
                 const getAllRecordsPayload = {
                     table_name: "cid_ui_case_cdr_ipdr",
                     ui_case_id: selectedRowData?.id
@@ -2221,7 +2216,6 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                 const getAllRecordsRes = await api.post("/templateData/getTemplateData", getAllRecordsPayload);
 
                 if (getAllRecordsRes && getAllRecordsRes.success && Array.isArray(getAllRecordsRes.data)) {
-                    // Update sys_status to IO for all records
                     for (const row of getAllRecordsRes.data) {
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
@@ -2231,7 +2225,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                     }
                 }
 
-                toast.success("The Action Plan has been submitted", {
+                toast.success("The CDR/IPDR has been Rejected", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -2262,7 +2256,6 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         }
     };
 
-// Handler for SPCCD: Approve and Send to CDRCELL
 const handleApproveAndSendToCDRCELL = async ({ id }) => {
     setCdrUpdateId(id);
     setCdrUpdateStatus("");
@@ -2270,12 +2263,10 @@ const handleApproveAndSendToCDRCELL = async ({ id }) => {
     setCdrUpdateDialogOpen(true);
 };
 
-// New function to handle update (similar to otherTemplateUpdateFunc)
 const handleCDRDialogUpdate = async () => {
     if (!cdrUpdateId) return;
     setLoading(true);
     try {
-        // Fetch all rows for this ui_case_id in cid_ui_case_cdr_ipdr
         const getAllRowsPayload = {
             table_name: "cid_ui_case_cdr_ipdr",
             ui_case_id: cdrUpdateId
@@ -2294,7 +2285,6 @@ const handleCDRDialogUpdate = async () => {
                 }
                 updateStatusForm.append("data", JSON.stringify(dataObj));
 
-                // Attach files
                 if (cdrUpdateFiles && cdrUpdateFiles.length > 0) {
                     let filteredFileArray = [];
                     let hasFileInstance = false;
@@ -2320,9 +2310,15 @@ const handleCDRDialogUpdate = async () => {
             }
         }
 
-        toast.success("The Action Plan has been submitted", {
+        toast.success("The CDR Copy and Status has been Updated", {
             position: "top-right",
             autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-success",
         });
 
         await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
@@ -2332,6 +2328,12 @@ const handleCDRDialogUpdate = async () => {
         toast.error("Submission failed. Please try again.", {
             position: "top-right",
             autoClose: 3000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            className: "toast-error",
         });
     } finally {
         setLoading(false);
