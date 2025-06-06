@@ -40,6 +40,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import CloseIcon from "@mui/icons-material/Close";
 import ActTable from './actSection';
+import DropdownWithAdd from "../form/DropdownWithAdd";
 
 const DynamicForm = ({
   formConfig,
@@ -97,6 +98,107 @@ const DynamicForm = ({
 
   const saveNewRef = useRef(false);
   const orderCopyFieldMandatory = useRef(false);
+
+    const [dropdownInputValue, setDropdownInputValue] = useState({});
+
+    const dropdownWithAddItem = async (field, value) => {
+
+        if(!value || value.trim() === ""){
+            toast.error('Please Check the Value Before Adding', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+       
+        const result = await Swal.fire({
+            title: 'Add Value?',
+            text: `Do you want to add "${value}" to the dropdown?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, add it',
+            cancelButtonText: 'No, cancel'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        var payloadData = {
+            table_name : field.table || null,
+            key: field?.attributes?.[0] || null,
+            value: value,
+            id : field?.id,
+            primaryTable : table_name || null
+        }
+
+        setLoading(true);
+        try {
+            const response = await api.post('/templateData/addDropdownSingleFieldValue', payloadData)
+
+            setLoading(false);
+
+            if (response && response.success && response.data) {
+
+                const {addingValue, options} = response.data;
+
+
+                setSelectedField(prev => ({
+                    ...prev,
+                    options: [...options]
+                }));
+
+                var updatedFormConfig = newFormConfig.map((data) => {
+                    if (data?.id === field?.id) {
+                        if (data.options) {
+                            return { ...data, options: [...options] };
+                        } else {
+                            return { ...data };
+                        }
+                    } else {
+                        return { ...data };
+                    }
+                });
+                setNewFormConfig(updatedFormConfig);
+
+                if(addingValue?.id){
+                    setFormData(prevData => ({
+                        ...prevData,
+                        [field.name]: addingValue?.id
+                    }));
+                }
+
+                setDropdownInputValue(prev => {
+                    if (!prev) return prev;
+                    const updated = { ...prev };
+                    delete updated[field.name];
+                    return updated;
+                });
+            }
+            
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response.data) {
+                toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please try again!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
 
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -2073,6 +2175,24 @@ const DynamicForm = ({
                         />
                       </Grid>
                     );
+                    case "dropdown_with_add":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <DropdownWithAdd
+                                    key={field.id}
+                                    field={field}
+                                    formData={formData}
+                                    errors={errors}
+                                    onChange={(selectedCode) => handleAutocomplete(field, selectedCode)}
+                                    onAdd={(value)=>dropdownWithAddItem(field, value)}
+                                    onChangeDropdownInputValue={(value) => 
+                                        setDropdownInputValue({ ...dropdownInputValue, [field.name]: value })
+                                    }
+                                    dropdownInputValue={dropdownInputValue}
+                                    readOnly={readOnlyData}
+                                />
+                            </Grid>
+                        );
                   case "divider":
                     return (
                       <div

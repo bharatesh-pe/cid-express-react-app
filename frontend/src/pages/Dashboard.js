@@ -60,9 +60,7 @@ import CloseIcon from '@mui/icons-material/Close';
     ];
 
     const days = [
-        "Hearing Today", "Hearing Tomorrow", "Hearing in 2 Days",
-        "Hearing in 3 Days", "Hearing in 4 Days", "Hearing in 5 Days",
-        "Hearing in 6-10 Days"
+        "Today", "Tomorrow", "This Week", "Next Week"
     ];
 
     // const gradients = [
@@ -85,11 +83,12 @@ import CloseIcon from '@mui/icons-material/Close';
     //   clipPath: 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)',
 
     const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
+        <Tooltip title={"click here"} arrow>
         <Box
             sx={{
                 width: isFirst ? 150 : 180,
                 height: 70,
-                background: bgGradient,
+                background: 'linear-gradient(135deg, #00796B, #26A69A)',
                 color: '#fff',
                 display: 'flex',
                 flexDirection: 'column',
@@ -127,40 +126,8 @@ import CloseIcon from '@mui/icons-material/Close';
                 {number || 0}
             </Typography>
         </Box>
+        </Tooltip>
     );
-
-    // const SkewedCard = ({ label, bgGradient }) => (
-    //     <Card
-    //         sx={{
-    //         width: 150,
-    //         height: 70,
-    //         transform: 'skew(-10deg)',
-    //         background: bgGradient,
-    //         color: '#fff',
-    //         display: 'flex',
-    //         alignItems: 'center',
-    //         justifyContent: 'center',
-    //         borderRadius: 2,
-    //         boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
-    //         transition: 'all 0.3s ease',
-    //         cursor: 'pointer',
-    //         '&:hover': {
-    //             transform: 'skew(-10deg) scale(1.05)',
-    //             boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
-    //         }
-    //         }}
-    //     >
-    //         <Typography
-    //         sx={{
-    //             transform: 'skew(10deg)', // undo skew for text
-    //             fontWeight: 'bold',
-    //             fontSize: '0.9rem',
-    //         }}
-    //         >
-    //         {label}
-    //         </Typography>
-    //     </Card>
-    // );
 
     const GradientBadge = styled(Box)(({ gradient }) => ({
         background: gradient,
@@ -297,7 +264,14 @@ const Dashboard = () => {
         setSelectedSubKey(option.key);
         setSubmenuAnchorEl(null);
         selectedActiveKey.current = option.key;
-        getDashboardTiles();
+        var subMenuKey = ""
+        if(option?.key === "pt_trail_case"){
+            subMenuKey = "trial_court";
+        }else if(option?.key === "pt_other_case"){
+            subMenuKey = "high_court";
+        }
+        getDashboardTiles(subMenuKey);
+        setCourtTab(0);
     };
 
     const handleMenuClose = () => {
@@ -305,9 +279,28 @@ const Dashboard = () => {
     };
     
     const [courtTab, setCourtTab] = useState(0);
+    const [courtTabs, setCourtTabs] = useState([]);
+
+    useEffect(() => {
+        if (selectedActiveKey.current === "pt_trail_case") {
+            setCourtTabs([
+                { label: "Trial Court", key: 0, sub_court: "trial_court" },
+                { label: "Sessions Court", key: 1, sub_court: "sessions_court" }
+            ]);
+        } else if (selectedActiveKey.current === "pt_other_case") {
+            setCourtTabs([
+                { label: "High Court", key: 0, sub_court: "high_court" },
+                { label: "Supreme Court", key: 1, sub_court: "supreme_court" }
+            ]);
+        } else {
+            setCourtTabs([]);
+        }
+    }, [selectedActiveKey.current]);
 
     const handleCourtTabChange = (event, newValue) => {
         setCourtTab(newValue);
+        var subMenuKey = courtTabs[newValue]?.sub_court || "";
+        getDashboardTiles(subMenuKey);
     };
 
     const handleLogout = async () => {
@@ -417,7 +410,7 @@ const Dashboard = () => {
     }, [selectedActiveKey]);
 
 
-    const getDashboardTiles = async () => {
+    const getDashboardTiles = async (subMenuKey) => {
         const userDesignationId = localStorage.getItem('designation_id');
         const userDesignationName = localStorage.getItem('designation_name');
         const userRole = localStorage.getItem('role_title');
@@ -436,11 +429,17 @@ const Dashboard = () => {
             }
         }
 
+        var subCourt = "";
+
+        if (subMenuKey) {
+            subCourt = subMenuKey
+        }
         
         const payload = {
             user_designation_id: userDesignationId || null,
             user_designation : userDesignation ,
-            case_modules: selectedActiveKey.current
+            case_modules: selectedActiveKey.current,
+            sub_court: subCourt
         };
 
         setLoading(true);
@@ -727,20 +726,53 @@ const Dashboard = () => {
                 </Box>
             </Box>
 
-            <Typography
-                sx={{
-                    fontSize: '18px',
-                    fontWeight: '600',
-                    color: '#0B5ED7',
-                    mt: 1,
-                    textAlign: 'center',
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase',
-                }}
-                className="Roboto"
-            >
-                {selectedTab?.current?.label || ""}
-            </Typography>
+            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 12}}>
+                
+                <Box
+                    sx={{
+                        backgroundColor: '#E3F2FD',
+                        borderLeft: '4px solid #42A5F5',
+                        padding: '12px 16px',
+                        borderRadius: 2,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        my: 2,
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                    <Typography sx={{ fontSize: 14, color: '#0F172A' }}>
+                        Click on the numbers in the tiles below to view detailed {selectedTab?.current?.label || ""}.
+                    </Typography>
+                </Box>
+
+                <Typography
+                    sx={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#0B5ED7',
+                        mt: 1,
+                        textAlign: 'center',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                    }}
+                    className="Roboto"
+                >
+                    {selectedTab?.current?.label || ""}
+                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', marginLeft: '250px'}}>
+                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
+                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                    </Typography>
+                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                        <IconButton>
+                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
+            </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',px: 10, py: 0.5}}>
 
@@ -775,7 +807,7 @@ const Dashboard = () => {
             </Box>
 
             {
-                selectedTab?.current?.key === "pt_trail_case" ?
+                (selectedActiveKey.current === "pt_trail_case" || selectedActiveKey.current === "pt_other_case") &&
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                     <Tabs
                         value={courtTab}
@@ -784,98 +816,28 @@ const Dashboard = () => {
                         indicatorColor="primary"
                         sx={{ mb: 1 }}
                     >
-                        <Tab label="Trial Court" />
-                        <Tab label="Sessions Court" />
+                        {
+                            courtTabs.map((tab) => (
+                                <Tab key={tab.key} label={tab.label} />
+                            ))
+                        }
                     </Tabs>
                 </Box>
-                : selectedTab?.current?.key === "pt_other_case" ?
-                    <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
-                        <Tabs
-                            value={courtTab}
-                            onChange={handleCourtTabChange}
-                            textColor="primary"
-                            indicatorColor="primary"
-                            sx={{ mb: 1 }}
-                        >
-                            <Tab label="High Court" />
-                            <Tab label="Supreme Court" />
-                        </Tabs>
-                    </Box>
-                : null
             }
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, py: 0.5}}>
+            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <Box className="divider" sx={{width: '50%', margin: '10px'}}></Box>
+            </Box>
+            {/* second section */}
+
+            { Object.keys(dashboardMenu).length > 0 &&
+            <>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, pb: 2, pt: 0.5}}>
                 <Box>
                     <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939'}}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
                     </Typography>
                 </Box>
-
-                {/* <Box sx={{display: 'flex', alignItems: 'end', flexDirection: 'column', }}>
-                    <Button
-                        variant="outlined"
-                        size="medium"
-                        endIcon={<ArrowForwardIcon />}
-                        sx={{
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            fontSize: '0.875rem',
-                            borderRadius: 1,
-                            color: '#fff',
-                            border: 'none',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                            px: 2.5,
-                            mr: 1.5,
-                            background: '#FF7043',
-                            '&:hover': {
-                                filter: 'brightness(1.1)',
-                            }
-                        }}
-                        onClick={ViewAllCases}
-                    >
-                        View All Cases
-                    </Button>
-                </Box> */}
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 12, py: 1}}>
-                <Box
-                    sx={{
-                        backgroundColor: '#F0F4FF',
-                        border: '1px solid #90CAF9',
-                        borderRadius: 2,
-                        padding: 1,
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 1,
-                    }}
-                >
-                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
-                    <Box>
-                        <Typography
-                            sx={{
-                                fontWeight: 400,
-                                fontSize: 13,
-                                color: '#344054',
-                                mt: 0.5
-                            }}
-                        >
-                            Please <strong style={{ color: '#1976d2' }}> click on statistics (numbers)</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
-                        </Typography>
-                    </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center'}}>
-                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
-                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
-                    </Typography>
-                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
-                        <IconButton>
-                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-
             </Box>
 
             <Box
@@ -898,7 +860,7 @@ const Dashboard = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
-                        background: `linear-gradient(135deg, #2196F3, #673ab7b5)`,
+                        background: 'linear-gradient(135deg, #1976D2, #2196F3)',
                         color: '#fff',
                         cursor: 'pointer',
                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
@@ -942,6 +904,7 @@ const Dashboard = () => {
                     {value.divider_details && Object.keys(value.divider_details).length > 0 ? (
                         <Box sx={{ display: 'flex', gap: 1}}>
                             {Object.entries(value.divider_details).map(([dividerKey, dividerValue], idx) => (
+                                <Tooltip title={"click here"} arrow>
                                 <Box
                                     key={dividerKey}
                                     onClick={(e) => {
@@ -965,46 +928,57 @@ const Dashboard = () => {
                                         },
                                     }}
                                 >
-                                    <Typography 
-                                        variant="body2" 
-                                        sx={{ 
-                                            width: 30, 
-                                            height: 30,
-                                            borderRadius: "50%",
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontWeight: 600, 
-                                            background: getAvatarColor(idx, Object.keys(value.divider_details).length) 
-                                        }}
-                                    >
-                                        {dividerValue.count}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
-                                        {dividerValue.name}
-                                    </Typography>
+                                        <Typography 
+                                            variant="body2" 
+                                            sx={{ 
+                                                width: 30, 
+                                                height: 30,
+                                                borderRadius: "50%",
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontWeight: 600, 
+                                                background: getAvatarColor(idx, Object.keys(value.divider_details).length) 
+                                            }}
+                                        >
+                                                {dividerValue.count}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                                                {dividerValue.name}
+                                        </Typography>
                                 </Box>
+                                </Tooltip>
                             ))}
                         </Box>
                     ) : (
-                        <Box sx={{ textAlign: 'center', mb: 2 }} onClick={()=>navigateRouter(value)}>
-                            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                                {value.total_count}
-                            </Typography>
-                        </Box>
+                        <Tooltip title={"click here"} arrow>
+                            <Box sx={{ textAlign: 'center', mb: 2 }} onClick={()=>navigateRouter(value)}>
+                                <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                                        {value.total_count}
+                                </Typography>
+                            </Box>
+                        </Tooltip>
                     )}
                 </Card>
                 ))}
             </Box>
+            </>
+            }
 
             {
                 (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
                 <Box>
+                    {
+                        selectedTab?.current?.key === "pt_other_case" &&
+                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                            <Box className="divider" sx={{width: '50%', margin: '10px'}}></Box>
+                        </Box>
+                    }
                     <Box>
                         <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939', textAlign: 'center'}}>
                             Hearing Date Alerts
                         </Typography>
-                    </Box>                    
+                    </Box>
                     <Box
                         sx={{
                             display: 'flex',
@@ -1025,6 +999,47 @@ const Dashboard = () => {
                     </Box>
                 </Box>
             }
+
+
+            {/* <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 12, py: 1}}>
+                <Box
+                    sx={{
+                        backgroundColor: '#F0F4FF',
+                        border: '1px solid #90CAF9',
+                        borderRadius: 2,
+                        padding: 1,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1,
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                    <Box>
+                        <Typography
+                            sx={{
+                                fontWeight: 400,
+                                fontSize: 13,
+                                color: '#344054',
+                                mt: 0.5
+                            }}
+                        >
+                            Please <strong style={{ color: '#1976d2' }}> click on statistics (numbers)</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
+                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                    </Typography>
+                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                        <IconButton>
+                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
+            </Box> */}
 
             {openUserDesignationDropdown && userOverallDesignation?.length > 0 && (
                 <Dialog

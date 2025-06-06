@@ -251,10 +251,14 @@ router.post('/getTemplateData',
     [gwtDataValidation],[validate_token],
     templateDataController.getTemplateData)
 router.post('/getPrimaryTemplateData',
-    // eitherAuthMiddleware,
-    // userAuthMiddleware,
     [gwtDataValidation],[validate_token],
     templateDataController.getPrimaryTemplateData)
+router.post('/getPrimaryTemplateDataWithoutPagination',
+    [gwtDataValidation],[validate_token],
+    templateDataController.getPrimaryTemplateDataWithoutPagination)
+router.post('/addDropdownSingleFieldValue',
+    [validate_token],
+    templateDataController.addDropdownSingleFieldValue)
 
     router.post('/getActionTemplateData',
     // eitherAuthMiddleware,

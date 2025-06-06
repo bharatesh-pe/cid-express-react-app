@@ -399,6 +399,30 @@
         "table_display_content": true,
         "disabled": "",
         "type": "texteditor",
-        "formType": "texteditor"
+        "formType": "Text Editor"
+    },
+    {
+        "field_id": 17,
+        "field_name": "dropdown_with_add",
+        "created_at": "2025-01-29T06:27:17.102Z",
+        "updated_at": "2025-02-19T11:30:17.756Z",
+        "label": "",
+        "kannada": "",
+        "heading": "",
+        "required": "",
+        "history": "",
+        "hide_from_ux": false,
+        "supportingText": "",
+        "table_display_content": true,
+        "is_primary_field": false,
+        "duplicateCheck": false,
+        "info": "",
+        "disabled": "",
+        "ao_field": false,
+        "hide_from_edit": false,
+        "particular_case_options": false,
+        "options": [],
+        "type": "dropdown_with_add",
+        "formType": "Dropdown With Add"
     }
 ]
