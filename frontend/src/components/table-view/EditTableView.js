@@ -12,6 +12,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Close';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
 export default function EditTableView({
   rows: propRows, columns: propColumns, checkboxSelection, getRowId,
@@ -195,11 +197,59 @@ export default function EditTableView({
           ...col,
           editable: false,
           renderCell: (params) => {
-            if (!params.value) return null;
-            if (typeof params.value === 'string') {
-              return <a href={params.value} target="_blank" rel="noopener noreferrer">{params.value.split('/').pop()}</a>;
+            if (params.value) {
+              // Show file icon for existing file
+              return (
+                <Tooltip title={typeof params.value === 'string' ? params.value.split('/').pop() : (params.value.name || '')}>
+                  <IconButton
+                    size="small"
+                    onClick={e => {
+                      e.stopPropagation();
+                      window.open(params.value, '_blank', 'noopener,noreferrer');
+                    }}
+                  >
+                    <AttachFileIcon />
+                  </IconButton>
+                </Tooltip>
+              );
             }
-            return params.value.name || '';
+            // Show upload icon if no file
+            return (
+              <Tooltip title="Upload File">
+                <IconButton
+                  size="small"
+                  component="label"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <AddCircleOutlineIcon color="primary" />
+                  <input
+                    type="file"
+                    hidden
+                    onChange={event => {
+                      const file = event.target.files[0];
+                      if (file) {
+                        // Instead of just updating local rows, trigger row edit mode and update the row value
+                        // Find the row id
+                        const rowId = params.id;
+                        // Set the row in edit mode
+                        setRowModesModel(prev => ({
+                          ...prev,
+                          [rowId]: { mode: GridRowModes.Edit }
+                        }));
+                        // Update the row value in edit mode
+                        setRows(prevRows =>
+                          prevRows.map(row =>
+                            row.id === rowId
+                              ? { ...row, [col.field]: file }
+                              : row
+                          )
+                        );
+                      }
+                    }}
+                  />
+                </IconButton>
+              </Tooltip>
+            );
           }
         };
       }
