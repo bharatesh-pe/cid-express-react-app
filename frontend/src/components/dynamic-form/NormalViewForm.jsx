@@ -1,5 +1,7 @@
 // DynamicForm.js
 import React, { useState, useEffect, useRef } from 'react';
+import isEqual from 'lodash.isequal';
+
 // import formConfig from './formConfig.json';
 import { Button, Grid, Box, Typography, IconButton, Chip } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
@@ -43,8 +45,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
+import DropdownWithAdd from '../form/DropdownWithAdd';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable }) => {
+const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
 
   const [formData, setFormData] = useState({});
@@ -67,8 +70,9 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     { field: 'date', headerName: 'Date & Time', flex: 1 }
   ]);
 
-  const saveNewActionRef = useRef(false);
+    const saveNewActionRef = useRef(false);
     const orderCopyFieldMandatory = useRef(false);
+    const changingFormField = useRef(false);
   
   
   useEffect(() => {
@@ -127,9 +131,6 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 
         orderCopyFieldMandatory.current = value
 
-        if (value) {
-            delete formData["field_order_copy_(_17a_done_)"];
-        }
     };
 
 //   useEffect(() => {
@@ -137,6 +138,107 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
 //       localStorage.setItem(template_name + '-formData', JSON.stringify(formData));
 //     }
 //   }, [formData]);
+
+    const [dropdownInputValue, setDropdownInputValue] = useState({});
+
+    const dropdownWithAddItem = async (field, value) => {
+
+        if(!value || value.trim() === ""){
+            toast.error('Please Check the Value Before Adding', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Add Value?',
+            text: `Do you want to add "${value}" to the dropdown?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, add it',
+            cancelButtonText: 'No, cancel'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        var payloadData = {
+            table_name : field.table || null,
+            key: field?.attributes?.[0] || null,
+            value: value,
+            id : field?.id,
+            primaryTable : table_name || null
+        }
+
+        setLoading(true);
+        try {
+            const response = await api.post('/templateData/addDropdownSingleFieldValue', payloadData)
+
+            setLoading(false);
+
+            if (response && response.success && response.data) {
+
+                const {addingValue, options} = response.data;
+
+
+                setSelectedField(prev => ({
+                    ...prev,
+                    options: [...options]
+                }));
+
+                var updatedFormConfig = newFormConfig.map((data) => {
+                    if (data?.id === field?.id) {
+                        if (data.options) {
+                            return { ...data, options: [...options] };
+                        } else {
+                            return { ...data };
+                        }
+                    } else {
+                        return { ...data };
+                    }
+                });
+                setNewFormConfig(updatedFormConfig);
+
+                if(addingValue?.id){
+                    setFormData(prevData => ({
+                        ...prevData,
+                        [field.name]: addingValue?.id
+                    }));
+                }
+
+                setDropdownInputValue(prev => {
+                    if (!prev) return prev;
+                    const updated = { ...prev };
+                    delete updated[field.name];
+                    return updated;
+                });
+            }
+            
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response.data) {
+                toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please try again!', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
 
   const handleChangeDate = (name, newValues) => {
     // setFormData({
@@ -235,6 +337,38 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             });
         }
 
+        const initialIsEmpty = !initialData || Object.keys(initialData).length === 0;
+        const formHasValues = formData && Object.keys(formData).length > 0 && Object.values(formData).some(val => val !== "" && val !== null && val !== undefined);;
+
+        const checkInitialData = {};
+        const checkFormData = {};
+
+        newFormConfig.forEach((config) => {
+            const name = config.name;
+
+            if (initialData.hasOwnProperty(name)) {
+                checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
+            }
+            if (formData.hasOwnProperty(name)) {
+                checkFormData[name] = Array.isArray(formData[name]) ? formData[name].join(',') : formData[name];
+            }
+        });  
+
+        var changingFlag = false;
+
+        if (initialIsEmpty && formHasValues) {                        
+            changingFlag = true
+        } else if (!initialIsEmpty && !isEqual(checkInitialData, checkFormData)) {
+            changingFlag = true;
+        } else {
+            changingFlag = false;
+        }  
+
+        changingFormField.current = changingFlag
+
+        if(editedForm){
+            editedForm(changingFlag);
+        }
 
     },[formData]);
 
@@ -958,9 +1092,29 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     }
   }
 
-  const CloseFormModal = () => {
+  const CloseFormModal = async () => {
     if (closeForm) {
-      closeForm(false);
+
+        if(changingFormField.current === true){
+            const result = await Swal.fire({
+                title: 'Unsaved Changes',
+                text: 'You have unsaved changes. Are you sure you want to leave?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Exit',
+                cancelButtonText: 'No',
+            });
+    
+            if (result.isConfirmed) {
+                if(editedForm){
+                    editedForm(false);
+                }
+                closeForm(false);
+            }
+        }else{
+            closeForm(false);
+        }
+
     }
   }
 
@@ -1143,10 +1297,15 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                         if (updatedField) {
                             if (updatedField?.options.length === 1) {
                                 const onlyOption = updatedField.options[0];
-                                setFormData((prevData) => ({
-                                    ...prevData,
-                                    [field.name]: onlyOption.code
-                                }));
+
+                                const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                                if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
+                                    setFormData((prevData) => ({
+                                        ...prevData,
+                                        [field.name]: onlyOption.code
+                                    }));
+                                }
 
                                 optionUpdateFields.push(field);
                             }
@@ -1735,6 +1894,25 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
                             />
                         </Grid>
                     );
+                    case "dropdown_with_add":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <DropdownWithAdd
+                                    key={field.id}
+                                    field={field}
+                                    formData={formData}
+                                    errors={errors}
+                                    onChange={(selectedCode) => handleAutocomplete(field, selectedCode)}
+                                    onAdd={(value)=>dropdownWithAddItem(field, value)}
+                                    onChangeDropdownInputValue={(value) => 
+                                        setDropdownInputValue({ ...dropdownInputValue, [field.name]: value })
+                                    }
+                                    onHistory={() => showHistory(field.name)}
+                                    dropdownInputValue={dropdownInputValue}
+                                    readOnly={readOnlyData}
+                                />
+                            </Grid>
+                        );
                   case 'divider':
                     return (
                       <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: '16px', width: '100%' }}>

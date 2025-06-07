@@ -1084,7 +1084,7 @@ exports.getActionTemplateData = async (req, res, next) => {
 exports.getTemplateData = async (req, res, next) => {
   const {
     page = 1,
-    limit = 5,
+    limit = null,
     sort_by = "template_id",
     order = "DESC",
     search = "",
@@ -4512,6 +4512,192 @@ exports.checkPdfEntry = async (req, res) => {
         } catch (error) {
             console.error("Error fetching data:", error);
             return userSendResponse(res, 500, false, "Server error.", null, error, null);
+        }
+    };
+
+    exports.getPrimaryTemplateDataWithoutPagination = async (req, res, next) => {
+        const { table_name } = req.body;
+
+        try {
+            const tableData = await Template.findOne({ where: { table_name } });
+
+            if (!tableData) {
+                const message = `Table ${table_name} does not exist.`;
+                return userSendResponse(res, 400, false, message, null);
+            }
+
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+            const filteredSchema = schema.filter(field => field.is_primary_field === true);
+
+            const modelAttributes = {
+                id: {
+                    type: Sequelize.DataTypes.INTEGER,
+                    primaryKey: true,
+                    autoIncrement: true
+                },
+                created_at: {
+                    type: Sequelize.DataTypes.DATE,
+                    allowNull: false,
+                },
+                updated_at: {
+                    type: Sequelize.DataTypes.DATE,
+                    allowNull: false,
+                }
+            };
+
+            for (const field of filteredSchema) {
+                const { name: columnName, data_type, not_null, default_value } = field;
+
+                if (!columnName || !data_type) {
+                    modelAttributes[columnName] = {
+                        type: Sequelize.DataTypes.STRING,
+                        allowNull: not_null ? false : true,
+                        defaultValue: default_value || null,
+                    };
+                    continue;
+                }
+
+                const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[columnName] = {
+                    type: sequelizeType,
+                    allowNull: not_null ? false : true,
+                    defaultValue: default_value || null,
+                };
+            }
+
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: 'created_at',
+                updatedAt: 'updated_at',
+            });
+
+            await Model.sync();
+
+            const records = await Model.findAll();
+
+            const transformedRecords = records.map(record => {
+                const data = record.toJSON();
+                const filteredData = {
+                    id: data.id,
+                    created_at: data.created_at,
+                    updated_at: data.updated_at,
+                };
+
+                filteredSchema.forEach(field => {
+                    filteredData[field.name] = data[field.name];
+                });
+
+                return filteredData;
+            });
+
+            const PrimaryKeyName = filteredSchema?.[0]?.name || "id";
+
+            return userSendResponse(res, 200, true, `Fetched data successfully from table ${table_name}.`, {data : transformedRecords, primaryAttribute : PrimaryKeyName});
+
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            return userSendResponse(res, 500, false, "Server error.", null, error, null);
+        }
+    };
+
+    exports.addDropdownSingleFieldValue = async (req, res) => {
+        try {
+            const { table_name, key, value, primaryTable, id } = req.body;
+            
+            if (id && primaryTable && !table_name) {
+
+                const template = await Template.findOne({ where: { table_name : primaryTable } });
+                if (!template) {
+                    return userSendResponse(res, 400, false, `Template with id ${id} does not exist.`, null);
+                }
+
+                let schema = typeof template.fields === "string" ? JSON.parse(template.fields) : template.fields;
+
+                const fieldIndex = schema.findIndex(f => f.id === id);
+                if (fieldIndex === -1) {
+                    return userSendResponse(res, 400, false, `Field ${key} not found in template schema.`, null);
+                }
+
+                if (!Array.isArray(schema[fieldIndex].options)) {
+                    schema[fieldIndex].options = [];
+                }
+
+                if (!schema[fieldIndex].options.some(opt => opt.name === value && opt.code === value)) {
+                    schema[fieldIndex].options.push({ name: value, code: value });
+                    await Template.update(
+                        { fields: JSON.stringify(schema) },
+                        { where: { table_name : primaryTable } }
+                    );
+                }
+                return userSendResponse(res, 200, true, "Option added to template field successfully.", {
+                    addingValue: { name: value, id: value },
+                    options: schema[fieldIndex].options,
+                });
+            }
+
+            if (!table_name || !key || typeof value === "undefined") {
+                return userSendResponse(res, 400, false, "table_name, key, and value are required.", null);
+            }
+
+            // Fetch table schema
+            const tableData = await Template.findOne({ where: { table_name } });
+            if (!tableData) {
+                return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+            }
+
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+            const primaryField = schema.find(f => f.is_primary_field) || schema[0];
+            if (!primaryField) {
+                return userSendResponse(res, 400, false, "No primary field found in schema.", null);
+            }
+
+            // Build model attributes
+            const modelAttributes = {};
+            for (const field of schema) {
+                const { name, data_type, not_null, default_value } = field;
+                const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+            }
+
+            // Add id if not present
+            if (!modelAttributes.id) {
+                modelAttributes.id = {
+                    type: Sequelize.DataTypes.INTEGER,
+                    primaryKey: true,
+                    autoIncrement: true,
+                };
+            }
+
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+
+            await Model.sync();
+            
+            const insertObj = { [key]: value };
+            const newRecord = await Model.create(insertObj);
+
+            // Fetch all records with primary key and value
+            const records = await Model.findAll({
+                attributes: ["id", primaryField.name],
+                order: [["id", "ASC"]],
+            });
+
+            return userSendResponse(res, 200, true, "Value added successfully.", {
+                addingValue: { id: newRecord.id, [primaryField.name]: newRecord[primaryField.name] },
+                options: records.map(r => ({ "code": r.id, "name": r[primaryField.name] })),
+            });
+        } catch (error) {
+            console.error("Error in addSingleFieldValue:", error);
+            return userSendResponse(res, 500, false, "Internal server error.", error);
         }
     };
 
