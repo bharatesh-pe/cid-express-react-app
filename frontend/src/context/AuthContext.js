@@ -47,12 +47,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Logout function
+  const logout = async () => {
+    try {
+      // Call the backend logout route
+      await fetch('/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // ...other headers such as auth token if needed...
+        },
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+    // Perform local logout
+    setToken("");
+    setAuthenticated(false);
+    localStorage.removeItem("auth_token");
+    navigate("/login");
+  };
+
   useEffect(() => {
     verifyUserToken();
   }, [token]);
 
   return (
-    <AuthContext.Provider value={{ token, setToken, isAuthenticated, setAuthenticated }}>
+    <AuthContext.Provider value={{ token, setToken, isAuthenticated, setAuthenticated, logout }}>
       {children}
     </AuthContext.Provider>
   );
