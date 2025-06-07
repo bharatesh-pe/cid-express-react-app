@@ -2204,9 +2204,31 @@ const updateTemplateData = async (rowData, tableName) => {
 
     await updateTemplateData(updatedRow, resolvedTableName);
 };
-                 
+          
+const normalizeOptions = (options) => {
+    if (!Array.isArray(options)) return [];
+    return options.map(opt =>
+        typeof opt === "object"
+            ? {
+                label: opt.name ?? opt.label ?? opt.code ?? opt.value ?? String(opt),
+                value: opt.code ?? opt.value ?? opt.name ?? opt.label ?? String(opt)
+            }
+            : { label: String(opt), value: String(opt) }
+    );
+};
+const normalizeFormFieldsOptions = (fields) =>
+    Array.isArray(fields)
+        ? fields.map(field => ({
+            ...field,
+            options: normalizeOptions(field.options)
+        }))
+        : fields;
+
     const accusedCloseForm = ()=>{
         setAccusedFormOpen(false);
+        setFormTemplateData(prev =>
+            Array.isArray(prev) ? normalizeFormFieldsOptions(prev) : prev
+        );
     }
 
     const showMorethenOneTemplate = async (table)=>{
