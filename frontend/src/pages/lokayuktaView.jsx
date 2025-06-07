@@ -106,6 +106,8 @@ const LokayuktaView = () => {
     const [reOpenAddCase, setReOpenAddCase] = useState(false);
     const [approvalSource, setApprovalSource] = useState(null);
 
+    const editedForm = useRef(false);
+
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
     const backToForm = ()=>{
@@ -129,10 +131,25 @@ const LokayuktaView = () => {
         }
     }
 
-    const sidebarActive = (item)=>{
+    const sidebarActive = async (item)=>{
 
         if(!item){
             return false;
+        }
+
+        if(editedForm.current){
+            const result = await Swal.fire({
+                title: 'Unsaved Changes',
+                text: 'You have unsaved changes. Are you sure you want to leave?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Exit',
+                cancelButtonText: 'No',
+            });
+    
+            if (!result.isConfirmed) {
+                return;
+            }
         }
                 
         if (overAllReadonly) {
@@ -591,8 +608,27 @@ const LokayuktaView = () => {
         });
     }
 
-    const closeAddForm = ()=>{
-        setFormOpen(false);
+    const closeAddForm = async ()=>{
+        if(editedForm.current){
+            const result = await Swal.fire({
+                title: 'Unsaved Changes',
+                text: 'You have unsaved changes. Are you sure you want to leave?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, Exit',
+                cancelButtonText: 'No',
+            });
+    
+            if (result.isConfirmed) {
+                setFormOpen(false);
+                editedForm.current = false;
+            }
+
+        }else{
+            setFormOpen(false);
+            editedForm.current = false;
+        }
+
     }
 
     const showAddNewForm = async ()=>{
@@ -1576,6 +1612,10 @@ const LokayuktaView = () => {
         console.log(error,"error");
     }
 
+    const editedFormFlag = (edited)=>{
+        editedForm.current = edited;
+    }
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
@@ -1709,6 +1749,7 @@ const LokayuktaView = () => {
                             closeForm={backToForm}
                             overAllReadonly={overAllReadonly}
                             noPadding={true}
+                            editedForm={editedFormFlag}
                         />
                     </Box>
                     :
@@ -1848,6 +1889,7 @@ const LokayuktaView = () => {
                         noPadding={true}
                         selectedRow={rowData}
                         investigationViewTable={table_name}
+                        editedForm={editedFormFlag}
                     />
                 </Box>
             )}

@@ -61,162 +61,9 @@ import CloseIcon from '@mui/icons-material/Close';
     ];
 
     const days = [
-        "Hearing Today", "Hearing Tomorrow", "Hearing in 2 Days",
-        "Hearing in 3 Days", "Hearing in 4 Days", "Hearing in 5 Days",
-        "Hearing in 6-10 Days"
+        "Today", "Tomorrow", "This Week", "Next Week"
     ];
 
-    // const gradients = [
-    //     "#2196F3", "#3f51b5", "#673ab7",
-    //     "#00bcd4", "#4caf50", "#ff9800",
-    //     "#f44336"
-    // ];
-
-    const gradients = [
-    'linear-gradient(135deg, #2196F3, #673ab7b5)',       // Blue to Purple (Day 1)
-    'linear-gradient(135deg, #00c6ff, #0072ff)',         // Light Blue to Deep Blue (Day 2)
-    'linear-gradient(135deg, #f7971e, #ffd200)',         // Orange to Yellow (Day 3)
-    'linear-gradient(135deg, #00b09b, #96c93d)',         // Teal to Green (Day 4)
-    'linear-gradient(135deg, #ff416c, #ff4b2b)',         // Pink to Red (Day 5)
-    'linear-gradient(135deg, #654ea3, #eaafc8)',         // Purple to Light Pink (Day 6)
-    'linear-gradient(135deg, #43cea2, #185a9d)',         // Aqua Green to Blue (Day 7–10)
-    ];
-
-
-    //   clipPath: 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)',
-
-    const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
-        <Box
-            sx={{
-                width: isFirst ? 150 : 180,
-                height: 70,
-                background: bgGradient,
-                color: '#fff',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 1,
-                boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
-                transition: 'all 0.3s ease',
-                px: 1,
-                cursor: 'pointer',
-                clipPath: isFirst ? 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)' : 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 13% 50%)',
-                '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
-                }
-            }}
-        >
-            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
-                {label}
-            </Typography>
-            <Typography
-                sx={{
-                    fontWeight: 'bold',
-                    fontSize: '1rem',
-                    ml: 1,
-                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-                    borderRadius: '50%',
-                    width: 24,
-                    height: 24,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
-                {number || 0}
-            </Typography>
-        </Box>
-    );
-
-    // const SkewedCard = ({ label, bgGradient }) => (
-    //     <Card
-    //         sx={{
-    //         width: 150,
-    //         height: 70,
-    //         transform: 'skew(-10deg)',
-    //         background: bgGradient,
-    //         color: '#fff',
-    //         display: 'flex',
-    //         alignItems: 'center',
-    //         justifyContent: 'center',
-    //         borderRadius: 2,
-    //         boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
-    //         transition: 'all 0.3s ease',
-    //         cursor: 'pointer',
-    //         '&:hover': {
-    //             transform: 'skew(-10deg) scale(1.05)',
-    //             boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
-    //         }
-    //         }}
-    //     >
-    //         <Typography
-    //         sx={{
-    //             transform: 'skew(10deg)', // undo skew for text
-    //             fontWeight: 'bold',
-    //             fontSize: '0.9rem',
-    //         }}
-    //         >
-    //         {label}
-    //         </Typography>
-    //     </Card>
-    // );
-
-    const GradientBadge = styled(Box)(({ gradient }) => ({
-        background: gradient,
-        color: '#fff',
-        fontSize: 13,
-        fontWeight: 600,
-        padding: '4px 8px',
-        borderRadius: '999px',
-        display: 'inline-block',
-        minWidth: 32,
-        textAlign: 'center',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-    }));
-
-    const cardBackgrounds = [
-        "linear-gradient(135deg, #569bd0, #5c5ee0)",  // 1 - darker blue
-        "linear-gradient(135deg, #a5a6d9, #8a4fd1)",  // 2 - darker lavender
-        "linear-gradient(135deg, #8c8dc7, #2c38c4)",  // 3 - deeper indigo
-        "linear-gradient(135deg, #a5a6d9, #3d3fd0)",  // 4 - deeper violet
-        "linear-gradient(135deg, #65bda3, #4a8c73)",  // 5 - teal green
-        "linear-gradient(135deg, #e2a37e, #cf5d3f)",  // 6 - burnt orange
-        "linear-gradient(135deg, #dc87b1, #b24f91)",  // 7 - rose pink
-        "linear-gradient(135deg, #f0c95e, #e09826)",  // 8 - amber gold
-        "linear-gradient(135deg, #9fa3b0, #727681)",  // 9 - slate grey
-        "linear-gradient(135deg, #97a7f7, #5c6be5)",  // 10 - soft periwinkle
-        "linear-gradient(135deg, #7cc6fe, #3b95e4)"   // 11 - sky blue
-    ];
-
-    const cardHoverBackgrounds = [
-        "linear-gradient(135deg, #467fb0, #484ad0)",  // 1
-        "linear-gradient(135deg, #8e8fc2, #743ebf)",  // 2
-        "linear-gradient(135deg, #6f70a9, #1f2cae)",  // 3
-        "linear-gradient(135deg, #8e8fc2, #2d2fbf)",  // 4
-        "linear-gradient(135deg, #519c8c, #35775f)",  // 5
-        "linear-gradient(135deg, #cb8d6c, #b04c30)",  // 6
-        "linear-gradient(135deg, #c27399, #94396e)",  // 7
-        "linear-gradient(135deg, #deb648, #c37d15)",  // 8
-        "linear-gradient(135deg, #868b9b, #5a5f6a)",  // 9
-        "linear-gradient(135deg, #7b8cdd, #4553d1)",  // 10
-        "linear-gradient(135deg, #66b1f0, #2a7fd1)"   // 11
-    ];
-
-    const cardTitleBackgrounds = [
-        "#6b9ddf",  // 1 - bright blue
-        "#b5aaf0",  // 2 - soft lavender
-        "#9295dc",  // 3 - light indigo
-        "#a2a5f2",  // 4 - light violet
-        "#7ecdb7",  // 5 - mint green
-        "#ee9f76",  // 6 - orange coral
-        "#e58fb4",  // 7 - rose pink
-        "#f5d97b",  // 8 - warm yellow
-        "#adb2c0",  // 9 - slate grey
-        "#a2b4fc",  // 10 - pastel periwinkle
-        "#8dcfff"   // 11 - light sky blue
-    ];
 
 const Dashboard = () => {
     const [activeTab, setActiveTab] = useState(0);
@@ -259,7 +106,6 @@ const Dashboard = () => {
                 preSelectTabLabels = matchedOption;
             }
         });
-
     }
 
     const selectedTab = useRef(preSelectTabLabels);
@@ -267,6 +113,54 @@ const Dashboard = () => {
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
     const [submenuItems, setSubmenuItems] = useState([]);
     const [selectedSubKey, setSelectedSubKey] = useState("");
+
+    const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
+        <Tooltip title={"click here"} arrow>
+        <Box
+            sx={{
+                width: isFirst ? 150 : 180,
+                height: 70,
+                background: 'linear-gradient(135deg, #00796B, #26A69A)',
+                color: '#fff',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 1,
+                boxShadow: '0 3px 8px rgba(0,0,0,0.2)',
+                transition: 'all 0.3s ease',
+                px: 1,
+                cursor: 'pointer',
+                clipPath: isFirst ? 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%)' : 'polygon(0 0, 85% 0, 100% 50%, 85% 100%, 0 100%, 13% 50%)',
+                '&:hover': {
+                    transform: 'scale(1.05)',
+                    boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+                }
+            }}
+            onClick={ViewAllCases}
+        >
+            <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
+                {label}
+            </Typography>
+            <Typography
+                sx={{
+                    fontWeight: 'bold',
+                    fontSize: '1rem',
+                    ml: 1,
+                    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                    borderRadius: '50%',
+                    width: 24,
+                    height: 24,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                }}
+            >
+                {number || 0}
+            </Typography>
+        </Box>
+        </Tooltip>
+    );
 
     const handleTabClick = (event, tab) => {
 
@@ -298,7 +192,14 @@ const Dashboard = () => {
         setSelectedSubKey(option.key);
         setSubmenuAnchorEl(null);
         selectedActiveKey.current = option.key;
-        getDashboardTiles();
+        var subMenuKey = ""
+        if(option?.key === "pt_trail_case"){
+            subMenuKey = "trial_court";
+        }else if(option?.key === "pt_other_case"){
+            subMenuKey = "high_court";
+        }
+        getDashboardTiles(subMenuKey);
+        setCourtTab(0);
     };
 
     const handleMenuClose = () => {
@@ -306,9 +207,28 @@ const Dashboard = () => {
     };
     
     const [courtTab, setCourtTab] = useState(0);
+    const [courtTabs, setCourtTabs] = useState([]);
+
+    useEffect(() => {
+        if (selectedActiveKey.current === "pt_trail_case") {
+            setCourtTabs([
+                { label: "Trial Court", key: 0, sub_court: "trial_court" },
+                { label: "Sessions Court", key: 1, sub_court: "sessions_court" }
+            ]);
+        } else if (selectedActiveKey.current === "pt_other_case") {
+            setCourtTabs([
+                { label: "High Court", key: 0, sub_court: "high_court" },
+                { label: "Supreme Court", key: 1, sub_court: "supreme_court" }
+            ]);
+        } else {
+            setCourtTabs([]);
+        }
+    }, [selectedActiveKey.current]);
 
     const handleCourtTabChange = (event, newValue) => {
         setCourtTab(newValue);
+        var subMenuKey = courtTabs[newValue]?.sub_court || "";
+        getDashboardTiles(subMenuKey);
     };
 
     const handleLogout = async () => {
@@ -418,7 +338,7 @@ const Dashboard = () => {
     }, [selectedActiveKey]);
 
 
-    const getDashboardTiles = async () => {
+    const getDashboardTiles = async (subMenuKey) => {
         const userDesignationId = localStorage.getItem('designation_id');
         const userDesignationName = localStorage.getItem('designation_name');
         const userRole = localStorage.getItem('role_title');
@@ -437,11 +357,17 @@ const Dashboard = () => {
             }
         }
 
+        var subCourt = "";
+
+        if (subMenuKey) {
+            subCourt = subMenuKey
+        }
         
         const payload = {
             user_designation_id: userDesignationId || null,
             user_designation : userDesignation ,
-            case_modules: selectedActiveKey.current
+            case_modules: selectedActiveKey.current,
+            sub_court: subCourt
         };
 
         setLoading(true);
@@ -728,20 +654,53 @@ const Dashboard = () => {
                 </Box>
             </Box>
 
-            <Typography
-                sx={{
-                    fontSize: '18px',
-                    fontWeight: '600',
-                    color: '#0B5ED7',
-                    mt: 1,
-                    textAlign: 'center',
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase',
-                }}
-                className="Roboto"
-            >
-                {selectedTab?.current?.label || ""}
-            </Typography>
+            <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', px: 12}}>
+                
+                <Box
+                    sx={{
+                        backgroundColor: '#E3F2FD',
+                        borderLeft: '4px solid #42A5F5',
+                        padding: '12px 16px',
+                        borderRadius: 2,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 1.5,
+                        my: 2,
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                    <Typography sx={{ fontSize: 14, color: '#0F172A' }}>
+                        Click on the numbers in the tiles below to view detailed {selectedTab?.current?.label || ""}.
+                    </Typography>
+                </Box>
+
+                <Typography
+                    sx={{
+                        fontSize: '18px',
+                        fontWeight: '600',
+                        color: '#0B5ED7',
+                        mt: 1,
+                        textAlign: 'center',
+                        letterSpacing: '0.5px',
+                        textTransform: 'uppercase',
+                    }}
+                    className="Roboto"
+                >
+                    {selectedTab?.current?.label || ""}
+                </Typography>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', marginLeft: '250px'}}>
+                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
+                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                    </Typography>
+                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                        <IconButton>
+                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
+            </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center',px: 10, py: 0.5}}>
 
@@ -776,7 +735,7 @@ const Dashboard = () => {
             </Box>
 
             {
-                (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
+                (selectedActiveKey.current === "pt_trail_case" || selectedActiveKey.current === "pt_other_case") &&
                 <Box sx={{display: 'flex', justifyContent: 'center', alignItems: 'center'}}>
                     <Tabs
                         value={courtTab}
@@ -785,84 +744,28 @@ const Dashboard = () => {
                         indicatorColor="primary"
                         sx={{ mb: 1 }}
                     >
-                        <Tab label="Trial Court" />
-                        <Tab label="Sessions Court" />
+                        {
+                            courtTabs.map((tab) => (
+                                <Tab key={tab.key} label={tab.label} />
+                            ))
+                        }
                     </Tabs>
                 </Box>
             }
 
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, py: 0.5}}>
+            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <Box className="divider" sx={{width: '50%', margin: '10px'}}></Box>
+            </Box>
+            {/* second section */}
+
+            { Object.keys(dashboardMenu).length > 0 &&
+            <>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', px: 4, pb: 2, pt: 0.5}}>
                 <Box>
                     <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939'}}>
                         PENDENCY Alerts/Notifications of {selectedTab?.current?.label || ""}
                     </Typography>
                 </Box>
-
-                {/* <Box sx={{display: 'flex', alignItems: 'end', flexDirection: 'column', }}>
-                    <Button
-                        variant="outlined"
-                        size="medium"
-                        endIcon={<ArrowForwardIcon />}
-                        sx={{
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            fontSize: '0.875rem',
-                            borderRadius: 1,
-                            color: '#fff',
-                            border: 'none',
-                            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                            px: 2.5,
-                            mr: 1.5,
-                            background: '#FF7043',
-                            '&:hover': {
-                                filter: 'brightness(1.1)',
-                            }
-                        }}
-                        onClick={ViewAllCases}
-                    >
-                        View All Cases
-                    </Button>
-                </Box> */}
-            </Box>
-
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 12, py: 1}}>
-                <Box
-                    sx={{
-                        backgroundColor: '#F0F4FF',
-                        border: '1px solid #90CAF9',
-                        borderRadius: 2,
-                        padding: 1,
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: 1,
-                    }}
-                >
-                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
-                    <Box>
-                        <Typography
-                            sx={{
-                                fontWeight: 400,
-                                fontSize: 13,
-                                color: '#344054',
-                                mt: 0.5
-                            }}
-                        >
-                            Please <strong style={{ color: '#1976d2' }}> click on statistics (numbers)</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
-                        </Typography>
-                    </Box>
-                </Box>
-
-                <Box sx={{ display: 'flex', alignItems: 'center'}}>
-                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
-                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
-                    </Typography>
-                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
-                        <IconButton>
-                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
-                        </IconButton>
-                    </Tooltip>
-                </Box>
-
             </Box>
 
             <Box
@@ -885,7 +788,7 @@ const Dashboard = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'space-between',
-                        background: `linear-gradient(135deg, #2196F3, #673ab7b5)`,
+                        background: 'linear-gradient(135deg, #1976D2, #2196F3)',
                         color: '#fff',
                         cursor: 'pointer',
                         boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
@@ -929,6 +832,7 @@ const Dashboard = () => {
                     {value.divider_details && Object.keys(value.divider_details).length > 0 ? (
                         <Box sx={{ display: 'flex', gap: 1}}>
                             {Object.entries(value.divider_details).map(([dividerKey, dividerValue], idx) => (
+                                <Tooltip title={"click here"} arrow>
                                 <Box
                                     key={dividerKey}
                                     onClick={(e) => {
@@ -952,46 +856,57 @@ const Dashboard = () => {
                                         },
                                     }}
                                 >
-                                    <Typography 
-                                        variant="body2" 
-                                        sx={{ 
-                                            width: 30, 
-                                            height: 30,
-                                            borderRadius: "50%",
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            fontWeight: 600, 
-                                            background: getAvatarColor(idx, Object.keys(value.divider_details).length) 
-                                        }}
-                                    >
-                                        {dividerValue.count}
-                                    </Typography>
-                                    <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
-                                        {dividerValue.name}
-                                    </Typography>
+                                        <Typography 
+                                            variant="body2" 
+                                            sx={{ 
+                                                width: 30, 
+                                                height: 30,
+                                                borderRadius: "50%",
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontWeight: 600, 
+                                                background: getAvatarColor(idx, Object.keys(value.divider_details).length) 
+                                            }}
+                                        >
+                                                {dividerValue.count}
+                                        </Typography>
+                                        <Typography variant="caption" sx={{ fontSize: '0.7rem' }}>
+                                                {dividerValue.name}
+                                        </Typography>
                                 </Box>
+                                </Tooltip>
                             ))}
                         </Box>
                     ) : (
-                        <Box sx={{ textAlign: 'center', mb: 2 }} onClick={()=>navigateRouter(value)}>
-                            <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                                {value.total_count}
-                            </Typography>
-                        </Box>
+                        <Tooltip title={"click here"} arrow>
+                            <Box sx={{ textAlign: 'center', mb: 2 }} onClick={()=>navigateRouter(value)}>
+                                <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                                        {value.total_count}
+                                </Typography>
+                            </Box>
+                        </Tooltip>
                     )}
                 </Card>
                 ))}
             </Box>
+            </>
+            }
 
             {
                 (selectedTab?.current?.key === "pt_trail_case" || selectedTab?.current?.key === "pt_other_case") && 
                 <Box>
+                    {
+                        selectedTab?.current?.key === "pt_other_case" &&
+                        <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                            <Box className="divider" sx={{width: '50%', margin: '10px'}}></Box>
+                        </Box>
+                    }
                     <Box>
                         <Typography sx={{ fontWeight: 600, fontSize: 20, color: '#1D2939', textAlign: 'center'}}>
                             Hearing Date Alerts
                         </Typography>
-                    </Box>                    
+                    </Box>
                     <Box
                         sx={{
                             display: 'flex',
@@ -1012,6 +927,47 @@ const Dashboard = () => {
                     </Box>
                 </Box>
             }
+
+
+            {/* <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 12, py: 1}}>
+                <Box
+                    sx={{
+                        backgroundColor: '#F0F4FF',
+                        border: '1px solid #90CAF9',
+                        borderRadius: 2,
+                        padding: 1,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1,
+                    }}
+                >
+                    <InfoOutlinedIcon sx={{ color: '#1976d2' }} />
+                    <Box>
+                        <Typography
+                            sx={{
+                                fontWeight: 400,
+                                fontSize: 13,
+                                color: '#344054',
+                                mt: 0.5
+                            }}
+                        >
+                            Please <strong style={{ color: '#1976d2' }}> click on statistics (numbers)</strong> in the below tiles to navigate to the particular {selectedTab?.current?.label || ""}.
+                        </Typography>
+                    </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center'}}>
+                    <Typography sx={{ fontWeight: 400, color: '#009688', fontSize: '14px' }}>
+                        Last Updated On: {storedTime ? formatDateTime(storedTime) : "Not Available"}
+                    </Typography>
+                    <Tooltip title="Refresh Dashboard" onClick={getDashboardData}>
+                        <IconButton>
+                            <RefreshIcon sx={{color: '#009688', fontWeight: 400}} />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
+
+            </Box> */}
 
             {openUserDesignationDropdown && userOverallDesignation?.length > 0 && (
                 <Dialog
