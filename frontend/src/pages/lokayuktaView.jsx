@@ -23,6 +23,7 @@ import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
 import ChargeSheetInvestigation from "./ChargeSheetInvestigation";
 import PropertyForm from "./PropertyForm";
+import CDR from "./CDR";
 import Report41A from "./Report41A";
 import PlanOfAction from "./PlanOfAction";
 import EqProgressReport from "./EqProgressReport";
@@ -1621,6 +1622,17 @@ const LokayuktaView = () => {
 
 
                      <PropertyForm
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                ) : activeSidebar?.table === "cid_ui_case_cdr_ipdr" ? (
+
+
+                     <CDR
                         templateName={template_name}
                         headerDetails={headerDetails}
                         rowId={tableRowId}

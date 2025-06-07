@@ -25,11 +25,12 @@ import Report from "./pages/reports";
 import UICreate from './pages/cases/UICreate';
 import UICases from './pages/cases/UICases';
 import RolePage from './pages/Role';
-
+import OrdersRepository from './pages/repository'
 import UIView from './pages/cases/UIView';
 import Trail from './pages/trail';
 import Annexure from './pages/annexure'
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import SessionTimeoutHandler from './components/SessionTimeoutHandler';
 
 import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
@@ -55,6 +56,7 @@ function App() {
   return (
     <Router>
       <AuthProvider>
+        <SessionTimeoutHandler />
         <Routes>
           <Route path="/" element={<Login />} />
           <Route
@@ -264,6 +266,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <CrimeIntelligence />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/case/repos_case"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <OrdersRepository />
                         </Layout>
                     </ProtectedRoute>
                 }
