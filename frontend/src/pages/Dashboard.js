@@ -47,16 +47,17 @@ import CloseIcon from '@mui/icons-material/Close';
         { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
         { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" },
         { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
-        { 
-            label: "Orders & Circulars", 
-            route: "/repository/judgements", 
-            key: "order_circulars",
-            options : [
-                {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
-                {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
-                {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
-            ]
-        },
+        { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" },
+        // { 
+        //     label: "Orders & Circulars", 
+        //     route: "/repository/judgements", 
+        //     key: "order_circulars",
+        //     options : [
+        //         {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
+        //         {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
+        //         {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
+        //     ]
+        // },
     ];
 
     const days = [
@@ -243,7 +244,7 @@ const Dashboard = () => {
 
     var preSelectTabLabels = tabLabels[0]
     
-    if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics")){
+    if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics" && tabActiveKey !== "repos_case")){
         
         tabLabels.forEach((tab) => {
             const isMainMatch = tabActiveKey === tab.key;
@@ -269,7 +270,7 @@ const Dashboard = () => {
 
     const handleTabClick = (event, tab) => {
 
-        if(tab.key === "crime_analytics" || tab.key === "crime_intelligence"){
+        if(tab.key === "crime_analytics" || tab.key === "crime_intelligence" || tab.key === "repos_case"){
             navigate(tab?.route, {state: {"navbarKey" : tab.key}} );
             window.location.reload();
             return;
@@ -412,7 +413,7 @@ const Dashboard = () => {
 
 
     useEffect(() => {
-        if (selectedActiveKey === "crime_intelligence") return;
+        if (selectedActiveKey === "crime_intelligence" || selectedActiveKey === "repos_case") return;
         getDashboardTiles();
     }, [selectedActiveKey]);
 

@@ -5163,104 +5163,130 @@ async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regula
     let currentY = pageHeight - 80;
 
     for (let [label, value] of Object.entries(data)) {
-      const fieldLabel = formatLabel(label);
-      let fieldValue = value ? value.toString() : 'N/A';
+        const fieldLabel = formatLabel(label);
+        let fieldValue = value ? value.toString() : 'N/A';
 
-      // Format date fields
-      if ((label === 'field_due_date' || label === 'created_at') && value) {
-        try {
-          const dateObj = new Date(value);
-          fieldValue = dateObj.toLocaleDateString('en-IN', {
-            year: 'numeric',
-            month: 'short',
-            day: '2-digit'
-          });
-        } catch (e) {
-          console.warn(`Invalid date for ${label}: ${value}`);
-        }
-      }
-
-      const rawLines = fieldValue.split('\n');
-      const wrappedLines = [];
-
-      for (let rawLine of rawLines) {
-        rawLine = breakLongWords(rawLine, regularFont, fontSize, pageWidth - 200);
-        const words = rawLine.trim().split(/\s+/);
-        let currentLine = '';
-
-        for (let word of words) {
-          const testLine = currentLine ? `${currentLine} ${word}` : word;
-          const width = regularFont.widthOfTextAtSize(testLine, fontSize);
-          if (width <= pageWidth - 200) {
-            currentLine = testLine;
-          } else {
-            wrappedLines.push(currentLine);
-            currentLine = word;
+        // Format date fields
+        if ((label === 'field_due_date' || label === 'created_at') && value) {
+          try {
+            const dateObj = new Date(value);
+            fieldValue = dateObj.toLocaleDateString('en-IN', {
+              year: 'numeric',
+              month: 'short',
+              day: '2-digit'
+            });
+          } catch (e) {
+            console.warn(`Invalid date for ${label}: ${value}`);
           }
         }
 
-        if (currentLine) wrappedLines.push(currentLine);
-      }
+        // --- Improved word wrapping logic with vertical space check ---
+        const maxBoxWidth = pageWidth - 300 - 20; // 20px padding for safety
+        const leftPadding = 210;
+        const topPadding = 15;
+        const minRowHeight = 30;
+        const lineSpacing = fontSize + 4;
 
-      let remainingLines = [...wrappedLines];
+        const rawLines = fieldValue.split('\n');
+        const wrappedLines = [];
 
-      while (remainingLines.length > 0) {
-        const availableHeight = currentY - 50;
-        const linesPerPage = Math.floor((availableHeight - 10) / (fontSize + 4));
-        const linesToPrint = remainingLines.splice(0, linesPerPage);
-        const valueHeight = linesToPrint.length * (fontSize + 4);
-        const rowHeight = Math.max(30, valueHeight + 10);
+        for (let rawLine of rawLines) {
+          // Break long words first
+          rawLine = breakLongWords(rawLine, regularFont, fontSize, maxBoxWidth);
+          let words = rawLine.trim().split(/\s+/);
+          let currentLine = '';
 
-        page.drawRectangle({
-          x: startX,
-          y: currentY - rowHeight,
-          width: 200,
-          height: rowHeight,
-          borderColor: rgb(0, 0, 0),
-          borderWidth: 1,
-        });
+          for (let word of words) {
+            let testLine = currentLine ? `${currentLine} ${word}` : word;
+            let width = regularFont.widthOfTextAtSize(testLine, fontSize);
+            if (width <= maxBoxWidth) {
+              currentLine = testLine;
+            } else {
+              if (currentLine) wrappedLines.push(currentLine);
+              // If the word itself is too long, break it
+              if (regularFont.widthOfTextAtSize(word, fontSize) > maxBoxWidth) {
+                let chars = word.split('');
+                let temp = '';
+                for (let c of chars) {
+                  let testTemp = temp + c;
+                  if (regularFont.widthOfTextAtSize(testTemp, fontSize) > maxBoxWidth) {
+                    wrappedLines.push(temp);
+                    temp = c;
+                  } else {
+                    temp = testTemp;
+                  }
+                }
+                if (temp) wrappedLines.push(temp);
+                currentLine = '';
+              } else {
+                currentLine = word;
+              }
+            }
+          }
+          if (currentLine) wrappedLines.push(currentLine);
+        }
+        // --- End improved word wrapping ---
 
-        page.drawRectangle({
-          x: startX + 200,
-          y: currentY - rowHeight,
-          width: pageWidth - 300,
-          height: rowHeight,
-          borderColor: rgb(0, 0, 0),
-          borderWidth: 1,
-        });
+        let remainingLines = [...wrappedLines];
 
-        page.drawText(fieldLabel, {
-          x: startX + 5,
-          y: currentY - 15,
-          size: fontSize,
-          font: boldFont,
-          color: rgb(0, 0, 0),
-        });
+        while (remainingLines.length > 0) {
+          const availableHeight = currentY - 50;
+          const linesPerPage = Math.floor((availableHeight - 10) / lineSpacing);
+          const linesToPrint = remainingLines.splice(0, linesPerPage);
+          const valueHeight = linesToPrint.length * lineSpacing;
+          const rowHeight = Math.max(minRowHeight, valueHeight + 10);
 
-        let textY = currentY - 15;
-        for (let line of linesToPrint) {
-          page.drawText(line, {
-            x: startX + 210,
-            y: textY,
+          page.drawRectangle({
+            x: startX,
+            y: currentY - rowHeight,
+            width: 200,
+            height: rowHeight,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1,
+          });
+
+          page.drawRectangle({
+            x: startX + 200,
+            y: currentY - rowHeight,
+            width: pageWidth - 300,
+            height: rowHeight,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1,
+          });
+
+          page.drawText(fieldLabel, {
+            x: startX + 5,
+            y: currentY - topPadding,
             size: fontSize,
-            font: regularFont,
+            font: boldFont,
             color: rgb(0, 0, 0),
           });
-          textY -= fontSize + 4;
-        }
 
-        currentY -= rowHeight;
+          let textY = currentY - topPadding;
+          for (let line of linesToPrint) {
+            // Ensure text does not overflow the box vertically
+            if (textY < currentY - rowHeight + 5) break;
+            page.drawText(line, {
+              x: startX + leftPadding,
+              y: textY,
+              size: fontSize,
+              font: regularFont,
+              color: rgb(0, 0, 0),
+            });
+            textY -= lineSpacing;
+          }
 
-        if (remainingLines.length > 0 || currentY < 100) {
-          page = pdfDoc.addPage([pageWidth, pageHeight]);
-          currentY = pageHeight - 80;
+          currentY -= rowHeight;
+
+          // If there are more lines or not enough space, add a new page
+          if (remainingLines.length > 0 || currentY < 100) {
+            page = pdfDoc.addPage([pageWidth, pageHeight]);
+            currentY = pageHeight - 80;
+          }
         }
       }
     }
   }
-
-}
-
 
 exports.appendToLastLineOfPDF = async (req, res) => {
   try {
@@ -5436,7 +5462,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error.' });
+    return res.status(500).json({ success: false, message: 'Internal server error.', error: error?.message || error });
   }
 };
 
