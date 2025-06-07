@@ -2082,129 +2082,126 @@ const UnderInvestigation = () => {
       }
   };
 
-            const updateTemplateData = async (rowData, tableName) => {
-                let rowId = rowData && rowData.id && rowData.id !== "null" ? rowData.id : null;
-                if (!rowId && Array.isArray(accusedTableRowData)) {
-                    const found = accusedTableRowData.find(r =>
-                        (r.sl_no === rowData.sl_no) ||
-                        (r.field_name === rowData.field_name)
-                    );
-                    if (found && found.id && found.id !== "null") {
-                        rowId = found.id;
-                    }
+    const updateTemplateData = async (rowData, tableName) => {
+        let rowId = rowData && rowData.id && rowData.id !== "null" ? rowData.id : null;
+        if (!rowId && Array.isArray(accusedTableRowData)) {
+            const found = accusedTableRowData.find(r =>
+                (r.sl_no === rowData.sl_no) ||
+                (r.field_name === rowData.field_name)
+            );
+            if (found && found.id && found.id !== "null") {
+                rowId = found.id;
+            }
+        }
+        if (!rowId || rowId === "null") {
+            toast.error("Cannot update: Row ID is missing.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        setSelectedRowId(rowId);
+    
+        const formData = new FormData();
+        formData.append("table_name", tableName);
+        formData.append("id", rowId);
+    
+        let normalData = {};
+        const fileFields = [];
+    
+        Object.keys(rowData).forEach((key) => {
+            if (
+                key !== "id" &&
+                key !== "sl_no" &&
+                key !== "isNew" &&
+                key !== "ReadStatus"
+            ) {
+                const value = rowData[key];
+                if (value instanceof File) {
+                    formData.append(key, value);
+                    fileFields.push(key);
+                } else {
+                    normalData[key] = Array.isArray(value)
+                        ? value.join(",")
+                        : value;
                 }
-                if (!rowId || rowId === "null") {
-                    toast.error("Cannot update: Row ID is missing.", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                    return;
-                }
-            
-                setSelectedRowId(rowId);
-            
-                const formData = new FormData();
-                formData.append("table_name", tableName);
-                formData.append("id", rowId);
-            
-                let normalData = {};
-                // Track file fields to append separately
-                const fileFields = [];
-            
-                Object.keys(rowData).forEach((key) => {
-                    if (
-                        key !== "id" &&
-                        key !== "sl_no" &&
-                        key !== "isNew" &&
-                        key !== "ReadStatus"
-                    ) {
-                        const value = rowData[key];
-                        // If value is a File, append to formData and skip from normalData
-                        if (value instanceof File) {
-                            formData.append(key, value);
-                            fileFields.push(key);
-                        } else {
-                            normalData[key] = Array.isArray(value)
-                                ? value.join(",")
-                                : value;
+            }
+        });
+    
+        fileFields.forEach(field => {
+            delete normalData[field];
+        });
+    
+        normalData["id"] = rowId;
+        formData.append("data", JSON.stringify(normalData));
+        const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transactionId);
+    
+        setLoading(true);
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+            setLoading(false);
+    
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        if (tableName === "cid_ui_case_accused") {
+                            if (showPreliminaryAccusedTable) {
+                                showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                            } else {
+                                showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                            }
+                        } else if (tableName === "cid_ui_case_progress_report") {
+                            showAccusedTableView(1, false, "cid_ui_case_progress_report");
+                        } else if (tableName === "cid_ui_case_forensic_science_laboratory") {
+                            showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
                         }
-                    }
+                    },
                 });
-            
-                // Remove file fields from normalData so they are not sent as {}
-                fileFields.forEach(field => {
-                    delete normalData[field];
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to update the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
                 });
-            
-                normalData["id"] = rowId;
-                formData.append("data", JSON.stringify(normalData));
-                const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-                formData.append("transaction_id", transactionId);
-            
-                setLoading(true);
-                try {
-                    const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
-                    setLoading(false);
-            
-                    if (saveTemplateData && saveTemplateData.success) {
-                        toast.success(saveTemplateData.message || "Data Updated Successfully", {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-success",
-                            onOpen: () => {
-                                if (tableName === "cid_ui_case_accused") {
-                                    if (showPreliminaryAccusedTable) {
-                                        showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
-                                    } else {
-                                        showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
-                                    }
-                                } else if (tableName === "cid_ui_case_progress_report") {
-                                    showAccusedTableView(1, false, "cid_ui_case_progress_report");
-                                } else if (tableName === "cid_ui_case_forensic_science_laboratory") {
-                                    showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
-                                }
-                            },
-                        });
-                    } else {
-                        const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to update the profile. Please try again.";
-                        toast.error(errorMessage, {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-                    }
-                } catch (error) {
-                    setLoading(false);
-                    if (error && error.response && error.response["data"]) {
-                        toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-                    }
-                }
-            };
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
             
 
     const handleEditTableRowUpdate = async (updatedRow, tableName) => {
@@ -2220,7 +2217,7 @@ const UnderInvestigation = () => {
     }
 
     await updateTemplateData(updatedRow, resolvedTableName);
-};
+    };
           
 const normalizeOptions = (options) => {
     if (!Array.isArray(options)) return [];

@@ -197,15 +197,23 @@ export default function EditTableView({
           ...col,
           editable: false,
           renderCell: (params) => {
+            // If file exists, show icon and disable further upload in this cell
             if (params.value) {
-              // Show file icon for existing file
               return (
                 <Tooltip title={typeof params.value === 'string' ? params.value.split('/').pop() : (params.value.name || '')}>
                   <IconButton
                     size="small"
                     onClick={e => {
                       e.stopPropagation();
-                      window.open(params.value, '_blank', 'noopener,noreferrer');
+                      // If it's a File object, create a URL for preview
+                      if (params.value instanceof File) {
+                        const url = URL.createObjectURL(params.value);
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                        // Optionally revoke the object URL after some time
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      } else {
+                        window.open(params.value, '_blank', 'noopener,noreferrer');
+                      }
                     }}
                   >
                     <AttachFileIcon />
@@ -213,7 +221,7 @@ export default function EditTableView({
                 </Tooltip>
               );
             }
-            // Show upload icon if no file
+            // Only allow upload if no file is present
             return (
               <Tooltip title="Upload File">
                 <IconButton
@@ -228,15 +236,11 @@ export default function EditTableView({
                     onChange={event => {
                       const file = event.target.files[0];
                       if (file) {
-                        // Instead of just updating local rows, trigger row edit mode and update the row value
-                        // Find the row id
                         const rowId = params.id;
-                        // Set the row in edit mode
                         setRowModesModel(prev => ({
                           ...prev,
                           [rowId]: { mode: GridRowModes.Edit }
                         }));
-                        // Update the row value in edit mode
                         setRows(prevRows =>
                           prevRows.map(row =>
                             row.id === rowId
@@ -244,8 +248,12 @@ export default function EditTableView({
                               : row
                           )
                         );
+                        // Optionally, update the propRows if you want to persist immediately
+                        // If you want to update the backend immediately, call onRowUpdate here as well
                       }
                     }}
+                    // Disable input if file already exists
+                    disabled={!!params.value}
                   />
                 </IconButton>
               </Tooltip>
