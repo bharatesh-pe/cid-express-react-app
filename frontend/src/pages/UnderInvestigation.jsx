@@ -4395,8 +4395,14 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         if (!extensionDate) {
                           isDisabledForOthers = diffDays > 90;
                         } else {
+                          const updatedBy = (field["field_extension_updated_by"] || "").toUpperCase();
+                          const hasValidExtension =
+                            updatedBy.includes("DIG") ||
+                            updatedBy.includes("ADG") ||
+                            updatedBy.includes("DGP");
                           const isPastExtension = currentDate > extensionDate;
-                          isDisabledForOthers = isPastExtension;
+                          isDisabledForOthers = isPastExtension || !hasValidExtension;
+
                         }
                       }
 
@@ -4408,7 +4414,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                       if (isDIGEligibleForCaseExtension || isADGEligibleForCaseExtension || isDGPEligibleForCaseExtension) {
                         extraHoverOptions.unshift({
-                          name: "Case Extension",
+                          name: "Case Extension Approve",
                           onclick: (selectedRow) => {
                             const baseDate = dayjs(field["created_at"]);
                             let minDate = null;
@@ -4431,6 +4437,32 @@ const loadChildMergedCasesData = async (page, caseId) => {
                               maxDate: maxDate?.toISOString(),
                             });
 
+                            setShowCaseExtensionModal(true);
+                          },
+                        });
+                      }
+                      else if (isDisabledForOthers) {
+                        extraHoverOptions.unshift({
+                          name: "Case Extension Request",
+                          onclick: (selectedRow) => {
+                            const baseDate = dayjs(field["created_at"]);
+                            let minDate = null;
+                            let maxDate = null;
+                            if (isOlderThan90Days && !isOlderThan180to360Days && !isOlderThan360Days) {
+                              minDate = baseDate.add(90, "day");
+                              maxDate = baseDate.add(180, "day");
+                            } else if (isOlderThan180to360Days && !isOlderThan360Days) {
+                              minDate = baseDate.add(180, "day");
+                              maxDate = baseDate.add(360, "day");
+                            } else if (isOlderThan360Days) {
+                              minDate = baseDate.add(361, "day");
+                              maxDate = null;
+                            }
+                            setFormData({
+                              id: selectedRow.id,
+                              minDate: minDate ? minDate.toISOString() : null,
+                              maxDate: maxDate ? maxDate.toISOString() : null,
+                            });
                             setShowCaseExtensionModal(true);
                           },
                         });
@@ -9695,10 +9727,12 @@ const handleOpenExportPopup = async () => {
       return;
     }
 
+    const field_extension_updated_by = localStorage.getItem("designation_name") || "";
     const extensionUpdateData = {
       id,
       field_extension_date,
       field_extension_remark,
+      field_extension_updated_by
     };
 
     showExtensionCaseApprovalPage( extensionUpdateData, new FormData(), true);
