@@ -335,7 +335,7 @@ const DynamicForm = ({
         newFormConfig.forEach((config) => {
             const name = config.name;
 
-            if (initialData.hasOwnProperty(name)) {
+            if (initialData && initialData.hasOwnProperty(name)) {
                 checkInitialData[name] = Array.isArray(initialData[name]) ? initialData[name].join(',') : initialData[name];
             }
             if (formData.hasOwnProperty(name)) {
