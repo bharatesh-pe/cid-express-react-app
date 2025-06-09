@@ -499,6 +499,20 @@ code {
     color: #12B76A !important;
 }
 
+.submissionCompleted{
+    background-color: #ECFDF3 !important;
+    color: #12B76A !important;
+}
+.submissionPending{
+    background-color: #EFF8FF !important;
+    color: #1570EF !important;
+}
+.investigationStepperTitle{
+    font-size: 14px;
+    font-weight: 500;
+    color: #1D2939 !important;
+}
+
 /* stepper border */
 .MuiStepConnector-horizontal {
     flex: 0 0 auto !important;
