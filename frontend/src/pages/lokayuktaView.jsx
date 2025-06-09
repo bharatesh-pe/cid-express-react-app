@@ -1616,6 +1616,27 @@ const LokayuktaView = () => {
         editedForm.current = edited;
     }
 
+    
+    const [selectedApprovalSteps, setSelectedApprovalSteps] = useState({});
+
+    const handleApprovalStepperClick = (stepValue) => {
+        
+        var selected = Array.isArray(selectedApprovalSteps.approval_steps)
+            ? [...selectedApprovalSteps.approval_steps]
+            : [];
+
+        if (selected.includes(stepValue)) {
+            selected = selected.filter((v) => v !== stepValue);
+        } else {
+            selected.push(stepValue);
+        }
+
+        setSelectedApprovalSteps({
+            ...selectedApprovalSteps,
+            approval_steps: selected
+        });
+    };
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
@@ -1754,6 +1775,130 @@ const LokayuktaView = () => {
                     </Box>
                     :
                     <Box p={2}>
+
+                        {
+                            activeSidebar?.is_approval && activeSidebar?.approval_steps && JSON.parse(activeSidebar?.approval_steps)?.length > 0 && 
+                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                                {
+                                    JSON.parse(activeSidebar?.approval_steps).map((step, index) => {
+
+                                        var selected = false;
+
+                                        var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                                        var designationName = localStorage.getItem("designation_name") || "";
+
+                                        var stepperValue = ""
+
+                                        if(roleTitle.toLowerCase() === "investigation officer"){
+                                            stepperValue = "io";
+                                        }else{
+                                            var splitingValue = designationName.split(" ");
+                                            if(splitingValue?.[0]){
+                                                stepperValue = splitingValue[0].toLowerCase();
+                                            }
+                                        }
+
+                                        var alreadySubmited = false;
+
+                                        if(activeSidebar?.alreadySubmitted){
+                                            alreadySubmited = true;
+                                        }
+
+                                        if(step.toLowerCase() === stepperValue){
+                                            selected = true;
+                                        }
+
+                                        var StepperTitle = ""
+                                        switch (step.toLowerCase()) {
+                                            case "io":
+                                                StepperTitle = "Investigation Officer";
+                                                break;
+                                            case "la":
+                                                StepperTitle = "Legal Advisor";
+                                                break;
+                                            case "sp":
+                                                StepperTitle = "Superintendent of Police";
+                                                break;
+                                            case "dig":
+                                                StepperTitle = "Deputy Inspector General";
+                                                break;
+                                            default:
+                                                StepperTitle = ""
+                                                break;
+                                        }
+
+                                        return (
+                                            <React.Fragment key={step}>
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={() => handleApprovalStepperClick(step)}
+                                                    sx={() => {
+                                                        var backgroundColor = "#f0f0f0";
+                                                        var color = "#333";
+                                                        var boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                                        if (alreadySubmited) {
+                                                            backgroundColor = "#27ae60";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #d4f7e8";
+                                                        } else if (selected) {
+                                                            backgroundColor = "#1570ef";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #dcebff ";
+                                                        }
+
+                                                        return {
+                                                            backgroundColor,
+                                                            color,
+                                                            minWidth: 52,
+                                                            height: 50,
+                                                            borderRadius: '50%',
+                                                            padding: '16px',
+                                                            fontWeight: 600,
+                                                            boxShadow,
+                                                            transition: "all 0.3s ease-in-out",
+                                                            transform: selected ? "translateY(-2px)" : "none",
+                                                            "&:hover": {
+                                                                backgroundColor: alreadySubmited
+                                                                    ? "#219150"
+                                                                    : selected
+                                                                    ? "#2980b9"
+                                                                    : "#dcdcdc",
+                                                                boxShadow: alreadySubmited
+                                                                    ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : selected
+                                                                    ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                                    : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                                transform: "translateY(-3px)",
+                                                            }
+                                                        };
+                                                    }}
+                                                >
+                                                    {step}
+                                                </Button>
+                                                <Box px={2}>        
+                                                    <div className="investigationStepperTitle">
+                                                        {StepperTitle}
+                                                    </div>
+                                                    <div className={`stepperCompletedPercentage ${alreadySubmited ? 'submissionCompleted' : 'submissionPending'}`}>
+                                                        {alreadySubmited ? "Submitted" : "Pending"}
+                                                    </div>
+                                                </Box>
+                                                
+                                                {index < JSON.parse(activeSidebar?.approval_steps)?.length - 1 && (
+                                                    <Box
+                                                        sx={{
+                                                            width: 60,
+                                                        }}
+                                                        className="divider"
+                                                    />
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                            </Box>
+                        }
+
                         <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
                             <Typography
                                 sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
@@ -1808,7 +1953,7 @@ const LokayuktaView = () => {
                                             }
                                         }}
                                         sx={{
-                                            width: '400px', borderRadius: '6px', outline: 'none',
+                                            width: '300px', borderRadius: '6px', outline: 'none',
                                             '& .MuiInputBase-input::placeholder': {
                                                 color: '#475467',
                                                 opacity: '1',
@@ -1852,6 +1997,17 @@ const LokayuktaView = () => {
                                 >
                                     Add New
                                 </Button>
+                                {
+                                    activeSidebar?.is_approval &&
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="large"
+                                        sx={{ height: "38px" }}
+                                    >
+                                        Submit
+                                    </Button>
+                                }
                             </Box>
                         </Box>
 
