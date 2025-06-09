@@ -2082,113 +2082,127 @@ const UnderInvestigation = () => {
       }
   };
 
-const updateTemplateData = async (rowData, tableName) => {
-    let rowId = rowData && rowData.id && rowData.id !== "null" ? rowData.id : null;
-    if (!rowId && Array.isArray(accusedTableRowData)) {
-        const found = accusedTableRowData.find(r =>
-            (r.sl_no === rowData.sl_no) ||
-            (r.field_name === rowData.field_name)
-        );
-        if (found && found.id && found.id !== "null") {
-            rowId = found.id;
+    const updateTemplateData = async (rowData, tableName) => {
+        let rowId = rowData && rowData.id && rowData.id !== "null" ? rowData.id : null;
+        if (!rowId && Array.isArray(accusedTableRowData)) {
+            const found = accusedTableRowData.find(r =>
+                (r.sl_no === rowData.sl_no) ||
+                (r.field_name === rowData.field_name)
+            );
+            if (found && found.id && found.id !== "null") {
+                rowId = found.id;
+            }
         }
-    }
-    if (!rowId || rowId === "null") {
-        toast.error("Cannot update: Row ID is missing.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
+        if (!rowId || rowId === "null") {
+            toast.error("Cannot update: Row ID is missing.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+    
+        setSelectedRowId(rowId);
+    
+        const formData = new FormData();
+        formData.append("table_name", tableName);
+        formData.append("id", rowId);
+    
+        let normalData = {};
+        const fileFields = [];
+    
+        Object.keys(rowData).forEach((key) => {
+            if (
+                key !== "id" &&
+                key !== "sl_no" &&
+                key !== "isNew" &&
+                key !== "ReadStatus"
+            ) {
+                const value = rowData[key];
+                if (value instanceof File) {
+                    formData.append(key, value);
+                    fileFields.push(key);
+                } else {
+                    normalData[key] = Array.isArray(value)
+                        ? value.join(",")
+                        : value;
+                }
+            }
         });
-        return;
-    }
-
-    setSelectedRowId(rowId);
-
-    const formData = new FormData();
-    formData.append("table_name", tableName);
-    formData.append("id", rowId);
-
-    let normalData = {};
-    Object.keys(rowData).forEach((key) => {
-        if (
-            key !== "id" &&
-            key !== "sl_no" &&
-            key !== "isNew" &&
-            key !== "ReadStatus"
-        ) {
-            normalData[key] = Array.isArray(rowData[key])
-                ? rowData[key].join(",")
-                : rowData[key];
-        }
-    });
-    normalData["id"] = rowId;
-    formData.append("data", JSON.stringify(normalData));
-    const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-    formData.append("transaction_id", transactionId);
-
-    setLoading(true);
-    try {
-        const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
-        setLoading(false);
-
-        if (saveTemplateData && saveTemplateData.success) {
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-success",
-                onOpen: () => {
-                    if (tableName === "cid_ui_case_accused") {
-                        if (showPreliminaryAccusedTable) {
-                            showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
-                        } else {
-                            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+    
+        fileFields.forEach(field => {
+            delete normalData[field];
+        });
+    
+        normalData["id"] = rowId;
+        formData.append("data", JSON.stringify(normalData));
+        const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        formData.append("transaction_id", transactionId);
+    
+        setLoading(true);
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+            setLoading(false);
+    
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        if (tableName === "cid_ui_case_accused") {
+                            if (showPreliminaryAccusedTable) {
+                                showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                            } else {
+                                showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                            }
+                        } else if (tableName === "cid_ui_case_progress_report") {
+                            showAccusedTableView(1, false, "cid_ui_case_progress_report");
+                        } else if (tableName === "cid_ui_case_forensic_science_laboratory") {
+                            showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
                         }
-                    } else if (tableName === "cid_ui_case_progress_report") {
-                        showAccusedTableView(1, false, "cid_ui_case_progress_report");
-                    } else if (tableName === "cid_ui_case_forensic_science_laboratory") {
-                        showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
-                    }
-                },
-            });
-        } else {
-            const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to update the profile. Please try again.";
-            toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
+                    },
+                });
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to update the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
         }
-    } catch (error) {
-        setLoading(false);
-        if (error && error.response && error.response["data"]) {
-            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-        }
-    }
-};
+    };
+            
 
     const handleEditTableRowUpdate = async (updatedRow, tableName) => {
     let resolvedTableName = tableName;
@@ -2203,10 +2217,32 @@ const updateTemplateData = async (rowData, tableName) => {
     }
 
     await updateTemplateData(updatedRow, resolvedTableName);
+    };
+          
+const normalizeOptions = (options) => {
+    if (!Array.isArray(options)) return [];
+    return options.map(opt =>
+        typeof opt === "object"
+            ? {
+                label: opt.name ?? opt.label ?? opt.code ?? opt.value ?? String(opt),
+                value: opt.code ?? opt.value ?? opt.name ?? opt.label ?? String(opt)
+            }
+            : { label: String(opt), value: String(opt) }
+    );
 };
-                 
+const normalizeFormFieldsOptions = (fields) =>
+    Array.isArray(fields)
+        ? fields.map(field => ({
+            ...field,
+            options: normalizeOptions(field.options)
+        }))
+        : fields;
+
     const accusedCloseForm = ()=>{
         setAccusedFormOpen(false);
+        setFormTemplateData(prev =>
+            Array.isArray(prev) ? normalizeFormFieldsOptions(prev) : prev
+        );
     }
 
     const showMorethenOneTemplate = async (table)=>{
@@ -4153,266 +4189,332 @@ const loadChildMergedCasesData = async (page, caseId) => {
 };
 
 
-    const loadTableData = async (page) => {
-        const getTemplatePayload = {
-            page,
-            limit: 10,
-            sort_by: tableSortKey,
-            order: tableSortOption,
-            search: searchValue || "",
-            table_name,
-            is_starred: starFlag,
-            is_read: readFlag,
-            template_module: "ui_case",
-            sys_status: sysStatus,
-            from_date: fromDateValue,
-            to_date: toDateValue,
-            filter: filterValues,
-        };
+  const loadTableData = async (page) => {
+          const getTemplatePayload = {
+              page,
+              limit: 10,
+              sort_by: tableSortKey,
+              order: tableSortOption,
+              search: searchValue || "",
+              table_name,
+              is_starred: starFlag,
+              is_read: readFlag,
+              template_module: "ui_case",
+              sys_status: sysStatus,
+              from_date: fromDateValue,
+              to_date: toDateValue,
+              filter: filterValues,
+          };
+      
+          setLoading(true);
+      
+          try {
+              const getTemplateResponse = await api.post( "/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
+              setLoading(false);
+
+              if (getTemplateResponse?.success) {
+                  const { data, meta } = getTemplateResponse.data;
+
+                  const totalPages = meta?.totalPages;
+                  const totalItems = meta?.totalItems;
+
+                  if (totalPages !== null && totalPages !== undefined) {
+                      setTotalPage(totalPages);
+                  }
+
+                  if (totalItems !== null && totalItems !== undefined) {
+                      setTotalRecord(totalItems);
+                  }
+
+                  if (meta?.table_name && meta?.template_name) {
+                      setTemplate_name(meta.template_name);
+                      setTable_name(meta.table_name);
+                  }
     
-        setLoading(true);
+                  if (data?.length > 0) {
+                      const excludedKeys = [
+                          "updated_at", "id", "deleted_at", "attachments",
+                          "Starred", "ReadStatus", "linked_profile_info",
+                          "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
+                          "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date"
+                      ];
+      
+                      const generateReadableHeader = (key) =>
+                          key
+                              .replace(/^field_/, "")
+                              .replace(/_/g, " ")
+                              .toLowerCase()
+                              .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+      
+          
+                      const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
+
+                      // {
+                      //     field: "task",
+                      //     headerName: "",
+                      //     width: 50,
+                      //     resizable: true,
+                      //     renderHeader: (params) => (
+                      //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
+                      //     ),
+                      //     renderCell: (params) => (
+                      //         <Badge
+                      //             badgeContent={params?.row?.['task_unread_count']}
+                      //             color="primary"
+                      //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
+                      //         >
+                      //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
+                      //         </Badge>
+                      //     ),
+                      // },
+                      const updatedHeader = [
+                          
+                          {
+                              field: "select",
+                              headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
+                              width: 50,
+                              resizable: false,
+                              renderCell: (params) => {
+                                  const isDisabled = params.row.isDisabled || !params?.row?.["field_io_name"];
+                                  return (
+                                  <Box display="flex" justifyContent="center" alignItems="center" width="100%">
+                                      <Checkbox
+                                          checked={params.row.isSelected || false}
+                                          onChange={(event) => handleCheckboxChangeField(event, params.row)}
+                                          disabled={isDisabled}
+                                      />
+                                  </Box>
+                              )},
+                          },
+                          {
+                              field: "approval",
+                              headerName: "Approval",
+                              width: 50,
+                              resizable: true,
+                              cellClassName: 'justify-content-start',
+                              renderHeader: (params) => (
+                                  <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
+                              ),                            
+                              renderCell: (params) => {
+                                const isDisabled = !params?.row?.["field_io_name"];
+                                return(
+                                  <Button
+                                      variant="contained"
+                                      color="transparent"
+                                      size="small"
+                                      sx={{
+                                          padding: 0,
+                                          fontSize: '0.75rem',
+                                          textTransform: 'none',
+                                          boxShadow: 'none',
+                                          '&:hover':{
+                                              boxShadow: 'none',
+                                          }
+                                      }}
+                                  >
+                                      <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={isDisabled ? undefined : ()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
+                                  </Button>
+                              )}
+                          },
+                          {
+                              field: "field_cid_crime_no./enquiry_no",
+                              headerName: "Cid Crime No./Enquiry No",
+                              width: 130,
+                              resizable: true,
+                              cellClassName: 'justify-content-start',
+                              renderHeader: (params) => (
+                                  tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
+                              ),
+                              renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
+                          },
+                          {
+                            field: "field_io_name",
+                            headerName: "Assign To IO",
+                            width: 150,
+                            resizable: true,
+                            cellClassName: 'justify-content-start',
+                            renderHeader: (params) => (
+                                tableHeaderRender(params, "field_io_name")
+                            ),
+                            renderCell: renderCellFunc("field_io_name", ),
+                          },
+                          {
+                              field: "field_name_of_the_police_station",
+                              headerName: "Police Station",
+                              width: 200,
+                              resizable: true,
+                              cellClassName: 'justify-content-start',
+                              renderHeader: (params) => (
+                                  tableHeaderRender(params, "field_name_of_the_police_station")
+                              ),
+                              renderCell: renderCellFunc("field_name_of_the_police_station", ),
+                          },
+                          {
+                              field: "field_division",
+                              headerName: "Divisions",
+                              width: 200,
+                              resizable: true,
+                              cellClassName: 'justify-content-start',
+                              renderHeader: (params) => (
+                                  tableHeaderRender(params, "field_division")
+                              ),
+                              renderCell: renderCellFunc("field_division", ),
+                          },
+                          {
+                              field: "field_case/enquiry_keyword",
+                              headerName: "Keyword",
+                              width: 200,
+                              resizable: true,
+                              cellClassName: 'justify-content-start',
+                              renderHeader: (params) => (
+                                  tableHeaderRender(params, "field_case/enquiry_keyword")
+                              ),
+                              renderCell: renderCellFunc("field_case/enquiry_keyword", ),
+                          },
+                          {
+                              field: "field_date_of_taking_over_by_cid",
+                              headerName: "CID Take over date",
+                              width: 200,
+                              resizable: true,
+                              cellClassName: 'justify-content-start',
+                              renderHeader: (params) => (
+                                  tableHeaderRender(params, "field_date_of_taking_over_by_cid")
+                              ),
+                              renderCell: renderCellFunc("field_date_of_taking_over_by_cid", ),
+                          },
+                          ...Object.keys(data[0])
+                              .filter((key) => !excludedKeys.includes(key))
+                              .map((key) => ({
+                                  field: key,
+                                  headerName: generateReadableHeader(key),
+                                  width: generateReadableHeader(key).length < 15 ? 100 : 200,
+                                  resizable: true,
+                                  renderHeader: (params) => (
+                                      tableHeaderRender(params, key)
+                                  ),
+                                  renderCell: renderCellFunc(key),
+                          })),
+                      ];
     
-        try {
-            const getTemplateResponse = await api.post( "/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
-            setLoading(false);
-
-            if (getTemplateResponse?.success) {
-                const { data, meta } = getTemplateResponse.data;
-
-                const totalPages = meta?.totalPages;
-                const totalItems = meta?.totalItems;
-
-                if (totalPages !== null && totalPages !== undefined) {
-                    setTotalPage(totalPages);
-                }
-
-                if (totalItems !== null && totalItems !== undefined) {
-                    setTotalRecord(totalItems);
-                }
-
-                if (meta?.table_name && meta?.template_name) {
-                    setTemplate_name(meta.template_name);
-                    setTable_name(meta.table_name);
-                }
-  
-                if (data?.length > 0) {
-                    const excludedKeys = [
-                         "updated_at", "id", "deleted_at", "attachments",
-                        "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id", 
-                        "field_name_of_the_police_station", "field_division", "field_case/enquiry_keyword", "field_date_of_taking_over_by_cid", "field_extension_date"
-                    ];
+                      setviewTemplateTableData(updatedHeader);
+      
+                      const formatDate = (value) => {
+                          const parsed = Date.parse(value);
+                          if (isNaN(parsed)) return value;
+                          return new Date(parsed).toLocaleDateString("en-GB");
+                      };
     
-                    const generateReadableHeader = (key) =>
-                        key
-                            .replace(/^field_/, "")
-                            .replace(/_/g, " ")
-                            .toLowerCase()
-                            .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-    
-        
-                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
+                      const updatedTableData = data.map((field, index) => {
+                        const updatedField = {};
+                        Object.keys(field).forEach((key) => {
+                          if (field[key] && key !== 'id' && isValidISODate(field[key])) {
+                            updatedField[key] = formatDate(field[key]);
+                          } else {
+                            updatedField[key] = field[key];
+                          }
+                        });
 
-                    // {
-                    //     field: "task",
-                    //     headerName: "",
-                    //     width: 50,
-                    //     resizable: true,
-                    //     renderHeader: (params) => (
-                    //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-                    //     ),
-                    //     renderCell: (params) => (
-                    //         <Badge
-                    //             badgeContent={params?.row?.['task_unread_count']}
-                    //             color="primary"
-                    //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-                    //         >
-                    //             <Tooltip title="Add Task"><AddTaskIcon onClick={()=>handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-                    //         </Badge>
-                    //     ),
-                    // },
-                    const updatedHeader = [
-                        
-                        {
-                            field: "select",
-                            headerName: <Tooltip title="Select All"><SelectAllIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>,
-                            width: 50,
-                            resizable: false,
-                            renderCell: (params) => {
-                                const isDisabled = params.row.isDisabled || !params?.row?.["field_io_name"];
-                                return (
-                                <Box display="flex" justifyContent="center" alignItems="center" width="100%">
-                                    <Checkbox
-                                        checked={params.row.isSelected || false}
-                                        onChange={(event) => handleCheckboxChangeField(event, params.row)}
-                                        disabled={isDisabled}
-                                    />
-                                </Box>
-                            )},
-                        },
-                        {
-                            field: "approval",
-                            headerName: "Approval",
-                            width: 50,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                <Tooltip title="Approval"><VerifiedIcon sx={{ color: "", fill: "#1f1dac" }} /></Tooltip>
-                            ),                            
-                            renderCell: (params) => {
-                              const isDisabled = !params?.row?.["field_io_name"];
-                              return(
-                                <Button
-                                    variant="contained"
-                                    color="transparent"
-                                    size="small"
-                                    sx={{
-                                        padding: 0,
-                                        fontSize: '0.75rem',
-                                        textTransform: 'none',
-                                        boxShadow: 'none',
-                                        '&:hover':{
-                                            boxShadow: 'none',
-                                        }
-                                    }}
-                                >
-                                    <Tooltip title="Approval"><VerifiedUserIcon color="success" onClick={isDisabled ? undefined : ()=>handleActionShow(params?.row)}  sx={{fontSize:'26px'}} /></Tooltip>
-                                </Button>
-                            )}
-                        },
-                        {
-                            field: "field_cid_crime_no./enquiry_no",
-                            headerName: "Cid Crime No./Enquiry No",
-                            width: 130,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
-                            ),
-                            renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
-                        },
-                        {
-                          field: "field_io_name",
-                          headerName: "Assign To IO",
-                          width: 150,
-                          resizable: true,
-                          cellClassName: 'justify-content-start',
-                          renderHeader: (params) => (
-                              tableHeaderRender(params, "field_io_name")
-                          ),
-                          renderCell: renderCellFunc("field_io_name", ),
-                        },
-                        {
-                            field: "field_name_of_the_police_station",
-                            headerName: "Police Station",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_name_of_the_police_station")
-                            ),
-                            renderCell: renderCellFunc("field_name_of_the_police_station", ),
-                        },
-                        {
-                            field: "field_division",
-                            headerName: "Divisions",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_division")
-                            ),
-                            renderCell: renderCellFunc("field_division", ),
-                        },
-                        {
-                            field: "field_case/enquiry_keyword",
-                            headerName: "Keyword",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_case/enquiry_keyword")
-                            ),
-                            renderCell: renderCellFunc("field_case/enquiry_keyword", ),
-                        },
-                        {
-                            field: "field_date_of_taking_over_by_cid",
-                            headerName: "CID Take over date",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_date_of_taking_over_by_cid")
-                            ),
-                            renderCell: renderCellFunc("field_date_of_taking_over_by_cid", ),
-                        },
-                        ...Object.keys(data[0])
-                            .filter((key) => !excludedKeys.includes(key))
-                            .map((key) => ({
-                                field: key,
-                                headerName: generateReadableHeader(key),
-                                width: generateReadableHeader(key).length < 15 ? 100 : 200,
-                                resizable: true,
-                                renderHeader: (params) => (
-                                    tableHeaderRender(params, key)
-                                ),
-                                renderCell: renderCellFunc(key),
-                        })),
-                    ];
-  
-                    setviewTemplateTableData(updatedHeader);
-    
-                    const formatDate = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        return new Date(parsed).toLocaleDateString("en-GB");
-                    };
-  
-                    const updatedTableData = data.map((field, index) => {
-                      const updatedField = {};
+                        const isNatureOfDisposalEmpty = !field["field_nature_of_disposal"];
+                        const createdAtDate = new Date(field["created_at"]);
+                        const currentDate = new Date();
+                        const extensionDate = field["field_extension_date"] ? new Date(field["field_extension_date"]) : null;
+                        const diffTime = currentDate - createdAtDate;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        const designation = localStorage.getItem("designation_name") || "";
+                        const designationUpper = designation.toUpperCase();
+                        const fieldUpdatedByUpper = (field["field_extension_updated_by"] || "").toUpperCase();
 
-                      Object.keys(field).forEach((key) => {
-                        if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                          updatedField[key] = formatDate(field[key]);
-                        } else {
-                          updatedField[key] = field[key];
+                        const isOlderThan90Days = diffDays > 90 && diffDays <= 180;
+                        const isOlderThan180to360Days = diffDays > 180 && diffDays <= 360;
+                        const isOlderThan360Days = diffDays > 360;
+
+                        const isUpdatedByDIG = fieldUpdatedByUpper.includes("DIG");
+                        const isUpdatedByADG = fieldUpdatedByUpper.includes("ADG");
+                        const isUpdatedByDGP = fieldUpdatedByUpper.includes("DGP");
+
+                        const isUpdatedByOther = !isUpdatedByDIG && !isUpdatedByADG && !isUpdatedByDGP;
+
+                        let isDisabledForOthers = false;
+                        if (isNatureOfDisposalEmpty) {
+                          if (!extensionDate) {
+                            isDisabledForOthers = diffDays > 90;
+                          } else {
+                            const isPastExtension = currentDate > extensionDate;
+                            if (
+                              isUpdatedByDIG &&
+                              isOlderThan90Days &&
+                              field["field_extension_date"] &&
+                              field["field_extension_remark"]
+                            ) {
+                              isDisabledForOthers = false;
+                            } else if (
+                              isUpdatedByADG &&
+                              isOlderThan180to360Days &&
+                              field["field_extension_date"] &&
+                              field["field_extension_remark"]
+                            ) {
+                              isDisabledForOthers = false;
+                            } else if (
+                              isUpdatedByDGP &&
+                              isOlderThan360Days &&
+                              field["field_extension_date"] &&
+                              field["field_extension_remark"]
+                            ) {
+                              isDisabledForOthers = false;
+                            } else {
+                              isDisabledForOthers = isPastExtension || isUpdatedByOther;
+                            }
+                          }
                         }
-                      });
 
-                      const isNatureOfDisposalEmpty = !field["field_nature_of_disposal"];
-                      const createdAtDate = new Date(field["created_at"]);
-                      const currentDate = new Date();
-                      const extensionDate = field["field_extension_date"] ? new Date(field["field_extension_date"]) : null;
-                      const diffTime = currentDate - createdAtDate;
-                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                      const designation = localStorage.getItem("designation_name") || "";
-                      const isOlderThan90Days = diffDays > 90 && diffDays <= 180;
-                      const isOlderThan180to360Days = diffDays > 180 && diffDays <= 360;
-                      const isOlderThan360Days = diffDays > 360;
 
-                      let isDisabledForOthers = false;
-                      if (isNatureOfDisposalEmpty) {
-                        if (!extensionDate) {
-                          isDisabledForOthers = diffDays > 90;
-                        } else {
-                          const isPastExtension = currentDate > extensionDate;
-                          isDisabledForOthers = isPastExtension;
+
+                        let isDIGEligibleForCaseExtension = false;
+                        let isADGEligibleForCaseExtension = false;
+                        let isDGPEligibleForCaseExtension = false;
+
+                        if (
+                          isNatureOfDisposalEmpty &&
+                          isOlderThan90Days &&
+                          designationUpper.includes("DIG") &&
+                          (
+                            (!extensionDate) ||
+                            (!isUpdatedByDIG)
+                          )
+                        ) {
+                          isDIGEligibleForCaseExtension = true;
+                        } else if (
+                          isNatureOfDisposalEmpty &&
+                          isOlderThan180to360Days &&
+                          designationUpper.includes("ADG") &&
+                          (
+                            (!extensionDate) ||
+                            (!isUpdatedByADG)
+                          )
+                        ) {
+                          isADGEligibleForCaseExtension = true;
+                        } else if (
+                          isNatureOfDisposalEmpty &&
+                          isOlderThan360Days &&
+                          designationUpper.includes("DGP") &&
+                          (
+                            (!extensionDate) ||
+                            (!isUpdatedByDGP)
+                          )
+                        ) {
+                          isDGPEligibleForCaseExtension = true;
                         }
-                      }
-
-                      const isDIGEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan90Days && designation.includes("DIG") && (!extensionDate || currentDate > extensionDate);
-                      const isADGEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan180to360Days && designation.includes("ADG") && (!extensionDate || currentDate > extensionDate);
-                      const isDGPEligibleForCaseExtension = isNatureOfDisposalEmpty && isOlderThan360Days && designation.includes("DGP") && (!extensionDate || currentDate > extensionDate);
 
                       let extraHoverOptions = [];
 
                       if (isDIGEligibleForCaseExtension || isADGEligibleForCaseExtension || isDGPEligibleForCaseExtension) {
                         extraHoverOptions.unshift({
-                          name: "Case Extension",
+                          name: "Case Extension Approve",
                           onclick: (selectedRow) => {
                             const baseDate = dayjs(field["created_at"]);
                             let minDate = null;
                             let maxDate = null;
+                            let extensionDateValue = field["field_extension_date"] || null;
 
                             if (isDIGEligibleForCaseExtension) {
                               minDate = baseDate.add(90, "day");
@@ -4427,10 +4529,47 @@ const loadChildMergedCasesData = async (page, caseId) => {
 
                             setFormData({
                               id: selectedRow.id,
-                              minDate: minDate?.toISOString(),
-                              maxDate: maxDate?.toISOString(),
+                              minDate: minDate ? minDate.toISOString() : null,
+                              maxDate: maxDate ? maxDate.toISOString() : null,
+                              field_extension_date: extensionDateValue,
+                              field_extension_remark: field["field_extension_remark"] || "",
                             });
 
+                            setShowCaseExtensionModal(true);
+                          },
+                        });
+                      }
+                      else if (
+                        isDisabledForOthers &&
+                        !(
+                          designationUpper.includes("DIG") ||
+                          designationUpper.includes("ADG") ||
+                          designationUpper.includes("DGP")
+                        )
+                      ) {
+                        extraHoverOptions.unshift({
+                          name: "Case Extension Request",
+                          onclick: (selectedRow) => {
+                            const baseDate = dayjs(field["created_at"]);
+                            let minDate = null;
+                            let maxDate = null;
+                            if (isOlderThan90Days && !isOlderThan180to360Days && !isOlderThan360Days) {
+                              minDate = baseDate.add(90, "day");
+                              maxDate = baseDate.add(180, "day");
+                            } else if (isOlderThan180to360Days && !isOlderThan360Days) {
+                              minDate = baseDate.add(180, "day");
+                              maxDate = baseDate.add(360, "day");
+                            } else if (isOlderThan360Days) {
+                              minDate = baseDate.add(361, "day");
+                              maxDate = null;
+                            }
+                            setFormData({
+                              id: selectedRow.id,
+                              minDate: minDate ? minDate.toISOString() : null,
+                              maxDate: maxDate ? maxDate.toISOString() : null,
+                              field_extension_date: null,
+                              field_extension_remark: "",
+                            });
                             setShowCaseExtensionModal(true);
                           },
                         });
@@ -4445,46 +4584,46 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         extraHoverOptions: extraHoverOptions,
                       };
                     });
-                    setTableData(updatedTableData);
-                }else{
-                    setTableData([]);
-                }
+                      setTableData(updatedTableData);
+                  }else{
+                      setTableData([]);
+                  }
 
-                setviewReadonly(false);
-                setEditTemplateData(false);
-                setInitialData({});
-                setFormOpen(false);
-                setSelectedRow(null);
-                setSelectedParentId([]);
-    
-                await getActions();
-            } else {
-                setLoading(false);
-                toast.error(getTemplateResponse.message || "Failed to load template data.", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-        }
-    };
+                  setviewReadonly(false);
+                  setEditTemplateData(false);
+                  setInitialData({});
+                  setFormOpen(false);
+                  setSelectedRow(null);
+                  setSelectedParentId([]);
+      
+                  await getActions();
+              } else {
+                  setLoading(false);
+                  toast.error(getTemplateResponse.message || "Failed to load template data.", {
+                      position: "top-right",
+                      autoClose: 3000,
+                      hideProgressBar: false,
+                      closeOnClick: true,
+                      pauseOnHover: true,
+                      draggable: true,
+                      progress: undefined,
+                      className: "toast-error",
+                  });
+              }
+          } catch (error) {
+              setLoading(false);
+              toast.error(error?.response?.data?.message || "Please Try Again!", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+              });
+          }
+  };
 
 
     const fetchFieldHistory = async (field_name, table_row_id, template_id) => {
@@ -9695,10 +9834,12 @@ const handleOpenExportPopup = async () => {
       return;
     }
 
+    const field_extension_updated_by = localStorage.getItem("designation_name") || "";
     const extensionUpdateData = {
       id,
       field_extension_date,
       field_extension_remark,
+      field_extension_updated_by
     };
 
     showExtensionCaseApprovalPage( extensionUpdateData, new FormData(), true);

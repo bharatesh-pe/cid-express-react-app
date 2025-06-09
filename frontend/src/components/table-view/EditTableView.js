@@ -12,6 +12,8 @@ import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
 import CancelIcon from '@mui/icons-material/Close';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
+import AttachFileIcon from '@mui/icons-material/AttachFile';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 
 export default function EditTableView({
   rows: propRows, columns: propColumns, checkboxSelection, getRowId,
@@ -195,11 +197,67 @@ export default function EditTableView({
           ...col,
           editable: false,
           renderCell: (params) => {
-            if (!params.value) return null;
-            if (typeof params.value === 'string') {
-              return <a href={params.value} target="_blank" rel="noopener noreferrer">{params.value.split('/').pop()}</a>;
+            // If file exists, show icon and disable further upload in this cell
+            if (params.value) {
+              return (
+                <Tooltip title={typeof params.value === 'string' ? params.value.split('/').pop() : (params.value.name || '')}>
+                  <IconButton
+                    size="small"
+                    onClick={e => {
+                      e.stopPropagation();
+                      // If it's a File object, create a URL for preview
+                      if (params.value instanceof File) {
+                        const url = URL.createObjectURL(params.value);
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                        // Optionally revoke the object URL after some time
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                      } else {
+                        window.open(params.value, '_blank', 'noopener,noreferrer');
+                      }
+                    }}
+                  >
+                    <AttachFileIcon />
+                  </IconButton>
+                </Tooltip>
+              );
             }
-            return params.value.name || '';
+            // Only allow upload if no file is present
+            return (
+              <Tooltip title="Upload File">
+                <IconButton
+                  size="small"
+                  component="label"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <AddCircleOutlineIcon color="primary" />
+                  <input
+                    type="file"
+                    hidden
+                    onChange={event => {
+                      const file = event.target.files[0];
+                      if (file) {
+                        const rowId = params.id;
+                        setRowModesModel(prev => ({
+                          ...prev,
+                          [rowId]: { mode: GridRowModes.Edit }
+                        }));
+                        setRows(prevRows =>
+                          prevRows.map(row =>
+                            row.id === rowId
+                              ? { ...row, [col.field]: file }
+                              : row
+                          )
+                        );
+                        // Optionally, update the propRows if you want to persist immediately
+                        // If you want to update the backend immediately, call onRowUpdate here as well
+                      }
+                    }}
+                    // Disable input if file already exists
+                    disabled={!!params.value}
+                  />
+                </IconButton>
+              </Tooltip>
+            );
           }
         };
       }
