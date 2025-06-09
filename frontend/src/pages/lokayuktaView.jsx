@@ -107,6 +107,25 @@ const LokayuktaView = () => {
     const [approvalSource, setApprovalSource] = useState(null);
 
     const editedForm = useRef(false);
+    const [enableSubmit, setEnableSubmit] = useState(false);
+    const [approvalDone, setApprovalDone] = useState(false);
+    const [approvalFieldArray, setApprovalFieldArray] = useState([]);
+    const [approvalStepperArray, setApprovalStepperArray] = useState([]);
+
+    var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+    var designationName = localStorage.getItem("designation_name") || "";
+    var gettingDesignationName = ""
+
+    if(roleTitle.toLowerCase() === "investigation officer"){
+        gettingDesignationName = "io";
+    }else{
+        var splitingValue = designationName.split(" ");
+        if(splitingValue?.[0]){
+            gettingDesignationName = splitingValue[0].toLowerCase();
+        }
+    }
+
+    const userDesignationName = useRef(gettingDesignationName);
 
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
@@ -366,7 +385,8 @@ const LokayuktaView = () => {
             to_date: noFilters ? null : tableFilterToDate,
             filter: noFilters ? {} : tableFilterOtherFilters,
             module: module ? module : 'ui_case',
-            tab: sysStatus
+            tab: sysStatus,
+            checkRandomColumn : "field_approval_done_by",
         };
 
         setLoading(true);
@@ -377,10 +397,13 @@ const LokayuktaView = () => {
 
             if (getTemplateResponse && getTemplateResponse.success) {
 
+                editedForm.current = false;
+
                 const { meta, data } = getTemplateResponse;
             
                 const totalPages = meta?.meta?.totalPages;
                 const totalItems = meta?.meta?.totalItems;
+                const checkRandomColumnValues = meta?.meta?.checkRandomColumnValues;
                 
                 if (totalPages !== null && totalPages !== undefined) {
                     setTableTotalPage(totalPages);
@@ -389,6 +412,13 @@ const LokayuktaView = () => {
                 if (totalItems !== null && totalItems !== undefined) {
                     setTableTotalRecord(totalItems);
                 }
+                if (checkRandomColumnValues) {
+                    setApprovalFieldArray(checkRandomColumnValues);
+                }else{
+                    setApprovalFieldArray([]);
+                }
+
+                setApprovalStepperArray((options?.is_approval && options?.approval_steps) ? JSON.parse(options.approval_steps) : []);
 
                 if (data?.length > 0) {
 
@@ -1637,6 +1667,100 @@ const LokayuktaView = () => {
         });
     };
 
+    const approvalOverAllSubmit = async ()=>{
+
+        if(!activeSidebar?.table){
+            toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const designation = userDesignationName.current?.toUpperCase();
+
+        var payload = {
+            value : designation,
+            table_name : activeSidebar.table,
+            column:  "field_approval_done_by",
+        }
+
+        setLoading(true);    
+        try {
+            const response = await api.post("/templateData/bulkUpdateColumn", payload);
+            setLoading(false);
+
+            if (response?.success) {
+                toast.success(response.message || "Success", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => { getTableData(activeSidebar); }
+                });
+            } else {
+                setLoading(false);
+                toast.error(response.message || "Something Went Wrong !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
+    const editableStage = (() => {
+        if(approvalStepperArray.length === 0) return ""
+        if (!approvalFieldArray || approvalFieldArray.length === 0) return "IO";
+        
+        const lastStage = approvalFieldArray[approvalFieldArray.length - 1];
+        const nextIndex = approvalStepperArray.indexOf(lastStage) + 1;
+
+        return approvalStepperArray[nextIndex] || null;
+    })();
+
+    useEffect(()=>{
+        if (userDesignationName?.current) {
+            const userRole = userDesignationName.current.toUpperCase();
+
+            setEnableSubmit(userRole === editableStage);
+
+            const lastApprovedRole = approvalFieldArray[0];
+            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+            setApprovalDone(approvedStages.includes(userRole));
+        }
+    },[approvalFieldArray, approvalStepperArray]);
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
@@ -1800,7 +1924,12 @@ const LokayuktaView = () => {
 
                                         var alreadySubmited = false;
 
-                                        if(activeSidebar?.alreadySubmitted){
+                                        const lastApprovedRole = approvalFieldArray[0];
+                                        const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+                                        const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+                                        if(approvedStages.includes(step)){
                                             alreadySubmited = true;
                                         }
 
@@ -1980,30 +2109,35 @@ const LokayuktaView = () => {
                                     )}
                                 </Box>
 
-                                <Button
-                                    onClick={showAddNewForm}
-                                    sx={{height: "38px",}}
-                                    className="blueButton"
-                                    startIcon={
-                                        <AddIcon
-                                            sx={{
-                                                border: "1.3px solid #FFFFFF",
-                                                borderRadius: "50%",
-                                                background:"#4D4AF3 !important",
-                                            }}
-                                        />
-                                    }
-                                    variant="contained"
-                                >
-                                    Add New
-                                </Button>
                                 {
-                                    activeSidebar?.is_approval &&
+                                    !approvalDone &&
+                                    <Button
+                                        onClick={showAddNewForm}
+                                        sx={{height: "38px",}}
+                                        className="blueButton"
+                                        startIcon={
+                                            <AddIcon
+                                                sx={{
+                                                    border: "1.3px solid #FFFFFF",
+                                                    borderRadius: "50%",
+                                                    background:"#4D4AF3 !important",
+                                                }}
+                                            />
+                                        }
+                                        variant="contained"
+                                    >
+                                        Add New
+                                    </Button>
+                                }
+
+                                {
+                                    activeSidebar?.is_approval && enableSubmit &&
                                     <Button
                                         variant="contained"
                                         color="success"
                                         size="large"
                                         sx={{ height: "38px" }}
+                                        onClick={approvalOverAllSubmit}
                                     >
                                         Submit
                                     </Button>
@@ -2046,6 +2180,7 @@ const LokayuktaView = () => {
                         selectedRow={rowData}
                         investigationViewTable={table_name}
                         editedForm={editedFormFlag}
+                        disableEditButton={approvalDone}
                     />
                 </Box>
             )}
