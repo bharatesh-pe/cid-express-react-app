@@ -670,6 +670,9 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                 key =>
                                                     ![
                                                         "sys_status",
+                                                        "id",
+                                                        "created_at",
+                                                        "updated_at",
                                                         "created_by",
                                                         "updated_by",
                                                         "created_by_id",
@@ -705,6 +708,9 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                     key =>
                                                         ![
                                                             "sys_status",
+                                                            "id",
+                                                            "created_at",
+                                                            "updated_at",
                                                             "created_by",
                                                             "updated_by",
                                                             "created_by_id",
@@ -796,6 +802,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 {chargeSheetGroups.map((group, idx) => (
                     <Box key={group.heading} sx={{ mb: 3 }}>
                         <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>{group.heading}</Typography>
+                        {/* Special handling for Accused table in point 6 */}
                         {group.heading === "6. Details of the accused individuals" ? (
                             accusedList.length > 0 && accusedTemplate && accusedTemplate.fields ? (
                                 (() => {
@@ -807,8 +814,9 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                     } catch {
                                         accusedFields = [];
                                     }
+                                    // Only show fields that are present in accusedList[0] and not in hiddenColumns
                                     const displayFields = accusedFields.filter(f =>
-                                        Object.keys(accusedList[0]).includes(f.name)
+                                        Object.keys(accusedList[0]).includes(f.name) && !hiddenColumns.includes(f.name)
                                     );
                                     return (
                                         <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
@@ -833,7 +841,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                                 </TableCell>
                                                             );
                                                         })}
-                                                        <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap', minWidth: 100 }}>Actions</TableCell>
+                                                        {/* <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap', minWidth: 100 }}>Actions</TableCell> */}
                                                     </TableRow>
                                                     {accusedList.map((row, rowIdx) => (
                                                         <TableRow key={rowIdx}>
@@ -978,7 +986,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                                     </TableCell>
                                                                 );
                                                             })}
-                                                            <TableCell sx={{ minWidth: 100, px: 1 }}>
+                                                            {/* <TableCell sx={{ minWidth: 100, px: 1 }}>
                                                                 <Button
                                                                     color="error"
                                                                     size="small"
@@ -989,11 +997,11 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                                 >
                                                                     Delete
                                                                 </Button>
-                                                            </TableCell>
+                                                            </TableCell> */}
                                                         </TableRow>
                                                     ))}
                                                     <TableRow>
-                                                        <TableCell colSpan={displayFields.length + 1}>
+                                                        {/* <TableCell colSpan={displayFields.length + 1}>
                                                             <Button
                                                                 color="primary"
                                                                 size="small"
@@ -1005,7 +1013,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                             >
                                                                 Add Row
                                                             </Button>
-                                                        </TableCell>
+                                                        </TableCell> */}
                                                     </TableRow>
                                                 </TableBody>
                                             </Table>
@@ -1022,43 +1030,47 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                         <TableBody>
                                             <TableRow>
                                                 {/* Editable headers */}
-                                                {Object.keys(witnessList[0]).map((key, idx) => {
-                                                    let header = key.replace(/^field_/, '').replace(/_/g, ' ');
-                                                    header = header.charAt(0).toUpperCase() + header.slice(1);
-                                                    return (
-                                                        <TableCell
-                                                            key={idx}
-                                                            sx={{
-                                                                fontWeight: 600,
-                                                                whiteSpace: 'nowrap',
-                                                                minWidth: 160,
-                                                                maxWidth: 300,
-                                                                px: 1
-                                                            }}
-                                                        >
-                                                            {header}
-                                                        </TableCell>
-                                                    );
-                                                })}
-                                                <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap', minWidth: 100 }}>Actions</TableCell>
+                                                {Object.keys(witnessList[0])
+                                                    .filter(key => !hiddenColumns.includes(key))
+                                                    .map((key, idx) => {
+                                                        let header = key.replace(/^field_/, '').replace(/_/g, ' ');
+                                                        header = header.charAt(0).toUpperCase() + header.slice(1);
+                                                        return (
+                                                            <TableCell
+                                                                key={idx}
+                                                                sx={{
+                                                                    fontWeight: 600,
+                                                                    whiteSpace: 'nowrap',
+                                                                    minWidth: 160,
+                                                                    maxWidth: 300,
+                                                                    px: 1
+                                                                }}
+                                                            >
+                                                                {header}
+                                                            </TableCell>
+                                                        );
+                                                    })}
+                                                {/* <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap', minWidth: 100 }}>Actions</TableCell> */}
                                             </TableRow>
                                             {witnessList.map((row, rowIdx) => (
                                                 <TableRow key={rowIdx}>
-                                                    {Object.keys(row).map((key, colIdx) => (
-                                                        <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
-                                                            <TextField
-                                                                value={row[key] || ""}
-                                                                size="small"
-                                                                fullWidth
-                                                                onChange={e => {
-                                                                    const updated = [...witnessList];
-                                                                    updated[rowIdx][key] = e.target.value;
-                                                                    setWitnessList(updated);
-                                                                }}
-                                                            />
-                                                        </TableCell>
-                                                    ))}
-                                                    <TableCell sx={{ minWidth: 100, px: 1 }}>
+                                                    {Object.keys(row)
+                                                        .filter(key => !hiddenColumns.includes(key))
+                                                        .map((key, colIdx) => (
+                                                            <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                                <TextField
+                                                                    value={row[key] || ""}
+                                                                    size="small"
+                                                                    fullWidth
+                                                                    onChange={e => {
+                                                                        const updated = [...witnessList];
+                                                                        updated[rowIdx][key] = e.target.value;
+                                                                        setWitnessList(updated);
+                                                                    }}
+                                                                />
+                                                            </TableCell>
+                                                        ))}
+                                                    {/* <TableCell sx={{ minWidth: 100, px: 1 }}>
                                                         <Button
                                                             color="error"
                                                             size="small"
@@ -1069,23 +1081,23 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                         >
                                                             Delete
                                                         </Button>
-                                                    </TableCell>
+                                                    </TableCell> */}
                                                 </TableRow>
                                             ))}
                                             <TableRow>
-                                                <TableCell colSpan={Object.keys(witnessList[0]).length + 1}>
+                                                {/* <TableCell colSpan={Object.keys(witnessList[0]).filter(key => !hiddenColumns.includes(key)).length + 1}>
                                                     <Button
                                                         color="primary"
                                                         size="small"
                                                         onClick={() => {
                                                             const newRow = {};
-                                                            Object.keys(witnessList[0]).forEach(f => newRow[f] = "");
+                                                            Object.keys(witnessList[0]).filter(key => !hiddenColumns.includes(key)).forEach(f => newRow[f] = "");
                                                             setWitnessList([...witnessList, newRow]);
                                                         }}
                                                     >
                                                         Add Row
                                                     </Button>
-                                                </TableCell>
+                                                </TableCell> */}
                                             </TableRow>
                                         </TableBody>
                                     </Table>
