@@ -14,6 +14,12 @@ import CancelIcon from '@mui/icons-material/Close';
 import { KeyboardArrowDown, KeyboardArrowUp } from '@mui/icons-material';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
+import ImageIcon from '@mui/icons-material/Image';
+import DescriptionIcon from '@mui/icons-material/Description';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import SlideshowIcon from '@mui/icons-material/Slideshow';
 
 export default function EditTableView({
   rows: propRows, columns: propColumns, checkboxSelection, getRowId,
@@ -128,6 +134,35 @@ export default function EditTableView({
     return valueOrLabel;
   };
 
+  const getFileIcon = (fileName) => {
+    if (!fileName || typeof fileName !== "string") return <InsertDriveFileIcon />;
+
+    const extension = fileName.split(".").pop().toLowerCase();
+
+    switch (extension) {
+      case 'pdf':
+        return <PictureAsPdfIcon color="error" />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'svg':
+      case 'gif':
+        return <ImageIcon color="primary" />;
+      case 'xls':
+      case 'xlsx':
+        return <TableChartIcon color="success" />;
+      case 'csv':
+      case 'doc':
+      case 'docx':
+        return <DescriptionIcon />;
+      case 'ppt':
+        return <SlideshowIcon color="warning" />;
+      default:
+        return <InsertDriveFileIcon />;
+    }
+  };
+
+
   // Actions column definition
   const actionsColumn = {
     field: 'actions',
@@ -169,7 +204,6 @@ export default function EditTableView({
     actionsColumn,
     ...propColumns.map(col => {
       const colType = getColType(col);
-      // Dropdown or Autocomplete (singleSelect)
       if (
         ((colType === 'autocomplete' || colType === 'singleSelect') && getValueOptions(col)) ||
         (fieldDefMap[col.field] && (fieldDefMap[col.field].type === 'autocomplete' || fieldDefMap[col.field].type === 'dropdown'))
@@ -180,16 +214,21 @@ export default function EditTableView({
           editable: true,
           type: 'singleSelect',
           valueOptions: options,
-          renderEditCell: undefined, // Let DataGrid use its default dropdown
+          renderEditCell: undefined,
           valueFormatter: (params) => {
+            if (!params || params.value == null) return '';
             const opts = getValueOptions(col);
             if (!opts) return params.value;
-            if (typeof opts[0] === 'object') {
-              const found = opts.find(opt => opt.value === params.value);
-              return found ? found.label : params.value;
+
+            if (Array.isArray(opts) && typeof opts[0] === 'object') {
+              const found = opts.find(opt =>
+                opt != null && (opt.value === params.value || opt.label === params.value)
+              );
+              return found?.label ?? params.value;
             }
+
             return params.value;
-          }
+          },
         };
       }
       if (colType === 'file') {
@@ -197,45 +236,34 @@ export default function EditTableView({
           ...col,
           editable: false,
           renderCell: (params) => {
-            // If file exists, show icon and disable further upload in this cell
-            if (params.value) {
-              return (
-                <Tooltip title={typeof params.value === 'string' ? params.value.split('/').pop() : (params.value.name || '')}>
-                  <IconButton
-                    size="small"
-                    onClick={e => {
-                      e.stopPropagation();
-                      // If it's a File object, create a URL for preview
-                      if (params.value instanceof File) {
-                        const url = URL.createObjectURL(params.value);
-                        window.open(url, '_blank', 'noopener,noreferrer');
-                        // Optionally revoke the object URL after some time
-                        setTimeout(() => URL.revokeObjectURL(url), 1000);
-                      } else {
-                        window.open(params.value, '_blank', 'noopener,noreferrer');
-                      }
-                    }}
-                  >
-                    <AttachFileIcon />
-                  </IconButton>
-                </Tooltip>
-              );
-            }
-            // Only allow upload if no file is present
+            const file = params.value;
+            const fileName = typeof file === 'string'
+              ? file.split('/').pop()
+              : file?.name || '';
+
             return (
-              <Tooltip title="Upload File">
+              <Tooltip title={fileName || "Upload File"}>
                 <IconButton
                   size="small"
                   component="label"
                   onClick={e => e.stopPropagation()}
                 >
-                  <AddCircleOutlineIcon color="primary" />
+                  {file ? (
+                    <>
+                      <AttachFileIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      <span style={{ fontSize: "12px", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px' }}>
+                        {fileName}
+                      </span>
+                    </>
+                  ) : (
+                    <AddCircleOutlineIcon color="primary" />
+                  )}
                   <input
                     type="file"
                     hidden
                     onChange={event => {
-                      const file = event.target.files[0];
-                      if (file) {
+                      const newFile = event.target.files[0];
+                      if (newFile) {
                         const rowId = params.id;
                         setRowModesModel(prev => ({
                           ...prev,
@@ -244,16 +272,12 @@ export default function EditTableView({
                         setRows(prevRows =>
                           prevRows.map(row =>
                             row.id === rowId
-                              ? { ...row, [col.field]: file }
+                              ? { ...row, [col.field]: newFile }
                               : row
                           )
                         );
-                        // Optionally, update the propRows if you want to persist immediately
-                        // If you want to update the backend immediately, call onRowUpdate here as well
                       }
                     }}
-                    // Disable input if file already exists
-                    disabled={!!params.value}
                   />
                 </IconButton>
               </Tooltip>
@@ -261,6 +285,7 @@ export default function EditTableView({
           }
         };
       }
+
       // Date
       if (colType === 'date') {
         return {
