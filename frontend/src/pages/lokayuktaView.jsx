@@ -129,6 +129,17 @@ const LokayuktaView = () => {
 
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
+    const NatureOfDisposalAlert = () => {
+    useEffect(() => {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Nature of Disposal Required',
+            text: 'Please take action by updating Nature of Disposal.',
+            confirmButtonText: 'OK'
+        });
+    }, []);
+    return null;
+};
     const backToForm = ()=>{
 
         if(backNavigation){
@@ -1770,7 +1781,6 @@ const LokayuktaView = () => {
 
                 {activeSidebar?.table === "cid_ui_case_action_plan" ? (
 
-                    
                     <ActionPlan
                         templateName={template_name}
                         headerDetails={headerDetails}
@@ -1779,19 +1789,21 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                     />
-               ) : activeSidebar?.chargeSheet === true ? (
-
-                     <ChargeSheetInvestigation
-                        overAllTemplateActions={contentArray}
-                        template_name={template_name}
-                        headerDetails={headerDetails}
-                        tableRowId={tableRowId}
-                        options={activeSidebar}
-                        rowData={rowData}
-                        module={module}
-                        backNavigation={backToForm}
-                    />
-
+                ) : activeSidebar?.chargeSheet === true ? (
+                    sysStatus === "disposal" ? (
+                        <ChargeSheetInvestigation
+                            overAllTemplateActions={contentArray}
+                            template_name={template_name}
+                            headerDetails={headerDetails}
+                            tableRowId={tableRowId}
+                            options={activeSidebar}
+                            rowData={rowData}
+                            module={module}
+                            backNavigation={backToForm}
+                        />
+                    ) : (
+                        <NatureOfDisposalAlert />
+                    )
                 ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
 
 
