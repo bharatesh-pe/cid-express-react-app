@@ -5,6 +5,8 @@ const fs = require('fs');
 const multer = require('multer');
 const upload = multer(); 
 const db = require('../models'); // adjust as per your project structure
+const mime = require('mime-types');
+
 const {
 	Template,
 	Users,
@@ -74,19 +76,6 @@ module.exports = {
 
         } catch (error) {
             console.error("Error fetching Charge Sheet:", error);
-            res.status(500).json({ error: "Internal Server Error" });
-        }
-    },
-
-    async saveChargeSheetData(req, res) {
-        try {
-            const { data } = req.body;
-
-            const newChargeSheet = await ChargeSheet.create(data);
-            res.json({success: true, data : newChargeSheet});
-
-        } catch (error) {
-            console.error("Error saving Charge Sheet:", error);
             res.status(500).json({ error: "Internal Server Error" });
         }
     },
@@ -424,6 +413,51 @@ module.exports = {
             res.status(500).json({ success: false, message: "Error saving charge sheet data" });
         }
     },
+
+  
+// POST /chargesheet/getProfileAttachment
+async getProfileAttachment(req, res) {
+  try {
+    const { tableName, tableRowId, fieldName } = req.body;
+
+    const profileAttachment = await ProfileAttachment.findOne({
+      where: {
+        table_row_id: tableRowId,
+        field_name: fieldName,
+      },
+      order: [['created_at', 'DESC']],
+    });
+
+    if (!profileAttachment) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const fileRelativePath = path.join(profileAttachment.s3_key);
+
+    if (!fs.existsSync(path.join(__dirname, fileRelativePath))) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Return file metadata instead of streaming
+   return res.status(200).json({
+    success: true,
+  file_path: `${profileAttachment.s3_key.replace(/\\/g, '/')}`,
+  attachment_name: profileAttachment.attachment_name,
+  profile_attachment_id: profileAttachment.profile_attachment_id,
+
+});
+
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+
+
+
+
 };
 
 

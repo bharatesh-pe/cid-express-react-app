@@ -2,14 +2,10 @@ import { West } from "@mui/icons-material";
 import { Box, Button, Chip, CircularProgress, TextField, Typography, Table, TableBody, TableCell, TableRow, TextareaAutosize, } from "@mui/material";
 import { useEffect, useState } from 'react';
 import dayjs from "dayjs";
-import DateField from "../components/form/Date";
-import TableView from "../components/table-view/TableView";
 import { toast } from "react-toastify";
 import api from "../services/api";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import RichTextEditor from "../components/form/RichTextEditor";
-import DynamicForm from "../components/dynamic-form/DynamicForm";
 import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
 import pdfIcon from "../Images/pdfIcon.svg";
 import docIcon from "../Images/docIcon.svg";
@@ -31,23 +27,12 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
     const [witnessList, setWitnessList] = useState([]);
     const [fslList, setFslList] = useState([]);
     const [chargeSheetFields, setChargeSheetFields] = useState([]);
-    const [allUIDataObj, setAllUIDataObj] = useState({}); // <-- Add this line at the top with other useState hooks
-
-    const getValue = (field) => cs_fir_cases_data?.[0]?.[field] || '';
-
-    const getFormattedDate = (dateString) =>
-        dateString ? dateString.split(' ')[0].split('-').reverse().join('-') : '';
+    const [allUIDataObj, setAllUIDataObj] = useState({});
 
     const handleInput = (e) => {
         setFormData((prev) => ({
             ...prev,
             [e.target.id]: e.target.value
-        }))
-    };
-    const handleRichTextEditorInput = (id, value) => {
-        setFormData((prev) => ({
-            ...prev,
-            [id]: value
         }))
     };
 
@@ -95,7 +80,6 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
         let normalData = {};
         const formPayload = new FormData();
 
-        // Only handle supporting documents as files, not as objects in data
         let supportingFiles = [];
         let supportingFileNames = [];
         if (formData.cs_supporting_documents && Array.isArray(formData.cs_supporting_documents)) {
@@ -111,7 +95,6 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
             });
         }
 
-        // Build normalData, skipping cs_supporting_documents and field_supporting_documents
         if (Array.isArray(chargeSheetFields)) {
             chargeSheetFields.forEach(field => {
                 const uiKey = Object.keys(fieldMap).find(k => fieldMap[k] === field.name);
@@ -121,7 +104,6 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 } else if (formData.hasOwnProperty(field.name)) {
                     value = formData[field.name];
                 }
-                // Skip cs_supporting_documents and field_supporting_documents for normalData
                 if (field.name === "cs_supporting_documents" || field.name === "field_supporting_documents") return;
                 if (value !== undefined) {
                     normalData[field.name] = Array.isArray(value) ? value.join(",") : value;
@@ -129,7 +111,6 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
             });
         }
 
-        // Add any extra fields from formData not in chargeSheetFields, skip cs_supporting_documents and field_supporting_documents
         Object.keys(formData).forEach(key => {
             const mappedKey = fieldMap[key] || key;
             if (
@@ -165,6 +146,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     progress: undefined,
                     className: "toast-success"
                 });
+                setAlreadySaved(true);
             } else {
                 toast.error(response?.message || "Please Try Again!", {
                     position: "top-right",
@@ -193,35 +175,91 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
     };
 
     const updateChargeSheetApi = async () => {
-
-        if (!formData?.id) {
-            return
-        }
-
-        if (Object.keys(formData).length === 0) {
-            toast.error("Data is Empty !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
+        if (!rowData?.id || !module) {
+            console.warn("Missing rowData.id or module");
             return;
         }
 
+        const fieldMap = {
+            cs_case_number: "field_cid_crime_no./enquiry_no",
+            cs_section_of_law: "field_sections_of_law",
+            cs_incident_location: "field_incident_location",
+            cs_incident_date: "field_incident_date",
+            cs_cid_case_number: "field_cid_crime_no./enquiry_no",
+            cs_cid_initiated_date: "field_cid_initiated_date",
+            cs_io_name: "field_investigating_officer_name",
+            cs_io_designation: "field_investigating_officer_designation",
+            cs_allegations_info: "field_brief_information_about_the_allegations",
+            cs_investigation_outcome: "field_outcome_of_the_investigation",
+            cs_accused_justification: "field_description/justification_provided_by_accused_individuals",
+            cs_evidence_to_refute: "field_evidences_available_to_refute_description/justification_provided_by_accused_individuals",
+            cs_evidence_compilation: "field_compilation_of_evidences",
+            cs_conclusion: "field_conclusion",
+            cs_recommendation: "field_recommendation",
+            cs_police_station: "field_name_of_the_police_station",
+            cs_supporting_documents: "field_supporting_documents",
+            cs_case_filed_date: "created_at"
+        };
+
+        let normalData = {};
+        const formPayload = new FormData();
+
+        let supportingFiles = [];
+        let supportingFileNames = [];
+        if (formData.cs_supporting_documents && Array.isArray(formData.cs_supporting_documents)) {
+            supportingFiles = formData.cs_supporting_documents.filter(f => f instanceof File || (f && f.filename instanceof File));
+            supportingFiles.forEach(fileObj => {
+                if (fileObj instanceof File) {
+                    formPayload.append("field_supporting_documents", fileObj);
+                    supportingFileNames.push(fileObj.name);
+                } else if (fileObj && fileObj.filename instanceof File) {
+                    formPayload.append("field_supporting_documents", fileObj.filename);
+                    supportingFileNames.push(fileObj.filename.name);
+                }
+            });
+        }
+
+        if (Array.isArray(chargeSheetFields)) {
+            chargeSheetFields.forEach(field => {
+                const uiKey = Object.keys(fieldMap).find(k => fieldMap[k] === field.name);
+                let value;
+                if (uiKey && formData.hasOwnProperty(uiKey)) {
+                    value = formData[uiKey];
+                } else if (formData.hasOwnProperty(field.name)) {
+                    value = formData[field.name];
+                }
+                if (field.name === "cs_supporting_documents" || field.name === "field_supporting_documents") return;
+                if (value !== undefined) {
+                    normalData[field.name] = Array.isArray(value) ? value.join(",") : value;
+                }
+            });
+        }
+
+        Object.keys(formData).forEach(key => {
+            const mappedKey = fieldMap[key] || key;
+            if (
+                !normalData.hasOwnProperty(mappedKey) &&
+                key !== "cs_supporting_documents" &&
+                key !== "field_supporting_documents" &&
+                !(formData[key] instanceof File)
+            ) {
+                normalData[mappedKey] = Array.isArray(formData[key]) ? formData[key].join(",") : formData[key];
+            }
+        });
+
+        formPayload.append("table_name", "cid_under_investigation");
+        formPayload.append("id", String(rowData.id));
+        formPayload.append("data", JSON.stringify(normalData));
+
         setLoading(true);
         try {
-
-            const response = await api.post("/chargeSheet/updateChargeSheet", {
-                data: formData,
-                id: formData.id
+            const response = await api.post("/templateData/updateTemplateData", formPayload, {
+                headers: { "Content-Type": "multipart/form-data" }
             });
+
             setLoading(false);
 
-            if (response.success) {
+            if (response?.success) {
                 toast.success("Data Updated Successfully", {
                     position: "top-right",
                     autoClose: 3000,
@@ -232,9 +270,8 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     progress: undefined,
                     className: "toast-success"
                 });
-                return
             } else {
-                toast.error(response.message ? response.message : "Please Try Again !", {
+                toast.error(response?.message || "Please Try Again!", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -244,25 +281,20 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     progress: undefined,
                     className: "toast-error",
                 });
-                return;
             }
-
         } catch (error) {
             setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
+            toast.error("Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
         }
-
     };
 
     const chargeSheetGroups = [
@@ -393,7 +425,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     localAllUIDataObj = {};
                 }
 
-                setAllUIDataObj(localAllUIDataObj); // <-- Save to state for later use
+                setAllUIDataObj(localAllUIDataObj);
 
                 if (allUIFields && typeof localAllUIDataObj === "object" && localAllUIDataObj !== null) {
                     const newFormData = {};
@@ -519,51 +551,56 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
         }
     };
 
-    const openFileInNewTab = async (file, formData, setLoading, toast, api, row) => {
-        if (row && Array.isArray(row.attachments) && row.attachments.length > 0) {
-            const payloadFile = row.attachments.find(
-                (attachment) => attachment.attachment_name === file
-            );
-            if (payloadFile && payloadFile.profile_attachment_id) {
-                setLoading(true);
-                try {
-                    const url = `/templateData/downloadDocumentAttachments/${payloadFile.profile_attachment_id}`;
-                    const res = await fetch(url, { method: "GET" });
-                    setLoading(false);
-                    if (res.ok) {
-                        const blob = await res.blob();
-                        const fileUrl = URL.createObjectURL(blob);
-                        window.open(fileUrl, "_blank");
-                    } else {
-                        toast.error('Unable to preview file!', {
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-                    }
-                } catch (error) {
-                    setLoading(false);
-                    toast.error('Please Try Again !', {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                }
+    const openFileInNewTab = async (file, formData, setLoading, toast, api, row = {}, fieldNameOverride = null) => {
+        let tableRowId = row.id || formData.id || formData.tableRowId || rowData?.id || null;
+        if (!tableRowId) {
+            toast.error("Table row ID missing!", { className: "toast-error" });
+            return;
+        }
+
+        let fieldName = fieldNameOverride || "field_supporting_documents";
+        if (file && typeof file === "object") {
+            if (file.field_name) fieldName = file.field_name;
+        }
+
+        setLoading(true);
+
+        try {
+            const profileRes = await api.post("/chargeSheet/getProfileAttachment", {
+                tableRowId,
+                fieldName,
+            });
+
+            if (!profileRes.success || !profileRes.profile_attachment_id) {
+                setLoading(false);
+                toast.error("Profile attachment ID not found!", { className: "toast-error" });
                 return;
             }
+
+            const attachmentId = profileRes.profile_attachment_id;
+
+            const fileRes = await api.post(
+                `/templateData/downloadDocumentAttachments/${attachmentId}`,
+                {},
+                { responseType: "blob" }
+            );
+
+            console.log("File response:", fileRes);
+            setLoading(false);
+
+            if (fileRes) {
+                const fileUrl = URL.createObjectURL(fileRes);
+                console.log("File URL:", fileUrl);
+                const newTab = window.open();
+                newTab.document.body.innerHTML = `<embed src="${fileUrl}" width="100%" height="100%" />`;
+            } else {
+                toast.error("Failed to download file!", { className: "toast-error" });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error("Error loading file, please try again.", { className: "toast-error" });
+            console.error(error);
         }
-        const url = `/templateData/downloadDocumentAttachments?file_name=${encodeURIComponent(file)}`;
-        window.open(url, "_blank");
     };
 
     const formatDateCell = (value) => {
@@ -574,77 +611,24 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
         return value;
     };
 
-    // Add a helper to upload supporting documents for accused/witness/FSL rows
-    const uploadSupportingDocuments = async ({
-        tableName,
-        rowId,
-        data,
-        files,
-        transaction_id,
-        user_designation_id,
-        others_data,
-        allowedUserIds,
-        getDataBasesOnUsers,
-        allowedDepartmentIds,
-        allowedDivisionIds
-    }) => {
-        const formPayload = new FormData();
-        formPayload.append("table_name", tableName);
-        formPayload.append("id", String(rowId));
-        formPayload.append("data", JSON.stringify(data));
-        if (transaction_id) formPayload.append("transaction_id", transaction_id);
-        if (user_designation_id) formPayload.append("user_designation_id", user_designation_id);
-        if (others_data) formPayload.append("others_data", JSON.stringify(others_data));
-        if (allowedUserIds) formPayload.append("allowedUserIds", JSON.stringify(allowedUserIds));
-        if (getDataBasesOnUsers !== undefined) formPayload.append("getDataBasesOnUsers", JSON.stringify(getDataBasesOnUsers));
-        if (allowedDepartmentIds) formPayload.append("allowedDepartmentIds", JSON.stringify(allowedDepartmentIds));
-        if (allowedDivisionIds) formPayload.append("allowedDivisionIds", JSON.stringify(allowedDivisionIds));
-        // Attach files
-        if (Array.isArray(files)) {
-            files.forEach(file => {
-                formPayload.append("field_pso_&_19_pc_act_order", file);
-            });
+    const getAccusedAttachmentFields = () => {
+        if (!accusedTemplate || !accusedTemplate.fields) return [];
+        let fieldsArr = [];
+        try {
+            fieldsArr = typeof accusedTemplate.fields === "string"
+                ? JSON.parse(accusedTemplate.fields)
+                : accusedTemplate.fields;
+        } catch {
+            fieldsArr = [];
         }
-        // You can add more file fields as needed, e.g.:
-        // formPayload.append("field_notice_41a_to_be_uploaded_(m)", ...);
-
-        return api.post("/templateData/updateDataWithApproval", formPayload, {
-            headers: { "Content-Type": "multipart/form-data" }
-        });
+        return fieldsArr
+            .filter(f =>
+                (f.data_type && f.data_type.toLowerCase() === "attachments") ||
+                (f.type && f.type.toLowerCase() === "file")
+            )
+            .map(f => f.name);
     };
 
-    // The function uploadRowSupportingDocument is a helper for uploading supporting documents for a specific row (accused/witness/FSL).
-    // It is not yet used in the current file. 
-    // To use it, you should call it from inside your table cell where you want to upload a file for a specific row.
-    // For example, in the accused table, inside the cell for file upload (field.type === "file" or field.data_type === "Attachments"), 
-    // you can render a FileInput and call uploadRowSupportingDocument in its onChange handler:
-
-    /*
-    <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
-        <FileInput
-            field={{
-                name: key, // e.g. "field_pso_&_19_pc_act_order"
-                label: "Supporting Document",
-                multiple: true
-            }}
-            formData={row}
-            errors={{}}
-            onChange={async (name, files) => {
-                await uploadRowSupportingDocument({
-                    tableName: "cid_ui_case_accused",
-                    rowId: row.id, // or the correct id field for the row
-                    data: row,     // or the correct row data
-                    fileFieldName: name,
-                    files
-                });
-                // Optionally refresh data after upload
-            }}
-            readOnly={false}
-        />
-    </TableCell>
-    */
-
-    // You can use similar logic for witness or FSL tables, changing tableName and fileFieldName as needed.
 
     return (
         <Box sx={{ overflow: 'auto', height: '100vh' }}>
@@ -735,20 +719,67 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                         <TableRow key={rowIdx}>
                                             {Object.keys(row)
                                                 .filter(key => !hiddenColumns.includes(key))
-                                                .map((key, colIdx) => (
-                                                    <TableCell
-                                                        key={colIdx}
-                                                        sx={{
-                                                            whiteSpace: 'normal',
-                                                            wordBreak: 'break-word',
-                                                            maxWidth: 180,
-                                                            minWidth: 120,
-                                                            px: 1
-                                                        }}
-                                                    >
-                                                        {formatDateCell(row[key])}
-                                                    </TableCell>
-                                                ))}
+                                                .map((key, colIdx) => {
+                                                    let value = row[key];
+                                                    if (value === undefined || value === null || value === "") value = "-";
+                                                    // Dynamically check if this key is an attachment field
+                                                    const attachmentFields = getAccusedAttachmentFields();
+                                                    if (attachmentFields.includes(key)) {
+                                                        return (
+                                                            <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                                {value !== "-" ? (
+                                                                    <Box
+                                                                        sx={{
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            gap: 1,
+                                                                            cursor: "pointer",
+                                                                            border: "1px solid #e0e0e0",
+                                                                            borderRadius: 1,
+                                                                            px: 1,
+                                                                            py: 0.5,
+                                                                            background: "#f8f9fa",
+                                                                            maxWidth: 220,
+                                                                            overflow: "hidden"
+                                                                        }}
+                                                                        onClick={e => {
+                                                                            e.stopPropagation();
+                                                                            openFileInNewTab(
+                                                                                value,
+                                                                                formData,
+                                                                                setLoading,
+                                                                                toast,
+                                                                                api,
+                                                                                row,
+                                                                                key // fieldNameOverride
+                                                                            );
+                                                                        }}
+                                                                        title="Click to preview"
+                                                                    >
+                                                                        {getFileIcon(value)}
+                                                                        <span style={{
+                                                                            marginLeft: 6,
+                                                                            whiteSpace: "nowrap",
+                                                                            overflow: "hidden",
+                                                                            textOverflow: "ellipsis",
+                                                                            maxWidth: 170,
+                                                                            display: "inline-block"
+                                                                        }}>
+                                                                            {typeof value === "string" ? value.split("/").pop() : ""}
+                                                                        </span>
+                                                                    </Box>
+                                                                ) : (
+                                                                    <span>-</span>
+                                                                )}
+                                                            </TableCell>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                            {value}
+                                                        </TableCell>
+                                                    );
+                                                })}
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -856,6 +887,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                         <Typography sx={{ color: "#B71C1C", fontWeight: 500, mt: 1 }}>No data found</Typography>
                     )}
                 </Box>
+
                 <Box sx={{ mt: 0, mb: 2 }}>
                     <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>Witness</Typography>
                     {witnessList.length > 0 ? (
@@ -926,7 +958,6 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 {chargeSheetGroups.map((group, idx) => (
                     <Box key={group.heading} sx={{ mb: 3 }}>
                         <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>{group.heading}</Typography>
-                        {/* Accused Table for point 6 */}
                         {group.heading === "6. Details of the accused individuals" ? (
                             accusedList.length > 0 && accusedTemplate && accusedTemplate.fields ? (
                                 (() => {
@@ -981,6 +1012,57 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                                 const key = field.name;
                                                                 let value = row[key];
                                                                 if (value === undefined || value === null || value === "") value = "-";
+                                                                const attachmentFields = getAccusedAttachmentFields();
+                                                                if (attachmentFields.includes(key)) {
+                                                                    return (
+                                                                        <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                                            {value !== "-" ? (
+                                                                                <Box
+                                                                                    sx={{
+                                                                                        display: "flex",
+                                                                                        alignItems: "center",
+                                                                                        gap: 1,
+                                                                                        cursor: "pointer",
+                                                                                        border: "1px solid #e0e0e0",
+                                                                                        borderRadius: 1,
+                                                                                        px: 1,
+                                                                                        py: 0.5,
+                                                                                        background: "#f8f9fa",
+                                                                                        maxWidth: 220,
+                                                                                        overflow: "hidden"
+                                                                                    }}
+                                                                                    onClick={e => {
+                                                                                        e.stopPropagation();
+                                                                                        openFileInNewTab(
+                                                                                            value,
+                                                                                            formData,
+                                                                                            setLoading,
+                                                                                            toast,
+                                                                                            api,
+                                                                                            row,
+                                                                                            key // fieldNameOverride
+                                                                                        );
+                                                                                    }}
+                                                                                    title="Click to preview"
+                                                                                >
+                                                                                    {getFileIcon(value)}
+                                                                                    <span style={{
+                                                                                        marginLeft: 6,
+                                                                                        whiteSpace: "nowrap",
+                                                                                        overflow: "hidden",
+                                                                                        textOverflow: "ellipsis",
+                                                                                        maxWidth: 170,
+                                                                                        display: "inline-block"
+                                                                                    }}>
+                                                                                        {typeof value === "string" ? value.split("/").pop() : ""}
+                                                                                    </span>
+                                                                                </Box>
+                                                                            ) : (
+                                                                                <span>-</span>
+                                                                            )}
+                                                                        </TableCell>
+                                                                    );
+                                                                }
                                                                 return (
                                                                     <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
                                                                         {value}
@@ -1236,27 +1318,15 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 ))}
 
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-                    {!alreadySaved ? (
-                        <Button
-                            variant="contained"
-                            color="success"
-                            size="large"
-                            sx={{ fontWeight: 500, height: 40, margin: 0 }}
-                            onClick={saveChargeSheetApi}
-                        >
-                            Save
-                        </Button>
-                    ) : (
-                        <Button
-                            variant="contained"
-                            color="success"
-                            size="large"
-                            sx={{ fontWeight: 500, height: 40, margin: 0 }}
-                            onClick={updateChargeSheetApi}
-                        >
-                            Update
-                        </Button>
-                    )}
+                    <Button
+                        variant="contained"
+                        color="success"
+                        size="large"
+                        sx={{ fontWeight: 500, height: 40, margin: 0 }}
+                        onClick={alreadySaved ? updateChargeSheetApi : saveChargeSheetApi}
+                    >
+                        {alreadySaved ? "Update" : "Save"}
+                    </Button>
                 </Box>
 
             </Box>
