@@ -12320,41 +12320,40 @@ const handleOpenExportPopup = async () => {
                             readOnly={viewReadonly}
                             editData={editTemplateData}
                             onUpdate={onCaseUpdateTemplateData}
-                            formConfig={
-                                Array.isArray(formTemplateData) && formTemplateData.length > 0
-                                    ? formTemplateData
-                                        .filter(
-                                            (field) => {
-                                                if (field.required === true) {
-                                                    return true;
-                                                }
-                                                if (accusedDialogTab === "fsl") {
-                                                    return (
-                                                        field.name === "field_status_of_accused_in_charge_sheet" ||
-                                                        field.name === "field_government_servent" ||
-                                                        field.name === "field_pso_&_19_pc_act_order" ||
-                                                        field.name === 'field_used_as_evidence' ||
-                                                        field.name === "field_reason"
-                                                    );
-                                                }
-                                                return (
-                                                    field.name === "field_status_of_accused_in_charge_sheet" ||
-                                                    field.name === "field_government_servent" ||
-                                                    field.name === "field_pso_&_19_pc_act_order" ||
-                                                    field.name === 'field_used_as_evidence' ||
-                                                    field.name === "field_reason" ||
-                                                    field.name === "field_status"
-                                                );
-                                            }
-                                        )
-                                        .map(field => ({
-                                            ...field,
-                                            col: 6
-                                        }))
-                                    : formTemplateData
-                            }
-
-
+                            // formConfig={
+                            //     Array.isArray(formTemplateData) && formTemplateData.length > 0
+                            //         ? formTemplateData
+                            //             .filter(
+                            //                 (field) => {
+                            //                     if (field.required === true) {
+                            //                         return true;
+                            //                     }
+                            //                     if (accusedDialogTab === "fsl") {
+                            //                         return (
+                            //                             field.name === "field_status_of_accused_in_charge_sheet" ||
+                            //                             field.name === "field_government_servent" ||
+                            //                             field.name === "field_pso_&_19_pc_act_order" ||
+                            //                             field.name === 'field_used_as_evidence' ||
+                            //                             field.name === "field_reason"
+                            //                         );
+                            //                     }
+                            //                     return (
+                            //                         field.name === "field_status_of_accused_in_charge_sheet" ||
+                            //                         field.name === "field_government_servent" ||
+                            //                         field.name === "field_pso_&_19_pc_act_order" ||
+                            //                         field.name === 'field_used_as_evidence' ||
+                            //                         field.name === "field_reason" ||
+                            //                         field.name === "field_status"
+                            //                     );
+                            //                 }
+                            //             )
+                            //             .map(field => ({
+                            //                 ...field,
+                            //                 col: 6
+                            //             }))
+                            //         : formTemplateData
+                            // }
+                            formConfig={formTemplateData}
                             stepperData={stepperData}
                             initialData={initialData}
                             onSubmit={onSaveTemplateData}
