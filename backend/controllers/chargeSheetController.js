@@ -360,7 +360,8 @@ module.exports = {
             if (req.files && req.files.length > 0) {
                 supportingDocs = await saveSupportingDocuments(req.files, id);
                 // Assume the file field is named as in the schema, e.g., "cs_supporting_documents"
-                if (schema.find(f => f.name === "cs_supporting_documents")) {
+                // Always set the supporting document field if files are uploaded
+                if (supportingDocs.length > 0) {
                     validData["cs_supporting_documents"] = supportingDocs.join(',');
                 }
             }

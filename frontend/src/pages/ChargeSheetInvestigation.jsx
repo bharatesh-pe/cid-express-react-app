@@ -31,6 +31,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
     const [witnessList, setWitnessList] = useState([]);
     const [fslList, setFslList] = useState([]);
     const [chargeSheetFields, setChargeSheetFields] = useState([]);
+    const [allUIDataObj, setAllUIDataObj] = useState({}); // <-- Add this line at the top with other useState hooks
 
     const getValue = (field) => cs_fir_cases_data?.[0]?.[field] || '';
 
@@ -87,10 +88,30 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
             cs_conclusion: "field_conclusion",
             cs_recommendation: "field_recommendation",
             cs_police_station: "field_name_of_the_police_station",
+            cs_supporting_documents: "field_supporting_documents",
             cs_case_filed_date: "created_at"
         };
 
-        const dataToSave = {};
+        let normalData = {};
+        const formPayload = new FormData();
+
+        // Only handle supporting documents as files, not as objects in data
+        let supportingFiles = [];
+        let supportingFileNames = [];
+        if (formData.cs_supporting_documents && Array.isArray(formData.cs_supporting_documents)) {
+            supportingFiles = formData.cs_supporting_documents.filter(f => f instanceof File || (f && f.filename instanceof File));
+            supportingFiles.forEach(fileObj => {
+                if (fileObj instanceof File) {
+                    formPayload.append("field_supporting_documents", fileObj);
+                    supportingFileNames.push(fileObj.name);
+                } else if (fileObj && fileObj.filename instanceof File) {
+                    formPayload.append("field_supporting_documents", fileObj.filename);
+                    supportingFileNames.push(fileObj.filename.name);
+                }
+            });
+        }
+
+        // Build normalData, skipping cs_supporting_documents and field_supporting_documents
         if (Array.isArray(chargeSheetFields)) {
             chargeSheetFields.forEach(field => {
                 const uiKey = Object.keys(fieldMap).find(k => fieldMap[k] === field.name);
@@ -100,35 +121,34 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 } else if (formData.hasOwnProperty(field.name)) {
                     value = formData[field.name];
                 }
+                // Skip cs_supporting_documents and field_supporting_documents for normalData
+                if (field.name === "cs_supporting_documents" || field.name === "field_supporting_documents") return;
                 if (value !== undefined) {
-                    dataToSave[field.name] = value;
+                    normalData[field.name] = Array.isArray(value) ? value.join(",") : value;
                 }
             });
         }
+
+        // Add any extra fields from formData not in chargeSheetFields, skip cs_supporting_documents and field_supporting_documents
         Object.keys(formData).forEach(key => {
             const mappedKey = fieldMap[key] || key;
-            if (!dataToSave.hasOwnProperty(mappedKey)) {
-                dataToSave[mappedKey] = formData[key];
+            if (
+                !normalData.hasOwnProperty(mappedKey) &&
+                key !== "cs_supporting_documents" &&
+                key !== "field_supporting_documents" &&
+                !(formData[key] instanceof File)
+            ) {
+                normalData[mappedKey] = Array.isArray(formData[key]) ? formData[key].join(",") : formData[key];
             }
         });
 
-        const formPayload = new FormData();
         formPayload.append("table_name", "cid_under_investigation");
         formPayload.append("id", String(rowData.id));
-        formPayload.append("data", JSON.stringify(dataToSave));
-
-        if (Array.isArray(formData.cs_supporting_documents)) {
-            formData.cs_supporting_documents.forEach((file) => {
-                formPayload.append("cs_supporting_documents", file);
-            });
-        }
-
-        for (let pair of formPayload.entries()) {
-        }
+        formPayload.append("data", JSON.stringify(normalData));
 
         setLoading(true);
         try {
-            const response = await api.post("/chargeSheet/saveChargeSheetData", formPayload, {
+            const response = await api.post("/templateData/updateTemplateData", formPayload, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
 
@@ -354,71 +374,73 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 setFslList(Array.isArray(response.fslData) ? response.fslData : []);
                 setWitnessList(Array.isArray(response.witnessData) ? response.witnessData : []);
                 let allUIFields = [];
-                let allUIDataObj = {};
+                let localAllUIDataObj = {};
                 if (response.allUIData && Array.isArray(response.allUIData.allUIFields)) {
                     setChargeSheetFields(response.allUIData.allUIFields);
                     allUIFields = response.allUIData.allUIFields;
-                    allUIDataObj = response.allUIData;
+                    localAllUIDataObj = response.allUIData;
                 } else if (Array.isArray(response.allUIFields)) {
                     setChargeSheetFields(response.allUIFields);
                     allUIFields = response.allUIFields;
-                    allUIDataObj = response.allUIData || {};
+                    localAllUIDataObj = response.allUIData || {};
                 } else if (Array.isArray(response.allUIData)) {
                     setChargeSheetFields(response.allUIData);
                     allUIFields = response.allUIData;
-                    allUIDataObj = {};
+                    localAllUIDataObj = {};
                 } else {
                     setChargeSheetFields([]);
                     allUIFields = [];
-                    allUIDataObj = {};
+                    localAllUIDataObj = {};
                 }
 
-                if (allUIFields && typeof allUIDataObj === "object" && allUIDataObj !== null) {
+                setAllUIDataObj(localAllUIDataObj); // <-- Save to state for later use
+
+                if (allUIFields && typeof localAllUIDataObj === "object" && localAllUIDataObj !== null) {
                     const newFormData = {};
-                    if (allUIDataObj["field_cid_crime_no./enquiry_no"]) {
-                        newFormData["cs_case_number"] = allUIDataObj["field_cid_crime_no./enquiry_no"];
+                    if (localAllUIDataObj["field_cid_crime_no./enquiry_no"]) {
+                        newFormData["cs_case_number"] = localAllUIDataObj["field_cid_crime_no./enquiry_no"];
                     }
-                    if (allUIDataObj["field_sections_of_law"]) {
-                        newFormData["cs_section_of_law"] = allUIDataObj["field_sections_of_law"];
+                    if (localAllUIDataObj["field_sections_of_law"]) {
+                        newFormData["cs_section_of_law"] = localAllUIDataObj["field_sections_of_law"];
                     }
-                    if (allUIDataObj["field_incident_location"]) {
-                        newFormData["cs_incident_location"] = allUIDataObj["field_incident_location"];
+                    if (localAllUIDataObj["field_incident_location"]) {
+                        newFormData["cs_incident_location"] = localAllUIDataObj["field_incident_location"];
                     }
-                    if (allUIDataObj["field_incident_date"]) {
-                        newFormData["cs_incident_date"] = dayjs(allUIDataObj["field_incident_date"]).format("YYYY-MM-DD");
+                    if (localAllUIDataObj["field_incident_date"]) {
+                        newFormData["cs_incident_date"] = dayjs(localAllUIDataObj["field_incident_date"]).format("YYYY-MM-DD");
                     }
-                    if (allUIDataObj["field_cid_crime_no./enquiry_no"]) {
-                        newFormData["cs_cid_case_number"] = allUIDataObj["field_cid_crime_no./enquiry_no"];
+                    if (localAllUIDataObj["field_cid_crime_no./enquiry_no"]) {
+                        newFormData["cs_cid_case_number"] = localAllUIDataObj["field_cid_crime_no./enquiry_no"];
                     }
-                    if (allUIDataObj["field_cid_initiated_date"]) {
-                        newFormData["cs_cid_initiated_date"] = dayjs(allUIDataObj["field_cid_initiated_date"]).format("YYYY-MM-DD");
+                    if (localAllUIDataObj["field_cid_initiated_date"]) {
+                        newFormData["cs_cid_initiated_date"] = dayjs(localAllUIDataObj["field_cid_initiated_date"]).format("YYYY-MM-DD");
                     }
-                    if (allUIDataObj["field_investigating_officer_name"]) {
-                        newFormData["cs_io_name"] = allUIDataObj["field_investigating_officer_name"];
+                    if (localAllUIDataObj["field_investigating_officer_name"]) {
+                        newFormData["cs_io_name"] = localAllUIDataObj["field_investigating_officer_name"];
                     }
-                    if (allUIDataObj["field_investigating_officer_designation"]) {
-                        newFormData["cs_io_designation"] = allUIDataObj["field_investigating_officer_designation"];
+                    if (localAllUIDataObj["field_investigating_officer_designation"]) {
+                        newFormData["cs_io_designation"] = localAllUIDataObj["field_investigating_officer_designation"];
                     }
-                    if (allUIDataObj["field_brief_information_about_the_allegations"]) {
-                        newFormData["cs_allegations_info"] = allUIDataObj["field_brief_information_about_the_allegations"];
+                    if (localAllUIDataObj["field_brief_information_about_the_allegations"]) {
+                        newFormData["cs_allegations_info"] = localAllUIDataObj["field_brief_information_about_the_allegations"];
                     }
-                    if (allUIDataObj["field_outcome_of_the_investigation"]) {
-                        newFormData["cs_investigation_outcome"] = allUIDataObj["field_outcome_of_the_investigation"];
+                    if (localAllUIDataObj["field_outcome_of_the_investigation"]) {
+                        newFormData["cs_investigation_outcome"] = localAllUIDataObj["field_outcome_of_the_investigation"];
                     }
-                    if (allUIDataObj["field_description/justification_provided_by_accused_individuals"]) {
-                        newFormData["cs_accused_justification"] = allUIDataObj["field_description/justification_provided_by_accused_individuals"];
+                    if (localAllUIDataObj["field_description/justification_provided_by_accused_individuals"]) {
+                        newFormData["cs_accused_justification"] = localAllUIDataObj["field_description/justification_provided_by_accused_individuals"];
                     }
-                    if (allUIDataObj["field_evidences_available_to_refute_description/justification_provided_by_accused_individuals"]) {
-                        newFormData["cs_evidence_to_refute"] = allUIDataObj["field_evidences_available_to_refute_description/justification_provided_by_accused_individuals"];
+                    if (localAllUIDataObj["field_evidences_available_to_refute_description/justification_provided_by_accused_individuals"]) {
+                        newFormData["cs_evidence_to_refute"] = localAllUIDataObj["field_evidences_available_to_refute_description/justification_provided_by_accused_individuals"];
                     }
-                    if (allUIDataObj["field_compilation_of_evidences"]) {
-                        newFormData["cs_evidence_compilation"] = allUIDataObj["field_compilation_of_evidences"];
+                    if (localAllUIDataObj["field_compilation_of_evidences"]) {
+                        newFormData["cs_evidence_compilation"] = localAllUIDataObj["field_compilation_of_evidences"];
                     }
-                    if (allUIDataObj["field_conclusion"]) {
-                        newFormData["cs_conclusion"] = allUIDataObj["field_conclusion"];
+                    if (localAllUIDataObj["field_conclusion"]) {
+                        newFormData["cs_conclusion"] = localAllUIDataObj["field_conclusion"];
                     }
-                    if (allUIDataObj["field_recommendation"]) {
-                        newFormData["cs_recommendation"] = allUIDataObj["field_recommendation"];
+                    if (localAllUIDataObj["field_recommendation"]) {
+                        newFormData["cs_recommendation"] = localAllUIDataObj["field_recommendation"];
                     }
                     const policeStationField = allUIFields.find(
                         f => f.name === "field_name_of_the_police_station" || f.field_name === "field_name_of_the_police_station"
@@ -429,8 +451,8 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                             newFormData["cs_police_station"] = val;
                         }
                     }
-                    if (allUIDataObj["created_at"]) {
-                        newFormData["cs_case_filed_date"] = dayjs(allUIDataObj["created_at"]).format("YYYY-MM-DD");
+                    if (localAllUIDataObj["created_at"]) {
+                        newFormData["cs_case_filed_date"] = dayjs(localAllUIDataObj["created_at"]).format("YYYY-MM-DD");
                     }
                     setFormData(prev => ({ ...prev, ...newFormData }));
                 }
@@ -552,6 +574,78 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
         return value;
     };
 
+    // Add a helper to upload supporting documents for accused/witness/FSL rows
+    const uploadSupportingDocuments = async ({
+        tableName,
+        rowId,
+        data,
+        files,
+        transaction_id,
+        user_designation_id,
+        others_data,
+        allowedUserIds,
+        getDataBasesOnUsers,
+        allowedDepartmentIds,
+        allowedDivisionIds
+    }) => {
+        const formPayload = new FormData();
+        formPayload.append("table_name", tableName);
+        formPayload.append("id", String(rowId));
+        formPayload.append("data", JSON.stringify(data));
+        if (transaction_id) formPayload.append("transaction_id", transaction_id);
+        if (user_designation_id) formPayload.append("user_designation_id", user_designation_id);
+        if (others_data) formPayload.append("others_data", JSON.stringify(others_data));
+        if (allowedUserIds) formPayload.append("allowedUserIds", JSON.stringify(allowedUserIds));
+        if (getDataBasesOnUsers !== undefined) formPayload.append("getDataBasesOnUsers", JSON.stringify(getDataBasesOnUsers));
+        if (allowedDepartmentIds) formPayload.append("allowedDepartmentIds", JSON.stringify(allowedDepartmentIds));
+        if (allowedDivisionIds) formPayload.append("allowedDivisionIds", JSON.stringify(allowedDivisionIds));
+        // Attach files
+        if (Array.isArray(files)) {
+            files.forEach(file => {
+                formPayload.append("field_pso_&_19_pc_act_order", file);
+            });
+        }
+        // You can add more file fields as needed, e.g.:
+        // formPayload.append("field_notice_41a_to_be_uploaded_(m)", ...);
+
+        return api.post("/templateData/updateDataWithApproval", formPayload, {
+            headers: { "Content-Type": "multipart/form-data" }
+        });
+    };
+
+    // The function uploadRowSupportingDocument is a helper for uploading supporting documents for a specific row (accused/witness/FSL).
+    // It is not yet used in the current file. 
+    // To use it, you should call it from inside your table cell where you want to upload a file for a specific row.
+    // For example, in the accused table, inside the cell for file upload (field.type === "file" or field.data_type === "Attachments"), 
+    // you can render a FileInput and call uploadRowSupportingDocument in its onChange handler:
+
+    /*
+    <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+        <FileInput
+            field={{
+                name: key, // e.g. "field_pso_&_19_pc_act_order"
+                label: "Supporting Document",
+                multiple: true
+            }}
+            formData={row}
+            errors={{}}
+            onChange={async (name, files) => {
+                await uploadRowSupportingDocument({
+                    tableName: "cid_ui_case_accused",
+                    rowId: row.id, // or the correct id field for the row
+                    data: row,     // or the correct row data
+                    fileFieldName: name,
+                    files
+                });
+                // Optionally refresh data after upload
+            }}
+            readOnly={false}
+        />
+    </TableCell>
+    */
+
+    // You can use similar logic for witness or FSL tables, changing tableName and fileFieldName as needed.
+
     return (
         <Box sx={{ overflow: 'auto', height: '100vh' }}>
             <Box p={2} pb={8}>
@@ -602,7 +696,17 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>Accused</Typography>
                     {accusedList.length > 0 ? (
                         <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-                            <Table size="small" sx={{ minWidth: 900 }}>
+                            <Table
+                                size="small"
+                                sx={{
+                                    minWidth: 900,
+                                    border: "1.5px solid #bdbdbd",
+                                    borderCollapse: "collapse",
+                                    '& th, & td': {
+                                        border: "1px solid #bdbdbd"
+                                    }
+                                }}
+                            >
                                 <TableBody>
                                     <TableRow>
                                         {Object.keys(accusedList[0])
@@ -662,7 +766,17 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>FSL</Typography>
                     {fslList.length > 0 ? (
                         <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-                            <Table size="small" sx={{ minWidth: 900 }}>
+                            <Table
+                                size="small"
+                                sx={{
+                                    minWidth: 900,
+                                    border: "1.5px solid #bdbdbd",
+                                    borderCollapse: "collapse",
+                                    '& th, & td': {
+                                        border: "1px solid #bdbdbd"
+                                    }
+                                }}
+                            >
                                 <TableBody>
                                     <TableRow>
                                         {Object.keys(fslList[0])
@@ -746,7 +860,17 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>Witness</Typography>
                     {witnessList.length > 0 ? (
                         <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-                            <Table size="small" sx={{ minWidth: 900 }}>
+                            <Table
+                                size="small"
+                                sx={{
+                                    minWidth: 900,
+                                    border: "1.5px solid #bdbdbd",
+                                    borderCollapse: "collapse",
+                                    '& th, & td': {
+                                        border: "1px solid #bdbdbd"
+                                    }
+                                }}
+                            >
                                 <TableBody>
                                     <TableRow>
                                         {Object.keys(witnessList[0])
@@ -802,7 +926,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 {chargeSheetGroups.map((group, idx) => (
                     <Box key={group.heading} sx={{ mb: 3 }}>
                         <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>{group.heading}</Typography>
-                        {/* Special handling for Accused table in point 6 */}
+                        {/* Accused Table for point 6 */}
                         {group.heading === "6. Details of the accused individuals" ? (
                             accusedList.length > 0 && accusedTemplate && accusedTemplate.fields ? (
                                 (() => {
@@ -814,13 +938,22 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                     } catch {
                                         accusedFields = [];
                                     }
-                                    // Only show fields that are present in accusedList[0] and not in hiddenColumns
                                     const displayFields = accusedFields.filter(f =>
                                         Object.keys(accusedList[0]).includes(f.name) && !hiddenColumns.includes(f.name)
                                     );
                                     return (
                                         <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-                                            <Table size="small" sx={{ minWidth: 900 }}>
+                                            <Table
+                                                size="small"
+                                                sx={{
+                                                    minWidth: 900,
+                                                    border: "1.5px solid #bdbdbd",
+                                                    borderCollapse: "collapse",
+                                                    '& th, & td': {
+                                                        border: "1px solid #bdbdbd"
+                                                    }
+                                                }}
+                                            >
                                                 <TableBody>
                                                     <TableRow>
                                                         {displayFields.map((field, idx) => {
@@ -841,180 +974,21 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                                 </TableCell>
                                                             );
                                                         })}
-                                                        {/* <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap', minWidth: 100 }}>Actions</TableCell> */}
                                                     </TableRow>
                                                     {accusedList.map((row, rowIdx) => (
                                                         <TableRow key={rowIdx}>
                                                             {displayFields.map((field, colIdx) => {
                                                                 const key = field.name;
-                                                                if (
-                                                                    (field.type === "dropdown" || field.type === "autocomplete" || field.data_type === "Dropdown" || field.data_type === "Autocomplete") &&
-                                                                    Array.isArray(field.options)
-                                                                ) {
-                                                                    return (
-                                                                        <TableCell key={colIdx} sx={{ minWidth: 160, px: 1 }}>
-                                                                            <TextField
-                                                                                select
-                                                                                value={row[key] || ""}
-                                                                                size="small"
-                                                                                fullWidth
-                                                                                SelectProps={{ native: true }}
-                                                                                onChange={e => {
-                                                                                    const updated = [...accusedList];
-                                                                                    updated[rowIdx][key] = e.target.value;
-                                                                                    setAccusedList(updated);
-                                                                                }}
-                                                                            >
-                                                                                <option value="">Select</option>
-                                                                                {field.options.map(opt => (
-                                                                                    <option key={opt.code ?? opt.value ?? opt.name} value={opt.code ?? opt.value ?? opt.name}>
-                                                                                        {opt.name ?? opt.label ?? opt.value ?? opt.code}
-                                                                                    </option>
-                                                                                ))}
-                                                                            </TextField>
-                                                                        </TableCell>
-                                                                    );
-                                                                }
-                                                                if (field.type === "date" || field.data_type === "Date") {
-                                                                    return (
-                                                                        <TableCell key={colIdx} sx={{ minWidth: 160, px: 1 }}>
-                                                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                                                                <DatePicker
-                                                                                    inputFormat="YYYY-MM-DD"
-                                                                                    value={row[key] ? dayjs(row[key]) : null}
-                                                                                    onChange={date => {
-                                                                                        const updated = [...accusedList];
-                                                                                        updated[rowIdx][key] = date ? dayjs(date).format("YYYY-MM-DD") : "";
-                                                                                        setAccusedList(updated);
-                                                                                    }}
-                                                                                    renderInput={(params) => (
-                                                                                        <TextField
-                                                                                            {...params}
-                                                                                            fullWidth
-                                                                                            size="small"
-                                                                                        />
-                                                                                    )}
-                                                                                />
-                                                                            </LocalizationProvider>
-                                                                        </TableCell>
-                                                                    );
-                                                                }
-                                                                if (field.type === "number" || field.data_type === "Number") {
-                                                                    return (
-                                                                        <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
-                                                                            <TextField
-                                                                                type="number"
-                                                                                value={row[key] || ""}
-                                                                                size="small"
-                                                                                fullWidth
-                                                                                onChange={e => {
-                                                                                    const updated = [...accusedList];
-                                                                                    updated[rowIdx][key] = e.target.value;
-                                                                                    setAccusedList(updated);
-                                                                                }}
-                                                                            />
-                                                                        </TableCell>
-                                                                    );
-                                                                }
-                                                                if (field.type === "textarea" || field.formType === "Long text") {
-                                                                    return (
-                                                                        <TableCell key={colIdx} sx={{ minWidth: 180, px: 1 }}>
-                                                                            <TextField
-                                                                                multiline
-                                                                                minRows={2}
-                                                                                value={row[key] || ""}
-                                                                                size="small"
-                                                                                fullWidth
-                                                                                onChange={e => {
-                                                                                    const updated = [...accusedList];
-                                                                                    updated[rowIdx][key] = e.target.value;
-                                                                                    setAccusedList(updated);
-                                                                                }}
-                                                                            />
-                                                                        </TableCell>
-                                                                    );
-                                                                }
-                                                                if (field.type === "file" || field.data_type === "Attachments") {
-                                                                    const val = row[key];
-                                                                    if (val && typeof val === "string" && val !== "") {
-                                                                        const files = val.split(",");
-                                                                        return (
-                                                                            <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
-                                                                                <Box sx={{ display: "flex", alignItems: "center", gap: "4px", height: '100%' }}>
-                                                                                    {files.map((file, fileIdx) => (
-                                                                                        <span
-                                                                                            key={fileIdx}
-                                                                                            style={{
-                                                                                                display: "flex",
-                                                                                                alignItems: "center",
-                                                                                                cursor: "pointer",
-                                                                                                marginRight: "8px",
-                                                                                                color: "#1976d2",
-                                                                                                textDecoration: "underline"
-                                                                                            }}
-                                                                                            onClick={async (e) => {
-                                                                                                e.stopPropagation();
-                                                                                                await openFileInNewTab(file, formData, setLoading, toast, api, row);
-                                                                                            }}
-                                                                                        >
-                                                                                            {getFileIcon(file)}
-                                                                                            <span style={{ marginLeft: 4 }}>{file.split('/').pop()}</span>
-                                                                                        </span>
-                                                                                    ))}
-                                                                                </Box>
-                                                                            </TableCell>
-                                                                        );
-                                                                    }
-                                                                    return (
-                                                                        <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
-                                                                            {/* No file */}
-                                                                        </TableCell>
-                                                                    );
-                                                                }
+                                                                let value = row[key];
+                                                                if (value === undefined || value === null || value === "") value = "-";
                                                                 return (
                                                                     <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
-                                                                        <TextField
-                                                                            value={row[key] || ""}
-                                                                            size="small"
-                                                                            fullWidth
-                                                                            onChange={e => {
-                                                                                const updated = [...accusedList];
-                                                                                updated[rowIdx][key] = e.target.value;
-                                                                                setAccusedList(updated);
-                                                                            }}
-                                                                        />
+                                                                        {value}
                                                                     </TableCell>
                                                                 );
                                                             })}
-                                                            {/* <TableCell sx={{ minWidth: 100, px: 1 }}>
-                                                                <Button
-                                                                    color="error"
-                                                                    size="small"
-                                                                    onClick={() => {
-                                                                        const updated = accusedList.filter((_, i) => i !== rowIdx);
-                                                                        setAccusedList(updated);
-                                                                    }}
-                                                                >
-                                                                    Delete
-                                                                </Button>
-                                                            </TableCell> */}
                                                         </TableRow>
                                                     ))}
-                                                    <TableRow>
-                                                        {/* <TableCell colSpan={displayFields.length + 1}>
-                                                            <Button
-                                                                color="primary"
-                                                                size="small"
-                                                                onClick={() => {
-                                                                    const newRow = {};
-                                                                    displayFields.forEach(f => newRow[f.name] = "");
-                                                                    setAccusedList([...accusedList, newRow]);
-                                                                }}
-                                                            >
-                                                                Add Row
-                                                            </Button>
-                                                        </TableCell> */}
-                                                    </TableRow>
                                                 </TableBody>
                                             </Table>
                                         </Box>
@@ -1026,10 +1000,19 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                         ) : group.heading === "14. Witness Details" ? (
                             witnessList.length > 0 ? (
                                 <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
-                                    <Table size="small" sx={{ minWidth: 900 }}>
+                                    <Table
+                                        size="small"
+                                        sx={{
+                                            minWidth: 900,
+                                            border: "1.5px solid #bdbdbd",
+                                            borderCollapse: "collapse",
+                                            '& th, & td': {
+                                                border: "1px solid #bdbdbd"
+                                            }
+                                        }}
+                                    >
                                         <TableBody>
                                             <TableRow>
-                                                {/* Editable headers */}
                                                 {Object.keys(witnessList[0])
                                                     .filter(key => !hiddenColumns.includes(key))
                                                     .map((key, idx) => {
@@ -1050,55 +1033,22 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                                             </TableCell>
                                                         );
                                                     })}
-                                                {/* <TableCell sx={{ fontWeight: 600, whiteSpace: 'nowrap', minWidth: 100 }}>Actions</TableCell> */}
                                             </TableRow>
                                             {witnessList.map((row, rowIdx) => (
                                                 <TableRow key={rowIdx}>
                                                     {Object.keys(row)
                                                         .filter(key => !hiddenColumns.includes(key))
-                                                        .map((key, colIdx) => (
-                                                            <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
-                                                                <TextField
-                                                                    value={row[key] || ""}
-                                                                    size="small"
-                                                                    fullWidth
-                                                                    onChange={e => {
-                                                                        const updated = [...witnessList];
-                                                                        updated[rowIdx][key] = e.target.value;
-                                                                        setWitnessList(updated);
-                                                                    }}
-                                                                />
-                                                            </TableCell>
-                                                        ))}
-                                                    {/* <TableCell sx={{ minWidth: 100, px: 1 }}>
-                                                        <Button
-                                                            color="error"
-                                                            size="small"
-                                                            onClick={() => {
-                                                                const updated = witnessList.filter((_, i) => i !== rowIdx);
-                                                                setWitnessList(updated);
-                                                            }}
-                                                        >
-                                                            Delete
-                                                        </Button>
-                                                    </TableCell> */}
+                                                        .map((key, colIdx) => {
+                                                            let value = row[key];
+                                                            if (value === undefined || value === null || value === "") value = "-";
+                                                            return (
+                                                                <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                                    {value}
+                                                                </TableCell>
+                                                            );
+                                                        })}
                                                 </TableRow>
                                             ))}
-                                            <TableRow>
-                                                {/* <TableCell colSpan={Object.keys(witnessList[0]).filter(key => !hiddenColumns.includes(key)).length + 1}>
-                                                    <Button
-                                                        color="primary"
-                                                        size="small"
-                                                        onClick={() => {
-                                                            const newRow = {};
-                                                            Object.keys(witnessList[0]).filter(key => !hiddenColumns.includes(key)).forEach(f => newRow[f] = "");
-                                                            setWitnessList([...witnessList, newRow]);
-                                                        }}
-                                                    >
-                                                        Add Row
-                                                    </Button>
-                                                </TableCell> */}
-                                            </TableRow>
                                         </TableBody>
                                     </Table>
                                 </Box>
@@ -1106,7 +1056,79 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                 <Typography sx={{ color: "#B71C1C", fontWeight: 500, mt: 1 }}>No data found</Typography>
                             )
                         ) : group.heading === "15. Supporting Documents" ? (
+                            // ...existing code for supporting documents...
                             <Box>
+                                {/* Preview already uploaded files (from backend) */}
+                                {(() => {
+                                    let fileString = formData.field_supporting_documents || formData.cs_supporting_documents;
+                                    if (!fileString && typeof allUIDataObj === "object" && allUIDataObj.field_supporting_documents) {
+                                        fileString = allUIDataObj.field_supporting_documents;
+                                    }
+                                    if (Array.isArray(fileString)) fileString = fileString.join(",");
+                                    let fileList = [];
+                                    if (typeof fileString === "string" && fileString.trim() !== "") {
+                                        if (fileString.trim().startsWith("[") && fileString.trim().endsWith("]")) {
+                                            try {
+                                                const arr = JSON.parse(fileString);
+                                                if (Array.isArray(arr)) {
+                                                    fileList = arr.map(f =>
+                                                        typeof f === "string"
+                                                            ? f
+                                                            : (f && (f.filename || f.name))
+                                                    ).filter(Boolean);
+                                                }
+                                            } catch {
+                                                fileList = fileString.split(",").map(f => f && typeof f === "string" ? f.trim() : "").filter(f => !!f && f !== "[object Object]");
+                                            }
+                                        } else {
+                                            fileList = fileString.split(",").map(f => f && typeof f === "string" ? f.trim() : "").filter(f => !!f && f !== "[object Object]");
+                                        }
+                                    }
+                                    // Show preview boxes with onClick to preview
+                                    return fileList.length > 0 ? (
+                                        <Box sx={{ mb: 1, display: "flex", flexWrap: "wrap", gap: 2 }}>
+                                            {fileList.map((file, idx) => (
+                                                <Box
+                                                    key={idx}
+                                                    sx={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        border: "1px solid #e0e0e0",
+                                                        borderRadius: 1,
+                                                        px: 1.5,
+                                                        py: 0.5,
+                                                        background: "#f8f9fa",
+                                                        fontSize: 14,
+                                                        color: "#333",
+                                                        gap: 1,
+                                                        maxWidth: 220,
+                                                        overflow: "hidden",
+                                                        cursor: "pointer"
+                                                    }}
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        await openFileInNewTab(file, formData, setLoading, toast, api, {});
+                                                    }}
+                                                    title="Click to preview"
+                                                >
+                                                    {getFileIcon(file)}
+                                                    <span style={{
+                                                        marginLeft: 6,
+                                                        whiteSpace: "nowrap",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                        maxWidth: 170,
+                                                        display: "inline-block"
+                                                    }}>
+                                                        {typeof file === "string"
+                                                            ? file.split("/").pop() || file
+                                                            : (file && file.name) || ""}
+                                                    </span>
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    ) : null;
+                                })()}
                                 <FileInput
                                     field={{
                                         name: "cs_supporting_documents",
