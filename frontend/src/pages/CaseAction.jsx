@@ -1020,10 +1020,10 @@ const CaseActions = () => {
     }
 
     const approvalSteps = [
-        { label: "IO", value: "IO" },
-        { label: "LA", value: "LA" },
-        { label: "SP", value: "SP" },
-        { label: "DIG", value: "DIG" }
+        { label: "IO", value: "IO", name: "Investigation Officer" },
+        { label: "LA", value: "LA", name: "Legal Advisor" },
+        { label: "SP", value: "SP", name: "Superintendent of Police" },
+        { label: "DIG", value: "DIG", name: "Deputy Inspector General" }
     ];
 
     const handleApprovalStepperClick = (stepValue) => {
@@ -1038,13 +1038,9 @@ const CaseActions = () => {
             selected.push(stepValue);
         }
 
-        const ordered = approvalSteps
-            .map(step => step.value)
-            .filter(value => selected.includes(value));
-
         setAddActionFormData({
             ...addActionFormData,
-            approval_steps: ordered
+            approval_steps: selected
         });
     };
 
@@ -1359,6 +1355,8 @@ const CaseActions = () => {
                                                         ? addActionFormData.approval_steps.includes(step.value)
                                                         : false;
 
+                                                    var findIndex = Array.isArray(addActionFormData.approval_steps) ? addActionFormData.approval_steps.indexOf(step.value) : -1;
+
                                                     return (
                                                         <React.Fragment key={step.value}>
                                                             <Button
@@ -1381,8 +1379,14 @@ const CaseActions = () => {
                                                                     }
                                                                 }}
                                                             >
-                                                                {step.label}
+                                                                {findIndex === -1 ? step.label : findIndex + 1}
                                                             </Button>
+
+                                                            <Box px={2}>
+                                                                <div className="investigationStepperTitle">
+                                                                    {step?.name || ""}
+                                                                </div>
+                                                            </Box>
                                                             
                                                             {index < approvalSteps.length - 1 && (
                                                                 <Box

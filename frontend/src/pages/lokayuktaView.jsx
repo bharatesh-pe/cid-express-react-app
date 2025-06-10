@@ -28,6 +28,7 @@ import Report41A from "./Report41A";
 import PlanOfAction from "./PlanOfAction";
 import EqProgressReport from "./EqProgressReport";
 import ClosureReport from "./ClosureReport";
+import dayjs from "dayjs";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
@@ -1669,8 +1670,36 @@ const LokayuktaView = () => {
 
     const approvalOverAllSubmit = async ()=>{
 
+        const userId = localStorage.getItem("designation_id");
+
         if(!activeSidebar?.table){
             toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        if(!activeSidebar?.approval_items){
+            toast.error("Approval Items Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        if(!userId){
+            toast.error("User Not Found !", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -1685,10 +1714,26 @@ const LokayuktaView = () => {
 
         const designation = userDesignationName.current?.toUpperCase();
 
+        var ui_case_id = rowData?.id;
+        var pt_case_id = rowData?.pt_case_id;
+
+        if(module === "pt_case"){
+            ui_case_id = rowData?.ui_case_id
+            pt_case_id = rowData?.id
+        }
+
         var payload = {
             value : designation,
             table_name : activeSidebar.table,
             column:  "field_approval_done_by",
+            ui_case_id: ui_case_id,
+            pt_case_id: pt_case_id,
+            Referenceid: rowData?.id,
+            approvalDate: dayjs()?.$d,
+            approvalItem: activeSidebar?.approval_items,
+            approvedBy: userId,
+            remarks: activeSidebar?.name + " Investigation Submitted By " + designation,
+            module: template_name
         }
 
         setLoading(true);    
@@ -1738,7 +1783,7 @@ const LokayuktaView = () => {
 
     const editableStage = (() => {
         if(approvalStepperArray.length === 0) return ""
-        if (!approvalFieldArray || approvalFieldArray.length === 0) return "IO";
+        if (!approvalFieldArray || approvalFieldArray.length === 0) return approvalStepperArray?.[0];
         
         const lastStage = approvalFieldArray[approvalFieldArray.length - 1];
         const nextIndex = approvalStepperArray.indexOf(lastStage) + 1;
