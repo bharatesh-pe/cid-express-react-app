@@ -4094,17 +4094,14 @@ exports.downloadDocumentAttachments = async (req, res) => {
 
     const fileRelativePath = path.join(profile_attachment.s3_key);
 
-    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$444File Relative Path:", fileRelativePath);
     const filePath = path.join(__dirname, fileRelativePath);
 
-    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$444File Path:", filePath);
     if (!fs.existsSync(filePath)) {
         return res.status(404).json({ error: 'File not found' });
     }
 
     const mime = require('mime-types');
     const contentType = mime.lookup(filePath) || 'application/octet-stream';
-    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$444Content Type:", contentType);
 
     res.setHeader('Content-Type', contentType);
     res.setHeader(
@@ -4116,8 +4113,6 @@ exports.downloadDocumentAttachments = async (req, res) => {
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
 
-    console.log(
-      `###############################################File ${profile_attachment.attachment_name} is being downloaded successfully.`  )
     // res.setHeader("Content-Type", data.ContentType || "application/octet-stream");
     // res.setHeader(
     //   "Content-Disposition",
