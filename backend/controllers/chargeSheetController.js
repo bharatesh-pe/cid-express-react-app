@@ -415,47 +415,42 @@ module.exports = {
     },
 
   
-// POST /chargesheet/getProfileAttachment
-async getProfileAttachment(req, res) {
-  try {
-    const { tableName, tableRowId, fieldName } = req.body;
+    async getProfileAttachment(req, res) {
+    try {
+        const { tableName, tableRowId, fieldName } = req.body;
 
-    const profileAttachment = await ProfileAttachment.findOne({
-      where: {
-        table_row_id: tableRowId,
-        field_name: fieldName,
-      },
-      order: [['created_at', 'DESC']],
+        const profileAttachment = await ProfileAttachment.findOne({
+        where: {
+            table_row_id: tableRowId,
+            field_name: fieldName,
+        },
+        order: [['created_at', 'DESC']],
+        });
+
+        if (!profileAttachment) {
+        return res.status(404).json({ error: 'File not found' });
+        }
+
+        const fileRelativePath = path.join(profileAttachment.s3_key);
+
+        if (!fs.existsSync(path.join(__dirname, fileRelativePath))) {
+        return res.status(404).json({ error: 'File not found' });
+        }
+
+    return res.status(200).json({
+        success: true,
+    file_path: `${profileAttachment.s3_key.replace(/\\/g, '/')}`,
+    attachment_name: profileAttachment.attachment_name,
+    profile_attachment_id: profileAttachment.profile_attachment_id,
+
     });
 
-    if (!profileAttachment) {
-      return res.status(404).json({ error: 'File not found' });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Internal server error' });
     }
-
-    const fileRelativePath = path.join(profileAttachment.s3_key);
-
-    if (!fs.existsSync(path.join(__dirname, fileRelativePath))) {
-      return res.status(404).json({ error: 'File not found' });
     }
-
-    // Return file metadata instead of streaming
-   return res.status(200).json({
-    success: true,
-  file_path: `${profileAttachment.s3_key.replace(/\\/g, '/')}`,
-  attachment_name: profileAttachment.attachment_name,
-  profile_attachment_id: profileAttachment.profile_attachment_id,
-
-});
-
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
-}
-
-
-
 
 
 };
