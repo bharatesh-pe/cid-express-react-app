@@ -65,8 +65,8 @@ const saveChargeSheetApi = async () => {
         cs_cid_initiated_date: "field_cid_initiated_date",
         cs_io_name: "field_investigating_officer_name",
         cs_io_designation: "field_investigating_officer_designation",
-        cs_allegations_info: "field_brief_information_about_allegations",
-        cs_investigation_outcome: "field_outcome_of_investigation",
+        cs_allegations_info: "field_brief_information_about_the_allegations",
+        cs_investigation_outcome: "field_outcome_of_the_investigation",
         cs_accused_justification: "field_description/justification_provided_by_accused_individuals",
         cs_evidence_to_refute: "field_evidences_available_to_refute_description/justification_provided_by_accused_individuals",
         cs_evidence_compilation: "field_compilation_of_evidences",
@@ -386,11 +386,11 @@ const saveChargeSheetApi = async () => {
                     if (allUIDataObj["field_investigating_officer_designation"]) {
                         newFormData["cs_io_designation"] = allUIDataObj["field_investigating_officer_designation"]; 
                     }
-                    if (allUIDataObj["field_brief_information_about_allegations"]) {
-                        newFormData["cs_allegations_info"] = allUIDataObj["field_brief_information_about_allegations"];
+                    if (allUIDataObj["field_brief_information_about_the_allegations"]) {
+                        newFormData["cs_allegations_info"] = allUIDataObj["field_brief_information_about_the_allegations"];
                     }    
-                    if (allUIDataObj["field_outcome_of_investigation"]) {
-                        newFormData["cs_investigation_outcome"] = allUIDataObj["field_outcome_of_investigation"];
+                    if (allUIDataObj["field_outcome_of_the_investigation"]) {
+                        newFormData["cs_investigation_outcome"] = allUIDataObj["field_outcome_of_the_investigation"];
                     }
                     if (allUIDataObj["field_description/justification_provided_by_accused_individuals"]) {
                         newFormData["cs_accused_justification"] = allUIDataObj["field_description/justification_provided_by_accused_individuals"];
