@@ -107,6 +107,25 @@ const LokayuktaView = () => {
     const [approvalSource, setApprovalSource] = useState(null);
 
     const editedForm = useRef(false);
+    const [enableSubmit, setEnableSubmit] = useState(false);
+    const [approvalDone, setApprovalDone] = useState(false);
+    const [approvalFieldArray, setApprovalFieldArray] = useState([]);
+    const [approvalStepperArray, setApprovalStepperArray] = useState([]);
+
+    var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+    var designationName = localStorage.getItem("designation_name") || "";
+    var gettingDesignationName = ""
+
+    if(roleTitle.toLowerCase() === "investigation officer"){
+        gettingDesignationName = "io";
+    }else{
+        var splitingValue = designationName.split(" ");
+        if(splitingValue?.[0]){
+            gettingDesignationName = splitingValue[0].toLowerCase();
+        }
+    }
+
+    const userDesignationName = useRef(gettingDesignationName);
 
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
@@ -377,7 +396,8 @@ const LokayuktaView = () => {
             to_date: noFilters ? null : tableFilterToDate,
             filter: noFilters ? {} : tableFilterOtherFilters,
             module: module ? module : 'ui_case',
-            tab: sysStatus
+            tab: sysStatus,
+            checkRandomColumn : "field_approval_done_by",
         };
 
         setLoading(true);
@@ -388,10 +408,13 @@ const LokayuktaView = () => {
 
             if (getTemplateResponse && getTemplateResponse.success) {
 
+                editedForm.current = false;
+
                 const { meta, data } = getTemplateResponse;
             
                 const totalPages = meta?.meta?.totalPages;
                 const totalItems = meta?.meta?.totalItems;
+                const checkRandomColumnValues = meta?.meta?.checkRandomColumnValues;
                 
                 if (totalPages !== null && totalPages !== undefined) {
                     setTableTotalPage(totalPages);
@@ -400,6 +423,13 @@ const LokayuktaView = () => {
                 if (totalItems !== null && totalItems !== undefined) {
                     setTableTotalRecord(totalItems);
                 }
+                if (checkRandomColumnValues) {
+                    setApprovalFieldArray(checkRandomColumnValues);
+                }else{
+                    setApprovalFieldArray([]);
+                }
+
+                setApprovalStepperArray((options?.is_approval && options?.approval_steps) ? JSON.parse(options.approval_steps) : []);
 
                 if (data?.length > 0) {
 
@@ -1627,6 +1657,121 @@ const LokayuktaView = () => {
         editedForm.current = edited;
     }
 
+    
+    const [selectedApprovalSteps, setSelectedApprovalSteps] = useState({});
+
+    const handleApprovalStepperClick = (stepValue) => {
+        
+        var selected = Array.isArray(selectedApprovalSteps.approval_steps)
+            ? [...selectedApprovalSteps.approval_steps]
+            : [];
+
+        if (selected.includes(stepValue)) {
+            selected = selected.filter((v) => v !== stepValue);
+        } else {
+            selected.push(stepValue);
+        }
+
+        setSelectedApprovalSteps({
+            ...selectedApprovalSteps,
+            approval_steps: selected
+        });
+    };
+
+    const approvalOverAllSubmit = async ()=>{
+
+        if(!activeSidebar?.table){
+            toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const designation = userDesignationName.current?.toUpperCase();
+
+        var payload = {
+            value : designation,
+            table_name : activeSidebar.table,
+            column:  "field_approval_done_by",
+        }
+
+        setLoading(true);    
+        try {
+            const response = await api.post("/templateData/bulkUpdateColumn", payload);
+            setLoading(false);
+
+            if (response?.success) {
+                toast.success(response.message || "Success", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => { getTableData(activeSidebar); }
+                });
+            } else {
+                setLoading(false);
+                toast.error(response.message || "Something Went Wrong !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
+    const editableStage = (() => {
+        if(approvalStepperArray.length === 0) return ""
+        if (!approvalFieldArray || approvalFieldArray.length === 0) return "IO";
+        
+        const lastStage = approvalFieldArray[approvalFieldArray.length - 1];
+        const nextIndex = approvalStepperArray.indexOf(lastStage) + 1;
+
+        return approvalStepperArray[nextIndex] || null;
+    })();
+
+    useEffect(()=>{
+        if (userDesignationName?.current) {
+            const userRole = userDesignationName.current.toUpperCase();
+
+            setEnableSubmit(userRole === editableStage);
+
+            const lastApprovedRole = approvalFieldArray[0];
+            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+            setApprovalDone(approvedStages.includes(userRole));
+        }
+    },[approvalFieldArray, approvalStepperArray]);
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
@@ -1766,6 +1911,135 @@ const LokayuktaView = () => {
                     </Box>
                     :
                     <Box p={2}>
+
+                        {
+                            activeSidebar?.is_approval && activeSidebar?.approval_steps && JSON.parse(activeSidebar?.approval_steps)?.length > 0 && 
+                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                                {
+                                    JSON.parse(activeSidebar?.approval_steps).map((step, index) => {
+
+                                        var selected = false;
+
+                                        var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                                        var designationName = localStorage.getItem("designation_name") || "";
+
+                                        var stepperValue = ""
+
+                                        if(roleTitle.toLowerCase() === "investigation officer"){
+                                            stepperValue = "io";
+                                        }else{
+                                            var splitingValue = designationName.split(" ");
+                                            if(splitingValue?.[0]){
+                                                stepperValue = splitingValue[0].toLowerCase();
+                                            }
+                                        }
+
+                                        var alreadySubmited = false;
+
+                                        const lastApprovedRole = approvalFieldArray[0];
+                                        const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+                                        const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+                                        if(approvedStages.includes(step)){
+                                            alreadySubmited = true;
+                                        }
+
+                                        if(step.toLowerCase() === stepperValue){
+                                            selected = true;
+                                        }
+
+                                        var StepperTitle = ""
+                                        switch (step.toLowerCase()) {
+                                            case "io":
+                                                StepperTitle = "Investigation Officer";
+                                                break;
+                                            case "la":
+                                                StepperTitle = "Legal Advisor";
+                                                break;
+                                            case "sp":
+                                                StepperTitle = "Superintendent of Police";
+                                                break;
+                                            case "dig":
+                                                StepperTitle = "Deputy Inspector General";
+                                                break;
+                                            default:
+                                                StepperTitle = ""
+                                                break;
+                                        }
+
+                                        return (
+                                            <React.Fragment key={step}>
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={() => handleApprovalStepperClick(step)}
+                                                    sx={() => {
+                                                        var backgroundColor = "#f0f0f0";
+                                                        var color = "#333";
+                                                        var boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                                        if (alreadySubmited) {
+                                                            backgroundColor = "#27ae60";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #d4f7e8";
+                                                        } else if (selected) {
+                                                            backgroundColor = "#1570ef";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #dcebff ";
+                                                        }
+
+                                                        return {
+                                                            backgroundColor,
+                                                            color,
+                                                            minWidth: 52,
+                                                            height: 50,
+                                                            borderRadius: '50%',
+                                                            padding: '16px',
+                                                            fontWeight: 600,
+                                                            boxShadow,
+                                                            transition: "all 0.3s ease-in-out",
+                                                            transform: selected ? "translateY(-2px)" : "none",
+                                                            "&:hover": {
+                                                                backgroundColor: alreadySubmited
+                                                                    ? "#219150"
+                                                                    : selected
+                                                                    ? "#2980b9"
+                                                                    : "#dcdcdc",
+                                                                boxShadow: alreadySubmited
+                                                                    ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : selected
+                                                                    ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                                    : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                                transform: "translateY(-3px)",
+                                                            }
+                                                        };
+                                                    }}
+                                                >
+                                                    {step}
+                                                </Button>
+                                                <Box px={2}>        
+                                                    <div className="investigationStepperTitle">
+                                                        {StepperTitle}
+                                                    </div>
+                                                    <div className={`stepperCompletedPercentage ${alreadySubmited ? 'submissionCompleted' : 'submissionPending'}`}>
+                                                        {alreadySubmited ? "Submitted" : "Pending"}
+                                                    </div>
+                                                </Box>
+                                                
+                                                {index < JSON.parse(activeSidebar?.approval_steps)?.length - 1 && (
+                                                    <Box
+                                                        sx={{
+                                                            width: 60,
+                                                        }}
+                                                        className="divider"
+                                                    />
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                            </Box>
+                        }
+
                         <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start'}}>
                             <Typography
                                 sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
@@ -1820,7 +2094,7 @@ const LokayuktaView = () => {
                                             }
                                         }}
                                         sx={{
-                                            width: '400px', borderRadius: '6px', outline: 'none',
+                                            width: '300px', borderRadius: '6px', outline: 'none',
                                             '& .MuiInputBase-input::placeholder': {
                                                 color: '#475467',
                                                 opacity: '1',
@@ -1847,23 +2121,39 @@ const LokayuktaView = () => {
                                     )}
                                 </Box>
 
-                                <Button
-                                    onClick={showAddNewForm}
-                                    sx={{height: "38px",}}
-                                    className="blueButton"
-                                    startIcon={
-                                        <AddIcon
-                                            sx={{
-                                                border: "1.3px solid #FFFFFF",
-                                                borderRadius: "50%",
-                                                background:"#4D4AF3 !important",
-                                            }}
-                                        />
-                                    }
-                                    variant="contained"
-                                >
-                                    Add New
-                                </Button>
+                                {
+                                    !approvalDone &&
+                                    <Button
+                                        onClick={showAddNewForm}
+                                        sx={{height: "38px",}}
+                                        className="blueButton"
+                                        startIcon={
+                                            <AddIcon
+                                                sx={{
+                                                    border: "1.3px solid #FFFFFF",
+                                                    borderRadius: "50%",
+                                                    background:"#4D4AF3 !important",
+                                                }}
+                                            />
+                                        }
+                                        variant="contained"
+                                    >
+                                        Add New
+                                    </Button>
+                                }
+
+                                {
+                                    activeSidebar?.is_approval && enableSubmit &&
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="large"
+                                        sx={{ height: "38px" }}
+                                        onClick={approvalOverAllSubmit}
+                                    >
+                                        Submit
+                                    </Button>
+                                }
                             </Box>
                         </Box>
 
@@ -1902,6 +2192,7 @@ const LokayuktaView = () => {
                         selectedRow={rowData}
                         investigationViewTable={table_name}
                         editedForm={editedFormFlag}
+                        disableEditButton={approvalDone}
                     />
                 </Box>
             )}

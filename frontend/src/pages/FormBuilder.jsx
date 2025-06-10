@@ -1225,13 +1225,31 @@ const Formbuilder = () => {
         //     return;
         // }
 
+        if(module === "others"){
+            var newFields = [
+                ...updatedFields, 
+                { 
+                    type: 'text', 
+                    formType: 'text',
+                    label: `Approval Done By`, 
+                    name: `field_approval_done_by`, 
+                    id: `random_${Date.now()}_approval_done_by`, 
+                    hide_from_ux : true,
+                    table_display_content : true,
+                    searchable: true,
+                    data_type : 'text',
+                    section: steps && steps[activeStep] ? steps[activeStep] : null 
+                }
+            ];
+        }
+
         // Log the updated fields array to check the result
         var createTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
             "template_module": module,
             "link_module": link_module,
-            "fields": updatedFields,
+            "fields": newFields,
             "paranoid": false
         }
 

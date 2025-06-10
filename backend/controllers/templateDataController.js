@@ -1092,6 +1092,7 @@ exports.getTemplateData = async (req, res, next) => {
     table_name,
     is_read = "",
     case_io_id = "",
+    checkRandomColumn = false,
   } = req.body;
   const {  ui_case_id, pt_case_id , module , tab } = req.body;
   const { filter = {}, from_date = null, to_date = null } = req.body;
@@ -1683,6 +1684,22 @@ exports.getTemplateData = async (req, res, next) => {
       },
     };
 
+    if (checkRandomColumn && typeof checkRandomColumn === "string" && table_name) {
+        const modelAttributes = Model.rawAttributes || {};
+
+        if (modelAttributes.hasOwnProperty(checkRandomColumn)) {
+            const allRecords = await Model.findAll({
+                attributes: [checkRandomColumn],
+                raw: true,
+            });
+
+            const checkRandomColumnValues = allRecords
+                .map(record => record[checkRandomColumn])
+                .filter(value => value !== null && value !== undefined);
+
+            templateresult["meta"]["checkRandomColumnValues"] = checkRandomColumnValues;
+        }
+    }
 
     // Log the user activity
     // await ActivityLog.create({
@@ -1710,6 +1727,78 @@ exports.getTemplateData = async (req, res, next) => {
     console.error("Error fetching data:", error);
     return userSendResponse(res, 500, false, "Server error.", error);
   }
+};
+
+/**
+ * Bulk update a single column for all records in a table.
+ * Expects: { table_name, column, value }
+ */
+exports.bulkUpdateColumn = async (req, res) => {
+    try {
+        const { table_name, column, value } = req.body;
+        if (!table_name || !column) {
+            return userSendResponse(res, 400, false, "table_name and column are required.", null);
+        }
+
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+        // Build model attributes
+        const modelAttributes = {};
+        let columnExists = false;
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+            if (name === column) columnExists = true;
+        }
+
+        // Add id if not present
+        if (!modelAttributes.id) {
+            modelAttributes.id = {
+                type: Sequelize.DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            };
+        }
+
+        if (!columnExists) {
+            return userSendResponse(res, 400, false, `Column ${column} not found in table ${table_name}.`, null);
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await Model.sync();
+
+        // Update all records
+        const [affectedRows] = await Model.update(
+            { [column]: value },
+            { where: {} }
+        );
+
+        return userSendResponse(
+            res,
+            200,
+            true,
+            `Updated ${affectedRows} records in column ${column} of table ${table_name}.`,
+            null
+        );
+    } catch (error) {
+        console.error("Error in bulkUpdateColumn:", error);
+        return userSendResponse(res, 500, false, "Internal server error.", error);
+    }
 };
 
 exports.viewTemplateData = async (req, res, next) => {
