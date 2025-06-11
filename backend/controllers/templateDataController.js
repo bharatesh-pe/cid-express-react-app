@@ -1093,6 +1093,7 @@ exports.getTemplateData = async (req, res, next) => {
     is_read = "",
     case_io_id = "",
     checkRandomColumn = false,
+    checkTabs = false,
   } = req.body;
   const {  ui_case_id, pt_case_id , module , tab } = req.body;
   const { filter = {}, from_date = null, to_date = null } = req.body;
@@ -1710,6 +1711,10 @@ exports.getTemplateData = async (req, res, next) => {
 
             templateresult["meta"]["checkRandomColumnValues"] = checkRandomColumnValues;
         }
+    }
+
+    if(checkTabs && checkTabs === true){
+        templateresult["meta"]["template_json"] = schema
     }
 
     // Log the user activity

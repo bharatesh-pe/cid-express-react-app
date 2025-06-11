@@ -130,6 +130,9 @@ const LokayuktaView = () => {
 
     var userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
 
+    const [tableTabs, setTableTabs] = useState([]);
+    const [selectedTableTabs, setSelectedTableTabs] = useState("all");
+
     const NatureOfDisposalAlert = () => {
     useEffect(() => {
         Swal.fire({
@@ -291,7 +294,7 @@ const LokayuktaView = () => {
                     onClick={onClickHandler}
                     className={`tableValueTextView Roboto`}
                 >
-                    {value || "-"}
+                    {value || "----"}
                 </span>
             </Tooltip>
         );
@@ -375,6 +378,13 @@ const LokayuktaView = () => {
         }
     };
 
+    useEffect(()=>{
+        if(tableTabs.length > 0){
+            getTableData(activeSidebar);
+        }
+    },[selectedTableTabs]);
+
+
     const getTableData = async (options, reOpen, noFilters) => {
 
         var ui_case_id = rowData?.id;
@@ -399,6 +409,7 @@ const LokayuktaView = () => {
             module: module ? module : 'ui_case',
             tab: sysStatus,
             checkRandomColumn : "field_approval_done_by",
+            checkTabs : true,
         };
 
         setLoading(true);
@@ -416,6 +427,7 @@ const LokayuktaView = () => {
                 const totalPages = meta?.meta?.totalPages;
                 const totalItems = meta?.meta?.totalItems;
                 const checkRandomColumnValues = meta?.meta?.checkRandomColumnValues;
+                const templateJson = meta?.meta?.template_json;
                 
                 if (totalPages !== null && totalPages !== undefined) {
                     setTableTotalPage(totalPages);
@@ -430,6 +442,93 @@ const LokayuktaView = () => {
                     setApprovalFieldArray([]);
                 }
 
+                var tabFields = [];
+
+                if(templateJson && templateJson.length > 0){
+                    var gettingTableTabs = templateJson.filter((element)=>{
+                        if(element?.tableTabs === true){
+                            return element
+                        }
+                    });
+
+                    if(gettingTableTabs?.[0] && gettingTableTabs?.[0]?.options?.length > 0){
+                        var defaultOptions = gettingTableTabs?.[0]?.options;
+                        defaultOptions = [
+                            {name : "All", code: "all"},
+                            ...defaultOptions
+                        ];
+
+                        if (gettingTableTabs?.[0]?.name) {
+
+                            if(selectedTableTabs !== "all"){
+                                
+                                tabFields = templateJson.filter((element)=>{        
+ 
+                                    const isSelected = selectedTableTabs === element.tabOption && !element?.hide_from_ux;
+                                    
+                                    if(isSelected){
+                                        return element
+                                    }
+    
+                                });
+                                
+                            }
+                        }
+
+                        setTableTabs(defaultOptions)
+                    }else{
+                        setTableTabs([]);
+                    }
+                }else{
+                    setTableTabs([]);
+                }
+
+                const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
+                
+                const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table);
+
+                if (tabFields.length > 0) {
+                    tabFields = tabFields.map((key, index) => {
+                        return {
+                            field: key?.name,
+                            headerName: generateReadableHeader(key?.name),
+                            width: generateReadableHeader(key?.name).length < 15 ? 100 : 200,
+                            resizable: true,
+                            renderHeader: (params) => tableHeaderRender(params, key?.name),
+                            renderCell: renderCellFunc(key?.name, index),
+                        };
+                    });
+
+                    tabFields = [
+                        {
+                            field: "sl_no",
+                            headerName: "S.No",
+                            resizable: false,
+                            width: 65,
+                            renderCell: (params) => (
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "end",
+                                        gap: "8px",
+                                    }}
+                                >
+                                    {params.value}
+                                    <DeleteIcon
+                                        sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleActionDelete(params.row, options);
+                                        }}
+                                    />
+                                </Box>
+                            ),
+                        },
+                        ...tabFields,
+                    ];
+                }
+
                 setApprovalStepperArray((options?.is_approval && options?.approval_steps) ? JSON.parse(options.approval_steps) : []);
 
                 if (data?.length > 0) {
@@ -439,10 +538,6 @@ const LokayuktaView = () => {
                         "Starred", "ReadStatus", "linked_profile_info",
                         "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
                     ];
-
-                    const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, options.table);
 
                     const updatedHeader = [
                         {
@@ -510,7 +605,7 @@ const LokayuktaView = () => {
                         };
                     });
 
-                    setTableColumnData(updatedHeader);
+                    setTableColumnData(tabFields.length > 0 ? tabFields : updatedHeader);
                     setTableRowData(updatedTableData);
                 }else{
                     setTableColumnData([]);
@@ -783,14 +878,14 @@ const LokayuktaView = () => {
             return;
         }
 
-        setApprovalSaveCaseData(data);
-        if (activeSidebar?.is_approval === true) {
-            setReOpenAddCase(formOpen);
-            setApprovalSource('submit');
-            showCaseApprovalPage(true);
-        } else {
+        // setApprovalSaveCaseData(data);
+        // if (activeSidebar?.is_approval === true) {
+        //     setReOpenAddCase(formOpen);
+        //     setApprovalSource('submit');
+        //     showCaseApprovalPage(true);
+        // } else {
             handleDirectCaseSave(data, formOpen);
-        }
+        // }
         return;
     }
 
@@ -2201,6 +2296,29 @@ const LokayuktaView = () => {
                                 }
                             </Box>
                         </Box>
+
+                        {
+                            tableTabs.length > 0 &&
+                            <Box sx={{ display: "flex", alignItems: 'start'}} pl={1}>
+                                <Box className="parentFilterTabs">
+                                    {
+                                        tableTabs.map((element)=>{
+                                            return (
+                                                <Box
+                                                    onClick={() => {
+                                                        setSelectedTableTabs(element.code);
+                                                    }}
+                                                    className={`filterTabs ${selectedTableTabs === element.code ? "Active" : ""}`}
+                                                    sx={{padding: '0px 20px'}}
+                                                >
+                                                    {element?.name}
+                                                </Box>
+                                            )
+                                        })
+                                    }
+                                </Box>
+                            </Box>
+                        }
 
                         <Box sx={{overflow: 'auto'}}>
                             <TableView
