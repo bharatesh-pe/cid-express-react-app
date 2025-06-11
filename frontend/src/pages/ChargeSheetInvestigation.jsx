@@ -676,7 +676,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     Charge Sheet
                 </Typography>
 
-                <Box sx={{ mt: 0, mb: 2 }}>
+                {/* <Box sx={{ mt: 0, mb: 2 }}>
                     <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>Accused</Typography>
                     {accusedList.length > 0 ? (
                         <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
@@ -953,7 +953,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     ) : (
                         <Typography sx={{ color: "#B71C1C", fontWeight: 500, mt: 1 }}>No data found</Typography>
                     )}
-                </Box>
+                </Box> */}
 
                 {chargeSheetGroups.map((group, idx) => (
                     <Box key={group.heading} sx={{ mb: 3 }}>
@@ -1230,7 +1230,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                                 />
                             </Box>
                         ) : (
-                            <Table size="small" sx={{ maxWidth: 700, border: '1px solid #e0e0e0' }}>
+                            <Table size="small" sx={{ maxWidth: '100%', border: '1px solid #e0e0e0' }}>
                                 <TableBody>
                                     <TableRow>
                                         {group.fields.map(field => (
