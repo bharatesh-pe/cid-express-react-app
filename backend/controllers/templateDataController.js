@@ -1687,10 +1687,21 @@ exports.getTemplateData = async (req, res, next) => {
     if (checkRandomColumn && typeof checkRandomColumn === "string" && table_name) {
         const modelAttributes = Model.rawAttributes || {};
 
+        let randomColumnQueryWhereClass = {};
+
+        if (ui_case_id && ui_case_id !== "" && pt_case_id && pt_case_id !== "") {
+            randomColumnQueryWhereClass = { [Op.or]: [{ ui_case_id }, { pt_case_id }] };
+        } else if (ui_case_id && ui_case_id !== "") {
+            randomColumnQueryWhereClass = { ui_case_id };
+        } else if (pt_case_id && pt_case_id !== "") {
+            randomColumnQueryWhereClass = { pt_case_id };
+        }
+
         if (modelAttributes.hasOwnProperty(checkRandomColumn)) {
             const allRecords = await Model.findAll({
                 attributes: [checkRandomColumn],
                 raw: true,
+                where: randomColumnQueryWhereClass,
             });
 
             const checkRandomColumnValues = allRecords
@@ -1735,7 +1746,7 @@ exports.getTemplateData = async (req, res, next) => {
  */
 exports.bulkUpdateColumn = async (req, res) => {
     try {
-        const { table_name, column, value } = req.body;
+        const { table_name, column, value, ui_case_id, pt_case_id, approvalDate, approvalItem, approvedBy, remarks, module, Referenceid } = req.body;
         if (!table_name || !column) {
             return userSendResponse(res, 400, false, "table_name and column are required.", null);
         }
@@ -1782,11 +1793,43 @@ exports.bulkUpdateColumn = async (req, res) => {
 
         await Model.sync();
 
-        // Update all records
+        // Start a transaction for atomicity
+        const t = await sequelize.transaction();
+        let whereClause = {};
+        if (ui_case_id && pt_case_id) {
+            whereClause = { [Op.or]: [{ ui_case_id }, { pt_case_id }] };
+        } else if (ui_case_id) {
+            whereClause = { ui_case_id };
+        } else if (pt_case_id) {
+            whereClause = { pt_case_id };
+        }
+
+        const existingCount = await Model.count({ where: whereClause, transaction: t });
+        if (existingCount === 0) {
+            await t.rollback();
+            return userSendResponse(res, 404, false, "No Cases found.", null);
+        }
+
         const [affectedRows] = await Model.update(
             { [column]: value },
-            { where: {} }
+            { where: whereClause, transaction: t }
         );
+
+        if (approvalDate && approvalItem && approvedBy) {
+            await UiCaseApproval.create({
+                approval_item: approvalItem,
+                approved_by: approvedBy,
+                approval_date: approvalDate,
+                remarks: remarks || null,
+                approval_type: table_name,
+                module: module || table_name,
+                action: remarks || null,
+                reference_id: Referenceid || null,
+                created_by: req.user?.user_id || null,
+            }, { transaction: t });
+        }
+
+        await t.commit();
 
         return userSendResponse(
             res,
@@ -1796,6 +1839,7 @@ exports.bulkUpdateColumn = async (req, res) => {
             null
         );
     } catch (error) {
+        if (t) await t.rollback();
         console.error("Error in bulkUpdateColumn:", error);
         return userSendResponse(res, 500, false, "Internal server error.", error);
     }
