@@ -4158,6 +4158,7 @@ exports.downloadDocumentAttachments = async (req, res) => {
         `inline; filename="${profile_attachment.attachment_name}"`
     );
 
+
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
 
