@@ -1546,7 +1546,8 @@ const UnderInvestigation = () => {
             // If none of the above, proceed
             setNatureOfDisposalValue((prev) => ({
                 ...prev,
-                code: data.pending_case ? "178_cases" : "disposal"
+                // code: data.pending_case ? "178_cases" : "disposal"
+                code: "178_cases"
             }));
             showPtCaseTemplate();
         } else {
