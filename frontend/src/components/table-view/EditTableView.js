@@ -37,9 +37,17 @@ export default function EditTableView({
   const [selectedRow, setSelectedRow] = React.useState(null);
 
   // Sync local rows with propRows if changed externally
-  React.useEffect(() => {
-    setRows(propRows);
-  }, [propRows]);
+React.useEffect(() => {
+  setRows(propRows);
+
+  // Automatically enable edit mode for all rows
+  const initialRowModes = {};
+  propRows.forEach((row) => {
+    initialRowModes[row.id] = { mode: GridRowModes.Edit };
+  });
+  setRowModesModel(initialRowModes);
+
+}, [propRows]);
 
   const handleMenuOpen = (event, row) => {
     setAnchorEl(event.currentTarget);
@@ -70,8 +78,43 @@ export default function EditTableView({
     setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.Edit } });
   };
 
-  const handleSaveClick = (id) => () => {
-    setRowModesModel({ ...rowModesModel, [id]: { mode: GridRowModes.View } });
+  const handleSaveClick = (id) => async () => {
+    const row = rows.find((r) => r.id === id);
+    if (!row) return;
+
+    try {
+      const updatedRow = await processRowUpdate(row);
+      setRows((prev) => prev.map((r) => (r.id === id ? updatedRow : r)));
+
+      setRowModesModel((prevModel) => ({
+        ...prevModel,
+        [id]: { mode: GridRowModes.Edit },
+      }));
+    } catch (error) {
+      console.error("Save failed:", error);
+    }
+  };
+
+
+  const handleSaveAll = async () => {
+  for (const row of rows) {
+    const id = row.id;
+    const isEditing = rowModesModel[id]?.mode === GridRowModes.Edit;
+    if (isEditing) {
+      try {
+        const updatedRow = await processRowUpdate(row);
+        setRows((prev) => prev.map((r) => (r.id === id ? updatedRow : r)));
+
+        // keep it in edit mode
+        setRowModesModel((prevModel) => ({
+          ...prevModel,
+          [id]: { mode: GridRowModes.Edit },
+        }));
+      } catch (error) {
+        console.error(`Failed to save row ${id}:`, error);
+      }
+    }
+  }
   };
 
   const handleCancelClick = (id) => () => {
@@ -164,44 +207,44 @@ export default function EditTableView({
 
 
   // Actions column definition
-  const actionsColumn = {
-    field: 'actions',
-    type: 'actions',
-    headerName: 'Actions',
-    width: 100,
-    cellClassName: 'actions',
-    getActions: ({ id }) => {
-      const isInEditMode = rowModesModel[id]?.mode === 'edit';
-      if (isInEditMode) {
-        return [
-          <GridActionsCellItem
-            icon={<SaveIcon />}
-            label="Save"
-            onClick={handleSaveClick(id)}
-            color="primary"
-          />,
-          <GridActionsCellItem
-            icon={<CancelIcon />}
-            label="Cancel"
-            onClick={handleCancelClick(id)}
-            color="inherit"
-          />,
-        ];
-      }
-      return [
-        <GridActionsCellItem
-          icon={<EditIcon />}
-          label="Edit"
-          onClick={handleEditClick(id)}
-          color="inherit"
-        />,
-      ];
-    },
-  };
+  // const actionsColumn = {
+  //   field: 'actions',
+  //   type: 'actions',
+  //   headerName: 'Actions',
+  //   width: 100,
+  //   cellClassName: 'actions',
+  //   getActions: ({ id }) => {
+  //     const isInEditMode = rowModesModel[id]?.mode === 'edit';
+  //     if (isInEditMode) {
+  //       return [
+  //         // <GridActionsCellItem
+  //         //   icon={<SaveIcon />}
+  //         //   label="Save"
+  //         //   onClick={handleSaveClick(id)}
+  //         //   color="primary"
+  //         // />,
+  //         // <GridActionsCellItem
+  //         //   icon={<CancelIcon />}
+  //         //   label="Cancel"
+  //         //   onClick={handleCancelClick(id)}
+  //         //   color="inherit"
+  //         // />,
+  //       ];
+  //     }
+  //     return [
+  //       // <GridActionsCellItem
+  //       //   icon={<EditIcon />}
+  //       //   label="Edit"
+  //       //   onClick={handleEditClick(id)}
+  //       //   color="inherit"
+  //       // />,
+  //     ];
+  //   },
+  // };
 
   // Compose columns: actions + propColumns (editable, with type/options from fieldDefinitions)
   const updatedColumns = [
-    actionsColumn,
+    // actionsColumn,
     ...propColumns.map(col => {
       const colType = getColType(col);
       if (
@@ -323,7 +366,7 @@ export default function EditTableView({
     if (highLightedRow && typeof highLightedRow === "function" && highLightedRow(params.row)) {
       return 'red-row';
     }
-    return getRowClassName;
+    return '';
   };
 
   const pageSize = 10;
@@ -347,7 +390,7 @@ export default function EditTableView({
     });
     setRows((prev) => prev.map((row) => (row.id === newRow.id ? updatedRow : row)));
     if (onRowUpdate) {
-      await onRowUpdate(updatedRow, tableName); // <-- ensure tableName is passed here
+      await onRowUpdate(updatedRow, tableName);
     }
     return updatedRow;
   };
@@ -360,6 +403,20 @@ export default function EditTableView({
           columns={updatedColumns}
           getRowId={getRowId}
           rowHeight={45}
+           sx={{
+            '& .red-row': {
+              backgroundColor: '#ffe5e5',
+            },
+            '& .red-row.MuiDataGrid-row--editing': {
+              backgroundColor: '#ffe5e5',
+            },
+            '& .red-row .MuiDataGrid-cell': {
+              backgroundColor: '#ffe5e5',
+            },
+            '& .MuiDataGrid-cell--editing': {
+              backgroundColor: 'transparent',
+            },
+          }}
           className={`FigmaTableView ${tableName && (tableName === "cid_ui_case_accused" || tableName === "cid_pt_case_witness") ? 'excelViewTable' : ''}`}
           disableColumnMenu
           disableColumnSorting
@@ -458,6 +515,15 @@ export default function EditTableView({
           )}
         </Box>
       )}
+    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+      <Button
+        variant="contained"
+        startIcon={<SaveIcon />}
+        onClick={handleSaveAll}
+      >
+        Save All
+      </Button>
+    </Box>
     </Box>
   );
 }

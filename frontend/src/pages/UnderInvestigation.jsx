@@ -1804,9 +1804,9 @@ const UnderInvestigation = () => {
         const isGovServant = row?.field_government_servent === "Yes" || row?.field_government_servent == null;
         const chargeSheetStatus = row?.field_status_of_accused_in_charge_sheet;
         const isChargedOrDropped = ["Charge Sheet", "Dropped"].includes(chargeSheetStatus) || !chargeSheetStatus;
-        const isPending = String(chargeSheetStatus).toLowerCase() === "pending";
+        // const isPending = String(chargeSheetStatus).toLowerCase() === "pending";
         const hasPSOAttachment = row?.attachments?.some(att => att.field_name === "field_pso_&_19_pc_act_order");
-        const highlight = (isGovServant && isChargedOrDropped && !hasPSOAttachment) || isPending;
+        const highlight = (isGovServant && isChargedOrDropped && !hasPSOAttachment);
         return highlight;
     };
 
