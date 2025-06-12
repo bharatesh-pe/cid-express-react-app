@@ -1978,7 +1978,30 @@ const LokayuktaView = () => {
                             backNavigation={backToForm}
                         />
                     ) : (
-                        <NatureOfDisposalAlert />
+                        <Box>
+                            <Box pb={1} px={1} sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                                <Typography
+                                    sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                    className="Roboto"
+                                    onClick={backToForm}
+                                >
+                                    <West />
+                                    <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
+                                        {activeSidebar.name ? activeSidebar.name : 'Form'}
+                                    </Typography>
+                                    {headerDetails && (
+                                        <Chip
+                                            label={headerDetails}
+                                            color="primary"
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ fontWeight: 500, marginTop: '2px' }}
+                                        />
+                                    )}
+                                </Typography>
+                            </Box>
+                            <NatureOfDisposalAlert />
+                        </Box>
                     )
                 ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
 
