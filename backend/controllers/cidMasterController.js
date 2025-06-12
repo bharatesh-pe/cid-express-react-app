@@ -4,6 +4,7 @@ const db = require("../models");
 const { Department, Designation, Division, UsersDepartment,  UsersDivision,  UserDesignation,  Users, Role , KGID ,UsersHierarchyNew,DesignationDivision , Act , Section} = require("../models");
 const { Op, where } = require("sequelize");
 const e = require("express");
+const sequelize = db.sequelize;
 
 const getAllDepartments = async (req, res) => {
 
@@ -72,6 +73,7 @@ const getAllDesignations = async (req, res) => {
         return adminSendResponse(res, 500, false, "Internal Server Error");
     }
 };
+
 const getAllDivisions = async (req, res) => {
     try {
 
@@ -553,6 +555,46 @@ const getIoUsersBasedOnDivision = async (req, res) => {
     }
 };
 
+const getSpecificIoUsersCases = async (req, res) => {
+    const { user_id, template_module } = req.body;
+
+    try {
+        if (!user_id || user_id === "") {
+            return res.status(400).json({ message: "User ID is required." });
+        }
+
+        if (!template_module || template_module === "") {
+            return res.status(400).json({ message: "Template module is required." });
+        }
+
+        let table_name = "";
+        if (template_module === "ui_case") {
+            table_name = "cid_under_investigation";
+        } else if (template_module === "pt_case") {
+            table_name = "cid_pending_trail";
+        } else if (template_module === "eq_case") {
+            table_name = "cid_enquiry";
+        } else {
+            return res.status(400).json({ message: "Invalid template module." });
+        }
+
+        const [cases] = await sequelize.query(
+            `SELECT * FROM ${table_name} WHERE field_io_name = :userID`,
+            {
+                replacements: { userID: user_id },
+                type: sequelize.QueryTypes.SELECT
+            }
+        );
+
+        return res.status(200).json({ cases });
+
+    } catch (error) {
+        console.error("Error fetching cases based on user ID:", error);
+        return res.status(500).json({ message: "Failed to fetch cases", error: error.message });
+    }
+
+};
+
 const getAllKGID = async (req, res) => {
     try {
 
@@ -736,4 +778,5 @@ module.exports = {
     getAllAct,
     getAllSectionAndActBasedSection,
     getDivisionBasedOnDepartment,
+    getSpecificIoUsersCases,
 };
