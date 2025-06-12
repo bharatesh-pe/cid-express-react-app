@@ -113,6 +113,16 @@ const Formbuilder = () => {
             if (Createdfields.length > 0) {
 
                 var updatedFields = Createdfields.map((element)=>{
+                    
+                    if(element.type === "tabs"){
+                        return{
+                            ...element,
+                            is_primary_field : element.is_primary_field ? element.is_primary_field : false,
+                            ao_field : element.ao_field ? element.ao_field : false,
+                            tableTabs : element.tableTabs ? element.tableTabs : false
+                        }
+                    }
+
                     return{
                         ...element,
                         is_primary_field : element.is_primary_field ? element.is_primary_field : false,
@@ -2151,6 +2161,8 @@ const Formbuilder = () => {
                 var propmtMsg = ''
                 if(name === 'duplicateCheck'){
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as duplicate check. Please change that field before make this one as duplicate check.`
+                }else if(name === 'tableTabs'){
+                    propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as table tabs. Please change that field before make this one as table tabs`
                 }else{
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as primary. Please change that field before make this one as primary.`
                 }
@@ -2550,7 +2562,7 @@ const Formbuilder = () => {
                                                         if (DisplayNoneFields.includes(prop)) return null;
 
 
-                                                        const increment = (prop === 'required' || prop === 'ao_field' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
+                                                        const increment = (prop === 'required' || prop === 'ao_field' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
                                                         rowCountValue += increment;
 
                                                         const isRowFull = rowCountValue === 10 && !toggleRenderedOnce;
@@ -2564,7 +2576,7 @@ const Formbuilder = () => {
 
                                                         var switchOnChange = handleSwitch;
 
-                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
+                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
                                                             rowColValue = 2;
                                                             colText = (prop === 'required') ? 'Mandatory field' : (prop === 'history') ? 'Enable field history' : 'Disabled';
 
@@ -2590,6 +2602,9 @@ const Formbuilder = () => {
                                                                 colText = 'Particular Case'
                                                             }else if(prop === 'ao_field'){
                                                                 colText = 'AO'
+                                                            }else if(prop === 'tableTabs'){
+                                                                colText = 'Enable Tabs'
+                                                                switchOnChange = changePrimaryValue;
                                                             }
                                                         }
 
@@ -2622,7 +2637,7 @@ const Formbuilder = () => {
                                                                                 </Box>
                                                                             </Box>
                                                                         ) :
-                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
+                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'tableTabs' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                                     <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && module !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>

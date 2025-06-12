@@ -383,6 +383,7 @@
         "options": [],
         "type": "tabs",
         "name": "tabs",
+        "tableTabs": true,
         "formType": "Tabs"
     },
     {
