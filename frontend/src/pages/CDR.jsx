@@ -136,7 +136,7 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
 
         console.log("checking selectedRow",selectedRow);
         var getTemplatePayload = {
-            table_name: options.table,
+            table_name: "cid_ui_case_cdr_ipdr",
             ui_case_id: selectedRow.id,
             case_io_id: selectedRow?.field_io_name || "",
             pt_case_id: selectedRow?.pt_case_id || null,
@@ -1981,7 +1981,7 @@ console.log("userDesignationId:", userDesignationId, "userRole:", userRole);
 // Fix: Remove quotes and trim for comparison
 const isIO = userRole.replace(/['"]+/g, '').trim() === "investigation officer";
 const isSPDivision = isImmediateSupervisior;
-const isSPCCD = userDesignationId === "CDR CELL" || userRole === "CDR CELL";
+const isSPCCD = userDesignationId === "CDR" || userRole === "CDR CELL";
 
 console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:", showSubmitAPButton, "templateActionAddFlag.current:", templateActionAddFlag.current, "otherTemplatesTotalRecord:", otherTemplatesTotalRecord);
 
@@ -2473,7 +2473,7 @@ const handleCDRDialogUpdate = async () => {
                                         }
                                     );
                                     return (
-                                        isIO && !viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
+                                        isIO && !viewModeOnly && !showSubmitAPButton && (
                                             <Button
                                                 variant="outlined"
                                                 sx={{ height: '40px' }}

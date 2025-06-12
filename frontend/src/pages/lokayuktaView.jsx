@@ -32,8 +32,11 @@ import dayjs from "dayjs";
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
-    const { state } = useLocation();
+    const location = useLocation();
+    const { state } = location;
     const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
+
+    const fromCDR = location.state?.fromCDR || false;
 
     useEffect(()=>{
         if(!rowData){
@@ -545,8 +548,32 @@ const LokayuktaView = () => {
     }
 
     useEffect(()=>{
-        setActiveSidebar(sidebarContentArray?.[0] || null);
-    },[]);
+        if (userDesignationName?.current) {
+            const userRole = userDesignationName.current.toUpperCase();
+
+            setEnableSubmit(userRole === editableStage);
+
+            const lastApprovedRole = approvalFieldArray[0];
+            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+            setApprovalDone(approvedStages.includes(userRole));
+        }
+    },[approvalFieldArray, approvalStepperArray]);
+
+    useEffect(() => {
+        if (fromCDR) {
+            const cdrSidebarItem = {
+                name: "CDR/IPDR",
+                table: "cid_ui_case_cdr_ipdr",
+            };
+            setSidebarContentArray([cdrSidebarItem]);
+            setActiveSidebar(cdrSidebarItem);
+        } else {
+            setActiveSidebar(sidebarContentArray?.[0] || null);
+        }
+    }, []);
 
     const handleClear = () => {
         tablePaginationCount.current = 1;
@@ -1820,11 +1847,20 @@ const LokayuktaView = () => {
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} />
+            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
-                {activeSidebar?.table === "cid_ui_case_action_plan" ? (
+                {fromCDR ? (
+                    <CDR
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={state?.options}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                ) : activeSidebar?.table === "cid_ui_case_action_plan" ? (
 
                     <ActionPlan
                         templateName={template_name}
