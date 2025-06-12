@@ -2394,7 +2394,7 @@ const handleCDRDialogUpdate = async () => {
                         </Box>
 
                         {/* Actions Section */}
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' , marginRight: '16px'}}>
                             <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
                                 <Box></Box>
 

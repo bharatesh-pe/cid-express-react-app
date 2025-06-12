@@ -86,7 +86,6 @@ const CDRpage = () => {
       renderCell: ({ row }) => (
         <Button
           variant="outlined"
-          color="success"
           size="small"
           onClick={() => handleViewCDR(row.id)}
         >
