@@ -591,6 +591,7 @@ const CreateProfile = () => {
             { name: 'Pending Trail', code: 'pt_case' },
             { name: 'Enquiries', code: 'eq_case' },
             { name: 'Crime Intelligence', code: 'ci_case' },
+            { name: 'Orders & Repository', code: 'repos_case' },
         ]
     };
 

@@ -1,480 +1,141 @@
 import { West } from "@mui/icons-material";
-import { Autocomplete, Box, Button, Chip, CircularProgress, TextField, Typography, Table, TableBody, TableCell, TableRow, TextareaAutosize, } from "@mui/material";
-import { useState } from 'react';
+import { Box, Button, Chip, CircularProgress, TextField, Typography, Table, TableBody, TableCell, TableRow, TextareaAutosize, } from "@mui/material";
+import { useEffect, useState } from 'react';
 import dayjs from "dayjs";
-import DateField from "../components/form/Date";
-import TableView from "../components/table-view/TableView";
-import { useEffect } from "react";
 import { toast } from "react-toastify";
 import api from "../services/api";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import RichTextEditor from "../components/form/RichTextEditor";
-import DynamicForm from "../components/dynamic-form/DynamicForm";
+import InsertDriveFileIcon from "@mui/icons-material/InsertDriveFile";
+import pdfIcon from "../Images/pdfIcon.svg";
+import docIcon from "../Images/docIcon.svg";
+import xlsIcon from "../Images/xlsIcon.svg";
+import pptIcon from "../Images/pptIcon.svg";
+import jpgIcon from "../Images/jpgIcon.svg";
+import pngIcon from "../Images/pngIcon.svg";
+import FileInput from "../components/form/FileInput";
 
 
 const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, options, rowData, module, backNavigation, overAllTemplateActions, cs_fir_cases_data }) => {
 
     const [loading, setLoading] = useState(false);
 
-    const [fromDate, setFromDate] = useState(dayjs().format("YYYY-MM-DD"));
-    const [toDate, setToDate] = useState(dayjs().format("YYYY-MM-DD"));
-
-    const [investigationArray, setInvestigationArray] = useState([]);
-    const [selectedInvestigation, setSelectedInvestigation] = useState(null);
-
-    // investigation table states
-
-    const [investigationViewTableRows, setInvestigationViewTableRows] = useState([]);
-    const [investigationViewTableColumns, setInvestigationViewTableColumns] = useState(
-        [
-            {
-                field: "sl_no",
-                headerName: "S.No",
-                resizable: false,
-                width: 65,
-                renderCell: (params) => {
-                    return (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "end",
-                                gap: "8px",
-                            }}
-                        >
-                            {params.value}
-                        </Box>
-                    );
-                }
-            },
-            {
-                field: "investigation_module",
-                headerName: "Investigation Module",
-                width: 200,
-                resizable: true,
-                cellClassName: 'justify-content-start',
-            },
-        ]
-    );
-
-    const [investigationTablePagination, setInvestigationTablePagination] = useState(1);
-    const [investigationTableRowCount, setInvestigationTableRowCount] = useState(0);
-    const [investigationTableTotalPageCount, setInvestigationTableTotalPageCount] = useState(1);
-
     const [formData, setFormData] = useState({});
     const [alreadySaved, setAlreadySaved] = useState(false);
-
-    const [formOpen, setFormOpen] = useState(false);
-    const [formTemplateData, setFormTemplateData] = useState([])
-    const [initialData, setInitialData] = useState({});
-    const [selectedRowId, setSelectedRowId] = useState(null);
-    const [selectedTemplateId, setSelectedTemplateId] = useState(null);
-    const [stepperData, setstepperData] = useState([]);
-    
-
-    const handlePagination = (page) => {
-        setInvestigationTablePagination(page)
-    };
-
-    useEffect(()=>{
-        if(selectedInvestigation && selectedInvestigation?.table){
-            getSelectedInvestigationData();
-        }
-    },[investigationTablePagination]);
-
-    useEffect(()=>{
-
-        if(overAllTemplateActions){
-            var parsedArray = JSON.parse(overAllTemplateActions);
-
-            var filteredInvestigationArray = parsedArray.filter((element)=>{
-
-                if(element.table){
-                    return element
-                }
-
-            });
-    
-            if(filteredInvestigationArray){
-                setInvestigationArray(filteredInvestigationArray);
-            }
-
-        }
-
-    },[overAllTemplateActions]);
-
-
-    const getSelectedInvestigationData = async ()=>{
-
-        if(!selectedInvestigation || !selectedInvestigation?.table){
-            toast.error("Please Select Investigation Before Getting Data", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-
-        var ui_case_id = rowData?.id;
-        var pt_case_id = rowData?.pt_case_id;
-
-        if(module === "pt_case"){
-            ui_case_id = rowData?.ui_case_id
-            pt_case_id = rowData?.id
-        }
-
-        var getTemplatePayload = {
-            table_name: selectedInvestigation.table,
-            ui_case_id: ui_case_id,
-            case_io_id: rowData?.field_io_name_id || "",
-            pt_case_id: pt_case_id,
-            limit : 10,
-            page : investigationTablePagination,     
-            from_date:  fromDate,
-            to_date:  toDate,
-            module: module ? module : 'ui_case'
-        };
-
-        setLoading(true);
-        try {
-
-            const getTemplateResponse = await api.post("/templateData/getPrimaryTemplateData",getTemplatePayload);
-            setLoading(false);
-
-            if (getTemplateResponse && getTemplateResponse.success && getTemplateResponse) {
-
-                const { meta, data } = getTemplateResponse;
-            
-                const totalPages = meta?.totalPages;
-                const totalItems = meta?.totalItems;
-                
-                if (totalPages !== null && totalPages !== undefined) {
-                    setInvestigationTableTotalPageCount(totalPages);
-                }
-                
-                if (totalItems !== null && totalItems !== undefined) {
-                    setInvestigationTableRowCount(totalItems);
-                }
-
-                if (data?.length > 0) {
-
-                    const excludedKeys = [
-                        "created_at", "updated_at", "id", "deleted_at", "attachments",
-                        "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count" , "field_cid_crime_no./enquiry_no","field_io_name" , "field_io_name_id"
-                    ];
-
-                    const generateReadableHeader = (key) =>key.replace(/^field_/, "").replace(/_/g, " ").toLowerCase().replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-                    const firstKey = Object.keys(data[0]).find(
-                        (key) => !excludedKeys.includes(key)
-                    );
-
-                    const columns = firstKey ? 
-                        [{
-                            field: firstKey,
-                            headerName: generateReadableHeader(firstKey),
-                            flex: 1,
-                            resizable: true,
-                        }]
-                    : [];
-
-                    const updatedHeader = [
-                        {
-                            field: "sl_no",
-                            headerName: "S.No",
-                            resizable: false,
-                            width: 65,
-                            renderCell: (params) => {
-                                return (
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "end",
-                                            gap: "8px",
-                                        }}
-                                    >
-                                        {params.value}
-                                    </Box>
-                                );
-                            }
-                        },
-                        {
-                            field: "investigation_module",
-                            headerName: "Investigation Module",
-                            width: 200,
-                            resizable: true,
-                            renderCell: (params) => {
-                                return (
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "start",
-                                            gap: "8px",
-                                            color: '#0167F8', 
-                                            textDecoration: 'underline', 
-                                            cursor: 'pointer'
-                                        }}
-                                        onClick={()=>viewInvestigationData(params?.row)}
-                                    >
-                                        {params.value}
-                                    </Box>
-                                );
-                            }
-                        },
-                        ...columns
-                    ]
-
-                    const formatDate = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        return new Date(parsed).toLocaleDateString("en-GB");
-                    };
-                    
-                    function isValidISODate(value) {
-                        return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
-                    }
-
-                    const updatedTableData = data.map((field, index) => {
-
-                        const updatedField = {};
-
-                        Object.keys(field).forEach((key) => {
-                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                                updatedField[key] = formatDate(field[key]);
-                            } else {
-                                updatedField[key] = field[key];
-                            }
-                        });
-
-                        return {
-                            ...updatedField,
-                            sl_no: (investigationTablePagination - 1) * 10 + (index + 1),
-                            investigation_module:  selectedInvestigation?.name || "",
-                            ...(field.id ? {} : { id: "unique_id_" + index }),
-                        };
-                    });
-
-                    setInvestigationViewTableColumns(updatedHeader);
-                    setInvestigationViewTableRows(updatedTableData);
-                }else{
-                    setInvestigationViewTableColumns([]);
-                    setInvestigationViewTableRows([]);
-                }
-            }
-
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-    }
-
-    const viewInvestigationData = async (investigationData)=>{
-        
-        if(!investigationData?.id || !selectedInvestigation?.table){
-            toast.error("ID Not Found !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        };
-
-        var viewTemplatePayload = {
-            table_name: selectedInvestigation.table,
-            id: investigationData.id,
-        };
-
-        setLoading(true);
-
-        try {
-
-            const viewTemplateData = await api.post("/templateData/viewTemplateData",viewTemplatePayload);
-            setLoading(false);
-
-            if (viewTemplateData && viewTemplateData.success) {
-
-                setInitialData(viewTemplateData.data ? viewTemplateData.data : {});
-                setSelectedRowId(null);
-                setSelectedTemplateId(null);
-
-                const viewTableData = {
-                    table_name: selectedInvestigation.table,
-                };
-
-                setLoading(true);
-                try {
-                    const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
-                    setLoading(false);
-
-                    setFormOpen(true);
-                    setSelectedRowId(rowData.id);
-                    setSelectedTemplateId(viewTemplateResponse['data'].template_id);
-                    setFormTemplateData(viewTemplateResponse.data['fields'] ? viewTemplateResponse.data['fields'] : []);
-                    if (viewTemplateResponse.data.no_of_sections && viewTemplateResponse.data.no_of_sections > 0) {
-                        setstepperData(viewTemplateResponse.data.sections ? viewTemplateResponse.data.sections : []);
-                    }
-
-                } catch (error) {
-                    setLoading(false);
-                    if (error && error.response && error.response["data"]) {
-                        toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                            position: "top-right",
-                            autoClose: 3000,
-                            hideProgressBar: false,
-                            closeOnClick: true,
-                            pauseOnHover: true,
-                            draggable: true,
-                            progress: undefined,
-                            className: "toast-error",
-                        });
-                    }
-                }
-            } else {
-                const errorMessage = viewTemplateData.message ? viewTemplateData.message : "Failed to get the template. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-    }
-
-    const getValue = (field) => cs_fir_cases_data?.[0]?.[field] || '';
-
-    const getFormattedDate = (dateString) =>
-        dateString ? dateString.split(' ')[0].split('-').reverse().join('-') : '';
+    const [accusedList, setAccusedList] = useState([]);
+    const [accusedTemplate, setAccusedTemplate] = useState(null);
+    const [witnessList, setWitnessList] = useState([]);
+    const [fslList, setFslList] = useState([]);
+    const [chargeSheetFields, setChargeSheetFields] = useState([]);
+    const [allUIDataObj, setAllUIDataObj] = useState({});
 
     const handleInput = (e) => {
-        setFormData((prev)=>({
+        setFormData((prev) => ({
             ...prev,
-            [e.target.id] : e.target.value
-        }))
-    };
-    const handleRichTextEditorInput = (id, value) => {
-        setFormData((prev)=>({
-            ...prev,
-            [id] : value
+            [e.target.id]: e.target.value
         }))
     };
 
-    const gettingChargeSheetApi = async ()=>{
+    const hiddenColumns = [
+        "id",
+        "sys_status",
+        "created_by",
+        "updated_by",
+        "created_at",
+        "updated_at",
+        "created_by_id",
+        "updated_by_id",
+        "ui_case_id",
+        "pt_case_id"
+    ];
 
-        if(!rowData?.id || !module){
-            return
-        }
 
-        setLoading(true);
-        try {
-            
-            const response = await api.post("/chargeSheet/getChargeSheet",{
-                case_id : rowData?.id ? String(rowData?.id) : '',
-                module : module
-            });
-            setLoading(false);
-
-            if(response.success){
-                setFormData(response.data ? response.data : {})
-                setAlreadySaved(true);
-            }else{
-                setFormData({})
-                setAlreadySaved(false);
-            }
-            
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-
-    };
-    
-    const saveChargeSheetApi = async ()=>{
-
-        if(!rowData?.id || !module){
-            return
-        }
-
-        if(Object.keys(formData).length === 0){
-            toast.error("Data is Empty !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
+    const saveChargeSheetApi = async () => {
+        if (!rowData?.id || !module) {
+            console.warn("Missing rowData.id or module");
             return;
         }
 
-        formData['case_id'] = rowData?.id
-        formData['module'] = module ? module : 'ui_case'
+        const fieldMap = {
+            cs_case_number: "field_cid_crime_no./enquiry_no",
+            cs_section_of_law: "field_sections_of_law",
+            cs_incident_location: "field_incident_location",
+            cs_incident_date: "field_incident_date",
+            cs_cid_case_number: "field_cid_crime_no./enquiry_no",
+            cs_cid_initiated_date: "field_cid_initiated_date",
+            cs_io_name: "field_investigating_officer_name",
+            cs_io_designation: "field_investigating_officer_designation",
+            cs_allegations_info: "field_brief_information_about_the_allegations",
+            cs_investigation_outcome: "field_outcome_of_the_investigation",
+            cs_accused_justification: "field_description/justification_provided_by_accused_individuals",
+            cs_evidence_to_refute: "field_evidences_available_to_refute_description/justification_provided_by_accused_individuals",
+            cs_evidence_compilation: "field_compilation_of_evidences",
+            cs_conclusion: "field_conclusion",
+            cs_recommendation: "field_recommendation",
+            cs_police_station: "field_name_of_the_police_station",
+            cs_supporting_documents: "field_supporting_documents",
+            cs_case_filed_date: "created_at"
+        };
+
+        let normalData = {};
+        const formPayload = new FormData();
+
+        let supportingFiles = [];
+        let supportingFileNames = [];
+        if (formData.cs_supporting_documents && Array.isArray(formData.cs_supporting_documents)) {
+            supportingFiles = formData.cs_supporting_documents.filter(f => f instanceof File || (f && f.filename instanceof File));
+            supportingFiles.forEach(fileObj => {
+                if (fileObj instanceof File) {
+                    formPayload.append("field_supporting_documents", fileObj);
+                    supportingFileNames.push(fileObj.name);
+                } else if (fileObj && fileObj.filename instanceof File) {
+                    formPayload.append("field_supporting_documents", fileObj.filename);
+                    supportingFileNames.push(fileObj.filename.name);
+                }
+            });
+        }
+
+        if (Array.isArray(chargeSheetFields)) {
+            chargeSheetFields.forEach(field => {
+                const uiKey = Object.keys(fieldMap).find(k => fieldMap[k] === field.name);
+                let value;
+                if (uiKey && formData.hasOwnProperty(uiKey)) {
+                    value = formData[uiKey];
+                } else if (formData.hasOwnProperty(field.name)) {
+                    value = formData[field.name];
+                }
+                if (field.name === "cs_supporting_documents" || field.name === "field_supporting_documents") return;
+                if (value !== undefined) {
+                    normalData[field.name] = Array.isArray(value) ? value.join(",") : value;
+                }
+            });
+        }
+
+        Object.keys(formData).forEach(key => {
+            const mappedKey = fieldMap[key] || key;
+            if (
+                !normalData.hasOwnProperty(mappedKey) &&
+                key !== "cs_supporting_documents" &&
+                key !== "field_supporting_documents" &&
+                !(formData[key] instanceof File)
+            ) {
+                normalData[mappedKey] = Array.isArray(formData[key]) ? formData[key].join(",") : formData[key];
+            }
+        });
+
+        formPayload.append("table_name", "cid_under_investigation");
+        formPayload.append("id", String(rowData.id));
+        formPayload.append("data", JSON.stringify(normalData));
 
         setLoading(true);
         try {
-    
-            const response = await api.post("/chargeSheet/saveChargeSheet",{
-                data : formData
+            const response = await api.post("/templateData/updateTemplateData", formPayload, {
+                headers: { "Content-Type": "multipart/form-data" }
             });
+
             setLoading(false);
 
-            if(response.success){
+            if (response?.success) {
                 toast.success("Data Created Successfully", {
                     position: "top-right",
                     autoClose: 3000,
@@ -485,10 +146,9 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     progress: undefined,
                     className: "toast-success"
                 });
-                gettingChargeSheetApi();
-                return
-            }else{
-                toast.error(response.message ? response.message : "Please Try Again !", {
+                setAlreadySaved(true);
+            } else {
+                toast.error(response?.message || "Please Try Again!", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -498,35 +158,10 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     progress: undefined,
                     className: "toast-error",
                 });
-                return;
             }
-            
         } catch (error) {
             setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-
-    };
-
-    const updateChargeSheetApi = async ()=>{
-
-        if(!formData?.id){
-            return
-        }
-
-        if(Object.keys(formData).length === 0){
-            toast.error("Data is Empty !", {
+            toast.error("Please Try Again!", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -536,19 +171,95 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                 progress: undefined,
                 className: "toast-error",
             });
+        }
+    };
+
+    const updateChargeSheetApi = async () => {
+        if (!rowData?.id || !module) {
+            console.warn("Missing rowData.id or module");
             return;
         }
 
+        const fieldMap = {
+            cs_case_number: "field_cid_crime_no./enquiry_no",
+            cs_section_of_law: "field_sections_of_law",
+            cs_incident_location: "field_incident_location",
+            cs_incident_date: "field_incident_date",
+            cs_cid_case_number: "field_cid_crime_no./enquiry_no",
+            cs_cid_initiated_date: "field_cid_initiated_date",
+            cs_io_name: "field_investigating_officer_name",
+            cs_io_designation: "field_investigating_officer_designation",
+            cs_allegations_info: "field_brief_information_about_the_allegations",
+            cs_investigation_outcome: "field_outcome_of_the_investigation",
+            cs_accused_justification: "field_description/justification_provided_by_accused_individuals",
+            cs_evidence_to_refute: "field_evidences_available_to_refute_description/justification_provided_by_accused_individuals",
+            cs_evidence_compilation: "field_compilation_of_evidences",
+            cs_conclusion: "field_conclusion",
+            cs_recommendation: "field_recommendation",
+            cs_police_station: "field_name_of_the_police_station",
+            cs_supporting_documents: "field_supporting_documents",
+            cs_case_filed_date: "created_at"
+        };
+
+        let normalData = {};
+        const formPayload = new FormData();
+
+        let supportingFiles = [];
+        let supportingFileNames = [];
+        if (formData.cs_supporting_documents && Array.isArray(formData.cs_supporting_documents)) {
+            supportingFiles = formData.cs_supporting_documents.filter(f => f instanceof File || (f && f.filename instanceof File));
+            supportingFiles.forEach(fileObj => {
+                if (fileObj instanceof File) {
+                    formPayload.append("field_supporting_documents", fileObj);
+                    supportingFileNames.push(fileObj.name);
+                } else if (fileObj && fileObj.filename instanceof File) {
+                    formPayload.append("field_supporting_documents", fileObj.filename);
+                    supportingFileNames.push(fileObj.filename.name);
+                }
+            });
+        }
+
+        if (Array.isArray(chargeSheetFields)) {
+            chargeSheetFields.forEach(field => {
+                const uiKey = Object.keys(fieldMap).find(k => fieldMap[k] === field.name);
+                let value;
+                if (uiKey && formData.hasOwnProperty(uiKey)) {
+                    value = formData[uiKey];
+                } else if (formData.hasOwnProperty(field.name)) {
+                    value = formData[field.name];
+                }
+                if (field.name === "cs_supporting_documents" || field.name === "field_supporting_documents") return;
+                if (value !== undefined) {
+                    normalData[field.name] = Array.isArray(value) ? value.join(",") : value;
+                }
+            });
+        }
+
+        Object.keys(formData).forEach(key => {
+            const mappedKey = fieldMap[key] || key;
+            if (
+                !normalData.hasOwnProperty(mappedKey) &&
+                key !== "cs_supporting_documents" &&
+                key !== "field_supporting_documents" &&
+                !(formData[key] instanceof File)
+            ) {
+                normalData[mappedKey] = Array.isArray(formData[key]) ? formData[key].join(",") : formData[key];
+            }
+        });
+
+        formPayload.append("table_name", "cid_under_investigation");
+        formPayload.append("id", String(rowData.id));
+        formPayload.append("data", JSON.stringify(normalData));
+
         setLoading(true);
         try {
-    
-            const response = await api.post("/chargeSheet/updateChargeSheet",{
-                data : formData,
-                id : formData.id
+            const response = await api.post("/templateData/updateTemplateData", formPayload, {
+                headers: { "Content-Type": "multipart/form-data" }
             });
+
             setLoading(false);
 
-            if(response.success){
+            if (response?.success) {
                 toast.success("Data Updated Successfully", {
                     position: "top-right",
                     autoClose: 3000,
@@ -559,10 +270,8 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     progress: undefined,
                     className: "toast-success"
                 });
-                gettingChargeSheetApi();
-                return
-            }else{
-                toast.error(response.message ? response.message : "Please Try Again !", {
+            } else {
+                toast.error(response?.message || "Please Try Again!", {
                     position: "top-right",
                     autoClose: 3000,
                     hideProgressBar: false,
@@ -572,156 +281,386 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     progress: undefined,
                     className: "toast-error",
                 });
-                return;
             }
-            
         } catch (error) {
             setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
+            toast.error("Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
         }
-
     };
 
-    useEffect(()=>{
-        gettingChargeSheetApi();
-    },[]);
+    const chargeSheetGroups = [
+        {
+            heading: "1. Case number, police station, and the date the case was filed",
+            fields: [
+                { id: "cs_case_number", label: "Case Number" },
+                { id: "cs_police_station", label: "Police Station" },
+                { id: "cs_case_filed_date", label: "Date Filed" }
+            ]
+        },
+        {
+            heading: "2. Section of the law",
+            fields: [
+                { id: "cs_section_of_law", label: "Section of the Law" }
+            ]
+        },
+        {
+            heading: "3. Incident location and date",
+            fields: [
+                { id: "cs_incident_location", label: "Incident Location" },
+                { id: "cs_incident_date", label: "Incident Date" }
+            ]
+        },
+        {
+            heading: "4. CID case number and the date investigation was initiated by CID",
+            fields: [
+                { id: "cs_cid_case_number", label: "CID Case Number" },
+                { id: "cs_cid_initiated_date", label: "CID Investigation Initiated Date" }
+            ]
+        },
+        {
+            heading: "5. Name and designation of the investigating officer",
+            fields: [
+                { id: "cs_io_name", label: "Investigating Officer Name" },
+                { id: "cs_io_designation", label: "Investigating Officer Designation" }
+            ]
+        },
+        {
+            heading: "6. Details of the accused individuals",
+            fields: []
+        },
+        {
+            heading: "7. Brief information about the allegations",
+            fields: [
+                { id: "cs_allegations_info", label: "Brief Information about Allegations" }
+            ]
+        },
+        {
+            heading: "8. Outcome of the investigation",
+            fields: [
+                { id: "cs_investigation_outcome", label: "Outcome of Investigation" }
+            ]
+        },
+        {
+            heading: "9. Description/justification provided by the accused individuals",
+            fields: [
+                { id: "cs_accused_justification", label: "Description/Justification by Accused" }
+            ]
+        },
+        {
+            heading: "10. Evidences available to refute the description/justification provided by the accused individuals",
+            fields: [
+                { id: "cs_evidence_to_refute", label: "Evidences to Refute Accused Justification" }
+            ]
+        },
+        {
+            heading: "11. Compilation of evidences (both oral and recorded)",
+            fields: [
+                { id: "cs_evidence_compilation", label: "Compilation of Evidences" }
+            ]
+        },
+        {
+            heading: "12. Conclusion",
+            fields: [
+                { id: "cs_conclusion", label: "Conclusion" }
+            ]
+        },
+        {
+            heading: "13. Recommendation (separately for each accused)",
+            fields: [
+                { id: "cs_recommendation", label: "Recommendation" }
+            ]
+        },
+        {
+            heading: "14. Witness Details",
+            fields: [
+                { id: "cs_witness_details", label: "Witness Details" }
+            ]
+        },
+        {
+            heading: "15. Supporting Documents",
+            fields: [
+                { id: "cs_supporting_documents", label: "Supporting Documents" }
+            ]
+        }
+    ];
 
-    return (
-        <Box sx={{ overflow: 'auto' , height: '100vh'}}>
-        <Box p={2} pb={8}>
-            <Box px={1} mb={2} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                <Typography
-                    sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-                    className="Roboto"
-                    onClick={backNavigation}
-                >
-                    <West />
-                    <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
-                        Charge Sheet
-                    </Typography>
-                    {headerDetails && (
-                        <Chip
-                            label={headerDetails}
-                            color="primary"
-                            variant="outlined"
-                            size="small"
-                            sx={{ fontWeight: 500, marginTop: '2px' }}
-                        />
-                    )}
-                </Typography>
-            </Box>
+    const getFullDetails = async () => {
 
-            <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}  mb={2}>
-                <Box display="flex" alignItems="center" gap={2}>
-                    <Box>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                                format="DD-MM-YYYY"
-                                sx={{
-                                    width: "100%",
-                                }}
-                                label="From Date"
-                                value={fromDate ? dayjs(fromDate) : null}
-                                onChange={(e) =>
-                                    setFromDate(e ? e.format("YYYY-MM-DD") : null)
-                                }
-                                maxDate={dayjs()}
-                            />
-                        </LocalizationProvider>
-                    </Box>
-                    <Box>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                                format="DD-MM-YYYY"
-                                sx={{
-                                    width: "100%",
-                                }}
-                                label="To Date"
-                                value={toDate ? dayjs(toDate) : null}
-                                onChange={(e) =>
-                                    setToDate(e ? e.format("YYYY-MM-DD") : null)
-                                }
-                                maxDate={dayjs()}
-                            />
-                        </LocalizationProvider>
-                    </Box>
-
-                    <Box>
-                        <Autocomplete
-                            options={investigationArray}
-                            getOptionLabel={(option) => option.name || ""}
-                            name="select_investigation"
-                            sx={{width: '250px'}}
-                            value={
-                                investigationArray.find((opt) => opt.id === selectedInvestigation?.id ) || null
-                            }
-                            onChange={(e, value) =>
-                                setSelectedInvestigation(value)
-                            }
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    className="selectHideHistory"
-                                    label="Select Investigation"
-                                />
-                            )}
-                        />
-                    </Box>
-
-                    <Box>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            size="large"
-                            sx={{ fontWeight: 500, height: 40, margin: 0 }}
-                            onClick={getSelectedInvestigationData}
-                        >
-                            Fetch
-                        </Button>
-                    </Box>
-                </Box>
-
-                {
-                    !alreadySaved ?
-                    <Button
-                        variant="contained"
-                        color="success"
-                        size="large"
-                        sx={{ fontWeight: 500, height: 40, margin: 0 }}
-                        onClick={saveChargeSheetApi}
-                    >
-                        Save
-                    </Button>
-
-                    :
-
-                    <Button
-                        variant="contained"
-                        color="success"
-                        size="large"
-                        sx={{ fontWeight: 500, height: 40, margin: 0 }}
-                        onClick={updateChargeSheetApi}
-                    >
-                        Update
-                    </Button>
-
+        if (!rowData?.id) return;
+        setLoading(true);
+        try {
+            const response = await api.post("/chargeSheet/getChargeSheetFullDetails", { id: rowData.id });
+            setLoading(false);
+            if (response.success) {
+                setAccusedList(Array.isArray(response.accusedData) ? response.accusedData : []);
+                setAccusedTemplate(response.accusedTemplate || null);
+                setFslList(Array.isArray(response.fslData) ? response.fslData : []);
+                setWitnessList(Array.isArray(response.witnessData) ? response.witnessData : []);
+                let allUIFields = [];
+                let localAllUIDataObj = {};
+                if (response.allUIData && Array.isArray(response.allUIData.allUIFields)) {
+                    setChargeSheetFields(response.allUIData.allUIFields);
+                    allUIFields = response.allUIData.allUIFields;
+                    localAllUIDataObj = response.allUIData;
+                } else if (Array.isArray(response.allUIFields)) {
+                    setChargeSheetFields(response.allUIFields);
+                    allUIFields = response.allUIFields;
+                    localAllUIDataObj = response.allUIData || {};
+                } else if (Array.isArray(response.allUIData)) {
+                    setChargeSheetFields(response.allUIData);
+                    allUIFields = response.allUIData;
+                    localAllUIDataObj = {};
+                } else {
+                    setChargeSheetFields([]);
+                    allUIFields = [];
+                    localAllUIDataObj = {};
                 }
 
-            </Box>
+                setAllUIDataObj(localAllUIDataObj);
 
-            <Box>
+                if (allUIFields && typeof localAllUIDataObj === "object" && localAllUIDataObj !== null) {
+                    const newFormData = {};
+                    if (localAllUIDataObj["field_cid_crime_no./enquiry_no"]) {
+                        newFormData["cs_case_number"] = localAllUIDataObj["field_cid_crime_no./enquiry_no"];
+                    }
+                    if (localAllUIDataObj["field_sections_of_law"]) {
+                        newFormData["cs_section_of_law"] = localAllUIDataObj["field_sections_of_law"];
+                    }
+                    if (localAllUIDataObj["field_incident_location"]) {
+                        newFormData["cs_incident_location"] = localAllUIDataObj["field_incident_location"];
+                    }
+                    if (localAllUIDataObj["field_incident_date"]) {
+                        newFormData["cs_incident_date"] = dayjs(localAllUIDataObj["field_incident_date"]).format("YYYY-MM-DD");
+                    }
+                    if (localAllUIDataObj["field_cid_crime_no./enquiry_no"]) {
+                        newFormData["cs_cid_case_number"] = localAllUIDataObj["field_cid_crime_no./enquiry_no"];
+                    }
+                    if (localAllUIDataObj["field_cid_initiated_date"]) {
+                        newFormData["cs_cid_initiated_date"] = dayjs(localAllUIDataObj["field_cid_initiated_date"]).format("YYYY-MM-DD");
+                    }
+                    if (localAllUIDataObj["field_investigating_officer_name"]) {
+                        newFormData["cs_io_name"] = localAllUIDataObj["field_investigating_officer_name"];
+                    }
+                    if (localAllUIDataObj["field_investigating_officer_designation"]) {
+                        newFormData["cs_io_designation"] = localAllUIDataObj["field_investigating_officer_designation"];
+                    }
+                    if (localAllUIDataObj["field_brief_information_about_the_allegations"]) {
+                        newFormData["cs_allegations_info"] = localAllUIDataObj["field_brief_information_about_the_allegations"];
+                    }
+                    if (localAllUIDataObj["field_outcome_of_the_investigation"]) {
+                        newFormData["cs_investigation_outcome"] = localAllUIDataObj["field_outcome_of_the_investigation"];
+                    }
+                    if (localAllUIDataObj["field_description/justification_provided_by_accused_individuals"]) {
+                        newFormData["cs_accused_justification"] = localAllUIDataObj["field_description/justification_provided_by_accused_individuals"];
+                    }
+                    if (localAllUIDataObj["field_evidences_available_to_refute_description/justification_provided_by_accused_individuals"]) {
+                        newFormData["cs_evidence_to_refute"] = localAllUIDataObj["field_evidences_available_to_refute_description/justification_provided_by_accused_individuals"];
+                    }
+                    if (localAllUIDataObj["field_compilation_of_evidences"]) {
+                        newFormData["cs_evidence_compilation"] = localAllUIDataObj["field_compilation_of_evidences"];
+                    }
+                    if (localAllUIDataObj["field_conclusion"]) {
+                        newFormData["cs_conclusion"] = localAllUIDataObj["field_conclusion"];
+                    }
+                    if (localAllUIDataObj["field_recommendation"]) {
+                        newFormData["cs_recommendation"] = localAllUIDataObj["field_recommendation"];
+                    }
+                    const policeStationField = allUIFields.find(
+                        f => f.name === "field_name_of_the_police_station" || f.field_name === "field_name_of_the_police_station"
+                    );
+                    if (policeStationField) {
+                        const val = allUIDataObj["field_name_of_the_police_station"];
+                        if (val !== undefined && val !== null) {
+                            newFormData["cs_police_station"] = val;
+                        }
+                    }
+                    if (localAllUIDataObj["created_at"]) {
+                        newFormData["cs_case_filed_date"] = dayjs(localAllUIDataObj["created_at"]).format("YYYY-MM-DD");
+                    }
+                    setFormData(prev => ({ ...prev, ...newFormData }));
+                }
+            } else {
+                setAccusedList([]);
+                setAccusedTemplate(null);
+                setFslList([]);
+                setWitnessList([]);
+                setChargeSheetFields([]);
+            }
+        } catch (error) {
+            setLoading(false);
+            setAccusedList([]);
+            setAccusedTemplate(null);
+            setWitnessList([]);
+            setFslList([]);
+            setChargeSheetFields([]);
+        }
+    };
 
+    useEffect(() => {
+        getFullDetails()
+    }, []);
+
+    const getDropdownOptions = (fieldName) => {
+        let allUIFields = [];
+        if (Array.isArray(chargeSheetFields)) {
+            allUIFields = chargeSheetFields;
+        } else if (chargeSheetFields && Array.isArray(chargeSheetFields.allUIFields)) {
+            allUIFields = chargeSheetFields.allUIFields;
+        }
+        const fieldDef = allUIFields.find(
+            f =>
+                (f.name === fieldName || f.field_name === fieldName) &&
+                (f.type === "dropdown" || f.data_type === "Dropdown") &&
+                Array.isArray(f.options)
+        );
+        return fieldDef ? fieldDef.options : [];
+    };
+
+    const getFileIcon = (fileName) => {
+        fileName = fileName.split('.').pop().toLowerCase();
+        switch (fileName) {
+            case 'pdf':
+                return <img src={pdfIcon} alt="pdf" />;
+            case 'jpg':
+            case 'jpeg':
+                return <img src={jpgIcon} alt="jpg" />;
+            case 'png':
+            case 'svg':
+            case 'gif':
+                return <img src={pngIcon} alt="img" />;
+            case 'xls':
+            case 'xlsx':
+                return <img src={xlsIcon} alt="xls" />;
+            case 'csv':
+            case 'docx':
+            case 'doc':
+                return <img src={docIcon} alt="doc" />;
+            case 'ppt':
+                return <img src={pptIcon} alt="ppt" />;
+            default:
+                return <InsertDriveFileIcon />;
+        }
+    };
+
+    const openFileInNewTab = async (file, formData, setLoading, toast, api, row = {}, fieldNameOverride = null) => {
+        let tableRowId = row.id || formData.id || formData.tableRowId || rowData?.id || null;
+        if (!tableRowId) {
+            toast.error("Table row ID missing!", { className: "toast-error" });
+            return;
+        }
+
+        let fieldName = fieldNameOverride || "field_supporting_documents";
+        if (file && typeof file === "object") {
+            if (file.field_name) fieldName = file.field_name;
+        }
+
+        setLoading(true);
+
+        try {
+            const profileRes = await api.post("/chargeSheet/getProfileAttachment", {
+                tableRowId,
+                fieldName,
+            });
+
+            if (!profileRes.success || !profileRes.profile_attachment_id) {
+                setLoading(false);
+                toast.error("Profile attachment ID not found!", { className: "toast-error" });
+                return;
+            }
+
+            const attachmentId = profileRes.profile_attachment_id;
+
+            const fileRes = await api.post(
+                `/templateData/downloadDocumentAttachments/${attachmentId}`,
+                {},
+                { responseType: "blob" }
+            );
+
+            console.log("File response:", fileRes);
+            setLoading(false);
+
+            if (fileRes) {
+                const fileUrl = URL.createObjectURL(fileRes);
+                console.log("File URL:", fileUrl);
+                const newTab = window.open();
+                newTab.document.body.innerHTML = `<embed src="${fileUrl}" width="100%" height="100%" />`;
+            } else {
+                toast.error("Failed to download file!", { className: "toast-error" });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error("Error loading file, please try again.", { className: "toast-error" });
+            console.error(error);
+        }
+    };
+
+    const formatDateCell = (value) => {
+        if (value === undefined || value === null || value === "") return "-";
+        if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+            return dayjs(value).format("YYYY-MM-DD");
+        }
+        return value;
+    };
+
+    const getAccusedAttachmentFields = () => {
+        if (!accusedTemplate || !accusedTemplate.fields) return [];
+        let fieldsArr = [];
+        try {
+            fieldsArr = typeof accusedTemplate.fields === "string"
+                ? JSON.parse(accusedTemplate.fields)
+                : accusedTemplate.fields;
+        } catch {
+            fieldsArr = [];
+        }
+        return fieldsArr
+            .filter(f =>
+                (f.data_type && f.data_type.toLowerCase() === "attachments") ||
+                (f.type && f.type.toLowerCase() === "file")
+            )
+            .map(f => f.name);
+    };
+
+
+    return (
+        <Box sx={{ overflow: 'auto', height: '100vh' }}>
+            <Box p={2} pb={8}>
+
+                {loading && (
+                    <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
+                        <CircularProgress size={100} />
+                    </div>
+                )}
+
+                <Box px={1} mb={2} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                    <Typography
+                        sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                        className="Roboto"
+                        onClick={backNavigation}
+                    >
+                        <West />
+                        <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
+                            Charge Sheet
+                        </Typography>
+                        {headerDetails && (
+                            <Chip
+                                label={headerDetails}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                                sx={{ fontWeight: 500, marginTop: '2px' }}
+                            />
+                        )}
+                    </Typography>
+                </Box>
                 <Typography
                     sx={{
                         fontSize: '18px',
@@ -734,293 +673,663 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     }}
                     className="Roboto"
                 >
-                    Investigations
+                    Charge Sheet
                 </Typography>
 
-                <TableView
-                    rows={investigationViewTableRows} 
-                    columns={investigationViewTableColumns}
-                    totalPage={investigationTableTotalPageCount} 
-                    totalRecord={investigationTableRowCount} 
-                    paginationCount={investigationTablePagination} 
-                    handlePagination={handlePagination} 
-                />
+                {/* <Box sx={{ mt: 0, mb: 2 }}>
+                    <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>Accused</Typography>
+                    {accusedList.length > 0 ? (
+                        <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                            <Table
+                                size="small"
+                                sx={{
+                                    minWidth: 900,
+                                    border: "1.5px solid #bdbdbd",
+                                    borderCollapse: "collapse",
+                                    '& th, & td': {
+                                        border: "1px solid #bdbdbd"
+                                    }
+                                }}
+                            >
+                                <TableBody>
+                                    <TableRow>
+                                        {Object.keys(accusedList[0])
+                                            .filter(key => !hiddenColumns.includes(key))
+                                            .map((key, idx) => {
+                                                let header = key.replace(/^field_/, '').replace(/_/g, ' ');
+                                                header = header.charAt(0).toUpperCase() + header.slice(1);
+                                                return (
+                                                    <TableCell
+                                                        key={idx}
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            whiteSpace: 'normal',
+                                                            wordBreak: 'break-word',
+                                                            maxWidth: 180,
+                                                            minWidth: 120,
+                                                            px: 1
+                                                        }}
+                                                    >
+                                                        {header}
+                                                    </TableCell>
+                                                );
+                                            })}
+                                    </TableRow>
+                                    {accusedList.map((row, rowIdx) => (
+                                        <TableRow key={rowIdx}>
+                                            {Object.keys(row)
+                                                .filter(key => !hiddenColumns.includes(key))
+                                                .map((key, colIdx) => {
+                                                    let value = row[key];
+                                                    if (value === undefined || value === null || value === "") value = "-";
+                                                    // Dynamically check if this key is an attachment field
+                                                    const attachmentFields = getAccusedAttachmentFields();
+                                                    if (attachmentFields.includes(key)) {
+                                                        return (
+                                                            <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                                {value !== "-" ? (
+                                                                    <Box
+                                                                        sx={{
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            gap: 1,
+                                                                            cursor: "pointer",
+                                                                            border: "1px solid #e0e0e0",
+                                                                            borderRadius: 1,
+                                                                            px: 1,
+                                                                            py: 0.5,
+                                                                            background: "#f8f9fa",
+                                                                            maxWidth: 220,
+                                                                            overflow: "hidden"
+                                                                        }}
+                                                                        onClick={e => {
+                                                                            e.stopPropagation();
+                                                                            openFileInNewTab(
+                                                                                value,
+                                                                                formData,
+                                                                                setLoading,
+                                                                                toast,
+                                                                                api,
+                                                                                row,
+                                                                                key // fieldNameOverride
+                                                                            );
+                                                                        }}
+                                                                        title="Click to preview"
+                                                                    >
+                                                                        {getFileIcon(value)}
+                                                                        <span style={{
+                                                                            marginLeft: 6,
+                                                                            whiteSpace: "nowrap",
+                                                                            overflow: "hidden",
+                                                                            textOverflow: "ellipsis",
+                                                                            maxWidth: 170,
+                                                                            display: "inline-block"
+                                                                        }}>
+                                                                            {typeof value === "string" ? value.split("/").pop() : ""}
+                                                                        </span>
+                                                                    </Box>
+                                                                ) : (
+                                                                    <span>-</span>
+                                                                )}
+                                                            </TableCell>
+                                                        );
+                                                    }
+                                                    return (
+                                                        <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                            {value}
+                                                        </TableCell>
+                                                    );
+                                                })}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </Box>
+                    ) : (
+                        <Box sx={{ color: "#B71C1C", fontWeight: 500, mt: 1 }}>
+                            No data found
+                        </Box>
+                    )
+                    }
+                </Box>
+
+                <Box sx={{ mt: 0, mb: 2 }}>
+                    <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>FSL</Typography>
+                    {fslList.length > 0 ? (
+                        <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                            <Table
+                                size="small"
+                                sx={{
+                                    minWidth: 900,
+                                    border: "1.5px solid #bdbdbd",
+                                    borderCollapse: "collapse",
+                                    '& th, & td': {
+                                        border: "1px solid #bdbdbd"
+                                    }
+                                }}
+                            >
+                                <TableBody>
+                                    <TableRow>
+                                        {Object.keys(fslList[0])
+                                            .filter(
+                                                key =>
+                                                    ![
+                                                        "sys_status",
+                                                        "id",
+                                                        "created_at",
+                                                        "updated_at",
+                                                        "created_by",
+                                                        "updated_by",
+                                                        "created_by_id",
+                                                        "updated_by_id",
+                                                        "ui_case_id",
+                                                        "pt_case_id"
+                                                    ].includes(key)
+                                            )
+                                            .map((key, idx) => {
+                                                let header = key.replace(/^field_/, '').replace(/_/g, ' ');
+                                                header = header.charAt(0).toUpperCase() + header.slice(1);
+                                                return (
+                                                    <TableCell
+                                                        key={idx}
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            whiteSpace: 'normal',
+                                                            wordBreak: 'break-word',
+                                                            maxWidth: 180,
+                                                            minWidth: 120,
+                                                            px: 1
+                                                        }}
+                                                    >
+                                                        {header}
+                                                    </TableCell>
+                                                );
+                                            })}
+                                    </TableRow>
+                                    {fslList.map((row, rowIdx) => (
+                                        <TableRow key={rowIdx}>
+                                            {Object.keys(row)
+                                                .filter(
+                                                    key =>
+                                                        ![
+                                                            "sys_status",
+                                                            "id",
+                                                            "created_at",
+                                                            "updated_at",
+                                                            "created_by",
+                                                            "updated_by",
+                                                            "created_by_id",
+                                                            "updated_by_id",
+                                                            "ui_case_id",
+                                                            "pt_case_id"
+                                                        ].includes(key)
+                                                )
+                                                .map((key, colIdx) => (
+                                                    <TableCell
+                                                        key={colIdx}
+                                                        sx={{
+                                                            whiteSpace: 'normal',
+                                                            wordBreak: 'break-word',
+                                                            maxWidth: 180,
+                                                            minWidth: 120,
+                                                            px: 1
+                                                        }}
+                                                    >
+                                                        {formatDateCell(row[key])}
+                                                    </TableCell>
+                                                ))}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </Box>
+                    ) : (
+                        <Typography sx={{ color: "#B71C1C", fontWeight: 500, mt: 1 }}>No data found</Typography>
+                    )}
+                </Box>
+
+                <Box sx={{ mt: 0, mb: 2 }}>
+                    <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>Witness</Typography>
+                    {witnessList.length > 0 ? (
+                        <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                            <Table
+                                size="small"
+                                sx={{
+                                    minWidth: 900,
+                                    border: "1.5px solid #bdbdbd",
+                                    borderCollapse: "collapse",
+                                    '& th, & td': {
+                                        border: "1px solid #bdbdbd"
+                                    }
+                                }}
+                            >
+                                <TableBody>
+                                    <TableRow>
+                                        {Object.keys(witnessList[0])
+                                            .filter(key => !hiddenColumns.includes(key))
+                                            .map((key, idx) => {
+                                                let header = key.replace(/^field_/, '').replace(/_/g, ' ');
+                                                header = header.charAt(0).toUpperCase() + header.slice(1);
+                                                return (
+                                                    <TableCell
+                                                        key={idx}
+                                                        sx={{
+                                                            fontWeight: 600,
+                                                            whiteSpace: 'normal',
+                                                            wordBreak: 'break-word',
+                                                            maxWidth: 180,
+                                                            minWidth: 120,
+                                                            px: 1
+                                                        }}
+                                                    >
+                                                        {header}
+                                                    </TableCell>
+                                                );
+                                            })}
+                                    </TableRow>
+                                    {witnessList.map((row, rowIdx) => (
+                                        <TableRow key={rowIdx}>
+                                            {Object.keys(row)
+                                                .filter(key => !hiddenColumns.includes(key))
+                                                .map((key, colIdx) => (
+                                                    <TableCell
+                                                        key={colIdx}
+                                                        sx={{
+                                                            whiteSpace: 'normal',
+                                                            wordBreak: 'break-word',
+                                                            maxWidth: 180,
+                                                            minWidth: 120,
+                                                            px: 1
+                                                        }}
+                                                    >
+                                                        {formatDateCell(row[key])}
+                                                    </TableCell>
+                                                ))}
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </Box>
+                    ) : (
+                        <Typography sx={{ color: "#B71C1C", fontWeight: 500, mt: 1 }}>No data found</Typography>
+                    )}
+                </Box> */}
+
+                {chargeSheetGroups.map((group, idx) => (
+                    <Box key={group.heading} sx={{ mb: 3 }}>
+                        <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>{group.heading}</Typography>
+                        {group.heading === "6. Details of the accused individuals" ? (
+                            accusedList.length > 0 && accusedTemplate && accusedTemplate.fields ? (
+                                (() => {
+                                    let accusedFields = [];
+                                    try {
+                                        accusedFields = typeof accusedTemplate.fields === "string"
+                                            ? JSON.parse(accusedTemplate.fields)
+                                            : accusedTemplate.fields;
+                                    } catch {
+                                        accusedFields = [];
+                                    }
+                                    const displayFields = accusedFields.filter(f =>
+                                        Object.keys(accusedList[0]).includes(f.name) && !hiddenColumns.includes(f.name)
+                                    );
+                                    return (
+                                        <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                                            <Table
+                                                size="small"
+                                                sx={{
+                                                    minWidth: 900,
+                                                    border: "1.5px solid #bdbdbd",
+                                                    borderCollapse: "collapse",
+                                                    '& th, & td': {
+                                                        border: "1px solid #bdbdbd"
+                                                    }
+                                                }}
+                                            >
+                                                <TableBody>
+                                                    <TableRow>
+                                                        {displayFields.map((field, idx) => {
+                                                            let header = field.name.replace(/^field_/, '').replace(/_/g, ' ');
+                                                            header = header.charAt(0).toUpperCase() + header.slice(1);
+                                                            return (
+                                                                <TableCell
+                                                                    key={idx}
+                                                                    sx={{
+                                                                        fontWeight: 600,
+                                                                        whiteSpace: 'nowrap',
+                                                                        minWidth: 160,
+                                                                        maxWidth: 300,
+                                                                        px: 1
+                                                                    }}
+                                                                >
+                                                                    {header}
+                                                                </TableCell>
+                                                            );
+                                                        })}
+                                                    </TableRow>
+                                                    {accusedList.map((row, rowIdx) => (
+                                                        <TableRow key={rowIdx}>
+                                                            {displayFields.map((field, colIdx) => {
+                                                                const key = field.name;
+                                                                let value = row[key];
+                                                                if (value === undefined || value === null || value === "") value = "-";
+                                                                const attachmentFields = getAccusedAttachmentFields();
+                                                                if (attachmentFields.includes(key)) {
+                                                                    return (
+                                                                        <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                                            {value !== "-" ? (
+                                                                                <Box
+                                                                                    sx={{
+                                                                                        display: "flex",
+                                                                                        alignItems: "center",
+                                                                                        gap: 1,
+                                                                                        cursor: "pointer",
+                                                                                        border: "1px solid #e0e0e0",
+                                                                                        borderRadius: 1,
+                                                                                        px: 1,
+                                                                                        py: 0.5,
+                                                                                        background: "#f8f9fa",
+                                                                                        maxWidth: 220,
+                                                                                        overflow: "hidden"
+                                                                                    }}
+                                                                                    onClick={e => {
+                                                                                        e.stopPropagation();
+                                                                                        openFileInNewTab(
+                                                                                            value,
+                                                                                            formData,
+                                                                                            setLoading,
+                                                                                            toast,
+                                                                                            api,
+                                                                                            row,
+                                                                                            key // fieldNameOverride
+                                                                                        );
+                                                                                    }}
+                                                                                    title="Click to preview"
+                                                                                >
+                                                                                    {getFileIcon(value)}
+                                                                                    <span style={{
+                                                                                        marginLeft: 6,
+                                                                                        whiteSpace: "nowrap",
+                                                                                        overflow: "hidden",
+                                                                                        textOverflow: "ellipsis",
+                                                                                        maxWidth: 170,
+                                                                                        display: "inline-block"
+                                                                                    }}>
+                                                                                        {typeof value === "string" ? value.split("/").pop() : ""}
+                                                                                    </span>
+                                                                                </Box>
+                                                                            ) : (
+                                                                                <span>-</span>
+                                                                            )}
+                                                                        </TableCell>
+                                                                    );
+                                                                }
+                                                                return (
+                                                                    <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                                        {value}
+                                                                    </TableCell>
+                                                                );
+                                                            })}
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </Box>
+                                    );
+                                })()
+                            ) : (
+                                <Typography sx={{ color: "#B71C1C", fontWeight: 500, mt: 1 }}>No data found</Typography>
+                            )
+                        ) : group.heading === "14. Witness Details" ? (
+                            witnessList.length > 0 ? (
+                                <Box sx={{ overflowX: 'auto', maxWidth: '100%' }}>
+                                    <Table
+                                        size="small"
+                                        sx={{
+                                            minWidth: 900,
+                                            border: "1.5px solid #bdbdbd",
+                                            borderCollapse: "collapse",
+                                            '& th, & td': {
+                                                border: "1px solid #bdbdbd"
+                                            }
+                                        }}
+                                    >
+                                        <TableBody>
+                                            <TableRow>
+                                                {Object.keys(witnessList[0])
+                                                    .filter(key => !hiddenColumns.includes(key))
+                                                    .map((key, idx) => {
+                                                        let header = key.replace(/^field_/, '').replace(/_/g, ' ');
+                                                        header = header.charAt(0).toUpperCase() + header.slice(1);
+                                                        return (
+                                                            <TableCell
+                                                                key={idx}
+                                                                sx={{
+                                                                    fontWeight: 600,
+                                                                    whiteSpace: 'nowrap',
+                                                                    minWidth: 160,
+                                                                    maxWidth: 300,
+                                                                    px: 1
+                                                                }}
+                                                            >
+                                                                {header}
+                                                            </TableCell>
+                                                        );
+                                                    })}
+                                            </TableRow>
+                                            {witnessList.map((row, rowIdx) => (
+                                                <TableRow key={rowIdx}>
+                                                    {Object.keys(row)
+                                                        .filter(key => !hiddenColumns.includes(key))
+                                                        .map((key, colIdx) => {
+                                                            let value = row[key];
+                                                            if (value === undefined || value === null || value === "") value = "-";
+                                                            return (
+                                                                <TableCell key={colIdx} sx={{ minWidth: 120, px: 1 }}>
+                                                                    {value}
+                                                                </TableCell>
+                                                            );
+                                                        })}
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </Box>
+                            ) : (
+                                <Typography sx={{ color: "#B71C1C", fontWeight: 500, mt: 1 }}>No data found</Typography>
+                            )
+                        ) : group.heading === "15. Supporting Documents" ? (
+                            // ...existing code for supporting documents...
+                            <Box>
+                                {/* Preview already uploaded files (from backend) */}
+                                {(() => {
+                                    let fileString = formData.field_supporting_documents || formData.cs_supporting_documents;
+                                    if (!fileString && typeof allUIDataObj === "object" && allUIDataObj.field_supporting_documents) {
+                                        fileString = allUIDataObj.field_supporting_documents;
+                                    }
+                                    if (Array.isArray(fileString)) fileString = fileString.join(",");
+                                    let fileList = [];
+                                    if (typeof fileString === "string" && fileString.trim() !== "") {
+                                        if (fileString.trim().startsWith("[") && fileString.trim().endsWith("]")) {
+                                            try {
+                                                const arr = JSON.parse(fileString);
+                                                if (Array.isArray(arr)) {
+                                                    fileList = arr.map(f =>
+                                                        typeof f === "string"
+                                                            ? f
+                                                            : (f && (f.filename || f.name))
+                                                    ).filter(Boolean);
+                                                }
+                                            } catch {
+                                                fileList = fileString.split(",").map(f => f && typeof f === "string" ? f.trim() : "").filter(f => !!f && f !== "[object Object]");
+                                            }
+                                        } else {
+                                            fileList = fileString.split(",").map(f => f && typeof f === "string" ? f.trim() : "").filter(f => !!f && f !== "[object Object]");
+                                        }
+                                    }
+                                    // Show preview boxes with onClick to preview
+                                    return fileList.length > 0 ? (
+                                        <Box sx={{ mb: 1, display: "flex", flexWrap: "wrap", gap: 2 }}>
+                                            {fileList.map((file, idx) => (
+                                                <Box
+                                                    key={idx}
+                                                    sx={{
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        border: "1px solid #e0e0e0",
+                                                        borderRadius: 1,
+                                                        px: 1.5,
+                                                        py: 0.5,
+                                                        background: "#f8f9fa",
+                                                        fontSize: 14,
+                                                        color: "#333",
+                                                        gap: 1,
+                                                        maxWidth: 220,
+                                                        overflow: "hidden",
+                                                        cursor: "pointer"
+                                                    }}
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        await openFileInNewTab(file, formData, setLoading, toast, api, {});
+                                                    }}
+                                                    title="Click to preview"
+                                                >
+                                                    {getFileIcon(file)}
+                                                    <span style={{
+                                                        marginLeft: 6,
+                                                        whiteSpace: "nowrap",
+                                                        overflow: "hidden",
+                                                        textOverflow: "ellipsis",
+                                                        maxWidth: 170,
+                                                        display: "inline-block"
+                                                    }}>
+                                                        {typeof file === "string"
+                                                            ? file.split("/").pop() || file
+                                                            : (file && file.name) || ""}
+                                                    </span>
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    ) : null;
+                                })()}
+                                <FileInput
+                                    field={{
+                                        name: "cs_supporting_documents",
+                                        label: "Supporting Documents",
+                                        multiple: true,
+                                        required: false,
+                                    }}
+                                    formData={formData}
+                                    errors={{}}
+                                    onChange={(name, files) => {
+                                        setFormData(prev => ({
+                                            ...prev,
+                                            [name]: files
+                                        }));
+                                    }}
+                                    readOnly={false}
+                                />
+                            </Box>
+                        ) : (
+                            <Table size="small" sx={{ maxWidth: '100%', border: '1px solid #e0e0e0' }}>
+                                <TableBody>
+                                    <TableRow>
+                                        {group.fields.map(field => (
+                                            <TableCell key={field.id} sx={{ fontWeight: 500, width: 200 }}>{field.label}</TableCell>
+                                        ))}
+                                    </TableRow>
+                                    <TableRow>
+                                        {group.fields.map(field => {
+                                            if (field.id === "cs_police_station") {
+                                                const dropdownOptions = getDropdownOptions("field_name_of_the_police_station");
+                                                return (
+                                                    <TableCell key={field.id}>
+                                                        {dropdownOptions.length > 0 ? (
+                                                            <TextField
+                                                                select
+                                                                id={field.id}
+                                                                fullWidth
+                                                                size="small"
+                                                                value={formData[field.id] || ""}
+                                                                onChange={handleInput}
+                                                                SelectProps={{ native: true }}
+                                                            >
+                                                                <option value="">Select</option>
+                                                                {dropdownOptions.map(opt => (
+                                                                    <option key={opt.code ?? opt.value ?? opt.name} value={opt.code ?? opt.value ?? opt.name}>
+                                                                        {opt.name ?? opt.label ?? opt.value ?? opt.code}
+                                                                    </option>
+                                                                ))}
+                                                            </TextField>
+                                                        ) : (
+                                                            <TextField
+                                                                id={field.id}
+                                                                fullWidth
+                                                                size="small"
+                                                                value={formData[field.id] || ""}
+                                                                onChange={handleInput}
+                                                            />
+                                                        )}
+                                                    </TableCell>
+                                                );
+                                            }
+                                            if (field.id === "cs_case_filed_date" || field.id === "cs_incident_date" || field.id === "cs_cid_initiated_date") {
+                                                return (
+                                                    <TableCell key={field.id}>
+                                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                            <DatePicker
+                                                                inputFormat="YYYY-MM-DD"
+                                                                value={formData[field.id] ? dayjs(formData[field.id]) : null}
+                                                                onChange={date => {
+                                                                    setFormData(prev => ({
+                                                                        ...prev,
+                                                                        [field.id]: date ? dayjs(date).format("YYYY-MM-DD") : ""
+                                                                    }));
+                                                                }}
+                                                                renderInput={(params) => (
+                                                                    <TextField
+                                                                        {...params}
+                                                                        id={field.id}
+                                                                        fullWidth
+                                                                        size="small"
+                                                                    />
+                                                                )}
+                                                            />
+                                                        </LocalizationProvider>
+                                                    </TableCell>
+                                                );
+                                            }
+                                            return (
+                                                <TableCell key={field.id}>
+                                                    <TextField
+                                                        id={field.id}
+                                                        fullWidth
+                                                        size="small"
+                                                        value={formData[field.id] || ""}
+                                                        onChange={handleInput}
+                                                    />
+                                                </TableCell>
+                                            );
+                                        })}
+                                    </TableRow>
+                                </TableBody>
+                            </Table>
+                        )}
+                    </Box>
+                ))}
+
+                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                    <Button
+                        variant="contained"
+                        color="success"
+                        size="large"
+                        sx={{ fontWeight: 500, height: 40, margin: 0 }}
+                        onClick={alreadySaved ? updateChargeSheetApi : saveChargeSheetApi}
+                    >
+                        {alreadySaved ? "Update" : "Save"}
+                    </Button>
+                </Box>
 
             </Box>
-
-            <Typography
-                sx={{
-                    fontSize: '18px',
-                    fontWeight: '600',
-                    color: '#0B5ED7',
-                    mb: 1,
-                    textAlign: 'center',
-                    letterSpacing: '0.5px',
-                    textTransform: 'uppercase',
-                }}
-                className="Roboto"
-            >
-                Charge Sheet
-            </Typography>
-
-            <Box sx={{border: '1px solid #e0e0e0'}}>
-                <Table size="small">
-                    <TableBody>
-                    <TableRow>
-                        <TableCell colSpan={2}>ಕರ್ನಾಟಕ CID</TableCell>
-                        <TableCell colSpan={2}>ದೋಷಾರೋಪಣ ಪತ್ರ</TableCell>
-                        <TableCell colSpan={2}>[ ಆದೇಶ ಸಂಖ್ಯೆ: 1539 ಮತ್ತು 1540 ]</TableCell>
-                        <TableCell rowSpan={4} style={{ width: 150, verticalAlign: 'top' }}>
-                        <Typography variant="body2">( ಪಿ.ಎಂ. 281)</Typography>
-                        <Typography variant="body2">( ಪೊಲೀಸರಿಗೆ ನೀಡಿದ ಮಾಹಿತಿ )</Typography>
-                        <Box mt={10}><Typography variant="body2">ಜಿಲ್ಲೆ</Typography></Box>
-                        </TableCell>
-                    </TableRow>
-
-                    <TableRow>
-                        <TableCell colSpan={2}>ನಮೂನೆ ಸಂಖ್ಯೆ: 157</TableCell>
-                        <TableCell colSpan={4}></TableCell>
-                    </TableRow>
-
-                    <TableRow>
-                        <TableCell colSpan={2}>ಜಿಲ್ಲೆ</TableCell>
-                        <TableCell colSpan={2}>
-                        ದೋಷಾರೋಪಣ ಸಂಖ್ಯೆ
-                        <TextField id="cs_no" size="small" fullWidth onChange={handleInput} value={formData['cs_no'] ? formData['cs_no'] : '' } />
-                        </TableCell>
-                        <TableCell colSpan={2}>
-                        ದಿನಾಂಕ
-                        <TextField id="CS_field_date" size="small" fullWidth type="date" onChange={handleInput} value={formData['CS_field_date'] ? formData['CS_field_date'].split('T')[0] : ''} />
-                        </TableCell>
-                    </TableRow>
-
-                    <TableRow>
-                        <TableCell colSpan={2}>ಪೋಲೀಸ್ ಠಾಣೆ</TableCell>
-                        <TableCell colSpan={2}>ಪ್ರಥಮ ಮಾಹಿತಿ ಸಂಖ್ಯೆ <span id="CS_fir_no" /></TableCell>
-                        <TableCell colSpan={2}>ದಿನಾಂಕ</TableCell>
-                    </TableRow>
-
-                    <TableRow>
-                        <TableCell colSpan={3}>ದೂರು ಅಥವಾ ಮಾಹಿತಿ ನೀಡಿದವರ ಹೆಸರು, ವಿಳಾಸ ಮತ್ತು ವೃತ್ತಿ</TableCell>
-                        <TableCell colSpan={3}>
-                        <TextField
-                            id="name_addr_informant"
-                            fullWidth
-                            multiline
-                            size="small"
-                            value={formData['name_addr_informant'] ? formData['name_addr_informant'] : ''}
-                            onChange={handleInput}
-                        />
-                        </TableCell>
-                        <TableCell />
-                    </TableRow>
-
-                    <TableRow>
-                        <TableCell rowSpan={2}>ತಲೆ ಮರೆಸಿಕೊಂಡವರೂ ಸೇರಿದಂತೆ...</TableCell>
-                        <TableCell colSpan={2}>ವಿಚಾರಣೆಗೆ ಕಳುಹಿಸಿದ ಆಪಾದಿತರ ಹೆಸರುಗಳು ಮತ್ತು ವಿಳಾಸಗಳು</TableCell>
-                        <TableCell rowSpan={2}>ಸ್ವತ್ತಿನ ವಿವರ</TableCell>
-                        <TableCell rowSpan={2}>ಸಾಕ್ಷಿಗಳ ಹೆಸರುಗಳು</TableCell>
-                        <TableCell rowSpan={2}>ಆಪಾದನೆ ಅಥವಾ ಮಾಹಿತಿ</TableCell>
-                        <TableCell rowSpan={4}>
-                            <Typography>ಪೋಲೀಸ್ ಠಾಣೆ: {getValue('police_station')}</Typography>
-                            <TextField
-                                label="ದೋಷಾರೋಪಣ ಪತ್ರ ಸಂಖ್ಯೆ"
-                                size="small"
-                                fullWidth
-                                onChange={handleInput}
-                                margin="dense"
-                            />
-                            <TextField
-                                label="ಪ್ರಥಮ ಮಾಹಿತಿ ವರದಿ ಸಂಖ್ಯೆ"
-                                size="small"
-                                fullWidth
-                                onChange={handleInput}
-                                margin="dense"
-                            />
-                            <Typography>ಮೊ.ಸಂಖ್ಯೆ: {getValue('crime_no')}</Typography>
-                            <Typography>ದಿನಾಂಕ: {getFormattedDate(getValue('crime_date'))}</Typography>
-                            <TextField
-                                label="ಮ್ಯಾಜಿಸ್ಟ್ರೇಟರ ಪ್ರಕರಣ ಸಂಖ್ಯೆ"
-                                id="magistrate_case_no"
-                                size="small"
-                                fullWidth
-                                onChange={handleInput}
-                                value={formData['magistrate_case_no'] ? formData['magistrate_case_no'] : ''}
-                                margin="dense"
-                            />
-                            <TextField
-                                label="ಸರಕಾರ ವಿರುದ್ದ ಆಪಾದಿತ"
-                                id="accused_name_per_gov"
-                                size="small"
-                                fullWidth
-                                onChange={handleInput}
-                                value={formData['accused_name_per_gov'] ? formData['accused_name_per_gov'] : ''}
-                                margin="dense"
-                            />
-                            <TextField
-                                label="ಮ್ಯಾಜಿಸ್ಟ್ರೇಟರು"
-                                id="magistrate"
-                                size="small"
-                                fullWidth
-                                onChange={handleInput}
-                                value={formData['magistrate'] ? formData['magistrate'] : ''}
-                                margin="dense"
-                            />
-                        </TableCell>
-                    </TableRow>
-
-                    <TableRow>
-                        <TableCell>ವಶದಲ್ಲಿರುವವರು</TableCell>
-                        <TableCell>ಜಾಮಿನು ಮೇಲೆ ಅಥವಾ ಮುಚ್ಚಳಿಕೆ ಪತ್ರದ ಮೇಲೆ</TableCell>
-                    </TableRow>
-
-                    <TableRow>
-                        <TableCell align="center">2</TableCell>
-                        <TableCell align="center">3</TableCell>
-                        <TableCell align="center">4</TableCell>
-                        <TableCell align="center">5</TableCell>
-                        <TableCell align="center">6</TableCell>
-                        <TableCell align="center">7</TableCell>
-                    </TableRow>
-
-                        <TableRow>
-                            {['det_accused_or_not_ind_absconders', 'custody', 'on_bail_or_bond', 'prop_desc', 'name_addr_witnesses', 'det_circumstances'].map((id) => (
-                                <TableCell key={id} align="center">
-                                <div
-                                    style={{
-                                        width: '130px',
-                                        height: '130px',
-                                        position: 'relative',
-                                        overflow: 'hidden',
-                                        border: '1px solid #ccc',
-                                    }}
-                                >
-                                    <textarea
-                                        id={id}
-                                        onChange={handleInput}
-                                        value={formData[id] ? formData[id] : ''}
-                                        style={{
-                                            width: '130px',
-                                            height: '130px',
-                                            transform: 'rotate(-90deg)',
-                                            transformOrigin: 'center',
-                                            position: 'absolute',
-                                            top: '0',
-                                            left: '0',
-                                            resize: 'none',
-                                            border: 'none',
-                                            padding: '8px',
-                                            boxSizing: 'border-box',
-                                        }}
-                                    />
-                                </div>
-                                </TableCell>
-                            ))}
-                        </TableRow>
-
-                    </TableBody>
-                </Table>
-
-                <Box mt={4} px={2}>
-                    <Typography align="center">ಕಾಲಂ ನಂ 5 ಮುಂದುವರೆದಿದೆ</Typography>
-                    <RichTextEditor
-                        field={{
-                            name: 'textEditor_01'
-                        }}
-                        onChange={(value)=>handleRichTextEditorInput("textEditor_01", value)}
-                        formData={formData}
-                    />
-                </Box>
-                <Box mt={4} px={2}>
-                    <Typography align="center">ಕಾಲಂ ನಂ 6 ಮುಂದುವರೆದಿದೆ</Typography>
-                    <RichTextEditor
-                        field={{
-                            name: 'textEditor_02'
-                        }}
-                        onChange={(value)=>handleRichTextEditorInput("textEditor_02", value)}
-                        formData={formData}
-                    />
-                </Box>
-                <Box mt={4} px={2}>
-                    <Typography align="center">ಕಾಲಂ ನಂ 7 ಮುಂದುವರೆದಿದೆ</Typography>
-                    <RichTextEditor
-                        field={{
-                            name: 'textEditor_03'
-                        }}
-                        onChange={(value)=>handleRichTextEditorInput("textEditor_03", value)}
-                        formData={formData}
-                    />
-                </Box>
-
-                <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    gap={5}
-                    my={5}
-                    px={2}
-                >
-                    <Box display="flex" flexDirection="column" gap={3}>
-
-                        <Box display="flex" alignItems="center" gap={5}>
-                            <Typography>ಸ್ಥಳ:</Typography>
-                            <TextField
-                                id="place"
-                                size="small"
-                                onInput={handleInput}
-                                variant="outlined"
-                                fullWidth
-                                value={formData['place'] ? formData['place'] : ''}
-                            />
-                        </Box>
-
-                        <Box display="flex" alignItems="center" gap={2.5}>
-                            <Typography>ದಿನಾಂಕ:</Typography>
-                            <TextField
-                                id="cs_fields_date2"
-                                type="date"
-                                size="small"
-                                onChange={handleInput}
-                                variant="outlined"
-                                fullWidth
-                                value={formData['cs_fields_date2'] ? formData['cs_fields_date2'].split('T')[0] : ''}
-                            />
-                        </Box>
-                    </Box>
-
-                    <Box>
-                        <Typography>(ತನಿಖಾಧಿಕಾರಿಯ ಸಹಿ)</Typography>
-                        <Typography>ಪದನಾಮ</Typography>
-                        <Typography>ಹುದ್ದೆ</Typography>
-                    </Box>
-
-                </Box>
-   
-                </Box>
-
-            {formOpen &&
-                <DynamicForm
-                    table_row_id={selectedRowId}
-                    template_id={selectedTemplateId}
-                    table_name={selectedInvestigation?.table}
-                    template_name={selectedInvestigation?.table}
-                    readOnly={true}
-                    editData={false}
-                    formConfig={formTemplateData}
-                    stepperData={stepperData}
-                    initialData={initialData}
-                    closeForm={setFormOpen} 
-                    hideEditBtn={true}
-                />
-            }
-
-            {loading && (
-                <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
-                    <CircularProgress size={100} />
-                </div>
-            )}
-
-        </Box>
         </Box>
     );
 };

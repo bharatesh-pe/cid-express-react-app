@@ -250,11 +250,20 @@ router.post('/getTemplateData',
     // userAuthMiddleware,
     [gwtDataValidation],[validate_token],
     templateDataController.getTemplateData)
-router.post('/getPrimaryTemplateData',
+router.post('/bulkUpdateColumn',
     // eitherAuthMiddleware,
     // userAuthMiddleware,
     [gwtDataValidation],[validate_token],
+    templateDataController.bulkUpdateColumn)
+router.post('/getPrimaryTemplateData',
+    [gwtDataValidation],[validate_token],
     templateDataController.getPrimaryTemplateData)
+router.post('/getPrimaryTemplateDataWithoutPagination',
+    [gwtDataValidation],[validate_token],
+    templateDataController.getPrimaryTemplateDataWithoutPagination)
+router.post('/addDropdownSingleFieldValue',
+    [validate_token],
+    templateDataController.addDropdownSingleFieldValue)
 
     router.post('/getActionTemplateData',
     // eitherAuthMiddleware,

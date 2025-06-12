@@ -25,7 +25,7 @@ import Report from "./pages/reports";
 import UICreate from './pages/cases/UICreate';
 import UICases from './pages/cases/UICases';
 import RolePage from './pages/Role';
-
+import OrdersRepository from './pages/repository'
 import UIView from './pages/cases/UIView';
 import Trail from './pages/trail';
 import Annexure from './pages/annexure'
@@ -50,6 +50,7 @@ import TemplateMastersView from './pages/templateMasters';
 import LokayuktaView from './pages/lokayuktaView';
 import ActionPlan from './pages/ActionPlan';
 import IframePage from './pages/IframePage';
+import SettingsPage from './pages/SettingsPage';
 
 import { ToastContainer } from 'react-toastify';
 function App() {
@@ -271,6 +272,16 @@ function App() {
                 }
             />
             <Route
+                path="/case/repos_case"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <OrdersRepository />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
                 path="/master"
                 element={
                     <ProtectedRoute>
@@ -479,6 +490,17 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <IframePage />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/settings"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <SettingsPage />
                         </Layout>
                     </ProtectedRoute>
                 }

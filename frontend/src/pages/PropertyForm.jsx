@@ -119,23 +119,11 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
     const [selectKey, setSelectKey] = useState(null);
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
-    const [selectedIds, setSelectedIds] = useState([]);
 
 
     useEffect(() => {
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
     }, [otherTemplatesPaginationCount]);
-
-    const toggleSelectRow = (id) => {
-        setSelectedIds((prevSelectedIds) => {
-            const updated = prevSelectedIds.includes(id)
-                ? prevSelectedIds.filter((selectedId) => selectedId !== id)
-                : [...prevSelectedIds, id];
-
-            return updated;
-        });
-    };
-
 
     const onSaveTemplateError = (error) => {
         setIsValid(false);
@@ -428,19 +416,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
                         const updatedHeader = [
                             {
-                                field: "select",
-                                headerName: "",
-                                width: 50,
-                                renderCell: (params) => {
-                                    const isPFUpdated = params.row.sys_status === 'PF';
-                                    return isPFUpdated ? (
-                                        <div onClick={(e) => e.stopPropagation()}>
-                                            <Checkbox onChange={() => toggleSelectRow(params.row.id)} />
-                                        </div>
-                                    ) : null;
-                                }
-                            },
-                            {
                                 field: "sl_no",
                                 headerName: "S.No",
                                 resizable: false,
@@ -525,7 +500,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                         ),
                                         renderCell: (params) => tableCellRender(key, params, params.value),
                                     };
-                                }),
+                               }),
 
                             ...(Object.keys(getTemplateResponse.data[0] || {}).includes("created_by") ? [{
                                 field: "created_by",
@@ -1448,140 +1423,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         }
     };
 
-    const handleAutocomplete = (field, selectedValue, othersFilter) => {
-        var updatedFormData = {}
-        var selectedFilterDropdown = []
-
-        if (othersFilter) {
-
-            selectedFilterDropdown = othersFiltersDropdown
-            updatedFormData = { ...othersFilterData, [field.name]: selectedValue };
-
-            setOthersFilterData(updatedFormData);
-
-        } else {
-
-            selectedFilterDropdown = filterDropdownObj
-            updatedFormData = { ...filterValues, [field.name]: selectedValue };
-
-            setFilterValues(updatedFormData);
-
-        }
-
-        if (field?.api && field?.table) {
-            var dependent_field = selectedFilterDropdown.filter((element) => {
-                return (
-                    element.dependent_table &&
-                    element.dependent_table.length > 0 &&
-                    element.dependent_table.includes(field.table)
-                );
-            });
-
-            if (dependent_field && dependent_field[0] && dependent_field[0].api) {
-                var apiPayload = {};
-                if (dependent_field[0].dependent_table.length === 1) {
-                    const key = field.table === "users" ? "user_id" : `${field.table}_id`;
-                    apiPayload = {
-                        [key]: updatedFormData[field.name],
-                    };
-                } else {
-                    var dependentFields = selectedFilterDropdown.filter((element) => {
-                        return dependent_field[0].dependent_table.includes(element.table);
-                    });
-
-                    apiPayload = dependentFields.reduce((payload, element) => {
-                        if (updatedFormData && updatedFormData[element.name]) {
-                            const key =
-                                element.table === "users" ? "user_id" : `${element.table}_id`;
-                            payload[key] = updatedFormData[element.name];
-                        }
-                        return payload;
-                    }, {});
-                }
-
-                const callApi = async () => {
-                    setLoading(true);
-
-                    try {
-                        var getOptionsValue = await api.post(
-                            dependent_field[0].api,
-                            apiPayload
-                        );
-                        setLoading(false);
-
-                        var updatedOptions = [];
-
-                        if (getOptionsValue && getOptionsValue.data) {
-                            updatedOptions = getOptionsValue.data.map((element, i) => {
-                                return {
-                                    name: element[
-                                        dependent_field[0].table === "users"
-                                            ? "name"
-                                            : dependent_field[0].table + "_name"
-                                    ],
-                                    code: element[
-                                        dependent_field[0].table === "users"
-                                            ? "user_id"
-                                            : dependent_field[0].table + "_id"
-                                    ],
-                                };
-                            });
-                        }
-
-                        var userUpdateFields = {
-                            options: updatedOptions,
-                        };
-
-
-                        dependent_field.forEach((data) => {
-                            delete updatedFormData[data.name];
-                        });
-
-                        if (othersFilter) {
-                            setOthersFiltersDropdown(
-                                selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
-                            );
-                            dependent_field.map((data) => {
-                                delete othersFilterData[data.name];
-                            });
-
-                            setOthersFilterData(updatedFormData);
-                        } else {
-                            setfilterDropdownObj(
-                                selectedFilterDropdown.map((element) => element.id === dependent_field[0].id ? { ...element, ...userUpdateFields } : element)
-                            );
-                            dependent_field.map((data) => {
-                                delete filterValues[data.name];
-                            });
-
-                            setFilterValues(updatedFormData);
-                        }
-
-                    } catch (error) {
-                        setLoading(false);
-                        if (error && error.response && error.response.data) {
-                            toast.error(
-                                error.response?.data?.message || "Need dependent Fields",
-                                {
-                                    position: "top-right",
-                                    autoClose: 3000,
-                                    hideProgressBar: false,
-                                    closeOnClick: true,
-                                    pauseOnHover: true,
-                                    draggable: true,
-                                    progress: undefined,
-                                    className: "toast-error",
-                                }
-                            );
-                            return;
-                        }
-                    }
-                };
-                callApi();
-            }
-        }
-    };
-
     const tableHeaderRender = (params, key) => {
         return (
             <Tooltip title={params.colDef.headerName} arrow placement="top">
@@ -1668,10 +1509,11 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         return res?.data || [];
     };
 
-    const handleSubmitPF = async ({ id, selectedIds }) => {
-
-        if (!id || id.length === 0 || !selectedIds || selectedIds.length === 0) {
-            toast.error("Please select at least one record to submit.", {
+    const handleSubmitPF = async () => {
+        // Find all rows with sys_status === 'PF'
+        const pfRows = otherTemplateData.filter(row => row.sys_status === 'PF');
+        if (!selectedRowData?.id || pfRows.length === 0) {
+            toast.error("No Property Form records with status 'PF' to submit.", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -1685,7 +1527,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         }
         const result = await Swal.fire({
             title: 'Are you sure?',
-            text: "Do you want to submit this Property Form? Once submitted, the selected record will be move to the FSL.",
+            text: "Do you want to submit these Property Form(s)? Once submitted, the selected record(s) will be moved to the FSL.",
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Yes, submit it!',
@@ -1695,8 +1537,8 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         if (result.isConfirmed) {
             const payload = {
                 transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
-                ui_case_id: id,
-                row_ids: selectedIds
+                ui_case_id: selectedRowData.id,
+                row_ids: pfRows.map(row => row.id)
             };
 
             try {
@@ -1704,7 +1546,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 const response = await api.post('/templateData/submitPropertyFormFSL', payload);
 
                 if (response.success) {
-                    toast.success("The Property Form has been submitted", {
+                    toast.success("The Property Form(s) have been submitted", {
                         position: "top-right",
                         autoClose: 3000,
                         hideProgressBar: false,
@@ -1721,7 +1563,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                             }
                         },
                     });
-                    setSelectedIds([]);
+                    // No need to clear selectedIds
                 } else {
                     toast.error(response.message || 'Something went wrong.', {
                         position: "top-right",
@@ -1850,170 +1692,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 autoClose: 3000,
                 className: "toast-error",
             });
-        }
-    };
-
-    const otherTemplateSaveFunc = async (data, saveNewAction) => {
-
-        if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
-            toast.warning("Please Check The Template", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-
-        if (Object.keys(data).length === 0) {
-            toast.warning("Data Is Empty Please Check Once", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-
-
-        const formData = new FormData();
-
-        var normalData = {}; // Non-file upload fields
-
-        optionFormTemplateData.forEach((field) => {
-            if (data[field.name]) {
-                if (field.type === "file" || field.type === "profilepicture") {
-                    // Append file fields to formData
-                    if (field.type === "file") {
-                        if (Array.isArray(data[field.name])) {
-                            const hasFileInstance = data[field.name].some(
-                                (file) => file.filename instanceof File
-                            );
-                            var filteredArray = data[field.name].filter(
-                                (file) => file.filename instanceof File
-                            );
-                            if (hasFileInstance) {
-                                data[field.name].forEach((file) => {
-                                    if (file.filename instanceof File) {
-                                        formData.append(field.name, file.filename);
-                                    }
-                                });
-
-                                filteredArray = filteredArray.map((obj) => {
-                                    return {
-                                        ...obj,
-                                        filename: obj.filename["name"],
-                                    };
-                                });
-
-                                formData.append(
-                                    "folder_attachment_ids",
-                                    JSON.stringify(filteredArray)
-                                );
-                            }
-                        }
-                    } else {
-                        formData.append(field.name, data[field.name]);
-                    }
-                } else {
-                    // Add non-file fields to normalData
-                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
-                }
-            }
-        });
-        normalData.sys_status = "ui_case";
-        normalData["ui_case_id"] = selectedRowData.id;
-
-        var othersData = {};
-
-
-        formData.append("table_name", selectedOtherTemplate.table);
-        formData.append("data", JSON.stringify(normalData));
-        formData.append("others_data", JSON.stringify(othersData));
-        formData.append("transaction_id", randomApprovalId);
-        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
-
-        setLoading(true);
-
-        try {
-            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
-
-            setLoading(false);
-
-            if (overallSaveData && overallSaveData.success) {
-
-                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                });
-
-                if (saveNewAction) {
-                    await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
-                    showOptionTemplate(selectedOtherTemplate.table);
-                } else {
-                    handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
-                }
-
-                setOtherFormOpen(false);
-
-                if (selectedOtherTemplate?.field) {
-                    var combinedData = {
-                        id: selectedRowData.id,
-                        [selectKey.name]: selectedOtherFields.code,
-                    };
-
-                    // update func
-                    onUpdateTemplateData(combinedData);
-
-                    setSelectKey(null);
-                    setSelectedRow(null);
-                    setSelectedOtherFields(null);
-                    setselectedOtherTemplate(null);
-                } else {
-                    return;
-                }
-
-            } else {
-                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
         }
     };
 
@@ -2465,9 +2143,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     <Button
                                         variant="contained"
                                         color="success"
-                                        onClick={() => {
-                                            handleSubmitPF({ id: selectedRowData?.id, selectedIds });
-                                        }}
+                                        onClick={handleSubmitPF}
                                         disabled={showSubmitPFButton}
                                         sx={{
                                             marginLeft: 'auto',

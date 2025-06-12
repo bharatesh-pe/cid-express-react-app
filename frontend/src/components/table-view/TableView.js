@@ -113,7 +113,7 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         {[
         ...(hoverTableOptions || []).map((option) => {
-            const isCaseExtension = option.name?.toLowerCase() === "case extension";
+            const isCaseExtension = option.name?.toLowerCase() === "case extension approve" || option.name?.toLowerCase() === "case extension request";
             const shouldDisable =
             selectedRow?.isDisabled &&
             !(isCaseExtension && selectedRow?.allowCaseExtension);

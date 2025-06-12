@@ -61,6 +61,8 @@ import HistoryIcon from '@mui/icons-material/History';
 
 import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
+import DropdownWithAdd from '../components/form/DropdownWithAdd';
+import Swal from 'sweetalert2';
 
 const camelize = (str) => {
     return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => (index === 0 ? match.toLowerCase() : match.toUpperCase())).replace(/\s+/g, '');
@@ -102,6 +104,8 @@ const Formbuilder = () => {
     // Array for step labels
     const steps = stepper;
 
+    const [dropdownInputValue, setDropdownInputValue] = useState({});
+
     const [loading, setLoading] = useState(false); // State for loading indicator
 
     useEffect(() => {
@@ -109,6 +113,16 @@ const Formbuilder = () => {
             if (Createdfields.length > 0) {
 
                 var updatedFields = Createdfields.map((element)=>{
+                    
+                    if(element.type === "tabs"){
+                        return{
+                            ...element,
+                            is_primary_field : element.is_primary_field ? element.is_primary_field : false,
+                            ao_field : element.ao_field ? element.ao_field : false,
+                            tableTabs : element.tableTabs ? element.tableTabs : false
+                        }
+                    }
+
                     return{
                         ...element,
                         is_primary_field : element.is_primary_field ? element.is_primary_field : false,
@@ -693,6 +707,30 @@ const Formbuilder = () => {
                         }
                     </div>
                 );
+            case "dropdown_with_add":
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+                        <DropdownWithAdd
+                            key={field.id}
+                            field={field}
+                            formData={formData}
+                            errors=""
+                            onChange={(selectedCode) => handleAutocomplete(field.name, selectedCode)}
+                            onAdd={(value)=>dropdownWithAddItem(field, value)}
+                            onChangeDropdownInputValue={(value) => 
+                                setDropdownInputValue({ ...dropdownInputValue, [field.name]: value })
+                            }
+                            dropdownInputValue={dropdownInputValue}
+                            onFocus={(e) => { setSelectedField(field) }}
+                            isFocused={field.label == selectedField.label}
+                        />
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
+                    </div>
+                );
             case "number":
                 return (
                     <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
@@ -1165,7 +1203,7 @@ const Formbuilder = () => {
                 ...field, // Keep all other properties of the field
                 name: transformedName, // Update the 'name' key with the transformed value
                 searchable: true, // for searching fields from the table
-                data_type: field.type === 'textarea' ? 'text' : field.formType, // Update the 'data_type' key with the formType value
+                data_type: (field.type === 'textarea' || field.type === 'texteditor') ? 'text' : field.formType, // Update the 'data_type' key with the formType value
             };
         });
 
@@ -1197,13 +1235,31 @@ const Formbuilder = () => {
         //     return;
         // }
 
+        if(module === "others"){
+            var newFields = [
+                ...updatedFields, 
+                { 
+                    type: 'text', 
+                    formType: 'text',
+                    label: `Approval Done By`, 
+                    name: `field_approval_done_by`, 
+                    id: `random_${Date.now()}_approval_done_by`, 
+                    hide_from_ux : true,
+                    table_display_content : true,
+                    searchable: true,
+                    data_type : 'text',
+                    section: steps && steps[activeStep] ? steps[activeStep] : null 
+                }
+            ];
+        }
+
         // Log the updated fields array to check the result
         var createTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
             "template_module": module,
             "link_module": link_module,
-            "fields": updatedFields,
+            "fields": newFields,
             "paranoid": false
         }
 
@@ -1329,7 +1385,7 @@ const Formbuilder = () => {
                     ...field, // Keep all other properties of the field
                     name: transformedName, // Update the 'name' key with the transformed value
                     searchable: true, // for searching fields from the table
-                    data_type: field.type === 'textarea' ? 'text' : field.formType, // Update the 'data_type' key with the formType value
+                    data_type: (field.type === 'textarea' || field.type === 'texteditor') ? 'text' : field.formType, // Update the 'data_type' key with the formType value
                 };
             });
 
@@ -1934,83 +1990,100 @@ const Formbuilder = () => {
             } else {
                 setLoading(true);
 
-                var getOptionsValue = await api.post('/templateData/getTemplateData', { table_name: selectedMasterOptions.table });
-                setLoading(false);
+                try {
 
-                if (getOptionsValue && getOptionsValue.success && getOptionsValue.data) {
+                    var getOptionsValue = await api.post('/templateData/getPrimaryTemplateDataWithoutPagination', { table_name: selectedMasterOptions.table });
+                    setLoading(false);
 
-                    var forignKey = 'id';
-                    var attributeKey = [];
-                    
-                    var updatedOptions = getOptionsValue.data.map((templateData) => {
+                    if (getOptionsValue && getOptionsValue.success && getOptionsValue.data) {
 
-                        var nameKey = Object.keys(templateData).find(
-                            key => !['id', 'created_at', 'updated_at'].includes(key)
-                        );
+                        const { data , primaryAttribute} = getOptionsValue.data
 
-                        if(attributeKey.length === 0){
-                            attributeKey = [nameKey]
+                        var forignKey = 'id';
+                        var attributeKey = [primaryAttribute || 'id'];
+                        
+                        var updatedOptions = data.map((templateData) => {
+
+                            var nameKey = Object.keys(templateData).find(
+                                key => !['id', 'created_at', 'updated_at'].includes(key)
+                            );
+
+                            // if(attributeKey.length === 0){
+                            //     attributeKey = [nameKey]
+                            // }
+
+                            return {
+                                name: nameKey ? templateData[nameKey] : '',
+                                code: templateData.id
+                            }
+                        })
+
+                        var userUpdateFields = {
+                            api: '/templateData/getTemplateData',
+                            readonlyOption: true,
+                            table: selectedMasterOptions.table,
+                            options: updatedOptions,
+                            forign_key : forignKey,
+                            attributes : attributeKey,
+                            defaultValue : false
                         }
 
-                        return {
-                            name: nameKey ? templateData[nameKey] : '',
-                            code: templateData.id
+                        setFields(fields.map((field) =>
+                            (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
+                        ));
+
+                        setSelectedField((prev) => ({
+                            ...prev,
+                            options: updatedOptions,
+                            table: selectedMasterOptions.table,
+                            api: '/templateData/getTemplateData',
+                            readonlyOption: true,
+                            forign_key : forignKey,
+                            attributes : attributeKey,
+                            defaultValue : false
+                        }));
+
+                    } else {
+
+                        var userUpdateFields = {
+                            api: '',
+                            readonlyOption: false,
+                            table: '',
+                            options: [],
+                            forign_key : '',
+                            attributes : [],
+                            defaultValue : false
                         }
-                    })
 
-                    var userUpdateFields = {
-                        api: '/templateData/getTemplateData',
-                        readonlyOption: true,
-                        table: selectedMasterOptions.table,
-                        options: updatedOptions,
-                        forign_key : forignKey,
-                        attributes : attributeKey,
-                        defaultValue : false
+                        setFields(fields.map((field) =>
+                            (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
+                        ));
+
+                        setSelectedField((prev) => ({
+                            ...prev,
+                            options: [],
+                            table: '',
+                            api: '',
+                            readonlyOption: false,
+                            forign_key : '',
+                            attributes : [],
+                            defaultValue : false
+                        }));
+
+                        toast.error('No Data Found', {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
                     }
-
-                    setFields(fields.map((field) =>
-                        (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
-                    ));
-
-                    setSelectedField((prev) => ({
-                        ...prev,
-                        options: updatedOptions,
-                        table: selectedMasterOptions.table,
-                        api: '/templateData/getTemplateData',
-                        readonlyOption: true,
-                        forign_key : forignKey,
-                        attributes : attributeKey,
-                        defaultValue : false
-                    }));
-
-                } else {
-
-                    var userUpdateFields = {
-                        api: '',
-                        readonlyOption: false,
-                        table: '',
-                        options: [],
-                        forign_key : '',
-                        attributes : [],
-                        defaultValue : false
-                    }
-
-                    setFields(fields.map((field) =>
-                        (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
-                    ));
-
-                    setSelectedField((prev) => ({
-                        ...prev,
-                        options: [],
-                        table: '',
-                        api: '',
-                        readonlyOption: false,
-                        forign_key : '',
-                        attributes : [],
-                        defaultValue : false
-                    }));
-
-                    toast.error('No Data Found', {
+                } catch (error) {
+                    setLoading(false);
+                    toast.error(error?.response?.data?.['message'] ? error.response.data['message'] : 'Need dependent Fields', {
                         position: "top-right",
                         autoClose: 3000,
                         hideProgressBar: false,
@@ -2020,6 +2093,7 @@ const Formbuilder = () => {
                         progress: undefined,
                         className: "toast-error",
                     });
+                    return;
                 }
             }
 
@@ -2087,6 +2161,8 @@ const Formbuilder = () => {
                 var propmtMsg = ''
                 if(name === 'duplicateCheck'){
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as duplicate check. Please change that field before make this one as duplicate check.`
+                }else if(name === 'tableTabs'){
+                    propmtMsg = `The field "${alreadyChecked[0].label}" is already enabled as table tabs. Please change that field before make this one as table tabs`
                 }else{
                     propmtMsg = `The field "${alreadyChecked[0].label}" is already marked as primary. Please change that field before make this one as primary.`
                 }
@@ -2125,6 +2201,101 @@ const Formbuilder = () => {
             f.id === field.id ? { ...f, [name]: code } : f
         ));
     };
+
+    const dropdownWithAddItem = async (field, value) => {
+
+        if(!value || value.trim() === ""){
+            toast.error('Please Check the Value Before Adding', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const result = await Swal.fire({
+            title: 'Add Value?',
+            text: `Do you want to add "${value}" to the dropdown?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, add it',
+            cancelButtonText: 'No, cancel'
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        if(field.table){
+
+            var payloadData = {
+                table_name : field.table,
+                key: field?.attributes?.[0],
+                value: value,
+                id : field?.id
+            }
+    
+            setLoading(true);
+            try {
+                const response = await api.post('/templateData/addDropdownSingleFieldValue', payloadData)
+    
+                setLoading(false);
+    
+                if (response && response.success && response.data) {
+    
+                    const {addingValue, options} = response.data;
+    
+                    setFields(fields.map((f) =>
+                        f.id === field.id ? { ...f, options: [...options] } : f
+                    ));
+    
+                    setSelectedField(prev => ({
+                        ...prev,
+                        options: [...options]
+                    }));
+    
+                    if(addingValue?.id){
+                        setFormData(prevData => ({
+                            ...prevData,
+                            [field.name]: addingValue?.id
+                        }));
+                    }
+    
+                    setDropdownInputValue(prev => {
+                        if (!prev) return prev;
+                        const updated = { ...prev };
+                        delete updated[field.name];
+                        return updated;
+                    });
+                }
+                
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response.data) {
+                    toast.error(error.response.data['message'] ? error.response.data['message'] : 'Please try again!', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                    return;
+                }
+            }
+
+        }else{
+            handleOptionChange(field?.options?.length, field, value)
+        }
+
+    }
 
     return (
 
@@ -2391,7 +2562,7 @@ const Formbuilder = () => {
                                                         if (DisplayNoneFields.includes(prop)) return null;
 
 
-                                                        const increment = (prop === 'required' || prop === 'ao_field' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
+                                                        const increment = (prop === 'required' || prop === 'ao_field' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field') ? 2 : 5;
                                                         rowCountValue += increment;
 
                                                         const isRowFull = rowCountValue === 10 && !toggleRenderedOnce;
@@ -2405,7 +2576,7 @@ const Formbuilder = () => {
 
                                                         var switchOnChange = handleSwitch;
 
-                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
+                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
                                                             rowColValue = 2;
                                                             colText = (prop === 'required') ? 'Mandatory field' : (prop === 'history') ? 'Enable field history' : 'Disabled';
 
@@ -2431,6 +2602,9 @@ const Formbuilder = () => {
                                                                 colText = 'Particular Case'
                                                             }else if(prop === 'ao_field'){
                                                                 colText = 'AO'
+                                                            }else if(prop === 'tableTabs'){
+                                                                colText = 'Enable Tabs'
+                                                                switchOnChange = changePrimaryValue;
                                                             }
                                                         }
 
@@ -2463,7 +2637,7 @@ const Formbuilder = () => {
                                                                                 </Box>
                                                                             </Box>
                                                                         ) :
-                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
+                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'tableTabs' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                                     <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && module !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>

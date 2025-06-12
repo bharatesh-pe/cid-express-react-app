@@ -1084,7 +1084,7 @@ exports.getActionTemplateData = async (req, res, next) => {
 exports.getTemplateData = async (req, res, next) => {
   const {
     page = 1,
-    limit = 5,
+    limit = null,
     sort_by = "template_id",
     order = "DESC",
     search = "",
@@ -1092,6 +1092,8 @@ exports.getTemplateData = async (req, res, next) => {
     table_name,
     is_read = "",
     case_io_id = "",
+    checkRandomColumn = false,
+    checkTabs = false,
   } = req.body;
   const {  ui_case_id, pt_case_id , module , tab } = req.body;
   const { filter = {}, from_date = null, to_date = null } = req.body;
@@ -1683,6 +1685,37 @@ exports.getTemplateData = async (req, res, next) => {
       },
     };
 
+    if (checkRandomColumn && typeof checkRandomColumn === "string" && table_name) {
+        const modelAttributes = Model.rawAttributes || {};
+
+        let randomColumnQueryWhereClass = {};
+
+        if (ui_case_id && ui_case_id !== "" && pt_case_id && pt_case_id !== "") {
+            randomColumnQueryWhereClass = { [Op.or]: [{ ui_case_id }, { pt_case_id }] };
+        } else if (ui_case_id && ui_case_id !== "") {
+            randomColumnQueryWhereClass = { ui_case_id };
+        } else if (pt_case_id && pt_case_id !== "") {
+            randomColumnQueryWhereClass = { pt_case_id };
+        }
+
+        if (modelAttributes.hasOwnProperty(checkRandomColumn)) {
+            const allRecords = await Model.findAll({
+                attributes: [checkRandomColumn],
+                raw: true,
+                where: randomColumnQueryWhereClass,
+            });
+
+            const checkRandomColumnValues = allRecords
+                .map(record => record[checkRandomColumn])
+                .filter(value => value !== null && value !== undefined);
+
+            templateresult["meta"]["checkRandomColumnValues"] = checkRandomColumnValues;
+        }
+    }
+
+    if(checkTabs && checkTabs === true){
+        templateresult["meta"]["template_json"] = schema
+    }
 
     // Log the user activity
     // await ActivityLog.create({
@@ -1710,6 +1743,111 @@ exports.getTemplateData = async (req, res, next) => {
     console.error("Error fetching data:", error);
     return userSendResponse(res, 500, false, "Server error.", error);
   }
+};
+
+/**
+ * Bulk update a single column for all records in a table.
+ * Expects: { table_name, column, value }
+ */
+exports.bulkUpdateColumn = async (req, res) => {
+    try {
+        const { table_name, column, value, ui_case_id, pt_case_id, approvalDate, approvalItem, approvedBy, remarks, module, Referenceid } = req.body;
+        if (!table_name || !column) {
+            return userSendResponse(res, 400, false, "table_name and column are required.", null);
+        }
+
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+        // Build model attributes
+        const modelAttributes = {};
+        let columnExists = false;
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+            if (name === column) columnExists = true;
+        }
+
+        // Add id if not present
+        if (!modelAttributes.id) {
+            modelAttributes.id = {
+                type: Sequelize.DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            };
+        }
+
+        if (!columnExists) {
+            return userSendResponse(res, 400, false, `Column ${column} not found in table ${table_name}.`, null);
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await Model.sync();
+
+        // Start a transaction for atomicity
+        const t = await sequelize.transaction();
+        let whereClause = {};
+        if (ui_case_id && pt_case_id) {
+            whereClause = { [Op.or]: [{ ui_case_id }, { pt_case_id }] };
+        } else if (ui_case_id) {
+            whereClause = { ui_case_id };
+        } else if (pt_case_id) {
+            whereClause = { pt_case_id };
+        }
+
+        const existingCount = await Model.count({ where: whereClause, transaction: t });
+        if (existingCount === 0) {
+            await t.rollback();
+            return userSendResponse(res, 404, false, "No Cases found.", null);
+        }
+
+        const [affectedRows] = await Model.update(
+            { [column]: value },
+            { where: whereClause, transaction: t }
+        );
+
+        if (approvalDate && approvalItem && approvedBy) {
+            await UiCaseApproval.create({
+                approval_item: approvalItem,
+                approved_by: approvedBy,
+                approval_date: approvalDate,
+                remarks: remarks || null,
+                approval_type: table_name,
+                module: module || table_name,
+                action: remarks || null,
+                reference_id: Referenceid || null,
+                created_by: req.user?.user_id || null,
+            }, { transaction: t });
+        }
+
+        await t.commit();
+
+        return userSendResponse(
+            res,
+            200,
+            true,
+            `Updated ${affectedRows} records in column ${column} of table ${table_name}.`,
+            null
+        );
+    } catch (error) {
+        if (t) await t.rollback();
+        console.error("Error in bulkUpdateColumn:", error);
+        return userSendResponse(res, 500, false, "Internal server error.", error);
+    }
 };
 
 exports.viewTemplateData = async (req, res, next) => {
@@ -4020,6 +4158,7 @@ exports.downloadDocumentAttachments = async (req, res) => {
         `inline; filename="${profile_attachment.attachment_name}"`
     );
 
+
     const fileStream = fs.createReadStream(filePath);
     fileStream.pipe(res);
 
@@ -4512,6 +4651,192 @@ exports.checkPdfEntry = async (req, res) => {
         } catch (error) {
             console.error("Error fetching data:", error);
             return userSendResponse(res, 500, false, "Server error.", null, error, null);
+        }
+    };
+
+    exports.getPrimaryTemplateDataWithoutPagination = async (req, res, next) => {
+        const { table_name } = req.body;
+
+        try {
+            const tableData = await Template.findOne({ where: { table_name } });
+
+            if (!tableData) {
+                const message = `Table ${table_name} does not exist.`;
+                return userSendResponse(res, 400, false, message, null);
+            }
+
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+            const filteredSchema = schema.filter(field => field.is_primary_field === true);
+
+            const modelAttributes = {
+                id: {
+                    type: Sequelize.DataTypes.INTEGER,
+                    primaryKey: true,
+                    autoIncrement: true
+                },
+                created_at: {
+                    type: Sequelize.DataTypes.DATE,
+                    allowNull: false,
+                },
+                updated_at: {
+                    type: Sequelize.DataTypes.DATE,
+                    allowNull: false,
+                }
+            };
+
+            for (const field of filteredSchema) {
+                const { name: columnName, data_type, not_null, default_value } = field;
+
+                if (!columnName || !data_type) {
+                    modelAttributes[columnName] = {
+                        type: Sequelize.DataTypes.STRING,
+                        allowNull: not_null ? false : true,
+                        defaultValue: default_value || null,
+                    };
+                    continue;
+                }
+
+                const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[columnName] = {
+                    type: sequelizeType,
+                    allowNull: not_null ? false : true,
+                    defaultValue: default_value || null,
+                };
+            }
+
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: 'created_at',
+                updatedAt: 'updated_at',
+            });
+
+            await Model.sync();
+
+            const records = await Model.findAll();
+
+            const transformedRecords = records.map(record => {
+                const data = record.toJSON();
+                const filteredData = {
+                    id: data.id,
+                    created_at: data.created_at,
+                    updated_at: data.updated_at,
+                };
+
+                filteredSchema.forEach(field => {
+                    filteredData[field.name] = data[field.name];
+                });
+
+                return filteredData;
+            });
+
+            const PrimaryKeyName = filteredSchema?.[0]?.name || "id";
+
+            return userSendResponse(res, 200, true, `Fetched data successfully from table ${table_name}.`, {data : transformedRecords, primaryAttribute : PrimaryKeyName});
+
+        } catch (error) {
+            console.error("Error fetching data:", error);
+            return userSendResponse(res, 500, false, "Server error.", null, error, null);
+        }
+    };
+
+    exports.addDropdownSingleFieldValue = async (req, res) => {
+        try {
+            const { table_name, key, value, primaryTable, id } = req.body;
+            
+            if (id && primaryTable && !table_name) {
+
+                const template = await Template.findOne({ where: { table_name : primaryTable } });
+                if (!template) {
+                    return userSendResponse(res, 400, false, `Template with id ${id} does not exist.`, null);
+                }
+
+                let schema = typeof template.fields === "string" ? JSON.parse(template.fields) : template.fields;
+
+                const fieldIndex = schema.findIndex(f => f.id === id);
+                if (fieldIndex === -1) {
+                    return userSendResponse(res, 400, false, `Field ${key} not found in template schema.`, null);
+                }
+
+                if (!Array.isArray(schema[fieldIndex].options)) {
+                    schema[fieldIndex].options = [];
+                }
+
+                if (!schema[fieldIndex].options.some(opt => opt.name === value && opt.code === value)) {
+                    schema[fieldIndex].options.push({ name: value, code: value });
+                    await Template.update(
+                        { fields: JSON.stringify(schema) },
+                        { where: { table_name : primaryTable } }
+                    );
+                }
+                return userSendResponse(res, 200, true, "Option added to template field successfully.", {
+                    addingValue: { name: value, id: value },
+                    options: schema[fieldIndex].options,
+                });
+            }
+
+            if (!table_name || !key || typeof value === "undefined") {
+                return userSendResponse(res, 400, false, "table_name, key, and value are required.", null);
+            }
+
+            // Fetch table schema
+            const tableData = await Template.findOne({ where: { table_name } });
+            if (!tableData) {
+                return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+            }
+
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+            const primaryField = schema.find(f => f.is_primary_field) || schema[0];
+            if (!primaryField) {
+                return userSendResponse(res, 400, false, "No primary field found in schema.", null);
+            }
+
+            // Build model attributes
+            const modelAttributes = {};
+            for (const field of schema) {
+                const { name, data_type, not_null, default_value } = field;
+                const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+            }
+
+            // Add id if not present
+            if (!modelAttributes.id) {
+                modelAttributes.id = {
+                    type: Sequelize.DataTypes.INTEGER,
+                    primaryKey: true,
+                    autoIncrement: true,
+                };
+            }
+
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+
+            await Model.sync();
+            
+            const insertObj = { [key]: value };
+            const newRecord = await Model.create(insertObj);
+
+            // Fetch all records with primary key and value
+            const records = await Model.findAll({
+                attributes: ["id", primaryField.name],
+                order: [["id", "ASC"]],
+            });
+
+            return userSendResponse(res, 200, true, "Value added successfully.", {
+                addingValue: { id: newRecord.id, [primaryField.name]: newRecord[primaryField.name] },
+                options: records.map(r => ({ "code": r.id, "name": r[primaryField.name] })),
+            });
+        } catch (error) {
+            console.error("Error in addSingleFieldValue:", error);
+            return userSendResponse(res, 500, false, "Internal server error.", error);
         }
     };
 
@@ -5163,104 +5488,130 @@ async function appendTextToPdf(pdfDoc, appendText, pageWidth, pageHeight, regula
     let currentY = pageHeight - 80;
 
     for (let [label, value] of Object.entries(data)) {
-      const fieldLabel = formatLabel(label);
-      let fieldValue = value ? value.toString() : 'N/A';
+        const fieldLabel = formatLabel(label);
+        let fieldValue = value ? value.toString() : 'N/A';
 
-      // Format date fields
-      if ((label === 'field_due_date' || label === 'created_at') && value) {
-        try {
-          const dateObj = new Date(value);
-          fieldValue = dateObj.toLocaleDateString('en-IN', {
-            year: 'numeric',
-            month: 'short',
-            day: '2-digit'
-          });
-        } catch (e) {
-          console.warn(`Invalid date for ${label}: ${value}`);
-        }
-      }
-
-      const rawLines = fieldValue.split('\n');
-      const wrappedLines = [];
-
-      for (let rawLine of rawLines) {
-        rawLine = breakLongWords(rawLine, regularFont, fontSize, pageWidth - 200);
-        const words = rawLine.trim().split(/\s+/);
-        let currentLine = '';
-
-        for (let word of words) {
-          const testLine = currentLine ? `${currentLine} ${word}` : word;
-          const width = regularFont.widthOfTextAtSize(testLine, fontSize);
-          if (width <= pageWidth - 200) {
-            currentLine = testLine;
-          } else {
-            wrappedLines.push(currentLine);
-            currentLine = word;
+        // Format date fields
+        if ((label === 'field_due_date' || label === 'created_at') && value) {
+          try {
+            const dateObj = new Date(value);
+            fieldValue = dateObj.toLocaleDateString('en-IN', {
+              year: 'numeric',
+              month: 'short',
+              day: '2-digit'
+            });
+          } catch (e) {
+            console.warn(`Invalid date for ${label}: ${value}`);
           }
         }
 
-        if (currentLine) wrappedLines.push(currentLine);
-      }
+        // --- Improved word wrapping logic with vertical space check ---
+        const maxBoxWidth = pageWidth - 300 - 20; // 20px padding for safety
+        const leftPadding = 210;
+        const topPadding = 15;
+        const minRowHeight = 30;
+        const lineSpacing = fontSize + 4;
 
-      let remainingLines = [...wrappedLines];
+        const rawLines = fieldValue.split('\n');
+        const wrappedLines = [];
 
-      while (remainingLines.length > 0) {
-        const availableHeight = currentY - 50;
-        const linesPerPage = Math.floor((availableHeight - 10) / (fontSize + 4));
-        const linesToPrint = remainingLines.splice(0, linesPerPage);
-        const valueHeight = linesToPrint.length * (fontSize + 4);
-        const rowHeight = Math.max(30, valueHeight + 10);
+        for (let rawLine of rawLines) {
+          // Break long words first
+          rawLine = breakLongWords(rawLine, regularFont, fontSize, maxBoxWidth);
+          let words = rawLine.trim().split(/\s+/);
+          let currentLine = '';
 
-        page.drawRectangle({
-          x: startX,
-          y: currentY - rowHeight,
-          width: 200,
-          height: rowHeight,
-          borderColor: rgb(0, 0, 0),
-          borderWidth: 1,
-        });
+          for (let word of words) {
+            let testLine = currentLine ? `${currentLine} ${word}` : word;
+            let width = regularFont.widthOfTextAtSize(testLine, fontSize);
+            if (width <= maxBoxWidth) {
+              currentLine = testLine;
+            } else {
+              if (currentLine) wrappedLines.push(currentLine);
+              // If the word itself is too long, break it
+              if (regularFont.widthOfTextAtSize(word, fontSize) > maxBoxWidth) {
+                let chars = word.split('');
+                let temp = '';
+                for (let c of chars) {
+                  let testTemp = temp + c;
+                  if (regularFont.widthOfTextAtSize(testTemp, fontSize) > maxBoxWidth) {
+                    wrappedLines.push(temp);
+                    temp = c;
+                  } else {
+                    temp = testTemp;
+                  }
+                }
+                if (temp) wrappedLines.push(temp);
+                currentLine = '';
+              } else {
+                currentLine = word;
+              }
+            }
+          }
+          if (currentLine) wrappedLines.push(currentLine);
+        }
+        // --- End improved word wrapping ---
 
-        page.drawRectangle({
-          x: startX + 200,
-          y: currentY - rowHeight,
-          width: pageWidth - 300,
-          height: rowHeight,
-          borderColor: rgb(0, 0, 0),
-          borderWidth: 1,
-        });
+        let remainingLines = [...wrappedLines];
 
-        page.drawText(fieldLabel, {
-          x: startX + 5,
-          y: currentY - 15,
-          size: fontSize,
-          font: boldFont,
-          color: rgb(0, 0, 0),
-        });
+        while (remainingLines.length > 0) {
+          const availableHeight = currentY - 50;
+          const linesPerPage = Math.floor((availableHeight - 10) / lineSpacing);
+          const linesToPrint = remainingLines.splice(0, linesPerPage);
+          const valueHeight = linesToPrint.length * lineSpacing;
+          const rowHeight = Math.max(minRowHeight, valueHeight + 10);
 
-        let textY = currentY - 15;
-        for (let line of linesToPrint) {
-          page.drawText(line, {
-            x: startX + 210,
-            y: textY,
+          page.drawRectangle({
+            x: startX,
+            y: currentY - rowHeight,
+            width: 200,
+            height: rowHeight,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1,
+          });
+
+          page.drawRectangle({
+            x: startX + 200,
+            y: currentY - rowHeight,
+            width: pageWidth - 300,
+            height: rowHeight,
+            borderColor: rgb(0, 0, 0),
+            borderWidth: 1,
+          });
+
+          page.drawText(fieldLabel, {
+            x: startX + 5,
+            y: currentY - topPadding,
             size: fontSize,
-            font: regularFont,
+            font: boldFont,
             color: rgb(0, 0, 0),
           });
-          textY -= fontSize + 4;
-        }
 
-        currentY -= rowHeight;
+          let textY = currentY - topPadding;
+          for (let line of linesToPrint) {
+            // Ensure text does not overflow the box vertically
+            if (textY < currentY - rowHeight + 5) break;
+            page.drawText(line, {
+              x: startX + leftPadding,
+              y: textY,
+              size: fontSize,
+              font: regularFont,
+              color: rgb(0, 0, 0),
+            });
+            textY -= lineSpacing;
+          }
 
-        if (remainingLines.length > 0 || currentY < 100) {
-          page = pdfDoc.addPage([pageWidth, pageHeight]);
-          currentY = pageHeight - 80;
+          currentY -= rowHeight;
+
+          // If there are more lines or not enough space, add a new page
+          if (remainingLines.length > 0 || currentY < 100) {
+            page = pdfDoc.addPage([pageWidth, pageHeight]);
+            currentY = pageHeight - 80;
+          }
         }
       }
     }
   }
-
-}
-
 
 exports.appendToLastLineOfPDF = async (req, res) => {
   try {
@@ -5436,7 +5787,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error.' });
+    return res.status(500).json({ success: false, message: 'Internal server error.', error: error?.message || error });
   }
 };
 
