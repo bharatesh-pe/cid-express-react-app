@@ -2075,14 +2075,27 @@ const LokayuktaView = () => {
                                         }
 
                                         var alreadySubmited = false;
+                                        var nextStageStep = false;
 
                                         const lastApprovedRole = approvalFieldArray[0];
                                         const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
 
                                         const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
 
-                                        if(approvedStages.includes(step)){
+                                        const nextStepIndex = lastApprovedIndex + 1;
+                                        const nextStep = approvalStepperArray[nextStepIndex];
+
+                                        let statusLabel = "Not Assigned";
+                                        let statusClass = "submissionNotAssigned";
+
+                                        if (approvedStages.includes(step)) {
                                             alreadySubmited = true;
+                                            statusLabel = "Submitted";
+                                            statusClass = "submissionCompleted";
+                                        } else if (step === nextStep) {
+                                            nextStageStep = true;
+                                            statusLabel = "Pending";
+                                            statusClass = "submissionPending";
                                         }
 
                                         if(step.toLowerCase() === stepperValue){
@@ -2122,6 +2135,10 @@ const LokayuktaView = () => {
                                                             backgroundColor = "#27ae60";
                                                             color = "#fff";
                                                             boxShadow = "0 0 0 5px #d4f7e8";
+                                                        }else if(nextStageStep){
+                                                            backgroundColor = "#ffd230";
+                                                            color = "#333";
+                                                            boxShadow = "0 0 0 5px #fff4cc ";
                                                         } else if (selected) {
                                                             backgroundColor = "#1570ef";
                                                             color = "#fff";
@@ -2142,11 +2159,15 @@ const LokayuktaView = () => {
                                                             "&:hover": {
                                                                 backgroundColor: alreadySubmited
                                                                     ? "#219150"
+                                                                    : nextStageStep
+                                                                    ? "#e6c200"
                                                                     : selected
                                                                     ? "#2980b9"
                                                                     : "#dcdcdc",
                                                                 boxShadow: alreadySubmited
                                                                     ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : nextStageStep
+                                                                    ? "0 8px 16px rgba(255, 210, 48, 0.5)"
                                                                     : selected
                                                                     ? "0 8px 16px rgba(52, 152, 219, 0.5)"
                                                                     : "0 4px 10px rgba(0, 0, 0, 0.15)",
@@ -2158,11 +2179,11 @@ const LokayuktaView = () => {
                                                     {step}
                                                 </Button>
                                                 <Box px={2}>        
-                                                    <div className="investigationStepperTitle">
+                                                    <div className="investigationStepperTitle" style={{marginBottom: '4px'}}>
                                                         {StepperTitle}
                                                     </div>
-                                                    <div className={`stepperCompletedPercentage ${alreadySubmited ? 'submissionCompleted' : 'submissionPending'}`}>
-                                                        {alreadySubmited ? "Submitted" : "Pending"}
+                                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                                        {statusLabel}
                                                     </div>
                                                 </Box>
                                                 

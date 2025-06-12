@@ -170,6 +170,30 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
             return;
         }
 
+        var alreadyExistOption = false;
+
+        if(field.options && field.options.length > 0){
+            field.options.map((element)=>{
+                if(element.name.trim() === value.trim()){
+                    alreadyExistOption = true;
+                }
+            });
+        }
+
+        if(alreadyExistOption){
+            toast.error('Option Already Exist', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
         var payloadData = {
             table_name : field.table || null,
             key: field?.attributes?.[0] || null,
