@@ -14,6 +14,7 @@ const uiCaseApprovalRoutes = require('./uiApprovalRoutes');
 const profileHistoryRoutes = require('./profileHistoryRoutes');
 const chargesheet = require('./chargesheet');
 const alertCronJob = require('../controllers/alertCronJob');
+const importOldDBRoute = require('./importOldDBRoute');
 router.use('/auth', authRoutes);
 router.use('/user', userRoutes);
 router.use('/role', roleRoutes);
@@ -27,6 +28,7 @@ router.use('/action', casesActionRoutes);
 router.use('/ui_approval', uiCaseApprovalRoutes);
 router.use('/profileHistories', profileHistoryRoutes);
 router.use('/chargeSheet', chargesheet);
+router.use('/import', importOldDBRoute);
 // New route to trigger refresh of alert cron jobs from frontend
 router.post('/refresh_alert_cron', alertCronJob.refreshAlertCron);
 

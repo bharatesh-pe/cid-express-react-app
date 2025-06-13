@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 const ImportOldData = () => {
     const [file, setFile] = useState(null);
@@ -17,7 +17,7 @@ const ImportOldData = () => {
         formData.append('file', file);
         setStatus('Uploading...');
         try {
-            await axios.post('/import-old-data', formData, {
+            await api.post('/import/import-old-data', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setStatus('Upload and import successful!');
