@@ -52,5 +52,6 @@ router.post('/getUserParticularDetails' , cidMasterController.getUserParticularD
 router.post('/getAllAct' , cidMasterController.getAllAct)
 router.post('/getAllSectionAndActBasedSection' , cidMasterController.getAllSectionAndActBasedSection)
 router.post('/getDivisionBasedOnDepartment' , cidMasterController.getDivisionBasedOnDepartment)
+router.post('/getSpecificIoUsersCases' , cidMasterController.getSpecificIoUsersCases)
 
 module.exports = router;
