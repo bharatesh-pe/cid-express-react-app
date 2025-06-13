@@ -13979,7 +13979,7 @@ const handleOpenExportPopup = async () => {
               style={{ cursor: "pointer", color: "#222" }}
               onClick={() => setShowReassignIoModal(false)}
             />
-            <span style={{ fontWeight: 500, fontSize: 15, color: "#222", marginLeft: 12 }}>
+            <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
               {selectKey?.title}
             </span>
           </div>
@@ -14035,10 +14035,10 @@ const handleOpenExportPopup = async () => {
                 value={selectedUser || null}
                 onChange={async (event, newValue) => {
                   setSelectedUser(newValue);
-                  setIoUserCases([]); // clear previous cases
+                  setIoUserCases([]); 
                   if (newValue && newValue.user_id) {
                     try {
-                      const user_id = String(newValue.user_id); // Ensure user_id is a string
+                      const user_id = String(newValue.user_id);
                       const template_module = "ui_case";
                       const response = await api.post(
                         "cidMaster/getSpecificIoUsersCases",
@@ -14047,9 +14047,6 @@ const handleOpenExportPopup = async () => {
                           template_module,
                         }
                       );
-                      // Debug: log the response and cases
-                      console.log("Response from getSpecificIoUsersCases:", response);
-                      // Fix: response.cases is an object, not an array!
                       let cases = [];
                       if (Array.isArray(response.cases)) {
                         cases = response.cases;
@@ -14060,7 +14057,6 @@ const handleOpenExportPopup = async () => {
                       } else if (response?.cases && typeof response.cases === "object") {
                         cases = [response.cases];
                       }
-                      console.log("Cases for TableView:", cases);
                       setIoUserCases(cases);
                     } catch (err) {
                       console.error("Failed to fetch IO user cases", err);
