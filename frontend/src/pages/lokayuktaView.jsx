@@ -29,6 +29,8 @@ import PlanOfAction from "./PlanOfAction";
 import EqProgressReport from "./EqProgressReport";
 import ClosureReport from "./ClosureReport";
 import dayjs from "dayjs";
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
@@ -136,17 +138,33 @@ const LokayuktaView = () => {
     const [tableTabs, setTableTabs] = useState([]);
     const [selectedTableTabs, setSelectedTableTabs] = useState("all");
 
-    const NatureOfDisposalAlert = () => {
-    useEffect(() => {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Nature of Disposal Required',
-            text: 'Please take action by updating Nature of Disposal.',
-            confirmButtonText: 'OK'
-        });
-    }, []);
-    return null;
-};
+    const NatureOfDisposalAlert = () => (
+        <Box
+            sx={{
+                mt: 3,
+                mb: 3,
+                mx: 'auto',
+                maxWidth: 500,
+                p: 3,
+                background: '#fffbe6',
+                border: '1px solid #ffe58f',
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+            }}
+        >
+            <WarningAmberIcon sx={{ color: '#faad14', fontSize: 40, mr: 1 }} />
+            <Box>
+                <Typography variant="h6" sx={{ color: '#ad6800', fontWeight: 600 }}>
+                    Nature of Disposal Required
+                </Typography>
+                <Typography sx={{ color: '#ad6800', mt: 0.5 }}>
+                    Please take action by updating Nature of Disposal.
+                </Typography>
+            </Box>
+        </Box>
+    );
     const backToForm = ()=>{
 
         if(backNavigation){
@@ -1979,7 +1997,7 @@ const LokayuktaView = () => {
                         />
                     ) : (
                         <Box>
-                            <Box pb={1} px={1} sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer'}}>
+                            <Box pb={1} px={1} sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', marginTop: '24px'}}>
                                 <Typography
                                     sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
                                     className="Roboto"
