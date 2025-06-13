@@ -51,6 +51,7 @@ import LokayuktaView from './pages/lokayuktaView';
 import ActionPlan from './pages/ActionPlan';
 import IframePage from './pages/IframePage';
 import SettingsPage from './pages/SettingsPage';
+import ImportOldData from './pages/ImportOldData';
 
 import { ToastContainer } from 'react-toastify';
 function App() {
