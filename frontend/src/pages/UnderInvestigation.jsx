@@ -9745,6 +9745,7 @@ const handleOpenExportPopup = async () => {
           setAddApproveFlag(false);
           setApproveTableFlag(false);
           setShowOtherTransferModal(false);
+          setShowReassignIoModal(false);
           setApprovalSaveData({});
           setShowMassiveTransferModal(false);
           setSelectKey(null);
@@ -13951,6 +13952,8 @@ const handleOpenExportPopup = async () => {
         setSelectKey(null);
         // setSelectedRow([]);
         setOtherTransferField([]);
+        setSelectedUser(null);
+        setIoUserCases([]);
         // setSelectedOtherFields(null);
         // setselectedOtherTemplate(null);
         setUsersBasedOnDivision([]);
@@ -13977,7 +13980,19 @@ const handleOpenExportPopup = async () => {
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
             <WestIcon
               style={{ cursor: "pointer", color: "#222" }}
-              onClick={() => setShowReassignIoModal(false)}
+              onClick={() => {
+                setShowReassignIoModal(false);
+                setSelectKey(null);
+                setOtherTransferField([]);
+                setUsersBasedOnDivision([]);
+                setSelectedUser(null);
+                setIoUserCases([]);
+                setSelectedMergeRowData([]);
+                setSelectedParentId(null);
+                setTableData((prevData) =>
+                  prevData.map((item) => ({ ...item, isSelected: false }))
+                );
+              }}
             />
             <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
               {selectKey?.title}
@@ -14129,6 +14144,8 @@ const handleOpenExportPopup = async () => {
             setSelectKey(null);
             setSelectedRow([]);
             setOtherTransferField([]);
+            setSelectedUser(null);
+            setIoUserCases([]);
             // setSelectedOtherFields(null);
             // setselectedOtherTemplate(null);
             setUsersBasedOnDivision([]);
