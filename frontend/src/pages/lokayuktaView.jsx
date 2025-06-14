@@ -226,7 +226,7 @@ const LokayuktaView = () => {
             var stateObj = {
                 pageCount: paginationCount,
                 systemStatus: sysStatus,
-                actionKey: actionKey
+                actionKey: actionKey ? actionKey : null,
             }
 
             if(dashboardName){
