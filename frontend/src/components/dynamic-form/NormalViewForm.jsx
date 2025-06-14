@@ -2265,18 +2265,17 @@ const NormalViewForm = ({
     setActionCases([]);
     setActionCasesPage(0);
   }}
-  maxWidth={false}
-  fullWidth={false}
-  PaperProps={{
-    sx: { width: 800, maxWidth: "100vw" }
-  }}
   aria-labelledby="alert-dialog-title"
   aria-describedby="alert-dialog-description"
+  fullScreen
+  fullWidth
+  sx={{ zIndex: "1", marginLeft: '250px' }}
 >
   <DialogTitle id="alert-dialog-title"></DialogTitle>
-  <DialogContent sx={{ width: "800px" }}>
+  <DialogContent sx={{  }}>
     <DialogContentText id="alert-dialog-description">
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <WestIcon
           style={{ cursor: "pointer", color: "#222" }}
           onClick={() => {
@@ -2289,10 +2288,14 @@ const NormalViewForm = ({
           {investigationAction?.name}
         </span>
       </div>
+      <Button variant='outlined' onClick={updateCaseActions}>
+      Submit
+    </Button>
+    </div>
       
       {/* <h4 className="form-field-heading">{investigationAction?.name}</h4> */}
 
-      <FormControl fullWidth sx={{ marginBottom: 2 , maxWidth: 700}}>
+      <FormControl fullWidth sx={{ marginBottom: 2 }}>
         <Autocomplete
           options={caseActionOptions}
           getOptionLabel={(option) => option.name || ""}
@@ -2334,9 +2337,9 @@ const NormalViewForm = ({
         />
       </FormControl>
 
-        <div style={{ marginTop: 16 , maxWidth: 700 }}>
+        <div style={{ marginTop: 16}}>
           <h4 className="form-field-heading">Cases for Selected Action</h4>
-          <div style={{ maxHeight: 250, overflowY: "auto" }}>
+          <div style={{ }}>
             <TableView
               rows={actionCases
                 .slice(
@@ -2396,7 +2399,7 @@ const NormalViewForm = ({
     </DialogContentText>
   </DialogContent>
   <DialogActions sx={{ padding: "12px 24px" }}>
-    <Button
+    {/* <Button
       onClick={() => {
         setShowActionModal(false);
         setCaseActionSelectedValue(null);
@@ -2404,10 +2407,10 @@ const NormalViewForm = ({
       }}
     >
       Cancel
-    </Button>
-    <Button className="fillPrimaryBtn" onClick={updateCaseActions}>
+    </Button> */}
+    {/* <Button className="fillPrimaryBtn" onClick={updateCaseActions}>
       Submit
-    </Button>
+    </Button> */}
   </DialogActions>
 </Dialog>
 

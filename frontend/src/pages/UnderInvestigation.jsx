@@ -14253,37 +14253,45 @@ const handleOpenExportPopup = async () => {
       }}
       aria-labelledby="alert-dialog-title"
       aria-describedby="alert-dialog-description"
-      maxWidth={false}
-      fullWidth={false}
-      PaperProps={{
-        sx: { width: 800, maxWidth: "100vw" }
-      }}
+      fullScreen
+      fullWidth
+      sx={{ zIndex: "1", marginLeft: '250px' }}
     >
       <DialogTitle id="alert-dialog-title"></DialogTitle>
-      <DialogContent sx={{ width: "800px" }}>
+      <DialogContent sx={{  }}>
         <DialogContentText id="alert-dialog-description">
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <WestIcon
-              style={{ cursor: "pointer", color: "#222" }}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, justifyContent: "space-between" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <WestIcon
+                style={{ cursor: "pointer", color: "#222" }}
+                onClick={() => {
+                  setShowReassignIoModal(false);
+                  setSelectKey(null);
+                  setOtherTransferField([]);
+                  setUsersBasedOnDivision([]);
+                  setSelectedUser(null);
+                  setIoUserCases([]);
+                  setSelectedMergeRowData([]);
+                  setSelectedParentId(null);
+                  setTableData((prevData) =>
+                    prevData.map((item) => ({ ...item, isSelected: false }))
+                  );
+                }}
+              />
+              <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+                {selectKey?.title}
+              </span>
+            </div>
+            <Button
+              variant="outlined"
               onClick={() => {
-                setShowReassignIoModal(false);
-                setSelectKey(null);
-                setOtherTransferField([]);
-                setUsersBasedOnDivision([]);
-                setSelectedUser(null);
-                setIoUserCases([]);
-                setSelectedMergeRowData([]);
-                setSelectedParentId(null);
-                setTableData((prevData) =>
-                  prevData.map((item) => ({ ...item, isSelected: false }))
-                );
+                handleMassiveDivisionChange();
               }}
-            />
-            <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
-              {selectKey?.title}
-            </span>
+            >
+              Submit
+            </Button>
           </div>
-          <div style={{ display: "flex", gap: 16, maxWidth: 700 }}>
+          <div style={{ display: "flex", gap: 16, }}>
             <FormControl fullWidth>
             <div style={{ marginBottom: 4, fontWeight: 600, fontSize: 16, color: "#222" }}>
               {selectKey?.title?.trim() === "Reassign IO" ? "Division" : selectKey?.title || "Division"}
@@ -14375,9 +14383,9 @@ const handleOpenExportPopup = async () => {
               />
             </FormControl>
           </div>
-                <div style={{ marginTop: 24, maxWidth: 700 }}>
+                <div style={{ marginTop: 24, maxWidth: '100vw'  }}>
                 <h4 className="form-field-heading">Cases for Selected IO User</h4>
-                <div style={{ maxHeight: 250, overflowY: "auto" }}>
+                <div style={{  }}>
                   <TableView
                   rows={ioUserCases.slice(
                     casesPage * casesPageSize,
@@ -14423,7 +14431,7 @@ const handleOpenExportPopup = async () => {
               </DialogContentText>
               </DialogContent>
               <DialogActions sx={{ padding: "12px 24px" }}>
-              <Button
+              {/* <Button
                 onClick={() => {
             setShowReassignIoModal(false);
             setSelectKey(null);
@@ -14445,17 +14453,8 @@ const handleOpenExportPopup = async () => {
           }}
         >
           Cancel
-        </Button>
-        {fieldActionAddFlag.current === true && (
-          <Button
-            className="fillPrimaryBtn"
-            onClick={() => {
-              handleMassiveDivisionChange();
-            }}
-          >
-            Submit
-          </Button>
-        )}
+        </Button> */}
+
       </DialogActions>
     </Dialog>
 
