@@ -112,17 +112,20 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
     {hoverTable &&   
         <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
         {[
-        ...(hoverTableOptions || []).map((option) => {
-            const isCaseExtension = option.name?.toLowerCase() === "case extension approve" || option.name?.toLowerCase() === "case extension request";
-            const shouldDisable =
-            selectedRow?.isDisabled &&
-            !(isCaseExtension && selectedRow?.allowCaseExtension);
+        ...(hoverTableOptions || [])
+            // Hide "assign to io" option on hover
+            .filter(option => option?.name?.toLowerCase() !== "assign to io")
+            .map((option) => {
+                const isCaseExtension = option.name?.toLowerCase() === "case extension approve" || option.name?.toLowerCase() === "case extension request";
+                const shouldDisable =
+                selectedRow?.isDisabled &&
+                !(isCaseExtension && selectedRow?.allowCaseExtension);
 
-            return {
-            ...option,
-            disabled: shouldDisable,
-            };
-        }),
+                return {
+                ...option,
+                disabled: shouldDisable,
+                };
+            }),
         ...(selectedRow?.extraHoverOptions || []),
         ].map((option, index) => {
         if (

@@ -21,15 +21,15 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import SlideshowIcon from '@mui/icons-material/Slideshow';
 
-export default function EditTableView({
+const EditTableView = React.forwardRef(function EditTableView({
   rows: propRows, columns: propColumns, checkboxSelection, getRowId,
   backBtn, nextBtn, handleNext, handleBack, handleRowClick,
   hoverTable, hoverTableOptions, hoverActionFuncHandle,
   totalPage, paginationCount, handlePagination, totalRecord,
   getRowClassName, tableName, highLightedRow,
   onRowUpdate,
-  fieldDefinitions // <-- new prop, pass the field definitions array here
-}) {
+  fieldDefinitions, // <-- new prop, pass the field definitions array here
+},ref) {
   // Row editing handlers
   const [rows, setRows] = React.useState(propRows);
   const [rowModesModel, setRowModesModel] = React.useState({});
@@ -96,26 +96,7 @@ React.useEffect(() => {
   };
 
 
-  const handleSaveAll = async () => {
-  for (const row of rows) {
-    const id = row.id;
-    const isEditing = rowModesModel[id]?.mode === GridRowModes.Edit;
-    if (isEditing) {
-      try {
-        const updatedRow = await processRowUpdate(row);
-        setRows((prev) => prev.map((r) => (r.id === id ? updatedRow : r)));
-
-        // keep it in edit mode
-        setRowModesModel((prevModel) => ({
-          ...prevModel,
-          [id]: { mode: GridRowModes.Edit },
-        }));
-      } catch (error) {
-        console.error(`Failed to save row ${id}:`, error);
-      }
-    }
-  }
-  };
+  
 
   const handleCancelClick = (id) => () => {
     setRowModesModel({
@@ -246,6 +227,10 @@ React.useEffect(() => {
   const updatedColumns = [
     // actionsColumn,
     ...propColumns.map(col => {
+      // Make S.No column non-editable
+      if (col.field === 'sl_no') {
+        return { ...col, editable: false };
+      }
       const colType = getColType(col);
       if (
         ((colType === 'autocomplete' || colType === 'singleSelect') && getValueOptions(col)) ||
@@ -388,12 +373,33 @@ React.useEffect(() => {
         updatedRow[col.field] = updatedRow[col.field].toISOString().split('T')[0];
       }
     });
+    // Log the row being updated and its values
+    console.log("processRowUpdate called for row:", updatedRow.id, updatedRow);
     setRows((prev) => prev.map((row) => (row.id === newRow.id ? updatedRow : row)));
     if (onRowUpdate) {
       await onRowUpdate(updatedRow, tableName);
     }
     return updatedRow;
   };
+
+  // Expose getRows and commitAllEdits to parent via ref
+  React.useImperativeHandle(
+    ref,
+    () => ({
+      getRows: () => rows,
+      commitAllEdits: () => {
+        // Set all rows to view mode to commit edits
+        setRowModesModel((prev) => {
+          const newModel = { ...prev };
+          rows.forEach(row => {
+            newModel[row.id] = { mode: GridRowModes.View };
+          });
+          return newModel;
+        });
+      }
+    }),
+    [rows]
+  );
 
   return (
     <Box sx={{ margin: "6px" }}>
@@ -435,95 +441,8 @@ React.useEffect(() => {
           experimentalFeatures={{ newEditingApi: true }}
         />
       </Paper>
-
-      {/* Hover Menu */}
-      {hoverTable &&
-        <Menu anchorEl={anchorEl} open={Boolean(anchorEl)} onClose={handleMenuClose}>
-          {[
-            ...(hoverTableOptions || []).map((option) => {
-              const isCaseExtension = option.name?.toLowerCase() === "case extension";
-              const shouldDisable = selectedRow?.isDisabled && !(isCaseExtension && selectedRow?.allowCaseExtension);
-              return { ...option, disabled: shouldDisable };
-            }),
-            ...(selectedRow?.extraHoverOptions || []),
-          ].map((option, index) => {
-            if (
-              selectedRow?.field_io_name !== null &&
-              selectedRow?.field_io_name !== "" &&
-              option?.name?.toLowerCase() === "assign to io"
-            ) return null;
-
-            if ((!option?.field && option?.table) || option?.caseView) return null;
-
-            return (
-              <MenuItem
-                key={index}
-                className="actionHoverOnTable"
-                onClick={() => !option.disabled && handleHoverOptionClick(option)}
-                sx={{ display: "flex", alignItems: "start", height: "40px" }}
-                disabled={(selectedRow?.field_io_name == null && option?.name.toLowerCase() !== "assign to io") || option.disabled === true}
-              >
-                {option?.icon ? (
-                  typeof option.icon === "function" ? option.icon() : (
-                    <span className="tableActionIcon" dangerouslySetInnerHTML={{ __html: option.icon }} />
-                  )
-                ) : (
-                  <span className="tableActionIcon" />
-                )}
-                <span style={{ marginTop: "3px" }}>{option?.name}</span>
-              </MenuItem>
-            );
-          })}
-        </Menu>
-      }
-
-      {/* Pagination or Back/Next */}
-      {handlePagination && paginationCount ? (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }} pt={2}>
-          <p style={{ fontSize: '14px' }}>{startRecord} - {endRecord} of {totalRecord}</p>
-          <Stack spacing={2} direction="row" justifyContent="center">
-            <Pagination
-              count={totalPage}
-              page={paginationCount}
-              onChange={(event, page) => handlePagination(page)}
-              renderItem={(item) => (
-                <PaginationItem
-                  {...item}
-                  disabled={item.page === "..." || (item.type === "previous" && paginationCount === 1) || (item.type === "next" && paginationCount === totalPage)}
-                  sx={{
-                    mx: 0.5,
-                    cursor: item.page === "..." ? "default" : "pointer",
-                    backgroundColor: paginationCount === item.page ? "#1976d2" : "transparent",
-                    color: paginationCount === item.page ? "#fff" : "inherit",
-                  }}
-                />
-              )}
-            />
-          </Stack>
-        </Box>
-      ) : (
-        <Box sx={{ display: 'flex', justifyContent: 'space-between' }} pt={2}>
-          {handleBack && handleNext && (
-            <>
-              <Button disabled={!backBtn} onClick={handleBack} sx={{ textTransform: 'none' }}>
-                <ArrowBackIcon /> Back
-              </Button>
-              <Button disabled={!nextBtn} onClick={handleNext} sx={{ textTransform: 'none' }}>
-                Next <ArrowForwardIcon />
-              </Button>
-            </>
-          )}
-        </Box>
-      )}
-    <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
-      <Button
-        variant="contained"
-        startIcon={<SaveIcon />}
-        onClick={handleSaveAll}
-      >
-        Save All
-      </Button>
-    </Box>
     </Box>
   );
-}
+});
+
+export default EditTableView;
