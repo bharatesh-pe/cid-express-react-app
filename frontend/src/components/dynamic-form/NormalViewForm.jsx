@@ -5,7 +5,7 @@ import isEqual from 'lodash.isequal';
 // import formConfig from './formConfig.json';
 import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
-
+import WestIcon from '@mui/icons-material/West';
 import ShortText from '../form/ShortText';
 import DateField from '../form/Date';
 import SelectField from '../form/Select';
@@ -82,7 +82,10 @@ const NormalViewForm = ({
     const [showActionModal, setShowActionModal] = useState(false);
     const [caseActionOptions, setCaseActionOptions] = useState([]);
     const [caseActionSelectedValue, setCaseActionSelectedValue] = useState(null);
-  
+    const [actionCases, setActionCases] = useState([]);
+    const [actionCasesPage, setActionCasesPage] = useState(0);
+    const actionCasesPageSize = 10;
+
   
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -2254,45 +2257,160 @@ const NormalViewForm = ({
         }
       </Box>
 
-        <Dialog
-            open={showActionModal}
-            onClose={() => {setShowActionModal(false);}}
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-        >
-            <DialogTitle id="alert-dialog-title"></DialogTitle>
-            <DialogContent sx={{ width: "400px" }}>
-                <DialogContentText id="alert-dialog-description">
-                    <h4 className="form-field-heading">{investigationAction?.name}</h4>
-                    <FormControl fullWidth>
-                        <Autocomplete
-                            options={caseActionOptions}
-                            getOptionLabel={(option) => option.name || ""}             
-                            value={caseActionOptions.find(option => String(option.code) === String(caseActionSelectedValue)) || null}
-                            onChange={(event, newValue) => {
-                                setCaseActionSelectedValue(newValue?.code)
-                            }}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    className="selectHideHistory"
-                                    label={investigationAction?.name.trim() || "Assign to IO"}
-                                />
-                            )}
-                        />
-                    </FormControl>
-                </DialogContentText>
-            </DialogContent>
-            <DialogActions sx={{ padding: "12px 24px" }}>
-                <Button onClick={() => {setShowActionModal(false);}}>Cancel</Button>
-                <Button
-                    className="fillPrimaryBtn"
-                    onClick={updateCaseActions}
-                >
-                    Submit
-                </Button>
-            </DialogActions>
-        </Dialog>
+<Dialog
+  open={showActionModal}
+  onClose={() => {
+    setShowActionModal(false);
+    setCaseActionSelectedValue(null);
+    setActionCases([]);
+    setActionCasesPage(0);
+  }}
+  maxWidth={false}
+  fullWidth={false}
+  PaperProps={{
+    sx: { width: 800, maxWidth: "100vw" }
+  }}
+  aria-labelledby="alert-dialog-title"
+  aria-describedby="alert-dialog-description"
+>
+  <DialogTitle id="alert-dialog-title"></DialogTitle>
+  <DialogContent sx={{ width: "800px" }}>
+    <DialogContentText id="alert-dialog-description">
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+        <WestIcon
+          style={{ cursor: "pointer", color: "#222" }}
+          onClick={() => {
+            setShowActionModal(false);
+            setCaseActionSelectedValue(null);
+            setActionCases([]);
+          }}
+        />
+        <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+          {investigationAction?.name}
+        </span>
+      </div>
+      
+      {/* <h4 className="form-field-heading">{investigationAction?.name}</h4> */}
+
+      <FormControl fullWidth sx={{ marginBottom: 2 , maxWidth: 700}}>
+        <Autocomplete
+          options={caseActionOptions}
+          getOptionLabel={(option) => option.name || ""}
+          value={
+            caseActionOptions.find(
+              (option) => String(option.code) === String(caseActionSelectedValue)
+            ) || null
+          }
+          onChange={async (event, newValue) => {
+            setCaseActionSelectedValue(newValue?.code || null);
+            setActionCases([]);
+            if (newValue?.code) {
+              try {
+                const response = await api.post("cidMaster/getSpecificIoUsersCases", {
+                  user_id: String(newValue.code),
+                  template_module: "ui_case",
+                });
+
+                let cases = [];
+                if (Array.isArray(response.cases)) {
+                  cases = response.cases;
+                } else if (response?.cases && typeof response.cases === "object") {
+                  cases = [response.cases];
+                }
+                setActionCases(cases);
+              } catch (err) {
+                console.error("Failed to fetch cases", err);
+                setActionCases([]);
+              }
+            }
+          }}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              className="selectHideHistory"
+              label={investigationAction?.name.trim() || "Assign to IO"}
+            />
+          )}
+        />
+      </FormControl>
+
+        <div style={{ marginTop: 16 , maxWidth: 700 }}>
+          <h4 className="form-field-heading">Cases for Selected Action</h4>
+          <div style={{ maxHeight: 250, overflowY: "auto" }}>
+            <TableView
+              rows={actionCases
+                .slice(
+                  actionCasesPage * actionCasesPageSize,
+                  (actionCasesPage + 1) * actionCasesPageSize
+                )
+                .map((row, idx) => ({
+                  ...row,
+                  sno: actionCasesPage * actionCasesPageSize + idx + 1,
+                  "field_cid_crime_no./enquiry_no":
+                    row["field_cid_crime_no./enquiry_no"] ||
+                    row.field_cid_crime_no ||
+                    row.enquiry_no ||
+                    "",
+                }))}
+              columns={[
+                {
+                  field: "sno",
+                  headerName: "S.No",
+                  flex: 0.3,
+                  renderCell: (params) => params.row.sno,
+                },
+                {
+                  field: "field_cid_crime_no./enquiry_no",
+                  headerName: "Crime/Enquiry No.",
+                  flex: 1,
+                  renderCell: (params) =>
+                    params.row["field_cid_crime_no./enquiry_no"],
+                },
+              ]}
+              totalPage={
+                actionCases.length > 0 && actionCasesPageSize > 0
+                  ? Math.ceil(actionCases.length / actionCasesPageSize)
+                  : 1
+              }
+              totalRecord={actionCases.length}
+              paginationCount={
+                Number.isFinite(actionCasesPage) ? actionCasesPage + 1 : 1
+              }
+              handlePagination={(page) => setActionCasesPage(page - 1)}
+              getRowId={(row, idx) =>
+                row.id || row["field_cid_crime_no./enquiry_no"] || idx
+              }
+              noRowsOverlayText="No data found"
+              sx={{ width: 700 }}
+            />
+          </div>
+          <div style={{ marginTop: 8 }}>
+            Showing{" "}
+            {Math.min(
+              actionCases.length,
+              (actionCasesPage + 1) * actionCasesPageSize
+            )}{" "}
+            of {actionCases.length} cases
+          </div>
+        </div>
+    </DialogContentText>
+  </DialogContent>
+  <DialogActions sx={{ padding: "12px 24px" }}>
+    <Button
+      onClick={() => {
+        setShowActionModal(false);
+        setCaseActionSelectedValue(null);
+        setActionCases([]);
+      }}
+    >
+      Cancel
+    </Button>
+    <Button className="fillPrimaryBtn" onClick={updateCaseActions}>
+      Submit
+    </Button>
+  </DialogActions>
+</Dialog>
+
 
       {historyModal &&
         <Dialog
