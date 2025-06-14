@@ -202,8 +202,10 @@ const Layout = ({ children }) => {
     const [userOverallDesignation, setUserOverallDesignation] = useState(localStorage.getItem("userOverallDesignation") ? JSON.parse(localStorage.getItem("userOverallDesignation")) : []);
     const [openUserDesignationDropdown, setOpenUserDesignationDropdown] = useState(false);
 
+
+    const isCDR = localStorage.getItem("designation_name") === "CDR" ? true : false;
         
-    const tabLabels = [
+    const allTabs = [
         { label: "UI Module", route: "/case/ui_case", key: "ui_case" },
         {   label: "Court Module", 
             route: "/case/pt_case", 
@@ -228,6 +230,10 @@ const Layout = ({ children }) => {
         //     ]
         // },
     ];
+
+const tabLabels = isCDR 
+    ? [{ label: "CDR", route: "/case/cdr_case", key: "ui_case" }] 
+    : allTabs;
 
     const selectedTab = useRef(tabLabels[0]);
     const selectedActiveKey = useRef(tabLabels[0]?.key);
@@ -527,6 +533,14 @@ const Layout = ({ children }) => {
         setLoading(false);
     }
   };
+
+  const isCDRPage = localStorage.getItem("designation_name") === "CDR" ? true : false;
+
+  useEffect(() => {
+    if (isCDRPage && window.location.pathname !== "/case/cdr_case") {
+      navigate("/case/cdr_case", { replace: true });
+    }
+  }, [isCDRPage, navigate]);
 
   return (
     <Box>

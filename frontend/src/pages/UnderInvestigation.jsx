@@ -97,6 +97,9 @@ import ImportExportIcon from '@mui/icons-material/ImportExport';
 import { BorderTop } from "@mui/icons-material";
 
 const UnderInvestigation = () => {
+  const accusedTableRef = useRef();
+const progressReportTableRef = useRef();
+const fslTableRef = useRef();
   const location = useLocation();
   const navigate = useNavigate();
     const { pageCount, systemStatus, record_id, dashboardName } = location.state || {};
@@ -294,7 +297,12 @@ const UnderInvestigation = () => {
   // transfer to other division states
 
   const [showOtherTransferModal, setShowOtherTransferModal] = useState(false);
+  const [showAssignIOTransferModal, setShowAssignIOTransferModal] = useState(false);
   const [showMassiveTransferModal, setShowMassiveTransferModal] = useState(false);
+  const [showReassignIoModal, setShowReassignIoModal] = useState(false);
+  const [ioUserCases, setIoUserCases] = useState([]);
+  const [casesPage, setCasesPage] = useState(0);
+  const [casesPageSize, setCasesPageSize] = useState(10);
 
   const [otherTransferField, setOtherTransferField] = useState([]);
   const [selectedOtherFields, setSelectedOtherFields] = useState(null);
@@ -376,7 +384,7 @@ const UnderInvestigation = () => {
     const hoverTableOptionsRef = useRef([]);
 
     useEffect(() => {
-        var filteredActions =  hoverTableOptions?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
+        var filteredActions =  hoverTableOptions || [];
         hoverTableOptionsRef.current = filteredActions;
     }, [hoverTableOptions]);
 
@@ -739,6 +747,9 @@ const UnderInvestigation = () => {
     const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
     const [hasApproval, setHasApproval] = useState(false);
 
+    const [natureOfDisposalSystemStatus, setNatureOfDisposalSystemStatus] = useState(null);
+    const [natureOfDisposalSystemData, setNatureOfDisposalSystemData] = useState({});
+
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
@@ -926,16 +937,16 @@ const UnderInvestigation = () => {
             if(natureOfDisposalValue?.code){
                 switch (natureOfDisposalValue?.code) {
                     case "disposal":
-                        showAccusedTableView(accusedTableCurrentPage);
+                        showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused", true);
                         break;
                     case "178_cases":
-                        showPreliminaryAccusedTableView(accusedTableCurrentPage);
+                        showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused", true);
                         break;
                     case "b_Report":
-                        natureOfDisposalSysStatus("b_Report");
+                        natureOfDisposalSysStatus("b_Report", false);
                         break;
                     case "c_Report":
-                        natureOfDisposalSysStatus("disposal")
+                        natureOfDisposalSysStatus("disposal", false);
                         break;
                     default:
                         setNatureOfDisposalModal(false);
@@ -959,63 +970,65 @@ const UnderInvestigation = () => {
     }
 
 
-    const showPreliminaryAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused")=>{
+    const showPreliminaryAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused", notApproved)=>{
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
-            toast.error("Please Select Approval Item !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-
-        if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
-            toast.error("Please Select Designation !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-
-        if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
-            toast.error("Please Select Approval Date !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-
-        if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
-
-            toast.error("Please Enter Comments !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
+        if(!notApproved){
+            if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
+                toast.error("Please Select Approval Item !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
+                toast.error("Please Select Designation !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
+                toast.error("Please Select Approval Date !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
+    
+                toast.error("Please Enter Comments !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
         }
 
         const viewTableData = {
@@ -1219,63 +1232,65 @@ const UnderInvestigation = () => {
     return col;
   });
 }
-    const showAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused")=>{
+    const showAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused", notApproved)=>{
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
-            toast.error("Please Select Approval Item !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
+        if(!notApproved){
+            if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
+                toast.error("Please Select Approval Item !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
-            toast.error("Please Select Designation !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
+            if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
+                toast.error("Please Select Designation !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
-            toast.error("Please Select Approval Date !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
+            if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
+                toast.error("Please Select Approval Date !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
+            if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
 
-            toast.error("Please Enter Comments !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
+                toast.error("Please Enter Comments !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
         }
 
         const viewTableData = {
@@ -1387,7 +1402,8 @@ const UnderInvestigation = () => {
                                     width: 70,
                                     resizable: false,
                                     cellClassName: 'justify-content-start',
-                                    renderCell: (params) => <span>{params.value}</span>
+                                    renderCell: renderCellFunc("sl_no", 0)
+
                                 },
                                 ...tableHeader
                             ];
@@ -1490,11 +1506,11 @@ const UnderInvestigation = () => {
     const handleAccusedDialogTabChange = (tab) => {
         setAccusedDialogTab(tab);
         if (tab === "accused") {
-            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused", true);
         } else if (tab === "progress_report") {
-            showAccusedTableView(1, false, "cid_ui_case_progress_report");
+            showAccusedTableView(1, false, "cid_ui_case_progress_report", true);
         } else if (tab === "fsl") {
-            showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
+            showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory", true);
         }
     };
 
@@ -1763,21 +1779,39 @@ const UnderInvestigation = () => {
 
     const accusedTableCellRender = (key, params, value, index, tableName) => {
 
-        if (params?.row?.attachments) {
-            var attachmentField = params.row.attachments.find(
-                (data) => data.field_name === key
-            );
-            if (attachmentField) {
-                return fileUploadTableView(key, params, params.value);
-            }
+    if (key === "sl_no") {
+        // Debug: log when rendering S.No cell
+        console.log("Rendering S.No cell", { value, row: params?.row, tableName });
+        return (
+            <Tooltip title={value} placement="top">
+                <span
+                    style={{ color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' }}
+                    onClick={event => {
+                        event.stopPropagation();
+                        handleViewAccused(params?.row, false, tableName);
+                    }}
+                    className="tableValueTextView Roboto"
+                >
+                    {value || "-"}
+                </span>
+            </Tooltip>
+        );
+    }
+    if (params?.row?.attachments) {
+        var attachmentField = params.row.attachments.find(
+            (data) => data.sl_no === key
+        );
+        if (attachmentField) {
+            return fileUploadTableView(key, params, params.value);
         }
+    }
 
         let highlightColor = {};
         let onClickHandler = null;
 
         const shouldUnderline =
           (index !== null && index === 0) ||
-          (tableName === "cid_ui_case_progress_report" && key === "field_action_item");
+          (tableName === "cid_ui_case_progress_report" && key === "sl_no");
 
         if (tableName && shouldUnderline) {
             highlightColor = { color: '#0167F8', textDecoration: 'underline', cursor: 'pointer' };
@@ -1799,14 +1833,13 @@ const UnderInvestigation = () => {
             </Tooltip>
         );
     };
-
     const accusedShouldHighlightRowRed = (row) => {
         const isGovServant = row?.field_government_servent === "Yes" || row?.field_government_servent == null;
         const chargeSheetStatus = row?.field_status_of_accused_in_charge_sheet;
         const isChargedOrDropped = ["Charge Sheet", "Dropped"].includes(chargeSheetStatus) || !chargeSheetStatus;
-        const isPending = String(chargeSheetStatus).toLowerCase() === "pending";
+        // const isPending = String(chargeSheetStatus).toLowerCase() === "pending";
         const hasPSOAttachment = row?.attachments?.some(att => att.field_name === "field_pso_&_19_pc_act_order");
-        const highlight = (isGovServant && isChargedOrDropped && !hasPSOAttachment) || isPending;
+        const highlight = (isGovServant && isChargedOrDropped && !hasPSOAttachment);
         return highlight;
     };
 
@@ -2053,6 +2086,9 @@ const UnderInvestigation = () => {
                       }
                   },
               });
+              setFormTemplateData(prev =>
+            Array.isArray(prev) ? normalizeFormFieldsOptions(prev) : prev
+        );
           } else {
               const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
               toast.error(errorMessage, {
@@ -2082,6 +2118,44 @@ const UnderInvestigation = () => {
           }
       }
   };
+
+
+function isValidDateValue(val) {
+    if (!val) return false;
+    if (val instanceof Date && !isNaN(val)) return true;
+    if (typeof val === "string") {
+        // Accepts "DD/MM/YYYY" or "YYYY-MM-DD"
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+            const [day, month, year] = val.split("/");
+            const d = new Date(`${year}-${month}-${day}`);
+            return !isNaN(d.getTime());
+        }
+        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) {
+            const d = new Date(val);
+            return !isNaN(d.getTime());
+        }
+        // Try parsing as Date
+        const d = new Date(val);
+        return !isNaN(d.getTime());
+    }
+    return false;
+}
+
+// Helper to format date as YYYY-MM-DD, returns null if invalid
+function toISODateString(val) {
+    if (!val) return null;
+    let d = val;
+    if (!(val instanceof Date)) {
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(val)) {
+            const [day, month, year] = val.split("/");
+            d = new Date(`${year}-${month}-${day}`);
+        } else {
+            d = new Date(val);
+        }
+    }
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString().split("T")[0];
+}
 
     const updateTemplateData = async (rowData, tableName) => {
         let rowId = rowData && rowData.id && rowData.id !== "null" ? rowData.id : null;
@@ -2129,10 +2203,20 @@ const UnderInvestigation = () => {
                     formData.append(key, value);
                     fileFields.push(key);
                 } else {
-                    normalData[key] = Array.isArray(value)
-                        ? value.join(",")
-                        : value;
-                }
+                        if (key.toLowerCase().includes("date")) {
+                            if (isValidDateValue(value)) {
+                                const isoDate = toISODateString(value);
+                                if (isoDate) {
+                                    normalData[key] = isoDate;
+                                }
+                            }
+                            // If not valid, do NOT set the key at all (prevents "Invalid date")
+                        } else {
+                            normalData[key] = Array.isArray(value)
+                                ? value.join(",")
+                                : value;
+                        }
+                    }
             }
         });
     
@@ -2336,7 +2420,14 @@ const normalizeFormFieldsOptions = (fields) =>
         setMoreThenTemplate(false);
     }
 
-    const natureOfDisposalFinalReport = async (data)=>{
+    const natureOfDisposalFinalReport = async (data, approved)=>{
+
+        if(!approved){
+            setNatureOfDisposalSystemStatus(natureOfDisposalValue.code);
+            setNatureOfDisposalSystemData(data);
+            showNewApprovalPage();
+            return;  
+        }
 
         const formData = new FormData();
         var normalData = {};
@@ -2546,7 +2637,13 @@ const normalizeFormFieldsOptions = (fields) =>
 
     }
     
-    const natureOfDisposalSysStatus = async (sys_status)=>{
+    const natureOfDisposalSysStatus = async (sys_status, approved)=>{
+
+        if(!approved){
+            setNatureOfDisposalSystemStatus(sys_status);
+            showNewApprovalPage();
+            return;  
+        }
 
         var othersUpdateData = {
             id : selectedRowData.id,
@@ -3365,9 +3462,9 @@ const normalizeFormFieldsOptions = (fields) =>
                     cancelButtonText: "UI Case",
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        showActionsOptionsTemplate("cid_pending_trail");
+                        showActionsOptionsTemplate("cid_pending_trial");
                     } else {
-                        natureOfDisposalSysStatus("ui_case")
+                        natureOfDisposalSysStatus("ui_case", true)
                     }
                 });
 
@@ -6378,7 +6475,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     }
 
     if(natureOfDisposalModal){
-        natureOfDisposalFinalReport(data);
+        natureOfDisposalFinalReport(data, false);
         return;
     }
     if(showOrderCopy){
@@ -9207,8 +9304,14 @@ const handleOpenExportPopup = async () => {
                                         //   setSelectedRow(selectedRow);
                                         //   setselectedOtherTemplate(options);
                                         setOtherTransferField(updatedOptions);
-                                        if (options.name.trim().toLowerCase() == "transfer to other division" || options.name.trim().toLowerCase() == "reassign io") {
+                                        if (options.name.trim().toLowerCase() == "transfer to other division" ) {
                                             setShowMassiveTransferModal(true);
+                                            setSelectedRowIds([selectedRow.id])
+                                        }  else if(options.name.trim().toLowerCase() == "reassign io"){
+                                            setShowReassignIoModal(true);
+                                            setSelectedRowIds([selectedRow.id])
+                                        }else if(options.name.trim().toLowerCase() == "assign to io"){
+                                            setShowAssignIOTransferModal(true);
                                             setSelectedRowIds([selectedRow.id])
                                         } else {
                                             setShowOtherTransferModal(true);
@@ -9251,8 +9354,11 @@ const handleOpenExportPopup = async () => {
                                 //   setSelectedRow(selectedRow);
                                 //   setselectedOtherTemplate(options);
                                 setOtherTransferField(staticOptions);
-                                if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase() || options.name.trim().toLowerCase() == "reassign io") {
+                                if (options.name.trim().toLowerCase() == "transfer to other division".toLowerCase()) {
                                     setShowMassiveTransferModal(true);
+                                }
+                                else if(options.name.trim().toLowerCase() == "reassign io"){
+                                  setShowReassignIoModal(true);
                                 } else {
                                     setShowOtherTransferModal(true);
                                 }
@@ -9590,6 +9696,7 @@ const handleOpenExportPopup = async () => {
                     setAddApproveFlag(false);
                     setApproveTableFlag(false);
                     setShowOtherTransferModal(false);
+                    setShowAssignIOTransferModal(false);
                     setApprovalSaveData({});
 
                 } else {
@@ -9735,6 +9842,7 @@ const handleOpenExportPopup = async () => {
           setAddApproveFlag(false);
           setApproveTableFlag(false);
           setShowOtherTransferModal(false);
+          setShowReassignIoModal(false);
           setApprovalSaveData({});
           setShowMassiveTransferModal(false);
           setSelectKey(null);
@@ -10668,7 +10776,7 @@ const handleOpenExportPopup = async () => {
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
                             module : "ui_case",
-                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name || !viewTemplateData?.["data"]?.field_approval_done_by || viewTemplateData?.["data"]?.field_approval_done_by === "" ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
                             dashboardName : dashboardTileName,
                             caseExtension :rowData?.isDisabled ?? false,
@@ -13815,6 +13923,194 @@ const handleOpenExportPopup = async () => {
         </DialogActions>
       </Dialog>
 
+    <Dialog
+      open={showAssignIOTransferModal}
+      onClose={() => {
+        setShowAssignIOTransferModal(false);
+        setSelectKey(null);
+        // setSelectedRow([]);
+        setOtherTransferField([]);
+        setSelectedUser(null);
+        setIoUserCases([]);
+        setSelectedOtherFields(null);
+        // setselectedOtherTemplate(null);
+        setUsersBasedOnDivision([]);
+        // setSelectedUser(null);
+        // setSelectedRowIds([]);
+        setSelectedMergeRowData([]);
+        setSelectedParentId(null);
+        setTableData((prevData) =>
+          prevData.map((item) => ({ ...item, isSelected: false }))
+        );
+        // setHasApproval(false);
+      }}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+      maxWidth={false}
+      fullWidth={false}
+      PaperProps={{
+        sx: { width: 800, maxWidth: "100vw" }
+      }}
+    >
+      <DialogTitle id="alert-dialog-title"></DialogTitle>
+      <DialogContent sx={{ width: "800px" }}>
+        <DialogContentText id="alert-dialog-description">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <WestIcon
+              style={{ cursor: "pointer", color: "#222" }}
+              onClick={() => {
+                setShowAssignIOTransferModal(false);
+                setSelectKey(null);
+                setOtherTransferField([]);
+                setUsersBasedOnDivision([]);
+                setSelectedUser(null);
+                setIoUserCases([]);
+                setSelectedMergeRowData([]);
+                setSelectedParentId(null);
+                setTableData((prevData) =>
+                  prevData.map((item) => ({ ...item, isSelected: false }))
+                );
+              }}
+            />
+            <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+              {selectKey?.title}
+            </span>
+          </div>
+          <FormControl fullWidth>
+          </FormControl>
+          <div style={{ display: "flex", gap: 16, maxWidth: 700 }}>
+            <FormControl fullWidth>
+              <div style={{ marginBottom: 4, fontWeight: 500, color: "#222" }}>IO User</div>
+              <Autocomplete
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={async (event, newValue) => {
+                  // setSelectedUser(newValue);
+                  setSelectedOtherFields(newValue);
+                  setIoUserCases([]);
+                  if (newValue && newValue.code) {
+                    try {
+                      const user_id = String(newValue.code);
+                      const template_module = "ui_case";
+                      const response = await api.post(
+                        "cidMaster/getSpecificIoUsersCases",
+                        {
+                          user_id,
+                          template_module,
+                        }
+                      );
+                      let cases = [];
+                      if (Array.isArray(response.cases)) {
+                        cases = response.cases;
+                      } else if (Array.isArray(response?.cases)) {
+                        cases = response.cases;
+                      } else if (response.cases && typeof response.cases === "object") {
+                        cases = [response.cases];
+                      } else if (response?.cases && typeof response.cases === "object") {
+                        cases = [response.cases];
+                      }
+                      setIoUserCases(cases);
+                    } catch (err) {
+                      console.error("Failed to fetch IO user cases", err);
+                      setIoUserCases([]);
+                    }
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label="IO User"
+                  />
+                )}
+                disabled={fieldActionAddFlag.current === false}
+              />
+            </FormControl>
+          </div>
+                <div style={{ marginTop: 24, maxWidth: 700 }}>
+                <h4 className="form-field-heading">Cases for Selected IO User</h4>
+                <div style={{ maxHeight: 250, overflowY: "auto" }}>
+                  <TableView
+                  rows={ioUserCases.slice(
+                    casesPage * casesPageSize,
+                    (casesPage + 1) * casesPageSize
+                  ).map((row, idx) => ({
+                    ...row,
+                    sno: casesPage * casesPageSize + idx + 1,
+                    "field_cid_crime_no./enquiry_no":
+                    row["field_cid_crime_no./enquiry_no"] ||
+                    row.field_cid_crime_no ||
+                    row.enquiry_no ||
+                    "",
+                  }))}
+                  columns={[
+                    {
+                    field: "sno",
+                    headerName: "S.No",
+                    flex: 0.3,
+                    renderCell: (params) => params.row.sno,
+                    },
+                    {
+                    field: "field_cid_crime_no./enquiry_no",
+                    headerName: "Crime/Enquiry No.",
+                    flex: 1,
+                    renderCell: (params) => params.row["field_cid_crime_no./enquiry_no"],
+                    },
+                  ]}
+                  totalPage={ioUserCases.length > 0 && casesPageSize > 0 ? Math.ceil(ioUserCases.length / casesPageSize) : 1}
+                  totalRecord={ioUserCases.length}
+                  paginationCount={Number.isFinite(casesPage) ? casesPage + 1 : 1}
+                  handlePagination={(page) => setCasesPage(page - 1)}
+                  getRowId={(row, idx) => row.id || row["field_cid_crime_no./enquiry_no"] || idx}
+                  noRowsOverlayText="No data found"
+                  sx={{ width: 700 }}
+                  />
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  Showing{" "}
+                  {Math.min(ioUserCases.length, (casesPage + 1) * casesPageSize)} of{" "}
+                  {ioUserCases.length} cases
+                </div>
+                </div>
+              </DialogContentText>
+              </DialogContent>
+              <DialogActions sx={{ padding: "12px 24px" }}>
+              <Button
+                onClick={() => {
+            setShowAssignIOTransferModal(false);
+            setSelectKey(null);
+            setSelectedRow([]);
+            setOtherTransferField([]);
+            setSelectedUser(null);
+            setIoUserCases([]);
+            // setSelectedOtherFields(null);
+            // setselectedOtherTemplate(null);
+            setUsersBasedOnDivision([]);
+            // setSelectedUser(null);
+            // setSelectedRowIds([]);
+            setSelectedMergeRowData([]);
+            setSelectedParentId(null);
+            setTableData((prevData) =>
+              prevData.map((item) => ({ ...item, isSelected: false }))
+            );
+            // setHasApproval(false);
+          }}
+        >
+          Cancel
+        </Button>
+        {fieldActionAddFlag.current === true && (
+          <Button
+            className="fillPrimaryBtn"
+            onClick={() => {
+              handleSaveDivisionChange();
+            }}
+          >
+            Submit
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
 
       <Dialog
         open={showMassiveTransferModal}
@@ -13932,6 +14228,236 @@ const handleOpenExportPopup = async () => {
           }
         </DialogActions>
       </Dialog>
+
+
+    <Dialog
+      open={showReassignIoModal}
+      onClose={() => {
+        setShowReassignIoModal(false);
+        setSelectKey(null);
+        // setSelectedRow([]);
+        setOtherTransferField([]);
+        setSelectedUser(null);
+        setIoUserCases([]);
+        // setSelectedOtherFields(null);
+        // setselectedOtherTemplate(null);
+        setUsersBasedOnDivision([]);
+        // setSelectedUser(null);
+        // setSelectedRowIds([]);
+        setSelectedMergeRowData([]);
+        setSelectedParentId(null);
+        setTableData((prevData) =>
+          prevData.map((item) => ({ ...item, isSelected: false }))
+        );
+        // setHasApproval(false);
+      }}
+      aria-labelledby="alert-dialog-title"
+      aria-describedby="alert-dialog-description"
+      maxWidth={false}
+      fullWidth={false}
+      PaperProps={{
+        sx: { width: 800, maxWidth: "100vw" }
+      }}
+    >
+      <DialogTitle id="alert-dialog-title"></DialogTitle>
+      <DialogContent sx={{ width: "800px" }}>
+        <DialogContentText id="alert-dialog-description">
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <WestIcon
+              style={{ cursor: "pointer", color: "#222" }}
+              onClick={() => {
+                setShowReassignIoModal(false);
+                setSelectKey(null);
+                setOtherTransferField([]);
+                setUsersBasedOnDivision([]);
+                setSelectedUser(null);
+                setIoUserCases([]);
+                setSelectedMergeRowData([]);
+                setSelectedParentId(null);
+                setTableData((prevData) =>
+                  prevData.map((item) => ({ ...item, isSelected: false }))
+                );
+              }}
+            />
+            <span style={{ fontWeight: 500, fontSize: 18, color: "#222", marginLeft: 12 }}>
+              {selectKey?.title}
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 16, maxWidth: 700 }}>
+            <FormControl fullWidth>
+            <div style={{ marginBottom: 4, fontWeight: 600, fontSize: 16, color: "#222" }}>
+              {selectKey?.title?.trim() === "Reassign IO" ? "Division" : selectKey?.title || "Division"}
+            </div>
+              <Autocomplete
+                options={otherTransferField}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedOtherFields || null}
+                onChange={(event, newValue) => {
+                  setSelectedOtherFields(newValue);
+                  setSelectedUser(null);
+
+                  if (newValue && newValue.code) {
+                    api
+                      .post("cidMaster/getIoUsersBasedOnDivision", {
+                        division_ids: [newValue.code],
+                        role_id: null,
+                      })
+                      .then((res) => {
+                        setUsersBasedOnDivision(res.data || []);
+                      })
+                      .catch((err) => {
+                        console.error("Failed to load users based on division", err);
+                        setUsersBasedOnDivision([]);
+                      });
+                  } else {
+                    setUsersBasedOnDivision([]);
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label={
+                      selectKey?.title.trim() == "Reassign IO"
+                        ? "Division"
+                        : selectKey?.title
+                    }
+                  />
+                )}
+                disabled={fieldActionAddFlag.current === false}
+              />
+            </FormControl>
+            <FormControl fullWidth>
+              <div style={{ marginBottom: 4, fontWeight: 500, color: "#222" }}>IO User</div>
+              <Autocomplete
+                options={usersBasedOnDivision}
+                getOptionLabel={(option) => option.name || ""}
+                value={selectedUser || null}
+                onChange={async (event, newValue) => {
+                  setSelectedUser(newValue);
+                  setIoUserCases([]); 
+                  if (newValue && newValue.user_id) {
+                    try {
+                      const user_id = String(newValue.user_id);
+                      const template_module = "ui_case";
+                      const response = await api.post(
+                        "cidMaster/getSpecificIoUsersCases",
+                        {
+                          user_id,
+                          template_module,
+                        }
+                      );
+                      let cases = [];
+                      if (Array.isArray(response.cases)) {
+                        cases = response.cases;
+                      } else if (Array.isArray(response?.cases)) {
+                        cases = response.cases;
+                      } else if (response.cases && typeof response.cases === "object") {
+                        cases = [response.cases];
+                      } else if (response?.cases && typeof response.cases === "object") {
+                        cases = [response.cases];
+                      }
+                      setIoUserCases(cases);
+                    } catch (err) {
+                      console.error("Failed to fetch IO user cases", err);
+                      setIoUserCases([]);
+                    }
+                  }
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="selectHideHistory"
+                    label="IO User"
+                  />
+                )}
+                disabled={fieldActionAddFlag.current === false}
+              />
+            </FormControl>
+          </div>
+                <div style={{ marginTop: 24, maxWidth: 700 }}>
+                <h4 className="form-field-heading">Cases for Selected IO User</h4>
+                <div style={{ maxHeight: 250, overflowY: "auto" }}>
+                  <TableView
+                  rows={ioUserCases.slice(
+                    casesPage * casesPageSize,
+                    (casesPage + 1) * casesPageSize
+                  ).map((row, idx) => ({
+                    ...row,
+                    sno: casesPage * casesPageSize + idx + 1,
+                    "field_cid_crime_no./enquiry_no":
+                    row["field_cid_crime_no./enquiry_no"] ||
+                    row.field_cid_crime_no ||
+                    row.enquiry_no ||
+                    "",
+                  }))}
+                  columns={[
+                    {
+                    field: "sno",
+                    headerName: "S.No",
+                    flex: 0.3,
+                    renderCell: (params) => params.row.sno,
+                    },
+                    {
+                    field: "field_cid_crime_no./enquiry_no",
+                    headerName: "Crime/Enquiry No.",
+                    flex: 1,
+                    renderCell: (params) => params.row["field_cid_crime_no./enquiry_no"],
+                    },
+                  ]}
+                  totalPage={ioUserCases.length > 0 && casesPageSize > 0 ? Math.ceil(ioUserCases.length / casesPageSize) : 1}
+                  totalRecord={ioUserCases.length}
+                  paginationCount={Number.isFinite(casesPage) ? casesPage + 1 : 1}
+                  handlePagination={(page) => setCasesPage(page - 1)}
+                  getRowId={(row, idx) => row.id || row["field_cid_crime_no./enquiry_no"] || idx}
+                  noRowsOverlayText="No data found"
+                  sx={{ width: 700 }}
+                  />
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  Showing{" "}
+                  {Math.min(ioUserCases.length, (casesPage + 1) * casesPageSize)} of{" "}
+                  {ioUserCases.length} cases
+                </div>
+                </div>
+              </DialogContentText>
+              </DialogContent>
+              <DialogActions sx={{ padding: "12px 24px" }}>
+              <Button
+                onClick={() => {
+            setShowReassignIoModal(false);
+            setSelectKey(null);
+            setSelectedRow([]);
+            setOtherTransferField([]);
+            setSelectedUser(null);
+            setIoUserCases([]);
+            // setSelectedOtherFields(null);
+            // setselectedOtherTemplate(null);
+            setUsersBasedOnDivision([]);
+            // setSelectedUser(null);
+            // setSelectedRowIds([]);
+            setSelectedMergeRowData([]);
+            setSelectedParentId(null);
+            setTableData((prevData) =>
+              prevData.map((item) => ({ ...item, isSelected: false }))
+            );
+            // setHasApproval(false);
+          }}
+        >
+          Cancel
+        </Button>
+        {fieldActionAddFlag.current === true && (
+          <Button
+            className="fillPrimaryBtn"
+            onClick={() => {
+              handleMassiveDivisionChange();
+            }}
+          >
+            Submit
+          </Button>
+        )}
+      </DialogActions>
+    </Dialog>
 
       <Dialog
         open={showCaseExtensionModal}
@@ -14794,7 +15320,16 @@ const handleOpenExportPopup = async () => {
                       <Button
                         variant="contained"
                         sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
-                        onClick={() => {saveOverallData(true)}}
+                        onClick={() => {
+
+                            if(natureOfDisposalSystemStatus === "b_Report" || natureOfDisposalSystemStatus === "c_Report"){
+                                natureOfDisposalSysStatus(natureOfDisposalSystemStatus, true);
+                            }else if(natureOfDisposalSystemStatus === "178_cases" || natureOfDisposalSystemStatus === "disposal"){
+                                natureOfDisposalFinalReport(natureOfDisposalSystemData, true);
+                            }else{
+                                saveOverallData(true);
+                            }
+                        }}
                       >
                         Submit
                       </Button>
@@ -14993,7 +15528,12 @@ const handleOpenExportPopup = async () => {
                                 });
                                 return;
                             }
-                            showNewApprovalPage();
+
+                            if(natureOfDisposalModal){
+                                handleNatureOfDisposalSubmit();
+                            }else{
+                                showNewApprovalPage();
+                            }
                         }}
                     >
                         Submit
@@ -15147,140 +15687,11 @@ const handleOpenExportPopup = async () => {
                 </Dialog>
           }
 
-            {
-              showAccusedTable && 
-              <Dialog
-                  open={showAccusedTable}
-                  onClose={() => setShowAccusedTable(false)}
-                  aria-labelledby="alert-dialog-title"
-                  aria-describedby="alert-dialog-description"
-                  fullScreen
-                  fullWidth
-                  sx={{ zIndex: "1", marginLeft: '50px' }}
-                >
-                  <DialogTitle
-                      id="alert-dialog-title"
-                      sx={{
-                          display: "flex",
-                          alignItems: "start",
-                          justifyContent: "space-between",
-                      }}
-                  >
-                      <Box
-                          sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
-                          onClick={() => { setShowAccusedTable(false)}}
-                      >
-  
-                          <WestIcon />
-  
-                          <Typography variant="body1" fontWeight={500}>
-                              {accusedDialogTab === "accused" && "Accused Data"}
-                              {accusedDialogTab === "progress_report" && "Progress Report Data"}
-                              {accusedDialogTab === "fsl" && "FSL Data"}
-                          </Typography>
-  
-                          {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
-                              <Chip
-                                  label={selectedRowData["field_cid_crime_no./enquiry_no"]}
-                                  color="primary"
-                                  variant="outlined"
-                                  size="small"
-                                  sx={{ fontWeight: 500, marginTop: '2px' }}
-                              />
-                          )}
-  
-                      </Box>
-  
-                      <Button
-                          variant="contained"
-                          sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
-                          onClick={() => {nextAccusedStage()}}
-                      >
-                          Submit
-                      </Button>
-  
-                  </DialogTitle>
-                  <DialogContent>
-                      <DialogContentText>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
-                        <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
-                          
-                          <Box className="parentFilterTabs">
-                              <Box
-                                  onClick={() => handleAccusedDialogTabChange("accused")}
-                                  className={`filterTabs ${accusedDialogTab === "accused" ? "Active" : ""}`}
-                              >
-                                  Accused
-                              </Box>
-                              <Box
-                                  onClick={() => handleAccusedDialogTabChange("progress_report")}
-                                  className={`filterTabs ${accusedDialogTab === "progress_report" ? "Active" : ""}`}
-                              >
-                                  Progress Report
-                              </Box>
-                              <Box
-                                  onClick={() => handleAccusedDialogTabChange("fsl")}
-                                  className={`filterTabs ${accusedDialogTab === "fsl" ? "Active" : ""}`}
-                              >
-                                  FSL
-                              </Box>
-                          </Box>
-                        </Box> </Box>
-                          <Box sx={{ width: '100%' }}>
-                              {accusedDialogTab === "accused" && (
-                                  <EditTableView
-                                      rows={accusedTableRowData}
-                                      columns={
-                                        accusedTableHeaderData
-                                      }
-                                      totalPage={accusedTableTotalPage}
-                                      totalRecord={accusedTableTotalRecord}
-                                      paginationCount={accusedTableCurrentPage}
-                                      handlePagination={setAccusedCurrentPagination}
-                                      highLightedRow={accusedShouldHighlightRowRed}
-                                      onRowUpdate={handleEditTableRowUpdate}
-                                      fieldDefinitions={formTemplateData}
-                                  />
-                              )}
-                              {accusedDialogTab === "progress_report" && (
-                                  <EditTableView
-                                      rows={progressReportTableRowData}
-                                      columns={progressReportTableHeaderData}
-                                      totalPage={progressReportTableTotalPage}
-                                      totalRecord={progressReportTableTotalRecord}
-                                      paginationCount={1}
-                                      handlePagination={(page) => showAccusedTableView(page, false, "cid_ui_case_progress_report")}
-                                      highLightedRow={progressReportShouldHighlightRowRed}
-                                      onRowUpdate={handleEditTableRowUpdate}
-                                      fieldDefinitions={formTemplateData}
-                                  />
-                              )}
-                              {accusedDialogTab === "fsl" && (
-                                  <EditTableView
-                                      rows={fslTableRowData}
-                                      columns={fslTableHeaderData}
-                                      totalPage={fslTableTotalPage}
-                                      totalRecord={fslTableTotalRecord}
-                                      paginationCount={1}
-                                      handlePagination={(page) => showAccusedTableView(page, false, "cid_ui_case_forensic_science_laboratory")}
-                                      highLightedRow={fslShouldHighlightRowRed}
-                                      onRowUpdate={handleEditTableRowUpdate}
-                                      fieldDefinitions={formTemplateData}
-                                  />
-                              )}
-                          </Box>
-                      </DialogContentText>
-                  </DialogContent>
-              </Dialog>
-          }
-             
-
-
               {
-                showPreliminaryAccusedTable && 
+                showAccusedTable && 
                 <Dialog
-                    open={showPreliminaryAccusedTable}
-                    onClose={() => setShowPreliminaryAccusedTable(false)}
+                    open={showAccusedTable}
+                    onClose={() => setShowAccusedTable(false)}
                     aria-labelledby="alert-dialog-title"
                     aria-describedby="alert-dialog-description"
                     fullScreen
@@ -15297,13 +15708,15 @@ const handleOpenExportPopup = async () => {
                     >
                         <Box
                             sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
-                            onClick={() => { setShowPreliminaryAccusedTable(false)}}
+                            onClick={() => { setShowAccusedTable(false)}}
                         >
     
                             <WestIcon />
     
                             <Typography variant="body1" fontWeight={500}>
-                                Accused Data
+                                {accusedDialogTab === "accused" && "Accused Data"}
+                                {accusedDialogTab === "progress_report" && "Progress Report Data"}
+                                {accusedDialogTab === "fsl" && "FSL Data"}
                             </Typography>
     
                             {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
@@ -15318,20 +15731,90 @@ const handleOpenExportPopup = async () => {
     
                         </Box>
     
-                        <Button
-                            variant="contained"
-                            sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
-                            onClick={() => {nextPrelimnaryAccusedStage()}}
-                        >
-                            Submit
-                        </Button>
+                        <Box>
+                            <Button
+                                variant="outlined"
+                                sx={{  mr: 1,}}
+                                onClick={async () => {
+                                    let rowsToSave = [];
+                                    if (accusedDialogTab === "accused") {
+                                        if (accusedTableRef.current?.commitAllEdits) {
+                                            accusedTableRef.current.commitAllEdits();
+                                            await new Promise(r => setTimeout(r, 0));
+                                        }
+                                        if (accusedTableRef.current?.getRows) {
+                                            rowsToSave = accusedTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = accusedTableRowData;
+                                        }
+                                    } else if (accusedDialogTab === "progress_report") {
+                                        if (progressReportTableRef.current?.commitAllEdits) {
+                                            progressReportTableRef.current.commitAllEdits();
+                                            await new Promise(r => setTimeout(r, 0));
+                                        }
+                                        if (progressReportTableRef.current?.getRows) {
+                                            rowsToSave = progressReportTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = progressReportTableRowData;
+                                        }
+                                    } else if (accusedDialogTab === "fsl") {
+                                        if (fslTableRef.current?.commitAllEdits) {
+                                            fslTableRef.current.commitAllEdits();
+                                            await new Promise(r => setTimeout(r, 0));
+                                        }
+                                        if (fslTableRef.current?.getRows) {
+                                            rowsToSave = fslTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = fslTableRowData;
+                                        }
+                                    }
+                                    for (const row of rowsToSave) {
+                                        await handleEditTableRowUpdate(row);
+                                    }
+                                }}
+                              >
+                                Save
+                            </Button>
+                            <Button
+                                variant="contained"
+                                sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                                onClick={() => { nextAccusedStage(); }}
+                            >
+                                Submit
+                            </Button>
+                        </Box>
     
                     </DialogTitle>
                     <DialogContent>
                         <DialogContentText>
-
+                          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, mb: 2 }}>
+                          <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+                            
+                            <Box className="parentFilterTabs">
+                                <Box
+                                    onClick={() => handleAccusedDialogTabChange("accused")}
+                                    className={`filterTabs ${accusedDialogTab === "accused" ? "Active" : ""}`}
+                                >
+                                    Accused
+                                </Box>
+                                <Box
+                                    onClick={() => handleAccusedDialogTabChange("progress_report")}
+                                    className={`filterTabs ${accusedDialogTab === "progress_report" ? "Active" : ""}`}
+                                >
+                                    Progress Report
+                                </Box>
+                                <Box
+                                    onClick={() => handleAccusedDialogTabChange("fsl")}
+                                    className={`filterTabs ${accusedDialogTab === "fsl" ? "Active" : ""}`}
+                                >
+                                    FSL
+                                </Box>
+                            </Box>
+                          </Box> </Box>
                             <Box sx={{ width: '100%' }}>
-                                    <TableView
+                                {accusedDialogTab === "accused" && (
+                                    <EditTableView
+                                    ref={accusedTableRef}
                                         rows={accusedTableRowData}
                                         columns={
                                           accusedTableHeaderData
@@ -15341,12 +15824,115 @@ const handleOpenExportPopup = async () => {
                                         paginationCount={accusedTableCurrentPage}
                                         handlePagination={setAccusedCurrentPagination}
                                         highLightedRow={accusedShouldHighlightRowRed}
+                                        onRowUpdate={handleEditTableRowUpdate}
+                                        fieldDefinitions={formTemplateData}
                                     />
+                                )}
+                                {accusedDialogTab === "progress_report" && (
+                                    <EditTableView
+                                    ref={progressReportTableRef}
+                                        rows={progressReportTableRowData}
+                                        columns={progressReportTableHeaderData}
+                                        totalPage={progressReportTableTotalPage}
+                                        totalRecord={progressReportTableTotalRecord}
+                                        paginationCount={1}
+                                        handlePagination={(page) => showAccusedTableView(page, false, "cid_ui_case_progress_report")}
+                                        highLightedRow={progressReportShouldHighlightRowRed}
+                                        onRowUpdate={handleEditTableRowUpdate}
+                                        fieldDefinitions={formTemplateData}
+                                    />
+                                )}
+                                {accusedDialogTab === "fsl" && (
+                                    <EditTableView
+                                    ref={fslTableRef}
+                                        rows={fslTableRowData}
+                                        columns={fslTableHeaderData}
+                                        totalPage={fslTableTotalPage}
+                                        totalRecord={fslTableTotalRecord}
+                                        paginationCount={1}
+                                        handlePagination={(page) => showAccusedTableView(page, false, "cid_ui_case_forensic_science_laboratory")}
+                                        highLightedRow={fslShouldHighlightRowRed}
+                                        onRowUpdate={handleEditTableRowUpdate}
+                                        fieldDefinitions={formTemplateData}
+                                    />
+                                )}
                             </Box>
                         </DialogContentText>
                     </DialogContent>
                 </Dialog>
               }
+            
+          {
+            showPreliminaryAccusedTable && 
+            <Dialog
+                open={showPreliminaryAccusedTable}
+                onClose={() => setShowPreliminaryAccusedTable(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                fullScreen
+                fullWidth
+                sx={{ zIndex: "1", marginLeft: '50px' }}
+              >
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "start",
+                        justifyContent: "space-between",
+                    }}
+                >
+                    <Box
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                        onClick={() => { setShowPreliminaryAccusedTable(false)}}
+                    >
+
+                        <WestIcon />
+
+                        <Typography variant="body1" fontWeight={500}>
+                            Accused Data
+                        </Typography>
+
+                        {selectedRowData?.["field_cid_crime_no./enquiry_no"] && (
+                            <Chip
+                                label={selectedRowData["field_cid_crime_no./enquiry_no"]}
+                                color="primary"
+                                variant="outlined"
+                                size="small"
+                                sx={{ fontWeight: 500, marginTop: '2px' }}
+                            />
+                        )}
+
+                    </Box>
+
+                    <Button
+                        variant="contained"
+                        sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
+                        onClick={() => {nextPrelimnaryAccusedStage()}}
+                    >
+                        Submit
+                    </Button>
+
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+
+                        <Box sx={{ width: '100%' }}>
+                                <TableView
+                                    rows={accusedTableRowData}
+                                    columns={
+                                      accusedTableHeaderData
+                                    }
+                                    totalPage={accusedTableTotalPage}
+                                    totalRecord={accusedTableTotalRecord}
+                                    paginationCount={accusedTableCurrentPage}
+                                    handlePagination={setAccusedCurrentPagination}
+                                    highLightedRow={accusedShouldHighlightRowRed}
+                                />
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
+          }
     </Box>
   );
 };

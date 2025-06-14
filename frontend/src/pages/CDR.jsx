@@ -1,4 +1,4 @@
-import {  useEffect, useRef, useState } from "react";
+import React, {  useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import NormalViewForm from "../components/dynamic-form/NormalViewForm";
 import TableView from "../components/table-view/TableView";
@@ -33,8 +33,9 @@ import MenuItem from '@mui/material/MenuItem';
 import DialogTitle from "@mui/material/DialogTitle";
 import Autocomplete from "@mui/material/Autocomplete";
 import { Add } from "@mui/icons-material";
+import dayjs from "dayjs";
 
-const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
+const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation, module}) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -117,6 +118,53 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
         { label: "Rejected", value: "Rejected" },
     ]);
 
+
+    const [enableSubmit, setEnableSubmit] = useState(false);
+    const [approvalDone, setApprovalDone] = useState(false);
+    const [approvalFieldArray, setApprovalFieldArray] = useState([]);
+    const [approvalStepperArray, setApprovalStepperArray] = useState([]);
+
+    var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+    var designationName = localStorage.getItem("designation_name") || "";
+    var gettingDesignationName = ""
+
+    if(roleTitle.toLowerCase() === "investigation officer"){
+        gettingDesignationName = "io";
+    }else{
+        var splitingValue = designationName.split(" ");
+        if(splitingValue?.[0]){
+            gettingDesignationName = splitingValue[0].toLowerCase();
+        }
+    }
+
+    const userDesignationName = useRef(gettingDesignationName);
+
+    const editableStage = (() => {
+        if(approvalStepperArray.length === 0) return ""
+        if (!approvalFieldArray || approvalFieldArray.length === 0) return approvalStepperArray?.[0];
+
+        const lastStage = approvalFieldArray[approvalFieldArray.length - 1];
+        const nextIndex = approvalStepperArray.indexOf(lastStage) + 1;
+
+        return approvalStepperArray[nextIndex] || null;
+    })();
+
+    useEffect(()=>{
+        if (userDesignationName?.current) {
+            const userRole = userDesignationName.current.toUpperCase();
+
+            setEnableSubmit(userRole === editableStage);
+
+            const lastApprovedRole = approvalFieldArray[0];
+            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+            setApprovalDone(approvedStages.includes(userRole));
+        }
+    },[approvalFieldArray, approvalStepperArray]);
+
+
     useEffect(()=>{
         handleOtherTemplateActions(selectedOtherTemplate, selectedRowData)
     },[otherTemplatesPaginationCount]);
@@ -136,7 +184,7 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
 
         console.log("checking selectedRow",selectedRow);
         var getTemplatePayload = {
-            table_name: options.table,
+            table_name: "cid_ui_case_cdr_ipdr",
             ui_case_id: selectedRow.id,
             case_io_id: selectedRow?.field_io_name || "",
             pt_case_id: selectedRow?.pt_case_id || null,
@@ -146,6 +194,7 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
             from_date: !searchFlag ? othersFromDate : null,
             to_date: !searchFlag ? othersToDate : null,
             filter: !searchFlag ? othersFilterData : {},
+            checkRandomColumn : "field_approval_done_by",
         };
 
         if (options.permissions) {
@@ -203,6 +252,16 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                 const { meta } = getTemplateResponse;
                 const totalPages = meta?.meta?.totalPages;
                 const totalItems = meta?.meta?.totalItems;
+                const checkRandomColumnValues = meta?.meta?.checkRandomColumnValues;
+
+                if (checkRandomColumnValues) {
+                    setApprovalFieldArray(checkRandomColumnValues);
+                }else{
+                    setApprovalFieldArray([]);
+                }
+
+                setApprovalStepperArray((options?.is_approval && options?.approval_steps) ? JSON.parse(options.approval_steps) : []);
+            
             
                 if (totalPages !== null && totalPages !== undefined) {
                     setOtherTemplatesTotalPage(totalPages);
@@ -1981,7 +2040,7 @@ console.log("userDesignationId:", userDesignationId, "userRole:", userRole);
 // Fix: Remove quotes and trim for comparison
 const isIO = userRole.replace(/['"]+/g, '').trim() === "investigation officer";
 const isSPDivision = isImmediateSupervisior;
-const isSPCCD = userDesignationId === "CDR CELL" || userRole === "CDR CELL";
+const isSPCCD = userDesignationId === "CDR" || userRole === "CDR CELL";
 
 console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:", showSubmitAPButton, "templateActionAddFlag.current:", templateActionAddFlag.current, "otherTemplatesTotalRecord:", otherTemplatesTotalRecord);
 
@@ -2343,14 +2402,161 @@ const handleCDRDialogUpdate = async () => {
     return (
     <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+
+            {
+                options?.is_approval && options?.approval_steps && JSON.parse(options?.approval_steps)?.length > 0 && 
+                <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', my: 2 }}>
+                    {
+                        JSON.parse(options?.approval_steps).map((step, index) => {
+
+                            var selected = false;
+
+                            var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                            var designationName = localStorage.getItem("designation_name") || "";
+
+                            var stepperValue = ""
+
+                            if(roleTitle.toLowerCase() === "investigation officer"){
+                                stepperValue = "io";
+                            }else{
+                                var splitingValue = designationName.split(" ");
+                                if(splitingValue?.[0]){
+                                    stepperValue = splitingValue[0].toLowerCase();
+                                }
+                            }
+
+                            var alreadySubmited = false;
+                            var nextStageStep = false;
+
+                            const lastApprovedRole = approvalFieldArray[0];
+                            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+                            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+                            const nextStepIndex = lastApprovedIndex + 1;
+                            const nextStep = approvalStepperArray[nextStepIndex];
+
+                            let statusLabel = "Not Assigned";
+                            let statusClass = "submissionNotAssigned";
+
+                            if (approvedStages.includes(step)) {
+                                alreadySubmited = true;
+                                statusLabel = "Submitted";
+                                statusClass = "submissionCompleted";
+                            } else if (step === nextStep) {
+                                nextStageStep = true;
+                                statusLabel = "Pending";
+                                statusClass = "submissionPending";
+                            }
+
+                            if(step.toLowerCase() === stepperValue){
+                                selected = true;
+                            }
+
+                            var StepperTitle = ""
+                            switch (step.toLowerCase()) {
+                                case "io":
+                                    StepperTitle = "Investigation Officer";
+                                    break;
+                                case "la":
+                                    StepperTitle = "Legal Advisor";
+                                    break;
+                                case "sp":
+                                    StepperTitle = "Superintendent of Police";
+                                    break;
+                                case "dig":
+                                    StepperTitle = "Deputy Inspector General";
+                                    break;
+                                default:
+                                    StepperTitle = ""
+                                    break;
+                            }
+
+                            return (
+                                <React.Fragment key={step}>
+                                    <Button
+                                        variant="contained"
+                                        sx={() => {
+                                            var backgroundColor = "#f0f0f0";
+                                            var color = "#333";
+                                            var boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                            if (alreadySubmited) {
+                                                backgroundColor = "#27ae60";
+                                                color = "#fff";
+                                                boxShadow = "0 0 0 5px #d4f7e8";
+                                            }else if(nextStageStep){
+                                                backgroundColor = "#ffd230";
+                                                color = "#333";
+                                                boxShadow = "0 0 0 5px #fff4cc ";
+                                            } else if (selected) {
+                                                backgroundColor = "#1570ef";
+                                                color = "#fff";
+                                                boxShadow = "0 0 0 5px #dcebff ";
+                                            }
+
+                                            return {
+                                                backgroundColor,
+                                                color,
+                                                minWidth: 52,
+                                                height: 50,
+                                                borderRadius: '50%',
+                                                padding: '16px',
+                                                fontWeight: 600,
+                                                boxShadow,
+                                                transition: "all 0.3s ease-in-out",
+                                                transform: selected ? "translateY(-2px)" : "none",
+                                                "&:hover": {
+                                                    backgroundColor: alreadySubmited
+                                                        ? "#219150"
+                                                        : nextStageStep
+                                                        ? "#e6c200"
+                                                        : selected
+                                                        ? "#2980b9"
+                                                        : "#dcdcdc",
+                                                    boxShadow: alreadySubmited
+                                                        ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                        : nextStageStep
+                                                        ? "0 8px 16px rgba(255, 210, 48, 0.5)"
+                                                        : selected
+                                                        ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                        : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                    transform: "translateY(-3px)",
+                                                }
+                                            };
+                                        }}
+                                    >
+                                        {step}
+                                    </Button>
+                                    <Box px={2}>        
+                                        <div className="investigationStepperTitle" style={{marginBottom: '4px'}}>
+                                            {StepperTitle}
+                                        </div>
+                                        <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                            {statusLabel}
+                                        </div>
+                                    </Box>
+                                    
+                                    {index < JSON.parse(options?.approval_steps)?.length - 1 && (
+                                        <Box
+                                            sx={{
+                                                width: 60,
+                                            }}
+                                            className="divider"
+                                        />
+                                    )}
+                                </React.Fragment>
+                            );
+                        })}
+                </Box>
+            }
+
+            <Box pb={1} px={2} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
                 <Box
                     sx={{
                         width: '100%',
-                        p: 2,
                         bgcolor: 'background.paper',
                         borderRadius: 2,
-                        boxShadow: 2,
                         zIndex: 1,
                     }}
                 >
@@ -2394,7 +2600,7 @@ const handleCDRDialogUpdate = async () => {
                         </Box>
 
                         {/* Actions Section */}
-                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' , marginRight: '16px'}}>
                             <Box sx={{ display: 'flex', alignItems: 'start', justifyContent: 'space-between', gap: '12px' }}>
                                 <Box></Box>
 
@@ -2473,7 +2679,7 @@ const handleCDRDialogUpdate = async () => {
                                         }
                                     );
                                     return (
-                                        isIO && !viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
+                                        isIO && !viewModeOnly && !showSubmitAPButton && (
                                             <Button
                                                 variant="outlined"
                                                 sx={{ height: '40px' }}

@@ -35,6 +35,7 @@ import SessionTimeoutHandler from './components/SessionTimeoutHandler';
 import UnderInvestigation from './pages/UnderInvestigation';
 import PendingTrail from './pages/PendingTrail';
 import Enquiries from './pages/Enquiries';
+import CDRPage from './pages/cdrpage';
 import CrimeIntelligence from './pages/CrimeIntelligence';
 import MastersView from './pages/Masters';
 import Designation from './pages/designation';
@@ -259,6 +260,16 @@ function App() {
                     <ProtectedRoute>
                         <Layout>
                             <Enquiries />
+                        </Layout>
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/case/cdr_case"
+                element={
+                    <ProtectedRoute>
+                        <Layout>
+                            <CDRPage />
                         </Layout>
                     </ProtectedRoute>
                 }

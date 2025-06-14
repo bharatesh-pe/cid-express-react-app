@@ -29,11 +29,16 @@ import PlanOfAction from "./PlanOfAction";
 import EqProgressReport from "./EqProgressReport";
 import ClosureReport from "./ClosureReport";
 import dayjs from "dayjs";
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
-    const { state } = useLocation();
-    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
+    const location = useLocation();
+    const { state } = location;
+    const { contentArray, actionKey, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
+
+    const fromCDR = location.state?.fromCDR || false;
 
     useEffect(()=>{
         if(!rowData){
@@ -133,24 +138,95 @@ const LokayuktaView = () => {
     const [tableTabs, setTableTabs] = useState([]);
     const [selectedTableTabs, setSelectedTableTabs] = useState("all");
 
-    const NatureOfDisposalAlert = () => {
-    useEffect(() => {
-        Swal.fire({
-            icon: 'warning',
-            title: 'Nature of Disposal Required',
-            text: 'Please take action by updating Nature of Disposal.',
-            confirmButtonText: 'OK'
+    const NatureOfDisposalAlert = () => (
+        <Box
+            sx={{
+                mt: 3,
+                mb: 3,
+                mx: 'auto',
+                maxWidth: 500,
+                p: 3,
+                background: '#fffbe6',
+                border: '1px solid #ffe58f',
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+            }}
+        >
+            <WarningAmberIcon sx={{ color: '#faad14', fontSize: 40, mr: 1 }} />
+            <Box>
+                <Typography variant="h6" sx={{ color: '#ad6800', fontWeight: 600 }}>
+                    Nature of Disposal Required
+                </Typography>
+                <Typography sx={{ color: '#ad6800', mt: 0.5 }}>
+                    Please take action by updating Nature of Disposal.
+                </Typography>
+            </Box>
+        </Box>
+    );
+
+    const [overAllReadonlyCases, setOverAllReadonlyCases] = useState(overAllReadonly ? overAllReadonly : false);
+    const [caseFieldArray, setCaseFieldArray] = useState([]);
+    const [caseFieldStepperArray, setCaseFieldStepperArray] = useState([]);
+
+    const [caseAction, setCaseAction] = useState([]);
+    const [showCaseActionBtn, setShowCaseActionBtn] = useState(false);
+
+    useEffect(()=>{
+
+        sidebarContentArray.map((element)=>{
+            console.log(element.name,"element name")
+            if(element.name.toLowerCase() === "assign to io"){
+
+                setCaseFieldArray(initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [] );
+
+                var fieldArray = initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [];
+                var stepperArray = (element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : [];
+
+                const userRole = userDesignationName.current.toUpperCase();
+
+                const lastApprovedRole = fieldArray[0];
+                const lastApprovedIndex = stepperArray.indexOf(lastApprovedRole);
+
+                const approvedStages = stepperArray.slice(0, lastApprovedIndex + 1);
+
+                setShowCaseActionBtn(approvedStages.includes(userRole));
+
+                if(approvedStages.includes(userRole)){
+                    setFormEditFlag(true);
+                    setFormReadFlag(false);
+                    setOverAllReadonlyCases(false);
+                }else{
+                    setFormEditFlag(false);
+                    setFormReadFlag(true);
+                    setOverAllReadonlyCases(true);
+                }
+
+                console.log(element,"element");
+                console.log(stepperArray,"stepperArray");
+                console.log(approvedStages,"approvedStages");
+                console.log(initialRowData,"initialRowData");
+                console.log(approvedStages.includes(userRole),"approvedStages.includes(userRole)");
+
+                if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
+                    setCaseAction(element);
+                    setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : [])
+                }
+
+            }
         });
-    }, []);
-    return null;
-};
+
+    },[initialRowData, tableViewFlag]);
+
     const backToForm = ()=>{
 
         if(backNavigation){
 
             var stateObj = {
                 pageCount: paginationCount,
-                systemStatus: sysStatus
+                systemStatus: sysStatus,
+                actionKey: actionKey ? actionKey : null,
             }
 
             if(dashboardName){
@@ -186,7 +262,7 @@ const LokayuktaView = () => {
             }
         }
                 
-        if (overAllReadonly) {
+        if (overAllReadonlyCases) {
 
             const registerItemArray = ["UI Case", "PT Case", "Enquiries"];
 
@@ -226,7 +302,6 @@ const LokayuktaView = () => {
             setTemplateName(template_name);
             setTableName(table_name);
             setStepperConfig(stepperData);
-            setInitialRowData(rowData);
             setTemplateFields(tableFields);
             setFormEditFlag(false);
             setFormReadFlag(true);
@@ -556,13 +631,16 @@ const LokayuktaView = () => {
                                         }}
                                     >
                                         {params.value}
-                                        <DeleteIcon
-                                            sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleActionDelete(params.row, options);
-                                            }}
-                                        />
+                                        {
+                                            !approvalDone &&
+                                            <DeleteIcon
+                                                sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleActionDelete(params.row, options);
+                                                }}
+                                            />
+                                        }
                                     </Box>
                                 );
                             }
@@ -640,8 +718,32 @@ const LokayuktaView = () => {
     }
 
     useEffect(()=>{
-        setActiveSidebar(sidebarContentArray?.[0] || null);
-    },[]);
+        if (userDesignationName?.current) {
+            const userRole = userDesignationName.current.toUpperCase();
+
+            setEnableSubmit(userRole === editableStage);
+
+            const lastApprovedRole = approvalFieldArray[0];
+            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+            setApprovalDone(approvedStages.includes(userRole));
+        }
+    },[approvalFieldArray, approvalStepperArray]);
+
+    useEffect(() => {
+        if (fromCDR) {
+            const cdrSidebarItem = {
+                name: "CDR/IPDR",
+                table: "cid_ui_case_cdr_ipdr",
+            };
+            setSidebarContentArray([cdrSidebarItem]);
+            setActiveSidebar(cdrSidebarItem);
+        } else {
+            setActiveSidebar(sidebarContentArray?.[0] || null);
+        }
+    }, []);
 
     const handleClear = () => {
         tablePaginationCount.current = 1;
@@ -1912,14 +2014,27 @@ const LokayuktaView = () => {
         }
     },[approvalFieldArray, approvalStepperArray]);
 
+    const reloadApproval = (data)=>{
+        setInitialRowData(data);
+    }
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} />
+            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
-                {activeSidebar?.table === "cid_ui_case_action_plan" ? (
+                {fromCDR ? (
+                    <CDR
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={state?.options}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                ) : activeSidebar?.table === "cid_ui_case_action_plan" ? (
 
                     <ActionPlan
                         templateName={template_name}
@@ -1942,7 +2057,30 @@ const LokayuktaView = () => {
                             backNavigation={backToForm}
                         />
                     ) : (
-                        <NatureOfDisposalAlert />
+                        <Box>
+                            <Box pb={1} px={1} sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', marginTop: '24px'}}>
+                                <Typography
+                                    sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                    className="Roboto"
+                                    onClick={backToForm}
+                                >
+                                    <West />
+                                    <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
+                                        {activeSidebar.name ? activeSidebar.name : 'Form'}
+                                    </Typography>
+                                    {headerDetails && (
+                                        <Chip
+                                            label={headerDetails}
+                                            color="primary"
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ fontWeight: 500, marginTop: '2px' }}
+                                        />
+                                    )}
+                                </Typography>
+                            </Box>
+                            <NatureOfDisposalAlert />
+                        </Box>
                     )
                 ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
 
@@ -1976,6 +2114,7 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        module={module}
                     />
                     
                 ) : activeSidebar?.table === "cid_ui_case_41a_notices" ? (
@@ -2029,34 +2168,12 @@ const LokayuktaView = () => {
                     
                     !tableViewFlag ?
                     <Box sx={{overflow: 'auto', height: '100vh'}}>
-                        <NormalViewForm 
-                            table_row_id={tableRowId}
-                            template_id={templateId}
-                            template_name={templateName}
-                            table_name={tableName}
-                            readOnly={formReadFlag}
-                            editData={formEditFlag}
-                            initialData={initialRowData}
-                            formConfig={templateFields}
-                            stepperData={stepperConfig}
-                            onSubmit={formSubmit}
-                            onUpdate={formCaseUpdate}
-                            onError={formError}
-                            headerDetails={headerDetails || "Case Details"}
-                            closeForm={backToForm}
-                            overAllReadonly={overAllReadonly}
-                            noPadding={true}
-                            editedForm={editedFormFlag}
-                        />
-                    </Box>
-                    :
-                    <Box p={2}>
 
                         {
-                            activeSidebar?.is_approval && activeSidebar?.approval_steps && JSON.parse(activeSidebar?.approval_steps)?.length > 0 && 
-                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                            caseAction && caseAction?.is_approval && caseAction?.approval_steps && JSON.parse(caseAction?.approval_steps)?.length > 0 && 
+                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mt: 2 }}>
                                 {
-                                    JSON.parse(activeSidebar?.approval_steps).map((step, index) => {
+                                    JSON.parse(caseAction?.approval_steps).map((step, index) => {
 
                                         var selected = false;
 
@@ -2075,14 +2192,27 @@ const LokayuktaView = () => {
                                         }
 
                                         var alreadySubmited = false;
+                                        var nextStageStep = false;
 
-                                        const lastApprovedRole = approvalFieldArray[0];
-                                        const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+                                        const lastApprovedRole = caseFieldArray[0];
+                                        const lastApprovedIndex = caseFieldStepperArray.indexOf(lastApprovedRole);
 
-                                        const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+                                        const approvedStages = caseFieldStepperArray.slice(0, lastApprovedIndex + 1);
 
-                                        if(approvedStages.includes(step)){
+                                        const nextStepIndex = lastApprovedIndex + 1;
+                                        const nextStep = caseFieldStepperArray[nextStepIndex];
+
+                                        let statusLabel = "Not Assigned";
+                                        let statusClass = "submissionNotAssigned";
+
+                                        if (approvedStages.includes(step)) {
                                             alreadySubmited = true;
+                                            statusLabel = "Submitted";
+                                            statusClass = "submissionCompleted";
+                                        } else if (step === nextStep) {
+                                            nextStageStep = true;
+                                            statusLabel = "Pending";
+                                            statusClass = "submissionPending";
                                         }
 
                                         if(step.toLowerCase() === stepperValue){
@@ -2122,6 +2252,10 @@ const LokayuktaView = () => {
                                                             backgroundColor = "#27ae60";
                                                             color = "#fff";
                                                             boxShadow = "0 0 0 5px #d4f7e8";
+                                                        }else if(nextStageStep){
+                                                            backgroundColor = "#ffd230";
+                                                            color = "#333";
+                                                            boxShadow = "0 0 0 5px #fff4cc ";
                                                         } else if (selected) {
                                                             backgroundColor = "#1570ef";
                                                             color = "#fff";
@@ -2142,11 +2276,15 @@ const LokayuktaView = () => {
                                                             "&:hover": {
                                                                 backgroundColor: alreadySubmited
                                                                     ? "#219150"
+                                                                    : nextStageStep
+                                                                    ? "#e6c200"
                                                                     : selected
                                                                     ? "#2980b9"
                                                                     : "#dcdcdc",
                                                                 boxShadow: alreadySubmited
                                                                     ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : nextStageStep
+                                                                    ? "0 8px 16px rgba(255, 210, 48, 0.5)"
                                                                     : selected
                                                                     ? "0 8px 16px rgba(52, 152, 219, 0.5)"
                                                                     : "0 4px 10px rgba(0, 0, 0, 0.15)",
@@ -2158,11 +2296,187 @@ const LokayuktaView = () => {
                                                     {step}
                                                 </Button>
                                                 <Box px={2}>        
-                                                    <div className="investigationStepperTitle">
+                                                    <div className="investigationStepperTitle" style={{marginBottom: '4px'}}>
                                                         {StepperTitle}
                                                     </div>
-                                                    <div className={`stepperCompletedPercentage ${alreadySubmited ? 'submissionCompleted' : 'submissionPending'}`}>
-                                                        {alreadySubmited ? "Submitted" : "Pending"}
+                                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                                        {statusLabel}
+                                                    </div>
+                                                </Box>
+
+                                                {index < JSON.parse(caseAction?.approval_steps)?.length - 1 && (
+                                                    <Box
+                                                        sx={{
+                                                            width: 60,
+                                                        }}
+                                                        className="divider"
+                                                    />
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                            </Box>
+                        }
+
+                        <NormalViewForm 
+                            table_row_id={tableRowId}
+                            template_id={templateId}
+                            template_name={templateName}
+                            table_name={tableName}
+                            readOnly={formReadFlag}
+                            editData={formEditFlag}
+                            initialData={initialRowData}
+                            formConfig={templateFields}
+                            stepperData={stepperConfig}
+                            onSubmit={formSubmit}
+                            onUpdate={formCaseUpdate}
+                            onError={formError}
+                            headerDetails={headerDetails || "Case Details"}
+                            closeForm={backToForm}
+                            overAllReadonly={overAllReadonlyCases}
+                            noPadding={true}
+                            editedForm={editedFormFlag}
+                            showAssignIo={true}
+                            investigationAction={caseAction}
+                            reloadApproval={reloadApproval}
+                            showCaseActionBtn={showCaseActionBtn}
+                        />
+                    </Box>
+                    :
+                    <Box p={2}>
+
+                        {
+                            activeSidebar?.is_approval && activeSidebar?.approval_steps && JSON.parse(activeSidebar?.approval_steps)?.length > 0 && 
+                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                                {
+                                    JSON.parse(activeSidebar?.approval_steps).map((step, index) => {
+
+                                        var selected = false;
+
+                                        var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                                        var designationName = localStorage.getItem("designation_name") || "";
+
+                                        var stepperValue = ""
+
+                                        if(roleTitle.toLowerCase() === "investigation officer"){
+                                            stepperValue = "io";
+                                        }else{
+                                            var splitingValue = designationName.split(" ");
+                                            if(splitingValue?.[0]){
+                                                stepperValue = splitingValue[0].toLowerCase();
+                                            }
+                                        }
+
+                                        var alreadySubmited = false;
+                                        var nextStageStep = false;
+
+                                        const lastApprovedRole = approvalFieldArray[0];
+                                        const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+                                        const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+                                        const nextStepIndex = lastApprovedIndex + 1;
+                                        const nextStep = approvalStepperArray[nextStepIndex];
+
+                                        let statusLabel = "Not Assigned";
+                                        let statusClass = "submissionNotAssigned";
+
+                                        if (approvedStages.includes(step)) {
+                                            alreadySubmited = true;
+                                            statusLabel = "Submitted";
+                                            statusClass = "submissionCompleted";
+                                        } else if (step === nextStep) {
+                                            nextStageStep = true;
+                                            statusLabel = "Pending";
+                                            statusClass = "submissionPending";
+                                        }
+
+                                        if(step.toLowerCase() === stepperValue){
+                                            selected = true;
+                                        }
+
+                                        var StepperTitle = ""
+                                        switch (step.toLowerCase()) {
+                                            case "io":
+                                                StepperTitle = "Investigation Officer";
+                                                break;
+                                            case "la":
+                                                StepperTitle = "Legal Advisor";
+                                                break;
+                                            case "sp":
+                                                StepperTitle = "Superintendent of Police";
+                                                break;
+                                            case "dig":
+                                                StepperTitle = "Deputy Inspector General";
+                                                break;
+                                            default:
+                                                StepperTitle = ""
+                                                break;
+                                        }
+
+                                        return (
+                                            <React.Fragment key={step}>
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={() => handleApprovalStepperClick(step)}
+                                                    sx={() => {
+                                                        var backgroundColor = "#f0f0f0";
+                                                        var color = "#333";
+                                                        var boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                                        if (alreadySubmited) {
+                                                            backgroundColor = "#27ae60";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #d4f7e8";
+                                                        }else if(nextStageStep){
+                                                            backgroundColor = "#ffd230";
+                                                            color = "#333";
+                                                            boxShadow = "0 0 0 5px #fff4cc ";
+                                                        } else if (selected) {
+                                                            backgroundColor = "#1570ef";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #dcebff ";
+                                                        }
+
+                                                        return {
+                                                            backgroundColor,
+                                                            color,
+                                                            minWidth: 52,
+                                                            height: 50,
+                                                            borderRadius: '50%',
+                                                            padding: '16px',
+                                                            fontWeight: 600,
+                                                            boxShadow,
+                                                            transition: "all 0.3s ease-in-out",
+                                                            transform: selected ? "translateY(-2px)" : "none",
+                                                            "&:hover": {
+                                                                backgroundColor: alreadySubmited
+                                                                    ? "#219150"
+                                                                    : nextStageStep
+                                                                    ? "#e6c200"
+                                                                    : selected
+                                                                    ? "#2980b9"
+                                                                    : "#dcdcdc",
+                                                                boxShadow: alreadySubmited
+                                                                    ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : nextStageStep
+                                                                    ? "0 8px 16px rgba(255, 210, 48, 0.5)"
+                                                                    : selected
+                                                                    ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                                    : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                                transform: "translateY(-3px)",
+                                                            }
+                                                        };
+                                                    }}
+                                                >
+                                                    {step}
+                                                </Button>
+                                                <Box px={2}>        
+                                                    <div className="investigationStepperTitle" style={{marginBottom: '4px'}}>
+                                                        {StepperTitle}
+                                                    </div>
+                                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                                        {statusLabel}
                                                     </div>
                                                 </Box>
                                                 
