@@ -573,11 +573,13 @@ exports.get_users = async (req, res) => {
         limit = 10,
         sort_by = "created_at",
         order = "DESC",
-        search = ""
-    } = req.query;
+        search = "",
+        filter = {},
+        from_date = null,
+        to_date = null
+    } = req.body;
 
     const offset = (page - 1) * limit;
-    const { filter = {}, from_date = null, to_date = null } = req.query;
     
     const andConditions = [];
 
