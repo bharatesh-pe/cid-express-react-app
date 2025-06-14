@@ -29,11 +29,16 @@ import PlanOfAction from "./PlanOfAction";
 import EqProgressReport from "./EqProgressReport";
 import ClosureReport from "./ClosureReport";
 import dayjs from "dayjs";
+import WarningAmberIcon from '@mui/icons-material/WarningAmber';
+
 const LokayuktaView = () => {
 
     const navigate = useNavigate();
-    const { state } = useLocation();
+    const location = useLocation();
+    const { state } = location;
     const { contentArray, actionKey, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
+
+    const fromCDR = location.state?.fromCDR || false;
 
     useEffect(()=>{
         if(!rowData){
@@ -133,17 +138,33 @@ const LokayuktaView = () => {
     const [tableTabs, setTableTabs] = useState([]);
     const [selectedTableTabs, setSelectedTableTabs] = useState("all");
 
-    const NatureOfDisposalAlert = () => {
-        useEffect(() => {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Nature of Disposal Required',
-                text: 'Please take action by updating Nature of Disposal.',
-                confirmButtonText: 'OK'
-            });
-        }, []);
-        return null;
-    };
+    const NatureOfDisposalAlert = () => (
+        <Box
+            sx={{
+                mt: 3,
+                mb: 3,
+                mx: 'auto',
+                maxWidth: 500,
+                p: 3,
+                background: '#fffbe6',
+                border: '1px solid #ffe58f',
+                borderRadius: 2,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 2,
+            }}
+        >
+            <WarningAmberIcon sx={{ color: '#faad14', fontSize: 40, mr: 1 }} />
+            <Box>
+                <Typography variant="h6" sx={{ color: '#ad6800', fontWeight: 600 }}>
+                    Nature of Disposal Required
+                </Typography>
+                <Typography sx={{ color: '#ad6800', mt: 0.5 }}>
+                    Please take action by updating Nature of Disposal.
+                </Typography>
+            </Box>
+        </Box>
+    );
 
     const [overAllReadonlyCases, setOverAllReadonlyCases] = useState(overAllReadonly ? overAllReadonly : false);
     const [caseFieldArray, setCaseFieldArray] = useState([]);
@@ -697,8 +718,32 @@ const LokayuktaView = () => {
     }
 
     useEffect(()=>{
-        setActiveSidebar(sidebarContentArray?.[0] || null);
-    },[]);
+        if (userDesignationName?.current) {
+            const userRole = userDesignationName.current.toUpperCase();
+
+            setEnableSubmit(userRole === editableStage);
+
+            const lastApprovedRole = approvalFieldArray[0];
+            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+            setApprovalDone(approvedStages.includes(userRole));
+        }
+    },[approvalFieldArray, approvalStepperArray]);
+
+    useEffect(() => {
+        if (fromCDR) {
+            const cdrSidebarItem = {
+                name: "CDR/IPDR",
+                table: "cid_ui_case_cdr_ipdr",
+            };
+            setSidebarContentArray([cdrSidebarItem]);
+            setActiveSidebar(cdrSidebarItem);
+        } else {
+            setActiveSidebar(sidebarContentArray?.[0] || null);
+        }
+    }, []);
 
     const handleClear = () => {
         tablePaginationCount.current = 1;
@@ -1976,11 +2021,20 @@ const LokayuktaView = () => {
     return (
         <Stack direction="row" justifyContent="space-between">
 
-            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} />
+            <LokayuktaSidebar contentArray={sidebarContentArray} onClick={sidebarActive} activeSidebar={activeSidebar} templateName={template_name} fromCDR={fromCDR} />
 
             <Box flex={4} sx={{ overflow: "hidden" }}>
 
-                {activeSidebar?.table === "cid_ui_case_action_plan" ? (
+                {fromCDR ? (
+                    <CDR
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={state?.options}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />
+                ) : activeSidebar?.table === "cid_ui_case_action_plan" ? (
 
                     <ActionPlan
                         templateName={template_name}
@@ -2003,7 +2057,30 @@ const LokayuktaView = () => {
                             backNavigation={backToForm}
                         />
                     ) : (
-                        <NatureOfDisposalAlert />
+                        <Box>
+                            <Box pb={1} px={1} sx={{display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', marginTop: '24px'}}>
+                                <Typography
+                                    sx={{ fontSize: "19px", fontWeight: "500", color: "#171A1C", display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                                    className="Roboto"
+                                    onClick={backToForm}
+                                >
+                                    <West />
+                                    <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
+                                        {activeSidebar.name ? activeSidebar.name : 'Form'}
+                                    </Typography>
+                                    {headerDetails && (
+                                        <Chip
+                                            label={headerDetails}
+                                            color="primary"
+                                            variant="outlined"
+                                            size="small"
+                                            sx={{ fontWeight: 500, marginTop: '2px' }}
+                                        />
+                                    )}
+                                </Typography>
+                            </Box>
+                            <NatureOfDisposalAlert />
+                        </Box>
                     )
                 ) : activeSidebar?.table === "cid_ui_case_progress_report" ? (
 

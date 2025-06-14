@@ -12,7 +12,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import DashboardCustomizeIcon from '@mui/icons-material/DashboardCustomize';
 import Navbar from "./navbar";
 
-const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) => {
+const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName, fromCDR}) => {
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -21,7 +21,8 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
 
     const [loading, setLoading] = useState(false); // State for loading indicator
     const [openRegister, setOpenRegister] = useState(true);
-    const [openInvestigation, setOpenInvestigation] = useState(true);
+    const [openInvestigation, setOpenInvestigation] = useState(fromCDR ? true : true);
+    const [selectedInvestigationIndex, setSelectedInvestigationIndex] = useState(fromCDR ? 0 : null);
 
     const [notificationCount, setNotificationCount] = useState(localStorage.getItem("unreadNotificationCount") || 0);
 
@@ -113,6 +114,8 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
     const registerItem = validSidebarItems.find(item => registerItemArray.includes(item.name));
     const investigationItems = validSidebarItems.filter(item => !registerItemArray.includes(item.name));
 
+    const cdrIndex = investigationItems.findIndex(item => item.name?.toLowerCase().includes("cdr"));
+
     return (
         <>
             <Box
@@ -159,33 +162,33 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
 
                     
                     {/* Sidebar Content (Navigation Links) */}
-
                     <Box sx={{ position: "relative" }}>
-
-                            <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
+                        <List sx={{ padding: "4px", height: "100vh", overflow: "auto" }}>
                             <Box py={0.5} sx={{ display: "flex", flexDirection: "column", gap: "4px", paddingBottom: "150px" }}>
 
                                 {/* Register Dropdown */}
-                                <Tooltip title={"Registration of a Crime"} arrow placement="right" key={"Registration of a Crime"}>   
-                                    <ListItem sx={{background: '#1F1DAC', color: '#FFFFFF' ,mt: 1, borderRadius: '4px', cursor: 'pointer', overflow: 'hidden'}} onClick={() => setOpenRegister(!openRegister)}>
-                                            <ListItemIcon sx={{ color: '#FFFFFF', minWidth: '35px' }}>
-                                                <DashboardCustomizeIcon />
-                                            </ListItemIcon>
-                                            <ListItemText className="sidebarTextEllipsis" primary="Registration of a Crime" />
-                                            {openRegister ? <ExpandLess /> : <ExpandMore />}
-                                    </ListItem>
-                                </Tooltip>
+                                {!fromCDR && (
+                                    <Tooltip title={"Registration of a Crime"} arrow placement="right" key={"Registration of a Crime"}>   
+                                        <ListItem sx={{background: '#1F1DAC', color: '#FFFFFF' ,mt: 1, borderRadius: '4px', cursor: 'pointer', overflow: 'hidden'}} onClick={() => setOpenRegister(!openRegister)}>
+                                                <ListItemIcon sx={{ color: '#FFFFFF', minWidth: '35px' }}>
+                                                    <DashboardCustomizeIcon />
+                                                </ListItemIcon>
+                                                <ListItemText className="sidebarTextEllipsis" primary="Registration of a Crime" />
+                                                {openRegister ? <ExpandLess /> : <ExpandMore />}
+                                        </ListItem>
+                                    </Tooltip>
+                                )}
 
-                                <Collapse in={openRegister} timeout="auto" unmountOnExit>
-                                    <List component="div" disablePadding className="sidebarChildContainer">
-
-                                        {registerItem ? (
-                                            <Tooltip title={registerItem.name ? registerItem.name : "FIR"} arrow placement="right" key={registerItem.name ? registerItem.name : "FIR"}>
-                                                <ListItem
-                                                    sx={{ cursor: "pointer", borderRadius: '4px' }}
-                                                    className={`sidebarChildItem lokayuktaSidebarMenus menuColor_1 ${activeSidebar?.name === registerItem.name ? "active" : ""}`}
-                                                    onClick={() => onClick ? onClick(registerItem) : console.log("sidebar selected")}
-                                                >
+                                {!fromCDR && (
+                                    <Collapse in={openRegister} timeout="auto" unmountOnExit>
+                                        <List component="div" disablePadding className="sidebarChildContainer">
+                                            {registerItem ? (
+                                                <Tooltip title={registerItem.name ? registerItem.name : "FIR"} arrow placement="right" key={registerItem.name ? registerItem.name : "FIR"}>
+                                                    <ListItem
+                                                        sx={{ cursor: "pointer", borderRadius: '4px' }}
+                                                        className={`sidebarChildItem lokayuktaSidebarMenus menuColor_1 ${activeSidebar?.name === registerItem.name ? "active" : ""}`}
+                                                        onClick={() => onClick ? onClick(registerItem) : console.log("sidebar selected")}
+                                                    >
                                                     {registerItem?.icon && registerItem?.icon?.props && registerItem?.icon?.props.dangerouslySetInnerHTML ? (
                                                         <span
                                                             className="tableActionIcon"
@@ -205,16 +208,16 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                                         </span>
                                                     )}
                                                     <ListItemText primary={registerItem.name ? registerItem.name : "FIR"} />
+                                                    </ListItem>
+                                                </Tooltip>
+                                            ) : (
+                                                <ListItem sx={{ cursor: "pointer", textAlign: "center", pl: 4 }} className="lokayuktaSidebarMenus menuColor_1">
+                                                    <ListItemText primary="No Actions Found" />
                                                 </ListItem>
-                                            </Tooltip>
-                                        ) : (
-                                            <ListItem sx={{ cursor: "pointer", textAlign: "center", pl: 4 }} className="lokayuktaSidebarMenus menuColor_1">
-                                                <ListItemText primary="No Actions Found" />
-                                            </ListItem>
-                                        )}
-
-                                    </List>
-                                </Collapse>
+                                            )}
+                                        </List>
+                                    </Collapse>
+                                )}
 
                                 {/* Investigation Dropdown */}
                                 <Tooltip title={"Investigations"} arrow placement="right" key={"Investigations"}>   
@@ -235,8 +238,13 @@ const LokayuktaSidebar = ({contentArray, onClick, activeSidebar, templateName}) 
                                                 <Tooltip title={element?.name} arrow placement="right" key={index}>
                                                     <ListItem
                                                         sx={{ cursor: "pointer", borderRadius: '4px' }}
-                                                        className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${index + 2} ${activeSidebar?.name === element.name ? "active" : ""}`}
-                                                        onClick={() => onClick ? onClick(element) : console.log("sidebar selected")}
+                                                        className={`sidebarChildItem lokayuktaSidebarMenus menuColor_${index + 2} ${
+                                                            (fromCDR && cdrIndex === index) ? "active" : (activeSidebar?.name === element.name ? "active" : "")
+                                                        }`}
+                                                        onClick={() => {
+                                                            setSelectedInvestigationIndex(index);
+                                                            if (onClick) onClick(element);
+                                                        }}
                                                     >
                                                         {element?.icon && element?.icon?.props && element?.icon?.props.dangerouslySetInnerHTML ? (
                                                             <span
