@@ -377,7 +377,7 @@ const Enquiries = () => {
     const hoverTableOptionsRef = useRef([]);
 
     useEffect(() => {
-        var filteredActions =  hoverTableOptions?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
+        var filteredActions =  hoverTableOptions || [];
         hoverTableOptionsRef.current = filteredActions;
     }, [hoverTableOptions]);
 
@@ -2813,7 +2813,7 @@ const accusedUpdateTable = async (data, table_name) => {
                     cancelButtonText: "UI Case",
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        showActionsOptionsTemplate("cid_pending_trail");
+                        showActionsOptionsTemplate("cid_pending_trial");
                     } else {
                         natureOfDisposalSysStatus("eq_case")
                     }

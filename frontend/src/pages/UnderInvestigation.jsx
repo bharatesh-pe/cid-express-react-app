@@ -747,6 +747,9 @@ const fslTableRef = useRef();
     const [isChildMergedLoading, setIsChildMergedLoading] = useState(false);
     const [hasApproval, setHasApproval] = useState(false);
 
+    const [natureOfDisposalSystemStatus, setNatureOfDisposalSystemStatus] = useState(null);
+    const [natureOfDisposalSystemData, setNatureOfDisposalSystemData] = useState({});
+
     const handleOtherPagination = (page) => {
         setOtherTemplatesPaginationCount(page)
     }
@@ -934,16 +937,16 @@ const fslTableRef = useRef();
             if(natureOfDisposalValue?.code){
                 switch (natureOfDisposalValue?.code) {
                     case "disposal":
-                        showAccusedTableView(accusedTableCurrentPage);
+                        showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused", true);
                         break;
                     case "178_cases":
-                        showPreliminaryAccusedTableView(accusedTableCurrentPage);
+                        showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused", true);
                         break;
                     case "b_Report":
-                        natureOfDisposalSysStatus("b_Report");
+                        natureOfDisposalSysStatus("b_Report", false);
                         break;
                     case "c_Report":
-                        natureOfDisposalSysStatus("disposal")
+                        natureOfDisposalSysStatus("disposal", false);
                         break;
                     default:
                         setNatureOfDisposalModal(false);
@@ -967,63 +970,65 @@ const fslTableRef = useRef();
     }
 
 
-    const showPreliminaryAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused")=>{
+    const showPreliminaryAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused", notApproved)=>{
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
-            toast.error("Please Select Approval Item !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-
-        if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
-            toast.error("Please Select Designation !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-
-        if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
-            toast.error("Please Select Approval Date !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-
-        if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
-
-            toast.error("Please Enter Comments !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
+        if(!notApproved){
+            if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
+                toast.error("Please Select Approval Item !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
+                toast.error("Please Select Designation !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
+                toast.error("Please Select Approval Date !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+    
+            if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
+    
+                toast.error("Please Enter Comments !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
         }
 
         const viewTableData = {
@@ -1227,63 +1232,65 @@ const fslTableRef = useRef();
     return col;
   });
 }
-    const showAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused")=>{
+    const showAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused", notApproved)=>{
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
-            toast.error("Please Select Approval Item !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
+        if(!notApproved){
+            if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
+                toast.error("Please Select Approval Item !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
-            toast.error("Please Select Designation !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
+            if (!singleApiData['approval'] || !singleApiData['approval']["approved_by"]) {
+                toast.error("Please Select Designation !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
-            toast.error("Please Select Approval Date !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
+            if (!singleApiData['approval'] || !singleApiData['approval']["approval_date"]) {
+                toast.error("Please Select Approval Date !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
 
-        if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
+            if (!singleApiData['approval'] || !singleApiData['approval']["remarks"]) {
 
-            toast.error("Please Enter Comments !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
+                toast.error("Please Enter Comments !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
         }
 
         const viewTableData = {
@@ -1499,11 +1506,11 @@ const fslTableRef = useRef();
     const handleAccusedDialogTabChange = (tab) => {
         setAccusedDialogTab(tab);
         if (tab === "accused") {
-            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused", true);
         } else if (tab === "progress_report") {
-            showAccusedTableView(1, false, "cid_ui_case_progress_report");
+            showAccusedTableView(1, false, "cid_ui_case_progress_report", true);
         } else if (tab === "fsl") {
-            showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
+            showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory", true);
         }
     };
 
@@ -2413,7 +2420,14 @@ const normalizeFormFieldsOptions = (fields) =>
         setMoreThenTemplate(false);
     }
 
-    const natureOfDisposalFinalReport = async (data)=>{
+    const natureOfDisposalFinalReport = async (data, approved)=>{
+
+        if(!approved){
+            setNatureOfDisposalSystemStatus(natureOfDisposalValue.code);
+            setNatureOfDisposalSystemData(data);
+            showNewApprovalPage();
+            return;  
+        }
 
         const formData = new FormData();
         var normalData = {};
@@ -2623,7 +2637,13 @@ const normalizeFormFieldsOptions = (fields) =>
 
     }
     
-    const natureOfDisposalSysStatus = async (sys_status)=>{
+    const natureOfDisposalSysStatus = async (sys_status, approved)=>{
+
+        if(!approved){
+            setNatureOfDisposalSystemStatus(sys_status);
+            showNewApprovalPage();
+            return;  
+        }
 
         var othersUpdateData = {
             id : selectedRowData.id,
@@ -3442,9 +3462,9 @@ const normalizeFormFieldsOptions = (fields) =>
                     cancelButtonText: "UI Case",
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        showActionsOptionsTemplate("cid_pending_trail");
+                        showActionsOptionsTemplate("cid_pending_trial");
                     } else {
-                        natureOfDisposalSysStatus("ui_case")
+                        natureOfDisposalSysStatus("ui_case", true)
                     }
                 });
 
@@ -6455,7 +6475,7 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     }
 
     if(natureOfDisposalModal){
-        natureOfDisposalFinalReport(data);
+        natureOfDisposalFinalReport(data, false);
         return;
     }
     if(showOrderCopy){
@@ -15300,7 +15320,16 @@ const handleOpenExportPopup = async () => {
                       <Button
                         variant="contained"
                         sx={{ backgroundColor: '#12B76A', color: 'white', mr: 1, textTransform: 'none' }}
-                        onClick={() => {saveOverallData(true)}}
+                        onClick={() => {
+
+                            if(natureOfDisposalSystemStatus === "b_Report" || natureOfDisposalSystemStatus === "c_Report"){
+                                natureOfDisposalSysStatus(natureOfDisposalSystemStatus, true);
+                            }else if(natureOfDisposalSystemStatus === "178_cases" || natureOfDisposalSystemStatus === "disposal"){
+                                natureOfDisposalFinalReport(natureOfDisposalSystemData, true);
+                            }else{
+                                saveOverallData(true);
+                            }
+                        }}
                       >
                         Submit
                       </Button>
@@ -15499,7 +15528,12 @@ const handleOpenExportPopup = async () => {
                                 });
                                 return;
                             }
-                            showNewApprovalPage();
+
+                            if(natureOfDisposalModal){
+                                handleNatureOfDisposalSubmit();
+                            }else{
+                                showNewApprovalPage();
+                            }
                         }}
                     >
                         Submit
