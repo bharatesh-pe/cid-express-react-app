@@ -1234,7 +1234,7 @@ const fslTableRef = useRef();
 }
     const showAccusedTableView = async (page, searchFlag, tableName = "cid_ui_case_accused", notApproved)=>{
 
-        if(!notApproved){
+        if(!notApproved && !searchFlag){
             if (!singleApiData['approval'] || !singleApiData['approval']["approval_item"]) {
                 toast.error("Please Select Approval Item !", {
                     position: "top-right",
@@ -2075,14 +2075,14 @@ const fslTableRef = useRef();
                   onOpen: () => {
                       if (table_name === "cid_ui_case_accused") {
                         if (showPreliminaryAccusedTable) {
-                            showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                            showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused",true);
                         } else {
-                            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused",true);
                         }
                       }  else if (table_name === "cid_ui_case_progress_report") {
-                          showAccusedTableView(1, false, "cid_ui_case_progress_report");
+                          showAccusedTableView(1, false, "cid_ui_case_progress_report",true);
                       } else if (table_name === "cid_ui_case_forensic_science_laboratory") {
-                          showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
+                          showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory",true);
                       }
                   },
               });
@@ -2247,14 +2247,14 @@ function toISODateString(val) {
                     onOpen: () => {
                         if (tableName === "cid_ui_case_accused") {
                             if (showPreliminaryAccusedTable) {
-                                showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                                showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused",true);
                             } else {
-                                showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused");
+                                showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused",true);
                             }
                         } else if (tableName === "cid_ui_case_progress_report") {
-                            showAccusedTableView(1, false, "cid_ui_case_progress_report");
+                            showAccusedTableView(1, false, "cid_ui_case_progress_report",true);
                         } else if (tableName === "cid_ui_case_forensic_science_laboratory") {
-                            showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory");
+                            showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory",true);
                         }
                     },
                 });
