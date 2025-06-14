@@ -438,7 +438,7 @@ const UnderInvestigation = () => {
     const hoverTableOptionsRef = useRef([]);
     
     useEffect(() => {
-        var filteredActions =  hoverTableOptions?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
+        var filteredActions =  hoverTableOptions || [];
         hoverTableOptionsRef.current = filteredActions;
     }, [hoverTableOptions]);
 
@@ -1202,7 +1202,8 @@ const UnderInvestigation = () => {
                             module : "pt_case",
                             overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
-                            dashboardName : dashboardTileName
+                            dashboardName : dashboardTileName,
+                            actionKey: actionKey
                         }
 
                         navigate("/caseView", {state: stateObj});
