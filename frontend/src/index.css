@@ -500,13 +500,22 @@ code {
 }
 
 .submissionCompleted{
-    background-color: #ECFDF3 !important;
-    color: #12B76A !important;
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    padding: 4px 14px !important;
 }
 .submissionPending{
-    background-color: #EFF8FF !important;
-    color: #1570EF !important;
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    padding: 4px 14px !important;
 }
+
+.submissionNotAssigned{
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    padding: 4px 14px !important;
+}
+
 .investigationStepperTitle{
     font-size: 14px;
     font-weight: 500;

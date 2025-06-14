@@ -165,6 +165,53 @@ const LokayuktaView = () => {
             </Box>
         </Box>
     );
+
+    const [overAllReadonlyCases, setOverAllReadonlyCases] = useState(overAllReadonly ? overAllReadonly : false);
+    const [caseFieldArray, setCaseFieldArray] = useState([]);
+    const [caseFieldStepperArray, setCaseFieldStepperArray] = useState([]);
+
+    const [caseAction, setCaseAction] = useState([]);
+    const [showCaseActionBtn, setShowCaseActionBtn] = useState(false);
+
+    useEffect(()=>{
+
+        sidebarContentArray.map((element)=>{
+            if(element.name.toLowerCase() === "assign to io"){
+
+                setCaseFieldArray(initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [] );
+
+                var fieldArray = initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [];
+                var stepperArray = (element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : [];
+
+                const userRole = userDesignationName.current.toUpperCase();
+
+                const lastApprovedRole = fieldArray[0];
+                const lastApprovedIndex = stepperArray.indexOf(lastApprovedRole);
+
+                const approvedStages = stepperArray.slice(0, lastApprovedIndex + 1);
+
+                setShowCaseActionBtn(approvedStages.includes(userRole));
+
+                if(approvedStages.includes(userRole)){
+                    setFormEditFlag(true);
+                    setFormReadFlag(false);
+                    setOverAllReadonlyCases(false);
+                }else{
+                    setFormEditFlag(false);
+                    setFormReadFlag(true);
+                    setOverAllReadonlyCases(true);
+                }
+
+                if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
+                    setCaseAction(element);
+                    setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : [])
+                }
+
+            }
+        });
+
+    },[initialRowData, tableViewFlag]);
+
     const backToForm = ()=>{
 
         if(backNavigation){
@@ -207,7 +254,7 @@ const LokayuktaView = () => {
             }
         }
                 
-        if (overAllReadonly) {
+        if (overAllReadonlyCases) {
 
             const registerItemArray = ["UI Case", "PT Case", "Enquiries"];
 
@@ -247,7 +294,6 @@ const LokayuktaView = () => {
             setTemplateName(template_name);
             setTableName(table_name);
             setStepperConfig(stepperData);
-            setInitialRowData(rowData);
             setTemplateFields(tableFields);
             setFormEditFlag(false);
             setFormReadFlag(true);
@@ -1957,6 +2003,10 @@ const LokayuktaView = () => {
         }
     },[approvalFieldArray, approvalStepperArray]);
 
+    const reloadApproval = (data)=>{
+        setInitialRowData(data);
+    }
+
     return (
         <Stack direction="row" justifyContent="space-between">
 
@@ -2106,34 +2156,12 @@ const LokayuktaView = () => {
                     
                     !tableViewFlag ?
                     <Box sx={{overflow: 'auto', height: '100vh'}}>
-                        <NormalViewForm 
-                            table_row_id={tableRowId}
-                            template_id={templateId}
-                            template_name={templateName}
-                            table_name={tableName}
-                            readOnly={formReadFlag}
-                            editData={formEditFlag}
-                            initialData={initialRowData}
-                            formConfig={templateFields}
-                            stepperData={stepperConfig}
-                            onSubmit={formSubmit}
-                            onUpdate={formCaseUpdate}
-                            onError={formError}
-                            headerDetails={headerDetails || "Case Details"}
-                            closeForm={backToForm}
-                            overAllReadonly={overAllReadonly}
-                            noPadding={true}
-                            editedForm={editedFormFlag}
-                        />
-                    </Box>
-                    :
-                    <Box p={2}>
 
                         {
-                            activeSidebar?.is_approval && activeSidebar?.approval_steps && JSON.parse(activeSidebar?.approval_steps)?.length > 0 && 
-                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                            caseAction && caseAction?.is_approval && caseAction?.approval_steps && JSON.parse(caseAction?.approval_steps)?.length > 0 && 
+                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mt: 2 }}>
                                 {
-                                    JSON.parse(activeSidebar?.approval_steps).map((step, index) => {
+                                    JSON.parse(caseAction?.approval_steps).map((step, index) => {
 
                                         var selected = false;
 
@@ -2152,14 +2180,27 @@ const LokayuktaView = () => {
                                         }
 
                                         var alreadySubmited = false;
+                                        var nextStageStep = false;
 
-                                        const lastApprovedRole = approvalFieldArray[0];
-                                        const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+                                        const lastApprovedRole = caseFieldArray[0];
+                                        const lastApprovedIndex = caseFieldStepperArray.indexOf(lastApprovedRole);
 
-                                        const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+                                        const approvedStages = caseFieldStepperArray.slice(0, lastApprovedIndex + 1);
 
-                                        if(approvedStages.includes(step)){
+                                        const nextStepIndex = lastApprovedIndex + 1;
+                                        const nextStep = caseFieldStepperArray[nextStepIndex];
+
+                                        let statusLabel = "Not Assigned";
+                                        let statusClass = "submissionNotAssigned";
+
+                                        if (approvedStages.includes(step)) {
                                             alreadySubmited = true;
+                                            statusLabel = "Submitted";
+                                            statusClass = "submissionCompleted";
+                                        } else if (step === nextStep) {
+                                            nextStageStep = true;
+                                            statusLabel = "Pending";
+                                            statusClass = "submissionPending";
                                         }
 
                                         if(step.toLowerCase() === stepperValue){
@@ -2199,6 +2240,10 @@ const LokayuktaView = () => {
                                                             backgroundColor = "#27ae60";
                                                             color = "#fff";
                                                             boxShadow = "0 0 0 5px #d4f7e8";
+                                                        }else if(nextStageStep){
+                                                            backgroundColor = "#ffd230";
+                                                            color = "#333";
+                                                            boxShadow = "0 0 0 5px #fff4cc ";
                                                         } else if (selected) {
                                                             backgroundColor = "#1570ef";
                                                             color = "#fff";
@@ -2219,11 +2264,15 @@ const LokayuktaView = () => {
                                                             "&:hover": {
                                                                 backgroundColor: alreadySubmited
                                                                     ? "#219150"
+                                                                    : nextStageStep
+                                                                    ? "#e6c200"
                                                                     : selected
                                                                     ? "#2980b9"
                                                                     : "#dcdcdc",
                                                                 boxShadow: alreadySubmited
                                                                     ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : nextStageStep
+                                                                    ? "0 8px 16px rgba(255, 210, 48, 0.5)"
                                                                     : selected
                                                                     ? "0 8px 16px rgba(52, 152, 219, 0.5)"
                                                                     : "0 4px 10px rgba(0, 0, 0, 0.15)",
@@ -2235,11 +2284,187 @@ const LokayuktaView = () => {
                                                     {step}
                                                 </Button>
                                                 <Box px={2}>        
-                                                    <div className="investigationStepperTitle">
+                                                    <div className="investigationStepperTitle" style={{marginBottom: '4px'}}>
                                                         {StepperTitle}
                                                     </div>
-                                                    <div className={`stepperCompletedPercentage ${alreadySubmited ? 'submissionCompleted' : 'submissionPending'}`}>
-                                                        {alreadySubmited ? "Submitted" : "Pending"}
+                                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                                        {statusLabel}
+                                                    </div>
+                                                </Box>
+
+                                                {index < JSON.parse(caseAction?.approval_steps)?.length - 1 && (
+                                                    <Box
+                                                        sx={{
+                                                            width: 60,
+                                                        }}
+                                                        className="divider"
+                                                    />
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                            </Box>
+                        }
+
+                        <NormalViewForm 
+                            table_row_id={tableRowId}
+                            template_id={templateId}
+                            template_name={templateName}
+                            table_name={tableName}
+                            readOnly={formReadFlag}
+                            editData={formEditFlag}
+                            initialData={initialRowData}
+                            formConfig={templateFields}
+                            stepperData={stepperConfig}
+                            onSubmit={formSubmit}
+                            onUpdate={formCaseUpdate}
+                            onError={formError}
+                            headerDetails={headerDetails || "Case Details"}
+                            closeForm={backToForm}
+                            overAllReadonly={overAllReadonlyCases}
+                            noPadding={true}
+                            editedForm={editedFormFlag}
+                            showAssignIo={true}
+                            investigationAction={caseAction}
+                            reloadApproval={reloadApproval}
+                            showCaseActionBtn={showCaseActionBtn}
+                        />
+                    </Box>
+                    :
+                    <Box p={2}>
+
+                        {
+                            activeSidebar?.is_approval && activeSidebar?.approval_steps && JSON.parse(activeSidebar?.approval_steps)?.length > 0 && 
+                            <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2 }}>
+                                {
+                                    JSON.parse(activeSidebar?.approval_steps).map((step, index) => {
+
+                                        var selected = false;
+
+                                        var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                                        var designationName = localStorage.getItem("designation_name") || "";
+
+                                        var stepperValue = ""
+
+                                        if(roleTitle.toLowerCase() === "investigation officer"){
+                                            stepperValue = "io";
+                                        }else{
+                                            var splitingValue = designationName.split(" ");
+                                            if(splitingValue?.[0]){
+                                                stepperValue = splitingValue[0].toLowerCase();
+                                            }
+                                        }
+
+                                        var alreadySubmited = false;
+                                        var nextStageStep = false;
+
+                                        const lastApprovedRole = approvalFieldArray[0];
+                                        const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+                                        const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+                                        const nextStepIndex = lastApprovedIndex + 1;
+                                        const nextStep = approvalStepperArray[nextStepIndex];
+
+                                        let statusLabel = "Not Assigned";
+                                        let statusClass = "submissionNotAssigned";
+
+                                        if (approvedStages.includes(step)) {
+                                            alreadySubmited = true;
+                                            statusLabel = "Submitted";
+                                            statusClass = "submissionCompleted";
+                                        } else if (step === nextStep) {
+                                            nextStageStep = true;
+                                            statusLabel = "Pending";
+                                            statusClass = "submissionPending";
+                                        }
+
+                                        if(step.toLowerCase() === stepperValue){
+                                            selected = true;
+                                        }
+
+                                        var StepperTitle = ""
+                                        switch (step.toLowerCase()) {
+                                            case "io":
+                                                StepperTitle = "Investigation Officer";
+                                                break;
+                                            case "la":
+                                                StepperTitle = "Legal Advisor";
+                                                break;
+                                            case "sp":
+                                                StepperTitle = "Superintendent of Police";
+                                                break;
+                                            case "dig":
+                                                StepperTitle = "Deputy Inspector General";
+                                                break;
+                                            default:
+                                                StepperTitle = ""
+                                                break;
+                                        }
+
+                                        return (
+                                            <React.Fragment key={step}>
+                                                <Button
+                                                    variant="contained"
+                                                    onClick={() => handleApprovalStepperClick(step)}
+                                                    sx={() => {
+                                                        var backgroundColor = "#f0f0f0";
+                                                        var color = "#333";
+                                                        var boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                                        if (alreadySubmited) {
+                                                            backgroundColor = "#27ae60";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #d4f7e8";
+                                                        }else if(nextStageStep){
+                                                            backgroundColor = "#ffd230";
+                                                            color = "#333";
+                                                            boxShadow = "0 0 0 5px #fff4cc ";
+                                                        } else if (selected) {
+                                                            backgroundColor = "#1570ef";
+                                                            color = "#fff";
+                                                            boxShadow = "0 0 0 5px #dcebff ";
+                                                        }
+
+                                                        return {
+                                                            backgroundColor,
+                                                            color,
+                                                            minWidth: 52,
+                                                            height: 50,
+                                                            borderRadius: '50%',
+                                                            padding: '16px',
+                                                            fontWeight: 600,
+                                                            boxShadow,
+                                                            transition: "all 0.3s ease-in-out",
+                                                            transform: selected ? "translateY(-2px)" : "none",
+                                                            "&:hover": {
+                                                                backgroundColor: alreadySubmited
+                                                                    ? "#219150"
+                                                                    : nextStageStep
+                                                                    ? "#e6c200"
+                                                                    : selected
+                                                                    ? "#2980b9"
+                                                                    : "#dcdcdc",
+                                                                boxShadow: alreadySubmited
+                                                                    ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                                    : nextStageStep
+                                                                    ? "0 8px 16px rgba(255, 210, 48, 0.5)"
+                                                                    : selected
+                                                                    ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                                    : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                                transform: "translateY(-3px)",
+                                                            }
+                                                        };
+                                                    }}
+                                                >
+                                                    {step}
+                                                </Button>
+                                                <Box px={2}>        
+                                                    <div className="investigationStepperTitle" style={{marginBottom: '4px'}}>
+                                                        {StepperTitle}
+                                                    </div>
+                                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                                        {statusLabel}
                                                     </div>
                                                 </Box>
                                                 

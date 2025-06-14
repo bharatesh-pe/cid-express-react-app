@@ -29,7 +29,7 @@ import OrdersRepository from './pages/repository'
 import UIView from './pages/cases/UIView';
 import Trail from './pages/trail';
 import Annexure from './pages/annexure'
-import { AuthProvider, useAuth } from "./context/AuthContext";
+import { AuthProvider } from "./context/AuthContext";
 import SessionTimeoutHandler from './components/SessionTimeoutHandler';
 
 import UnderInvestigation from './pages/UnderInvestigation';
@@ -52,9 +52,11 @@ import LokayuktaView from './pages/lokayuktaView';
 import ActionPlan from './pages/ActionPlan';
 import IframePage from './pages/IframePage';
 import SettingsPage from './pages/SettingsPage';
+import ImportOldData from './pages/ImportOldData';
 
 import { ToastContainer } from 'react-toastify';
 function App() {
+//   const { isAdmin } = useAuth ? useAuth() : { isAdmin: false };
   return (
     <Router>
       <AuthProvider>
@@ -516,6 +518,18 @@ function App() {
                     </ProtectedRoute>
                 }
             />
+            {/* {isAdmin && ( */}
+              <Route
+                path="/importDB"
+                element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <ImportOldData />
+                    </Layout>
+                  </ProtectedRoute>
+                }
+              />
+            {/* )} */}
 
           <Route path="*" element={<Login />} />
         </Routes>

@@ -1235,9 +1235,13 @@ const Formbuilder = () => {
         //     return;
         // }
 
-        if(module === "others"){
+        var newFields = [
+            ...updatedFields
+        ]
+
+        if((module === "others" || module === "ui_case" || module === "pt_case" || module === "eq_case") && !newFields.some(field => field.name === "field_approval_done_by")){
             var newFields = [
-                ...updatedFields, 
+                ...newFields, 
                 { 
                     type: 'text', 
                     formType: 'text',
@@ -1251,6 +1255,45 @@ const Formbuilder = () => {
                     section: steps && steps[activeStep] ? steps[activeStep] : null 
                 }
             ];
+        }
+
+        if (module === "approval") {
+            const fieldsToAdd = [
+                {
+                    label: `Reference Id`,
+                    name: `field_reference_id`
+                },
+                {
+                    label: `Approval Type`,
+                    name: `field_approval_type`
+                },
+                {
+                    label: `Module`,
+                    name: `field_module`
+                },
+                {
+                    label: `Action`,
+                    name: `field_action`
+                }
+            ];
+
+            fieldsToAdd.forEach(field => {
+                const alreadyExists = newFields.some(f => f.name === field.name);
+                if (!alreadyExists) {
+                    newFields.push({
+                        type: 'text',
+                        formType: 'text',
+                        label: field.label,
+                        name: field.name,
+                        id: `random_${Date.now()}_${field.name.split('field_')[1]}`,
+                        hide_from_ux: true,
+                        table_display_content: true,
+                        searchable: true,
+                        data_type: 'text',
+                        section: steps && steps[activeStep] ? steps[activeStep] : null
+                    });
+                }
+            });
         }
 
         // Log the updated fields array to check the result
@@ -1417,12 +1460,74 @@ const Formbuilder = () => {
         //     return;
         // }
 
+        var newFields = [
+            ...updatedFields
+        ]
+
+        if ((module === "others" || module === "ui_case" || module === "pt_case" || module === "eq_case") && !newFields.some(field => field.name === "field_approval_done_by")) {
+            var newFields = [
+                ...newFields, 
+                { 
+                    type: 'text', 
+                    formType: 'text',
+                    label: `Approval Done By`, 
+                    name: `field_approval_done_by`, 
+                    id: `random_${Date.now()}_approval_done_by`, 
+                    hide_from_ux : true,
+                    table_display_content : true,
+                    searchable: true,
+                    data_type : 'text',
+                    section: steps && steps[activeStep] ? steps[activeStep] : null 
+                }
+            ];
+        }
+
+
+        if (module === "approval") {
+            const fieldsToAdd = [
+                {
+                    label: `Reference Id`,
+                    name: `field_reference_id`
+                },
+                {
+                    label: `Approval Type`,
+                    name: `field_approval_type`
+                },
+                {
+                    label: `Module`,
+                    name: `field_module`
+                },
+                {
+                    label: `Action`,
+                    name: `field_action`
+                }
+            ];
+
+            fieldsToAdd.forEach(field => {
+                const alreadyExists = newFields.some(f => f.name === field.name);
+                if (!alreadyExists) {
+                    newFields.push({
+                        type: 'text',
+                        formType: 'text',
+                        label: field.label,
+                        name: field.name,
+                        id: `random_${Date.now()}_${field.name.split('field_')[1]}`,
+                        hide_from_ux: true,
+                        table_display_content: true,
+                        searchable: true,
+                        data_type: 'text',
+                        section: steps && steps[activeStep] ? steps[activeStep] : null
+                    });
+                }
+            });
+        }
+
         var updateTemplatePayload = {
             "template_name": editTemplateDetailsData,
             "template_type": type,
             "template_module": module,
             "link_module": link_module,
-            "fields": updatedFields,
+            "fields": newFields,
             "paranoid": false
         }
 

@@ -380,7 +380,7 @@ const UnderInvestigation = () => {
     const hoverTableOptionsRef = useRef([]);
 
     useEffect(() => {
-        var filteredActions =  hoverTableOptions?.filter(item => (!item?.field && item?.table) || item?.viewAction) || [];
+        var filteredActions =  hoverTableOptions || [];
         hoverTableOptionsRef.current = filteredActions;
     }, [hoverTableOptions]);
 
@@ -10679,7 +10679,7 @@ const handleOpenExportPopup = async () => {
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
                             module : "ui_case",
-                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name ? true : false,
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name || !viewTemplateData?.["data"]?.field_approval_done_by || viewTemplateData?.["data"]?.field_approval_done_by === "" ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
                             dashboardName : dashboardTileName,
                             caseExtension :rowData?.isDisabled ?? false,

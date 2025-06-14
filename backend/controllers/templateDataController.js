@@ -1850,6 +1850,103 @@ exports.bulkUpdateColumn = async (req, res) => {
     }
 };
 
+exports.updateFieldsWithApproval = async (req, res) => {
+    const {
+        table_name,
+        id,
+        fields,
+        approvalItem,
+        approvedBy,
+        approvalDate,
+        remarks,
+        module,
+        Referenceid,
+    } = req.body;
+
+    const userId = req.user?.user_id || null;
+    
+    if (!table_name || !id || !fields || typeof fields !== "object") {
+        return userSendResponse(res, 400, false, "table_name, id, and fields are required.", null);
+    }
+
+    const t = await dbConfig.sequelize.transaction();
+    try {
+        // Get template and schema
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            await t.rollback();
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+        // Build model attributes
+        const modelAttributes = {};
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+        if (!modelAttributes.id) {
+            modelAttributes.id = {
+                type: Sequelize.DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            };
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await Model.sync();
+
+        // Update fields
+        const [affectedRows] = await Model.update(fields, { where: { id }, transaction: t });
+        if (affectedRows === 0) {
+            await t.rollback();
+            return userSendResponse(res, 404, false, "No record found to update.", null);
+        }
+
+        // Create approval entry
+        if (approvalItem && approvedBy && approvalDate) {
+            await UiCaseApproval.create({
+                approval_item: approvalItem,
+                approved_by: approvedBy,
+                approval_date: approvalDate,
+                remarks: remarks || null,
+                approval_type: table_name,
+                module: module || table_name,
+                action: remarks || null,
+                reference_id: Referenceid || id,
+                created_by: userId,
+            }, { transaction: t });
+        }
+
+        await t.commit();
+
+        const updatedRecord = await Model.findOne({ where: { id } });
+
+        return userSendResponse(
+            res,
+            200,
+            true,
+            "Fields updated and approval created successfully.",
+            updatedRecord
+        );
+    } catch (error) {
+        if (t) await t.rollback();
+        console.error("Error in updateFieldsWithApproval:", error);
+        return userSendResponse(res, 500, false, "Internal server error.", error);
+    }
+};
+
 exports.viewTemplateData = async (req, res, next) => {
     const { table_name, id, template_module } = req.body;
     const userId = req.user?.user_id || null;

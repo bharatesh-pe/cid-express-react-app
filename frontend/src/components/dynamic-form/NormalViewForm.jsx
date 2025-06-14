@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import isEqual from 'lodash.isequal';
 
 // import formConfig from './formConfig.json';
-import { Button, Grid, Box, Typography, IconButton, Chip } from '@mui/material';
+import { Button, Grid, Box, Typography, IconButton, Chip, FormControl, Autocomplete, DialogActions, TextField } from '@mui/material';
 import { Stepper, Step, StepLabel } from '@mui/material';
 
 import ShortText from '../form/ShortText';
@@ -46,8 +46,12 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
 import DropdownWithAdd from '../form/DropdownWithAdd';
+import dayjs from 'dayjs';
 
-const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm }) => {
+const NormalViewForm = ({ 
+    formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn
+ }) => {
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
 
   const [formData, setFormData] = useState({});
@@ -73,6 +77,11 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
     const saveNewActionRef = useRef(false);
     const orderCopyFieldMandatory = useRef(false);
     const changingFormField = useRef(false);
+
+
+    const [showActionModal, setShowActionModal] = useState(false);
+    const [caseActionOptions, setCaseActionOptions] = useState([]);
+    const [caseActionSelectedValue, setCaseActionSelectedValue] = useState(null);
   
   
   useEffect(() => {
@@ -167,6 +176,30 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
         });
 
         if (!result.isConfirmed) {
+            return;
+        }
+
+        var alreadyExistOption = false;
+
+        if(field.options && field.options.length > 0){
+            field.options.map((element)=>{
+                if(element.name.trim() === value.trim()){
+                    alreadyExistOption = true;
+                }
+            });
+        }
+
+        if(alreadyExistOption){
+            toast.error('Option Already Exist', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
             return;
         }
 
@@ -1444,8 +1477,268 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
         }));
     };
 
-//   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
-//   console.log(stepperData, "stepperData stepperData")
+    const showTransferToOtherDivision = async (options, selectedRow, selectedFieldValue) => {
+        
+        const selectedFieldData = selectedRow[selectedFieldValue];
+
+        const viewTableData = {
+            table_name: options.table,
+        };
+        
+        setLoading(true);
+        try {
+
+            const viewTemplateResponse = await api.post("/templates/viewTemplate",viewTableData);
+            setLoading(false);
+        
+            if (viewTemplateResponse && viewTemplateResponse.success && viewTemplateResponse["data"]) {
+                
+                if (viewTemplateResponse["data"].fields) {
+            
+                    const getSelectedField = viewTemplateResponse["data"].fields.filter(
+                        (data) => data.name === options.field
+                    );
+
+                    if (getSelectedField.length > 0) {
+
+                        var newPayload = {};
+
+                        if(getSelectedField[0].table === "users"){
+                            if(selectedRow['field_division']){
+                                newPayload['division_id'] = selectedRow['field_division']
+                                newPayload['designation_id'] = localStorage.getItem('designation_id') || null
+                            }
+                        }
+                        
+                        if (getSelectedField[0].api) {
+            
+                            var payloadApi = {
+                                table_name: getSelectedField[0].table,
+                            };
+
+                            if(getSelectedField[0].table === "users"){
+                                payloadApi = {
+                                    ...payloadApi,
+                                    ...newPayload,
+                                    get_flag : getSelectedField[0]?.user_hierarchy || "lower"
+                                }
+                            }
+
+                            setLoading(true);
+
+                            try {
+                                const getOptionsValue = await api.post(getSelectedField[0].api, payloadApi);
+                                setLoading(false);
+                
+                                var updatedOptions = [];
+
+                                if (getSelectedField[0].api === "/templateData/getTemplateData") {
+                                    updatedOptions = getOptionsValue.data.map((templateData) => {
+                                        const nameKey = Object.keys(templateData).find(
+                                            (key) => !["id", "created_at", "updated_at"].includes(key)
+                                        );
+                                        return {
+                                            name: nameKey ? templateData[nameKey] : "",
+                                            code: templateData.id,
+                                        };
+                                    });
+                                } else {
+                                    updatedOptions = getOptionsValue.data.map((field) => ({
+                                        name: getSelectedField[0].table === "users" ? field.name : field[getSelectedField[0].table + "_name"],
+                                        code: getSelectedField[0].table === "users" ? field.user_id: field[getSelectedField[0].table + "_id"],
+                                    }));
+                                }
+
+                                setShowActionModal(true);
+                                setCaseActionOptions(updatedOptions);
+                                setCaseActionSelectedValue(selectedFieldData ? selectedFieldData : null);
+
+
+                            } catch (error) {
+                                setLoading(false);
+                                if (error?.response?.data) {
+                                    toast.error(error.response.data.message || "selected field not found",{
+                                        position: "top-right",
+                                        autoClose: 3000,
+                                        hideProgressBar: false,
+                                        closeOnClick: true,
+                                        pauseOnHover: true,
+                                        draggable: true,
+                                        progress: undefined,
+                                        className: "toast-error",
+                                    });
+                                }
+                            }
+                        }
+                    } else {
+                        toast.error("Can't able to find selected field", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            hideProgressBar: false,
+                            closeOnClick: true,
+                            pauseOnHover: true,
+                            draggable: true,
+                            progress: undefined,
+                            className: "toast-error",
+                        });
+                    }
+                }
+            } else {
+                toast.error(viewTemplateResponse.message || "Failed to get Template. Please try again.",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error?.response?.data) {
+                toast.error(error.response.data.message || "Please Try Again!",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+
+    const updateCaseActions = async ()=>{
+
+        if(!investigationAction.field){
+            toast.error("Can't able to find fields !",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if(!caseActionSelectedValue || caseActionSelectedValue === ""){
+            toast.error("Please Select Any value before submit !",{
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const userId = localStorage.getItem("designation_id");
+
+        if(!userId){
+            toast.error("User Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+        var designationName = localStorage.getItem("designation_name") || "";
+        var gettingDesignationName = ""
+
+        if(roleTitle.toLowerCase() === "investigation officer"){
+            gettingDesignationName = "IO";
+        }else{
+            var splitingValue = designationName.split(" ");
+            if(splitingValue?.[0]){
+                gettingDesignationName = splitingValue[0].toUpperCase();
+            }
+        }
+
+        var payload = {
+            fields : {
+                [investigationAction.field]: caseActionSelectedValue,
+                "field_approval_done_by": gettingDesignationName,
+            },
+            "table_name": table_name,
+            "id": initialData?.id,
+            "Referenceid": initialData?.id,
+            "approvalDate": dayjs()?.$d,
+            "approvalItem": investigationAction?.approval_items,
+            "approvedBy": userId,
+            "remarks": investigationAction?.name + " Submitted By " + gettingDesignationName,
+            "module": template_name
+        }
+
+        setLoading(true);    
+        try {
+            const response = await api.post("/templateData/updateFieldsWithApproval", payload);
+            setLoading(false);
+
+            if (response?.success) {
+                toast.success(response.message || "Success", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                setShowActionModal(false);
+                setCaseActionOptions([]);
+                setCaseActionSelectedValue(null);
+
+                if(reloadApproval && response.data){
+                    reloadApproval(response.data);
+                }
+
+            } else {
+                setLoading(false);
+                toast.error(response.message || "Something Went Wrong !", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            toast.error(error?.response?.data?.message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+        }
+    }
+
   return (
     <>
       <Box inert={loading ? true : false} p={noPadding ? 0 : 2} px={2}>
@@ -1464,7 +1757,7 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </Box>
         )}
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '99' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', background: '#FFFFFF', position: 'sticky', top: '0', zIndex: '98' }}>
           <Box onClick={CloseFormModal} sx={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '4px' }}>
             <ArrowBackIcon sx={{ fontSize: '22px', fontWeight: '500', color: '#171A1C' }} />
             <Typography sx={{ fontSize: '19px', fontWeight: '500', color: '#171A1C' }} className='Roboto'>
@@ -1482,6 +1775,24 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
+
+            {
+                showAssignIo && investigationAction && investigationAction?.field && !showCaseActionBtn &&
+                <Button
+                    onClick={()=>showTransferToOtherDivision(investigationAction, initialData, investigationAction?.field)}
+                    sx={{
+                        background: "#0167F8",
+                        borderRadius: "8px",
+                        fontSize: "14px",
+                        fontWeight: "500",
+                        color: "#FFFFFF",
+                        padding: "6px 16px",
+                    }}
+                    className="Roboto blueButton"
+                >
+                    {investigationAction?.name}
+                </Button>
+            }
 
             {!readOnlyTemplate && editDataTemplate && onUpdate ?
 
@@ -1942,6 +2253,46 @@ const NormalViewForm = ({ formConfig, initialData, onSubmit, onError, stepperDat
           </div>
         }
       </Box>
+
+        <Dialog
+            open={showActionModal}
+            onClose={() => {setShowActionModal(false);}}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+        >
+            <DialogTitle id="alert-dialog-title"></DialogTitle>
+            <DialogContent sx={{ width: "400px" }}>
+                <DialogContentText id="alert-dialog-description">
+                    <h4 className="form-field-heading">{investigationAction?.name}</h4>
+                    <FormControl fullWidth>
+                        <Autocomplete
+                            options={caseActionOptions}
+                            getOptionLabel={(option) => option.name || ""}             
+                            value={caseActionOptions.find(option => String(option.code) === String(caseActionSelectedValue)) || null}
+                            onChange={(event, newValue) => {
+                                setCaseActionSelectedValue(newValue?.code)
+                            }}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    className="selectHideHistory"
+                                    label={investigationAction?.name.trim() || "Assign to IO"}
+                                />
+                            )}
+                        />
+                    </FormControl>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions sx={{ padding: "12px 24px" }}>
+                <Button onClick={() => {setShowActionModal(false);}}>Cancel</Button>
+                <Button
+                    className="fillPrimaryBtn"
+                    onClick={updateCaseActions}
+                >
+                    Submit
+                </Button>
+            </DialogActions>
+        </Dialog>
 
       {historyModal &&
         <Dialog
