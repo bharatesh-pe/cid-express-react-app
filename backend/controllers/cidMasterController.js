@@ -578,7 +578,7 @@ const getSpecificIoUsersCases = async (req, res) => {
             return res.status(400).json({ message: "Invalid template module." });
         }
 
-        const [cases] = await sequelize.query(
+        const cases = await sequelize.query(
             `SELECT * FROM ${table_name} WHERE field_io_name = :userID`,
             {
                 replacements: { userID: user_id },
@@ -592,7 +592,6 @@ const getSpecificIoUsersCases = async (req, res) => {
         console.error("Error fetching cases based on user ID:", error);
         return res.status(500).json({ message: "Failed to fetch cases", error: error.message });
     }
-
 };
 
 const getAllKGID = async (req, res) => {

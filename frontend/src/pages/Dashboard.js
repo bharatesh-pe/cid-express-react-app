@@ -34,7 +34,9 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
 
-    const tabLabels = [
+
+    const isCDR = localStorage.getItem("designation_name") === "CDR";
+    const allTabs = [
         { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" },
         {   label: "Court Module", 
             route: "/case/pt_case", 
@@ -60,6 +62,9 @@ import CloseIcon from '@mui/icons-material/Close';
         // },
     ];
 
+const tabLabels = isCDR 
+    ? [{ label: "CDR", route: "/case/cdr_case", key: "ui_case" }] 
+    : allTabs;
     const days = [
         "Today", "Tomorrow", "This Week", "Next Week"
     ];
