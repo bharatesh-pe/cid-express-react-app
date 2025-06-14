@@ -129,8 +129,6 @@ export default function TableView({rows, columns, checkboxSelection,getRowId, ba
         ...(selectedRow?.extraHoverOptions || []),
         ].map((option, index) => {
         if (
-            selectedRow?.field_io_name !== null &&
-            selectedRow?.field_io_name !== "" &&
             option?.name?.toLowerCase() === "assign to io"
         ) {
             return null;

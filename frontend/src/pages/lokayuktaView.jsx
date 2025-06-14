@@ -36,7 +36,7 @@ const LokayuktaView = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { state } = location;
-    const { contentArray, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
+    const { contentArray, actionKey, headerDetails, backNavigation, paginationCount, sysStatus, rowData, tableFields, stepperData, template_id, template_name, table_name, module, overAllReadonly, dashboardName, record_id, caseExtension} = state || {};
 
     const fromCDR = location.state?.fromCDR || false;
 
@@ -176,6 +176,7 @@ const LokayuktaView = () => {
     useEffect(()=>{
 
         sidebarContentArray.map((element)=>{
+            console.log(element.name,"element name")
             if(element.name.toLowerCase() === "assign to io"){
 
                 setCaseFieldArray(initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [] );
@@ -202,6 +203,12 @@ const LokayuktaView = () => {
                     setOverAllReadonlyCases(true);
                 }
 
+                console.log(element,"element");
+                console.log(stepperArray,"stepperArray");
+                console.log(approvedStages,"approvedStages");
+                console.log(initialRowData,"initialRowData");
+                console.log(approvedStages.includes(userRole),"approvedStages.includes(userRole)");
+
                 if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
                     setCaseAction(element);
                     setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : [])
@@ -218,7 +225,8 @@ const LokayuktaView = () => {
 
             var stateObj = {
                 pageCount: paginationCount,
-                systemStatus: sysStatus
+                systemStatus: sysStatus,
+                actionKey: actionKey ? actionKey : null,
             }
 
             if(dashboardName){
@@ -623,13 +631,16 @@ const LokayuktaView = () => {
                                         }}
                                     >
                                         {params.value}
-                                        <DeleteIcon
-                                            sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                handleActionDelete(params.row, options);
-                                            }}
-                                        />
+                                        {
+                                            !approvalDone &&
+                                            <DeleteIcon
+                                                sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleActionDelete(params.row, options);
+                                                }}
+                                            />
+                                        }
                                     </Box>
                                 );
                             }
@@ -2103,6 +2114,7 @@ const LokayuktaView = () => {
                         options={activeSidebar}
                         selectedRowData={rowData}
                         backNavigation={backToForm}
+                        module={module}
                     />
                     
                 ) : activeSidebar?.table === "cid_ui_case_41a_notices" ? (
