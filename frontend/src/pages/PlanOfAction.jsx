@@ -249,7 +249,7 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
               field.name !== "field_section"
           );
     
-          const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
+          const briefFactField = response.data.fields.find((f) => f.name === "field_brief_fact");
           const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
     
           if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
@@ -1851,7 +1851,7 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
         let normalData = {};
         
         const allowedFields = [
-            "field_breif_fact",
+            "field_brief_fact",
             "field_investigation_carried_out_by_the_police_station"
         ];
     

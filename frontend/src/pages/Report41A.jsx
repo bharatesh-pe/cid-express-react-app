@@ -1829,7 +1829,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
         let normalData = {};
         
         const allowedFields = [
-            "field_breif_fact",
+            "field_brief_fact",
             "field_investigation_carried_out_by_the_police_station"
         ];
     
