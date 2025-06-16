@@ -28,6 +28,7 @@ const EditTableView = React.forwardRef(function EditTableView({
   totalPage, paginationCount, handlePagination, totalRecord,
   getRowClassName, tableName, highLightedRow,
   onRowUpdate,
+  onBatchRowUpdate, // <-- new prop for batch update
   fieldDefinitions, // <-- new prop, pass the field definitions array here
 },ref) {
   // Row editing handlers
@@ -35,6 +36,7 @@ const EditTableView = React.forwardRef(function EditTableView({
   const [rowModesModel, setRowModesModel] = React.useState({});
   const [anchorEl, setAnchorEl] = React.useState(null);
   const [selectedRow, setSelectedRow] = React.useState(null);
+  const [editedRows, setEditedRows] = React.useState({});
 
   // Sync local rows with propRows if changed externally
 React.useEffect(() => {
@@ -363,6 +365,7 @@ React.useEffect(() => {
     setRowModesModel(newRowModesModel);
   };
 
+  // Track edited rows
   const processRowUpdate = async (newRow) => {
     let updatedRow = { ...newRow, isNew: false };
     propColumns.forEach(col => {
@@ -376,6 +379,8 @@ React.useEffect(() => {
     // Log the row being updated and its values
     console.log("processRowUpdate called for row:", updatedRow.id, updatedRow);
     setRows((prev) => prev.map((row) => (row.id === newRow.id ? updatedRow : row)));
+    // Track edited row
+    setEditedRows(prev => ({ ...prev, [updatedRow.id]: updatedRow }));
     if (onRowUpdate) {
       await onRowUpdate(updatedRow, tableName);
     }
@@ -387,7 +392,7 @@ React.useEffect(() => {
     ref,
     () => ({
       getRows: () => rows,
-      commitAllEdits: () => {
+      commitAllEdits: async () => {
         // Set all rows to view mode to commit edits
         setRowModesModel((prev) => {
           const newModel = { ...prev };
@@ -396,9 +401,15 @@ React.useEffect(() => {
           });
           return newModel;
         });
+        // Batch update: send all edited rows at once
+        const editedRowsArr = Object.values(editedRows);
+        if (editedRowsArr.length > 0 && onBatchRowUpdate) {
+          await onBatchRowUpdate(editedRowsArr, tableName);
+          setEditedRows({}); // Clear after batch update
+        }
       }
     }),
-    [rows]
+    [rows, editedRows, onBatchRowUpdate, tableName]
   );
 
   return (
