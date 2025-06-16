@@ -363,6 +363,10 @@ const fslTableRef = useRef();
       const [selectedFieldName, setSelectedFieldName] = useState('');
       const [selectTemplateId, setSelectTemplateId] = useState(null);
 
+      const [extensionFormFields, setExtensionFormFields] = useState([]);
+      const [showExtensionFormDialog, setShowExtensionFormDialog] = useState(false);
+      const [extensionFormData, setExtensionFormData] = useState({});
+                          
     const permissionStr = localStorage.getItem("user_permissions");
     let user_role_name = '';
 
@@ -3120,7 +3124,433 @@ const normalizeFormFieldsOptions = (fields) =>
             });
         }
     };
+const ExtensionFormWrapper = ({
+    extensionFormData,
+    extensionFormFields,
+    setShowExtensionFormDialog,
+    setLoading,
+    selectedRowData,
+    api,
+    toast
+}) => {
+    const [extensionFormRecord, setExtensionFormRecord] = useState(null);
+    const [checked, setChecked] = useState(false);
+    // Use different state names for extension form field history popup
+    const [showExtensionFieldHistoryDialog, setShowExtensionFieldHistoryDialog] = useState(false);
+    const [extensionFieldHistoryData, setExtensionFieldHistoryData] = useState([]);
+    const [extensionFieldHistoryRows, setExtensionFieldHistoryRows] = useState([]);
+    const [selectedExtensionFieldName, setSelectedExtensionFieldName] = useState("");
 
+    // Move these hooks to the top-level, before any return or condition
+    useEffect(() => {
+        if (extensionFieldHistoryData && extensionFieldHistoryData.length > 0) {
+            console.log("ExtensionFormWrapper: extensionFieldHistoryData updated", extensionFieldHistoryData);
+        }
+    }, [extensionFieldHistoryData]);
+
+    useEffect(() => {
+        if (showExtensionFieldHistoryDialog) {
+            console.log("ExtensionFormWrapper: showExtensionFieldHistoryDialog set to true");
+        }
+    }, [showExtensionFieldHistoryDialog]);
+
+    useEffect(() => {
+        let isMounted = true;
+        setChecked(false);
+        setExtensionFormRecord(null);
+        (async () => {
+            try {
+                const res = await api.post("/templateData/getTemplateData", {
+                    table_name: "cid_ui_case_extension_form",
+                    ui_case_id: extensionFormData.ui_case_id,
+                });
+                if (isMounted && res?.success && Array.isArray(res.data) && res.data.length > 0) {
+                    setExtensionFormRecord(res.data[0]);
+                }
+            } catch (err) {
+                // ignore
+            } finally {
+                if (isMounted) setChecked(true);
+            }
+        })();
+        return () => { isMounted = false; };
+        // eslint-disable-next-line
+    }, [extensionFormData?.ui_case_id, setShowExtensionFormDialog]);
+
+    // Add a console to check what is being passed to NormalViewForm
+    console.log("ExtensionFormWrapper: formConfig", extensionFormFields);
+
+    if (!checked) return null;
+
+    // Replace fetchFieldHistory to ensure it uses cid_ui_case_extension_form table and logs calls
+    const fetchExtensionFieldHistory = async (field_name, table_row_id, template_id) => {
+        console.log("ExtensionFormWrapper: fetchExtensionFieldHistory called", { field_name, table_row_id, template_id });
+        setLoading(true);
+        try {
+            const payload = {
+                template_id,
+                field_name,
+                table_row_id,
+                table_name: "cid_ui_case_extension_form", // Always use extension form table
+            };
+            const getHistoryResponse = await api.post("/profileHistories/getProfileHistory", payload);
+            setLoading(false);
+            if (getHistoryResponse.data && getHistoryResponse.data.length > 0) {
+                const rawData = getHistoryResponse.data || [];
+
+                const transformedRows = rawData.map((item, index) => {
+                    const formatDate = (dateStr) => {
+                        const date = new Date(dateStr);
+                        return date.toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                    };
+
+                    const isOldValueDate = !isNaN(Date.parse(item.old_value));
+                    const isUpdatedValueDate = !isNaN(Date.parse(item.updated_value));
+
+                    return {
+                        id: index,
+                        user: item.userDetails?.user_firstname || 'N/A',
+                        old_value: isOldValueDate ? formatDate(item.old_value) : (item.old_value || 'N/A'),
+                        updated_value: isUpdatedValueDate ? formatDate(item.updated_value) : item.updated_value,
+                        changed_at: formatDate(item.created_at)
+                    };
+                });
+
+                setExtensionFieldHistoryData(rawData);
+                setExtensionFieldHistoryRows(transformedRows);
+                setSelectedExtensionFieldName(field_name);
+                setShowExtensionFieldHistoryDialog(true);
+            } else {
+                toast.info("No records found for the specified filters.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    className: "toast-info",
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching field history:", error);
+            setLoading(false);
+            if (error.response && error.response.status === 404) {
+                toast.error("No records found for the specified filters.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    className: "toast-error",
+                });
+            } else {
+                toast.error("Failed to fetch field history.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    className: "toast-error",
+                });
+            }
+        }
+    };
+
+    // When passing formConfig to NormalViewForm, inject a custom onHistory for each field
+    const getFormConfigWithExtensionHistory = (fields, recordOrData) => {
+        return fields.map(field => ({
+            ...field,
+            onHistory: () => {
+                console.log("ExtensionFormWrapper: onHistory called for field", field.name, field);
+                fetchExtensionFieldHistory(
+                    field.name,
+                    recordOrData?.id || recordOrData?.ui_case_id,
+                    null
+                );
+            }
+        }));
+    };
+
+    if (extensionFormRecord) {
+        if (!extensionFormRecord.id) {
+            console.log("No extensionFormRecord.id found", extensionFormRecord);
+            return (
+                <NormalViewForm
+                    table_row_id={extensionFormData?.ui_case_id}
+                    template_id={null}
+                    template_name="Case Extension"
+                    table_name="cid_ui_case_extension_form"
+                    readOnly={false}
+                    editData={false}
+                    initialData={extensionFormData}
+                    formConfig={getFormConfigWithExtensionHistory(extensionFormFields, extensionFormData)}
+                    stepperData={[]}
+                    onSubmit={async (data) => {
+                        console.log("onSubmit fallback called", { data, extensionFormData });
+                        const formDataObj = new FormData();
+                        formDataObj.append("table_name", "cid_ui_case_extension_form");
+                        formDataObj.append("data", JSON.stringify({
+                            ...data,
+                            ui_case_id: extensionFormData.ui_case_id,
+                            field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                            field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                            field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                        }));
+                        formDataObj.append("others_data", JSON.stringify({}));
+                        formDataObj.append("transaction_id", `ext_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+                        formDataObj.append("user_designation_id", localStorage.getItem("designation_id") || "");
+
+                        setLoading(true);
+                        try {
+                            await api.post("/templateData/saveDataWithApprovalToTemplates", formDataObj);
+                            console.log("Extension form record created");
+                        } catch (err) {
+                            setLoading(false);
+                            toast.error("Failed to create extension form record.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                            return;
+                        }
+
+                        const updateMainCaseForm = new FormData();
+                        updateMainCaseForm.append("table_name", "cid_under_investigation");
+                        updateMainCaseForm.append("id", extensionFormData.ui_case_id);
+                        updateMainCaseForm.append("data", JSON.stringify({
+                            field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                            field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                            field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                        }));
+
+                        try {
+                            await api.post("/templateData/updateTemplateData", updateMainCaseForm);
+                            setLoading(false);
+                            toast.success("Extension submitted successfully.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-success",
+                            });
+                            setShowExtensionFormDialog(false);
+                            console.log("Main case extension fields updated");
+                        } catch (err) {
+                            setLoading(false);
+                            toast.error("Failed to update main case extension fields.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                        }
+                    }}
+                    onError={() => { console.log("onError called"); }}
+                    closeForm={() => setShowExtensionFormDialog(false)}
+                    headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                />
+            );
+        }
+        return (
+            <NormalViewForm
+                table_row_id={extensionFormRecord.id}
+                template_id={null}
+                template_name="Case Extension"
+                table_name="cid_ui_case_extension_form"
+                readOnly={false}
+                editData={true}
+                initialData={extensionFormRecord}
+                formConfig={getFormConfigWithExtensionHistory(extensionFormFields, extensionFormRecord)}
+                stepperData={[]}
+                onUpdate={async (data) => {
+                    console.log("onUpdate called", { data, extensionFormRecord, extensionFormData });
+                    const updateForm = new FormData();
+                    updateForm.append("table_name", "cid_ui_case_extension_form");
+                    updateForm.append("id", extensionFormRecord.id);
+                    updateForm.append("data", JSON.stringify({
+                        ...data,
+                        ui_case_id: extensionFormData.ui_case_id,
+                        field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                        field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                        field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                    }));
+
+                    setLoading(true);
+                    try {
+                        await api.post("/templateData/updateTemplateData", updateForm);
+                        console.log("Extension form record updated");
+                    } catch (err) {
+                        setLoading(false);
+                        toast.error("Failed to update extension form record.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-error",
+                        });
+                        return;
+                    }
+
+                    const updateMainCaseForm = new FormData();
+                    updateMainCaseForm.append("table_name", "cid_under_investigation");
+                    updateMainCaseForm.append("id", extensionFormData.ui_case_id);
+                    updateMainCaseForm.append("data", JSON.stringify({
+                        field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                        field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                        field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                    }));
+
+                    try {
+                        await api.post("/templateData/updateTemplateData", updateMainCaseForm);
+                        setLoading(false);
+                        toast.success("Extension updated successfully.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-success",
+                        });
+                        setShowExtensionFormDialog(false);
+                        console.log("Main case extension fields updated");
+                    } catch (err) {
+                        setLoading(false);
+                        toast.error("Failed to update main case extension fields.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-error",
+                        });
+                    }
+                }}
+                onSubmit={async (data) => {
+                    console.log("onSubmit called in edit mode", { data, extensionFormRecord, extensionFormData });
+                }}
+                onError={() => {console.log("onError called"); }}
+                closeForm={() => setShowExtensionFormDialog(false)}
+                headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+            />
+        );
+    } else {
+        return (
+            <NormalViewForm
+                table_row_id={extensionFormData?.ui_case_id}
+                template_id={null}
+                template_name="Case Extension"
+                table_name="cid_ui_case_extension_form"
+                readOnly={false}
+                editData={false}
+                initialData={extensionFormData}
+                formConfig={getFormConfigWithExtensionHistory(extensionFormFields, extensionFormData)}
+                stepperData={[]}
+                onSubmit={async (data) => {
+                    console.log("onSubmit called", { data, extensionFormData });
+                    const formDataObj = new FormData();
+                    formDataObj.append("table_name", "cid_ui_case_extension_form");
+                    formDataObj.append("data", JSON.stringify({
+                        ...data,
+                        ui_case_id: extensionFormData.ui_case_id,
+                        field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                        field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                        field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                    }));
+                    formDataObj.append("others_data", JSON.stringify({}));
+                    formDataObj.append("transaction_id", `ext_${Date.now()}_${Math.floor(Math.random() * 10000)}`);
+                    formDataObj.append("user_designation_id", localStorage.getItem("designation_id") || "");
+
+                    setLoading(true);
+                    try {
+                        await api.post("/templateData/saveDataWithApprovalToTemplates", formDataObj);
+                        console.log("Extension form record created");
+                    } catch (err) {
+                        setLoading(false);
+                        toast.error("Failed to create extension form record.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-error",
+                        });
+                        return;
+                    }
+
+                    const updateMainCaseForm = new FormData();
+                    updateMainCaseForm.append("table_name", "cid_under_investigation");
+                    updateMainCaseForm.append("id", extensionFormData.ui_case_id);
+                    updateMainCaseForm.append("data", JSON.stringify({
+                        field_extension_date: data.field_extension_date || extensionFormData.field_extension_date || "",
+                        field_extension_remark: data.field_extension_remark || extensionFormData.field_extension_remark || "",
+                        field_extension_updated_by: localStorage.getItem("designation_name") || extensionFormData.field_extension_updated_by || "",
+                    }));
+
+                    try {
+                        await api.post("/templateData/updateTemplateData", updateMainCaseForm);
+                        setLoading(false);
+                        toast.success("Extension submitted successfully.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-success",
+                        });
+                        setShowExtensionFormDialog(false);
+                        console.log("Main case extension fields updated");
+                    } catch (err) {
+                        setLoading(false);
+                        toast.error("Failed to update main case extension fields.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-error",
+                        });
+                    }
+                }}
+                onError={() => { console.log("onError called"); }}
+                closeForm={() => setShowExtensionFormDialog(false)}
+                headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+            />
+        );
+    }
+
+    // Extension Field History Dialog
+    {showExtensionFieldHistoryDialog && (
+        <Dialog
+            open={showExtensionFieldHistoryDialog}
+            onClose={() => setShowExtensionFieldHistoryDialog(false)}
+            aria-labelledby="alert-dialog-title"
+            aria-describedby="alert-dialog-description"
+            maxWidth="md"
+            fullWidth
+        >
+            <DialogTitle id="alert-dialog-title">Extension Field History: {selectedExtensionFieldName}</DialogTitle>
+            <DialogContent>
+                <DialogContentText id="alert-dialog-description">
+                    <div style={{ padding: 16 }}>
+                        {extensionFieldHistoryRows && extensionFieldHistoryRows.length > 0 ? (
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Old Value</th>
+                                        <th>Updated Value</th>
+                                        <th>Changed At</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {extensionFieldHistoryRows.map(row => (
+                                        <tr key={row.id}>
+                                            <td>{row.user}</td>
+                                            <td>{row.old_value}</td>
+                                            <td>{row.updated_value}</td>
+                                            <td>{row.changed_at}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        ) : (
+                            <div>No history found.</div>
+                        )}
+                    </div>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={() => setShowExtensionFieldHistoryDialog(false)}>Close</Button>
+            </DialogActions>
+        </Dialog>
+    )}
+}
     const showInvestigationPtCase = async ()=>{
 
         var getTemplatePayload = {
@@ -6444,6 +6874,227 @@ const handleSubmitPF = async ({ id, selectedIds }) => {
     }
   };
 
+        const otherTemplateExtensionSaveFunc = async (data, saveNewAction) => {
+
+        // Fix: Check for extension form dialog context
+        if (showExtensionFormDialog) {
+            // For extension form, use extensionFormFields and extensionFormData
+            if (!extensionFormFields || extensionFormFields.length === 0) {
+                toast.warning("Please Check The Template", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return;
+            }
+        } else if ((!natureOfDisposalModal && !showOrderCopy) && (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if(natureOfDisposalModal){
+            natureOfDisposalFinalReport(data, false);
+            return;
+        }
+        if(showOrderCopy){
+            natureOfDisposalOrderCopy(data);
+            return;
+        }
+    
+        const formData = new FormData();
+    
+        var normalData = {}; // Non-file upload fields
+    
+        optionFormTemplateData.forEach((field) => {
+          if (data[field.name]) {
+            if (field.type === "file" || field.type === "profilepicture") {
+              // Append file fields to formData
+              if (field.type === "file") {
+                if (Array.isArray(data[field.name])) {
+                  const hasFileInstance = data[field.name].some(
+                    (file) => file.filename instanceof File
+                  );
+                  var filteredArray = data[field.name].filter(
+                    (file) => file.filename instanceof File
+                  );
+                  if (hasFileInstance) {
+                    data[field.name].forEach((file) => {
+                      if (file.filename instanceof File) {
+                        formData.append(field.name, file.filename);
+                      }
+                    });
+    
+                    filteredArray = filteredArray.map((obj) => {
+                      return {
+                        ...obj,
+                        filename: obj.filename["name"],
+                      };
+                    });
+    
+                    formData.append(
+                      "folder_attachment_ids",
+                      JSON.stringify(filteredArray)
+                    );
+                  }
+                }
+              } else {
+                formData.append(field.name, data[field.name]);
+              }
+            } else {
+              // Add non-file fields to normalData
+              normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+            }
+          }
+        });
+    
+        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+            normalData["field_pr_status"] = "No";
+        }
+    
+        normalData.sys_status = showPtCaseModal ? "pt_case" : "ui_case";
+        normalData["ui_case_id"] = selectedRowData.id;
+    
+        var othersData = {};
+    
+        if(Object.keys(approvalSaveData).length > 0 ){
+            othersData['approval'] = approvalSaveData;
+    
+            var approvalItems = {
+                id : selectedRowData.id,
+                module_name : 'Under Investigation',
+                action : selectedOtherTemplate.name ? selectedOtherTemplate.name : 'Action'
+            }
+    
+            othersData = {
+                            ...othersData, 
+                            approval_details : approvalItems
+                        }
+        }
+    
+        formData.append("table_name", showPtCaseModal ? ptCaseTableName : selectedOtherTemplate.table);
+        formData.append("data", JSON.stringify(normalData));
+        formData.append("others_data", JSON.stringify(othersData));
+        formData.append("transaction_id", randomApprovalId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null);
+    
+        setLoading(true);
+    
+        try {
+            const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
+    
+            setLoading(false);
+    
+            if (overallSaveData && overallSaveData.success) {
+    
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+    
+                if (sysStatus === "merge_cases") {
+                  loadMergedCasesData(paginationCount);
+                }else if(saveNewAction){
+                  await handleOtherTemplateActions(selectedOtherTemplate, selectedRow);   
+                  showOptionTemplate(selectedOtherTemplate.table);
+                }else{
+                  handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
+                }
+    
+                setOtherFormOpen(false);
+                setAddApproveFlag(false);
+                setApproveTableFlag(false);
+              //   if (Object.keys(othersData).length > 0) {
+              //     setOtherTemplateModalOpen(false);
+              //   }
+              //   else{
+              //   setOtherTemplateModalOpen(true);
+              //   handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+    
+              // }
+                setApprovalSaveData({});
+    
+                if(selectedOtherTemplate?.field){
+                    var combinedData = {
+                        id: selectedRowData.id,
+                        [selectKey.name]: selectedOtherFields.code,
+                    };
+            
+                    // update func
+                    onUpdateTemplateData(combinedData);
+    
+                    setSelectKey(null);
+                    setSelectedRow(null);
+                    setOtherTransferField([]);
+                    setShowOtherTransferModal(false);
+                    setSelectedOtherFields(null);
+                    setselectedOtherTemplate(null);
+                    setOtherTemplateModalOpen(false);
+                }else{
+                    return;
+                }
+    
+            } else {
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+      };
   const otherTemplateSaveFunc = async (data, saveNewAction) => {
 
     if ((!natureOfDisposalModal && !showOrderCopy) && (!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
@@ -14458,7 +15109,7 @@ const handleOpenExportPopup = async () => {
       </DialogActions>
     </Dialog>
 
-      <Dialog
+    <Dialog
         open={showCaseExtensionModal}
         onClose={() => {
           setShowCaseExtensionModal(false);
@@ -14550,11 +15201,92 @@ const handleOpenExportPopup = async () => {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShowCaseExtensionModal(false)}>Cancel</Button>
-          <Button onClick={handleCaseExtension} className="fillPrimaryBtn">
+          {/* <Button onClick={handleCaseExtension} className="fillPrimaryBtn">
             Submit
-          </Button>
+          </Button> */}
+
+            <Button
+                onClick={async () => {
+                    // Only open extension form dialog if both fields are filled
+                    if (!formData.field_extension_date || !formData.field_extension_remark) {
+                        toast.error("Please fill both Extension Date and Extension Remark before proceeding.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-error",
+                        });
+                        return;
+                    }
+                    setShowCaseExtensionModal(false);
+
+                    // Fetch template fields for cid_ui_case_extension_form
+                    setLoading(true);
+                    try {
+                        const templateRes = await api.post("/templates/viewTemplate", {
+                            table_name: "cid_ui_case_extension_form",
+                        });
+                        setLoading(false);
+
+                        if (templateRes && templateRes.success) {
+                            setExtensionFormFields(templateRes.data.fields || []);
+                            setShowExtensionFormDialog(true);
+                            setExtensionFormData({
+                                ui_case_id: formData.id,
+                                field_extension_date: formData.field_extension_date || "",
+                                field_extension_remark: formData.field_extension_remark || "",
+                                field_extension_updated_by: localStorage.getItem("designation_name") || "",
+                            });
+                        } else {
+                            toast.error("Failed to load extension form template.", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                        }
+                    } catch (err) {
+                        setLoading(false);
+                        toast.error("Failed to load extension form template.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-error",
+                        });
+                    }
+                }}
+                className="fillPrimaryBtn"
+              >
+                Submit
+              </Button>
         </DialogActions>
       </Dialog>
+
+    {showExtensionFormDialog &&
+    <Dialog
+        open={showExtensionFormDialog}
+        onClose={() => {setShowExtensionFormDialog(false);}}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        maxWidth="md"
+        fullWidth
+    >
+        <DialogContent sx={{ minWidth: '400px', padding: '0'  }}>
+            <DialogContentText id="alert-dialog-description">
+                <FormControl fullWidth>
+                    <ExtensionFormWrapper
+                        extensionFormData={extensionFormData}
+                        extensionFormFields={extensionFormFields}
+                        setShowExtensionFormDialog={setShowExtensionFormDialog}
+                        setLoading={setLoading}
+                        selectedRowData={selectedRowData}
+                        api={api}
+                        toast={toast}
+                    />
+                </FormControl>
+            </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ padding: '12px 24px' }}>
+            <Button onClick={() => setShowExtensionFormDialog(false)}>Cancel</Button>
+        </DialogActions>
+    </Dialog>
+}
 
       <Dialog
         open={showHistoryDialog}
