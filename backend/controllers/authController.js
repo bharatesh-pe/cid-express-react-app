@@ -30,6 +30,7 @@ const { Op , fn, col, literal } = require("sequelize");
 const fs = require("fs");
 const path = require("path");
 const { pdfDocEncodingDecode } = require("pdf-lib");
+const { sendSMS } = require("../services/smsService"); // <-- Add this import
 const get_module = async (req, res) => {
   try {
     const { user_id } = req.user;
@@ -366,7 +367,7 @@ const generate_OTP = async (req, res) => {
     const user_detail = await KGID.findOne({ where: { kgid } });
 
     if (user_detail) {
-      const mobile = user_detail.mobile;
+        const mobile = user_detail.mobile;
       const kgid_id = user_detail.id;
       // Find the user by kgid
       const user = await AuthSecure.findOne({ where: { kgid_id } });
@@ -415,6 +416,7 @@ const generate_OTP = async (req, res) => {
 
         // Generate a random OTP
         const otp = crypto.randomInt(100000, 999999).toString();
+        
         // Set the OTP expiration time to 10 minutes from now
         const expiresAt = moment().add(10, "minutes").toDate();
         // Get the current timestamp
@@ -422,6 +424,18 @@ const generate_OTP = async (req, res) => {
 
         // Update the user with the new OTP, expiration time, and increment the number of attempts
         await user.update({ otp, otp_expires_at: expiresAt });
+
+        // Send SMS after OTP is generated and saved
+        try {
+          await sendSMS({
+            message: `Your OTP is ${otp}`,
+            mobile: mobile
+          });
+        } catch (smsErr) {
+          console.error("Failed to send SMS:", smsErr.message);
+          // Optionally, you can return an error or continue
+        }
+
         // Return success response
         return res.status(200).json({
           success: true,
@@ -543,6 +557,18 @@ const generate_OTP_without_pin = async (req, res) => {
 
         // Update the user with the new OTP, expiration time, and increment the number of attempts
         await user.update({ otp, otp_expires_at: expiresAt });
+
+        // Send SMS after OTP is generated and saved
+        try {
+          await sendSMS({
+            message: `Your OTP is ${otp}`,
+            mobile: mobile
+          });
+        } catch (smsErr) {
+          console.error("Failed to send SMS:", smsErr.message);
+          // Optionally, you can return an error or continue
+        }
+
         // Return success response
         return res.status(200).json({
           success: true,

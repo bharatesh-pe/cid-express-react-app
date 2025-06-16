@@ -11,16 +11,21 @@ const path = require("path");
 // Get all actions
 exports.get_overall_actions = async (req, res) => {
   try {
+   
     const {
+        page = 1,
+        limit = 5,
         sort_by = "created_at",
         order = "DESC",
         search = "",
-        search_field = "",
-    } = req.query;
+        filter = {},
+        from_date = null,
+        to_date = null
+    } = req.body;
 
 
 
-    const {  page = 1,filter = {}, from_date = null, to_date = null, limit = 5, } = req.body;
+
     const fields = {};
     const offset = (page - 1) * limit;
 
