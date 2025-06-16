@@ -367,8 +367,7 @@ const generate_OTP = async (req, res) => {
     const user_detail = await KGID.findOne({ where: { kgid } });
 
     if (user_detail) {
-        const mobile = "9698273271";
-        // const mobile = user_detail.mobile;
+        const mobile = user_detail.mobile;
       const kgid_id = user_detail.id;
       // Find the user by kgid
       const user = await AuthSecure.findOne({ where: { kgid_id } });
