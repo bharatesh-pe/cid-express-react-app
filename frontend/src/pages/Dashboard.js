@@ -35,40 +35,31 @@ import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import CloseIcon from '@mui/icons-material/Close';
 
 
-    const isCDR = localStorage.getItem("designation_name") === "CDR";
-    const allTabs = [
-        { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" },
-        {   label: "Court Module", 
-            route: "/case/pt_case", 
-            key: "pt_case",
-            options : [
-                {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case", name: "PT Case"},
-                {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case", name: "PT Case"},
-            ]
-        },
-        { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
-        { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" },
-        { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
-        { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" },
-        // { 
-        //     label: "Orders & Circulars", 
-        //     route: "/repository/judgements", 
-        //     key: "order_circulars",
-        //     options : [
-        //         {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
-        //         {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
-        //         {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
-        //     ]
-        // },
-    ];
-
-const tabLabels = isCDR 
-    ? [{ label: "CDR", route: "/case/cdr_case", key: "ui_case" }] 
-    : allTabs;
-    const days = [
-        "Today", "Tomorrow", "This Week", "Next Week"
-    ];
-
+const allTabs = [
+    { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" },
+    {   label: "Court Module", 
+        route: "/case/pt_case", 
+        key: "pt_case",
+        options : [
+            {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case", name: "PT Case"},
+            {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case", name: "PT Case"},
+        ]
+    },
+    { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" },
+    { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" },
+    { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" },
+    { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" },
+    // { 
+    //     label: "Orders & Circulars", 
+    //     route: "/repository/judgements", 
+    //     key: "order_circulars",
+    //     options : [
+    //         {label: "Goverment Order", route: "/repository/gn_order", key: "gn_order", directLoad : true},
+    //         {label: "Judgement", route: "/repository/judgements", key: "judgements", directLoad : true},
+    //         {label: "Circular", route: "/repository/circular", key: "circular", directLoad : true},
+    //     ]
+    // },
+];
 
 const Dashboard = () => {
     const [activeTab, setActiveTab] = useState(0);
@@ -93,6 +84,11 @@ const Dashboard = () => {
 
     const handleVideoOpen = () => setVideoOpen(true);
     const handleVideoClose = () => setVideoOpen(false);
+
+    const isCDR = localStorage.getItem("designation_name") === "CDR";
+    const tabLabels = isCDR 
+        ? [{ label: "CDR", route: "/case/cdr_case", key: "ui_case" }] 
+        : allTabs;
 
     var preSelectTabLabels = tabLabels[0]
     
@@ -520,6 +516,12 @@ const Dashboard = () => {
     }
 
     const storedTime = localStorage.getItem("refreshData");
+
+
+    const days = [
+        "Today", "Tomorrow", "This Week", "Next Week"
+    ];
+
 
     if (userId === "1") return null;
     return (

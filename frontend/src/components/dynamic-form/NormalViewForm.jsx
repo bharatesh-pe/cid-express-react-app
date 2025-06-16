@@ -1819,7 +1819,7 @@ const NormalViewForm = ({
                   </Button>
             
                     {
-                        !disableSaveNew && table_name !== "cid_eq_case_closure_report" &&
+                        !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" &&
                         <Button
                             variant="contained" color="success"
                             onClick={() =>{

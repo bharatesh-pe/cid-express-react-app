@@ -2040,7 +2040,8 @@ console.log("userDesignationId:", userDesignationId, "userRole:", userRole);
 // Fix: Remove quotes and trim for comparison
 const isIO = userRole.replace(/['"]+/g, '').trim() === "investigation officer";
 const isSPDivision = isImmediateSupervisior;
-const isSPCCD = userDesignationId === "CDR" || userRole === "CDR CELL";
+const isSPCCD = userDesignationId === "SP CCD";
+const isCDR = userDesignationId === "CDR" || userRole === "CDR CELL";
 
 console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:", showSubmitAPButton, "templateActionAddFlag.current:", templateActionAddFlag.current, "otherTemplatesTotalRecord:", otherTemplatesTotalRecord);
 
@@ -2135,6 +2136,93 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
         }
     };
 
+    const handleCDR = async ({ id }) => {
+        const user_divisio_id = localStorage.getItem("division_id") || null;
+        const user_designation_id = localStorage.getItem("designation_id") || null;
+
+        if (!id || id.length === 0) {
+            toast.error("Please select at least one record to submit.", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+        var result;
+        if (isImmediateSupervisior) {
+            result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you want to Return this to Review? Once submitted, for IO it will get the Access to Edit.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, submit it!',
+                cancelButtonText: 'Cancel',
+            });
+        } else {
+            result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you want to Return this to Review? Once submitted, for IO it will get the Access to Edit.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, submit it!',
+                cancelButtonText: 'Cancel',
+            });
+        }
+
+        if (result.isConfirmed) {
+            try {
+                setLoading(true);
+                const getAllRecordsPayload = {
+                    table_name: "cid_ui_case_cdr_ipdr",
+                    ui_case_id: selectedRowData?.id
+                };
+                const getAllRecordsRes = await api.post("/templateData/getTemplateData", getAllRecordsPayload);
+
+                if (getAllRecordsRes && getAllRecordsRes.success && Array.isArray(getAllRecordsRes.data)) {
+                    for (const row of getAllRecordsRes.data) {
+                        const updateStatusForm = new FormData();
+                        updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
+                        updateStatusForm.append("id", row.id);
+                        updateStatusForm.append("data", JSON.stringify({ sys_status: "CDR" }));
+                        await api.post("/templateData/updateTemplateData", updateStatusForm);
+                    }
+                }
+
+                toast.success("The CDR/IPDR has been sent to Review", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                    onOpen: () => {
+                        handleOtherTemplateActions(selectedOtherTemplate, selectedRow);
+                    },
+                });
+                setShowSubmitAPButton(true);
+            } catch (error) {
+                toast.error(error.message || 'Submission failed.', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
     const handleReturnForReview = async ({ id }) => {
         const user_divisio_id = localStorage.getItem("division_id") || null;
         const user_designation_id = localStorage.getItem("designation_id") || null;
@@ -2566,7 +2654,8 @@ const handleCDRDialogUpdate = async () => {
                             display: "flex",
                             alignItems: "start",
                             justifyContent: "space-between",
-                            mb: 2
+                            mb: 2,
+                            mt: 2,
                         }}
                     >
                         <Box 
@@ -2744,6 +2833,7 @@ const handleCDRDialogUpdate = async () => {
                                         >
                                             <MenuItem
                                                 onClick={() => {
+                                                    handleCDR({ id: selectedRowData?.id });
                                                     setApproveDropdownAnchorEl(null);
                                                     handleApproveAndSendToCDRCELL({ id: selectedRowData?.id });
                                                 }}
@@ -2772,6 +2862,17 @@ const handleCDRDialogUpdate = async () => {
                                         </Menu>
                                     </Box>
                                 )}
+                                {isCDR && (
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={() => handleApproveAndSendToCDRCELL({ id: selectedRowData?.id })}
+                                        disabled={otherTemplatesTotalRecord === 0}
+                                    >
+                                        Status Update
+                                    </Button> 
+                                )
+                                }
                             </Box>
                         </Box>
                     </Box>
@@ -2840,7 +2941,7 @@ const handleCDRDialogUpdate = async () => {
                 fullWidth
             >
                 <DialogTitle id="cdr-update-dialog-title">
-                    Approve and Send to CDRCELL
+                    Status Update and Upload CDR Copy
                 </DialogTitle>
 <DialogContent>
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3, mt: 1 }}>

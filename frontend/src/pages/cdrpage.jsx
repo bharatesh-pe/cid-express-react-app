@@ -29,8 +29,14 @@ const CDRpage = () => {
             id: item.id || `unique_id_${idx}`,
             crime_no: item['field_cid_crime_no./enquiry_no'],
           }));
+          // Use meta.totalItems for totalRecords if available
+          const totalCount =
+            response.data?.meta?.totalItems ||
+            response.data?.meta?.totalRecords ||
+            response.data?.totalCount ||
+            result.length;
           setCdrList(result);
-          setTotalRecords(response.data.totalCount || result.length); // Update total count from API
+          setTotalRecords(totalCount);
         } else {
           setCdrList([]);
           setTotalRecords(0);
