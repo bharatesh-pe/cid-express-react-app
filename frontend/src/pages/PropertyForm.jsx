@@ -1982,14 +1982,12 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
     return (
         <>
             <Box sx={{ overflow: 'auto', height: '100vh' }}>
-                <Box pb={1} px={1} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', }}>
+                <Box py={1} px={2} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', }}>
                     <Box
                         sx={{
                             width: '100%',
-                            p: 2,
                             bgcolor: 'background.paper',
                             borderRadius: 2,
-                            boxShadow: 2,
                             zIndex: 1,
                         }}
                     >
