@@ -4091,7 +4091,7 @@ const loadAOFields = async () => {
       );
 
       const briefFactField = response.data.fields.find(
-        (f) => f.name === "field_breif_fact"
+        (f) => f.name === "field_brief_fact"
       );
       const policeStationField = response.data.fields.find(
         (f) => f.name === "field_investigation_carried_out_by_the_police_station"
@@ -4210,7 +4210,7 @@ useEffect(() => {
     let normalData = {};
   
     const allowedFields = [
-      "field_breif_fact",
+      "field_brief_fact",
       "field_investigation_carried_out_by_the_police_station"
     ];
   

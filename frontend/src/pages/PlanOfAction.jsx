@@ -249,7 +249,7 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
               field.name !== "field_section"
           );
     
-          const briefFactField = response.data.fields.find((f) => f.name === "field_breif_fact");
+          const briefFactField = response.data.fields.find((f) => f.name === "field_brief_fact");
           const policeStationField = response.data.fields.find((f) => f.name === "field_investigation_carried_out_by_the_police_station");
     
           if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
@@ -1851,7 +1851,7 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
         let normalData = {};
         
         const allowedFields = [
-            "field_breif_fact",
+            "field_brief_fact",
             "field_investigation_carried_out_by_the_police_station"
         ];
     
@@ -2451,14 +2451,12 @@ const PlanOfAction = ({templateName, headerDetails, rowId, options, selectedRowD
     return (
         <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+            <Box py={1} px={2} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
                 <Box
                     sx={{
                         width: '100%',
-                        p: 2,
                         bgcolor: 'background.paper',
                         borderRadius: 2,
-                        boxShadow: 2,
                         zIndex: 1,
                     }}
                 >

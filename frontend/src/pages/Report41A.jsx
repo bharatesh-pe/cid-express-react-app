@@ -1829,7 +1829,7 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
         let normalData = {};
         
         const allowedFields = [
-            "field_breif_fact",
+            "field_brief_fact",
             "field_investigation_carried_out_by_the_police_station"
         ];
     
@@ -2429,14 +2429,12 @@ const Report41A = ({templateName, headerDetails, rowId, options, selectedRowData
     return (
         <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-            <Box pb={1} px={1} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+            <Box py={1} px={2} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
                 <Box
                     sx={{
                         width: '100%',
-                        p: 2,
                         bgcolor: 'background.paper',
                         borderRadius: 2,
-                        boxShadow: 2,
                         zIndex: 1,
                     }}
                 >
