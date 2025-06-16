@@ -1961,7 +1961,7 @@ const NormalViewForm = ({
                             formData={formData}
                             errors={errors}
                             onChange={handleChange}
-                            onHistory={() => {showHistory(field.name);}}
+                            onHistory={() => showHistory(field.name)}
                             readOnly={readOnlyData}
                           />
                         </div>
