@@ -1035,9 +1035,9 @@ exports.getActionTemplateData = async (req, res, next) => {
             filteredData.field_division = division?.division_name || "Unknown";
           }
 
-        } else if (["cid_pt_case_trail_monitoring", "cid_ui_case_action_plan", "cid_ui_case_property_form"].includes(table_name)) {
+        } else if (["cid_pt_case_trail_monitoring", "cid_ui_case_action_plan", "cid_ui_case_property_form", "cid_ui_case_cdr_ipdr"].includes(table_name)) {
           filteredData = { ...data };
-          if (table_name === 'cid_ui_case_action_plan' && case_io_id) {
+          if (table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_cdr_ipdr' && case_io_id) {
             const case_io_user_designation = await UserDesignation.findOne({
               attributes: ["designation_id"],
               where: { user_id: case_io_id },
