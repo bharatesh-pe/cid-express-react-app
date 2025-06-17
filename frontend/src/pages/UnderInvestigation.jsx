@@ -15225,6 +15225,9 @@ const handleOpenExportPopup = async () => {
                     row.field_cid_crime_no ||
                     row.enquiry_no ||
                     "",
+                    "field_crime_number_of_ps" : row["field_crime_number_of_ps"] || "",
+                    "field_case/enquiry_keyword" : row["field_case/enquiry_keyword"] || "-",
+                    
                   }))}
                   columns={[
                     {
@@ -15238,6 +15241,17 @@ const handleOpenExportPopup = async () => {
                     headerName: "Crime/Enquiry No.",
                     flex: 1,
                     renderCell: (params) => params.row["field_cid_crime_no./enquiry_no"],
+                    },
+                    {
+                    field: "field_crime_number_of_ps",
+                    headerName: "Crime Number of PS",
+                    flex: 1,
+                    renderCell: (params) => params.row["field_crime_number_of_ps"],
+                    },{
+                    field: "field_case/enquiry_keyword",
+                    headerName: "Case/Enquiry Keyword",
+                    flex: 1,
+                    renderCell: (params) => params.row["field_case/enquiry_keyword"],
                     },
                   ]}
                   totalPage={ioUserCases.length > 0 && casesPageSize > 0 ? Math.ceil(ioUserCases.length / casesPageSize) : 1}

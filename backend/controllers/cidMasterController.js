@@ -133,9 +133,9 @@ const getIoUsers = async (req, res) => {
                 attributes: ["supervisor_designation_id"],
                 raw: true,
             });
-            if (!userHierarchy || userHierarchy.length === 0) {
-                return res.status(200).json({ data: [] });
-            }
+            // if (!userHierarchy || userHierarchy.length === 0) {
+            //     return res.status(200).json({ data: [] });
+            // }
             const superivisors = [];
 
              if(division_id)
@@ -150,14 +150,18 @@ const getIoUsers = async (req, res) => {
                     raw: true,
                 });
 
-                if (!designation_division || designation_division.length === 0) {
-                    return res.status(200).json({ data: [] });
-                }
+                // if (!designation_division || designation_division.length === 0) {
+                //     return res.status(200).json({ data: [] });
+                // }
                 const designationIds = designation_division.map(user => user.designation_id);
                 superivisors.push(...designationIds);
+                // Add the current designation_id to the supervisors list
+                superivisors.push(designation_id);
             }
             else{
                  superivisors = userHierarchy.map(user => user.supervisor_designation_id);
+                // Add the current designation_id to the supervisors list
+                superivisors.push(designation_id);
             }
             // Fetch users based on the userIds from the userDesignations table
             userDesignations = await UserDesignation.findAll({
@@ -225,9 +229,9 @@ const getIoUsers = async (req, res) => {
                 attributes: ["officer_designation_id"],
                 raw: true,
             });
-            if (!userHierarchy || userHierarchy.length === 0) {
-                return res.status(200).json({ data: [] });
-            }
+            // if (!userHierarchy || userHierarchy.length === 0) {
+            //     return res.status(200).json({ data: [] });
+            // }
 
             var officersIds = [];
 
@@ -243,14 +247,18 @@ const getIoUsers = async (req, res) => {
                     raw: true,
                 });
 
-                if (!designation_division || designation_division.length === 0) {
-                    return res.status(200).json({ data: [] });
-                }
+                // if (!designation_division || designation_division.length === 0) {
+                //     return res.status(200).json({ data: [] });
+                // }
                 const designationIds = designation_division.map(user => user.designation_id);
                 officersIds.push(...designationIds);
+                // Add the current designation_id to the officers list
+                officersIds.push(designation_id);
             }
             else{
                  officersIds = userHierarchy.map(user => user.officer_designation_id);
+                // Add the current designation_id to the officers list
+                officersIds.push(designation_id);
             }
 
             userDesignations = await UserDesignation.findAll({
@@ -265,6 +273,7 @@ const getIoUsers = async (req, res) => {
             if (!userDesignations || userDesignations.length === 0) {
                 return res.status(200).json({ data: [] });
             }
+
             userIds = userDesignations.map(user => user.user_id && user.user_id !== null ? user.user_id : null).filter(userId => userId !== null);
             
             usersData = await Users.findAll({

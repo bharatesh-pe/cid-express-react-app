@@ -2439,6 +2439,9 @@ const NormalViewForm = ({
                     row.field_cid_crime_no ||
                     row.enquiry_no ||
                     "",
+                    "field_crime_number_of_ps" : row["field_crime_number_of_ps"] || "",
+                    "field_case/enquiry_keyword" : row["field_case/enquiry_keyword"] || "-",
+
                 }))}
               columns={[
                 {
@@ -2454,6 +2457,17 @@ const NormalViewForm = ({
                   renderCell: (params) =>
                     params.row["field_cid_crime_no./enquiry_no"],
                 },
+                {
+                  field: "field_crime_number_of_ps",
+                  headerName: "Crime Number of PS",
+                  flex: 1,
+                  renderCell: (params) => params.row["field_crime_number_of_ps"],
+                  },{
+                  field: "field_case/enquiry_keyword",
+                  headerName: "Case/Enquiry Keyword",
+                  flex: 1,
+                  renderCell: (params) => params.row["field_case/enquiry_keyword"],
+                  },
               ]}
               totalPage={
                 actionCases.length > 0 && actionCasesPageSize > 0
