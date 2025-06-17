@@ -51,6 +51,8 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
     const [toDateValue, setToDateValue] = useState(null);
     const [showSubmitAPButton, setShowSubmitAPButton] = useState(false);
     const [isImmediateSupervisior, setIsImmediateSupervisior] = useState(false); 
+    const [ioSubmitted, setIoSubmitted] = useState(false);
+    const [spSubmitted, setSpSubmitted] = useState(false);
     const [ImmediateSupervisiorId, setImmediateSupervisiorId] = useState(0); 
     const [otherTemplatesTotalPage, setOtherTemplatesTotalPage] = useState(0);
     const [otherTemplatesTotalRecord, setOtherTemplatesTotalRecord] = useState(0);
@@ -175,6 +177,25 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
         setIsValid(false);
     };
 
+    const userDesignationId = (localStorage.getItem("designation_name") || "").toUpperCase();
+const userRole = (localStorage.getItem("role_title") || "").trim().toLowerCase();
+console.log("userDesignationId:", userDesignationId, "userRole:", userRole);
+
+const isIO = userRole.replace(/['"]+/g, '').trim() === "investigation officer";
+const isSPDivision = isImmediateSupervisior && Array.isArray(ioSubmitted) && ioSubmitted.length > 0;
+console.log("isSPDivision:::::::::::::::::::::::::::::::::", isSPDivision);
+console.log("isImmediateSupervisior:::::::::::::::::::::::::::::::::", isImmediateSupervisior);
+console.log("ioSubmitted:::::::::::::::::::::::::::::::::", ioSubmitted);
+const isSPCCD = userDesignationId === "SP CCD" && Array.isArray(spSubmitted) && spSubmitted.length > 0;
+const isCDR = userDesignationId === "CDR" || userRole === "CDR CELL";
+
+// Check if any row has field_submit_spdivision === "SP"
+const hasSpSubmitted = Array.isArray(otherTemplateData) && otherTemplateData.some(row => row.field_submit_spdivision === "SP");
+// Check if any row has field_submit_reject === "REJECT"
+const hasRejectSubmitted = Array.isArray(otherTemplateData) && otherTemplateData.some(row => row.field_submit_reject === "REJECT");
+
+const hasCDRCell = Array.isArray(otherTemplateData) && otherTemplateData.some(row => row.field_submit_cdr === "CDR");
+
     const handleOtherTemplateActions = async (options, selectedRow, searchFlag) => {
 
         const randomId = `random_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
@@ -277,6 +298,8 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                     let APisSubmited = false;
                     let anySubmitAP = true;
                     let isSuperivisor = false;
+                    let ioSubmitted = false;
+                    let spSubmitted = false;
                     const userDesigId = localStorage.getItem('designation_id');
                     if (records && records.length > 0) {
 
@@ -290,12 +313,11 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                             setImmediateSupervisiorId(supervisorRecords[0].supervisior_designation_id);
                         }
 
-                        
                         let allAPWithOutSupervisorSubmit = false;
 
                         for (let i = 0; i < supervisorRecords.length; i++) {
                             const status = supervisorRecords[i]['field_submit_status'];
-                            if (status === "" || status === null) {
+                            if (status === "IO" || status === null) {
                                 allAPWithOutSupervisorSubmit = true;
                                 console.log("Set allAPWithOutSupervisorSubmit to true");
                                 break;
@@ -342,12 +364,23 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                         anySubmitAP = false;
                     }
 
+                    const ioSubmittedRecords = records.filter(
+                        record => record.field_submit_status === "IO"
+                    );
+            
+                    console.log('ioSubmittedRecords', ioSubmittedRecords);
+                    const  spSubmittedRecords = records.filter(
+                        record => record.field_submit_spdivision === "SP"
+                    );
                     
                     console.log('anySubmitAP',anySubmitAP);
 
                     console.log('isSuperivisor',isSuperivisor)
                     setShowSubmitAPButton(anySubmitAP);
                     setIsImmediateSupervisior(isSuperivisor);
+                    console.log('setIsImmediateSupervisior called with:', isSuperivisor); // <-- Add this debug log
+                    setIoSubmitted(ioSubmittedRecords);
+                    setSpSubmitted(spSubmittedRecords);
                     setAPIsSubmited(APisSubmited);
                     
                     if (getTemplateResponse.data[0]) {
@@ -366,7 +399,7 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                         ];
 
                     
-                        const updatedHeader = ([
+                        const updatedHeader = [
                             {
                                 field: "sl_no",
                                 headerName: "S.No",
@@ -386,10 +419,19 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                                         isActionPlan = true;
                                     }
 
+                                    // FIX: For SPCCD user, show edit/delete only when Approve and Send to SPCCD is visible (!hasSpSubmitted)
+                                    // Hide edit/delete when Submit is visible (hasSpSubmitted)
+                                    let allowDelete;
+                                    if (isSPCCD) {
+                                        allowDelete = !hasSpSubmitted && ((canDelete && !isViewAction && !isActionPlan) || isSPDivision) && !hasRejectSubmitted;
+                                    } else {
+                                        allowDelete = ((canDelete && !isViewAction && !isActionPlan) || isSPDivision) && !hasRejectSubmitted;
+                                    }
+
                                     return (
                                         <Box sx={{ display: "flex", alignItems: "center", gap: "4px" }}>
                                             {params.value}
-                                            {canDelete && !isViewAction && !isActionPlan && (
+                                            {allowDelete && (
                                                 <DeleteIcon
                                                     sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
                                                     onClick={(event) => {
@@ -402,7 +444,6 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                                     );
                                 },
                             },
-
                             ...Object.keys(getTemplateResponse.data[0]).filter(
                                 (key) =>
                                     !excludedKeys.includes(key) &&
@@ -456,7 +497,12 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                                                 isActionPlan = true;
                                             }
 
-                                            const isEditAllowed = canEdit && !isViewAction && !isActionPlan;
+                                            let isEditAllowed;
+                                            if (isSPCCD) {
+                                                isEditAllowed = !hasSpSubmitted && ((canEdit && !isViewAction && !isActionPlan) || isSPDivision) && !hasRejectSubmitted;
+                                            } else {
+                                                isEditAllowed = ((canEdit && !isViewAction && !isActionPlan) || isSPDivision) && !hasRejectSubmitted;
+                                            }
 
                                             return (
                                                 <span
@@ -481,8 +527,7 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
                                     }
                                 };
                             }),
-
-                        ]).filter(Boolean);
+                        ].filter(Boolean);
 
                         setOtherTemplateColumn(updatedHeader);
                     } else {
@@ -1244,15 +1289,6 @@ const CDR = ({templateName, headerDetails, rowId, options, selectedRowData, back
         }
     };
 
-    const handleOtherClear = ()=>{
-        setOtherSearchValue('');
-        setOtherTemplatesPaginationCount(1);
-        setOthersFromDate(null);
-        setOthersToDate(null);
-        setOthersFiltersDropdown([]);
-        setOthersFilterData({});
-        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData, true)
-    }
 
 const showOptionTemplate = async (tableName, approved) => {
     if (!tableName || tableName === "") {
@@ -1543,7 +1579,7 @@ const showOptionTemplate = async (tableName, approved) => {
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ sys_status: "IO" }));
+                        updateStatusForm.append("data", JSON.stringify({ sys_status: "IO", field_submit_status: 'IO' }));
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -1808,10 +1844,7 @@ const showOptionTemplate = async (tableName, approved) => {
                     filename: file.filename.name,
                   }));
       
-                  formData.append(
-                    "folder_attachment_ids",
-                    JSON.stringify(folderInfo)
-                  );
+                  formData.append("folder_attachment_ids", JSON.stringify(folderInfo));
                 }
               } else {
                 formData.append(field.name, data[field.name]);
@@ -2033,20 +2066,9 @@ const showOptionTemplate = async (tableName, approved) => {
 
 
 // Helper to determine if current user is viewing as IO, Supervisor, or SPCCD
-const userDesignationId = (localStorage.getItem("designation_name") || "").toUpperCase();
-const userRole = (localStorage.getItem("role_title") || "").trim().toLowerCase();
-console.log("userDesignationId:", userDesignationId, "userRole:", userRole);
 
-// Fix: Remove quotes and trim for comparison
-const isIO = userRole.replace(/['"]+/g, '').trim() === "investigation officer";
-const isSPDivision = isImmediateSupervisior;
-const isSPCCD = userDesignationId === "SP CCD";
-const isCDR = userDesignationId === "CDR" || userRole === "CDR CELL";
-
-console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:", showSubmitAPButton, "templateActionAddFlag.current:", templateActionAddFlag.current, "otherTemplatesTotalRecord:", otherTemplatesTotalRecord);
-
-
-// Handler for SPDivision: Approve and Send to SPCCD
+// Only hide edit/delete for SPCCD user when the "Submit" dropdown is shown (i.e., after Approve and Send to SPCCD is done)
+const hideEditDeleteForSPCCD = isSPCCD && hasSpSubmitted;
 
     const handleApproveAndSendToSPCCD = async ({ id }) => {
         const user_divisio_id = localStorage.getItem("division_id") || null;
@@ -2100,7 +2122,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ field_submit_status: "SP CCD" }));
+                        updateStatusForm.append("data", JSON.stringify({ field_submit_spdivision: "SP" }));
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2153,7 +2175,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
             });
             return;
         }
-        var result;
+        let result;
         if (isImmediateSupervisior) {
             result = await Swal.fire({
                 title: 'Are you sure?',
@@ -2188,7 +2210,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ sys_status: "CDR" }));
+                        updateStatusForm.append("data", JSON.stringify({ field_submit_cdr: "CDR" }));
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2223,6 +2245,9 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
             }
         }
     };
+
+
+
     const handleReturnForReview = async ({ id }) => {
         const user_divisio_id = localStorage.getItem("division_id") || null;
         const user_designation_id = localStorage.getItem("designation_id") || null;
@@ -2367,7 +2392,7 @@ console.log("isIO:", isIO, "viewModeOnly:", viewModeOnly, "showSubmitAPButton:",
                         const updateStatusForm = new FormData();
                         updateStatusForm.append("table_name", "cid_ui_case_cdr_ipdr");
                         updateStatusForm.append("id", row.id);
-                        updateStatusForm.append("data", JSON.stringify({ sys_status: "REJECT" }));
+                        updateStatusForm.append("data", JSON.stringify({ field_submit_reject: "REJECT" }));
                         await api.post("/templateData/updateTemplateData", updateStatusForm);
                     }
                 }
@@ -2535,6 +2560,9 @@ const handleCDRDialogUpdate = async () => {
                                 nextStageStep = true;
                                 statusLabel = "Pending";
                                 statusClass = "submissionPending";
+                            } else if (selected) {
+                                statusLabel = "In Progress";
+                                statusClass = "submissionInProgress";
                             }
 
                             if(step.toLowerCase() === stepperValue){
@@ -2739,7 +2767,6 @@ const handleCDRDialogUpdate = async () => {
                                     />
                                     {(otherSearchValue || othersFromDate || othersToDate || Object.keys(othersFilterData).length > 0) && (
                                         <Typography
-                                            onClick={handleOtherClear}
                                             sx={{
                                                 fontSize: "13px",
                                                 fontWeight: "500",
@@ -2798,7 +2825,7 @@ const handleCDRDialogUpdate = async () => {
                                 )}
 
                                 {/* SPDivision: Approve and Send to SPCCD, allow edit */}
-                                {isSPDivision && (
+                                {isSPDivision && !hasSpSubmitted && (
                                     <Button
                                         variant="contained"
                                         color="primary"
@@ -2835,7 +2862,6 @@ const handleCDRDialogUpdate = async () => {
                                                 onClick={() => {
                                                     handleCDR({ id: selectedRowData?.id });
                                                     setApproveDropdownAnchorEl(null);
-                                                    handleApproveAndSendToCDRCELL({ id: selectedRowData?.id });
                                                 }}
                                                 disabled={otherTemplatesTotalRecord === 0}
                                             >
@@ -2862,7 +2888,7 @@ const handleCDRDialogUpdate = async () => {
                                         </Menu>
                                     </Box>
                                 )}
-                                {isCDR && (
+                                {isCDR && hasCDRCell && !hasRejectSubmitted &&(
                                     <Button
                                         variant="contained"
                                         color="primary"
