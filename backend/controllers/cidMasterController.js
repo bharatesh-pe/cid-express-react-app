@@ -150,9 +150,9 @@ const getIoUsers = async (req, res) => {
                     raw: true,
                 });
 
-                if (!designation_division || designation_division.length === 0) {
-                    return res.status(200).json({ data: [] });
-                }
+                // if (!designation_division || designation_division.length === 0) {
+                //     return res.status(200).json({ data: [] });
+                // }
                 const designationIds = designation_division.map(user => user.designation_id);
                 superivisors.push(...designationIds);
                 // Add the current designation_id to the supervisors list
@@ -247,9 +247,9 @@ const getIoUsers = async (req, res) => {
                     raw: true,
                 });
 
-                if (!designation_division || designation_division.length === 0) {
-                    return res.status(200).json({ data: [] });
-                }
+                // if (!designation_division || designation_division.length === 0) {
+                //     return res.status(200).json({ data: [] });
+                // }
                 const designationIds = designation_division.map(user => user.designation_id);
                 officersIds.push(...designationIds);
                 // Add the current designation_id to the officers list
@@ -274,7 +274,6 @@ const getIoUsers = async (req, res) => {
                 return res.status(200).json({ data: [] });
             }
 
-            console.log("userDesignations$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$", userDesignations);
             userIds = userDesignations.map(user => user.user_id && user.user_id !== null ? user.user_id : null).filter(userId => userId !== null);
             
             usersData = await Users.findAll({
