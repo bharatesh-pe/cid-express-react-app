@@ -421,16 +421,35 @@ const Formbuilder = () => {
         // Update the selectedField state with a new object, preserving the current state, 
         // and updating the value of the field corresponding to the `name` key.
         // If the `name` is 'label', also update the `name` property with the new value (same as `label`).
+
+        var existingData = false;
+
+        if (Createdfields && Createdfields.length > 0) {
+            existingData = Createdfields.some((element) => element.id === selectedField.id);
+        }
+
         setSelectedField({
-            ...selectedField, // Spread the previous selectedField to maintain other properties
-            [name]: value, // Update the property based on the `name` (e.g., 'label', 'value', etc.)
-            name: name === 'label' ? camelize(value) : camelize(selectedField.name) // If the 'name' is 'label', set the name to the new value (same as label)
+            ...selectedField,
+            [name]: value,
+            name: existingData
+                ? selectedField.name
+                : name === 'label'
+                    ? convertToUnderscore(value)
+                    : convertToUnderscore(selectedField.name)
         });
 
-        // Update the fields array by mapping over it and changing the field whose id matches selectedField.id
-        // It updates the field that corresponds to the selected field, leaving others unchanged.
         setFields(fields.map((field) =>
-            (field.id === selectedField.id ? { ...field, [name]: value, name: name === 'label' ? camelize(value) : camelize(field.name) } : field) // If the field's id matches selectedField's id, update the value and name for the specific field
+            field.id === selectedField.id
+                ? {
+                    ...field,
+                    [name]: value,
+                    name: existingData
+                        ? field.name
+                        : name === 'label'
+                            ? convertToUnderscore(value)
+                            : convertToUnderscore(field.name)
+                }
+                : field
         ));
     };
 
@@ -1198,10 +1217,8 @@ const Formbuilder = () => {
                 }
             }
 
-            const transformedName = convertToUnderscore(labelValue); // Use the helper function
             return {
                 ...field, // Keep all other properties of the field
-                name: transformedName, // Update the 'name' key with the transformed value
                 searchable: true, // for searching fields from the table
                 data_type: 'text', // Update the 'data_type' key with the formType value
             };
@@ -1422,11 +1439,8 @@ const Formbuilder = () => {
                     }
                 }
 
-                const transformedName = convertToUnderscore(labelValue);
-
                 return {
                     ...field, // Keep all other properties of the field
-                    name: transformedName, // Update the 'name' key with the transformed value
                     searchable: true, // for searching fields from the table
                     data_type: 'text', // Update the 'data_type' key with the formType value
                 };
@@ -2663,7 +2677,7 @@ const Formbuilder = () => {
                                                         // Skip specific field
 
 
-                                                        const DisplayNoneFields = ['col', 'defaultValue', 'user_hierarchy', 'readonlyOption', 'formType', 'type', 'name', 'id', 'selectedSupportFormat', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
+                                                        const DisplayNoneFields = ['col', 'defaultValue', 'user_hierarchy', 'readonlyOption', 'formType', 'type', 'id', 'selectedSupportFormat', 'api', 'is_dependent', 'section', 'table', 'dependent_table', 'data_type', 'attributes', 'dependentNode', 'forign_key', 'updated_at', 'created_at', 'field_name', 'field_id', 'disableFutureDate', 'disablePreviousDate', 'searchable', 'tabOption'];
                                                         if (DisplayNoneFields.includes(prop)) return null;
 
 
@@ -2865,7 +2879,7 @@ const Formbuilder = () => {
                                                                                     )
                                                                                         : (
                                                                                             <TextField
-                                                                                                label={prop.charAt(0).toUpperCase() + prop.slice(1)}
+                                                                                                label={prop !== "name" ? prop.charAt(0).toUpperCase() + prop.slice(1) : "DB Name"}
                                                                                                 name={prop}
                                                                                                 value={selectedField[prop] || ""}
                                                                                                 onChange={handlePropertyChange}
@@ -2874,7 +2888,7 @@ const Formbuilder = () => {
                                                                                                     maxLength : prop === 'label' ? 50 : undefined
                                                                                                 }}
                                                                                                 fullWidth
-                                                                                                disabled={(updateFieldReadonly && prop === "label") ? true : false}
+                                                                                                disabled={prop === "name" ? true : false}
                                                                                                 size="small" // Default size is "medium"
                                                                                                 margin="none" // Adjust the margin to control spacing
                                                                                             />
