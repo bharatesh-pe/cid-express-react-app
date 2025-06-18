@@ -2798,15 +2798,19 @@ const LokayuktaView = () => {
                                         Submit
                                     </Button>
                                 }
-                                <Button
-                                    variant="contained"
-                                    color="success"
-                                    size="large"
-                                    sx={{ height: "38px" }}
-                                    onClick={showBulkUploadScreen}
-                                >
-                                    Bulk Upload
-                                </Button>
+
+                                {
+                                    !approvalDone &&
+                                    <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="large"
+                                        sx={{ height: "38px" }}
+                                        onClick={showBulkUploadScreen}
+                                    >
+                                        Bulk Upload
+                                    </Button>
+                                }
                             </Box>
                         </Box>
 
