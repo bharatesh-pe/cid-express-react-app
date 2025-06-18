@@ -3671,10 +3671,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
         }
     }
 
-    console.log("searchConditions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-    console.log(searchConditions);
-    console.log("searchConditions >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>")
-
     const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
     if (sys_status !== null && sys_status !== undefined && sys_status !== "all") {
