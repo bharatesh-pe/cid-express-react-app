@@ -33,6 +33,8 @@ import ShortText from "../components/form/ShortText";
 import WestIcon from '@mui/icons-material/West';
 
 const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowData, backNavigation}) => {
+
+    console.log("ActionPlan component rendered with options:", options);
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -110,6 +112,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     const [randomApprovalId, setRandomApprovalId] = useState(0);
     const hoverTableOptionsRef = useRef([]);
 
+    const [actionPlanData, setActionPlanData] = useState([])
     const loadValueField = async (rowData, editData, table_name) => {
         if (!table_name || table_name === "") {
           toast.warning("Please Check Table Name", {
@@ -484,6 +487,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                     setShowSubmitAPButton(anySubmitAP);
                     setIsImmediateSupervisior(isSuperivisor);
                     setAPIsSubmited(APisSubmited);
+                    setActionPlanData(getTemplateResponse.data, options.table, disabledEditFlag, disabledDeleteFlag, getTemplateResponse);
                     
                     if (getTemplateResponse.data[0]) {
                         var excludedKeys = [
@@ -2451,10 +2455,190 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
     };
 
  
+    // --- Approval Stepper Logic (from LokayuktaView.jsx style) ---
+    // Get activeSidebar from localStorage (or context if available)
+    const activeSidebar = JSON.parse(localStorage.getItem("activeSidebar")) || {};
+    // Approval stepper arrays
+    const approvalStepperArray = options?.approval_steps ? JSON.parse(options.approval_steps) : [];
+    // Find approvalFieldArray from selectedRowData (if available)
+    const approvalFieldArray = selectedRowData?.approval_field_array || [];
+
+    // Approval stepper click handler (dummy, implement as needed)
+    const handleApprovalStepperClick = (step) => {
+        // Implement navigation or logic as per your requirements
+        // Example: toast.info(`Clicked step: ${step}`);
+    };
+
     return (
         <>
         <Box sx={{  overflow: 'auto' , height: '100vh'}}>
-            <Box py={1} px={2} sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'start',}}>
+            {approvalStepperArray.length > 0 && (
+                <Box sx={{ display: "flex", justifyContent: 'center', alignItems: 'center', mb: 2, mt: 2 }}>
+                    {approvalStepperArray.map((step, index) => {
+                        let selected = false;
+                        let roleTitle = JSON.parse(localStorage.getItem("role_title")) || "";
+                        let designationName = localStorage.getItem("designation_name") || "";
+                        let stepperValue = "";
+
+                        if (roleTitle.toLowerCase() === "investigation officer") {
+                            stepperValue = "io";
+                        } else {
+                            const splitingValue = designationName.split(" ");
+                            if (splitingValue?.[0]) {
+                                stepperValue = splitingValue[0].toLowerCase();
+                            }
+                        }
+
+                        let alreadySubmited = false;
+                        let nextStageStep = false;
+
+                        let sysStatus = actionPlanData[0]?.sys_status;
+                        let fieldSubmitStatus = actionPlanData[0]?.field_submit_status;
+                        let stepLower = step.toLowerCase();
+                        // If sys_status is IO, mark IO as submitted
+                        if (sysStatus === "IO" && stepLower === "io") {
+                            alreadySubmited = true;
+                        }
+                        // If sys_status is IO and field_submit_status is submit, mark SP as submitted
+                        if (
+                            (sysStatus === "IO" && fieldSubmitStatus === "submit" && stepLower === "sp") ||
+                            (fieldSubmitStatus === "submit" && stepLower === "sp") ||
+                            (fieldSubmitStatus === "submit" && stepLower === "io" && sysStatus !== "IO")
+                        ) {
+                            alreadySubmited = true;
+                        }
+
+                        // Fallback to approvalFieldArray logic if not already submitted
+                        if (!alreadySubmited) {
+                            const lastApprovedRole = approvalFieldArray[0];
+                            const lastApprovedIndex = approvalStepperArray.indexOf(lastApprovedRole);
+
+                            const approvedStages = approvalStepperArray.slice(0, lastApprovedIndex + 1);
+
+                            const nextStepIndex = lastApprovedIndex + 1;
+                            const nextStep = approvalStepperArray[nextStepIndex];
+
+                            if (approvedStages.includes(step)) {
+                                alreadySubmited = true;
+                            } else if (step === nextStep) {
+                                nextStageStep = true;
+                            }
+                        }
+
+                        let statusLabel = "Not Assigned";
+                        let statusClass = "submissionNotAssigned";
+
+                        if (alreadySubmited) {
+                            statusLabel = "Submitted";
+                            statusClass = "submissionCompleted";
+                        } else if (nextStageStep) {
+                            statusLabel = "Pending";
+                            statusClass = "submissionPending";
+                        }
+
+                        if (stepLower === stepperValue) {
+                            selected = true;
+                        }
+
+                        let StepperTitle = "";
+                        switch (stepLower) {
+                            case "io":
+                                StepperTitle = "Investigation Officer";
+                                break;
+                            case "la":
+                                StepperTitle = "Legal Advisor";
+                                break;
+                            case "sp":
+                                StepperTitle = "Superintendent of Police";
+                                break;
+                            case "dig":
+                                StepperTitle = "Deputy Inspector General";
+                                break;
+                            default:
+                                StepperTitle = "";
+                                break;
+                        }
+
+                        return (
+                            <span key={step} style={{ display: "flex", alignItems: "center" }}>
+                                <Button
+                                    variant="contained"
+                                    onClick={() => handleApprovalStepperClick(step)}
+                                    sx={() => {
+                                        let backgroundColor = "#f0f0f0";
+                                        let color = "#333";
+                                        let boxShadow = "0 2px 6px rgba(0, 0, 0, 0.1)";
+
+                                        if (alreadySubmited) {
+                                            backgroundColor = "#27ae60";
+                                            color = "#fff";
+                                            boxShadow = "0 0 0 5px #d4f7e8";
+                                        } else if (nextStageStep) {
+                                            backgroundColor = "#ffd230";
+                                            color = "#333";
+                                            boxShadow = "0 0 0 5px #fff4cc ";
+                                        } else if (selected) {
+                                            backgroundColor = "#1570ef";
+                                            color = "#fff";
+                                            boxShadow = "0 0 0 5px #dcebff ";
+                                        }
+
+                                        return {
+                                            backgroundColor,
+                                            color,
+                                            minWidth: 52,
+                                            height: 50,
+                                            borderRadius: '50%',
+                                            padding: '16px',
+                                            fontWeight: 600,
+                                            boxShadow,
+                                            transition: "all 0.3s ease-in-out",
+                                            transform: selected ? "translateY(-2px)" : "none",
+                                            "&:hover": {
+                                                backgroundColor: alreadySubmited
+                                                    ? "#219150"
+                                                    : nextStageStep
+                                                        ? "#e6c200"
+                                                        : selected
+                                                            ? "#2980b9"
+                                                            : "#dcdcdc",
+                                                boxShadow: alreadySubmited
+                                                    ? "0 8px 16px rgba(39, 174, 96, 0.5)"
+                                                    : nextStageStep
+                                                        ? "0 8px 16px rgba(255, 210, 48, 0.5)"
+                                                        : selected
+                                                            ? "0 8px 16px rgba(52, 152, 219, 0.5)"
+                                                            : "0 4px 10px rgba(0, 0, 0, 0.15)",
+                                                transform: "translateY(-3px)",
+                                            }
+                                        };
+                                    }}
+                                >
+                                    {step}
+                                </Button>
+                                <Box px={2}>
+                                    <div className="investigationStepperTitle" style={{ marginBottom: '4px' }}>
+                                        {StepperTitle}
+                                    </div>
+                                    <div className={`stepperCompletedPercentage ${statusClass}`}>
+                                        {statusLabel}
+                                    </div>
+                                </Box>
+                                {index < approvalStepperArray.length - 1 && (
+                                    <Box
+                                        sx={{
+                                            width: 60,
+                                        }}
+                                        className="divider"
+                                    />
+                                )}
+                            </span>
+                        );
+                    })}
+                </Box>
+            )}
+
+            <Box py={1} px={2} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', }}>
                 <Box
                     sx={{
                         width: '100%',
@@ -2472,8 +2656,8 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                             mb: 2
                         }}
                     >
-                        <Box 
-                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }} 
+                        <Box
+                            sx={{ display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer' }}
                             onClick={() => backNavigation()}
                         >
                             <WestIcon />
@@ -2567,7 +2751,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
                                     )}
                                 </Box>
 
-                               
+
                                 {!viewModeOnly && !showSubmitAPButton && templateActionAddFlag.current === true && (
                                     <Button
                                         variant="outlined"
@@ -2691,7 +2875,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
         {otherFormOpen && (
             <Dialog
                 open={otherFormOpen}
-                onClose={() => closeOtherForm}
+                onClose={closeOtherForm}
                 aria-labelledby="alert-dialog-title"
                 aria-describedby="alert-dialog-description"
                 maxWidth="xl"
@@ -2728,7 +2912,7 @@ const ActionPlan = ({templateName, headerDetails, rowId, options, selectedRowDat
             </Dialog>
         )}
         </>
-    );    
+    );
 };
 
 export default ActionPlan;

@@ -3489,20 +3489,20 @@ const handleCheckboxDemerge = (event, row) => {
                             ),
                         }
                     : null,
-                        sysStatus !== "b_Report" && sysStatus !== 'merge_cases' && sysStatus !== 'disposal' ?{
-                            name: "Nature of Disposal",
-                            onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
-                        } : null,
-                        sysStatus === "b_Report" ?
-                        {
-                            name: "Accepted By Court",
-                            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
-                        } : null,
-                        sysStatus === "b_Report" ? 
-                        {
-                            name: "Rejected By Court",
-                            onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
-                        } : null,
+                        // sysStatus !== "b_Report" && sysStatus !== 'merge_cases' && sysStatus !== 'disposal' ?{
+                        //     name: "Nature of Disposal",
+                        //     onclick: (selectedRow) => showNatureOfDisposal(selectedRow, table_name),
+                        // } : null,
+                        // sysStatus === "b_Report" ?
+                        // {
+                        //     name: "Accepted By Court",
+                        //     onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, true),
+                        // } : null,
+                        // sysStatus === "b_Report" ? 
+                        // {
+                        //     name: "Rejected By Court",
+                        //     onclick: (selectedRow) => showOrderCopyCourt(selectedRow, table_name, false),
+                        // } : null,
                         userPermissions?.delete_enquiry
                             ? {
                                 name: "Delete",

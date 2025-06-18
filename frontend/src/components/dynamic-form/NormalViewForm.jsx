@@ -52,6 +52,7 @@ const NormalViewForm = ({
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
     , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn
  }) => {
+
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
 
   const [formData, setFormData] = useState({});
@@ -1816,6 +1817,35 @@ const NormalViewForm = ({
             }
         }
     };
+    useEffect(() => {
+  if (showActionModal && caseActionSelectedValue && caseActionOptions.length > 0) {
+    // Only fetch if actionCases is empty (avoid refetch on every render)
+    if (actionCases.length === 0) {
+      const selected = caseActionOptions.find(
+        (option) => String(option.code) === String(caseActionSelectedValue)
+      );
+      if (selected) {
+        api
+          .post("cidMaster/getSpecificIoUsersCases", {
+            user_id: String(selected.code),
+            template_module: "ui_case",
+          })
+          .then((response) => {
+            let cases = [];
+            if (Array.isArray(response.cases)) {
+              cases = response.cases;
+            } else if (response?.cases && typeof response.cases === "object") {
+              cases = [response.cases];
+            }
+            setActionCases(cases);
+          })
+          .catch(() => setActionCases([]));
+      }
+    }
+  }
+  // eslint-disable-next-line
+}, [showActionModal, caseActionSelectedValue, caseActionOptions]);
+
 
   return (
     <>
@@ -2399,34 +2429,44 @@ const NormalViewForm = ({
                   template_module: "ui_case",
                 });
 
+                console.log("initialData from cases:", initialData.id);
+                
+
                 let cases = [];
                 if (Array.isArray(response.cases)) {
                   cases = response.cases;
                 } else if (response?.cases && typeof response.cases === "object") {
                   cases = [response.cases];
                 }
+                // Remove the current case (initialData.id) from the cases array
+                cases = cases.filter(
+                  (caseItem) =>
+                  String(caseItem.id) !== String(initialData.id)
+                );
                 setActionCases(cases);
-              } catch (err) {
+                } catch (err) {
                 console.error("Failed to fetch cases", err);
                 setActionCases([]);
+                }
               }
-            }
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              className="selectHideHistory"
-              label={investigationAction?.name.trim() || "Assign to IO"}
+              }}
+              renderInput={(params) => (
+              <TextField
+                {...params}
+                className="selectHideHistory"
+                label={investigationAction?.name.trim() || "Assign to IO"}
+              />
+              )}
             />
-          )}
-        />
-      </FormControl>
+            </FormControl>
 
-        <div style={{ marginTop: 16}}>
-          <h4 className="form-field-heading">Cases for Selected Action</h4>
-          <div style={{ }}>
-            <TableView
-              rows={actionCases
+            <div style={{ marginTop: 16}}>
+              <h4 className="form-field-heading">Cases for Selected Action</h4>
+              <div style={{ }}>
+              <TableView
+                rows={actionCases
+                // Filter out the current case by id before displaying in the table
+                .filter(row => String(row.id) !== String(initialData.id))
                 .slice(
                   actionCasesPage * actionCasesPageSize,
                   (actionCasesPage + 1) * actionCasesPageSize
@@ -2435,15 +2475,14 @@ const NormalViewForm = ({
                   ...row,
                   sno: actionCasesPage * actionCasesPageSize + idx + 1,
                   "field_cid_crime_no./enquiry_no":
-                    row["field_cid_crime_no./enquiry_no"] ||
-                    row.field_cid_crime_no ||
-                    row.enquiry_no ||
-                    "",
-                    "field_crime_number_of_ps" : row["field_crime_number_of_ps"] || "",
-                    "field_case/enquiry_keyword" : row["field_case/enquiry_keyword"] || "-",
-
+                  row["field_cid_crime_no./enquiry_no"] ||
+                  row.field_cid_crime_no ||
+                  row.enquiry_no ||
+                  "",
+                  "field_crime_number_of_ps": row["field_crime_number_of_ps"] || "",
+                  "field_case/enquiry_keyword": row["field_case/enquiry_keyword"] || "-",
                 }))}
-              columns={[
+                columns={[
                 {
                   field: "sno",
                   headerName: "S.No",
@@ -2455,58 +2494,59 @@ const NormalViewForm = ({
                   headerName: "Crime/Enquiry No.",
                   flex: 1,
                   renderCell: (params) =>
-                    params.row["field_cid_crime_no./enquiry_no"],
+                  params.row["field_cid_crime_no./enquiry_no"],
                 },
                 {
                   field: "field_crime_number_of_ps",
                   headerName: "Crime Number of PS",
                   flex: 1,
                   renderCell: (params) => params.row["field_crime_number_of_ps"],
-                  },{
+                },
+                {
                   field: "field_case/enquiry_keyword",
                   headerName: "Case/Enquiry Keyword",
                   flex: 1,
                   renderCell: (params) => params.row["field_case/enquiry_keyword"],
-                  },
-              ]}
-              totalPage={
-                actionCases.length > 0 && actionCasesPageSize > 0
-                  ? Math.ceil(actionCases.length / actionCasesPageSize)
+                },
+                ]}
+                totalPage={
+                actionCases.filter(row => String(row.id) !== String(initialData.id)).length > 0 && actionCasesPageSize > 0
+                  ? Math.ceil(actionCases.filter(row => String(row.id) !== String(initialData.id)).length / actionCasesPageSize)
                   : 1
-              }
-              totalRecord={actionCases.length}
-              paginationCount={
+                }
+                totalRecord={actionCases.filter(row => String(row.id) !== String(initialData.id)).length}
+                paginationCount={
                 Number.isFinite(actionCasesPage) ? actionCasesPage + 1 : 1
-              }
-              handlePagination={(page) => setActionCasesPage(page - 1)}
-              getRowId={(row, idx) =>
+                }
+                handlePagination={(page) => setActionCasesPage(page - 1)}
+                getRowId={(row, idx) =>
                 row.id || row["field_cid_crime_no./enquiry_no"] || idx
-              }
-              noRowsOverlayText="No data found"
-              sx={{ width: 700 }}
-            />
-          </div>
-          <div style={{ marginTop: 8 }}>
-            Showing{" "}
-            {Math.min(
-              actionCases.length,
-              (actionCasesPage + 1) * actionCasesPageSize
-            )}{" "}
-            of {actionCases.length} cases
-          </div>
-        </div>
-    </DialogContentText>
-  </DialogContent>
-  <DialogActions sx={{ padding: "12px 24px" }}>
-    {/* <Button
-      onClick={() => {
-        setShowActionModal(false);
-        setCaseActionSelectedValue(null);
-        setActionCases([]);
-      }}
-    >
-      Cancel
-    </Button> */}
+                }
+                noRowsOverlayText="No data found"
+                sx={{ width: 700 }}
+              />
+              </div>
+              <div style={{ marginTop: 8 }}>
+              Showing{" "}
+              {Math.min(
+                actionCases.filter(row => String(row.id) !== String(initialData.id)).length,
+                (actionCasesPage + 1) * actionCasesPageSize
+              )}{" "}
+              of {actionCases.filter(row => String(row.id) !== String(initialData.id)).length} cases
+              </div>
+            </div>
+          </DialogContentText>
+          </DialogContent>
+          <DialogActions sx={{ padding: "12px 24px" }}>
+          {/* <Button
+            onClick={() => {
+            setShowActionModal(false);
+            setCaseActionSelectedValue(null);
+            setActionCases([]);
+            }}
+          >
+            Cancel
+          </Button> */}
     {/* <Button className="fillPrimaryBtn" onClick={updateCaseActions}>
       Submit
     </Button> */}

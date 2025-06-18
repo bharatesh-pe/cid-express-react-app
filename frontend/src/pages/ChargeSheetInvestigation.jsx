@@ -661,7 +661,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                         )}
                     </Typography>
                 </Box>
-                <Typography
+                {/* <Typography
                     sx={{
                         fontSize: '18px',
                         fontWeight: '600',
@@ -674,7 +674,7 @@ const ChargeSheetInvestigation = ({ template_name, headerDetails, tableRowId, op
                     className="Roboto"
                 >
                     Charge Sheet
-                </Typography>
+                </Typography> */}
 
                 {/* <Box sx={{ mt: 0, mb: 2 }}>
                     <Typography sx={{ fontWeight: 600, mb: 1, color: "#0B5ED7" }}>Accused</Typography>
