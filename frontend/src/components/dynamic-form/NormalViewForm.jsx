@@ -86,6 +86,14 @@ const NormalViewForm = ({
     const [actionCasesPage, setActionCasesPage] = useState(0);
     const actionCasesPageSize = 10;
 
+    const [caseHistoryModal, setCaseHistoryModal] = useState(false);
+    const [caseHistoryData, setCaseHistoryData] = useState([]);
+    const [caseHistoryHeaderData, setCasehistoryHeaderData] = useState([
+        { field: "sl_no", headerName: "Sl. No." },
+        { field: "action", headerName: "Action", flex: 1 },
+        { field: "actor_name", headerName: "User", flex: 1 },
+        { field: "date", headerName: "Date & Time", flex: 1 },
+    ]);
   
   useEffect(() => {
     if (initialData && Object.keys(initialData).length > 0) {
@@ -1742,6 +1750,73 @@ const NormalViewForm = ({
         }
     }
 
+    const CaseLogs = async () => {
+        if ( !template_id || template_id === "" || !table_row_id || table_row_id === "" ) {
+            return false;
+        }
+
+        var payload = {
+            template_id: template_id,
+            table_row_id: table_row_id,
+        };
+
+        setLoading(true);
+
+        try {
+            const getHistoryResponse = await api.post( "/profileHistories/getCaseHistory",payload);
+            setLoading(false);
+
+            if (getHistoryResponse && getHistoryResponse.success) {
+                if ( getHistoryResponse["data"] && getHistoryResponse["data"].length > 0 ) {
+                    var updatedData = getHistoryResponse["data"].map((data, index) => {
+                        // var fullname = "";
+
+                        const readableDate = new Date(data.updated_at).toLocaleString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            second: "2-digit",
+                            hour12: true, // Optional: shows time in AM/PM format
+                        });
+
+                        return {
+                            ...data,
+                            id: data.log_id,
+                            sl_no: index + 1,
+                            actor_name: data.actor_name,
+                            date: readableDate,
+                        };
+                    });
+
+                    setCaseHistoryData(updatedData);
+                    setCaseHistoryModal(true);
+                } else {
+                    setCaseHistoryData([]);
+                    setCaseHistoryModal(true);
+                }
+            } else {
+                setCaseHistoryData([]);
+                setCaseHistoryModal(true);
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message || "Please Try Again!", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+                });
+            }
+        }
+    };
+
   return (
     <>
       <Box inert={loading ? true : false} p={noPadding ? 0 : 2} px={2}>
@@ -1797,9 +1872,20 @@ const NormalViewForm = ({
                 </Button>
             }
 
+            {
+                table_row_id &&
+                <Button
+                    variant="outlined"
+                    sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
+                    onClick = {() => {CaseLogs()}}
+                >
+                    Case Log
+                </Button>
+            }
+
             {!readOnlyTemplate && editDataTemplate && onUpdate ?
 
-              <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
+              <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
                 Update
               </Button>
 
@@ -1812,7 +1898,7 @@ const NormalViewForm = ({
                       formButtonRef.current &&
                       formButtonRef.current.click()
                   }}
-                    sx={{ background: '#0167F8', borderRadius: '8px', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
+                    sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
                     className="Roboto blueButton"
                   >
                     Save
@@ -1842,7 +1928,6 @@ const NormalViewForm = ({
                     onClick={templateEdit}
                     sx={{
                         background: "#0167F8",
-                        borderRadius: "8px",
                         fontSize: "14px",
                         fontWeight: "500",
                         color: "#FFFFFF",
@@ -2354,6 +2439,9 @@ const NormalViewForm = ({
                     row.field_cid_crime_no ||
                     row.enquiry_no ||
                     "",
+                    "field_crime_number_of_ps" : row["field_crime_number_of_ps"] || "",
+                    "field_case/enquiry_keyword" : row["field_case/enquiry_keyword"] || "-",
+
                 }))}
               columns={[
                 {
@@ -2369,6 +2457,17 @@ const NormalViewForm = ({
                   renderCell: (params) =>
                     params.row["field_cid_crime_no./enquiry_no"],
                 },
+                {
+                  field: "field_crime_number_of_ps",
+                  headerName: "Crime Number of PS",
+                  flex: 1,
+                  renderCell: (params) => params.row["field_crime_number_of_ps"],
+                  },{
+                  field: "field_case/enquiry_keyword",
+                  headerName: "Case/Enquiry Keyword",
+                  flex: 1,
+                  renderCell: (params) => params.row["field_case/enquiry_keyword"],
+                  },
               ]}
               totalPage={
                 actionCases.length > 0 && actionCasesPageSize > 0
@@ -2446,6 +2545,44 @@ const NormalViewForm = ({
           </DialogContent>
         </Dialog>
       }
+
+        {caseHistoryModal && (
+            <Dialog
+                open={caseHistoryModal}
+                onClose={() => setCaseHistoryModal(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="md"
+                fullWidth
+                className="approvalModal"
+            >
+                <DialogTitle
+                    id="alert-dialog-title"
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        paddingBottom: 0
+                    }}
+                >
+                    <Box>Case History</Box>
+                    <IconButton
+                        aria-label="close"
+                        onClick={() => setCaseHistoryModal(false)}
+                        sx={{ color: (theme) => theme.palette.grey[500] }}
+                    >
+                        <CloseIcon />
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                        <Box py={2}>
+                            <TableView rows={caseHistoryData} columns={caseHistoryHeaderData} />
+                        </Box>
+                    </DialogContentText>
+                </DialogContent>
+            </Dialog>
+        )}
 
     </>
   );

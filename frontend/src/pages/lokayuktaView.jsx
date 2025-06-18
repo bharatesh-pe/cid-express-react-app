@@ -193,16 +193,6 @@ const LokayuktaView = () => {
 
                 setShowCaseActionBtn(approvedStages.includes(userRole));
 
-                if(approvedStages.includes(userRole)){
-                    setFormEditFlag(true);
-                    setFormReadFlag(false);
-                    setOverAllReadonlyCases(false);
-                }else{
-                    setFormEditFlag(false);
-                    setFormReadFlag(true);
-                    setOverAllReadonlyCases(true);
-                }
-
                 console.log(element,"element");
                 console.log(stepperArray,"stepperArray");
                 console.log(approvedStages,"approvedStages");
@@ -211,7 +201,17 @@ const LokayuktaView = () => {
 
                 if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
                     setCaseAction(element);
-                    setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : [])
+                    setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : []);
+
+                    if(approvedStages.includes(userRole)){
+                        setFormEditFlag(true);
+                        setFormReadFlag(false);
+                        setOverAllReadonlyCases(false);
+                    }else{
+                        setFormEditFlag(false);
+                        setFormReadFlag(true);
+                        setOverAllReadonlyCases(true);
+                    }
                 }
 
             }
@@ -270,6 +270,8 @@ const LokayuktaView = () => {
                 return;
             }
 
+            console.log("overAllReadonlyCases", overAllReadonlyCases);
+            console.log("item.name", item.name);
             Swal.fire({
                 text: 'IO not found. You are not allowed to perform any actions.',
                 icon: 'warning',

@@ -5595,13 +5595,17 @@ const loadChildMergedCasesData = async (page, caseId) => {
         onClickHandler = (event) => {event.stopPropagation();handleTemplateDataView(params.row, false, tableName, hoverTableOptions)};
     }
 
-
     return (
         <Tooltip title={value} placement="top">
             {
                 (key === "field_io_name" && (value === "" || !value)) ? (
                     <span className="io-alert-flashy">
                         <span className="flashy-dot"></span>
+                        ASSIGN IO
+                    </span>                  
+                ) : (key === "field_io_name" && (value !== "" && (params?.row?.field_approval_done_by === "" || params?.row?.field_approval_done_by !== "DIG"))) ? (
+                    <span className="DIG-alert-flashy">
+                        <span className="blue-flashy-dot"></span>
                         ASSIGN IO
                     </span>                  
                 ) : (
@@ -11603,7 +11607,7 @@ const handleOpenExportPopup = async () => {
                             template_name : viewTemplateResponse?.["data"]?.template_name,
                             table_name: table_name,
                             module : "ui_case",
-                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name || !viewTemplateData?.["data"]?.field_approval_done_by || viewTemplateData?.["data"]?.field_approval_done_by === "" ? true : false,
+                            overAllReadonly : !viewTemplateData?.["data"]?.field_io_name || !viewTemplateData?.["data"]?.field_approval_done_by || viewTemplateData?.["data"]?.field_approval_done_by === "" || viewTemplateData?.["data"]?.field_approval_done_by !== "DIG" ? true : false,
                             record_id : dashboardRecordId ? JSON.stringify(dashboardRecordId) : [],
                             dashboardName : dashboardTileName,
                             caseExtension :rowData?.isDisabled ?? false,
@@ -15225,6 +15229,9 @@ const handleOpenExportPopup = async () => {
                     row.field_cid_crime_no ||
                     row.enquiry_no ||
                     "",
+                    "field_crime_number_of_ps" : row["field_crime_number_of_ps"] || "",
+                    "field_case/enquiry_keyword" : row["field_case/enquiry_keyword"] || "-",
+                    
                   }))}
                   columns={[
                     {
@@ -15238,6 +15245,17 @@ const handleOpenExportPopup = async () => {
                     headerName: "Crime/Enquiry No.",
                     flex: 1,
                     renderCell: (params) => params.row["field_cid_crime_no./enquiry_no"],
+                    },
+                    {
+                    field: "field_crime_number_of_ps",
+                    headerName: "Crime Number of PS",
+                    flex: 1,
+                    renderCell: (params) => params.row["field_crime_number_of_ps"],
+                    },{
+                    field: "field_case/enquiry_keyword",
+                    headerName: "Case/Enquiry Keyword",
+                    flex: 1,
+                    renderCell: (params) => params.row["field_case/enquiry_keyword"],
                     },
                   ]}
                   totalPage={ioUserCases.length > 0 && casesPageSize > 0 ? Math.ceil(ioUserCases.length / casesPageSize) : 1}
