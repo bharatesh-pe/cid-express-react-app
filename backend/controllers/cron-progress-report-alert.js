@@ -326,7 +326,7 @@ exports.runMonthlyAlertCronPR = async () => {
     } 
 };
 
-//cron for Action Plan
+//cron for Investigation Officer Allocation
 exports.runDailyAlertCronIO = async () => {
     try {
         const today = moment().startOf("day");
@@ -335,7 +335,18 @@ exports.runDailyAlertCronIO = async () => {
         const ioAlertsData = await CaseAlerts.findAll({
             where: { 
                 alert_type: "IO_ALLOCATION",
-                module: { [Op.in]: case_modules },
+                module: { [Op.in]: ["ui_case", "pt_case"] },
+                status: {
+                    [Op.iLike]: "%pending%" 
+                }
+            },
+            order: [["created_at", "DESC"]],
+        });
+
+        const eoAlertsData = await CaseAlerts.findAll({
+            where: { 
+                alert_type: "EO_ALLOCATION",
+                module: { [Op.in]: ["eq_case"] },
                 status: {
                     [Op.iLike]: "%pending%" 
                 }
@@ -355,6 +366,23 @@ exports.runDailyAlertCronIO = async () => {
                     {
                         where: {
                             alert_type: "IO_ALLOCATION",
+                            record_id: alert_record_id,
+                        },
+                    }
+                );
+            }
+        }
+
+        for (const eoCaseEntry of eoAlertsData) {
+            const alert_record_id = eoCaseEntry.record_id;
+            const ioDueDate = moment(eoCaseEntry.due_date).startOf("day");
+
+            if (ioDueDate.isBefore(today)) {
+                await CaseAlerts.update(
+                    { alert_level: "high" },
+                    {
+                        where: {
+                            alert_type: "EO_ALLOCATION",
                             record_id: alert_record_id,
                         },
                     }
@@ -474,11 +502,11 @@ exports.runDailyAlertCronIO = async () => {
             const isOlderThan1Days = today.diff(createdAt, "days") > 1;
             const isEqualToToday = today.isSame(createdAt, "day");
             var alertLevel = "low";
-            var alertMessage = "Please assign an IO to this case";
+            var alertMessage = "Please assign an EO to this case";
             if(isOlderThan1Days)
             {
                 alertLevel = "high";
-                alertMessage = "Please assign an IO to this case, it is overdue";
+                alertMessage = "Please assign an EO to this case, it is overdue";
             }
 
             if(field_io === null || field_io === "")
@@ -486,10 +514,10 @@ exports.runDailyAlertCronIO = async () => {
                 try{
                     const existingAlert = await CaseAlerts.findOne({
                         where: {
-                            module: "ui_case",
+                            module: "eq_case",
                             main_table: uiTableName,
                             record_id: eq_case_id,
-                            alert_type: "IO_ALLOCATION",
+                            alert_type: "EO_ALLOCATION",
                             alert_level: alertLevel,
                             alert_message: alertMessage,
                             status: {
@@ -504,7 +532,7 @@ exports.runDailyAlertCronIO = async () => {
                     } else {
                         console.log(`Creating new alert for case ${eq_case_id}`);
                         await CaseAlerts.create({
-                            module: "ui_case",
+                            module: "eq_case",
                             main_table: uiTableName,
                             record_id: eq_case_id,
                             alert_type: "IO_ALLOCATION",
@@ -524,7 +552,7 @@ exports.runDailyAlertCronIO = async () => {
             }
         }
 
-        console.log(`Daily Alert Cron completed for IO Assign. ${updatedCount} alerts updated.`);
+        console.log(`Daily Alert Cron completed for IO Assign and EO Assign. ${updatedCount} alerts updated.`);
     } catch (error) {
         console.error("Error running Daily Alert Cron for IO Assign:", error);
     }
@@ -1218,7 +1246,7 @@ for (const record of records) {
 };
 
 
-//cron for Action Plan
+//cron for Accused
 exports.runDailyAlertCronAccused = async () => {
     try {
         const today = moment();
@@ -1410,4 +1438,5 @@ exports.runDailyAlertCronAccused = async () => {
       console.error("Error running Daily Alert Cron for Action Plan:", error);
     } 
 };
+
 

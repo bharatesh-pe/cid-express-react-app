@@ -3444,8 +3444,8 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       whereClause["$ReadStatus.template_user_status_id$"] = { [Op.is]: null }; // Filter only unread records
     }
 
+    var searchConditions = [];
     if (search) {
-      const searchConditions = [];
 
       if (search_field && fields[search_field]) {
         // Specific field search
@@ -3529,78 +3529,125 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
           }
         }
       } else {
-        // General search across all fields
+        // // General search across all fields
+        // Object.keys(fields).forEach((field) => {
+        //   const fieldConfig = fieldConfigs[field];
+        //   const fieldType = fields[field].type.key;
+        //   const isForeignKey = associations.some(
+        //     (assoc) => assoc.foreignKey === field
+        //   );
+
+        //   // Standard text and numeric search
+        //   if (["STRING", "TEXT"].includes(fieldType)) {
+        //     searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
+        //   } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+        //     if (!isNaN(search)) {
+        //       searchConditions.push({ [field]: parseInt(search, 10) });
+        //     }
+        //   }
+
+        //   // Dropdown, radio, checkbox search
+        //   if (
+        //     fieldConfig &&
+        //     fieldConfig.type === "dropdown" &&
+        //     Array.isArray(fieldConfig.options)
+        //   ) {
+        //     // Find option code that matches the search text
+        //     const matchingOption = fieldConfig.options.find((option) =>
+        //       option.name.toLowerCase().includes(search.toLowerCase())
+        //     );
+
+        //     if (matchingOption) {
+        //         // if(field === "field_division")
+        //             searchConditions.push({ [field]: String(matchingOption.code) });
+        //         // else
+        //         //     searchConditions.push({ [field]: matchingOption.code });
+        //     }
+        //   }
+
+        //   if (
+        //     fieldConfig &&
+        //     fieldConfig.type === "radio" &&
+        //     Array.isArray(fieldConfig.options)
+        //   ) {
+        //     // Find option code that matches the search text
+        //     const matchingOption = fieldConfig.options.find((option) =>
+        //       option.name.toLowerCase().includes(search.toLowerCase())
+        //     );
+
+        //     if (matchingOption) {
+        //       searchConditions.push({ [field]: matchingOption.code });
+        //     }
+        //   }
+
+        //   // Foreign key search
+        //   if (isForeignKey) {
+        //     const association = associations.find(
+        //       (assoc) => assoc.foreignKey === field
+        //     );
+        //     if (association) {
+        //       // Get the included model from the include array
+        //       const associatedModel = include.find(
+        //         (inc) => inc.as === `${association.relatedTable}Details`
+        //       );
+
+        //       // Only add the condition if the model is properly included
+        //       if (associatedModel) {
+        //         searchConditions.push({
+        //           [`$${association.relatedTable}Details.${association.targetAttribute}$`]:
+        //             { [Op.iLike]: `%${search}%` },
+        //         });
+        //       }
+        //     }
+        //   }
+        // });
+
         Object.keys(fields).forEach((field) => {
-          const fieldConfig = fieldConfigs[field];
-          const fieldType = fields[field].type.key;
-          const isForeignKey = associations.some(
-            (assoc) => assoc.foreignKey === field
-          );
-
-          // Standard text and numeric search
-          if (["STRING", "TEXT"].includes(fieldType)) {
-            searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
-          } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
-            if (!isNaN(search)) {
-              searchConditions.push({ [field]: parseInt(search, 10) });
+            // Skip fields that likely represent dates or timestamps
+            if (/date|month|year/i.test(field)) return;
+          
+            const fieldConfig = fieldConfigs[field];
+            const fieldType = fields[field].type?.key || fields[field].type?.constructor?.key;
+            const isForeignKey = associations.some((assoc) => assoc.foreignKey === field);
+          
+            // ILIKE for text fields
+            if (["STRING", "TEXT"].includes(fieldType)) {
+              searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
+            } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+              if (!isNaN(search)) {
+                searchConditions.push({ [field]: parseInt(search, 10) });
+              }
             }
-          }
-
-          // Dropdown, radio, checkbox search
-          if (
-            fieldConfig &&
-            fieldConfig.type === "dropdown" &&
-            Array.isArray(fieldConfig.options)
-          ) {
-            // Find option code that matches the search text
-            const matchingOption = fieldConfig.options.find((option) =>
-              option.name.toLowerCase().includes(search.toLowerCase())
-            );
-
-            if (matchingOption) {
-                // if(field === "field_division")
-                    searchConditions.push({ [field]: String(matchingOption.code) });
-                // else
-                //     searchConditions.push({ [field]: matchingOption.code });
-            }
-          }
-
-          if (
-            fieldConfig &&
-            fieldConfig.type === "radio" &&
-            Array.isArray(fieldConfig.options)
-          ) {
-            // Find option code that matches the search text
-            const matchingOption = fieldConfig.options.find((option) =>
-              option.name.toLowerCase().includes(search.toLowerCase())
-            );
-
-            if (matchingOption) {
-              searchConditions.push({ [field]: matchingOption.code });
-            }
-          }
-
-          // Foreign key search
-          if (isForeignKey) {
-            const association = associations.find(
-              (assoc) => assoc.foreignKey === field
-            );
-            if (association) {
-              // Get the included model from the include array
-              const associatedModel = include.find(
-                (inc) => inc.as === `${association.relatedTable}Details`
+          
+            // Dropdown / Radio
+            if (
+              fieldConfig &&
+              ["dropdown", "radio"].includes(fieldConfig.type) &&
+              Array.isArray(fieldConfig.options)
+            ) {
+              const match = fieldConfig.options.find((opt) =>
+                opt.name.toLowerCase().includes(search.toLowerCase())
               );
-
-              // Only add the condition if the model is properly included
-              if (associatedModel) {
+              if (match) {
+                searchConditions.push({ [field]: String(match.code) });
+              }
+            }
+          
+            // Foreign key
+            if (isForeignKey) {
+              const assoc = associations.find((a) => a.foreignKey === field);
+              const includedModel = include.find((inc) => inc.as === `${assoc.relatedTable}Details`);
+              if (includedModel) {
                 searchConditions.push({
-                  [`$${association.relatedTable}Details.${association.targetAttribute}$`]:
-                    { [Op.iLike]: `%${search}%` },
+                  [`$${assoc.relatedTable}Details.${assoc.targetAttribute}$`]: {
+                    [Op.iLike]: `%${search}%`,
+                  },
                 });
               }
             }
-          }
-        });
+          });
+          
+          
       }
 
       if (template_module === "ui_case" || template_module === "pt_case" || template_module === "eq_case") {
@@ -6173,9 +6220,9 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 const main_table = table_name;
                 const record_id = insertedId;
                 const module = insertedType;
-                const alert_type = "IO_ALLOCATION";
+                const alert_type = "EO_ALLOCATION";
                 const alert_level = "low";
-                const alert_message = "Please assign an IO to this case";
+                const alert_message = "Please assign an EO to this case";
                 
                 const createdAt = new Date(insertedData.created_at);
                 const due_date = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000); // Add 24 hours

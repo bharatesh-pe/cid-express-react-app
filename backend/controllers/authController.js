@@ -428,18 +428,22 @@ const generate_OTP = async (req, res) => {
         // Send SMS after OTP is generated and saved
         try {
           await sendSMS({
-            message: `Your OTP is ${otp}`,
-            mobile: mobile
+            message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.`,
+            // mobile: '9080250155',
+            mobile: '9698273271',
+            template_id: '1107174885741640587',
           });
         } catch (smsErr) {
-          console.error("Failed to send SMS:", smsErr.message);
-          // Optionally, you can return an error or continue
+            console.error("Failed to send SMS:", smsErr.message);
+            if (smsErr.response) {
+                console.error("SMS response body:", smsErr.response.data);
+            }
         }
 
         // Return success response
         return res.status(200).json({
           success: true,
-          message: "OTP generated and sent successfully.",
+          message: "OTP generated and sent successfully."+otp,
         });
       } else {
         // Return error if the user is not found
@@ -1438,7 +1442,9 @@ const fetch_dash_count = async (req, res) => {
                     ...baseWhereClause,
                     alert_type: {
                         [Op.in]: [   
-                            "TRIAL_TODAY",
+                            "EO_ALLOCATION",
+                            "ACTION_PLAN",
+                            "PROGRESS_REPORT",
                         ]
                     }
                 };
@@ -1694,7 +1700,7 @@ const fetch_dash_count = async (req, res) => {
             // };
 
             alertTemplates = {
-                IO_ALLOCATION: {
+                EO_ALLOCATION: {
                     label: "EO Allocation",
                     divider: 2,
                     divider_details: {
