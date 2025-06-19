@@ -255,6 +255,9 @@ router.post('/bulkUpdateColumn',
     // userAuthMiddleware,
     [gwtDataValidation],[validate_token],
     templateDataController.bulkUpdateColumn)
+router.post('/bulkInsertData',
+    [gwtDataValidation],[validate_token],
+    templateDataController.bulkInsertData)
 router.post('/updateFieldsWithApproval',
     // eitherAuthMiddleware,
     // userAuthMiddleware,

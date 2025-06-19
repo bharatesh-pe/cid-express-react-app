@@ -222,6 +222,10 @@ const LokayuktaView = () => {
                         setFormReadFlag(true);
                         setOverAllReadonlyCases(true);
                     }
+                }else if(initialRowData?.["field_approval_done_by"] === "DIG"){
+                    setFormEditFlag(true);
+                    setFormReadFlag(false);
+                    setOverAllReadonlyCases(false);
                 }
 
             }
@@ -2164,7 +2168,7 @@ const LokayuktaView = () => {
 
         const reader = new FileReader();
 
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             
@@ -2178,9 +2182,18 @@ const LokayuktaView = () => {
             const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
             // remove unwanted column
-            const rowData = jsonData.map(({ __rowNum__, ...rest }) => rest);
 
-            if(rowData.length === 0 || headerColumn.length === 0){
+            var ui_case_id = rowData?.id;
+            var pt_case_id = rowData?.pt_case_id;
+
+            if(module === "pt_case"){
+                ui_case_id = rowData?.ui_case_id
+                pt_case_id = rowData?.id
+            }
+
+            const rowExcelData = jsonData.map(({ __rowNum__, ...rest }) => ({...rest, ui_case_id, pt_case_id }));
+
+            if(rowExcelData.length === 0 || headerColumn.length === 0){
                 toast.error('Excel Data and Header is Empty', {
                     position: "top-right",
                     autoClose: 3000,
@@ -2196,11 +2209,60 @@ const LokayuktaView = () => {
 
             var payloadData = {
                 "table_name" : activeSidebar?.table,
-                "rowData" : rowData,
+                "rowData" : rowExcelData,
                 "columnData": headerColumn
             }
 
-            console.log(payloadData,"payloadData");
+            setLoading(true);
+            try {
+                const bulkInsertResponse = await api.post("templateData/bulkInsertData", payloadData);
+                setLoading(false);
+
+                if (bulkInsertResponse?.success) {
+                    toast.success(bulkInsertResponse.message || "Data Uploaded Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => { getTableData(activeSidebar) }
+                    });
+
+                    setBulkUploadShow(false);
+                    setSelectedFile(null);
+
+                } else {
+                    toast.error(bulkInsertResponse.message || "Failed to Upload Data.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+
         };
 
         reader.readAsArrayBuffer(selectedFile);
@@ -2972,7 +3034,7 @@ const LokayuktaView = () => {
                         </Box>
 
                         {selectedFile && (
-                            <Box sx={{display: 'flex', justifyContent: 'end'}}>
+                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
                                 <Typography mt={2} color="blue">
                                     Selected File: {selectedFile.name}
                                 </Typography>
