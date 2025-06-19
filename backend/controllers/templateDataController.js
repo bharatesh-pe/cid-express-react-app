@@ -4023,13 +4023,6 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
 
 exports.downloadExcelData = async (req, res) => {
   const { table_name, fields } = req.body;
-  const userId = res.locals.user_id || null;
-  const adminUserId = res.locals.admin_user_id || null;
-  const actorId = userId || adminUserId;
-
-  if (!actorId) {
-    return userSendResponse(res, 403, false, "Unauthorized access.", null);
-  }
 
   try {
     const tableData = await Template.findOne({ where: { table_name } });
@@ -4037,139 +4030,138 @@ exports.downloadExcelData = async (req, res) => {
       return res.status(404).send(`Table ${table_name} does not exist.`);
     }
 
-    let schema =
-      typeof tableData.fields === "string"
-        ? JSON.parse(tableData.fields)
-        : tableData.fields;
+    let schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
 
-    schema.push(
-      {
-        name: "created_at",
-        label: "Created At",
-        data_type: "DATE",
-        not_null: false,
-      },
-      {
-        name: "updated_at",
-        label: "Updated At",
-        data_type: "DATE",
-        not_null: false,
-      }
-    );
+    // schema.push(
+    //   {
+    //     name: "created_at",
+    //     label: "Created At",
+    //     data_type: "DATE",
+    //     not_null: false,
+    //   },
+    //   {
+    //     name: "updated_at",
+    //     label: "Updated At",
+    //     data_type: "DATE",
+    //     not_null: false,
+    //   }
+    // );
 
-    if (fields && Array.isArray(fields) && fields.length > 0) {
-      schema = schema.filter((field) => fields.includes(field.name));
-    }
-
-    const modelAttributes = {};
-    const associations = [];
-    const dropdownMappings = {};
-
-    schema.forEach(
-      ({
-        name,
-        data_type,
-        not_null,
-        table,
-        forign_key,
-        attributes,
-        type,
-        options,
-      }) => {
-        modelAttributes[name] = {
-          type:
-            Sequelize.DataTypes[data_type.toUpperCase()] ||
-            Sequelize.DataTypes.STRING,
-          allowNull: !not_null,
-        };
-
-        if (table && forign_key && attributes) {
-          associations.push({
-            relatedTable: table,
-            foreignKey: name,
-            targetAttributes: attributes,
-          });
+    schema = schema.filter((field) => {
+        if(!field?.hide_from_ux){
+            return field
         }
-
-        if (type === "dropdown" && Array.isArray(options)) {
-          dropdownMappings[name] = options.reduce((acc, option) => {
-            acc[option.code] = option.name;
-            return acc;
-          }, {});
-        }
-      }
-    );
-
-    const Model = sequelize.define(table_name, modelAttributes, {
-      freezeTableName: true,
-      timestamps: true,
-      paranoid: false,
-      underscored: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    });
-    await Model.sync();
-
-    const include = associations
-      .map(({ relatedTable, foreignKey, targetAttributes }) => {
-        const RelatedModel = require(`../models`)[relatedTable];
-        if (RelatedModel) {
-          Model.belongsTo(RelatedModel, {
-            foreignKey,
-            as: `${relatedTable}Details`,
-          });
-
-          return {
-            model: RelatedModel,
-            as: `${relatedTable}Details`,
-            attributes: targetAttributes || {
-              exclude: ["created_date", "modified_date"],
-            },
-          };
-        }
-      })
-      .filter(Boolean);
-
-    const columnNames = schema.map((field) => field.name);
-
-    const records = await Model.findAll({
-      attributes: columnNames,
-      include,
-      raw: true,
-      nest: true,
     });
 
-    const transformedRows = records.map((record) => {
-      const data = { ...record };
+    // const modelAttributes = {};
+    // const associations = [];
+    // const dropdownMappings = {};
 
-      for (const association of associations) {
-        const alias = `${association.relatedTable}Details`;
-        if (data[alias]) {
-          Object.entries(data[alias]).forEach(([key, value]) => {
-            data[association.foreignKey] = value;
-            delete data[alias];
-          });
-        }
-      }
+    // schema.forEach(
+    //   ({
+    //     name,
+    //     data_type,
+    //     not_null,
+    //     table,
+    //     forign_key,
+    //     attributes,
+    //     type,
+    //     options,
+    //   }) => {
+    //     modelAttributes[name] = {
+    //       type:
+    //         Sequelize.DataTypes[data_type.toUpperCase()] ||
+    //         Sequelize.DataTypes.STRING,
+    //       allowNull: !not_null,
+    //     };
 
-      for (const field in dropdownMappings) {
-        if (data[field] !== undefined && dropdownMappings[field][data[field]]) {
-          data[field] = dropdownMappings[field][data[field]];
-        }
-      }
+    //     if (table && forign_key && attributes) {
+    //       associations.push({
+    //         relatedTable: table,
+    //         foreignKey: name,
+    //         targetAttributes: attributes,
+    //       });
+    //     }
 
-      return data;
-    });
+    //     if (type === "dropdown" && Array.isArray(options)) {
+    //       dropdownMappings[name] = options.reduce((acc, option) => {
+    //         acc[option.code] = option.name;
+    //         return acc;
+    //       }, {});
+    //     }
+    //   }
+    // );
+
+    // const Model = sequelize.define(table_name, modelAttributes, {
+    //   freezeTableName: true,
+    //   timestamps: true,
+    //   paranoid: false,
+    //   underscored: true,
+    //   createdAt: "created_at",
+    //   updatedAt: "updated_at",
+    // });
+    // await Model.sync();
+
+    // const include = associations
+    //   .map(({ relatedTable, foreignKey, targetAttributes }) => {
+    //     const RelatedModel = require(`../models`)[relatedTable];
+    //     if (RelatedModel) {
+    //       Model.belongsTo(RelatedModel, {
+    //         foreignKey,
+    //         as: `${relatedTable}Details`,
+    //       });
+
+    //       return {
+    //         model: RelatedModel,
+    //         as: `${relatedTable}Details`,
+    //         attributes: targetAttributes || {
+    //           exclude: ["created_date", "modified_date"],
+    //         },
+    //       };
+    //     }
+    //   })
+    //   .filter(Boolean);
+
+    // const columnNames = schema.map((field) => field.name);
+
+    // const records = await Model.findAll({
+    //   attributes: columnNames,
+    //   include,
+    //   raw: true,
+    //   nest: true,
+    // });
+
+    // const transformedRows = records.map((record) => {
+    //   const data = { ...record };
+
+    //   for (const association of associations) {
+    //     const alias = `${association.relatedTable}Details`;
+    //     if (data[alias]) {
+    //       Object.entries(data[alias]).forEach(([key, value]) => {
+    //         data[association.foreignKey] = value;
+    //         delete data[alias];
+    //       });
+    //     }
+    //   }
+
+    //   for (const field in dropdownMappings) {
+    //     if (data[field] !== undefined && dropdownMappings[field][data[field]]) {
+    //       data[field] = dropdownMappings[field][data[field]];
+    //     }
+    //   }
+
+    //   return data;
+    // });
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Data");
 
     worksheet.columns = schema.map((field) => ({
-      header: field.label || field.name,
+      header: field.name,
       key: field.name,
       width: 20,
     }));
-    transformedRows.forEach((record) => worksheet.addRow(record));
+    // transformedRows.forEach((record) => worksheet.addRow(record));
 
     res.setHeader(
       "Content-Type",
