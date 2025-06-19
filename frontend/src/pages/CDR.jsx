@@ -413,7 +413,9 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                             "sys_status",
                             "field_status",
                             "field_submit_status",
-                            "supervisior_designation_id"
+                            "supervisior_designation_id",
+                            "field_done_by",
+                            "field_need_to_do_by"
                         ];
 
 
