@@ -4182,6 +4182,101 @@ exports.downloadExcelData = async (req, res) => {
   }
 };
 
+exports.bulkInsertData = async (req, res) => {
+    const { table_name, columnData, rowData } = req.body;
+
+    if (!table_name || !Array.isArray(columnData) || !Array.isArray(rowData)) {
+        return userSendResponse(res, 400, false, "table_name, columnData, and rowData are required.", null);
+    }
+
+    try {
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+        const schemaColumns = schema.map(f => f.name);
+
+        for (const col of columnData) {
+            if (!schemaColumns.includes(col)) {
+                return userSendResponse(res, 400, false, `Column "${col}" does not exist in table ${table_name}.`, null);
+            }
+        }
+
+        const modelAttributes = {};
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+        if (!modelAttributes.id) {
+            modelAttributes.id = {
+                type: Sequelize.DataTypes.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            };
+        }
+
+        if (!columnData.includes("ui_case_id")) {
+            columnData.push("ui_case_id");
+        }
+        if (!columnData.includes("pt_case_id")) {
+            columnData.push("pt_case_id");
+        }
+
+        if (!modelAttributes["ui_case_id"]) {
+            modelAttributes["ui_case_id"] = {
+                type: Sequelize.DataTypes.INTEGER,
+                allowNull: true,
+                defaultValue: null,
+            };
+        }
+        if (!modelAttributes["pt_case_id"]) {
+            modelAttributes["pt_case_id"] = {
+                type: Sequelize.DataTypes.INTEGER,
+                allowNull: true,
+                defaultValue: null,
+            };
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await Model.sync();
+
+        const insertRows = rowData.map(row => {
+            const obj = {};
+            for (const col of columnData) {
+                obj[col] = row[col];
+            }
+            return obj;
+        });
+
+        const t = await sequelize.transaction();
+        try {
+            await Model.bulkCreate(insertRows, { transaction: t });
+            await t.commit();
+            return userSendResponse(res, 200, true, "Data insert successfully.", null);
+        } catch (err) {
+            console.log(err,"query executed catch error")
+            await t.rollback();
+            return userSendResponse(res, 500, false, "Data insert failed. All changes reverted.", err.message);
+        }
+
+    } catch (error) {
+        console.log(error,"bulkInsertData catch error")
+        return userSendResponse(res, 500, false, "Internal server error.", error.message);
+    }
+};
+
 exports.fetchAndDownloadExcel = async (req, res) => {
   const { file_name } = req.body;
 
