@@ -380,6 +380,18 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },
+    crime_intelligence: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    crime_analytics: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
+    repos_case: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
     created_by: {
       type: DataTypes.INTEGER,
       allowNull: true

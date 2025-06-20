@@ -1695,7 +1695,8 @@ const NormalViewForm = ({
             "approvalItem": investigationAction?.approval_items,
             "approvedBy": userId,
             "remarks": investigationAction?.name + " Submitted By " + gettingDesignationName,
-            "module": template_name
+            "module": template_name,
+            designation_id: localStorage.getItem("designation_id") || null,
         }
 
         setLoading(true);    
