@@ -164,7 +164,7 @@ const Dashboard = () => {
     }
 
     const selectedTab = useRef(preSelectTabLabels);
-    const selectedActiveKey = useRef(preSelectTabLabels.key);
+    const selectedActiveKey = useRef(preSelectTabLabels?.key);
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
     const [submenuItems, setSubmenuItems] = useState([]);
     const [selectedSubKey, setSelectedSubKey] = useState("");
@@ -394,6 +394,11 @@ const Dashboard = () => {
 
 
     const getDashboardTiles = async (subMenuKey) => {
+
+        if(!selectedActiveKey?.current){
+            return;
+        }
+
         const userDesignationId = localStorage.getItem('designation_id');
         const userDesignationName = localStorage.getItem('designation_name');
         const userRole = localStorage.getItem('role_title');
