@@ -7,7 +7,7 @@ import TableView from "../components/table-view/TableView";
 import EditTableView from "../components/table-view/EditTableView";
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
-
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -12968,6 +12968,32 @@ const handleExtensionApprovalWithUpdate = async () => {
               </>
             )}
 
+          {filterValues?.field_io_name === "" ? (
+            <Button
+                variant="outlined"
+                startIcon={<VisibilityIcon />}
+                onClick={handleClear}
+                sx={{
+                  borderColor: '#1976d2',
+                  color: '#1976d2',
+                  backgroundColor: '#e3f2fd', 
+                  textTransform: 'none',
+                  height: 38,
+                  px: 2,
+                  borderRadius: 1,
+                  fontWeight: 500,
+                  '&:hover': {
+                    borderColor: '#1565c0',
+                    color: '#1565c0',
+                    backgroundColor: '#f5faff',
+                  },
+                }}
+              >
+                View All Cases
+              </Button>
+
+              ) : (
+                    
             <Button
                 variant="outlined"
                 startIcon={<PersonOffIcon />}
@@ -12991,6 +13017,8 @@ const handleExtensionApprovalWithUpdate = async () => {
             >
                 Unassigned IO
             </Button>
+            )}
+
             {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && (
                 <Button
                     onClick={() => getTemplate(table_name)}
@@ -13164,6 +13192,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 fromDateValue ||
                 toDateValue ||
                 Object.keys(filterValues).length > 0) && (
+                    filterValues?.field_io_name !== "" && (
                 <Typography
                   onClick={handleClear}
                   sx={{
@@ -13176,7 +13205,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 >
                   View All / Clear Filter
                 </Typography>
-              )}
+              ))}
             </Box>
         </Box>
 
