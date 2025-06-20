@@ -86,11 +86,65 @@ const Dashboard = () => {
     const handleVideoClose = () => setVideoOpen(false);
 
     const isCDR = localStorage.getItem("designation_name") === "CDR";
+
+    const userPermissions = localStorage.getItem("user_permissions") ? JSON.parse(localStorage.getItem("user_permissions")) : {};
+    const sortedTabs = [];
+
+    if(userPermissions?.[0]){
+        const permissionObj = userPermissions?.[0];
+
+        if(permissionObj?.ui_case === true){
+            sortedTabs.push(
+                { label: "UI Module", route: "/case/ui_case", key: "ui_case", name: "UI Case" }
+            )
+        }
+
+        if(permissionObj?.pt_case === true){
+            sortedTabs.push(
+                {   
+                    label: "Court Module", 
+                    route: "/case/pt_case", 
+                    key: "pt_case",
+                    options : [
+                        {label: "Trial Courts", route: "/case/pt_case", key: "pt_trail_case", actionKey: "pt_trail_case", name: "PT Case"},
+                        {label: "Other Courts", route: "/case/pt_case", key: "pt_other_case", actionKey: "pt_other_case", name: "PT Case"},
+                    ]
+                }
+            )
+        }
+
+        if(permissionObj?.crime_intelligence === true){
+            sortedTabs.push(
+                { label: "Crime Intelligence", route: "/case/ci_case", key: "crime_intelligence" }
+            )
+        }
+        
+        if(permissionObj?.enquiry === true){
+            sortedTabs.push(
+                { label: "Enquiries", route: "/case/enquiry", key: "eq_case", name: "Enquiries" }
+            )
+        }
+        
+        if(permissionObj?.crime_analytics === true){
+            sortedTabs.push(
+                { label: "Crime Analytics", route: "/iframe", key: "crime_analytics" }
+            )
+        }
+
+        if(permissionObj?.repos_case === true){
+            sortedTabs.push(
+                { label: "Orders & Repository", route: "/case/repos_case", key: "repos_case" }
+            )
+        }
+
+    }
+
+
     const tabLabels = isCDR 
         ? [{ label: "CDR", route: "/case/cdr_case", key: "ui_case" }] 
-        : allTabs;
+        : sortedTabs;
 
-    var preSelectTabLabels = tabLabels[0]
+    var preSelectTabLabels = tabLabels?.[0]
     
     if(tabActiveKey && (tabActiveKey !== "crime_intelligence" && tabActiveKey !== "crime_analytics" && tabActiveKey !== "repos_case")){
         
