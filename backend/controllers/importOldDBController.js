@@ -16,29 +16,47 @@ const typeMapping = {
     "TEXT": Sequelize.STRING,
 };
 
-// Helper to parse dates in DD-MM-YYYY or DD-MM-YYYY HH:mm:ss format
 function parseCustomDate(dateStr) {
-    if (!dateStr || typeof dateStr !== "string") return null;
-    // Match DD-MM-YYYY or DD-MM-YYYY HH:mm:ss
-    const match = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?$/);
-    if (match) {
-        const [, dd, mm, yyyy, hh = "00", min = "00", ss = "00"] = match;
-        // JS Date: months are 0-based
-        const date = new Date(
-            Number(yyyy),
-            Number(mm) - 1,
-            Number(dd),
-            Number(hh),
-            Number(min),
-            Number(ss)
-        );
-        // Check for invalid date
-        if (!isNaN(date.getTime())) return date;
+    if (dateStr == null || (typeof dateStr === "string" && dateStr.trim() === "")) return null;
+
+    // Handle Excel serial numbers (both number and numeric string)
+    if (!isNaN(dateStr) && dateStr !== "") {
+        const serial = Number(dateStr);
+        // Excel's epoch starts at 1899-12-30
+        const utc_days = Math.floor(serial - 25569);
+        const utc_value = utc_days * 86400; // seconds
+        const date_info = new Date(utc_value * 1000);
+
+        // Handle time portion
+        const fractional_day = serial - Math.floor(serial);
+        if (fractional_day > 0) {
+            const totalSeconds = Math.round(86400 * fractional_day);
+            date_info.setSeconds(date_info.getSeconds() + totalSeconds);
+        }
+        return isNaN(date_info.getTime()) ? null : date_info;
     }
-    // Try native Date parse as fallback
-    const d = new Date(dateStr);
-    return isNaN(d.getTime()) ? null : d;
+
+    if (typeof dateStr === "string") {
+        const match = dateStr.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2}):(\d{2}))?$/);
+        if (match) {
+            const [, dd, mm, yyyy, hh = "00", min = "00", ss = "00"] = match;
+            const date = new Date(
+                Number(yyyy),
+                Number(mm) - 1,
+                Number(dd),
+                Number(hh),
+                Number(min),
+                Number(ss)
+            );
+            return isNaN(date.getTime()) ? null : date;
+        }
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    return null;
 }
+
 
 exports.import_old_data = async (req, res) => {
     try {
@@ -102,12 +120,10 @@ exports.import_old_data = async (req, res) => {
                     if (Model.rawAttributes[key]) {
                         const attrType = Model.rawAttributes[key].type;
 
-                        if (
-                            attrType instanceof Sequelize.DATE
-                        ) {
-                            // Try to parse custom date formats
-                            const parsedDate = parseCustomDate(row[key]);
-                            record[key] = parsedDate;
+                        if (attrType instanceof Sequelize.DATE) {
+                            // Convert empty string or whitespace to null for date fields
+                            // record[key] = row[key] && row[key].trim && row[key].trim() !== "" ? parseCustomDate(row[key]) : null;
+                            continue
                         } else {
                             record[key] = row[key];
 
@@ -155,6 +171,21 @@ exports.import_old_data = async (req, res) => {
                                     record["field_referring_agency"] = null; // or handle as needed
                                 }
                             }
+                            if(key === "field_nature_of_disposl")
+                            {
+                                //get the id from the cid_nature_of_disposl table where the publickey is equal to the value in row[key]
+                                var query = `SELECT id FROM cid_nature_of_disposl WHERE publickey = :publickey`;
+                                var natureOfDisposl = await dbConfig.sequelize.query(query, {
+                                    replacements: { publickey: row[key] },
+                                    type: Sequelize.QueryTypes.SELECT
+                                });
+                                if (natureOfDisposl.length > 0) {
+                                    record["field_nature_of_disposl"] = natureOfDisposl[0].id;
+                                } else {
+                                    record["field_nature_of_disposl"] = null; // or handle as needed
+                                }
+                            }
+                            
                         }
                     }
                 }
@@ -222,12 +253,10 @@ exports.import_old_data = async (req, res) => {
                     if (ModelPT.rawAttributes[key]) {
                         const attrType = ModelPT.rawAttributes[key].type;
 
-                        if (
-                            attrType instanceof Sequelize.DATE
-                        ) {
-                            // Try to parse custom date formats
-                            const parsedDate = parseCustomDate(row[key]);
-                            record[key] = parsedDate;
+                        if (attrType instanceof Sequelize.DATE) {
+                            // Convert empty string or whitespace to null for date fields
+                            // record[key] = row[key] && row[key].trim && row[key].trim() !== "" ? parseCustomDate(row[key]) : null;
+                            continue
                         } else {
                             record[key] = row[key];
 
@@ -245,6 +274,20 @@ exports.import_old_data = async (req, res) => {
                                 } else {
                                     record["field_division"] = null;
                                     record["field_dept_unit"] = null;
+                                }
+                            }
+                            if(key === "field_nature_of_disposl")
+                            {
+                                //get the id from the cid_nature_of_disposl table where the publickey is equal to the value in row[key]
+                                var query = `SELECT id FROM cid_nature_of_disposl WHERE publickey = :publickey`;
+                                var natureOfDisposl = await dbConfig.sequelize.query(query, {
+                                    replacements: { publickey: row[key] },
+                                    type: Sequelize.QueryTypes.SELECT
+                                });
+                                if (natureOfDisposl.length > 0) {
+                                    record["field_nature_of_disposl"] = natureOfDisposl[0].id;
+                                } else {
+                                    record["field_nature_of_disposl"] = null; // or handle as needed
                                 }
                             }
                         }
@@ -314,12 +357,10 @@ exports.import_old_data = async (req, res) => {
                     if (ModelEQ.rawAttributes[key]) {
                         const attrType = ModelEQ.rawAttributes[key].type;
 
-                        if (
-                            attrType instanceof Sequelize.DATE
-                        ) {
-                            // Try to parse custom date formats
-                            const parsedDate = parseCustomDate(row[key]);
-                            record[key] = parsedDate;
+                        if (attrType instanceof Sequelize.DATE) {
+                            // Convert empty string or whitespace to null for date fields
+                            // record[key] = row[key] && row[key].trim && row[key].trim() !== "" ? parseCustomDate(row[key]) : null;
+                            continue
                         } else {
                             record[key] = row[key];
 

@@ -10,6 +10,7 @@ const {
   get_supervisor_id,
   set_user_hierarchy,
   fetch_dash_count,
+  mapUIandPT,
 } = require("../controllers/authController");
 const { validate_token } = require("../helper/validations");
 
@@ -26,5 +27,6 @@ router.post("/update_pin", update_pin);
 router.post("/get_supervisor_id", [validate_token], get_supervisor_id);
 router.post("/set_user_hierarchy", set_user_hierarchy);
 router.post("/fetch_dash_count" , [validate_token], fetch_dash_count);
+router.post("/mapUIandPT" , mapUIandPT);
 
 module.exports = router;

@@ -1863,6 +1863,59 @@ const fetch_dash_count = async (req, res) => {
         return res.status(500).json({ success: false, message: "Internal server error"+error });
     }
 };
+
+const mapUIandPT = async (req, res) => {
+    try {
+        const ui_cases = await sequelize.query(
+            `SELECT id, "field_cid_crime_no./enquiry_no" FROM cid_under_investigation;`,
+            { type: sequelize.QueryTypes.SELECT }
+        );
+
+        const pt_cases = await sequelize.query(
+            `SELECT id, "field_cid_crime_no./enquiry_no" FROM cid_pending_trial;`,
+            { type: sequelize.QueryTypes.SELECT }
+        );
+
+        // Build map of UI cases by their key
+        const ui_case_map = {};
+        ui_cases.forEach(ui => {
+            const key = ui["field_cid_crime_no./enquiry_no"]?.trim();
+            if (key) ui_case_map[key] = ui.id;
+        });
+
+        // For each PT case, update accordingly
+        for (const pt of pt_cases) {
+            const key = pt["field_cid_crime_no./enquiry_no"]?.trim();
+
+            if (key && ui_case_map[key]) {
+                // Match found → update ui_case_id
+                await sequelize.query(
+                    `UPDATE cid_pending_trial SET ui_case_id = :uiCaseId WHERE id = :ptCaseId;`,
+                    {
+                        replacements: { uiCaseId: ui_case_map[key], ptCaseId: pt.id },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            } else {
+                // No match → update pt_case_id with its own ID (or a fallback if needed)
+                await sequelize.query(
+                    `UPDATE cid_pending_trial SET pt_case_id = :ptCaseId WHERE id = :ptCaseId;`,
+                    {
+                        replacements: { ptCaseId: pt.id },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            }
+        }
+
+        return res.status(200).json({ success: true, message: "PT cases updated with UI or PT IDs as required" });
+    } catch (error) {
+        console.error("Error mapping UI and PT:", error.message);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+
   
 
 module.exports = {
@@ -1876,6 +1929,7 @@ module.exports = {
   get_supervisor_id,
   set_user_hierarchy,
   fetch_dash_count,
+  mapUIandPT
 };
 
 
