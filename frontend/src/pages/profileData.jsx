@@ -5,7 +5,7 @@ import DynamicForm from '../components/dynamic-form/DynamicForm';
 import TableView from "../components/table-view/TableView";
 import api from '../services/api';
 
-import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid } from "@mui/material";
+import { Box, Button, FormControl, InputAdornment, Typography, IconButton, Checkbox, Grid, Link } from "@mui/material";
 import TextFieldInput from '@mui/material/TextField';
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -41,6 +41,8 @@ import trash from "../Images/tableTrash.svg";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import * as XLSX from 'xlsx';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 
 const ProfileData = () => {
     const location = useLocation();
@@ -1482,6 +1484,233 @@ const ProfileData = () => {
     };
 
 
+    // start --- bulk upload functions
+    
+    const [bulkUploadShow, setBulkUploadShow] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+
+    const showBulkUploadScreen = ()=>{
+        setBulkUploadShow(true);
+        setSelectedFile(null);
+    }
+    
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
+
+    const downloadExcelHeader = async ()=>{
+        
+        if(!table_name){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        const downloadReport = {
+            "table_name": table_name,
+        }
+        setLoading(true);
+
+        try {
+            const downloadReportResponse = await api.post("templateData/downloadExcelData", downloadReport);
+            setLoading(false);
+
+            if (downloadReportResponse) {
+                const blob = new Blob([downloadReportResponse], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${table_name}_Report.xlsx`;
+
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                window.URL.revokeObjectURL(url);
+
+            } else {
+                const errorMessage = downloadReportResponse.message ? downloadReportResponse.message : "Failed to download report. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const checkUploadedFile = async ()=> {
+
+        if(!table_name){
+            toast.error('Template Not Found !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if (!selectedFile) {
+            toast.error('Please upload a file !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const allowedExtensions = ['.xlsx', '.xls'];
+        const fileName = selectedFile.name.toLowerCase();
+        const isValid = allowedExtensions.some(ext => fileName.endsWith(ext));
+
+        if (!isValid) {
+            toast.error('Invalid file format. Please upload a valid Excel file (.xls or .xlsx) !', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = async (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+
+            const headerColumn = XLSX.utils.sheet_to_json(worksheet, {
+                header: 1,
+            })[0];
+            
+            const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+            const rowExcelData = jsonData.map(({ __rowNum__, ...rest }) => ({...rest }));
+
+            if(rowExcelData.length === 0 || headerColumn.length === 0){
+                toast.error('Excel Data and Header is Empty', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return
+            }
+
+            var payloadData = {
+                "table_name" : table_name,
+                "rowData" : rowExcelData,
+                "columnData": headerColumn,
+            }
+
+            setLoading(true);
+            try {
+                const bulkInsertResponse = await api.post("templateData/bulkInsertData", payloadData);
+                setLoading(false);
+
+                if (bulkInsertResponse?.success) {
+                    toast.success(bulkInsertResponse.message || "Data Uploaded Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () => { loadTableData(paginationCount) }
+                    });
+
+                    setBulkUploadShow(false);
+                    setSelectedFile(null);
+
+                } else {
+                    toast.error(bulkInsertResponse.message || "Failed to Upload Data.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+
+            } catch (error) {
+                setLoading(false);
+                if (error && error.response && error.response['data']) {
+                    toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            }
+
+        };
+
+        reader.readAsArrayBuffer(selectedFile);
+    }
+
+    // end --- bulk upload functions
+
+
     return (
         <Box p={2} inert={loading ? true : false}>
             <>
@@ -1588,6 +1817,16 @@ const ProfileData = () => {
                                 Download Report
                             </Button>
                         }
+
+                        <Button
+                            variant="contained"
+                            color="success"
+                            size="large"
+                            sx={{ height: "38px" }}
+                            onClick={showBulkUploadScreen}
+                        >
+                            Bulk Upload
+                        </Button>
 
                     </Box>
                 </Box>
@@ -1875,6 +2114,81 @@ const ProfileData = () => {
                     </DialogActions>
                 </Dialog>
             )}
+
+            {
+                bulkUploadShow &&
+
+                <Dialog
+                    open={bulkUploadShow}
+                    onClose={()=>setBulkUploadShow(false)}
+                    maxWidth="sm"
+                    fullWidth
+                    PaperProps={{ sx: { borderRadius: 3, p: 2} }}
+                >
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <DialogTitle sx={{ fontWeight: 600, fontSize: '20px', pb: 0  }}>Excel Upload</DialogTitle>
+                        <IconButton onClick={()=>setBulkUploadShow(false)}>
+                            <CloseIcon />
+                        </IconButton>
+                    </Box>
+
+                    <DialogContent>
+                        <Typography sx={{ mb: 2 }}>
+                            Please check Excel header before upload. If needed,
+                            <Link onClick={downloadExcelHeader} underline="hover" sx={{cursor: 'pointer'}}>
+                                Download here
+                            </Link>
+                        </Typography>
+
+                        <Box
+                            component="label"
+                            htmlFor="excel-upload"
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexDirection: 'column',
+                                border: '2px dashed #1976d2',
+                                p: 5,
+                                textAlign: 'center',
+                                borderRadius: 2,
+                                backgroundColor: '#f9f9f9',
+                                cursor: 'pointer',
+                                '&:hover': { backgroundColor: '#f0f0f0' },
+                            }}
+                        >
+                            <UploadFileIcon sx={{ fontSize: 48, color: '#1976d2', mb: 1 }} />
+                            <Typography variant="h6" fontWeight={500} sx={{ color: '#555' }}>
+                                Click here to upload Excel file
+                            </Typography>
+                            <input
+                                type="file"
+                                accept=".xlsx, .xls"
+                                id="excel-upload"
+                                hidden
+                                onChange={handleFileChange}
+                            />
+                        </Box>
+
+                        {selectedFile && (
+                            <Box sx={{display: 'flex', justifyContent: 'space-between'}}>
+                                <Typography mt={2} color="blue">
+                                    Selected File: {selectedFile.name}
+                                </Typography>
+                                <Button
+                                    variant="contained"
+                                    color="success"
+                                    sx={{ mt: 2, textTransform: 'uppercase', fontWeight: 500 }}
+                                    startIcon={<UploadFileIcon />}
+                                    onClick={checkUploadedFile}
+                                >
+                                    Upload
+                                </Button>
+                            </Box>
+                        )}
+                    </DialogContent>
+                </Dialog>
+            }
 
         </Box>
     )

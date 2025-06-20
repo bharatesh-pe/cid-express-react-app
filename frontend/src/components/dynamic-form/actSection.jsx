@@ -27,33 +27,33 @@ const ActTable = ({ formConfig, formData, tableRow, tableFunc, showOrderCopy, re
     
     const roleTitle = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim());
 
-    if (roleTitle === "admin organization") {
-        if (!actField.ao_field) {
-            actField.disabled = true;
-            if (actField.required) {
-                actField.required = false;
-            }
-        }
-        if (!sectionField.ao_field) {
-            sectionField.disabled = true;
-            if (sectionField.required) {
-                sectionField.required = false;
-            }
-        }
-    } else {
-        if (actField.ao_field) {
-            actField.disabled = true;
-            if (actField.required) {
-                actField.required = false;
-            }
-        }
-        if (sectionField.ao_field) {
-            sectionField.disabled = true;
-            if (sectionField.required) {
-                sectionField.required = false;
-            }
-        }
-    }
+    // if (roleTitle === "admin organization") {
+    //     if (!actField.ao_field) {
+    //         actField.disabled = true;
+    //         if (actField.required) {
+    //             actField.required = false;
+    //         }
+    //     }
+    //     if (!sectionField.ao_field) {
+    //         sectionField.disabled = true;
+    //         if (sectionField.required) {
+    //             sectionField.required = false;
+    //         }
+    //     }
+    // } else {
+    //     if (actField.ao_field) {
+    //         actField.disabled = true;
+    //         if (actField.required) {
+    //             actField.required = false;
+    //         }
+    //     }
+    //     if (sectionField.ao_field) {
+    //         sectionField.disabled = true;
+    //         if (sectionField.required) {
+    //             sectionField.required = false;
+    //         }
+    //     }
+    // }
 
     const handleActChange = async (index, selectedAct) => {
         const updatedRows = [...tableRow];
