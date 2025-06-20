@@ -516,6 +516,12 @@ code {
     padding: 4px 14px !important;
 }
 
+.submissionRejected {
+    background-color: #fee2e2 !important;
+    color: #b91c1c !important;
+    padding: 4px 14px !important;
+}
+
 .investigationStepperTitle{
     font-size: 14px;
     font-weight: 500;
