@@ -1861,6 +1861,7 @@ exports.updateFieldsWithApproval = async (req, res) => {
         remarks,
         module,
         Referenceid,
+        designation_id,
     } = req.body;
 
     const userId = req.user?.user_id || null;
@@ -1869,6 +1870,7 @@ exports.updateFieldsWithApproval = async (req, res) => {
         return userSendResponse(res, 400, false, "table_name, id, and fields are required.", null);
     }
 
+    let updatedRecord;
     const t = await dbConfig.sequelize.transaction();
     try {
         // Get template and schema
@@ -1914,9 +1916,8 @@ exports.updateFieldsWithApproval = async (req, res) => {
             return userSendResponse(res, 404, false, "No record found to update.", null);
         }
 
-        // Create approval entry
         if (approvalItem && approvedBy && approvalDate) {
-            await UiCaseApproval.create({
+          const newApproval =  await UiCaseApproval.create({
                 approval_item: approvalItem,
                 approved_by: approvedBy,
                 approval_date: approvalDate,
@@ -1927,11 +1928,26 @@ exports.updateFieldsWithApproval = async (req, res) => {
                 reference_id: Referenceid || id,
                 created_by: userId,
             }, { transaction: t });
+
+            await System_Alerts.create(
+              {
+              approval_id: newApproval.approval_id,
+              reference_id: id || affectedRows.id,
+              alert_type: "Approval",
+              alert_message: newApproval.remarks,
+              created_by: userId,
+              created_by_designation_id: designation_id || null,
+              created_by_division_id: null,
+              send_to: fields.field_io_name || null,
+              },
+              { transaction: t }
+            );
         }
 
-        await t.commit();
+        // Fetch the updated record inside the transaction before commit
+        updatedRecord = await Model.findOne({ where: { id }, transaction: t });
 
-        const updatedRecord = await Model.findOne({ where: { id } });
+        await t.commit();
 
         return userSendResponse(
             res,
@@ -1941,7 +1957,7 @@ exports.updateFieldsWithApproval = async (req, res) => {
             updatedRecord
         );
     } catch (error) {
-        if (t) await t.rollback();
+        if (t && !t.finished) await t.rollback();
         console.error("Error in updateFieldsWithApproval:", error);
         return userSendResponse(res, 500, false, "Internal server error.", error);
     }
