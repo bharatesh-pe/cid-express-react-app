@@ -20,8 +20,8 @@ const sendSMS = async ({ message, mobile , template_id }) => {
 
   const payload = new URLSearchParams({
     username: SMS_USERNAME.trim(),
-    password: SMS_PASSWORD.trim(), 
-    // password: md5Password, 
+    password: md5Password, // use MD5 hashed password
+    // password: SMS_PASSWORD.trim(),
     senderid: SMS_SENDERID.trim(),
     content: message.trim(),
     smsservicetype: 'otpmsg',
