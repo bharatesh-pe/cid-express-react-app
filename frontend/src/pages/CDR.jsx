@@ -1390,24 +1390,13 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                 }
                 const userDesignationId = (localStorage.getItem("designation_name") || "").toUpperCase();
 
-                if (normalizedRole === "investigation officer") {
-                    // IO: Only show 3 fields
-                    const filteredFields = getCaseIdFields.filter(
-                        f =>
-                            f.name === "field_to_date" ||
-                            f.name === "field_from_date" ||
-                            f.name === "field_mobile_no"
-                    );
-                    setOptionFormTemplateData(filteredFields);
-                } else if (userDesignationId && userDesignationId.toUpperCase() === "SP CCD") {
-                    // SPCCD: Only show status update and upload cdr copy fields
-                    const filteredFields = getCaseIdFields.filter(
-                        f =>
-                            f.name === "field_upload_the_cdr_copy" ||
-                            f.name === "field_status_update"
-                    );
-                    setOptionFormTemplateData(filteredFields);
-                } else {
+                const filteredFields = getCaseIdFields.filter(
+                    f =>
+                        f.name === "field_to_date" ||
+                        f.name === "field_from_date" ||
+                        f.name === "field_mobile_no"
+                );
+                setOptionFormTemplateData(filteredFields);
                     setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
                 }
 
