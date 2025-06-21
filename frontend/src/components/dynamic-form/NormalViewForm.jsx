@@ -50,7 +50,7 @@ import dayjs from 'dayjs';
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -111,6 +111,13 @@ const NormalViewForm = ({
         setReadonlyTemplate((prev)=>!prev);
         setEditDataTemplate((prev)=>!prev);
     }
+
+    useEffect(()=>{
+        if(table_row_id && (reloadForm !== null || reloadForm !== undefined)){
+            setReadonlyTemplate(true);
+            setEditDataTemplate(false);  
+        }
+    },[reloadForm]);
 
   const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
 
