@@ -57,6 +57,7 @@ const LokayuktaView = () => {
     },[]);
 
     const [loading, setLoading] = useState(false);
+    const [reloadForm, setReloadForm] = useState(false);
     
     const [activeSidebar, setActiveSidebar] = useState(null);
 
@@ -214,8 +215,8 @@ const LokayuktaView = () => {
                     setCaseFieldStepperArray((element?.is_approval && element?.approval_steps) ? JSON.parse(element.approval_steps) : []);
 
                     if(approvedStages.includes(userRole)){
-                        setFormEditFlag(true);
-                        setFormReadFlag(false);
+                        setFormEditFlag(false);
+                        setFormReadFlag(true);
                         setOverAllReadonlyCases(false);
                     }else{
                         setFormEditFlag(false);
@@ -223,8 +224,8 @@ const LokayuktaView = () => {
                         setOverAllReadonlyCases(true);
                     }
                 }else if(initialRowData?.["field_approval_done_by"] === "DIG"){
-                    setFormEditFlag(true);
-                    setFormReadFlag(false);
+                    setFormEditFlag(false);
+                    setFormReadFlag(true);
                     setOverAllReadonlyCases(false);
                 }
 
@@ -1841,10 +1842,16 @@ const LokayuktaView = () => {
                     position: "top-right",
                     autoClose: 3000,
                     className: "toast-success",
-                    onOpen: () => { getTableData(table_name, reOpenAddCase); }
                 });
                 setApprovalSource(null);
                 setRowValueId({});
+
+                setFormOpen(false);
+                setShowApprovalModal(false);
+                setShowCaseApprovalModal(false);
+
+                setReloadForm((prev)=>!prev);
+
             } else {
                 toast.error(response.message || "Failed to update case.", {
                     position: "top-right",
@@ -2592,6 +2599,7 @@ const LokayuktaView = () => {
                             investigationAction={caseAction}
                             reloadApproval={reloadApproval}
                             showCaseActionBtn={showCaseActionBtn}
+                            reloadForm={reloadForm}
                         />
                     </Box>
                     :
