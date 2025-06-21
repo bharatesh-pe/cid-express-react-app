@@ -13014,7 +13014,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                     
                   <Button
                   variant="outlined"
-                  startIcon={<NotApprovedIcon />}
+                  startIcon={<PersonOffIcon />}
                   sx={{
                     borderColor: '#0B3C91',
                     backgroundColor: '#E3EAFD',
