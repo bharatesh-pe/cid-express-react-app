@@ -8,6 +8,7 @@ import EditTableView from "../components/table-view/EditTableView";
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import NotApprovedIcon from '@mui/icons-material/NotInterested';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -12788,13 +12789,30 @@ const handleExtensionApprovalWithUpdate = async () => {
         setShowFileAttachments(true);
     }
 
-    const setUnAssignedIo = ()=>{
-        setFilterValues(prev => ({
-            ...(prev || {}),
-            field_io_name: ""
-        }));
-        setForceTableLoad((prev) => !prev);
-    }
+    const clearAllFilters = () => {
+      setFilterValues({});
+      setFromDateValue(null);
+      setToDateValue(null);
+      setSearchValue("");
+    };
+
+    const setUnAssignedIo = () => {
+      clearAllFilters();
+      setFilterValues(prev => ({
+        ...(prev || {}),
+        field_io_name: ""
+      }));
+      setForceTableLoad((prev) => !prev);
+    };
+
+    const setDigNotApproved = () => {
+      clearAllFilters();
+      setFilterValues(prev => ({
+        ...(prev || {}),
+        field_approval_done_by: "SP"
+      }));
+      setForceTableLoad(prev => !prev);
+    };
 
   return (
     <Box p={2} inert={loading ? true : false}>
@@ -12960,45 +12978,95 @@ const handleExtensionApprovalWithUpdate = async () => {
                   </svg>
                 }
                 onClick={() => {
-                  handleConfirmDemerge();
-                }}
-              >
-                De-Merge
-              </Button>
-              </>
-            )}
+                    handleConfirmDemerge();
+                  }}
+                  >
+                  De-Merge
+                  </Button>
+                  </>
+                )}
+                
+                {filterValues?.field_approval_done_by === "SP"? (
+                <Button
+                  variant="outlined"
+                  startIcon={<VisibilityIcon />}
+                  onClick={handleClear}
+                  sx={{
+                    borderColor: '#00931D',
+                    color: '#00931D',
+                    backgroundColor: '#E6FFEB', 
+                    textTransform: 'none',
+                    height: 38,
+                    px: 2,
+                    borderRadius: 1,
+                    fontWeight: 500,
+                    '&:hover': {
+                    borderColor: '#00931D',
+                    color: '#00931D',
+                    backgroundColor: '#E6FFEB',
+                    },
+                  }}
+                  >
+                  View All Cases
+                  </Button>
 
-          {filterValues?.field_io_name === "" ? (
-            <Button
-                variant="outlined"
-                startIcon={<VisibilityIcon />}
-                onClick={handleClear}
-                sx={{
-                  borderColor: '#1976d2',
-                  color: '#1976d2',
-                  backgroundColor: '#e3f2fd', 
-                  textTransform: 'none',
-                  height: 38,
-                  px: 2,
-                  borderRadius: 1,
-                  fontWeight: 500,
-                  '&:hover': {
-                    borderColor: '#1565c0',
-                    color: '#1565c0',
-                    backgroundColor: '#f5faff',
-                  },
-                }}
-              >
-                View All Cases
-              </Button>
-
-              ) : (
+                  ) : (
                     
-            <Button
-                variant="outlined"
-                startIcon={<PersonOffIcon />}
-                onClick={setUnAssignedIo}
-                sx={{
+                  <Button
+                  variant="outlined"
+                  startIcon={<NotApprovedIcon />}
+                  sx={{
+                    borderColor: '#0B3C91',
+                    backgroundColor: '#E3EAFD',
+                    color: '#0B3C91',
+                    height: 38,
+                    fontWeight: 500,
+                    textTransform: 'none',
+                    textTransform: 'uppercase',
+                    ml: 2,
+                    '&:hover': {
+                    borderColor: '#1816a3d0',
+                    backgroundColor: '#D0D8F6',
+                    color: '#1816a3d0'
+                    }
+                  }}
+                  onClick={setDigNotApproved}
+                  >
+                  DIG - UnAssigned IO
+                  </Button>
+                  )}
+
+                {filterValues?.field_io_name === "" ? (
+                <Button
+                  variant="outlined"
+                  startIcon={<VisibilityIcon />}
+                  onClick={handleClear}
+                  sx={{
+                    borderColor: '#00931D',
+                    color: '#00931D',
+                    backgroundColor: '#E6FFEB', 
+                    textTransform: 'none',
+                    height: 38,
+                    px: 2,
+                    borderRadius: 1,
+                    fontWeight: 500,
+                    '&:hover': {
+                    borderColor: '#00931D',
+                    color: '#00931D',
+                    backgroundColor: '#E6FFEB',
+                    },
+                  }} 
+                  >
+                  View All Cases
+                  </Button>
+
+                  ) : (
+                    
+                <Button
+                  variant="outlined"
+                  startIcon={<PersonOffIcon />}
+                  onClick={setUnAssignedIo}
+                  sx={{
                     borderColor: '#eb2f06',
                     backgroundColor: '#FFF5F5',
                     color: '#eb2f06',
@@ -13006,66 +13074,66 @@ const handleExtensionApprovalWithUpdate = async () => {
                     fontWeight: 500,
                     textTransform: 'uppercase',
                     '&:hover': {
-                        borderColor: '#e55039',
-                        backgroundColor: '#FFE8E8',
-                        color: '#e55039'
+                      borderColor: '#e55039',
+                      backgroundColor: '#FFE8E8',
+                      color: '#e55039'
                     },
                     '& .MuiSvgIcon-root': {
-                        color: '#eb2f06'
+                      color: '#eb2f06'
                     }
-                }}
-            >
-                Unassigned IO
-            </Button>
-            )}
+                  }}
+                >
+                  Unassigned IO
+                </Button>
+                )}
 
-            {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && (
-                <Button
+                {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && (
+                  <Button
                     onClick={() => getTemplate(table_name)}
                     className="blueButton"
                     startIcon={
-                        <AddIcon
-                            sx={{
-                                border: "1.3px solid #FFFFFF",
-                                borderRadius: "50%",
-                                background:"#4D4AF3 !important"
-                            }}
-                        />
+                      <AddIcon
+                        sx={{
+                          border: "1.3px solid #FFFFFF",
+                          borderRadius: "50%",
+                          background:"#4D4AF3 !important"
+                        }}
+                      />
                     }
                     variant="contained"
-                >
+                  >
                     Add New
-                </Button>
-            )}
-            {localStorage.getItem("authAdmin") === "false" && (
-              <Button
-                onClick={downloadReportModal}
-                variant="contained"
-                sx={{
-                  background: "#32D583",
-                  color: "#101828",
-                  textTransform: "none",
-                  height: "38px",
-                }}
-              >
-                Download Report
-              </Button>
-            )}
-          </Box>
-        </Box>
+                  </Button>
+                )}
+                {localStorage.getItem("authAdmin") === "false" && (
+                  <Button
+                  onClick={downloadReportModal}
+                  variant="contained"
+                  sx={{
+                    background: "#32D583",
+                    color: "#101828",
+                    textTransform: "none",
+                    height: "38px",
+                  }}
+                  >
+                  Download Report
+                  </Button>
+                )}
+                </Box>
+              </Box>
 
-        <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: 'start' }}>
-          <Box className="parentFilterTabs">
-            {/* <Box
-              onClick={() => {
-                setSysSattus("all");
-                setPaginationCount(1);
-              }}
-              id="filterAll"
-              className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
-            >
-              All
-            </Box> */}
+              <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: 'start' }}>
+                <Box className="parentFilterTabs">
+                {/* <Box
+                  onClick={() => {
+                  setSysSattus("all");
+                  setPaginationCount(1);
+                  }}
+                  id="filterAll"
+                  className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
+                >
+                  All
+                </Box> */}
             <Box
               onClick={() => {
                 setSysSattus("ui_case");
@@ -13192,7 +13260,7 @@ const handleExtensionApprovalWithUpdate = async () => {
                 fromDateValue ||
                 toDateValue ||
                 Object.keys(filterValues).length > 0) && (
-                    filterValues?.field_io_name !== "" && (
+                    filterValues?.field_io_name !== "" || filterValues?.field_approval_done_by === "SP" && (
                 <Typography
                   onClick={handleClear}
                   sx={{
