@@ -163,8 +163,8 @@ const Dashboard = () => {
         });
     }
 
-    const selectedTab = useRef(preSelectTabLabels);
-    const selectedActiveKey = useRef(preSelectTabLabels?.key);
+    const selectedTab = useRef(preSelectTabLabels?.options ? preSelectTabLabels?.options?.[0] : preSelectTabLabels);
+    const selectedActiveKey = useRef(preSelectTabLabels?.options ? preSelectTabLabels?.options?.[0]?.key : preSelectTabLabels?.key);
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
     const [submenuItems, setSubmenuItems] = useState([]);
     const [selectedSubKey, setSelectedSubKey] = useState("");
