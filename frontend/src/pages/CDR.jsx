@@ -1390,6 +1390,19 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                 }
                 const userDesignationId = (localStorage.getItem("designation_name") || "").toUpperCase();
 
+                // if (normalizedRole === "investigation officer") {
+                //     // IO: Only show 3 fields
+                //     const filteredFields = getCaseIdFields.filter(
+                //         f =>
+                //             f.name === "field_to_date" ||
+                //             f.name === "field_from_date" ||
+                //             f.name === "field_mobile_no"
+                //     );
+                //     setOptionFormTemplateData(filteredFields);
+                // }  else {
+                //     setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
+                // }
+
                 const filteredFields = getCaseIdFields.filter(
                     f =>
                         f.name === "field_to_date" ||
@@ -1397,9 +1410,6 @@ const CDR = ({ templateName, headerDetails, rowId, options, selectedRowData, bac
                         f.name === "field_mobile_no"
                 );
                 setOptionFormTemplateData(filteredFields);
-                    setOptionFormTemplateData(getCaseIdFields ? getCaseIdFields : []);
-                }
-
                 if (
                     viewTemplateResponse.data.no_of_sections &&
                     viewTemplateResponse.data.no_of_sections > 0
