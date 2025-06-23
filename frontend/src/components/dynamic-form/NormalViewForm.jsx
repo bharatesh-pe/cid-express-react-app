@@ -113,7 +113,7 @@ const NormalViewForm = ({
     }
 
     useEffect(()=>{
-        if(table_row_id && (reloadForm !== null || reloadForm !== undefined)){
+        if(table_row_id && (reloadForm !== null && reloadForm !== undefined)){
             setReadonlyTemplate(true);
             setEditDataTemplate(false);  
         }
@@ -1944,6 +1944,7 @@ const NormalViewForm = ({
             
                     {
                         !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" && table_name !== "cid_eq_case_enquiry_order_copy" &&
+                        table_name !== "cid_eq_case_extension_form" &&
                         <Button
                             variant="contained" color="success"
                             onClick={() =>{
