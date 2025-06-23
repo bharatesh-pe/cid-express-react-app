@@ -2870,7 +2870,7 @@ const LokayuktaView = () => {
                                 }
 
                                 {
-                                    !approvalDone &&
+                                    userPermissions && userPermissions?.[0]?.['bulk_upload'] === true && !approvalDone &&
                                     <Button
                                         variant="contained"
                                         color="success"
