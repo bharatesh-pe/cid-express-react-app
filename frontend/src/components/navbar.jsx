@@ -183,6 +183,69 @@ export default function Navbar({ unreadNotificationCount }) {
         return formattedDate;
     };
 
+    const readAllAlerts = async ()=>{
+
+        var alertsPayload = {
+            "user_designation_id" : localStorage.getItem("designation_id") ? localStorage.getItem("designation_id") : '',
+            "user_division_id" :  localStorage.getItem("division_id") ? localStorage.getItem("division_id") : '',
+        }
+
+        setLoading(true);
+        try {
+            const readAllAlertsResponse = await api.post("/ui_approval/mark_alert_notification_read", alertsPayload);
+
+            setLoading(false);
+
+            if (readAllAlertsResponse && readAllAlertsResponse.success) { 
+
+                toast.success(readAllAlertsResponse.message ? readAllAlertsResponse.message : 'Read Status Updated', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                getOverallAlertData();
+                return;
+                
+            } else {
+                const errorMessage = readAllAlertsResponse.message ? readAllAlertsResponse.message : "Failed to add approval. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response['data']) {
+                toast.error(error.response['data'].message ? error.response['data'].message : 'Please Try Again !', {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+
+            }
+        }
+
+    }
+
     return (
         <>
         {/* <AppBar
@@ -305,6 +368,7 @@ export default function Navbar({ unreadNotificationCount }) {
                                             borderColor: '#1565c0',
                                         },
                                     }}
+                                    onClick={readAllAlerts}
                                 >
                                     Mark All as Read
                                 </Button>

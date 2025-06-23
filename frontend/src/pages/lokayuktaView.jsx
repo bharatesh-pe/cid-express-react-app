@@ -1894,6 +1894,8 @@ const LokayuktaView = () => {
                 setShowApprovalModal(false);
                 setShowCaseApprovalModal(false);
 
+                setInitialRowData((prev) => ({ ...prev, ...normalData }));
+                editedForm.current = false;
                 setReloadForm((prev)=>!prev);
 
             } else {

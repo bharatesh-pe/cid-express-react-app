@@ -450,6 +450,79 @@ exports.get_alert_notification = async (req, res) => {
   }
 };
 
+    exports.mark_alert_notification_read = async (req, res) => {
+        try {
+            const { user_id } = req.user;
+            const { user_designation_id, alert_ids = [] } = req.body;
+
+            const subordinates = await UsersHierarchyNew.findAll({
+                where: { supervisor_designation_id: user_designation_id },
+                attributes: ["officer_designation_id"],
+                raw: true,
+            });
+
+            const officer_designation_ids = subordinates.map(
+                (d) => d.officer_designation_id
+            );
+
+            const alertNotifications = await System_Alerts.findAll({
+                where: {
+                    [Op.or]: [
+                        { created_by_designation_id: { [Op.in]: officer_designation_ids } },
+                        { send_to: user_id },
+                    ],
+                },
+                order: [["created_at", "DESC"]],
+            });
+
+            if (!Array.isArray(alertNotifications) || alertNotifications.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Alerts Not Found",
+                });
+            }
+
+            await Promise.all(
+                alertNotifications.map(async (system_alert_id) => {
+                    const [viewStatus] = await AlertViewStatus.findOrCreate({
+                        where: {
+                            system_alert_id : system_alert_id.system_alert_id,
+                            viewed_by: user_id,
+                            viewed_by_designation_id: user_designation_id,
+                        },
+                        defaults: {
+                            view_status: true,
+                        },
+                    });
+
+                    if (!viewStatus.view_status) {
+                        await AlertViewStatus.update(
+                            { view_status: true },
+                            {
+                                where: {
+                                    system_alert_id : system_alert_id.system_alert_id,
+                                    viewed_by: user_id,
+                                    viewed_by_designation_id: user_designation_id,
+                                },
+                            }
+                        );
+                    }
+                })
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "Alert(s) marked as read",
+            });
+        } catch (error) {
+            console.error("Error marking alert notifications as read:", error);
+            return res.status(500).json({
+                message: "Failed to mark alert notifications as read",
+                error: error.message,
+            });
+        }
+    };
+
 exports.get_case_approval_by_id = async (req, res) => {
   try {
     const { user_id } = req.user;
