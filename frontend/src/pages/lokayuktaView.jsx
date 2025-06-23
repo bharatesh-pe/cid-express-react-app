@@ -1351,9 +1351,25 @@ const LokayuktaView = () => {
                 }
             }
         });
-
-        normalData.sys_status = module ? module : "ui_case";
-
+        if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
+            normalData["sys_status"] = data?.field_status || "eq_case";
+            if (data?.field_status && rowData?.id) {
+            try {
+                await api.post("/templateData/updateDataWithApprovalToTemplates", {
+                table_name: "cid_enquiry",
+                data: JSON.stringify({ sys_status: data.field_status }),
+                id: String(rowData.id),
+                transaction_id: `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                user_designation_id: localStorage.getItem("designation_id") || null,
+                others_data: JSON.stringify({}),
+                });
+            } catch (err) {
+                console.error("Failed to update cid_enquiry sys_status", err);
+            }
+            }
+        }else {
+            normalData.sys_status = module ? module : "ui_case";
+        }
         var ui_case_id = rowData?.id;
         var pt_case_id = rowData?.pt_case_id;
 
@@ -1389,7 +1405,11 @@ const LokayuktaView = () => {
                     progress: undefined,
                     className: "toast-success",
                     onOpen: () => {
-                        getTableData(activeSidebar, formOpen);
+                        if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
+                            navigate("/case/enquiry");
+                        } else {
+                            getTableData(activeSidebar, formOpen);
+                        }
                     }
                 });
             } else {
@@ -1639,7 +1659,25 @@ const LokayuktaView = () => {
             }
         });
 
-        normalData.sys_status = module ? module : "ui_case";
+        if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
+            normalData["sys_status"] = data?.field_status || "eq_case";
+            if (data?.field_status && rowData?.id) {
+            try {
+                await api.post("/templateData/updateDataWithApprovalToTemplates", {
+                table_name: "cid_enquiry",
+                data: JSON.stringify({ sys_status: data.field_status }),
+                id: String(rowData.id),
+                transaction_id: `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+                user_designation_id: localStorage.getItem("designation_id") || null,
+                others_data: JSON.stringify({}),
+                });
+            } catch (err) {
+                console.error("Failed to update cid_enquiry sys_status", err);
+            }
+            }
+        }else {
+            normalData.sys_status = module ? module : "ui_case";
+        }
         
         var ui_case_id = rowData?.id;
         var pt_case_id = rowData?.pt_case_id;
@@ -1674,7 +1712,13 @@ const LokayuktaView = () => {
                     draggable: true,
                     progress: undefined,
                     className: "toast-success",
-                    onOpen: () => { getTableData(activeSidebar, reOpenAddCase) }
+                    onOpen: () => {
+                        if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
+                            navigate("/case/enquiry");
+                        } else {
+                            getTableData(activeSidebar, formOpen);
+                        }
+                    }
                 });
                 setRowValueId({});
             } else {

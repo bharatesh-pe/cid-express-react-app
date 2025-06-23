@@ -12814,7 +12814,11 @@ const handleExtensionApprovalWithUpdate = async () => {
       setForceTableLoad(prev => !prev);
     };
 
-  return (
+const rawRoleTitle = localStorage.getItem("role_title") || "";
+const cleanedRoleTitle = rawRoleTitle.replace(/^"(.*)"$/, "$1");
+const roleTitle = cleanedRoleTitle.toLowerCase().trim();
+
+return (
     <Box p={2} inert={loading ? true : false}>
       <>
         <Box
@@ -12979,161 +12983,163 @@ const handleExtensionApprovalWithUpdate = async () => {
                 }
                 onClick={() => {
                     handleConfirmDemerge();
-                  }}
-                  >
-                  De-Merge
-                  </Button>
-                  </>
-                )}
-                
-                {filterValues?.field_approval_done_by === "SP"? (
-                <Button
-                  variant="outlined"
-                  startIcon={<VisibilityIcon />}
-                  onClick={handleClear}
-                  sx={{
-                    borderColor: '#00931D',
-                    color: '#00931D',
-                    backgroundColor: '#E6FFEB', 
-                    textTransform: 'none',
-                    height: 38,
-                    px: 2,
-                    borderRadius: 1,
-                    fontWeight: 500,
-                    '&:hover': {
-                    borderColor: '#00931D',
-                    color: '#00931D',
-                    backgroundColor: '#E6FFEB',
-                    },
-                  }}
-                  >
-                  View All Cases
-                  </Button>
-
-                  ) : (
-                    
-                  <Button
-                  variant="outlined"
-                  startIcon={<PersonOffIcon />}
-                  sx={{
-                    borderColor: '#0B3C91',
-                    backgroundColor: '#E3EAFD',
-                    color: '#0B3C91',
-                    height: 38,
-                    fontWeight: 500,
-                    textTransform: 'none',
-                    textTransform: 'uppercase',
-                    ml: 2,
-                    '&:hover': {
-                    borderColor: '#1816a3d0',
-                    backgroundColor: '#D0D8F6',
-                    color: '#1816a3d0'
-                    }
-                  }}
-                  onClick={setDigNotApproved}
-                  >
-                  DIG - UnAssigned IO
-                  </Button>
+                    }}
+                    >
+                    De-Merge
+                    </Button>
+                    </>
                   )}
 
-                {filterValues?.field_io_name === "" ? (
-                <Button
-                  variant="outlined"
-                  startIcon={<VisibilityIcon />}
-                  onClick={handleClear}
-                  sx={{
-                    borderColor: '#00931D',
-                    color: '#00931D',
-                    backgroundColor: '#E6FFEB', 
-                    textTransform: 'none',
-                    height: 38,
-                    px: 2,
-                    borderRadius: 1,
-                    fontWeight: 500,
-                    '&:hover': {
-                    borderColor: '#00931D',
-                    color: '#00931D',
-                    backgroundColor: '#E6FFEB',
-                    },
-                  }} 
-                  >
-                  View All Cases
-                  </Button>
+                      {filterValues?.field_approval_done_by === "SP" ? (
+                      <Button
+                        variant="outlined"
+                        startIcon={<VisibilityIcon />}
+                        onClick={handleClear}
+                        sx={{
+                        borderColor: '#00931D',
+                        color: '#00931D',
+                        backgroundColor: '#E6FFEB', 
+                        textTransform: 'none',
+                        height: 38,
+                        px: 2,
+                        borderRadius: 1,
+                        fontWeight: 500,
+                        '&:hover': {
+                          borderColor: '#00931D',
+                          color: '#00931D',
+                          backgroundColor: '#E6FFEB',
+                        },
+                        }}
+                      >
+                        View All Cases
+                      </Button>
+                      ) : (
+                      <Button
+                        variant="outlined"
+                        startIcon={<PersonOffIcon />}
+                        sx={{
+                        borderColor: '#0B3C91',
+                        backgroundColor: '#E3EAFD',
+                        color: '#0B3C91',
+                        height: 38,
+                        fontWeight: 500,
+                        textTransform: 'none',
+                        textTransform: 'uppercase',
+                        ml: 2,
+                        '&:hover': {
+                          borderColor: '#1816a3d0',
+                          backgroundColor: '#D0D8F6',
+                          color: '#1816a3d0'
+                        }
+                        }}
+                        onClick={setDigNotApproved}
+                      >
+                        DIG approval pending
+                      </Button>
+                      )}
 
-                  ) : (
-                    
-                <Button
-                  variant="outlined"
-                  startIcon={<PersonOffIcon />}
-                  onClick={setUnAssignedIo}
-                  sx={{
-                    borderColor: '#eb2f06',
-                    backgroundColor: '#FFF5F5',
-                    color: '#eb2f06',
-                    height: 38,
-                    fontWeight: 500,
-                    textTransform: 'uppercase',
-                    '&:hover': {
-                      borderColor: '#e55039',
-                      backgroundColor: '#FFE8E8',
-                      color: '#e55039'
-                    },
-                    '& .MuiSvgIcon-root': {
-                      color: '#eb2f06'
-                    }
-                  }}
-                >
-                  Unassigned IO
-                </Button>
-                )}
+                  <>
+                    {roleTitle !== "investigation officer"   ? (
+                      <>
+                        {filterValues?.field_io_name === "" ? (
+                          <Button
+                            variant="outlined"
+                            startIcon={<VisibilityIcon />}
+                            onClick={handleClear}
+                            sx={{
+                              borderColor: '#00931D',
+                              color: '#00931D',
+                              backgroundColor: '#E6FFEB',
+                              textTransform: 'none',
+                              height: 38,
+                              px: 2,
+                              borderRadius: 1,
+                              fontWeight: 500,
+                              '&:hover': {
+                                borderColor: '#00931D',
+                                color: '#00931D',
+                                backgroundColor: '#E6FFEB',
+                              },
+                            }}
+                          >
+                            View All Cases
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outlined"
+                            startIcon={<PersonOffIcon />}
+                            onClick={setUnAssignedIo}
+                            sx={{
+                              borderColor: '#eb2f06',
+                              backgroundColor: '#FFF5F5',
+                              color: '#eb2f06',
+                              height: 38,
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              '&:hover': {
+                                borderColor: '#e55039',
+                                backgroundColor: '#FFE8E8',
+                                color: '#e55039'
+                              },
+                              '& .MuiSvgIcon-root': {
+                                color: '#eb2f06'
+                              }
+                            }}
+                          >
+                            Unassigned IO
+                          </Button>
+                        )}
+                      </>
+                    ) : null}
+                  </>
 
-                {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && (
-                  <Button
+                  {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && localStorage.getItem("role_title") && localStorage.getItem("role_title").toLowerCase() !== "investigation officer" && (
+                    <Button
                     onClick={() => getTemplate(table_name)}
                     className="blueButton"
                     startIcon={
                       <AddIcon
-                        sx={{
-                          border: "1.3px solid #FFFFFF",
-                          borderRadius: "50%",
-                          background:"#4D4AF3 !important"
-                        }}
+                      sx={{
+                        border: "1.3px solid #FFFFFF",
+                        borderRadius: "50%",
+                        background:"#4D4AF3 !important"
+                      }}
                       />
                     }
                     variant="contained"
-                  >
+                    >
                     Add New
-                  </Button>
-                )}
-                {localStorage.getItem("authAdmin") === "false" && (
-                  <Button
-                  onClick={downloadReportModal}
-                  variant="contained"
-                  sx={{
-                    background: "#32D583",
-                    color: "#101828",
-                    textTransform: "none",
-                    height: "38px",
-                  }}
-                  >
-                  Download Report
-                  </Button>
-                )}
-                </Box>
-              </Box>
+                    </Button>
+                  )}
+                  {localStorage.getItem("authAdmin") === "false" && localStorage.getItem("role_title") && localStorage.getItem("role_title").toLowerCase() !== "investigation officer" && (
+                    <Button
+                    onClick={downloadReportModal}
+                    variant="contained"
+                    sx={{
+                      background: "#32D583",
+                      color: "#101828",
+                      textTransform: "none",
+                      height: "38px",
+                    }}
+                    >
+                    Download Report
+                    </Button>
+                  )}
+                  </Box>
+                  </Box>
 
-              <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: 'start' }}>
-                <Box className="parentFilterTabs">
-                {/* <Box
-                  onClick={() => {
-                  setSysSattus("all");
-                  setPaginationCount(1);
-                  }}
-                  id="filterAll"
-                  className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
-                >
-                  All
-                </Box> */}
+                  <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: 'start' }}>
+                  <Box className="parentFilterTabs">
+                  {/* <Box
+                    onClick={() => {
+                    setSysSattus("all");
+                    setPaginationCount(1);
+                    }}
+                    id="filterAll"
+                    className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
+                  >
+                    All
+                  </Box> */}
             <Box
               onClick={() => {
                 setSysSattus("ui_case");
