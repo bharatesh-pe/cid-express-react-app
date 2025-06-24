@@ -249,40 +249,63 @@ const ProgressReport = ({ templateName, headerDetails, rowId, options, selectedR
         if (briefFactField && !aoOnlyFields.includes(briefFactField)) aoOnlyFields.push(briefFactField);
         if (policeStationField && !aoOnlyFields.includes(policeStationField)) aoOnlyFields.push(policeStationField);
 
-        for (const field of aoOnlyFields) {
-          if (field && field.api) {
-            const payloadApi = field.api;
-            const apiPayload = {}; // Define this as needed
+          for (const field of aoOnlyFields) {
+            if (field && field.api) {
+              const payloadApi = field.api;
+              const apiPayload = {};
 
-            try {
-              const res = await api.post(payloadApi, apiPayload);
-              if (!res.data) continue;
+              try {
+                  if (field.api === "/templateData/getTemplateData") {
+                  const table_name = field.table;
+                  apiPayload.table_name = table_name;
+                  const res = await api.post(payloadApi, apiPayload);
+                  if (!res.data) {
+                      field.options = [];
+                      continue;
+                  }
+                  let headerName = "name";
+                  let headerId = "id";
+                  const updatedOptions = res.data.map((item) => {
+                      headerName =
+                      Object.keys(item).find(
+                          (key) =>
+                          !["id", "created_at", "updated_at"].includes(key)
+                      ) || "name";
+                      headerId = "id";
+                      return {
+                      name: item[headerName],
+                      code: item[headerId],
+                      };
+                  });
+                  field.options = updatedOptions;
+                  continue;
+                  }
 
-              const updatedOptions = res.data.map((item) => {
-                const nameKey = Object.keys(item).find((key) => !["id", "created_at", "updated_at"].includes(key));
-                var headerName = nameKey;
-                var headerId = 'id';
-
-                if (field.table === "users") {
-                  headerName = "name"
-                  headerId = "user_id"
-                } else if (field.api !== "/templateData/getTemplateData") {
-                  headerName = field.table + "_name"
-                  headerId = field.table + "_id"
-                }
-
-                return {
+                  const res = await api.post(payloadApi, apiPayload);
+                  if (!res.data) {
+                  field.options = [];
+                  continue;
+                  }
+                  let headerName = "name";
+                  let headerId = "id";
+                  if (field.table === "users") {
+                  headerName = "name";
+                  headerId = "user_id";
+                  } else if (field.api !== "/templateData/getTemplateData") {
+                  headerName = field.table + "_name";
+                  headerId = field.table + "_id";
+                  }
+                  const updatedOptions = res.data.map((item) => ({
                   name: item[headerName],
                   code: item[headerId],
-                };
-              });
-
-              field.options = updatedOptions;
-            } catch (err) {
-              console.error(`Error loading options for field ${field.name}`, err);
-            }
+                  }));
+                  field.options = updatedOptions;
+              } catch (err) {
+                  console.error(`Error loading options for field ${field.name}`, err);
+                  field.options = [];
+              }
+              }
           }
-        }
 
         setAoFields(aoOnlyFields);
         loadValueField(aoFieldId, false, "cid_under_investigation");
