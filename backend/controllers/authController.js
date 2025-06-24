@@ -418,7 +418,7 @@ const generate_OTP = async (req, res) => {
             const otp = crypto.randomInt(100000, 999999).toString();
             
             // Set the OTP expiration time to 10 minutes from now
-            const expiresAt = moment().add(10, "minutes").toDate();
+            const expiresAt = moment().add(2, "minutes").toDate();
             // Get the current timestamp
             const currentTimeStamp = moment().toDate();
 
