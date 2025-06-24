@@ -79,6 +79,7 @@ const Dashboard = () => {
     
     const [loading, setLoading] = useState(false);
     const [dashboardMenu, setDashboardMenu] = useState({});
+    const [hearingMenu, setHearingMenu] = useState({});
 
     const [videoOpen, setVideoOpen] = useState(false);
 
@@ -169,7 +170,7 @@ const Dashboard = () => {
     const [submenuItems, setSubmenuItems] = useState([]);
     const [selectedSubKey, setSelectedSubKey] = useState("");
 
-    const SkewedCard = ({ label, bgGradient, isFirst, number }) => (
+    const SkewedCard = ({ label, element, isFirst, number }) => (
         <Tooltip title={"click here"} arrow>
         <Box
             sx={{
@@ -192,7 +193,7 @@ const Dashboard = () => {
                     boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
                 }
             }}
-            onClick={ViewAllCases}
+            onClick={()=>navigateRouter(element)}
         >
             <Typography sx={{ fontWeight: 'bold', fontSize: '0.9rem' }}>
                 {label}
@@ -439,8 +440,14 @@ const Dashboard = () => {
             if (response?.success) {
                 if(response?.data){
                     setDashboardMenu(response.data);
+                    if(response.hearingTemplates){
+                        setHearingMenu(response.hearingTemplates);
+                    }else{
+                        setHearingMenu({});
+                    }
                 }else{
                     setDashboardMenu({});
+                    setHearingMenu({});
                 }
             } else {
                 const errorMessage = response?.message || "Failed to fetch dashboard data. Please try again.";
@@ -455,6 +462,7 @@ const Dashboard = () => {
                     className: "toast-error"
                 });
                 setDashboardMenu({});
+                setHearingMenu({});
             }
         } catch (error) {
             setLoading(false);
@@ -470,6 +478,7 @@ const Dashboard = () => {
                 className: "toast-error"
             });
             setDashboardMenu({});
+            setHearingMenu({});
         }
     }
 
@@ -981,13 +990,14 @@ const Dashboard = () => {
                             mt: 2,
                         }}
                         >
-                        {days.map((day, index) => (
+                        {Object.keys(hearingMenu).map((element, index)=>(
                             <SkewedCard
-                                key={day}
-                                label={day}
+                                key={element}
+                                label={hearingMenu[element].label}
+                                element={hearingMenu[element]}
                                 bgGradient={`linear-gradient(135deg, #43cea2, #185a9d)`}
                                 isFirst={index === 0}
-                                number={index + 1}
+                                number={hearingMenu[element].total_count}
                             />
                         ))}
                     </Box>
