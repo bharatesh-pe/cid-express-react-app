@@ -116,6 +116,7 @@ const NormalViewForm = ({
         if(table_row_id && (reloadForm !== null || reloadForm !== undefined)){
             setReadonlyTemplate(true);
             setEditDataTemplate(false);  
+            editedForm(false);
         }
     },[reloadForm]);
 

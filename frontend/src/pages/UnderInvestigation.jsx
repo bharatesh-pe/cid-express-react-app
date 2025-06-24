@@ -13262,11 +13262,10 @@ return (
                   },
                 }}
               />
-              {(searchValue ||
+              {((searchValue ||
                 fromDateValue ||
                 toDateValue ||
-                Object.keys(filterValues).length > 0) && (
-                    filterValues?.field_io_name !== "" || filterValues?.field_approval_done_by === "SP" && (
+                Object.keys(filterValues).length > 0 ) && (
                 <Typography
                   onClick={handleClear}
                   sx={{
