@@ -856,6 +856,70 @@ const NormalViewForm = ({
             callApi();
             }
         }
+
+        if(selectedField && selectedField?.name === "field_io_name"){
+            
+            const gettingUserDetails = async () => {
+                if (formData["field_io_name"]) {
+                    try {
+                        const response = await api.post("cidMaster/getUserParticularDetails", {
+                            user_id: formData["field_io_name"]
+                        });
+
+                        const data = response?.data;
+                        if (!data) return;
+
+                        let updatedFormData = {};
+
+                        newFormConfig.forEach((field) => {
+                            if (field?.name === "field_io_code/kgid_number" && data?.kgid_id) {
+                                updatedFormData["field_io_code/kgid_number"] = data.kgid_id;
+                            }
+
+                            if (field?.name === "field_io_rank_(designation)") {
+                                if (field?.type === "multidropdown") {
+                                    updatedFormData["field_io_rank_(designation)"] = data?.designations || [];
+                                } else {
+                                    updatedFormData["field_io_rank_(designation)"] = data?.designations?.[0] || "";
+                                }
+                            }
+                        });
+
+                        setFormData((prevData) => ({
+                            ...prevData,
+                            ...updatedFormData
+                        }));
+
+                    } catch (error) {
+                        console.error("Error fetching user details:", error);
+                    }
+                }else{
+                    let updatedFormData = {};
+
+                    newFormConfig.forEach((field) => {
+                        if (field?.name === "field_io_code/kgid_number" && formData?.['field_io_code/kgid_number']) {
+                            updatedFormData["field_io_code/kgid_number"] = "";
+                        }
+
+                        if (field?.name === "field_io_rank_(designation)" && formData?.['field_io_rank_(designation)']) {
+                            if (field?.type === "multidropdown") {
+                                updatedFormData["field_io_rank_(designation)"] = [];
+                            } else {
+                                updatedFormData["field_io_rank_(designation)"] = "";
+                            }
+                        }
+                    });
+
+                    setFormData((prevData) => ({
+                        ...prevData,
+                        ...updatedFormData
+                    }));
+                }
+            };
+
+            gettingUserDetails();
+        }
+
     }, [selectedField]);
 
        useEffect(() => {
