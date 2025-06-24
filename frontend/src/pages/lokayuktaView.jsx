@@ -1894,6 +1894,8 @@ const LokayuktaView = () => {
                 setShowApprovalModal(false);
                 setShowCaseApprovalModal(false);
 
+                setInitialRowData((prev) => ({ ...prev, ...normalData }));
+                editedForm.current = false;
                 setReloadForm((prev)=>!prev);
 
             } else {
@@ -2914,7 +2916,7 @@ const LokayuktaView = () => {
                                 }
 
                                 {
-                                    !approvalDone &&
+                                    userPermissions && userPermissions?.[0]?.['bulk_upload'] === true && !approvalDone &&
                                     <Button
                                         variant="contained"
                                         color="success"

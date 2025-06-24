@@ -392,6 +392,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },
+    bulk_upload: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
     created_by: {
       type: DataTypes.INTEGER,
       allowNull: true

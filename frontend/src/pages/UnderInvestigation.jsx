@@ -13266,7 +13266,7 @@ return (
                   },
                 }}
               />
-              {(searchValue ||
+              {((searchValue ||
                 fromDateValue ||
                 toDateValue ||
                 Object.keys(filterValues).length > 0) && (

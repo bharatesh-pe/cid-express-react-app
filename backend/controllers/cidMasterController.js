@@ -734,9 +734,19 @@ const getAllSectionAndActBasedSection = async (req, res) => {
             // if(!act_id || act_id === ""){
             //     return res.status(400).json({ message: "Act ID is required." });
             // }
-           
+
+            let actIdArray = [];
+
+            if (typeof act_id === 'string') {
+                actIdArray = act_id.split(',').map(Number);
+            } else if (Array.isArray(act_id)) {
+                actIdArray = act_id.map(Number);
+            } else if (typeof act_id === 'number') {
+                actIdArray = [act_id];
+            }
+
             sections = await Section.findAll({
-                where: { act_id : act_id },
+                where: { act_id : actIdArray },
                 order: [["section_name", "ASC"]]
             });
             
