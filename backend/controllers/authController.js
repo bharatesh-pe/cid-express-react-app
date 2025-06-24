@@ -368,89 +368,88 @@ const generate_OTP = async (req, res) => {
 
     if (user_detail) {
         const mobile = user_detail.mobile;
-      const kgid_id = user_detail.id;
-      // Find the user by kgid
-      const user = await AuthSecure.findOne({ where: { kgid_id } });
-      // If user is found
-      if (user) {
-        const userRole = await Users.findOne({
-          where: { user_id: user.user_id },
-        });
-        if (userRole && userRole.dev_status === false) {
-          return res.status(500).json({
-            success: false,
-            message: "User deactivated, please contact admin",
-          });
-        }
-        // Check if the user has exceeded the maximum number of attempts
-        if (user.no_of_attempts >= 5) {
-          // Calculate the time for the next attempt
-          const nextAttemptTime = moment(user.last_attempt_at).add(
-            15,
-            "minutes"
-          );
-          // If the current time is before the next attempt time, return an error
-          if (moment().isBefore(nextAttemptTime)) {
-            return res.status(429).json({
-              success: false,
-              message: "Too many attempts. Please try again after 15 minutes.",
+        const kgid_id = user_detail.id;
+        // Find the user by kgid
+        const user = await AuthSecure.findOne({ where: { kgid_id } });
+        // If user is found
+        if (user) {
+            const userRole = await Users.findOne({
+            where: { user_id: user.user_id },
             });
-          } else {
-            // Reset the number of attempts if the time for the next attempt has passed
-            await user.update({ no_of_attempts: 0 });
-          }
-        }
-
-        // Check if the entered PIN is correct
-        if (user.pin !== pin) {
-          // Increment the number of attempts
-          await user.increment("no_of_attempts");
-          user.last_attempt_at = moment(); // Update the last attempt time
-          await user.save(); // Save the user record
-
-          return res.status(401).json({
-            success: false,
-            message: "Invalid credentials. Please try again.",
-          });
-        }
-
-        // Generate a random OTP
-        const otp = crypto.randomInt(100000, 999999).toString();
-        
-        // Set the OTP expiration time to 10 minutes from now
-        const expiresAt = moment().add(10, "minutes").toDate();
-        // Get the current timestamp
-        const currentTimeStamp = moment().toDate();
-
-        // Update the user with the new OTP, expiration time, and increment the number of attempts
-        await user.update({ otp, otp_expires_at: expiresAt });
-
-        // Send SMS after OTP is generated and saved
-        try {
-          await sendSMS({
-            message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.`,
-            // mobile: '9080250155',
-            mobile: '9698273271',
-            template_id: '1107174885741640587',
-          });
-        } catch (smsErr) {
-            console.error("Failed to send SMS:", smsErr.message);
-            if (smsErr.response) {
-                console.error("SMS response body:", smsErr.response.data);
+            if (userRole && userRole.dev_status === false) {
+            return res.status(500).json({
+                success: false,
+                message: "User deactivated, please contact admin",
+            });
             }
-        }
+            // Check if the user has exceeded the maximum number of attempts
+            if (user.no_of_attempts >= 5) {
+            // Calculate the time for the next attempt
+            const nextAttemptTime = moment(user.last_attempt_at).add(
+                15,
+                "minutes"
+            );
+            // If the current time is before the next attempt time, return an error
+            if (moment().isBefore(nextAttemptTime)) {
+                return res.status(429).json({
+                success: false,
+                message: "Too many attempts. Please try again after 15 minutes.",
+                });
+            } else {
+                // Reset the number of attempts if the time for the next attempt has passed
+                await user.update({ no_of_attempts: 0 });
+            }
+            }
 
-        // Return success response
-        return res.status(200).json({
-          success: true,
-          message: "OTP generated and sent successfully."+otp,
-        });
-      } else {
-        // Return error if the user is not found
-        return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
-      }
+            // Check if the entered PIN is correct
+            if (user.pin !== pin) {
+            // Increment the number of attempts
+            await user.increment("no_of_attempts");
+            user.last_attempt_at = moment(); // Update the last attempt time
+            await user.save(); // Save the user record
+
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials. Please try again.",
+            });
+            }
+
+            // Generate a random OTP
+            const otp = crypto.randomInt(100000, 999999).toString();
+            
+            // Set the OTP expiration time to 10 minutes from now
+            const expiresAt = moment().add(10, "minutes").toDate();
+            // Get the current timestamp
+            const currentTimeStamp = moment().toDate();
+
+            // Update the user with the new OTP, expiration time, and increment the number of attempts
+            await user.update({ otp, otp_expires_at: expiresAt });
+
+            // Send SMS after OTP is generated and saved
+            try {
+                await sendSMS({
+                    message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
+                    mobile: mobile,
+                    template_id: '1107174885741640587',
+                });
+            } catch (smsErr) {
+                console.error("Failed to send SMS:", smsErr.message);
+                if (smsErr.response) {
+                    console.error("SMS response body:", smsErr.response.data);
+                }
+            }
+
+            // Return success response
+            return res.status(200).json({
+            success: true,
+            message: "OTP generated and sent successfully."+otp,
+            });
+        } else {
+            // Return error if the user is not found
+            return res
+            .status(404)
+            .json({ success: false, message: "User not found" });
+        }
     } else {
       return res
         .status(404)
@@ -565,8 +564,9 @@ const generate_OTP_without_pin = async (req, res) => {
         // Send SMS after OTP is generated and saved
         try {
           await sendSMS({
-            message: `Your OTP is ${otp}`,
-            mobile: mobile
+            message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
+            mobile: mobile,
+            template_id: '1107174885741640587',
           });
         } catch (smsErr) {
           console.error("Failed to send SMS:", smsErr.message);
@@ -1508,6 +1508,7 @@ const fetch_dash_count = async (req, res) => {
         // 10. CUSTODIAL
 
         var alertTemplates = {}
+        var hearingTemplates = {}
         if(case_modules === "ui_case") {
             alertTemplates = {
                 IO_ALLOCATION: {
@@ -1633,6 +1634,25 @@ const fetch_dash_count = async (req, res) => {
                 //   }
                 
             };
+            hearingTemplates = {
+                TRIAL_TODAY: {
+                    label: "Today",
+                    total_count: 0
+                },
+                TRIAL_TOMORROW: {
+                    label: "Tomorrow",
+                    total_count: 0
+                },
+                TRIAL_THIS_WEEK: {
+                    label: "This Week",
+                    total_count: 0
+                },
+                TRIAL_NEXT_WEEK: {
+                    label: "Next Week",
+                    total_count: 0
+                }
+            };
+
         }
         else if (case_modules === "pt_other_case") {
 
@@ -1690,6 +1710,25 @@ const fetch_dash_count = async (req, res) => {
                   },
                 
             };
+            hearingTemplates = {
+                TRIAL_TODAY: {
+                    label: "Today",
+                    total_count: 0
+                },
+                TRIAL_TOMORROW: {
+                    label: "Tomorrow",
+                    total_count: 0
+                },
+                TRIAL_THIS_WEEK: {
+                    label: "This Week",
+                    total_count: 0
+                },
+                TRIAL_NEXT_WEEK: {
+                    label: "Next Week",
+                    total_count: 0
+                }
+            };
+
         }
         else if (case_modules === "eq_case") {
             // alertTemplates = {
@@ -1850,6 +1889,10 @@ const fetch_dash_count = async (req, res) => {
             {
                 dashboard_count_details["EXTENSION"].total_count = dashboard_count_details["NATURE_OF_DISPOSAL"].total_count;
             }
+        }
+
+        if( case_modules === "pt_trail_case" || case_modules === "pt_other_case") {
+            
         }
 
 

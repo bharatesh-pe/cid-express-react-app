@@ -10,8 +10,8 @@ const sendSMS = async ({ message, mobile , template_id }) => {
     SMS_SECURE_KEY,
   } = process.env;
 
-  // Hash the password using MD5
-  const md5Password = crypto.createHash('md5').update(SMS_PASSWORD.trim()).digest('hex');
+  // Hash the password using SHA1
+  const sha1Password = crypto.createHash('sha1').update(SMS_PASSWORD.trim()).digest('hex');
 
   const key = crypto
     .createHash('sha512')
@@ -20,7 +20,7 @@ const sendSMS = async ({ message, mobile , template_id }) => {
 
   const payload = new URLSearchParams({
     username: SMS_USERNAME.trim(),
-    password: md5Password, // use MD5 hashed password
+    password: sha1Password, // use SHA1 hashed password
     // password: SMS_PASSWORD.trim(),
     senderid: SMS_SENDERID.trim(),
     content: message.trim(),
