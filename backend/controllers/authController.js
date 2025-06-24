@@ -368,89 +368,88 @@ const generate_OTP = async (req, res) => {
 
     if (user_detail) {
         const mobile = user_detail.mobile;
-      const kgid_id = user_detail.id;
-      // Find the user by kgid
-      const user = await AuthSecure.findOne({ where: { kgid_id } });
-      // If user is found
-      if (user) {
-        const userRole = await Users.findOne({
-          where: { user_id: user.user_id },
-        });
-        if (userRole && userRole.dev_status === false) {
-          return res.status(500).json({
-            success: false,
-            message: "User deactivated, please contact admin",
-          });
-        }
-        // Check if the user has exceeded the maximum number of attempts
-        if (user.no_of_attempts >= 5) {
-          // Calculate the time for the next attempt
-          const nextAttemptTime = moment(user.last_attempt_at).add(
-            15,
-            "minutes"
-          );
-          // If the current time is before the next attempt time, return an error
-          if (moment().isBefore(nextAttemptTime)) {
-            return res.status(429).json({
-              success: false,
-              message: "Too many attempts. Please try again after 15 minutes.",
+        const kgid_id = user_detail.id;
+        // Find the user by kgid
+        const user = await AuthSecure.findOne({ where: { kgid_id } });
+        // If user is found
+        if (user) {
+            const userRole = await Users.findOne({
+            where: { user_id: user.user_id },
             });
-          } else {
-            // Reset the number of attempts if the time for the next attempt has passed
-            await user.update({ no_of_attempts: 0 });
-          }
-        }
-
-        // Check if the entered PIN is correct
-        if (user.pin !== pin) {
-          // Increment the number of attempts
-          await user.increment("no_of_attempts");
-          user.last_attempt_at = moment(); // Update the last attempt time
-          await user.save(); // Save the user record
-
-          return res.status(401).json({
-            success: false,
-            message: "Invalid credentials. Please try again.",
-          });
-        }
-
-        // Generate a random OTP
-        const otp = crypto.randomInt(100000, 999999).toString();
-        
-        // Set the OTP expiration time to 10 minutes from now
-        const expiresAt = moment().add(10, "minutes").toDate();
-        // Get the current timestamp
-        const currentTimeStamp = moment().toDate();
-
-        // Update the user with the new OTP, expiration time, and increment the number of attempts
-        await user.update({ otp, otp_expires_at: expiresAt });
-
-        // Send SMS after OTP is generated and saved
-        try {
-          await sendSMS({
-            message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.`,
-            // mobile: '9080250155',
-            mobile: '9698273271',
-            template_id: '1107174885741640587',
-          });
-        } catch (smsErr) {
-            console.error("Failed to send SMS:", smsErr.message);
-            if (smsErr.response) {
-                console.error("SMS response body:", smsErr.response.data);
+            if (userRole && userRole.dev_status === false) {
+            return res.status(500).json({
+                success: false,
+                message: "User deactivated, please contact admin",
+            });
             }
-        }
+            // Check if the user has exceeded the maximum number of attempts
+            if (user.no_of_attempts >= 5) {
+            // Calculate the time for the next attempt
+            const nextAttemptTime = moment(user.last_attempt_at).add(
+                15,
+                "minutes"
+            );
+            // If the current time is before the next attempt time, return an error
+            if (moment().isBefore(nextAttemptTime)) {
+                return res.status(429).json({
+                success: false,
+                message: "Too many attempts. Please try again after 15 minutes.",
+                });
+            } else {
+                // Reset the number of attempts if the time for the next attempt has passed
+                await user.update({ no_of_attempts: 0 });
+            }
+            }
 
-        // Return success response
-        return res.status(200).json({
-          success: true,
-          message: "OTP generated and sent successfully."+otp,
-        });
-      } else {
-        // Return error if the user is not found
-        return res
-          .status(404)
-          .json({ success: false, message: "User not found" });
-      }
+            // Check if the entered PIN is correct
+            if (user.pin !== pin) {
+            // Increment the number of attempts
+            await user.increment("no_of_attempts");
+            user.last_attempt_at = moment(); // Update the last attempt time
+            await user.save(); // Save the user record
+
+            return res.status(401).json({
+                success: false,
+                message: "Invalid credentials. Please try again.",
+            });
+            }
+
+            // Generate a random OTP
+            const otp = crypto.randomInt(100000, 999999).toString();
+            
+            // Set the OTP expiration time to 10 minutes from now
+            const expiresAt = moment().add(2, "minutes").toDate();
+            // Get the current timestamp
+            const currentTimeStamp = moment().toDate();
+
+            // Update the user with the new OTP, expiration time, and increment the number of attempts
+            await user.update({ otp, otp_expires_at: expiresAt });
+
+            // Send SMS after OTP is generated and saved
+            try {
+                await sendSMS({
+                    message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
+                    mobile: '9698273271',
+                    template_id: '1107174885741640587',
+                });
+            } catch (smsErr) {
+                console.error("Failed to send SMS:", smsErr.message);
+                if (smsErr.response) {
+                    console.error("SMS response body:", smsErr.response.data);
+                }
+            }
+
+            // Return success response
+            return res.status(200).json({
+            success: true,
+            message: "OTP generated and sent successfully."+otp,
+            });
+        } else {
+            // Return error if the user is not found
+            return res
+            .status(404)
+            .json({ success: false, message: "User not found" });
+        }
     } else {
       return res
         .status(404)
@@ -565,8 +564,9 @@ const generate_OTP_without_pin = async (req, res) => {
         // Send SMS after OTP is generated and saved
         try {
           await sendSMS({
-            message: `Your OTP is ${otp}`,
-            mobile: mobile
+            message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
+            mobile: mobile,
+            template_id: '1107174885741640587',
           });
         } catch (smsErr) {
           console.error("Failed to send SMS:", smsErr.message);
@@ -1420,7 +1420,7 @@ const fetch_dash_count = async (req, res) => {
                     ...baseWhereClause,
                     alert_type: {
                         [Op.in]: [   
-                            "TRIAL_TODAY",
+                            "PT_HEARING",
                         ]
                     }
                 };
@@ -1431,7 +1431,7 @@ const fetch_dash_count = async (req, res) => {
                     ...baseWhereClause,
                     alert_type: {
                         [Op.in]: [   
-                            "TRIAL_TODAY",
+                            "OTHER_HEARING",
                         ]
                     }
                 };
@@ -1451,8 +1451,7 @@ const fetch_dash_count = async (req, res) => {
             }
         }
 
-        
-        
+
         const groupedAlerts = await CaseAlerts.findAll({
             attributes: [
                 "alert_type",
@@ -1508,6 +1507,9 @@ const fetch_dash_count = async (req, res) => {
         // 10. CUSTODIAL
 
         var alertTemplates = {}
+        var ptHearingTemplates = {}
+        var otherHearingTemplates = {}
+        var hearingTemplates = {}
         if(case_modules === "ui_case") {
             alertTemplates = {
                 IO_ALLOCATION: {
@@ -1633,6 +1635,29 @@ const fetch_dash_count = async (req, res) => {
                 //   }
                 
             };
+            ptHearingTemplates = {
+                "TRIAL_TODAY": {
+                    "label": "Today",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_TOMORROW": {
+                    "label": "Tomorrow",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_THIS_WEEK": {
+                    "label": "This Week",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_NEXT_WEEK": {
+                    "label": "Next Week",
+                    "total_count": 0,
+                    "record_ids": []
+                }
+            };
+
         }
         else if (case_modules === "pt_other_case") {
 
@@ -1690,6 +1715,29 @@ const fetch_dash_count = async (req, res) => {
                   },
                 
             };
+            otherHearingTemplates = {
+                "TRIAL_TODAY": {
+                    "label": "Today",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_TOMORROW": {
+                    "label": "Tomorrow",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_THIS_WEEK": {
+                    "label": "This Week",
+                    "total_count": 0,
+                    "record_ids": []
+                },
+                "TRIAL_NEXT_WEEK": {
+                    "label": "Next Week",
+                    "total_count": 0,
+                    "record_ids": []
+                }
+            };
+
         }
         else if (case_modules === "eq_case") {
             // alertTemplates = {
@@ -1852,11 +1900,103 @@ const fetch_dash_count = async (req, res) => {
             }
         }
 
+        if( case_modules === "pt_trail_case" || case_modules === "pt_other_case") {
+
+            if( case_modules === "pt_trail_case"){
+                for (const row of groupedAlerts)
+                {
+                    if(row && row.alert_level && row.record_ids && row.count)
+                    {
+                        var alertLevel = row.alert_level.toLowerCase();
+                        var record_ids = row.record_ids;
+                        var record_count = row.count;
+                        
+                        if(alertLevel === "high")
+                        {
+                            if(ptHearingTemplates["TRIAL_TODAY"])
+                            {
+                                ptHearingTemplates["TRIAL_TODAY"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_TODAY"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "medium")
+                        {
+                            if(ptHearingTemplates["TRIAL_TOMORROW"])
+                            {
+                                ptHearingTemplates["TRIAL_TOMORROW"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_TOMORROW"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "low")
+                        {
+                            if(ptHearingTemplates["TRIAL_THIS_WEEK"])
+                            {
+                                ptHearingTemplates["TRIAL_THIS_WEEK"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_THIS_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "very_low")
+                        {
+                            if(ptHearingTemplates["TRIAL_NEXT_WEEK"])
+                            {
+                                ptHearingTemplates["TRIAL_NEXT_WEEK"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_NEXT_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                    }
+                }
+            }
+            else{
+                for (const row of groupedAlerts)
+                {
+                    if(row && row.alert_level)
+                    {
+                        var alertLevel = row.alert_level.toLowerCase();
+                        var record_ids = row.record_ids;
+                        var record_count = row.count;
+                        if(alertLevel === "high")
+                        {
+                            if(otherHearingTemplates["TRIAL_TODAY"])
+                            {
+                                otherHearingTemplates["TRIAL_TODAY"].total_count = record_count;
+                                otherHearingTemplates["TRIAL_TODAY"]["record_ids"] = record_ids;
+                            }
+                        }
+                        else if(alertLevel === "medium")
+                        {
+                            if(otherHearingTemplates["TRIAL_TOMORROW"])
+                            {
+                                otherHearingTemplates["TRIAL_TOMORROW"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_TOMORROW"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "low")
+                        {
+                            if(otherHearingTemplates["TRIAL_THIS_WEEK"])
+                            {
+                                otherHearingTemplates["TRIAL_THIS_WEEK"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_THIS_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "very_low")
+                        {
+                            if(otherHearingTemplates["TRIAL_NEXT_WEEK"])
+                            {
+                                otherHearingTemplates["TRIAL_NEXT_WEEK"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_NEXT_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         return res.status(200).json({
             success: true,
             data: dashboard_count_details,
-            "groupedAlerts":groupedAlerts
+            hearingTemplates: case_modules === "pt_trail_case" ? ptHearingTemplates : case_modules === "pt_other_case" ? otherHearingTemplates : hearingTemplates,
+            "groupedAlerts":  groupedAlerts,
         });
     } catch (error) {
         console.error("Error retrieving dashboard count:", error.message);

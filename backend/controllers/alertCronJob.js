@@ -6,7 +6,10 @@ cron.schedule('59 23 * * *', async () => {
         runDailyAlertCron.runDailyAlertCronIO(),
         runDailyAlertCron.runDailyAlertCronAP(),
         runDailyAlertCron.runDailyAlertCronFSL_PF(),
-        runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL()
+        runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL(),
+        runDailyAlertCron.runDailyAlertCronPTHearing(),
+        runDailyAlertCron.runDailyAlertCronOtherHearing(),
+
     ]);
     console.log("Running Daily Alert Cron Job at", new Date().toISOString());
 })
@@ -70,6 +73,8 @@ exports.refreshAlertCron = async (req, res) => {
             runDailyAlertCron.runDailyAlertCronFSL_PF(),
             runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL(),
             runDailyAlertCron.runMonthlyAlertCronPR(),
+            runDailyAlertCron.runDailyAlertCronPTHearing(),
+            runDailyAlertCron.runDailyAlertCronOtherHearing(),
         ]);
 
         const currentTime = new Date().toISOString(); // e.g., "2025-05-26T08:34:12.000Z"
