@@ -1442,6 +1442,7 @@ exports.runDailyAlertCronAccused = async () => {
 //cron for PT Hearing
 exports.runDailyAlertCronPTHearing = async () => {
     try {
+        
         const today = moment();
     
         console.log("Fetching CID Pending Trial template...");
@@ -1524,67 +1525,162 @@ exports.runDailyAlertCronPTHearing = async () => {
 
             const TrialMonitoringRecord = await TrialMonitoringModel.findOne({
                 where: { pt_case_id: case_id },
-                order: [["created_at", "DESC"]],
             });
 
             if (TrialMonitoringRecord) {
-               if(TrialMonitoringRecord.field_hearing_date) {
-                    const nextHearingDate = moment(TrialMonitoringRecord.field_hearing_date);
+               if(TrialMonitoringRecord.field_next_hearing_date) {
+
+                    const nextHearingDate = moment(TrialMonitoringRecord.field_next_hearing_date);
+        
                     //if the next hearing date is today means set the trial_today to true
-                    if (nextHearingDate.isSame(today, 'day')) {
-                        // Create or update alert for today
-                        await CaseAlerts.upsert({
-                            module: "pt_case",
-                            main_table: "cid_pt_case_trail_monitoring",
-                            record_id: case_id,
-                            alert_type: "PT_HEARING",
-                            alert_level: "high",
-                            alert_message: `Trial for case ID ${case_id} is scheduled for today.`,
-                            triggered_on: new Date(),
-                            status: "Pending",
-                            created_by: 0,
+                    if (nextHearingDate.isSame(moment(), 'day')) {
+                        //if there is already an alert for today then update the alert to pending
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                status: "Pending"
+                            }
                         });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        } else {
+                            //if there is no alert for today then create a new alert
+                            await CaseAlerts.create({
+                                module: "pt_trail_case",
+                                main_table: "cid_pt_case_trail_monitoring",
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                alert_level: "high",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for today.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
                     }
-                    else if (nextHearingDate.isSame(today.add(1, 'day'), 'day')) {
-                        // Create or update alert for tomorrow
-                        await CaseAlerts.upsert({
-                            module: "pt_case",
-                            main_table: "cid_pt_case_trail_monitoring",
-                            record_id: case_id,
-                            alert_type: "PT_HEARING",
-                            alert_level: "medium",
-                            alert_message: `Trial for case ID ${case_id} is scheduled for tomorrow.`,
-                            triggered_on: new Date(),
-                            status: "Pending",
-                            created_by: 0,
+                    else if (nextHearingDate.isSame(moment().add(1, 'day'), 'day')) {
+
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                status: "Pending"
+                            }
                         });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                         //create a new alert for tomorrow
+                            await CaseAlerts.create({
+                                module: "pt_trail_case",
+                                main_table: "cid_pt_case_trail_monitoring",
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                alert_level: "medium",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for tomorrow.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
                     }
-                    else if (nextHearingDate.isSame(today.add(1, 'week'), 'week')) {
-                        // Create or update alert for next week
-                        await CaseAlerts.upsert({
-                            module: "pt_case",
-                            main_table: "cid_pt_case_trail_monitoring",
-                            record_id: case_id,
-                            alert_type: "PT_HEARING",
-                            alert_level: "low",
-                            alert_message: `Trial for case ID ${case_id} is scheduled for next week.`,
-                            triggered_on: new Date(),
-                            status: "Pending",
-                            created_by: 0,
+                    // need to check the hearing date is belongs to this current week except today and tomorrow
+                    else if ( nextHearingDate.isBetween(moment().startOf('isoWeek'), moment().endOf('isoWeek'), 'day', '[]') && !nextHearingDate.isSame(moment(), 'day') && !nextHearingDate.isSame(moment().add(1, 'day'), 'day')) {
+                        // Check if an alert already exists for tomorrow
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                status: "Pending"
+                            }
                         });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                            // Create a new alert for tomorrow
+                            await CaseAlerts.create({
+                                module: "pt_trail_case",
+                                main_table: "cid_pt_case_trail_monitoring",
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                alert_level: "low",
+                                alert_message: `Trial for case ID ${case_id} is scheduled this week.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
                     }
-                    else if (nextHearingDate.isSame(today.add(1, 'week'), 'week')) {
-                        // Create or update alert for this week
-                        await CaseAlerts.upsert({
-                            module: "pt_case",
-                            main_table: "cid_pt_case_trail_monitoring",
+                    else if (nextHearingDate.isSame(moment().add(1, 'week'), 'week')) {
+                        // Check if an alert already exists for next week
+                        const existingAlert = await CaseAlerts.findOne({
+                            where: {
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                status: "Pending"
+                            }
+                        });
+                        if (existingAlert) {
+                            await CaseAlerts.update(
+                                { status: "Pending" },
+                                {
+                                    where: {
+                                        id: existingAlert.id
+                                    }
+                                }
+                            );
+                        }
+                        else {
+                            // Create a new alert for next week
+                            await CaseAlerts.create({
+                                module: "pt_trail_case",
+                                main_table: "cid_pt_case_trail_monitoring",
+                                record_id: case_id,
+                                alert_type: "PT_HEARING",
+                                alert_level: "very_low",
+                                alert_message: `Trial for case ID ${case_id} is scheduled for next week.`,
+                                triggered_on: new Date(),
+                                status: "Pending",
+                                created_by: 0,
+                            });
+                        }
+                    }
+                    else if (nextHearingDate.isSame(moment().subtract(1, 'day'), 'day')) {
+                      //update the case alert to incomplete if the case_id and alert_type and status is pending
+                      await CaseAlerts.update(
+                        {
+                          status: "Incomplete"
+                        },
+                        {
+                          where: {
                             record_id: case_id,
                             alert_type: "PT_HEARING",
-                            alert_level: "low",
-                            alert_message: `Trial for case ID ${case_id} is scheduled for this week.`,
-                            triggered_on: new Date(),
-                            status: "Pending",
-                            created_by: 0,
+                            status: "Pending"
+                          }
                         });
                     }
                 }
