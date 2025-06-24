@@ -7,7 +7,8 @@ import TableView from "../components/table-view/TableView";
 import EditTableView from "../components/table-view/EditTableView";
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
-
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import NotApprovedIcon from '@mui/icons-material/NotInterested';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import CancelIcon from "@mui/icons-material/Cancel";
@@ -3514,6 +3515,7 @@ const ExtensionFormWrapper = ({
                                 className: "toast-success",
                             });
                             setShowExtensionFormDialog(false);
+                            showExtensionCaseApprovalPage(extensionFormData, data);
                             console.log("Main case extension fields updated");
                         } catch (err) {
                             setLoading(false);
@@ -3584,8 +3586,10 @@ const ExtensionFormWrapper = ({
                             position: "top-right",
                             autoClose: 3000,
                             className: "toast-success",
+                            onOpen: () => {loadTableData(paginationCount);},
                         });
                         setShowExtensionFormDialog(false);
+                        showExtensionCaseApprovalPage(extensionFormData, data);
                         console.log("Main case extension fields updated");
                     } catch (err) {
                         setLoading(false);
@@ -3661,8 +3665,10 @@ const ExtensionFormWrapper = ({
                             position: "top-right",
                             autoClose: 3000,
                             className: "toast-success",
+                            onOpen: () => {loadTableData(paginationCount);},
                         });
                         setShowExtensionFormDialog(false);
+                        showExtensionCaseApprovalPage(extensionFormData, data);
                         console.log("Main case extension fields updated");
                     } catch (err) {
                         setLoading(false);
@@ -5257,6 +5263,7 @@ const loadChildMergedCasesData = async (page, caseId) => {
                             const baseDate = dayjs(field["created_at"]);
                             let minDate = null;
                             let maxDate = null;
+                            let extensionDateValue = field["field_extension_date"] || null;
                             if (isOlderThan90Days && !isOlderThan180to360Days && !isOlderThan360Days) {
                               minDate = baseDate.add(90, "day");
                               maxDate = baseDate.add(180, "day");
@@ -5271,8 +5278,9 @@ const loadChildMergedCasesData = async (page, caseId) => {
                               id: selectedRow.id,
                               minDate: minDate ? minDate.toISOString() : null,
                               maxDate: maxDate ? maxDate.toISOString() : null,
-                              field_extension_date: null,
-                              field_extension_remark: "",
+                              field_extension_date: extensionDateValue,
+                              field_extension_remark: field["field_extension_remark"] || "",
+                              field_extension_updated_by: field["field_extension_updated_by"] || "",
                             });
                             setShowCaseExtensionModal(true);
                           },
@@ -10788,6 +10796,7 @@ const handleOpenExportPopup = async () => {
 
 
   const showExtensionCaseApprovalPage = async (caseData, formData)=>{
+    console.log("caseData", caseData, formData);
           setLoading(true);
           try {
   
@@ -10854,157 +10863,150 @@ const handleOpenExportPopup = async () => {
           }
     }
 
-    const handleExtensionApprovalWithUpdate = async () => {
+const handleExtensionApprovalWithUpdate = async () => {
 
-          if (!approvalFormData || !approvalFormData["approval_item"]) {
-            toast.error("Please Select Approval Item!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-         }
-    
-        if (!approvalFormData || !approvalFormData["approved_by"]) {
-            toast.error("Please Select Designation!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-    
-        if (!approvalFormData || !approvalFormData["approval_date"]) {
-            toast.error("Please Select Approval Date!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-    
-        if (!approvalFormData || !approvalFormData["remarks"]) {
-            toast.error("Please Enter Comments!", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-        
-      const caseData = approvalSaveCaseData.caseData || {};
-      const id = caseData.id;
+    if (!approvalFormData || !approvalFormData["approval_item"]) {
+      toast.error("Please Select Approval Item!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-      const tableName = "cid_under_investigation";
+    if (!approvalFormData || !approvalFormData["approved_by"]) {
+      toast.error("Please Select Designation!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-      const { id: _, ...dataWithoutId } = caseData;
+    if (!approvalFormData || !approvalFormData["approval_date"]) {
+      toast.error("Please Select Approval Date!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-      const approvalItems = {
-        id: id,
-        type: "ui_case",
-        module_name: "Under Investigation",
-        action: "Extension Natural of Disposal",
-      };
+    if (!approvalFormData || !approvalFormData["remarks"]) {
+      toast.error("Please Enter Comments!", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        className: "toast-error",
+      });
+      return;
+    }
 
-      const approvalData = {
-        approval: approvalFormData,
-        approval_details: approvalItems,
-      };
+    const caseData = approvalSaveCaseData.caseData || {};
+    const id = caseData.ui_case_id;
 
-      const formData = new FormData();
+    const tableName = "cid_under_investigation";
 
-      if (approvalSaveCaseData.formData instanceof FormData) {
-        for (const [key, value] of approvalSaveCaseData.formData.entries()) {
-          formData.append(key, value);
-        }
-      }
-
-      formData.append("table_name", tableName);
-      formData.append("id", id.toString());
-      formData.append("data", JSON.stringify(dataWithoutId));
-      formData.append("others_data", JSON.stringify(approvalData));
-
-      const transactionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-      formData.append("transaction_id", transactionId);
-      formData.append("user_designation_id", localStorage.getItem("designation_id") || "");
-      for (const [key, value] of formData.entries()) {
-        console.log(`${key}:`, value);
-      }
-      setLoading(true);
-
-      try {
-        const response = await api.post("/templateData/updateDataWithApprovalToTemplates", formData);
-        setLoading(false);
-
-        if (response?.success) {
-          toast.success(response.message || "Extension Updated with Approval!", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-success",
-            onOpen: () => loadTableData(paginationCount),
-        });
-
-          setShowExtensionApprovalModal(false);
-          setApprovalSaveCaseData({});
-          setApprovalItemsData([]);
-          setApprovalDesignationData([]);
-          setApprovalSaveData({});
-          setFormData({});
-          setShowCaseExtensionModal(false);
-        } else {
-          toast.error(response.message, {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(error.response["data"].message || "Please Try Again!", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
+    const approvalItems = {
+      id: id,
+      type: "ui_case",
+      module_name: "Under Investigation",
+      action: "Extension Natural of Disposal",
     };
 
+    const approvalData = {
+      approval: approvalFormData,
+      approval_details: approvalItems,
+    };
+
+    const formData = new FormData();
+
+    console.log("formdata", formData)
+    formData.append("table_name", tableName);
+    formData.append("id", caseData.ui_case_id);
+    // Only update others_data, not the main data
+    formData.append("others_data", JSON.stringify(approvalData));
+
+    const transactionId = `pt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    formData.append("transaction_id", transactionId);
+    formData.append("user_designation_id", localStorage.getItem("designation_id") || "");
+
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}:`, value);
+    }
+    setLoading(true);
+
+    try {
+      const response = await api.post("/templateData/updateDataWithApprovalToTemplates", formData);
+      setLoading(false);
+
+      if (response?.success) {
+        toast.success(response.message || "Extension Updated with Approval!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-success",
+          onOpen: () => loadTableData(paginationCount),
+        });
+
+        setShowExtensionApprovalModal(false);
+        setApprovalSaveCaseData({});
+        setApprovalItemsData([]);
+        setApprovalDesignationData([]);
+        setApprovalSaveData({});
+        setFormData({});
+        setShowCaseExtensionModal(false);
+      } else {
+        toast.error(response.message, {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    } catch (error) {
+      setLoading(false);
+      if (error && error.response && error.response["data"]) {
+        toast.error(error.response["data"].message || "Please Try Again!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          className: "toast-error",
+        });
+      }
+    }
+  };
 
 
 
@@ -12787,15 +12789,36 @@ const handleOpenExportPopup = async () => {
         setShowFileAttachments(true);
     }
 
-    const setUnAssignedIo = ()=>{
-        setFilterValues(prev => ({
-            ...(prev || {}),
-            field_io_name: ""
-        }));
-        setForceTableLoad((prev) => !prev);
-    }
+    const clearAllFilters = () => {
+      setFilterValues({});
+      setFromDateValue(null);
+      setToDateValue(null);
+      setSearchValue("");
+    };
 
-  return (
+    const setUnAssignedIo = () => {
+      clearAllFilters();
+      setFilterValues(prev => ({
+        ...(prev || {}),
+        field_io_name: ""
+      }));
+      setForceTableLoad((prev) => !prev);
+    };
+
+    const setDigNotApproved = () => {
+      clearAllFilters();
+      setFilterValues(prev => ({
+        ...(prev || {}),
+        field_approval_done_by: "SP"
+      }));
+      setForceTableLoad(prev => !prev);
+    };
+
+const rawRoleTitle = localStorage.getItem("role_title") || "";
+const cleanedRoleTitle = rawRoleTitle.replace(/^"(.*)"$/, "$1");
+const roleTitle = cleanedRoleTitle.toLowerCase().trim();
+
+return (
     <Box p={2} inert={loading ? true : false}>
       <>
         <Box
@@ -12959,84 +12982,164 @@ const handleOpenExportPopup = async () => {
                   </svg>
                 }
                 onClick={() => {
-                  handleConfirmDemerge();
-                }}
-              >
-                De-Merge
-              </Button>
-              </>
-            )}
+                    handleConfirmDemerge();
+                    }}
+                    >
+                    De-Merge
+                    </Button>
+                    </>
+                  )}
 
-            <Button
-                variant="outlined"
-                startIcon={<PersonOffIcon />}
-                onClick={setUnAssignedIo}
-                sx={{
-                    borderColor: '#eb2f06',
-                    backgroundColor: '#FFF5F5',
-                    color: '#eb2f06',
-                    height: 38,
-                    fontWeight: 500,
-                    textTransform: 'uppercase',
-                    '&:hover': {
-                        borderColor: '#e55039',
-                        backgroundColor: '#FFE8E8',
-                        color: '#e55039'
-                    },
-                    '& .MuiSvgIcon-root': {
-                        color: '#eb2f06'
-                    }
-                }}
-            >
-                Unassigned IO
-            </Button>
-            {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && (
-                <Button
+                      {filterValues?.field_approval_done_by === "SP" ? (
+                      <Button
+                        variant="outlined"
+                        startIcon={<VisibilityIcon />}
+                        onClick={handleClear}
+                        sx={{
+                        borderColor: '#00931D',
+                        color: '#00931D',
+                        backgroundColor: '#E6FFEB', 
+                        textTransform: 'none',
+                        height: 38,
+                        px: 2,
+                        borderRadius: 1,
+                        fontWeight: 500,
+                        '&:hover': {
+                          borderColor: '#00931D',
+                          color: '#00931D',
+                          backgroundColor: '#E6FFEB',
+                        },
+                        }}
+                      >
+                        View All Cases
+                      </Button>
+                      ) : (
+                      <Button
+                        variant="outlined"
+                        startIcon={<PersonOffIcon />}
+                        sx={{
+                        borderColor: '#0B3C91',
+                        backgroundColor: '#E3EAFD',
+                        color: '#0B3C91',
+                        height: 38,
+                        fontWeight: 500,
+                        textTransform: 'none',
+                        textTransform: 'uppercase',
+                        ml: 2,
+                        '&:hover': {
+                          borderColor: '#1816a3d0',
+                          backgroundColor: '#D0D8F6',
+                          color: '#1816a3d0'
+                        }
+                        }}
+                        onClick={setDigNotApproved}
+                      >
+                        DIG approval pending
+                      </Button>
+                      )}
+
+                  <>
+                    {roleTitle !== "investigation officer"   ? (
+                      <>
+                        {filterValues?.field_io_name === "" ? (
+                          <Button
+                            variant="outlined"
+                            startIcon={<VisibilityIcon />}
+                            onClick={handleClear}
+                            sx={{
+                              borderColor: '#00931D',
+                              color: '#00931D',
+                              backgroundColor: '#E6FFEB',
+                              textTransform: 'none',
+                              height: 38,
+                              px: 2,
+                              borderRadius: 1,
+                              fontWeight: 500,
+                              '&:hover': {
+                                borderColor: '#00931D',
+                                color: '#00931D',
+                                backgroundColor: '#E6FFEB',
+                              },
+                            }}
+                          >
+                            View All Cases
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outlined"
+                            startIcon={<PersonOffIcon />}
+                            onClick={setUnAssignedIo}
+                            sx={{
+                              borderColor: '#eb2f06',
+                              backgroundColor: '#FFF5F5',
+                              color: '#eb2f06',
+                              height: 38,
+                              fontWeight: 500,
+                              textTransform: 'uppercase',
+                              '&:hover': {
+                                borderColor: '#e55039',
+                                backgroundColor: '#FFE8E8',
+                                color: '#e55039'
+                              },
+                              '& .MuiSvgIcon-root': {
+                                color: '#eb2f06'
+                              }
+                            }}
+                          >
+                            Unassigned IO
+                          </Button>
+                        )}
+                      </>
+                    ) : null}
+                  </>
+
+                  {JSON.parse(localStorage.getItem("user_permissions")) && JSON.parse(localStorage.getItem("user_permissions"))[0].create_case && !isCheckboxSelected && localStorage.getItem("role_title") && localStorage.getItem("role_title").toLowerCase() !== "investigation officer" && (
+                    <Button
                     onClick={() => getTemplate(table_name)}
                     className="blueButton"
                     startIcon={
-                        <AddIcon
-                            sx={{
-                                border: "1.3px solid #FFFFFF",
-                                borderRadius: "50%",
-                                background:"#4D4AF3 !important"
-                            }}
-                        />
+                      <AddIcon
+                      sx={{
+                        border: "1.3px solid #FFFFFF",
+                        borderRadius: "50%",
+                        background:"#4D4AF3 !important"
+                      }}
+                      />
                     }
                     variant="contained"
-                >
+                    >
                     Add New
-                </Button>
-            )}
-            {localStorage.getItem("authAdmin") === "false" && (
-              <Button
-                onClick={downloadReportModal}
-                variant="contained"
-                sx={{
-                  background: "#32D583",
-                  color: "#101828",
-                  textTransform: "none",
-                  height: "38px",
-                }}
-              >
-                Download Report
-              </Button>
-            )}
-          </Box>
-        </Box>
+                    </Button>
+                  )}
+                  {localStorage.getItem("authAdmin") === "false" && localStorage.getItem("role_title") && localStorage.getItem("role_title").toLowerCase() !== "investigation officer" && (
+                    <Button
+                    onClick={downloadReportModal}
+                    variant="contained"
+                    sx={{
+                      background: "#32D583",
+                      color: "#101828",
+                      textTransform: "none",
+                      height: "38px",
+                    }}
+                    >
+                    Download Report
+                    </Button>
+                  )}
+                  </Box>
+                  </Box>
 
-        <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: 'start' }}>
-          <Box className="parentFilterTabs">
-            {/* <Box
-              onClick={() => {
-                setSysSattus("all");
-                setPaginationCount(1);
-              }}
-              id="filterAll"
-              className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
-            >
-              All
-            </Box> */}
+                  <Box pt={1} sx={{ display: "flex", justifyContent: "space-between", alignItems: 'start' }}>
+                  <Box className="parentFilterTabs">
+                  {/* <Box
+                    onClick={() => {
+                    setSysSattus("all");
+                    setPaginationCount(1);
+                    }}
+                    id="filterAll"
+                    className={`filterTabs ${sysStatus === "all" ? "Active" : ""}`}
+                  >
+                    All
+                  </Box> */}
             <Box
               onClick={() => {
                 setSysSattus("ui_case");
@@ -13163,6 +13266,7 @@ const handleOpenExportPopup = async () => {
                 fromDateValue ||
                 toDateValue ||
                 Object.keys(filterValues).length > 0) && (
+                    filterValues?.field_io_name !== "" || filterValues?.field_approval_done_by === "SP" && (
                 <Typography
                   onClick={handleClear}
                   sx={{
@@ -13175,7 +13279,7 @@ const handleOpenExportPopup = async () => {
                 >
                   View All / Clear Filter
                 </Typography>
-              )}
+              ))}
             </Box>
         </Box>
 
@@ -15303,154 +15407,239 @@ const handleOpenExportPopup = async () => {
       </DialogActions>
     </Dialog>
 
-    <Dialog
-        open={showCaseExtensionModal}
-        onClose={() => {
-          setShowCaseExtensionModal(false);
-          setHistoryData([]);
-        }}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle id="alert-dialog-title">Case Extension</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            {extensionFields.length === 0 ? (
-              <p>No extension fields available</p>
-            ) : (
-              extensionFields.map((field) => (
-                <FormControl fullWidth key={field.name} sx={{ marginBottom: "20px" }}>
-                  {field.name === "field_extension_remark" ? (
-                    <LongText
-                      field={{
-                        ...field,
-                        label: field.label || field.name,
-                        multiline: true,
-                        rows: 4,
-                        history: true,
-                        required: true,
+
+              <Dialog
+                open={showCaseExtensionModal}
+                onClose={() => {
+                  setShowCaseExtensionModal(false);
+                    setHistoryData([]);
+                  }}
+                  aria-labelledby="alert-dialog-title"
+                  aria-describedby="alert-dialog-description"
+                  maxWidth="sm"
+                  fullWidth
+                  >
+                  <DialogTitle id="alert-dialog-title">
+                    Case Extension
+                   {console.log("formData.field_extension_updated_by", formData)}
+                    {/* Show "Request Submitted" if field_extension_updated_by is not DIG, ADG, or DGP */}
+                    {formData.field_extension_updated_by &&
+                     !["dig", "adg", "dgp"].some((rank) =>
+                        String(formData.field_extension_updated_by).toLowerCase().startsWith(rank)
+                      ) && (
+                      <span
+                      style={{
+                        marginLeft: 16,
+                        background: "#FFF7E0",
+                        color: "#B54708",
+                        fontWeight: 600,
+                        fontSize: 15,
+                        padding: "2px 12px",
+                        borderRadius: 8,
+                        verticalAlign: "middle",
                       }}
-                      formData={formData}
-                      onChange={(e) =>
-                        setFormData({ ...formData, [field.name]: e.target.value })
-                      }
-                      onHistory={() => fetchFieldHistory(field.name, formData.id, selectTemplateId.template_id)}
-                    />
-                  ) : (
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <h4 className="form-field-heading">Extension Date</h4>
-                      <DatePicker
-                        className="selectHideHistory"
-                        label={
-                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                      >
+                      Request Submitted
+                      </span>
+                    )}
+                  </DialogTitle>
+                  <DialogContent>
+                    <DialogContentText id="alert-dialog-description">
+                    {extensionFields.length === 0 ? (
+                      <p>No extension fields available</p>
+                    ) : (
+                      extensionFields.map((field) => (
+                      <FormControl fullWidth key={field.name} sx={{ marginBottom: "20px" }}>
+                        {field.name === "field_extension_remark" ? (
+                        <LongText
+                          field={{
+                          ...field,
+                          label: field.label || field.name,
+                          multiline: true,
+                          rows: 4,
+                          history: true,
+                          required: true,
+                          readOnly:
+                           (formData.field_extension_updated_by &&
+                                      !["dig", "adg", "dgp"].some((rank) =>
+                                        String(formData.field_extension_updated_by)
+                                          .toLowerCase()
+                                          .startsWith(rank)
+                          )
+                        )}}
+                          formData={formData}
+                          onChange={(e) =>
+                          setFormData({ ...formData, [field.name]: e.target.value })
+                          }
+                          onHistory={() =>
+                          fetchFieldHistory(
+                            field.name,
+                            formData.id,
+                            selectTemplateId.template_id
+                          )
+                          }
+                          readOnly={(formData.field_extension_updated_by &&
+                                      !["dig", "adg", "dgp"].some((rank) =>
+                                        String(formData.field_extension_updated_by)
+                                          .toLowerCase()
+                                          .startsWith(rank)
+                                      ))}
+                        />
+                        ) : (
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <h4 className="form-field-heading">Extension Date</h4>
+                          <DatePicker
+                          className="selectHideHistory"
+                          label={
+                            <div style={{ display: "flex", alignItems: "center" }}>
                             <span>{field.label || field.name}</span>
                             <span
                               className="MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk"
-                              style={{ padding: '0px 0px 0px 5px', verticalAlign: 'middle' }}
+                              style={{
+                              padding: "0px 0px 0px 5px",
+                              verticalAlign: "middle",
+                              }}
                             >
                               *
                             </span>
                             <HistoryIcon
                               onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                fetchFieldHistory(field.name, formData.id, selectTemplateId.template_id);
+                              e.preventDefault();
+                              e.stopPropagation();
+                              fetchFieldHistory(
+                                field.name,
+                                formData.id,
+                                selectTemplateId.template_id
+                              );
                               }}
                               className="historyIcon"
                               sx={{
-                                color: '#1570EF',
-                                padding: '0 1px',
-                                fontSize: '20px',
-                                verticalAlign: 'middle',
-                                cursor: 'pointer',
-                                pointerEvents: 'auto',
-                                marginBottom: '3px',
+                              color: "#1570EF",
+                              padding: "0 1px",
+                              fontSize: "20px",
+                              verticalAlign: "middle",
+                              cursor: "pointer",
+                              pointerEvents: "auto",
+                              marginBottom: "3px",
                               }}
                             />
-                          </div>
-                        }
-                        value={formData[field.name] ? dayjs(formData[field.name]) : null}
-                        onChange={(newVal) =>
-                          setFormData({
+                            </div>
+                          }
+                          value={
+                            formData[field.name] ? dayjs(formData[field.name]) : null
+                          }
+                          onChange={(newVal) =>
+                            setFormData({
                             ...formData,
                             [field.name]: newVal ? newVal.toISOString() : null,
-                          })
-                        }
-                        minDate={formData.minDate ? dayjs(formData.minDate) : null}
-                        maxDate={formData.maxDate ? dayjs(formData.maxDate) : null}
-                        disableFuture={false}
-                        renderInput={(params) => (
-                          <TextField {...params} fullWidth required={field.required} />
+                            })
+                          }
+                          minDate={
+                            formData.minDate ? dayjs(formData.minDate) : null
+                          }
+                          maxDate={
+                            formData.maxDate ? dayjs(formData.maxDate) : null
+                          }
+                          disableFuture={false}
+                          renderInput={(params) => (
+                            <TextField
+                            {...params}
+                            fullWidth
+                            required={field.required}
+                            InputProps={{
+                              ...params.InputProps,
+                              readOnly:
+                               (formData.field_extension_updated_by &&
+                                      !["dig", "adg", "dgp"].some((rank) =>
+                                        String(formData.field_extension_updated_by)
+                                          .toLowerCase()
+                                          .startsWith(rank)
+                                      ))
+                            }}
+                            />
+                          )}
+                          disabled={
+                                    (formData.field_extension_updated_by &&
+                                      !["dig", "adg", "dgp"].some((rank) =>
+                                        String(formData.field_extension_updated_by)
+                                          .toLowerCase()
+                                          .startsWith(rank)
+                                      ))
+                          }
+                          />
+                        </LocalizationProvider>
                         )}
-                      />
-                    </LocalizationProvider>
-                  )}
-                </FormControl>
-              ))
-            )}
-
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setShowCaseExtensionModal(false)}>Cancel</Button>
-          {/* <Button onClick={handleCaseExtension} className="fillPrimaryBtn">
-            Submit
-          </Button> */}
-
-            <Button
-                onClick={async () => {
-                    // Only open extension form dialog if both fields are filled
-                    if (!formData.field_extension_date || !formData.field_extension_remark) {
-                        toast.error("Please fill both Extension Date and Extension Remark before proceeding.", {
-                            position: "top-right",
-                            autoClose: 3000,
-                            className: "toast-error",
-                        });
-                        return;
-                    }
-                    setShowCaseExtensionModal(false);
-
-                    // Fetch template fields for cid_ui_case_extension_form
-                    setLoading(true);
-                    try {
-                        const templateRes = await api.post("/templates/viewTemplate", {
-                            table_name: "cid_ui_case_extension_form",
-                        });
-                        setLoading(false);
-
-                        if (templateRes && templateRes.success) {
-                            setExtensionFormFields(templateRes.data.fields || []);
-                            setShowExtensionFormDialog(true);
-                            setExtensionFormData({
-                                ui_case_id: formData.id,
-                                field_extension_date: formData.field_extension_date || "",
-                                field_extension_remark: formData.field_extension_remark || "",
-                                field_extension_updated_by: localStorage.getItem("designation_name") || "",
-                            });
-                        } else {
-                            toast.error("Failed to load extension form template.", {
-                                position: "top-right",
-                                autoClose: 3000,
-                                className: "toast-error",
-                            });
+                      </FormControl>
+                      ))
+                    )}
+                    </DialogContentText>
+                  </DialogContent>
+                  <DialogActions>
+                    <Button onClick={() => setShowCaseExtensionModal(false)}>Cancel</Button>
+                    <Button
+                    onClick={async () => {
+                      // Only open extension form dialog if both fields are filled
+                      if (!formData.field_extension_date || !formData.field_extension_remark) {
+                      toast.error(
+                        "Please fill both Extension Date and Extension Remark before proceeding.",
+                        {
+                        position: "top-right",
+                        autoClose: 3000,
+                        className: "toast-error",
                         }
-                    } catch (err) {
-                        setLoading(false);
-                        toast.error("Failed to load extension form template.", {
-                            position: "top-right",
-                            autoClose: 3000,
-                            className: "toast-error",
+                      );
+                      return;
+                      }
+                      setShowCaseExtensionModal(false);
+
+                      // Fetch template fields for cid_ui_case_extension_form
+                      setLoading(true);
+                      try {
+                      const templateRes = await api.post("/templates/viewTemplate", {
+                        table_name: "cid_ui_case_extension_form",
+                      });
+                      setLoading(false);
+
+                      if (templateRes && templateRes.success) {
+                        setExtensionFormFields(templateRes.data.fields || []);
+                        setShowExtensionFormDialog(true);
+                        setExtensionFormData({
+                        ui_case_id: formData.id,
+                        field_extension_date: formData.field_extension_date || "",
+                        field_extension_remark: formData.field_extension_remark || "",
+                        field_extension_updated_by:
+                          localStorage.getItem("designation_name") || "",
                         });
+                      } else {
+                        toast.error("Failed to load extension form template.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        className: "toast-error",
+                        });
+                      }
+                      } catch (err) {
+                      setLoading(false);
+                      toast.error("Failed to load extension form template.", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        className: "toast-error",
+                      });
+                      }
+                    }}
+                    className="fillPrimaryBtn"
+                    disabled={
+                       (formData.field_extension_updated_by &&
+                        !["dig", "adg", "dgp"].some((rank) =>
+                          String(formData.field_extension_updated_by)
+                            .toLowerCase()
+                            .startsWith(rank)
+                        ))
                     }
-                }}
-                className="fillPrimaryBtn"
-              >
-                Submit
-              </Button>
-        </DialogActions>
-      </Dialog>
+                    >
+                    Submit
+                    </Button>
+                  </DialogActions>
+                  </Dialog>
 
     {showExtensionFormDialog &&
     <Dialog

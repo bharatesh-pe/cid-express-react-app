@@ -119,14 +119,16 @@ const Formbuilder = () => {
                             ...element,
                             is_primary_field : element.is_primary_field ? element.is_primary_field : false,
                             ao_field : element.ao_field ? element.ao_field : false,
-                            tableTabs : element.tableTabs ? element.tableTabs : false
+                            tableTabs : element.tableTabs ? element.tableTabs : false,
+                            hide_from_edit : element.hide_from_edit ? element.hide_from_edit : false,
                         }
                     }
 
                     return{
                         ...element,
                         is_primary_field : element.is_primary_field ? element.is_primary_field : false,
-                        ao_field : element.ao_field ? element.ao_field : false
+                        ao_field : element.ao_field ? element.ao_field : false,
+                        hide_from_edit : element.hide_from_edit ? element.hide_from_edit : false,
                     }
                 })
                 

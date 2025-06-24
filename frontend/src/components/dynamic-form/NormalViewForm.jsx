@@ -50,7 +50,7 @@ import dayjs from 'dayjs';
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -111,6 +111,13 @@ const NormalViewForm = ({
         setReadonlyTemplate((prev)=>!prev);
         setEditDataTemplate((prev)=>!prev);
     }
+
+    useEffect(()=>{
+        if(table_row_id && (reloadForm !== null || reloadForm !== undefined)){
+            setReadonlyTemplate(true);
+            setEditDataTemplate(false);  
+        }
+    },[reloadForm]);
 
   const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
 
@@ -1695,7 +1702,8 @@ const NormalViewForm = ({
             "approvalItem": investigationAction?.approval_items,
             "approvedBy": userId,
             "remarks": investigationAction?.name + " Submitted By " + gettingDesignationName,
-            "module": template_name
+            "module": template_name,
+            designation_id: localStorage.getItem("designation_id") || null,
         }
 
         setLoading(true);    
@@ -1935,7 +1943,7 @@ const NormalViewForm = ({
                   </Button>
             
                     {
-                        !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" &&
+                        !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" && table_name !== "cid_eq_case_enquiry_order_copy" &&
                         <Button
                             variant="contained" color="success"
                             onClick={() =>{
