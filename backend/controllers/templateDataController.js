@@ -469,12 +469,17 @@ exports.updateTemplateData = async (req, res, next) => {
     }
 
     if (parsedData.field_io_name) {
-      const ioId = id;
+      let ioIds;
+      if (typeof id === "string" && id.includes(",")) {
+        ioIds = id.split(",").map((i) => i.trim());
+      } else {
+        ioIds = [id];
+      }
       await CaseAlerts.update(
         { status: "Completed" },
         {
           where: {
-            record_id: ioId,
+            record_id: { [Sequelize.Op.in]: ioIds },
             status: "Pending",
           },
         }
@@ -612,13 +617,15 @@ exports.updateTemplateData = async (req, res, next) => {
         //     activity: `Updated`,
         // });
 
-        await CaseHistory.create({
+        for (const rowId of ids) {
+          await CaseHistory.create({
             template_id: tableData.template_id,
-            table_row_id: id,
+            table_row_id: rowId,
             user_id: actorId,
             actor_name: userName,
             action: `Updated`,
-        });
+          });
+        }
       }
 
       const fileUpdates = {};
@@ -5272,7 +5279,28 @@ exports.caseSysStatusUpdation = async (req, res) => {
     }
     
 
-    if (updatedCount === 0) {
+    // if (updatedCount === 0) {
+    //   return userSendResponse(
+    //     res,
+    //     400,
+    //     false,
+    //     "No changes detected or update failed."
+    //   );
+    // }
+
+   if (updatedCount === 0) {
+      const existingRecords = await Model.findAll({
+        where: { id: recordId }
+      });
+      const alreadySet = existingRecords.every(rec => rec.sys_status === sys_status);
+      if (alreadySet) {
+        return userSendResponse(
+          res,
+          200,
+          true,
+          "Case record already has the requested status."
+        );
+      }
       return userSendResponse(
         res,
         400,
@@ -5280,6 +5308,7 @@ exports.caseSysStatusUpdation = async (req, res) => {
         "No changes detected or update failed."
       );
     }
+
 
     const handleInvestigationUpdate = async (invTableName, caseId , default_status) => {
       const investigationTable = await Template.findOne({

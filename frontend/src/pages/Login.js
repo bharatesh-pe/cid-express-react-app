@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   TextField,
   Button,
@@ -35,87 +35,95 @@ const Login = () => {
   const [forgotPin, setForgotPin] = useState(false);
   const [usersDesignations, setUsersDesignations] = useState({});
   const [usersDivision, setUsersDivision] = useState({});
-  const handleSubmit = async (e) => {
-    setValidationError("");
-    e.preventDefault();
-    setLoading(true);
 
-    try {
-      if (!kgid || !pin || isNaN(kgid) || isNaN(pin)) {
-        setValidationError("Please enter valid KGID and PIN");
-        setLoading(false);
-        return;
-      }
+  const [timer, setTimer] = useState();
 
-      const serverURL = process.env.REACT_APP_SERVER_URL;
-      const response = await fetch(`${serverURL}/auth/generate_OTP`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ kgid: kgid, pin: pin }),
-      });
+    const handleSubmit = async (e) => {
+        setValidationError("");
+        e.preventDefault();
+        setLoading(true);
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
-      setShowOtp(true);
-      setLoading(false);
-    } catch (err) {
-      //in err Error: You have exceeded the maximum number of attempts
-      setLoading(false);
-      setLoading(false);
-      var errMessage = "Something went wrong. Please try again.";
-      if (err && err.message) {
-        errMessage = err.message;
-      }
-      setValidationError(errMessage);
-    }
-  };
-  const handleForgotPin = async (e) => {
-    setValidationError("");
-    e.preventDefault();
-    setLoading(true);
+        try {
+            if (!kgid || !pin || isNaN(kgid) || isNaN(pin)) {
+                setValidationError("Please enter valid KGID and PIN");
+                setLoading(false);
+                return;
+            }
 
-    try {
-      if (!kgid || isNaN(kgid)) {
-        setValidationError("Please enter valid KGID");
-        setLoading(false);
-        return;
-      }
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(`${serverURL}/auth/generate_OTP`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ kgid: kgid, pin: pin }),
+            });
 
-      const serverURL = process.env.REACT_APP_SERVER_URL;
-      const response = await fetch(
-        `${serverURL}/auth/generate_OTP_without_pin`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ kgid: kgid }),
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+   
+            setShowOtp(true);
+            setTimer(120);
+            setLoading(false);
+        } catch (err) {
+            //in err Error: You have exceeded the maximum number of attempts
+            setLoading(false);
+            setLoading(false);
+            var errMessage = "Something went wrong. Please try again.";
+            if (err && err.message) {
+                errMessage = err.message;
+            }
+            setValidationError(errMessage);
         }
-      );
+    };
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
-      setShowOtp(false);
-      setForgotVerifyOtp(true);
-      setForgotPassword(false);
-      setLoading(false);
-    } catch (err) {
-      //in err Error: You have exceeded the maximum number of attempts
-      setLoading(false);
-      setLoading(false);
-      var errMessage = "Something went wrong. Please try again.";
-      if (err && err.message) {
-        errMessage = err.message;
-      }
-      setValidationError(errMessage);
-    }
-  };
+    const handleForgotPin = async (e) => {
+        setValidationError("");
+        e.preventDefault();
+        setLoading(true);
+
+        try {
+            if (!kgid || isNaN(kgid)) {
+                setValidationError("Please enter valid KGID");
+                setLoading(false);
+                return;
+            }
+
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(
+                `${serverURL}/auth/generate_OTP_without_pin`,{
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ kgid: kgid }),
+                }
+            );
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            setShowOtp(false);
+            setForgotVerifyOtp(true);
+            setTimer(120);
+            setForgotPassword(false);
+            setLoading(false);
+
+        } catch (err) {
+        //in err Error: You have exceeded the maximum number of attempts
+            setLoading(false);
+            setLoading(false);
+            var errMessage = "Something went wrong. Please try again.";
+            if (err && err.message) {
+                errMessage = err.message;
+            }
+            setValidationError(errMessage);
+        }
+    };
 
   const handleforgotOtpVerify = async (e) => {
     setValidationError("");
@@ -338,41 +346,47 @@ const Login = () => {
     }
   };
 
-  const resendOtp = async () => {
-    setValidationError("");
-    setLoading(true);
+    const resendOtp = async () => {
+        setValidationError("");
+        setLoading(true);
 
-    try {
-      if (!kgid || !pin || isNaN(kgid) || isNaN(pin)) {
-        setValidationError("Please enter valid KGID and PIN");
-        setLoading(false);
-        return;
-      }
+        try {
 
-      const serverURL = process.env.REACT_APP_SERVER_URL;
-      const response = await fetch(`${serverURL}/auth/generate_OTP`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ kgid: kgid, pin: pin }),
-      });
+            console.log(kgid,"kgid");
+            console.log(pin,"pin");
 
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
-      setShowOtp(true);
-      setLoading(false);
-    } catch (err) {
-      setLoading(false);
-      var errMessage = "Something went wrong. Please try again.";
-      if (err && err.message) {
-        errMessage = err.message;
-      }
-      setValidationError(errMessage);
-    }
-  };
+            if (!kgid || !pin || isNaN(kgid) || isNaN(pin)) {
+                setValidationError("Please enter valid KGID and PIN");
+                setLoading(false);
+                return;
+            }
+
+            const serverURL = process.env.REACT_APP_SERVER_URL;
+            const response = await fetch(`${serverURL}/auth/generate_OTP`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ kgid: kgid, pin: pin }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+            setShowOtp(true);
+            setTimer(120);
+            setLoading(false);
+
+        } catch (err) {
+            setLoading(false);
+            var errMessage = "Something went wrong. Please try again.";
+            if (err && err.message) {
+                errMessage = err.message;
+            }
+            setValidationError(errMessage);
+        }
+    };
 
     const designationClick = (item) => {
         console.log("Clicked Item:", item); // Check if item is received correctly
@@ -479,6 +493,26 @@ const Login = () => {
         setShowDesignation(false);
         setLoading(false);
     }
+
+    useEffect(() => {
+        if(showOtp || forgotVerifyOtp){
+            var countdown;
+    
+            if ((showOtp || forgotVerifyOtp) && timer > 0) {
+                countdown = setInterval(() => {
+                    setTimer((prev) => prev - 1);
+                }, 1000);
+            }
+    
+            return () => clearInterval(countdown);
+        }
+    }, [showOtp, timer, forgotVerifyOtp]);
+
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+    };
 
   return (
     <Box
@@ -740,37 +774,46 @@ const Login = () => {
         )}
 
         {showOtp && (
-          <Box
-            sx={{
-              padding: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: "1px solid #D0D5DD",
-              marginTop: 2,
-            }}
-          >
-            <Link href="#" underline="none" onClick={() => resendOtp()}>
-              {"Resend OTP"}
-            </Link>
-          </Box>
+            <Box
+                sx={{
+                    padding: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid #D0D5DD",
+                    marginTop: 2,
+                }}
+            >
+                {timer > 0 ? (
+                    <span style={{ color: "#555" }}>Resend OTP in {formatTime(timer)}</span>
+                ) : (
+                    <Link href="#" underline="none" onClick={resendOtp}>
+                        Resend OTP
+                    </Link>
+                )}
+                
+            </Box>
         )}
 
         {!showOtp && forgotVerifyOtp && (
-          <Box
-            sx={{
-              padding: 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: "1px solid #D0D5DD",
-              marginTop: 2,
-            }}
-          >
-            <Link href="#" underline="none" onClick={() => resendOtp()}>
-              {"Resend OTP"}
-            </Link>
-          </Box>
+            <Box
+                sx={{
+                    padding: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderBottom: "1px solid #D0D5DD",
+                    marginTop: 2,
+                }}
+            >
+                {timer > 0 ? (
+                    <span style={{ color: "#555" }}>Resend OTP in {formatTime(timer)}</span>
+                ) : (
+                    <Link href="#" underline="none" onClick={handleForgotPin}>
+                        Resend OTP
+                    </Link>
+                )}
+            </Box>
         )}
         {loading && (
           <div className="parent_spinner" tabIndex="-1" aria-hidden="true">
