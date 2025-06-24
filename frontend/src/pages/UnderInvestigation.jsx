@@ -309,6 +309,7 @@ const fslTableRef = useRef();
   const [selectedOtherFields, setSelectedOtherFields] = useState(null);
   const [selectKey, setSelectKey] = useState(null);
   const [mergeDialogData, setMergeDialogData] = useState([]);
+  const [hideClearFilter, setHideClearFilter] = useState(false);
 
   // for approve states
 
@@ -11829,6 +11830,7 @@ const handleExtensionApprovalWithUpdate = async () => {
     setFromDateValue(null);
     setToDateValue(null);
     setForceTableLoad((prev) => !prev);
+    setHideClearFilter(false);
   };
 
   const setFilterData = () => {
@@ -12798,6 +12800,7 @@ const handleExtensionApprovalWithUpdate = async () => {
 
     const setUnAssignedIo = () => {
       clearAllFilters();
+      setHideClearFilter(true);
       setFilterValues(prev => ({
         ...(prev || {}),
         field_io_name: ""
@@ -12807,6 +12810,7 @@ const handleExtensionApprovalWithUpdate = async () => {
 
     const setDigNotApproved = () => {
       clearAllFilters();
+      setHideClearFilter(true);
       setFilterValues(prev => ({
         ...(prev || {}),
         field_approval_done_by: "SP"
@@ -13262,10 +13266,11 @@ return (
                   },
                 }}
               />
-              {((searchValue ||
+              {(searchValue ||
                 fromDateValue ||
                 toDateValue ||
-                Object.keys(filterValues).length > 0 ) && (
+                Object.keys(filterValues).length > 0) && (
+                   !hideClearFilter && (
                 <Typography
                   onClick={handleClear}
                   sx={{
