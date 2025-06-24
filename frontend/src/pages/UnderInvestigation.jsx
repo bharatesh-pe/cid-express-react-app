@@ -2787,6 +2787,7 @@ const normalizeFormFieldsOptions = (fields) =>
                 setNatureOfDisposalFileUpload({});
                 setShowAccusedTable(false);
                 setAccusedFormOpen(false);
+                setShowPreliminaryAccusedTable(false)
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -15425,8 +15426,6 @@ return (
                   >
                   <DialogTitle id="alert-dialog-title">
                     Case Extension
-                   {console.log("formData.field_extension_updated_by", formData)}
-                    {/* Show "Request Submitted" if field_extension_updated_by is not DIG, ADG, or DGP */}
                     {formData.field_extension_updated_by &&
                      !["dig", "adg", "dgp"].some((rank) =>
                         String(formData.field_extension_updated_by).toLowerCase().startsWith(rank)
