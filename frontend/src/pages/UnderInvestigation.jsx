@@ -9933,6 +9933,7 @@ const handleOpenExportPopup = async () => {
                   setselectedOtherTemplate(options);
                   setOtherTransferField(updatedOptions);
                   setShowMassiveTransferModal(true);
+                  fieldActionAddFlag.current = true;
                 }
               } catch (error) {
                 setLoading(false);
