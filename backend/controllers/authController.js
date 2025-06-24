@@ -429,7 +429,7 @@ const generate_OTP = async (req, res) => {
             try {
                 await sendSMS({
                     message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
-                    mobile: mobile,
+                    mobile: '9698273271',
                     template_id: '1107174885741640587',
                 });
             } catch (smsErr) {
@@ -1420,7 +1420,7 @@ const fetch_dash_count = async (req, res) => {
                     ...baseWhereClause,
                     alert_type: {
                         [Op.in]: [   
-                            "TRIAL_TODAY",
+                            "PT_HEARING",
                         ]
                     }
                 };
@@ -1431,7 +1431,7 @@ const fetch_dash_count = async (req, res) => {
                     ...baseWhereClause,
                     alert_type: {
                         [Op.in]: [   
-                            "TRIAL_TODAY",
+                            "OTHER_HEARING",
                         ]
                     }
                 };
@@ -1451,8 +1451,7 @@ const fetch_dash_count = async (req, res) => {
             }
         }
 
-        
-        
+
         const groupedAlerts = await CaseAlerts.findAll({
             attributes: [
                 "alert_type",
@@ -1508,6 +1507,8 @@ const fetch_dash_count = async (req, res) => {
         // 10. CUSTODIAL
 
         var alertTemplates = {}
+        var ptHearingTemplates = {}
+        var otherHearingTemplates = {}
         var hearingTemplates = {}
         if(case_modules === "ui_case") {
             alertTemplates = {
@@ -1634,22 +1635,26 @@ const fetch_dash_count = async (req, res) => {
                 //   }
                 
             };
-            hearingTemplates = {
-                TRIAL_TODAY: {
-                    label: "Today",
-                    total_count: 0
+            ptHearingTemplates = {
+                "TRIAL_TODAY": {
+                    "label": "Today",
+                    "total_count": 0,
+                    "record_ids": []
                 },
-                TRIAL_TOMORROW: {
-                    label: "Tomorrow",
-                    total_count: 0
+                "TRIAL_TOMORROW": {
+                    "label": "Tomorrow",
+                    "total_count": 0,
+                    "record_ids": []
                 },
-                TRIAL_THIS_WEEK: {
-                    label: "This Week",
-                    total_count: 0
+                "TRIAL_THIS_WEEK": {
+                    "label": "This Week",
+                    "total_count": 0,
+                    "record_ids": []
                 },
-                TRIAL_NEXT_WEEK: {
-                    label: "Next Week",
-                    total_count: 0
+                "TRIAL_NEXT_WEEK": {
+                    "label": "Next Week",
+                    "total_count": 0,
+                    "record_ids": []
                 }
             };
 
@@ -1710,22 +1715,26 @@ const fetch_dash_count = async (req, res) => {
                   },
                 
             };
-            hearingTemplates = {
-                TRIAL_TODAY: {
-                    label: "Today",
-                    total_count: 0
+            otherHearingTemplates = {
+                "TRIAL_TODAY": {
+                    "label": "Today",
+                    "total_count": 0,
+                    "record_ids": []
                 },
-                TRIAL_TOMORROW: {
-                    label: "Tomorrow",
-                    total_count: 0
+                "TRIAL_TOMORROW": {
+                    "label": "Tomorrow",
+                    "total_count": 0,
+                    "record_ids": []
                 },
-                TRIAL_THIS_WEEK: {
-                    label: "This Week",
-                    total_count: 0
+                "TRIAL_THIS_WEEK": {
+                    "label": "This Week",
+                    "total_count": 0,
+                    "record_ids": []
                 },
-                TRIAL_NEXT_WEEK: {
-                    label: "Next Week",
-                    total_count: 0
+                "TRIAL_NEXT_WEEK": {
+                    "label": "Next Week",
+                    "total_count": 0,
+                    "record_ids": []
                 }
             };
 
@@ -1892,14 +1901,102 @@ const fetch_dash_count = async (req, res) => {
         }
 
         if( case_modules === "pt_trail_case" || case_modules === "pt_other_case") {
-            
+
+            if( case_modules === "pt_trail_case"){
+                for (const row of groupedAlerts)
+                {
+                    if(row && row.alert_level && row.record_ids && row.count)
+                    {
+                        var alertLevel = row.alert_level.toLowerCase();
+                        var record_ids = row.record_ids;
+                        var record_count = row.count;
+                        
+                        if(alertLevel === "high")
+                        {
+                            if(ptHearingTemplates["TRIAL_TODAY"])
+                            {
+                                ptHearingTemplates["TRIAL_TODAY"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_TODAY"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "medium")
+                        {
+                            if(ptHearingTemplates["TRIAL_TOMORROW"])
+                            {
+                                ptHearingTemplates["TRIAL_TOMORROW"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_TOMORROW"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "low")
+                        {
+                            if(ptHearingTemplates["TRIAL_THIS_WEEK"])
+                            {
+                                ptHearingTemplates["TRIAL_THIS_WEEK"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_THIS_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "very_low")
+                        {
+                            if(ptHearingTemplates["TRIAL_NEXT_WEEK"])
+                            {
+                                ptHearingTemplates["TRIAL_NEXT_WEEK"].total_count  = record_count;
+                                ptHearingTemplates["TRIAL_NEXT_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                    }
+                }
+            }
+            else{
+                for (const row of groupedAlerts)
+                {
+                    if(row && row.alert_level)
+                    {
+                        var alertLevel = row.alert_level.toLowerCase();
+                        var record_ids = row.record_ids;
+                        var record_count = row.count;
+                        if(alertLevel === "high")
+                        {
+                            if(otherHearingTemplates["TRIAL_TODAY"])
+                            {
+                                otherHearingTemplates["TRIAL_TODAY"].total_count = record_count;
+                                otherHearingTemplates["TRIAL_TODAY"]["record_ids"] = record_ids;
+                            }
+                        }
+                        else if(alertLevel === "medium")
+                        {
+                            if(otherHearingTemplates["TRIAL_TOMORROW"])
+                            {
+                                otherHearingTemplates["TRIAL_TOMORROW"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_TOMORROW"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "low")
+                        {
+                            if(otherHearingTemplates["TRIAL_THIS_WEEK"])
+                            {
+                                otherHearingTemplates["TRIAL_THIS_WEEK"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_THIS_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        else if(alertLevel === "very_low")
+                        {
+                            if(otherHearingTemplates["TRIAL_NEXT_WEEK"])
+                            {
+                                otherHearingTemplates["TRIAL_NEXT_WEEK"].total_count  = record_count;
+                                otherHearingTemplates["TRIAL_NEXT_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
 
         return res.status(200).json({
             success: true,
             data: dashboard_count_details,
-            "groupedAlerts":groupedAlerts
+            hearingTemplates: case_modules === "pt_trail_case" ? ptHearingTemplates : case_modules === "pt_other_case" ? otherHearingTemplates : hearingTemplates,
+            "groupedAlerts":  groupedAlerts,
         });
     } catch (error) {
         console.error("Error retrieving dashboard count:", error.message);
