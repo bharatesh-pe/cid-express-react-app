@@ -1508,6 +1508,7 @@ const fetch_dash_count = async (req, res) => {
         // 10. CUSTODIAL
 
         var alertTemplates = {}
+        var hearingTemplates = {}
         if(case_modules === "ui_case") {
             alertTemplates = {
                 IO_ALLOCATION: {
@@ -1633,6 +1634,25 @@ const fetch_dash_count = async (req, res) => {
                 //   }
                 
             };
+            hearingTemplates = {
+                TRIAL_TODAY: {
+                    label: "Today",
+                    total_count: 0
+                },
+                TRIAL_TOMORROW: {
+                    label: "Tomorrow",
+                    total_count: 0
+                },
+                TRIAL_THIS_WEEK: {
+                    label: "This Week",
+                    total_count: 0
+                },
+                TRIAL_NEXT_WEEK: {
+                    label: "Next Week",
+                    total_count: 0
+                }
+            };
+
         }
         else if (case_modules === "pt_other_case") {
 
@@ -1690,6 +1710,25 @@ const fetch_dash_count = async (req, res) => {
                   },
                 
             };
+            hearingTemplates = {
+                TRIAL_TODAY: {
+                    label: "Today",
+                    total_count: 0
+                },
+                TRIAL_TOMORROW: {
+                    label: "Tomorrow",
+                    total_count: 0
+                },
+                TRIAL_THIS_WEEK: {
+                    label: "This Week",
+                    total_count: 0
+                },
+                TRIAL_NEXT_WEEK: {
+                    label: "Next Week",
+                    total_count: 0
+                }
+            };
+
         }
         else if (case_modules === "eq_case") {
             // alertTemplates = {
@@ -1850,6 +1889,10 @@ const fetch_dash_count = async (req, res) => {
             {
                 dashboard_count_details["EXTENSION"].total_count = dashboard_count_details["NATURE_OF_DISPOSAL"].total_count;
             }
+        }
+
+        if( case_modules === "pt_trail_case" || case_modules === "pt_other_case") {
+            
         }
 
 
