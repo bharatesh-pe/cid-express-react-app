@@ -987,7 +987,7 @@ const Dashboard = () => {
                                 label={day}
                                 bgGradient={`linear-gradient(135deg, #43cea2, #185a9d)`}
                                 isFirst={index === 0}
-                                number={25}
+                                number={index + 1}
                             />
                         ))}
                     </Box>
