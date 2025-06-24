@@ -113,9 +113,10 @@ const NormalViewForm = ({
     }
 
     useEffect(()=>{
-        if(table_row_id && (reloadForm !== null || reloadForm !== undefined)){
+        if(table_row_id && (reloadForm !== null && reloadForm !== undefined)){
             setReadonlyTemplate(true);
             setEditDataTemplate(false);  
+            editedForm(false);
         }
     },[reloadForm]);
 
@@ -855,6 +856,70 @@ const NormalViewForm = ({
             callApi();
             }
         }
+
+        if(selectedField && selectedField?.name === "field_io_name"){
+            
+            const gettingUserDetails = async () => {
+                if (formData["field_io_name"]) {
+                    try {
+                        const response = await api.post("cidMaster/getUserParticularDetails", {
+                            user_id: formData["field_io_name"]
+                        });
+
+                        const data = response?.data;
+                        if (!data) return;
+
+                        let updatedFormData = {};
+
+                        newFormConfig.forEach((field) => {
+                            if (field?.name === "field_io_code/kgid_number" && data?.kgid_id) {
+                                updatedFormData["field_io_code/kgid_number"] = data.kgid_id;
+                            }
+
+                            if (field?.name === "field_io_rank_(designation)") {
+                                if (field?.type === "multidropdown") {
+                                    updatedFormData["field_io_rank_(designation)"] = data?.designations || [];
+                                } else {
+                                    updatedFormData["field_io_rank_(designation)"] = data?.designations?.[0] || "";
+                                }
+                            }
+                        });
+
+                        setFormData((prevData) => ({
+                            ...prevData,
+                            ...updatedFormData
+                        }));
+
+                    } catch (error) {
+                        console.error("Error fetching user details:", error);
+                    }
+                }else{
+                    let updatedFormData = {};
+
+                    newFormConfig.forEach((field) => {
+                        if (field?.name === "field_io_code/kgid_number" && formData?.['field_io_code/kgid_number']) {
+                            updatedFormData["field_io_code/kgid_number"] = "";
+                        }
+
+                        if (field?.name === "field_io_rank_(designation)" && formData?.['field_io_rank_(designation)']) {
+                            if (field?.type === "multidropdown") {
+                                updatedFormData["field_io_rank_(designation)"] = [];
+                            } else {
+                                updatedFormData["field_io_rank_(designation)"] = "";
+                            }
+                        }
+                    });
+
+                    setFormData((prevData) => ({
+                        ...prevData,
+                        ...updatedFormData
+                    }));
+                }
+            };
+
+            gettingUserDetails();
+        }
+
     }, [selectedField]);
 
        useEffect(() => {
@@ -1944,6 +2009,7 @@ const NormalViewForm = ({
             
                     {
                         !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" && table_name !== "cid_eq_case_enquiry_order_copy" &&
+                        table_name !== "cid_eq_case_extension_form" &&
                         <Button
                             variant="contained" color="success"
                             onClick={() =>{
