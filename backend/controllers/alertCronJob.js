@@ -3,12 +3,12 @@ const runDailyAlertCron = require("./cron-progress-report-alert");
 
 cron.schedule('59 23 * * *', async () => {
     await Promise.all([
-        // runDailyAlertCron.runDailyAlertCronIO(),
-        // runDailyAlertCron.runDailyAlertCronAP(),
-        // runDailyAlertCron.runDailyAlertCronFSL_PF(),
-        // runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL(),
-        // runDailyAlertCron.runDailyAlertCronPTHearing(),
-        // runDailyAlertCron.runDailyAlertCronOtherHearing(),
+        runDailyAlertCron.runDailyAlertCronIO(),
+        runDailyAlertCron.runDailyAlertCronAP(),
+        runDailyAlertCron.runDailyAlertCronFSL_PF(),
+        runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL(),
+        runDailyAlertCron.runDailyAlertCronPTHearing(),
+        runDailyAlertCron.runDailyAlertCronOtherHearing(),
         runDailyAlertCron.runDailyAlertCronCourtStay(),
 
     ]);
@@ -69,13 +69,13 @@ cron.schedule('59 23 * * *', async () => {
 exports.refreshAlertCron = async (req, res) => {
     try {
         await Promise.all([
-            // runDailyAlertCron.runDailyAlertCronIO(),
-            // runDailyAlertCron.runDailyAlertCronAP(),
-            // runDailyAlertCron.runDailyAlertCronFSL_PF(),
-            // runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL(),
-            // runDailyAlertCron.runMonthlyAlertCronPR(),
-            // runDailyAlertCron.runDailyAlertCronPTHearing(),
-            // runDailyAlertCron.runDailyAlertCronOtherHearing(),
+            runDailyAlertCron.runDailyAlertCronIO(),
+            runDailyAlertCron.runDailyAlertCronAP(),
+            runDailyAlertCron.runDailyAlertCronFSL_PF(),
+            runDailyAlertCron.runDailyAlertCronNATURE_OF_DISPOSAL(),
+            runDailyAlertCron.runMonthlyAlertCronPR(),
+            runDailyAlertCron.runDailyAlertCronPTHearing(),
+            runDailyAlertCron.runDailyAlertCronOtherHearing(),
             runDailyAlertCron.runDailyAlertCronCourtStay(),
         ]);
 
