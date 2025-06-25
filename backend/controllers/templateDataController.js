@@ -1170,6 +1170,9 @@ exports.getTemplateData = async (req, res, next) => {
         table,
         forign_key,
         attributes,
+        options,
+        type,
+        table_display_content,
       } = field;
 
       if (!columnName || !data_type) {
@@ -1186,26 +1189,113 @@ exports.getTemplateData = async (req, res, next) => {
 
       // Handle data_type mapping to Sequelize types
       const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-      
-	  modelAttributes[columnName] = {
+
+        modelAttributes[columnName] = {
         type: sequelizeType,
         allowNull: not_null ? false : true,
         defaultValue: default_value || null,
-      };
+        };
 
-	  fields[columnName] = {
+        fields[columnName] = {
         type: sequelizeType,
         allowNull: !not_null,
         defaultValue: default_value || null,
-      };
+        displayContent: table_display_content,
+        };
+
+      // If attributes present, fetch options from related table (users or others)
+      if (attributes && attributes.length > 0) {
+      let opts = [];
+      if (table && forign_key && attributes) {
+        // Ensure forign_key is in attributes
+        if (!attributes.includes(forign_key)) attributes.push(forign_key);
+      }
+      if (table === "users") {
+        // Special handling for users table
+        let IOData = [];
+        IOData = await Users.findAll({
+        where: { dev_status: true },
+        include: [
+          {
+          model: Role,
+          as: "role",
+          attributes: ["role_id", "role_title"],
+          where: {
+            role_id: {
+            [Op.notIn]: excluded_role_ids,
+            },
+          },
+          },
+          {
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["name"],
+          },
+        ],
+        attributes: ["user_id"],
+        raw: true,
+        nest: true,
+        });
+        if (IOData.length > 0) {
+        IOData.forEach((result) => {
+          var code = result["user_id"];
+          var name = result["kgidDetails"]["name"] || '';
+          opts.push({ code, name });
+        });
+        }
+      } else {
+        // Generic table fetch
+        let query = `SELECT ${attributes.join(",")} FROM ${table}`;
+        const [results] = await sequelize.query(query);
+        if (results.length > 0) {
+        results.forEach((result) => {
+          if (result[forign_key]) {
+          var code = result[forign_key];
+          var name = '';
+          attributes.forEach((attribute) => {
+            if (attribute !== forign_key) {
+            name = result[attribute];
+            }
+          });
+          opts.push({ code, name });
+          }
+        });
+        }
+      }
+      // Attach options to field config for later use in transformedRows
+      fields[columnName].options = opts;
+      }
+
+      // Radio/checkbox/dropdown mappings
+      if (type === "radio" && Array.isArray(options)) {
+      fields[columnName].radioMap = options.reduce((acc, option) => {
+        acc[option.code] = option.name;
+        return acc;
+      }, {});
+      }
+      if (type === "checkbox" && Array.isArray(options)) {
+      fields[columnName].checkboxMap = options.reduce((acc, option) => {
+        acc[option.code] = option.name;
+        return acc;
+      }, {});
+      }
+      if (
+      (type === "dropdown" || type === "multidropdown" || type === "autocomplete") &&
+      Array.isArray(options)
+      ) {
+      fields[columnName].dropdownMap = options.reduce((acc, option) => {
+        acc[option.code] = option.name;
+        return acc;
+      }, {});
+      }
 
       // Handle foreign key associations dynamically
       if (table && forign_key && attributes) {
-        associations.push({
-          relatedTable: table,
-          foreignKey: columnName,
-          targetAttribute: attributes,
-        });
+      associations.push({
+        relatedTable: table,
+        foreignKey: columnName,
+        targetAttribute: attributes,
+      });
       }
     }
 
@@ -1219,10 +1309,8 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Dynamically define associations
     const include = [];
-    // Uncomment and adjust if needed to include associations
     for (const association of associations) {
         const RelatedModel = require(`../models`)[association.relatedTable];
-
         if (RelatedModel) {
             Model.belongsTo(RelatedModel, {
                 foreignKey: association.foreignKey,
@@ -1232,8 +1320,11 @@ exports.getTemplateData = async (req, res, next) => {
             include.push({
                 model: RelatedModel,
                 as: `${association.relatedTable}Details`,
-            });
-        }
+                attributes: association.targetAttribute || {
+                exclude: ["created_date", "modified_date"],
+                },
+              });
+      }
     }
 
     // Add TemplateUserStatus association
@@ -1249,8 +1340,8 @@ exports.getTemplateData = async (req, res, next) => {
         as: 'ReadStatus',
         required: is_read,
         where: {
-            user_id: userId,
-            template_id: tableData.template_id
+          user_id: userId,
+          template_id: tableData.template_id
         },
         attributes: ['template_user_status_id']
     });
@@ -1268,9 +1359,9 @@ exports.getTemplateData = async (req, res, next) => {
     } else if (pt_case_id && pt_case_id !== "") {
       whereClause = { pt_case_id };
     }
-    
+
     const pending = 'Pending';
-    
+
     if (module && tab && table_name === 'cid_ui_case_accused') {
         if (module === "ui_case" && tab === "178_cases") {
             whereClause.field_status_of_accused_in_charge_sheet = { [Op.iLike]: `%${pending}%` };
@@ -1279,11 +1370,11 @@ exports.getTemplateData = async (req, res, next) => {
         }
     }
 
-	// Apply field filters if provided
+    // Apply field filters if provided
     if (filter && typeof filter === "object") {
       Object.entries(filter).forEach(([key, value]) => {
         if (fields[key]) {
-          whereClause[key] = value; // Direct match for foreign key fields
+          whereClause[key] = value;
         }
       });
     }
@@ -1307,174 +1398,141 @@ exports.getTemplateData = async (req, res, next) => {
       const searchConditions = [];
 
       if (search_field && fields[search_field]) {
-        // Specific field search
-        const fieldConfig = fieldConfigs[search_field];
-        const fieldType = fields[search_field].type.key;
+        const fieldConfig = fields[search_field];
+        const fieldType = fieldConfig.type.key;
         const isForeignKey = associations.some(
           (assoc) => assoc.foreignKey === search_field
         );
 
-        // Handle field type based search
-        if (["STRING", "TEXT"].includes(fieldType)) {
-          searchConditions.push({
-            [search_field]: { [Op.iLike]: `%${search}%` },
-          });
-        } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
-          if (!isNaN(search)) {
-            searchConditions.push({ [search_field]: parseInt(search, 10) });
-          }
-        } else if (fieldType === "BOOLEAN") {
-          const boolValue = search.toLowerCase() === "true";
-          searchConditions.push({ [search_field]: boolValue });
-        } else if (fieldType === "DATE") {
-          const parsedDate = Date.parse(search);
-          if (!isNaN(parsedDate)) {
-            searchConditions.push({ [search_field]: new Date(parsedDate) });
-          }
-        }
-
-        // Handle dropdown, radio, checkbox special searches
-        if (
-          fieldConfig &&
-          fieldConfig.type === "dropdown" &&
-          Array.isArray(fieldConfig.options)
-        ) {
-          // Find option code that matches the search text
-          const matchingOption = fieldConfig.options.find((option) =>
-            option.name.toLowerCase().includes(search.toLowerCase())
-          );
-
-          if (matchingOption) {
-            searchConditions.push({ [search_field]: matchingOption.code });
-          }
-        }
-
-        if (
-          fieldConfig &&
-          fieldConfig.type === "radio" &&
-          Array.isArray(fieldConfig.options)
-        ) {
-          // Find option code that matches the search text
-          const matchingOption = fieldConfig.options.find((option) =>
-            option.name.toLowerCase().includes(search.toLowerCase())
-          );
-
-          if (matchingOption) {
-            searchConditions.push({ [search_field]: matchingOption.code });
-          }
-        }
-
-        // Handle foreign keys
-        if (isForeignKey) {
-          const association = associations.find(
-            (assoc) => assoc.foreignKey === search_field
-          );
-          if (association) {
-            // Get the included model from the include array
-            const associatedModel = include.find(
-              (inc) => inc.as === `${association.relatedTable}Details`
-            );
-
-            // Only add the condition if the model is properly included
-            if (associatedModel) {
-              searchConditions.push({
-                [`$${association.relatedTable}Details.${association.targetAttribute}$`]:
-                  { [Op.iLike]: `%${search}%` },
-              });
-            }
-          }
-        }
-      } else {
-        // General search across all fields
-        Object.keys(fields).forEach((field) => {
-          const fieldConfig = fieldConfigs[field];
-          const fieldType = fields[field].type.key;
-          const isForeignKey = associations.some(
-            (assoc) => assoc.foreignKey === field
-          );
-
-          // Standard text and numeric search
-          if (["STRING", "TEXT"].includes(fieldType)) {
-            searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
-          } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
-            if (!isNaN(search)) {
-              searchConditions.push({ [field]: parseInt(search, 10) });
-            }
-          }
-
-          // Dropdown, radio, checkbox search
-          if (
-            fieldConfig &&
-            fieldConfig.type === "dropdown" &&
-            Array.isArray(fieldConfig.options)
-          ) {
-            // Find option code that matches the search text
-            const matchingOption = fieldConfig.options.find((option) =>
-              option.name.toLowerCase().includes(search.toLowerCase())
-            );
-
-            if (matchingOption) {
-              searchConditions.push({ [field]: matchingOption.code });
-            }
-          }
-
-          if (
-            fieldConfig &&
-            fieldConfig.type === "radio" &&
-            Array.isArray(fieldConfig.options)
-          ) {
-            // Find option code that matches the search text
-            const matchingOption = fieldConfig.options.find((option) =>
-              option.name.toLowerCase().includes(search.toLowerCase())
-            );
-
-            if (matchingOption) {
-              searchConditions.push({ [field]: matchingOption.code });
-            }
-          }
-
-          // Foreign key search
-          if (isForeignKey) {
-            const association = associations.find(
-              (assoc) => assoc.foreignKey === field
-            );
-            if (association) {
-              // Get the included model from the include array
-              const associatedModel = include.find(
-                (inc) => inc.as === `${association.relatedTable}Details`
-              );
-
-              // Only add the condition if the model is properly included
-              if (associatedModel) {
-                searchConditions.push({
-                  [`$${association.relatedTable}Details.${association.targetAttribute}$`]:
-                    { [Op.iLike]: `%${search}%` },
-                });
-              }
-            }
-          }
+      if (["STRING", "TEXT"].includes(fieldType)) {
+        searchConditions.push({
+        [search_field]: { [Op.iLike]: `%${search}%` },
         });
+      } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+        if (!isNaN(search)) {
+        searchConditions.push({ [search_field]: parseInt(search, 10) });
+        }
+      } else if (fieldType === "BOOLEAN") {
+        const boolValue = search.toLowerCase() === "true";
+        searchConditions.push({ [search_field]: boolValue });
+      } else if (fieldType === "DATE") {
+        const parsedDate = Date.parse(search);
+        if (!isNaN(parsedDate)) {
+        searchConditions.push({ [search_field]: new Date(parsedDate) });
+        }
+      }
+
+      // Dropdown/radio/checkbox search
+      if (
+        fieldConfig.dropdownMap &&
+        Object.values(fieldConfig.dropdownMap).length
+      ) {
+        const match = Object.entries(fieldConfig.dropdownMap).find(
+        ([, name]) => name.toLowerCase().includes(search.toLowerCase())
+        );
+        if (match) searchConditions.push({ [search_field]: match[0] });
+      }
+      if (
+        fieldConfig.radioMap &&
+        Object.values(fieldConfig.radioMap).length
+      ) {
+        const match = Object.entries(fieldConfig.radioMap).find(
+        ([, name]) => name.toLowerCase().includes(search.toLowerCase())
+        );
+        if (match) searchConditions.push({ [search_field]: match[0] });
+      }
+
+      // Foreign key search
+      if (isForeignKey) {
+        const association = associations.find(
+        (assoc) => assoc.foreignKey === search_field
+        );
+        if (association) {
+        const associatedModel = include.find(
+          (inc) => inc.as === `${association.relatedTable}Details`
+        );
+        if (associatedModel) {
+          searchConditions.push({
+          [`$${association.relatedTable}Details.${association.targetAttribute}$`]:
+            { [Op.iLike]: `%${search}%` },
+          });
+        }
+        }
+      }
+      } else {
+      // General search across all fields
+      Object.keys(fields).forEach((field) => {
+        const fieldConfig = fields[field];
+        const fieldType = fieldConfig.type.key;
+        const isForeignKey = associations.some(
+        (assoc) => assoc.foreignKey === field
+        );
+
+        if (["STRING", "TEXT"].includes(fieldType)) {
+        searchConditions.push({ [field]: { [Op.iLike]: `%${search}%` } });
+        } else if (["INTEGER", "FLOAT", "DOUBLE"].includes(fieldType)) {
+        if (!isNaN(search)) {
+          searchConditions.push({ [field]: parseInt(search, 10) });
+        }
+        }
+
+        if (
+        fieldConfig.dropdownMap &&
+        Object.values(fieldConfig.dropdownMap).length
+        ) {
+        const match = Object.entries(fieldConfig.dropdownMap).find(
+          ([, name]) => name.toLowerCase().includes(search.toLowerCase())
+        );
+        if (match) searchConditions.push({ [field]: match[0] });
+        }
+        if (
+        fieldConfig.radioMap &&
+        Object.values(fieldConfig.radioMap).length
+        ) {
+        const match = Object.entries(fieldConfig.radioMap).find(
+          ([, name]) => name.toLowerCase().includes(search.toLowerCase())
+        );
+        if (match) searchConditions.push({ [field]: match[0] });
+        }
+
+        if (isForeignKey) {
+        const association = associations.find(
+          (assoc) => assoc.foreignKey === field
+        );
+        if (association) {
+          const associatedModel = include.find(
+          (inc) => inc.as === `${association.relatedTable}Details`
+          );
+          if (associatedModel) {
+          searchConditions.push({
+            [`$${association.relatedTable}Details.${association.targetAttribute}$`]:
+            { [Op.iLike]: `%${search}%` },
+          });
+          }
+        }
+        }
+      });
       }
 
       if (searchConditions.length > 0) {
-        whereClause[Op.or] = searchConditions;
+      whereClause[Op.or] = searchConditions;
       }
     }
 
     const validSortBy = fields[sort_by] ? sort_by : "created_at";
 
-    // Fetch data with dynamic includes
-    // const records = await Model.findAll({
-    //   where: whereClause,
-    //   limit,
-    //   offset,
-    //   order: [[validSortBy, order.toUpperCase()]],
-    //   attributes: [
-    //     "id",
-    //     ...Object.keys(fields).filter((field) => fields[field].displayContent),
-    //   ],
-    //   include,
-    // });
+     // Fetch data with dynamic includes
+     // const records = await Model.findAll({
+     //   where: whereClause,
+     //   limit,
+     //   offset,
+     //   order: [[validSortBy, order.toUpperCase()]],
+     //   attributes: [
+     //     "id",
+     //     ...Object.keys(fields).filter((field) => fields[field].displayContent),
+     //   ],
+     //   include,
+     // });
     const { rows: records, count: totalItems } = await Model.findAndCountAll({
       where: whereClause,
       limit,
@@ -1483,202 +1541,201 @@ exports.getTemplateData = async (req, res, next) => {
       order: [[col(validSortBy), order.toUpperCase()]],
     });
 
-
-    // const totalItems = records.count;
     const totalPages = Math.ceil(totalItems / limit);
-
-
 
     // Transform the response to include only primary fields and metadata fields
     const transformedRecords = await Promise.all(
       records.map(async (record) => {
-        const data = record.toJSON();
-        let filteredData;
+      const data = record.toJSON();
+      let filteredData;
 
-        data.ReadStatus = data.ReadStatus ? true : false;
-        if (table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report") {
-          filteredData = { ...data };
+      data.ReadStatus = data.ReadStatus ? true : false;
 
-          if (data.field_assigned_to || data.field_assigned_by) {
-            try {
-              if (data.field_assigned_to) {
-                filteredData.field_assigned_to_id = data.field_assigned_to;
-                let hasAnyYes = false;
-
-                if (typeof data.field_pr_status === "string") {
-                  hasAnyYes = data.field_pr_status === "Yes";
-                }
-              
-                else if (Array.isArray(data.field_pr_status)) {
-                  hasAnyYes = data.field_pr_status.some((statusObj) => statusObj === "Yes" || statusObj.status === "Yes");
-                }
-              
-                filteredData.hasFieldPrStatus = hasAnyYes;
-              
-                const assignedToUser = await Users.findOne({
-                  where: { user_id: data.field_assigned_to },
-                  attributes: ["kgid_id"],
-                });
-          
-                if (assignedToUser && assignedToUser.kgid_id) {
-                  const kgidRecord = await KGID.findOne({
-                    where: { id: assignedToUser.kgid_id },
-                    attributes: ["name"],
-                  });
-          
-                  filteredData.field_assigned_to = kgidRecord ? kgidRecord.name : " ";
-                } else {
-                  filteredData.field_assigned_to = " ";
-                }
-              }
-          
-              if (data.field_assigned_by) {
-                filteredData.field_assigned_by_id = data.field_assigned_by;
-
-                const assignedByUser = await Users.findOne({
-                  where: { user_id: data.field_assigned_by },
-                  attributes: ["kgid_id"],
-                });
-          
-                if (assignedByUser && assignedByUser.kgid_id) {
-                  const kgidRecord = await KGID.findOne({
-                    where: { id: assignedByUser.kgid_id },
-                    attributes: ["name"],
-                  });
-          
-                  filteredData.field_assigned_by = kgidRecord ? kgidRecord.name : "Unknown";
-                } else {
-                  filteredData.field_assigned_by = "Unknown";
-                }
-              }
-            } catch (error) {
-              console.error("Error fetching user details:", error);
-            }
-          }
-
-          if(data.field_division) {
-            const division = await Division.findOne({
-              where: { division_id: data.field_division },
-              attributes: ["division_name"],
-            });
-            filteredData.field_division = division ? division.division_name : "Unknown";
-          }
-        }else if (table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_eq_case_plan_of_action' || table_name === 'cid_ui_case_cdr_ipdr') {
-            filteredData = { ...data };
-            if (
-                (table_name === 'cid_ui_case_action_plan' ||
-                 table_name === 'cid_eq_case_plan_of_action' ||
-                 table_name === 'cid_ui_case_cdr_ipdr') &&
-                case_io_id && case_io_id !== ""
-            ) {
-              const case_io_user_designation = await UserDesignation.findOne({
-                    attributes: ["designation_id"],
-                    where: { user_id: case_io_id },
-                });
-            
-                let supervisorDesignationId = '';
-            
-                if (case_io_user_designation?.designation_id) {
-                    const immediate_supervisior = await UsersHierarchy.findOne({
-                        attributes: ["supervisor_designation_id"],
-                        where: { officer_designation_id: case_io_user_designation.designation_id },
-                    });
-            
-                    supervisorDesignationId = immediate_supervisior?.supervisor_designation_id || '';
-                }
-            
-                filteredData['supervisior_designation_id'] = supervisorDesignationId;
-            }            
-        }else if (table_name === "cid_ui_case_accused") {
-          filteredData = { ...data };
-          console.log("filteredData", filteredData);
-        }else if (table_name === "cid_ui_case_41a_notices") {
-          console.log("🔍 Handling cid_ui_case_41a_notices");
-
-          filteredData = { ...data };
-
-          if (case_io_id && case_io_id !== "") {
-            const case_io_user_designation = await UserDesignation.findOne({
-              attributes: ["designation_id"],
-              where: { user_id: case_io_id },
-            });
-
-            let supervisorDesignationId = "";
-
-            if (case_io_user_designation?.designation_id) {
-              const immediate_supervisior = await UsersHierarchy.findOne({
-                attributes: ["supervisor_designation_id"],
-                where: { officer_designation_id: case_io_user_designation.designation_id },
-              });
-
-              supervisorDesignationId = immediate_supervisior?.supervisor_designation_id || "";
-            }
-
-            filteredData["supervisior_designation_id"] = supervisorDesignationId;
-          }
-
-          const accusedTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_accused" } });
-
-          const accusedMap = {};
-
-          if (accusedTemplate) {
-            const accusedFields = typeof accusedTemplate.fields === "string"
-              ? JSON.parse(accusedTemplate.fields)
-              : accusedTemplate.fields;
-
-            const displayField = accusedFields.find(f => f.name !== "id")?.name || "id";
-
-            const accusedData = await sequelize.query(
-              `SELECT id, ${displayField} FROM ${accusedTemplate.table_name} WHERE id IS NOT NULL`,
-              { type: sequelize.QueryTypes.SELECT }
-            );
-
-            accusedData.forEach((row) => {
-              accusedMap[row.id] = row[displayField];
-            });
-
-          }
-
-          // Replace 'field_accused_level' values with mapped names if possible
-          schema
-            .filter(field => field.is_primary_field === true || field.table_display_content === true)
-            .forEach(field => {
-              if (field.name === "field_accused_level") {
-                const mappedName = accusedMap[data[field.name]] || data[field.name];
-                filteredData[field.name] = mappedName;
-              } else {
-                filteredData[field.name] = data[field.name];
-              }
-            });
-
-        }else {
-          filteredData = {
-            id: data.id,
-            created_at: data.created_at,
-            updated_at: data.updated_at,
-          };
-
-          schema
-            .filter((field) => field.is_primary_field === true || field.table_display_content === true)
-            .forEach((field) => {
-              filteredData[field.name] = data[field.name];
-            });
+      // Map radio, checkbox, dropdown, and foreign key display values using options
+      for (const fieldName in fields) {
+        const fieldConfig = fields[fieldName];
+        if (!fieldConfig) continue;
+        // Radio
+        if (fieldConfig.radioMap && data[fieldName] !== undefined) {
+        if (fieldConfig.radioMap[data[fieldName]]) {
+          data[fieldName] = fieldConfig.radioMap[data[fieldName]];
         }
+        }
+        // Checkbox
+        if (fieldConfig.checkboxMap && data[fieldName]) {
+        const codes = String(data[fieldName]).split(",").map((code) => code.trim());
+        data[fieldName] = codes
+          .map((code) => fieldConfig.checkboxMap[code] || code)
+          .join(", ");
+        }
+        // Dropdown
+        if (fieldConfig.dropdownMap && data[fieldName] !== undefined) {
+        if (fieldConfig.dropdownMap[data[fieldName]]) {
+          data[fieldName] = fieldConfig.dropdownMap[data[fieldName]];
+        }
+        }
+        // Foreign key display via options (attributes)
+        if (fieldConfig.options && Array.isArray(fieldConfig.options) && data[fieldName] !== undefined && data[fieldName] !== null) {
+        const found = fieldConfig.options.find(opt => String(opt.code) === String(data[fieldName]));
+        if (found) {
+          data[fieldName] = found.name;
+        }
+        }
+      }
 
-        // Fetch attachments related to this row
-        const attachments = await ProfileAttachment.findAll({
-            where: {
-                template_id: tableData.template_id,
-                table_row_id: data.id,
-            },
-            order: [["created_at", "DESC"]],
+      // Attachments
+      const attachments = await ProfileAttachment.findAll({
+        where: {
+          template_id: tableData.template_id,
+          table_row_id: data.id,
+        },
+        order: [["created_at", "DESC"]],
+      });
+      if (attachments.length) {
+        data.attachments = attachments.map((att) => att.toJSON());
+      }
+
+      // Custom logic for special tables (as before)
+      if (table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report") {
+        filteredData = { ...data };
+        if (data.field_assigned_to || data.field_assigned_by) {
+        try {
+          if (data.field_assigned_to) {
+          filteredData.field_assigned_to_id = data.field_assigned_to;
+          let hasAnyYes = false;
+          if (typeof data.field_pr_status === "string") {
+            hasAnyYes = data.field_pr_status === "Yes";
+          } else if (Array.isArray(data.field_pr_status)) {
+            hasAnyYes = data.field_pr_status.some((statusObj) => statusObj === "Yes" || statusObj.status === "Yes");
+          }
+          filteredData.hasFieldPrStatus = hasAnyYes;
+          const assignedToUser = await Users.findOne({
+            where: { user_id: data.field_assigned_to },
+            attributes: ["kgid_id"],
+          });
+          if (assignedToUser && assignedToUser.kgid_id) {
+            const kgidRecord = await KGID.findOne({
+            where: { id: assignedToUser.kgid_id },
+            attributes: ["name"],
+            });
+            filteredData.field_assigned_to = kgidRecord ? kgidRecord.name : " ";
+          } else {
+            filteredData.field_assigned_to = " ";
+          }
+          }
+          if (data.field_assigned_by) {
+          filteredData.field_assigned_by_id = data.field_assigned_by;
+          const assignedByUser = await Users.findOne({
+            where: { user_id: data.field_assigned_by },
+            attributes: ["kgid_id"],
+          });
+          if (assignedByUser && assignedByUser.kgid_id) {
+            const kgidRecord = await KGID.findOne({
+            where: { id: assignedByUser.kgid_id },
+            attributes: ["name"],
+            });
+            filteredData.field_assigned_by = kgidRecord ? kgidRecord.name : "Unknown";
+          } else {
+            filteredData.field_assigned_by = "Unknown";
+          }
+          }
+        } catch (error) {
+          console.error("Error fetching user details:", error);
+        }
+        }
+        if (data.field_division) {
+        const division = await Division.findOne({
+          where: { division_id: data.field_division },
+          attributes: ["division_name"],
         });
-
-        if (attachments.length) {
-            filteredData.attachments = attachments.map((att) => att.toJSON());
+        filteredData.field_division = division ? division.division_name : "Unknown";
         }
+      } else if (
+        table_name === "cid_pt_case_trail_monitoring" ||
+        table_name === 'cid_ui_case_action_plan' ||
+        table_name === 'cid_ui_case_property_form' ||
+        table_name === 'cid_eq_case_plan_of_action' ||
+        table_name === 'cid_ui_case_cdr_ipdr'
+      ) {
+        filteredData = { ...data };
+        if (
+        (table_name === 'cid_ui_case_action_plan' ||
+          table_name === 'cid_eq_case_plan_of_action' ||
+          table_name === 'cid_ui_case_cdr_ipdr') &&
+        case_io_id && case_io_id !== ""
+        ) {
+        const case_io_user_designation = await UserDesignation.findOne({
+          attributes: ["designation_id"],
+          where: { user_id: case_io_id },
+        });
+        let supervisorDesignationId = '';
+        if (case_io_user_designation?.designation_id) {
+          const immediate_supervisior = await UsersHierarchy.findOne({
+          attributes: ["supervisor_designation_id"],
+          where: { officer_designation_id: case_io_user_designation.designation_id },
+          });
+          supervisorDesignationId = immediate_supervisior?.supervisor_designation_id || '';
+        }
+        filteredData['supervisior_designation_id'] = supervisorDesignationId;
+        }
+      } else if (table_name === "cid_ui_case_accused") {
+        filteredData = { ...data };
+      } else if (table_name === "cid_ui_case_41a_notices") {
+        filteredData = { ...data };
+        if (case_io_id && case_io_id !== "") {
+        const case_io_user_designation = await UserDesignation.findOne({
+          attributes: ["designation_id"],
+          where: { user_id: case_io_id },
+        });
+        let supervisorDesignationId = "";
+        if (case_io_user_designation?.designation_id) {
+          const immediate_supervisior = await UsersHierarchy.findOne({
+          attributes: ["supervisor_designation_id"],
+          where: { officer_designation_id: case_io_user_designation.designation_id },
+          });
+          supervisorDesignationId = immediate_supervisior?.supervisor_designation_id || "";
+        }
+        filteredData["supervisior_designation_id"] = supervisorDesignationId;
+        }
+        const accusedTemplate = await Template.findOne({ where: { table_name: "cid_ui_case_accused" } });
+        const accusedMap = {};
+        if (accusedTemplate) {
+        const accusedFields = typeof accusedTemplate.fields === "string"
+          ? JSON.parse(accusedTemplate.fields)
+          : accusedTemplate.fields;
+        const displayField = accusedFields.find(f => f.name !== "id")?.name || "id";
+        const accusedData = await sequelize.query(
+          `SELECT id, ${displayField} FROM ${accusedTemplate.table_name} WHERE id IS NOT NULL`,
+          { type: sequelize.QueryTypes.SELECT }
+        );
+        accusedData.forEach((row) => {
+          accusedMap[row.id] = row[displayField];
+        });
+        }
+        schema
+        .filter(field => field.is_primary_field === true || field.table_display_content === true)
+        .forEach(field => {
+          if (field.name === "field_accused_level") {
+          const mappedName = accusedMap[data[field.name]] || data[field.name];
+          filteredData[field.name] = mappedName;
+          } else {
+          filteredData[field.name] = data[field.name];
+          }
+        });
+      } else {
+        filteredData = {
+        id: data.id,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        };
+        schema
+        .filter((field) => field.is_primary_field === true || field.table_display_content === true)
+        .forEach((field) => {
+          filteredData[field.name] = data[field.name];
+        });
+      }
 
-        return filteredData;
+      return filteredData;
       })
     );
 
