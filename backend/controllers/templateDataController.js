@@ -5288,26 +5288,31 @@ exports.caseSysStatusUpdation = async (req, res) => {
     //   );
     // }
 
-   if (updatedCount === 0) {
-      const existingRecords = await Model.findAll({
-        where: { id: recordId }
-      });
-      const alreadySet = existingRecords.every(rec => rec.sys_status === sys_status);
-      if (alreadySet) {
-        return userSendResponse(
-          res,
-          200,
-          true,
-          "Case record already has the requested status."
-        );
-      }
+  if (updatedCount === 0) {
+    const existingRecords = await Model.findAll({
+      where: { id: recordId }
+    });
+    const alreadySet = existingRecords.every(rec => rec.sys_status === sys_status);
+    if (alreadySet) {
       return userSendResponse(
         res,
-        400,
-        false,
-        "No changes detected or update failed."
+        200,
+        true,
+        "Case record already has the requested status."
       );
     }
+    const currentStatuses = existingRecords.map(rec => ({
+      id: rec.id,
+      current_sys_status: rec.sys_status
+    }));
+    return userSendResponse(
+      res,
+      400,
+      false,
+      `No records were updated. The current status${existingRecords.length > 1 ? 'es are' : ' is'}: ${currentStatuses.map(s => `[id: ${s.id}, sys_status: ${s.current_sys_status}]`).join(', ')}. The requested status may already be set or the update failed.`,
+      { error: "No records were updated.", currentStatuses }
+    );
+  }
 
 
     const handleInvestigationUpdate = async (invTableName, caseId , default_status) => {
