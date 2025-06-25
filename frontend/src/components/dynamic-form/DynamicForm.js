@@ -97,6 +97,12 @@ const DynamicForm = ({
     { field: "date", headerName: "Date & Time", flex: 1 },
   ]);
 
+    // based on department get division options state
+
+    const [departmentDivisionField, setDepartmentDivisionField] = useState([]);
+
+    // --- end --- 
+
     const saveNewRef = useRef(false);
     const orderCopyFieldMandatory = useRef(false);
     const changingFormField = useRef(false);
@@ -925,6 +931,77 @@ const DynamicForm = ({
             gettingUserDetails();
         }
 
+        if(selectedField && selectedField?.name && selectedField?.table === "department" && departmentDivisionField.length > 1){
+
+            var divisionField = departmentDivisionField.find((field)=>field.table === "division");
+
+            if(divisionField && divisionField?.name){
+
+                const gettingDivisionBasedOnDepartment = async ()=>{
+                    try {
+
+                        var departmentPayload = {
+                            "department_id" : formData[selectedField.name]
+                        }
+
+                        const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+        
+                        const data = response?.data;
+
+                        if (!data){
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((configData) => {
+                                    if (configData?.name === divisionField?.name) {
+                                        return { ...configData, options: [] };
+                                    }
+                                    return configData;
+                                });
+                                return updatedFormConfig;
+                            });
+                            return;
+                        }
+
+                        var updatedOptions = data.map((divisionData) => {
+                                                return {
+                                                    name: divisionData["division_name"],
+                                                    code: divisionData["division_id"],
+                                                };
+                                            });
+
+                        setNewFormConfig((prevFormConfig) => {
+                            const updatedFormConfig = prevFormConfig.map((configData) => {
+                                if (configData?.name === divisionField?.name) {
+                                    return { ...configData, options: updatedOptions };
+                                }
+                                return configData;
+                            });
+                            return updatedFormConfig;
+                        });
+
+                        setFormData((prevData) => ({
+                            ...prevData,
+                            [divisionField.name] : ""
+                        }));
+                        
+                    } catch (error) {
+                        console.error("Error fetching division details:", error);
+                        setNewFormConfig((prevFormConfig) => {
+                            const updatedFormConfig = prevFormConfig.map((configData) => {
+                                if (configData?.name === divisionField?.name) {
+                                    return { ...configData, options: [] };
+                                }
+                                return configData;
+                            });
+                            return updatedFormConfig;
+                        });
+                    }
+                }
+
+                gettingDivisionBasedOnDepartment();
+
+            }
+        }
+
     }, [selectedField]);
 
     useEffect(() => {
@@ -1506,6 +1583,92 @@ const DynamicForm = ({
                 });
 
                 gettingDependentedOptions(optionUpdateFields);
+
+                const findDepartmentDivisionField = newFormConfig.filter((element)=>{
+                    if(element?.table && (element?.table === "division" || element?.table === "department")){
+                        return element
+                    }
+                });
+
+                if(findDepartmentDivisionField?.length > 1){
+        
+                    setDepartmentDivisionField(findDepartmentDivisionField);
+
+                    var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
+
+                    if(departmentField && departmentField?.name && initialData[departmentField?.name]){
+
+                        const gettingDivisionBasedOnDepartment = async ()=>{
+                            try {
+
+                                var departmentPayload = {
+                                    "department_id" : initialData[departmentField.name]
+                                }
+
+                                const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+                
+                                const data = response?.data;
+
+                                if (!data){
+                                    setNewFormConfig((prevFormConfig) => {
+                                        const updatedFormConfig = prevFormConfig.map((data) => {
+                                            if (data?.table === "division") {
+                                                return { ...data, options: [] };
+                                            }
+                                            return data;
+                                        });
+                                        return updatedFormConfig;
+                                    });
+                                    return;
+                                }
+
+                                var updatedOptions = data.map((divisionData) => {
+                                                        return {
+                                                            name: divisionData["division_name"],
+                                                            code: divisionData["division_id"],
+                                                        };
+                                                    });
+
+                                setNewFormConfig((prevFormConfig) => {
+                                    const updatedFormConfig = prevFormConfig.map((data) => {
+                                        if (data?.table === "division") {
+                                            return { ...data, options: updatedOptions };
+                                        }
+                                        return data;
+                                    });
+                                    return updatedFormConfig;
+                                });
+                                
+                            } catch (error) {
+                                console.error("Error fetching division details:", error);
+                                setNewFormConfig((prevFormConfig) => {
+                                    const updatedFormConfig = prevFormConfig.map((data) => {
+                                        if (data?.table === "division") {
+                                            return { ...data, options: [] };
+                                        }
+                                        return data;
+                                    });
+                                    return updatedFormConfig;
+                                });
+                            }
+                        }
+
+                        gettingDivisionBasedOnDepartment();
+                    }else{
+                        setNewFormConfig((prevFormConfig) => {
+                            const updatedFormConfig = prevFormConfig.map((data) => {
+                                if (data?.table === "division") {
+                                    return { ...data, options: [] };
+                                }
+                                return data;
+                            });
+                            return updatedFormConfig;
+                        });
+                    }
+
+                }else{
+                    setDepartmentDivisionField([]);
+                }
 
             } catch (error) {
                 console.error("Error fetching template data:", error);
