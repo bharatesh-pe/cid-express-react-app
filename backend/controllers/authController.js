@@ -429,7 +429,7 @@ const generate_OTP = async (req, res) => {
             try {
                 await sendSMS({
                     message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
-                    mobile: '9698273271',
+                    mobile: mobile,
                     template_id: '1107174885741640587',
                 });
             } catch (smsErr) {
@@ -1432,6 +1432,10 @@ const fetch_dash_count = async (req, res) => {
                     alert_type: {
                         [Op.in]: [   
                             "OTHER_HEARING",
+                            "UI_FULL",
+                            "UI_PARTIAL",
+                            "EQ_FULL",
+                            "EQ_PARTIAL",
                         ]
                     }
                 };
@@ -1668,36 +1672,19 @@ const fetch_dash_count = async (req, res) => {
             }            
 
             alertTemplates = {
-                // OTHER_CASE_1: {
-                //     label: "Other Case 1",
-                //     total_count: 0
-                // },
-                // OTHER_CASE_2: {
-                //     label: "Other Case 2",
-                //     total_count: 0
-                // },
-                // OTHER_CASE_3: {
-                //     label: "Other Case 3",
-                //     divider: 2,
-                //     divider_details: {
-                //         low: { name: "Pending", count: 0, record_id: [], level: "low" },
-                //         high: { name: "Over Due", count: 0, record_id: [], level: "high" }
-                //     },
-                //     total_count: 0
-                // },
-                full_stay_on_investigation: {
+                "UI_FULL": {
                   label: "Full Stay on Investigation",
                   total_count: 0
                   },
-                  full_stay_on_enquiries: {
+                  "EQ_FULL": {
                     label: "Full Stay on Enquiries",
                     total_count: 0
                   },
-                  partial_stay_on_investigation: {
+                  "UI_PARTIAL": {
                     label: "Partial Stay on Investigation",
                     total_count: 0
                   },
-                  partial_stay_on_enquiries: {
+                  "EQ_PARTIAL": {
                     label: "Partial Stay on Enquiries",
                     total_count: 0
                   },
@@ -1952,6 +1939,7 @@ const fetch_dash_count = async (req, res) => {
                     if(row && row.alert_level)
                     {
                         var alertLevel = row.alert_level.toLowerCase();
+                        var alertType = row.alert_type.toLowerCase();
                         var record_ids = row.record_ids;
                         var record_count = row.count;
                         if(alertLevel === "high")
@@ -1984,6 +1972,15 @@ const fetch_dash_count = async (req, res) => {
                             {
                                 otherHearingTemplates["TRIAL_NEXT_WEEK"].total_count  = record_count;
                                 otherHearingTemplates["TRIAL_NEXT_WEEK"]["record_ids"] = record_ids ;
+                            }
+                        }
+                        
+                        if(alertType === "ui_full")
+                        {
+                            if(otherHearingTemplates["UI_FULL"])
+                            {
+                                otherHearingTemplates["UI_FULL"].total_count = record_count;
+                                otherHearingTemplates["UI_FULL"]["record_ids"] = record_ids;
                             }
                         }
                     }

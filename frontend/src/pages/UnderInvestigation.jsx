@@ -1416,7 +1416,7 @@ const fslTableRef = useRef();
                         }
                         if (tableName === "cid_ui_case_progress_report") {
                             tableHeader = tableHeader.filter(
-                                (col) => col.field !== "field_due_date" && col.field !== "field_pr_status"
+                                (col) => col.field !== "field_due_date" && col.field !== "field_pr_status" && col.field !== "field_approval_done_by"
                             );
                             tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
@@ -1786,8 +1786,6 @@ const fslTableRef = useRef();
     const accusedTableCellRender = (key, params, value, index, tableName) => {
 
     if (key === "sl_no") {
-        // Debug: log when rendering S.No cell
-        console.log("Rendering S.No cell", { value, row: params?.row, tableName });
         return (
             <Tooltip title={value} placement="top">
                 <span
@@ -2787,6 +2785,7 @@ const normalizeFormFieldsOptions = (fields) =>
                 setNatureOfDisposalFileUpload({});
                 setShowAccusedTable(false);
                 setAccusedFormOpen(false);
+                setShowPreliminaryAccusedTable(false)
 
             } else {
                 const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
@@ -9932,6 +9931,7 @@ const handleOpenExportPopup = async () => {
                   setselectedOtherTemplate(options);
                   setOtherTransferField(updatedOptions);
                   setShowMassiveTransferModal(true);
+                  fieldActionAddFlag.current = true;
                 }
               } catch (error) {
                 setLoading(false);
@@ -11769,34 +11769,104 @@ const handleExtensionApprovalWithUpdate = async () => {
     }
   };
 
+  // const getAllOptionsforFilter = async (dropdownFields, others) => {
+  //   try {
+  //     setLoading(true);
+
+  //     const apiCalls = dropdownFields
+  //       .filter(
+  //         (field) =>
+  //           field.api === "/templateData/getTemplateData" && field.table
+  //       )
+  //       .map(async (field) => {
+  //         try {
+  //           const response = await api.post(field.api, {
+  //             table_name: field.table,
+  //           });
+
+  //           if (!response.data) return { id: field.id, options: [] };
+
+  //           const updatedOptions = response.data.map((templateData) => {
+  //             const nameKey = Object.keys(templateData).find(
+  //               (key) => !["id", "created_at", "updated_at"].includes(key)
+  //             );
+  //             return {
+  //               name: nameKey ? templateData[nameKey] : "",
+  //               code: templateData.id,
+  //             };
+  //           });
+
+  //           return { id: field.id, options: updatedOptions };
+  //         } catch (error) {
+  //           return { id: field.id, options: [] };
+  //         }
+  //       });
+
+  //     const results = await Promise.all(apiCalls);
+
+  //     setLoading(false);
+  //     var updatedFieldsDropdown = dropdownFields.map((field) => {
+  //       const updatedField = results.find((res) => res.id === field.id);
+  //       return updatedField
+  //         ? { ...field, options: updatedField.options }
+  //         : field;
+  //     });
+
+  //       if(others){
+  //           setOthersFiltersDropdown(updatedFieldsDropdown)
+  //       }else{
+  //           setfilterDropdownObj(updatedFieldsDropdown);
+  //       }
+
+  //   } catch (error) {
+  //     setLoading(false);
+  //     console.error("Error fetching template data:", error);
+  //   }
+  // };
+  
   const getAllOptionsforFilter = async (dropdownFields, others) => {
     try {
       setLoading(true);
 
       const apiCalls = dropdownFields
-        .filter(
-          (field) =>
-            field.api === "/templateData/getTemplateData" && field.table
-        )
+        .filter((field) => field.api && field.table)
         .map(async (field) => {
           try {
-            const response = await api.post(field.api, {
-              table_name: field.table,
-            });
+            let payload = {};
+            let headerName = "name";
+            let headerId = "id";
+            let res;
 
-            if (!response.data) return { id: field.id, options: [] };
-
-            const updatedOptions = response.data.map((templateData) => {
-              const nameKey = Object.keys(templateData).find(
-                (key) => !["id", "created_at", "updated_at"].includes(key)
-              );
-              return {
-                name: nameKey ? templateData[nameKey] : "",
-                code: templateData.id,
-              };
-            });
-
-            return { id: field.id, options: updatedOptions };
+            if (field.api === "/templateData/getTemplateData") {
+              payload.table_name = field.table;
+              res = await api.post(field.api, payload);
+              if (!res.data) return { id: field.id, options: [] };
+              const updatedOptions = res.data.map((item) => {
+                const nameKey = Object.keys(item).find(
+                  (key) => !["id", "created_at", "updated_at"].includes(key)
+                );
+                return {
+                  name: nameKey ? item[nameKey] : "",
+                  code: item.id,
+                };
+              });
+              return { id: field.id, options: updatedOptions };
+            } else {
+              res = await api.post(field.api, payload);
+              if (!res.data) return { id: field.id, options: [] };
+              if (field.table === "users") {
+                headerName = "name";
+                headerId = "user_id";
+              } else {
+                headerName = field.table + "_name";
+                headerId = field.table + "_id";
+              }
+              const updatedOptions = res.data.map((item) => ({
+                name: item[headerName],
+                code: item[headerId],
+              }));
+              return { id: field.id, options: updatedOptions };
+            }
           } catch (error) {
             return { id: field.id, options: [] };
           }
@@ -11812,12 +11882,11 @@ const handleExtensionApprovalWithUpdate = async () => {
           : field;
       });
 
-        if(others){
-            setOthersFiltersDropdown(updatedFieldsDropdown)
-        }else{
-            setfilterDropdownObj(updatedFieldsDropdown);
-        }
-
+      if (others) {
+        setOthersFiltersDropdown(updatedFieldsDropdown);
+      } else {
+        setfilterDropdownObj(updatedFieldsDropdown);
+      }
     } catch (error) {
       setLoading(false);
       console.error("Error fetching template data:", error);
@@ -15425,8 +15494,6 @@ return (
                   >
                   <DialogTitle id="alert-dialog-title">
                     Case Extension
-                   {console.log("formData.field_extension_updated_by", formData)}
-                    {/* Show "Request Submitted" if field_extension_updated_by is not DIG, ADG, or DGP */}
                     {formData.field_extension_updated_by &&
                      !["dig", "adg", "dgp"].some((rank) =>
                         String(formData.field_extension_updated_by).toLowerCase().startsWith(rank)
@@ -16852,33 +16919,34 @@ return (
                         <Box>
                             <Button
                                 variant="outlined"
-                                sx={{  mr: 1,}}
+                                sx={{ mr: 1 }}
                                 onClick={async () => {
                                     let rowsToSave = [];
                                     if (accusedDialogTab === "accused") {
                                         if (accusedTableRef.current?.commitAllEdits) {
-                                            accusedTableRef.current.commitAllEdits();
-                                            await new Promise(r => setTimeout(r, 0));
+                                            await accusedTableRef.current.commitAllEdits();
+                                            rowsToSave = accusedTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = accusedTableRowData;
                                         }
-                                        // Use the full table data for batch update:
-                                        rowsToSave = accusedTableRowData;
                                     } else if (accusedDialogTab === "progress_report") {
                                         if (progressReportTableRef.current?.commitAllEdits) {
-                                            progressReportTableRef.current.commitAllEdits();
-                                            await new Promise(r => setTimeout(r, 0));
+                                            await progressReportTableRef.current.commitAllEdits();
+                                            rowsToSave = progressReportTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = progressReportTableRowData;
                                         }
-                                        rowsToSave = progressReportTableRowData;
                                     } else if (accusedDialogTab === "fsl") {
                                         if (fslTableRef.current?.commitAllEdits) {
-                                            fslTableRef.current.commitAllEdits();
-                                            await new Promise(r => setTimeout(r, 0));
+                                            await fslTableRef.current.commitAllEdits();
+                                            rowsToSave = fslTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = fslTableRowData;
                                         }
-                                        rowsToSave = fslTableRowData;
                                     }
-                                    // Now rowsToSave is always an array of all rows in the table
                                     await handleBatchEditTableRowUpdate(rowsToSave);
                                 }}
-                              >
+                            >
                                 Save
                             </Button>
                             <Button

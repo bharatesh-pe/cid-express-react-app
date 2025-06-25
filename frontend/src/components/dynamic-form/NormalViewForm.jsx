@@ -72,7 +72,7 @@ const NormalViewForm = ({
     { field: 'updated_value', headerName: 'Updated Value', flex: 1 },
     { field: 'old_value', headerName: 'Old Value', flex: 1 },
     { field: 'username', headerName: 'Edited User', flex: 1 },
-    { field: 'date', headerName: 'Date & Time', flex: 1 }
+    { field: 'date', headerName: 'Date & Time', flex: 1.5 }
   ]);
 
     const saveNewActionRef = useRef(false);
@@ -1357,9 +1357,13 @@ const NormalViewForm = ({
             }
 
             const readableDate = new Date(data.updated_at).toLocaleString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: '2-digit'
+              year: "numeric",
+                month: "long",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true,
             });
 
             return {

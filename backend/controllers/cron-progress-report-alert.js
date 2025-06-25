@@ -1953,4 +1953,163 @@ exports.runDailyAlertCronOtherHearing = async () => {
     }
 }
 
+//cron for court stay 
+exports.runDailyAlertCronCourtStay = async () => {
+    try{
+        console.log("Fetching CID Pending Trial template...");
+        const template = await Template.findOne({ where: { table_name: "cid_pending_trial" } });
+    
+        if (!template) {
+            console.error("Template not found.");
+            return;
+        }
+  
+        const tableName = template.table_name;
+        console.log(`Using table: ${tableName}`);
+    
+
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id FROM ${tableName} WHERE id IS NOT NULL`,
+            {
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        const allIds = allCases.map(row => row.id);
+        console.log(`Found ${allIds.length} cases.`);
+    
+        // Fetch Trial Monitoring template metadata
+        const CourtStayTableData = await Template.findOne({ where: { table_name: "cid_ui_case_court_stay" } });
+    
+        if (!CourtStayTableData) {
+            console.error(`Table PT Court Stay does not exist.`);
+            return;
+        }
+
+        // Parse schema and build model
+        const schema = typeof CourtStayTableData.fields === "string" ? JSON.parse(CourtStayTableData.fields) : CourtStayTableData.fields;
+        schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+
+        const CourtStayAttributes = {
+            id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            },
+            created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,
+            },
+        };
+
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            CourtStayAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+            defaultValue: default_value || null,
+            };
+        }
+
+        const CourtStayModel = sequelize.define(CourtStayTableData.table_name, CourtStayAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await CourtStayModel.sync();
+
+        for (const caseEntry of allCases) {
+            const case_id = caseEntry.id;
+
+            const CourtStayRecord = await CourtStayModel.findAll({
+                where: { pt_case_id: case_id },
+            });
+
+            if (CourtStayRecord) {
+                
+                var ui_full = false ;
+                var ui_partial = false ;
+                var eq_full = false ;
+                var eq_partial = false ;
+                
+               // Iterate through each record to check the field_case_level
+                for (const stay of CourtStayRecord) {
+                    if (stay && stay.field_case_level) {
+                        const stay_level = stay.field_case_level.toLowerCase().trim();
+
+                        if (stay_level === 'ui full') {
+                            ui_full = true;
+                        } else if (stay_level === 'ui partial') {
+                            ui_partial = true;
+                        } else if (stay_level === 'eq full') {
+                            eq_full = true;
+                        } else if (stay_level === 'eq partial') {
+                            eq_partial = true;
+                        } else {
+                            console.warn(`Unknown case level '${stay.field_case_level}' for case ID ${case_id}`);
+                        }
+                    }
+                }
+                
+                if (ui_full) await courtStayCreateOrUpdateAlert("UI_FULL", `Court Stay for case ID ${case_id} is in UI FULL.`,case_id);
+                if (ui_partial) await courtStayCreateOrUpdateAlert("UI_PARTIAL", `Court Stay for case ID ${case_id} is in UI PARTIAL.`,case_id);
+                if (eq_full) await courtStayCreateOrUpdateAlert("EQ_FULL", `Court Stay for case ID ${case_id} is in EQ FULL.`,case_id);
+                if (eq_partial) await courtStayCreateOrUpdateAlert("EQ_PARTIAL", `Court Stay for case ID ${case_id} is in EQ PARTIAL.`,case_id);
+                
+
+                console.log(`Flags for case ID ${case_id} -> ui_full: ${ui_full}, ui_partial: ${ui_partial}, eq_full: ${eq_full}, eq_partial: ${eq_partial}`);
+            }
+        }
+    
+    }
+    catch (error) {
+        console.error("Error running Daily Alert Cron for Court Stay:", error);
+    }
+
+}
+
+
+const courtStayCreateOrUpdateAlert = async (type, message , case_id) => {
+    const existingAlert = await CaseAlerts.findOne({
+        where: {
+            record_id: case_id,
+            alert_type: type,
+            status: "Pending"
+        }
+    });
+
+    if (existingAlert) {
+        await CaseAlerts.update(
+            { triggered_on: new Date() },
+            { where: { id: existingAlert.id } }
+        );
+    } else {
+        await CaseAlerts.create({
+            module: "pt_other_case",
+            main_table: "cid_ui_case_court_stay",
+            record_id: case_id,
+            alert_type: type,
+            alert_level: "high",
+            alert_message: message,
+            triggered_on: new Date(),
+            status: "Pending",
+            created_by: 0,
+        });
+        console.log(`create alert for ${type} DONE`)
+    }
+};
+
 
