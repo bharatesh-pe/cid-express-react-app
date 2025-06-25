@@ -388,11 +388,15 @@ React.useEffect(() => {
   };
 
   // Expose getRows and commitAllEdits to parent via ref
-  React.useImperativeHandle(
+React.useImperativeHandle(
     ref,
     () => ({
-      getRows: () => rows,
+      getRows: () => {
+        console.log("getRows called, returning rows:", rows);
+        return rows;
+      },
       commitAllEdits: async () => {
+        console.log("commitAllEdits called");
         // Set all rows to view mode to commit edits
         setRowModesModel((prev) => {
           const newModel = { ...prev };
@@ -401,17 +405,15 @@ React.useEffect(() => {
           });
           return newModel;
         });
-        // Batch update: send all edited rows at once
-        const editedRowsArr = Object.values(editedRows);
-        if (editedRowsArr.length > 0 && onBatchRowUpdate) {
-          await onBatchRowUpdate(editedRowsArr, tableName);
-          setEditedRows({}); // Clear after batch update
-        }
+        // Wait for state update to finish
+        await new Promise(r => setTimeout(r, 0));
+        console.log("commitAllEdits returning rows:", rows);
+        // Return the latest rows (with edits)
+        return rows;
       }
     }),
-    [rows, editedRows, onBatchRowUpdate, tableName]
+    [rows]
   );
-
   return (
     <Box sx={{ margin: "6px" }}>
       <Paper sx={{ width: '100%' }}>
