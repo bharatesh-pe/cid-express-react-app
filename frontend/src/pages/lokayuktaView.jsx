@@ -1716,7 +1716,7 @@ const LokayuktaView = () => {
                         if (activeSidebar?.table === "cid_eq_case_enquiry_order_copy") {
                             navigate("/case/enquiry");
                         } else {
-                            getTableData(activeSidebar, formOpen);
+                            getTableData(activeSidebar);
                         }
                     }
                 });
