@@ -1416,7 +1416,7 @@ const fslTableRef = useRef();
                         }
                         if (tableName === "cid_ui_case_progress_report") {
                             tableHeader = tableHeader.filter(
-                                (col) => col.field !== "field_due_date" && col.field !== "field_pr_status"
+                                (col) => col.field !== "field_due_date" && col.field !== "field_pr_status" && col.field !== "field_approval_done_by"
                             );
                             tableHeader = enhanceTableHeader(tableHeader, viewTemplateResponse?.['data']?.['fields'] || []);
                         }
@@ -1786,8 +1786,6 @@ const fslTableRef = useRef();
     const accusedTableCellRender = (key, params, value, index, tableName) => {
 
     if (key === "sl_no") {
-        // Debug: log when rendering S.No cell
-        console.log("Rendering S.No cell", { value, row: params?.row, tableName });
         return (
             <Tooltip title={value} placement="top">
                 <span
@@ -16921,33 +16919,34 @@ return (
                         <Box>
                             <Button
                                 variant="outlined"
-                                sx={{  mr: 1,}}
+                                sx={{ mr: 1 }}
                                 onClick={async () => {
                                     let rowsToSave = [];
                                     if (accusedDialogTab === "accused") {
                                         if (accusedTableRef.current?.commitAllEdits) {
-                                            accusedTableRef.current.commitAllEdits();
-                                            await new Promise(r => setTimeout(r, 0));
+                                            await accusedTableRef.current.commitAllEdits();
+                                            rowsToSave = accusedTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = accusedTableRowData;
                                         }
-                                        // Use the full table data for batch update:
-                                        rowsToSave = accusedTableRowData;
                                     } else if (accusedDialogTab === "progress_report") {
                                         if (progressReportTableRef.current?.commitAllEdits) {
-                                            progressReportTableRef.current.commitAllEdits();
-                                            await new Promise(r => setTimeout(r, 0));
+                                            await progressReportTableRef.current.commitAllEdits();
+                                            rowsToSave = progressReportTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = progressReportTableRowData;
                                         }
-                                        rowsToSave = progressReportTableRowData;
                                     } else if (accusedDialogTab === "fsl") {
                                         if (fslTableRef.current?.commitAllEdits) {
-                                            fslTableRef.current.commitAllEdits();
-                                            await new Promise(r => setTimeout(r, 0));
+                                            await fslTableRef.current.commitAllEdits();
+                                            rowsToSave = fslTableRef.current.getRows();
+                                        } else {
+                                            rowsToSave = fslTableRowData;
                                         }
-                                        rowsToSave = fslTableRowData;
                                     }
-                                    // Now rowsToSave is always an array of all rows in the table
                                     await handleBatchEditTableRowUpdate(rowsToSave);
                                 }}
-                              >
+                            >
                                 Save
                             </Button>
                             <Button
