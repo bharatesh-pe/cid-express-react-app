@@ -437,7 +437,7 @@ const Formbuilder = () => {
                 ? selectedField.name
                 : name === 'label'
                     ? convertToUnderscore(value)
-                    : convertToUnderscore(selectedField.name)
+                    : selectedField.name
         });
 
         setFields(fields.map((field) =>
@@ -449,7 +449,7 @@ const Formbuilder = () => {
                         ? field.name
                         : name === 'label'
                             ? convertToUnderscore(value)
-                            : convertToUnderscore(field.name)
+                            : field.name
                 }
                 : field
         ));
