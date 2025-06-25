@@ -2047,9 +2047,6 @@ exports.runDailyAlertCronCourtStay = async () => {
                 
                // Iterate through each record to check the field_case_level
                 for (const stay of CourtStayRecord) {
-                    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$");
-                    console.log("stay",stay)
-                    console.log("stay.field_case_level",stay.field_case_level)
                     if (stay && stay.field_case_level) {
                         const stay_level = stay.field_case_level.toLowerCase().trim();
 

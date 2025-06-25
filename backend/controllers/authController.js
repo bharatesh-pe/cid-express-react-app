@@ -429,7 +429,7 @@ const generate_OTP = async (req, res) => {
             try {
                 await sendSMS({
                     message: `Dear User, use this One Time Password ${otp} to log in to your CMS application. This OTP will be valid for the next 2 mins.-KSPPCW`,
-                    mobile: '9698273271',
+                    mobile: mobile,
                     template_id: '1107174885741640587',
                 });
             } catch (smsErr) {
