@@ -2064,10 +2064,10 @@ exports.runDailyAlertCronCourtStay = async () => {
                     }
                 }
                 
-                if (ui_full) await courtStayCreateOrUpdateAlert("UI_FULL", `Court Stay for case ID ${case_id} is in UI FULL.`,case_id);
-                if (ui_partial) await courtStayCreateOrUpdateAlert("UI_PARTIAL", `Court Stay for case ID ${case_id} is in UI PARTIAL.`,case_id);
-                if (eq_full) await courtStayCreateOrUpdateAlert("EQ_FULL", `Court Stay for case ID ${case_id} is in EQ FULL.`,case_id);
-                if (eq_partial) await courtStayCreateOrUpdateAlert("EQ_PARTIAL", `Court Stay for case ID ${case_id} is in EQ PARTIAL.`,case_id);
+                if (ui_full) await otherCourtActionCreateOrUpdateAlert("UI_FULL", `Court Stay for case ID ${case_id} is in UI FULL.`,case_id);
+                if (ui_partial) await otherCourtActionCreateOrUpdateAlert("UI_PARTIAL", `Court Stay for case ID ${case_id} is in UI PARTIAL.`,case_id);
+                if (eq_full) await otherCourtActionCreateOrUpdateAlert("EQ_FULL", `Court Stay for case ID ${case_id} is in EQ FULL.`,case_id);
+                if (eq_partial) await otherCourtActionCreateOrUpdateAlert("EQ_PARTIAL", `Court Stay for case ID ${case_id} is in EQ PARTIAL.`,case_id);
                 
 
                 console.log(`Flags for case ID ${case_id} -> ui_full: ${ui_full}, ui_partial: ${ui_partial}, eq_full: ${eq_full}, eq_partial: ${eq_partial}`);
@@ -2081,8 +2081,138 @@ exports.runDailyAlertCronCourtStay = async () => {
 
 }
 
+//cron for petitions 
+exports.runDailyAlertCronPetition = async () => {
+    try{
+        console.log("Fetching CID Pending Trial template...");
+        const template = await Template.findOne({ where: { table_name: "cid_pending_trial" } });
+    
+        if (!template) {
+            console.error("Template not found.");
+            return;
+        }
+  
+        const tableName = template.table_name;
+        console.log(`Using table: ${tableName}`);
+    
+   
+        // Run raw SQL query to fetch cases that are not in the list of childCaseIds
+        const allCases = await sequelize.query(
+            `SELECT id , field_court_type FROM ${tableName} WHERE id IS NOT NULL AND field_court_type = 'High Court' OR field_court_type = 'Supreme Court'`,
+            {
+                type: sequelize.QueryTypes.SELECT,
+            }
+        );
 
-const courtStayCreateOrUpdateAlert = async (type, message , case_id) => {
+        const allIds = allCases.map(row => row.id);
+        console.log(`Found ${allIds.length} cases.`);
+    
+        // Fetch Trial Monitoring template metadata
+        const PetitionTableData = await Template.findOne({ where: { table_name: "cid_pt_case_petition" } });
+    
+        if (!PetitionTableData) {
+            console.error(`Table PT Court Stay does not exist.`);
+            return;
+        }
+
+        // Parse schema and build model
+        const schema = typeof PetitionTableData.fields === "string" ? JSON.parse(PetitionTableData.fields) : PetitionTableData.fields;
+        schema.push({ name: "sys_status", data_type: "TEXT", not_null: false });
+
+        const PetitionAttributes = {
+            id: {
+            type: Sequelize.DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+            },
+            created_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            updated_at: {
+            type: Sequelize.DataTypes.DATE,
+            allowNull: false,
+            },
+            created_by: {
+            type: Sequelize.DataTypes.STRING,
+            allowNull: true,
+            },
+        };
+
+        for (const field of schema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+    
+            PetitionAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+            defaultValue: default_value || null,
+            };
+        }
+
+        const PetitionModel = sequelize.define(PetitionTableData.table_name, PetitionAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await PetitionModel.sync();
+
+        for (const caseEntry of allCases) {
+            const case_id = caseEntry.id;
+            const court_type = caseEntry.field_court_type;
+
+            const PetitionRecord = await PetitionModel.findAll({
+                where: { pt_case_id: case_id },
+            });
+
+            if (PetitionRecord) {
+                
+                var pending_quash_petitions = false ;
+                var pending_bail_petitions = false ;
+                var pending_anticipatory_bail_petitions  = false ;
+                
+               // Iterate through each record to check the field_case_level
+                for (const petitions of PetitionRecord) {
+                    if (petitions && petitions.field_pending_status) {
+                        const petitions_status = petitions.field_pending_status.toLowerCase().trim();
+
+                        if (petitions_status === 'pending quash petitions') {
+                            pending_quash_petitions = true;
+                        } else if (petitions_status === 'pending bail petitions') {
+                            pending_bail_petitions = true;
+                        } else if (petitions_status === 'pending anticipatory bail petitions') {
+                            pending_anticipatory_bail_petitions = true;
+                        }else {
+                            console.warn(`Unknown Petition status '${petitions.field_pending_status}' for case ID ${case_id}`);
+                        }
+                    }
+                }
+                
+                if(court_type === "High Court")
+                {
+                    if (pending_quash_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_QUASH_PETITIONS_HC", `The case ID ${case_id} is Pending Quash Petitions in High Court.`,case_id);
+                    if (pending_bail_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_BAIL_PETITIONS_HC", `The case ID ${case_id} is Pending Bail Petitions in High Court.`,case_id);
+                    if (pending_anticipatory_bail_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_ANTICIPATORY_BAIL_PETITIONS_HC", `The case ID ${case_id} is Pending Anticipatory Bail Petitions in High Court.`,case_id);
+                }
+                else{
+                    if (pending_quash_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_QUASH_PETITIONS_SC", `The case ID ${case_id} is Pending Quash Petitions in Supreme Court.`,case_id);
+                    if (pending_bail_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_BAIL_PETITIONS_SC", `The case ID ${case_id} is Pending Bail Petitions in Supreme Court.`,case_id);
+                    if (pending_anticipatory_bail_petitions) await otherCourtActionCreateOrUpdateAlert("PENDING_ANTICIPATORY_BAIL_PETITIONS_SC", `The case ID ${case_id} is Pending Anticipatory Bail Petitions in Supreme Court.`,case_id); 
+                }
+            }
+        }
+    
+    }
+    catch (error) {
+        console.error("Error running Daily Alert Cron for Petitions:", error);
+    }
+
+}
+
+
+const otherCourtActionCreateOrUpdateAlert = async (type, message , case_id) => {
     const existingAlert = await CaseAlerts.findOne({
         where: {
             record_id: case_id,
@@ -2111,5 +2241,6 @@ const courtStayCreateOrUpdateAlert = async (type, message , case_id) => {
         console.log(`create alert for ${type} DONE`)
     }
 };
+
 
 
