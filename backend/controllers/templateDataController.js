@@ -732,6 +732,204 @@ exports.updateTemplateData = async (req, res, next) => {
   }
 };
 
+exports.updateEditTemplateData = async (req, res, next) => {
+  const { table_name, id, data, folder_attachment_ids, transaction_id } = req.body;
+
+
+  const userId = req.user?.user_id || null;
+  const adminUserId = res.locals.admin_user_id || null;
+  const actorId = userId || adminUserId;
+
+  if (!actorId) {
+    return userSendResponse(res, 403, false, "Unauthorized access.", null);
+  }
+
+  const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+  if (fs.existsSync(dirPath))
+    return res.status(400).json({ success: false, message: "Duplicate transaction detected." });
+  fs.mkdirSync(dirPath, { recursive: true });
+
+  const userData = await Users.findOne({
+    include: [{
+      model: KGID,
+      as: "kgidDetails",
+      attributes: ["kgid", "name", "mobile"],
+    }],
+    where: { user_id: userId },
+  });
+
+  let userName = userData?.kgidDetails?.name || null;
+
+  try {
+    const tableData = await Template.findOne({ where: { table_name } });
+    if (!tableData) {
+      return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+    }
+
+    const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+
+    let parsedDataArr;
+    try {
+      const parsed = JSON.parse(data);
+      parsedDataArr = Array.isArray(parsed) ? parsed : [parsed];
+    } catch (err) {
+      return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+    }
+
+    const ids = id.split(",").map((id) => id.trim());
+
+    const completeSchemaBase = [
+      { name: "updated_by", data_type: "TEXT", not_null: false },
+      { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+      ...schema,
+    ];
+
+    const modelAttributes = {};
+    for (const field of completeSchemaBase) {
+      const { name, data_type, not_null, default_value } = field;
+      const sequelizeType = typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+      modelAttributes[name] = {
+        type: sequelizeType,
+        allowNull: !not_null,
+        defaultValue: default_value || null,
+      };
+    }
+
+    const Model = sequelize.define(table_name, modelAttributes, {
+      freezeTableName: true,
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    });
+
+    for (let i = 0; i < ids.length; i++) {
+      const singleId = ids[i];
+      const parsedData = parsedDataArr[i];
+      const validData = {};
+
+      for (const field of schema) {
+        const { name, not_null } = field;
+        if (parsedData.hasOwnProperty(name)) {
+          validData[name] = parsedData[name];
+        } else if (not_null && !parsedData[name]) {
+          return userSendResponse(res, 400, false, `Field ${name} cannot be null.`, null);
+        }
+      }
+
+      validData.sys_status = parsedData.sys_status;
+      validData.updated_by = userName;
+      validData.updated_by_id = userId;
+      if (parsedData?.ui_case_id) validData.ui_case_id = parsedData.ui_case_id;
+      if (parsedData?.pt_case_id) validData.pt_case_id = parsedData.pt_case_id;
+
+      const record = await Model.findByPk(singleId);
+      if (!record) {
+        return userSendResponse(res, 400, false, `Record with ID ${singleId} does not exist in table ${table_name}.`, null);
+      }
+
+      const originalData = record.toJSON();
+      const updatedFields = {};
+
+      for (const key in validData) {
+        if (originalData[key] !== validData[key]) {
+          updatedFields[key] = validData[key];
+        }
+      }
+
+      if (Object.keys(updatedFields).length > 0) {
+        await record.update(updatedFields);
+
+        if (userId) {
+          for (const key in updatedFields) {
+            const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
+            const newValue = updatedFields[key];
+            const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
+            const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
+
+            if (oldValue !== newValue) {
+              await ProfileHistory.create({
+                template_id: tableData.template_id,
+                table_row_id: parseInt(singleId),
+                user_id: userId,
+                field_name: key,
+                old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
+                updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
+              });
+            }
+          }
+        }
+
+        await CaseHistory.create({
+          template_id: tableData.template_id,
+          table_row_id: singleId,
+          user_id: actorId,
+          actor_name: userName,
+          action: `Updated`,
+        });
+      }
+
+      const fileUpdates = {};
+      if (req.files && req.files.length > 0) {
+        const folderAttachments = folder_attachment_ids ? JSON.parse(folder_attachment_ids) : [];
+
+        for (const file of req.files) {
+          const { originalname, size, key, fieldname, filename } = file;
+          const fileExtension = path.extname(originalname);
+
+          const matchingFolder = folderAttachments.find(
+            (attachment) => attachment.filename === originalname && attachment.field_name === fieldname
+          );
+          const folderId = matchingFolder ? matchingFolder.folder_id : null;
+          const s3Key = `../data/cases/${filename}`;
+
+          await ProfileAttachment.create({
+            template_id: tableData.template_id,
+            table_row_id: singleId,
+            attachment_name: originalname,
+            attachment_extension: fileExtension,
+            attachment_size: size,
+            s3_key: s3Key,
+            field_name: fieldname,
+            folder_id: folderId,
+          });
+
+          const existingRecord = await Model.findOne({
+            where: { id: singleId },
+            attributes: [fieldname],
+          });
+
+          let currentFilenames = existingRecord?.[fieldname] || "";
+          currentFilenames = currentFilenames ? `${currentFilenames},${originalname}` : originalname;
+
+          fileUpdates[fieldname] = fileUpdates[fieldname]
+            ? `${fileUpdates[fieldname]},${originalname}`
+            : currentFilenames;
+        }
+
+        for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+          await Model.update({ [fieldname]: filenames }, { where: { id: singleId } });
+        }
+      }
+    }
+
+    return userSendResponse(res, 200, true, `Record updated successfully.`, null);
+  } catch (error) {
+    if (error.name === "SequelizeUniqueConstraintError") {
+      const uniqueErrorField = error.errors[0]?.path || "a unique field";
+      return userSendResponse(res, 400, false, `${uniqueErrorField} already exists. Please use a different value.`, null);
+    }
+
+    if (error.name === "SequelizeValidationError") {
+      const validationErrorField = error.errors[0]?.path || "a required field";
+      return userSendResponse(res, 400, false, `${validationErrorField} is required and cannot be null.`, null);
+    }
+
+    console.error("Error updating data:", error);
+    return userSendResponse(res, 500, false, "Server error.", error);
+  } finally {
+    if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
+  }
+};
 exports.deleteFileFromTemplate = async (req, res, next) => {
   const { profile_attachment_id, transaction_id } = req.body; // Get profile_attachment_id from request body
 

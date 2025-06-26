@@ -2323,87 +2323,81 @@ function toISODateString(val) {
     await updateTemplateData(updatedRow, resolvedTableName);
     };
     
-const handleBatchEditTableRowUpdate = async (rows, tableName) => {
+  const handleBatchEditTableRowUpdate = async (rows, tableName) => {
     console.log("Batch update called with rows:", rows, "and tableName:", tableName);
 
-    // Fix: If rows is a single object (not array), wrap it in an array
     if (!Array.isArray(rows)) {
-        if (rows && typeof rows === "object") {
-            rows = [rows];
-        } else {
-            console.log("No rows to update.");
-            return;
-        }
-    }
-    if (rows.length === 0) {
+      if (rows && typeof rows === "object") {
+        rows = [rows];
+      } else {
         console.log("No rows to update.");
         return;
+      }
+    }
+    if (rows.length === 0) {
+      console.log("No rows to update.");
+      return;
     }
 
     let resolvedTableName = tableName;
     if (!resolvedTableName) {
-        if (accusedDialogTab === "accused") {
-            resolvedTableName = "cid_ui_case_accused";
-        } else if (accusedDialogTab === "progress_report") {
-            resolvedTableName = "cid_ui_case_progress_report";
-        } else if (accusedDialogTab === "fsl") {
-            resolvedTableName = "cid_ui_case_forensic_science_laboratory";
-        }
+      if (accusedDialogTab === "accused") {
+        resolvedTableName = "cid_ui_case_accused";
+      } else if (accusedDialogTab === "progress_report") {
+        resolvedTableName = "cid_ui_case_progress_report";
+      } else if (accusedDialogTab === "fsl") {
+        resolvedTableName = "cid_ui_case_forensic_science_laboratory";
+      }
     }
 
-    // Collect IDs and data
     const ids = [];
     const dataArr = [];
     const fileFields = [];
     const formData = new FormData();
 
     rows.forEach(rowData => {
-        let rowId = rowData && rowData.id && rowData.id !== "null" ? rowData.id : null;
-        if (!rowId && Array.isArray(accusedTableRowData)) {
-            const found = accusedTableRowData.find(r =>
-                (r.sl_no === rowData.sl_no) ||
-                (r.field_name === rowData.field_name)
-            );
-            if (found && found.id && found.id !== "null") {
-                rowId = found.id;
-            }
+      let rowId = rowData?.id && rowData.id !== "null" ? rowData.id : null;
+
+      if (!rowId && Array.isArray(accusedTableRowData)) {
+        const found = accusedTableRowData.find(r =>
+          (r.sl_no === rowData.sl_no) || (r.field_name === rowData.field_name)
+        );
+        if (found?.id && found.id !== "null") {
+          rowId = found.id;
         }
-        if (rowId && rowId !== "null") {
-            ids.push(rowId);
-            let normalData = {};
-            Object.keys(rowData).forEach((key) => {
-                if (
-                    key !== "id" &&
-                    key !== "sl_no" &&
-                    key !== "isNew" &&
-                    key !== "ReadStatus"
-                ) {
-                    const value = rowData[key];
-                    if (value instanceof File) {
-                        formData.append(key, value);
-                        fileFields.push(key);
-                    } else {
-                        if (key.toLowerCase().includes("date")) {
-                            if (isValidDateValue(value)) {
-                                const isoDate = toISODateString(value);
-                                if (isoDate) {
-                                    normalData[key] = isoDate;
-                                }
-                            }
-                        } else {
-                            normalData[key] = Array.isArray(value)
-                                ? value.join(",")
-                                : value;
-                        }
-                    }
+      }
+
+      if (rowId && rowId !== "null") {
+        ids.push(rowId);
+        const normalData = {};
+
+        Object.keys(rowData).forEach(key => {
+          if (!["id", "sl_no", "isNew", "ReadStatus"].includes(key)) {
+            const value = rowData[key];
+
+            if (value instanceof File) {
+              formData.append(key, value);
+              fileFields.push(key);
+            } else if (key.toLowerCase().includes("date")) {
+              if (isValidDateValue(value)) {
+                const isoDate = toISODateString(value);
+                if (isoDate) {
+                  normalData[key] = isoDate;
                 }
-            });
-            fileFields.forEach(field => {
-                delete normalData[field];
-            });
-            normalData["id"] = rowId;
-            dataArr.push(normalData);
-        }
+              }
+            } else {
+              normalData[key] = Array.isArray(value) ? value.join(",") : value;
+            }
+          }
+        });
+
+        fileFields.forEach(field => {
+          delete normalData[field];
+        });
+
+        normalData["id"] = rowId;
+        dataArr.push(normalData);
+      }
     });
 
     console.log("Batch update ids:", ids);
@@ -2416,93 +2410,61 @@ const handleBatchEditTableRowUpdate = async (rows, tableName) => {
     return;
 
     if (ids.length === 0) {
-        toast.error("No valid rows to update.", {
-            position: "top-right",
-            autoClose: 3000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            className: "toast-error",
-        });
-        return;
+      toast.error("No valid rows to update.", { className: "toast-error" });
+      return;
     }
 
     formData.append("table_name", resolvedTableName);
     formData.append("id", ids.join(","));
-    formData.append("data", JSON.stringify(dataArr.length === 1 ? dataArr[0] : dataArr));
+    formData.append("data", JSON.stringify(dataArr));
     const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     formData.append("transaction_id", transactionId);
 
     console.log("Batch update FormData:", {
-        table_name: resolvedTableName,
-        id: ids.join(","),
-        data: JSON.stringify(dataArr.length === 1 ? dataArr[0] : dataArr),
-        transaction_id: transactionId
+      table_name: resolvedTableName,
+      id: ids.join(","),
+      data: JSON.stringify(dataArr),
+      transaction_id: transactionId
     });
 
     setLoading(true);
+
     try {
-        const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
-        setLoading(false);
+      const saveTemplateData = await api.post("/templateData/updateEditTemplateData", formData);
+      setLoading(false);
 
-        console.log("Batch update API response:", saveTemplateData);
+      console.log("Batch update API response:", saveTemplateData);
 
-        if (saveTemplateData && saveTemplateData.success) {
-            toast.success(saveTemplateData.message || "Data Updated Successfully", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-success",
-                onOpen: () => {
-                    if (resolvedTableName === "cid_ui_case_accused") {
-                        if (showPreliminaryAccusedTable) {
-                            showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused",true);
-                        } else {
-                            showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused",true);
-                        }
-                    } else if (resolvedTableName === "cid_ui_case_progress_report") {
-                        showAccusedTableView(1, false, "cid_ui_case_progress_report",true);
-                    } else if (resolvedTableName === "cid_ui_case_forensic_science_laboratory") {
-                        showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory",true);
-                    }
-                },
-            });
-        } else {
-            const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to update the profile. Please try again.";
-            toast.error(errorMessage, {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-        }
+      if (saveTemplateData?.success) {
+        toast.success(saveTemplateData.message || "Data Updated Successfully", {
+          className: "toast-success",
+          onOpen: () => {
+            if (resolvedTableName === "cid_ui_case_accused") {
+              if (showPreliminaryAccusedTable) {
+                showPreliminaryAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused", true);
+              } else {
+                showAccusedTableView(accusedTableCurrentPage, false, "cid_ui_case_accused", true);
+              }
+            } else if (resolvedTableName === "cid_ui_case_progress_report") {
+              showAccusedTableView(1, false, "cid_ui_case_progress_report", true);
+            } else if (resolvedTableName === "cid_ui_case_forensic_science_laboratory") {
+              showAccusedTableView(1, false, "cid_ui_case_forensic_science_laboratory", true);
+            }
+          },
+        });
+      } else {
+        toast.error(saveTemplateData.message || "Failed to update the profile.", {
+          className: "toast-error",
+        });
+      }
     } catch (error) {
-        setLoading(false);
-        console.log("Batch update error:", error);
-        if (error && error.response && error.response["data"]) {
-            toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-        }
+      setLoading(false);
+      console.log("Batch update error:", error);
+      toast.error(error?.response?.data?.message || "Please Try Again!", {
+        className: "toast-error",
+      });
     }
-};
+  };
 
 
 const normalizeOptions = (options) => {
