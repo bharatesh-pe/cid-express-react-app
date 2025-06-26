@@ -2002,6 +2002,20 @@ const fslTableRef = useRef();
           }
       }
 
+        if(table_name === "cid_ui_case_accused" && data?.['field_status_of_accused_in_charge_sheet'] === "Dropped" && !data?.['field_he_is_being_treated_as_witness']){
+
+            Swal.fire({
+                title: 'Please Update Witness Field',
+                text: 'He is being treated as witness ?',
+                icon: 'warning'
+            });
+
+            return;
+        }
+
+        console.log(data,"data");
+        return;
+
 
       if (Object.keys(data).length === 0) {
           toast.warning("Data Is Empty Please Check Once", {
@@ -2060,6 +2074,7 @@ const fslTableRef = useRef();
       formData.append("data", JSON.stringify(normalData));
       const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
       formData.append("transaction_id", transactionId);
+      formData.append("checkWitnessData", true);
 
       setLoading(true);
       try {
@@ -2393,6 +2408,12 @@ const handleBatchEditTableRowUpdate = async (rows, tableName) => {
 
     console.log("Batch update ids:", ids);
     console.log("Batch update dataArr:", dataArr);
+    console.log("Batch update FormData:", {
+        table_name: resolvedTableName,
+        id: ids.join(","),
+        data: JSON.stringify(dataArr.length === 1 ? dataArr[0] : dataArr)
+    });
+    return;
 
     if (ids.length === 0) {
         toast.error("No valid rows to update.", {
