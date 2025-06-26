@@ -369,10 +369,12 @@ React.useEffect(() => {
   const processRowUpdate = async (newRow) => {
     let updatedRow = { ...newRow, isNew: false };
     propColumns.forEach(col => {
-      if (col.type === 'autocomplete' && getValueOptions(col)) {
+      // Use getColType to get the correct type from fieldDefinitions
+      const colType = getColType(col);
+      if ((colType === 'autocomplete' || colType === 'singleSelect') && getValueOptions(col)) {
         updatedRow[col.field] = getDropdownValue(col, updatedRow[col.field]);
       }
-      if (col.type === 'date' && updatedRow[col.field] instanceof Date) {
+      if (colType === 'date' && updatedRow[col.field] instanceof Date) {
         updatedRow[col.field] = updatedRow[col.field].toISOString().split('T')[0];
       }
     });
@@ -387,17 +389,28 @@ React.useEffect(() => {
     return updatedRow;
   };
 
-  // Expose getRows and commitAllEdits to parent via ref
-React.useImperativeHandle(
+  React.useImperativeHandle(
     ref,
     () => ({
       getRows: () => {
-        console.log("getRows called, returning rows:", rows);
-        return rows;
+        const mappedRows = rows.map(row => {
+          const updatedRow = { ...row };
+          propColumns.forEach(col => {
+            const colType = getColType(col);
+            if ((colType === 'autocomplete' || colType === 'singleSelect') && getValueOptions(col)) {
+              updatedRow[col.field] = getDropdownValue(col, updatedRow[col.field]);
+            }
+            if (colType === 'date' && updatedRow[col.field] instanceof Date) {
+              updatedRow[col.field] = updatedRow[col.field].toISOString().split('T')[0];
+            }
+          });
+          return updatedRow;
+        });
+        console.log("getRows called, returning rows:", mappedRows);
+        return mappedRows;
       },
       commitAllEdits: async () => {
         console.log("commitAllEdits called");
-        // Set all rows to view mode to commit edits
         setRowModesModel((prev) => {
           const newModel = { ...prev };
           rows.forEach(row => {
@@ -405,14 +418,29 @@ React.useImperativeHandle(
           });
           return newModel;
         });
-        // Wait for state update to finish
-        await new Promise(r => setTimeout(r, 0));
-        console.log("commitAllEdits returning rows:", rows);
-        // Return the latest rows (with edits)
-        return rows;
+        await new Promise(resolve => setTimeout(resolve, 0));
+        return new Promise(resolve => {
+          setTimeout(() => {
+            const mappedRows = rows.map(row => {
+              const updatedRow = { ...row };
+              propColumns.forEach(col => {
+                const colType = getColType(col);
+                if ((colType === 'autocomplete' || colType === 'singleSelect') && getValueOptions(col)) {
+                  updatedRow[col.field] = getDropdownValue(col, updatedRow[col.field]);
+                }
+                if (colType === 'date' && updatedRow[col.field] instanceof Date) {
+                  updatedRow[col.field] = updatedRow[col.field].toISOString().split('T')[0];
+                }
+              });
+              return updatedRow;
+            });
+            console.log("commitAllEdits returning rows:", mappedRows);
+            resolve([...mappedRows]);
+          }, 0);
+        });
       }
     }),
-    [rows]
+    [rows, propColumns, getColType, getValueOptions, getDropdownValue]
   );
   return (
     <Box sx={{ margin: "6px" }}>
