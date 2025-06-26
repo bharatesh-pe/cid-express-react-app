@@ -234,6 +234,31 @@ router.post('/updateTemplateData',
     },
     [validate_token],
     templateDataController.updateTemplateData)
+router.post('/updateEditTemplateData',
+    // userAuthMiddleware,
+    // eitherAuthMiddleware,
+    (req, res, next) => {
+        // Dynamically decide whether to use file upload middleware based on request
+        if (req.is('multipart/form-data')) {
+            upload.any()(req, res, (err) => {
+                if (err) {
+                    console.error('Error during file upload:', err);
+                    return res
+                        .status(400)
+                        .json(
+                            userSendResponse(false, req, 'File upload failed', err)
+                        );
+                }
+                next();
+            });
+        } else {
+            // If not multipart/form-data, skip the file upload step
+            next();
+        }
+    },
+    [validate_token],
+    templateDataController.updateEditTemplateData)
+
 router.post('/deleteTemplateData',
     // eitherAuthMiddleware,
     // userAuthMiddleware,
