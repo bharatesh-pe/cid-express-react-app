@@ -1436,6 +1436,12 @@ const fetch_dash_count = async (req, res) => {
                             "UI_PARTIAL",
                             "EQ_FULL",
                             "EQ_PARTIAL",
+                            "PENDING_QUASH_PETITIONS_HC",
+                            "PENDING_BAIL_PETITIONS_HC",
+                            "PENDING_ANTICIPATORY_BAIL_PETITIONS_HC",
+                            "PENDING_QUASH_PETITIONS_SC",
+                            "PENDING_BAIL_PETITIONS_SC",
+                            "PENDING_ANTICIPATORY_BAIL_PETITIONS_SC",
                         ]
                     }
                 };
@@ -1673,35 +1679,35 @@ const fetch_dash_count = async (req, res) => {
 
             alertTemplates = {
                 "UI_FULL": {
-                  label: "Full Stay on Investigation",
-                  total_count: 0
-                  },
-                  "EQ_FULL": {
+                    label: "Full Stay on Investigation",
+                    total_count: 0
+                },
+                "EQ_FULL": {
                     label: "Full Stay on Enquiries",
                     total_count: 0
-                  },
-                  "UI_PARTIAL": {
+                },
+                "UI_PARTIAL": {
                     label: "Partial Stay on Investigation",
                     total_count: 0
-                  },
-                  "EQ_PARTIAL": {
+                },
+                "EQ_PARTIAL": {
                     label: "Partial Stay on Enquiries",
                     total_count: 0
-                  },
-                  pending_quash_petitions_in_hc: {
-                    label: "Pending Quash Petitions in "+ appendingText,
+                },
+                [`PENDING_QUASH_PETITIONS_${appendingText}`]: {
+                    label: `Pending Quash Petitions in ${appendingText}`,
                     total_count: 0
-                  },
-                  pending_bail_petitions_in_hc: {
-                    label: "Pending Bail Petitions in "+ appendingText,
+                },
+                [`PENDING_BAIL_PETITIONS_${appendingText}`]: {
+                    label: `Pending Bail Petitions in ${appendingText}`,
                     total_count: 0
-                  },
-                  pending_anticipatory_petitions_in_hc: {
-                    label: "Pending Anticipatory Bail Petitions in "+ appendingText,
+                },
+                [`PENDING_ANTICIPATORY_BAIL_PETITIONS_${appendingText}`]: {
+                    label: `Pending Anticipatory Bail Petitions in ${appendingText}`,
                     total_count: 0
-                  },
-                
-            };
+                }
+            }
+
             otherHearingTemplates = {
                 "TRIAL_TODAY": {
                     "label": "Today",
@@ -1972,15 +1978,6 @@ const fetch_dash_count = async (req, res) => {
                             {
                                 otherHearingTemplates["TRIAL_NEXT_WEEK"].total_count  = record_count;
                                 otherHearingTemplates["TRIAL_NEXT_WEEK"]["record_ids"] = record_ids ;
-                            }
-                        }
-                        
-                        if(alertType === "ui_full")
-                        {
-                            if(otherHearingTemplates["UI_FULL"])
-                            {
-                                otherHearingTemplates["UI_FULL"].total_count = record_count;
-                                otherHearingTemplates["UI_FULL"]["record_ids"] = record_ids;
                             }
                         }
                     }
