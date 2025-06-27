@@ -7260,6 +7260,7 @@ const UnderInvestigation = () => {
                   closeForm={setOtherFormOpen}
                   headerDetails={selectedRowData?.["field_cc_no./sc_no"]}
                   selectedRow={selectedRowData}
+                  showCaseLog={true}
                 />
               </FormControl>
             </DialogContentText>
