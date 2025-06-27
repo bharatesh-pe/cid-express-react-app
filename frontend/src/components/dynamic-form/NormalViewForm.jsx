@@ -50,7 +50,7 @@ import dayjs from 'dayjs';
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -64,6 +64,7 @@ const NormalViewForm = ({
   const [stepperPercentage, setStepperPercentage] = useState({});
   const [loading, setLoading] = useState(false); // State for loading indicator
   const [selectedField, setSelectedField] = useState({});
+  const userrole = JSON.parse(localStorage.getItem("role_title")?.toLowerCase().trim()) || "";
 
   const [historyModal, setHistoryModal] = useState(false)
   const [historyData, setHistoryData] = useState([])
@@ -2124,7 +2125,7 @@ const NormalViewForm = ({
           <Box sx={{ display: 'flex', alignItems: 'center', }}>
 
             {
-                showAssignIo && investigationAction && investigationAction?.field && !showCaseActionBtn &&
+                showAssignIo && investigationAction && investigationAction?.field && !showCaseActionBtn && userrole !== "investigation officer" &&
                 <Button
                     onClick={()=>showTransferToOtherDivision(investigationAction, initialData, investigationAction?.field)}
                     sx={{
@@ -2142,7 +2143,7 @@ const NormalViewForm = ({
             }
 
             {
-                table_row_id &&
+                table_row_id && showAssignIo &&
                 <Button
                     variant="outlined"
                     sx={{marginLeft: "10px", marginRight: "10px", height: '40px'}}
