@@ -370,6 +370,7 @@ const Formbuilder = () => {
               formType : 'divider',
               label: `random_${Date.now()}_divider`, 
               id: `random_${Date.now()}_divider`, 
+              name: `random_${Date.now()}_divider`, 
               section: steps && steps[activeStep] ? steps[activeStep] : null 
             }
         ]);          
@@ -2915,6 +2916,7 @@ const Formbuilder = () => {
                                                                                 >
                                                                                     <ToggleButton className='rowToggleBtn' value="12">1</ToggleButton>
                                                                                     <ToggleButton className='rowToggleBtn' value="6">2</ToggleButton>
+                                                                                    <ToggleButton className='rowToggleBtn' value="4">3</ToggleButton>
                                                                                 </ToggleButtonGroup>
                                                                             </ThemeProvider>
                                                                         </Box>
