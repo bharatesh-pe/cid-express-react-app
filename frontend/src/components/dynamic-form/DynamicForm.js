@@ -42,6 +42,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import CloseIcon from "@mui/icons-material/Close";
 import ActTable from './actSection';
 import DropdownWithAdd from "../form/DropdownWithAdd";
+import TableField from "../form/Table";
 
 const DynamicForm = ({
   formConfig,
@@ -679,6 +680,15 @@ const DynamicForm = ({
       [fieldId]: selectedValue,
     }));
   };
+
+    const handleTableDataChange = (field, data)=>{
+        setFormData(prevData => {
+            return {
+                ...prevData,
+                [field.name]: JSON.stringify(data),
+            };
+        });
+    }
 
   const handleAutocomplete = (field, selectedValue) => {
     let updatedFormData = { ...formData, [field.name]: selectedValue };
@@ -2498,6 +2508,19 @@ const DynamicForm = ({
                                 />
                             </Grid>
                         );
+                    case "table":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <TableField
+                                    field={field}
+                                    formData={formData}
+                                    onChange={handleTableDataChange}
+                                    readOnly={readOnlyData}
+                                    errors={errors}
+                                />
+                            </Grid>
+                        );
+                        
                   case "divider":
                     return (
                       <div
