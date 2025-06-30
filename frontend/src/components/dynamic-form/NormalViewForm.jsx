@@ -47,6 +47,7 @@ import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
 import DropdownWithAdd from '../form/DropdownWithAdd';
 import dayjs from 'dayjs';
+import TableField from '../form/Table';
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
@@ -673,6 +674,15 @@ const NormalViewForm = ({
       [fieldId]: selectedValue,
     }));
   };
+
+    const handleTableDataChange = (field, data)=>{
+        setFormData(prevData => {
+            return {
+                ...prevData,
+                [field.name]: JSON.stringify(data),
+            };
+        });
+    }
 
   const handleAutocomplete = (field, selectedValue) => {
 
@@ -2580,6 +2590,18 @@ const NormalViewForm = ({
                                     onHistory={() => showHistory(field.name)}
                                     dropdownInputValue={dropdownInputValue}
                                     readOnly={readOnlyData}
+                                />
+                            </Grid>
+                        );
+                        case "table":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <TableField
+                                    field={field}
+                                    formData={formData}
+                                    onChange={handleTableDataChange}
+                                    readOnly={readOnlyData}
+                                    errors={errors}
                                 />
                             </Grid>
                         );

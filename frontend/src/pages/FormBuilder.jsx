@@ -15,6 +15,7 @@ import ProfilePicture from '../components/form/ProfilePicture';
 import AutocompleteField from '../components/form/AutoComplete';
 import TabsComponents from '../components/form/Tabs';
 import RichTextEditor from '../components/form/RichTextEditor';
+import TableField from '../components/form/Table';
 
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -53,6 +54,7 @@ import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import InfoIcon from '@mui/icons-material/Info';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -107,6 +109,37 @@ const Formbuilder = () => {
     const [dropdownInputValue, setDropdownInputValue] = useState({});
 
     const [loading, setLoading] = useState(false); // State for loading indicator
+
+    const [propEditIndex, setPropEditIndex] = useState(null);
+    const [propEditField, setPropEditField] = useState(null);
+    const [showPropsModal, setShowPropsModal] = useState(false);
+
+    const handleOpenPropsModal = (index) => {
+        const field = selectedField.tableHeaders[index];
+        setPropEditIndex(index);
+        setPropEditField({ ...field });
+        setShowPropsModal(true);
+    };
+
+    const handleSaveProps = () => {
+        const updatedHeaders = [...selectedField.tableHeaders];
+        updatedHeaders[propEditIndex] = propEditField;
+
+        setSelectedField({ ...selectedField, tableHeaders: updatedHeaders });
+        setFields(fields.map(f => f.id === selectedField.id ? { ...f, tableHeaders: updatedHeaders } : f));
+        setShowPropsModal(false);
+    };
+
+    const importOptionsToField = (index, dbOptions) => {
+        const updatedHeaders = [...selectedField.tableHeaders];
+        updatedHeaders[index].fieldType = {
+            ...(updatedHeaders[index].fieldType || {}),
+            options: dbOptions
+        };
+
+        setSelectedField({ ...selectedField, tableHeaders: updatedHeaders });
+        setFields(fields.map(f => f.id === selectedField.id ? { ...f, tableHeaders: updatedHeaders } : f));
+    };
 
     useEffect(() => {
         if (Createdfields && action === 'edit') {
@@ -494,7 +527,164 @@ const Formbuilder = () => {
         ));
     };
 
-    // Handles adding a new option to a field's options array
+    const handleTableHeaderChange = (index, field, value, type) => {
+        const newOptions = [...field.tableHeaders]; // Create a copy of the options array
+
+        if (!newOptions[index]) {
+            newOptions[index] = {};
+        }
+
+        const isDuplicate = newOptions.some((item, idx) => {
+            if (idx === index) return false;
+            if (type !== "fieldType") {
+                return item?.[type] === value;
+            } else {
+                return item?.fieldType?.type === value;
+            }
+        });
+
+        if (isDuplicate) {
+            toast.warning('This value is already used in another header', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if(type !== "fieldType"){
+            newOptions[index][type] = value;
+        }else{
+            if (!newOptions[index].fieldType) {
+                newOptions[index].fieldType = {};
+            }
+            newOptions[index].fieldType.type = value;
+        }
+        
+        // Update the selectedField state with the new options array
+        setSelectedField({ ...field, tableHeaders: newOptions });
+
+        // Update the fields array with the modified options for the field whose id matches the field.id
+        setFields(fields.map((f) =>
+            (f.id === field.id ? { ...f, tableHeaders: newOptions } : f) // If id matches, update the field's options
+        ));
+    };
+
+    const handleAddTableHeaders = () => {
+        const newOption = { header: "", fieldType: {type: "short_text"} };
+
+        const hasEmptyOption = selectedField?.tableHeaders?.some(option =>
+            !option.header?.trim() || !option.fieldType?.type?.trim()
+        );
+
+        if(hasEmptyOption){
+            toast.warning('Please Check Previous Table Header and Cell Options', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        setSelectedField({
+            ...selectedField,
+            tableHeaders: [...selectedField.tableHeaders, newOption]
+        });
+
+        setFields(fields.map((field) =>
+            (field.id === selectedField.id ? { ...field, tableHeaders: [...field.tableHeaders, newOption] } : field)
+        ));
+    };
+
+    const handleRemoveTableHeaders = (index) => {
+
+        if(selectedField.tableHeaders.length === 1){
+            toast.warning('At least one option is required.', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const newOptions = selectedField.tableHeaders.filter((_, i) => i !== index);
+
+        setSelectedField({ ...selectedField, tableHeaders: newOptions });
+
+        setFields(fields.map((field) =>
+            (field.id === selectedField.id ? { ...field, tableHeaders: newOptions } : field)
+        ));
+    };
+
+    const deleteAllTableHeaders = (index) => {
+
+        var userUpdateFields = {
+            tableHeaders: [],
+        }
+
+        setSelectedField((prev) => ({
+            ...prev,
+            tableHeaders : []
+        }));
+
+        setFields(fields.map((field) =>
+            (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
+        ));
+
+    };
+
+    const handleTableDataChange = (field, data)=>{
+        setFormData(prevData => {
+            return {
+                ...prevData,
+                [field.name]: data,
+            };
+        });
+    }
+
+    const handleTableFieldRemoveOption = (index) => {
+        const updated = [...(propEditField?.fieldType?.options || [])];
+
+        if (updated.length <= 1) {
+            toast.warning('At least one option is required.', {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        updated.splice(index, 1);
+
+        setPropEditField({
+            ...propEditField,
+            fieldType: {
+                ...propEditField.fieldType,
+                options: updated
+            }
+        });
+    };
+
     const handleAddOption = () => {
         const newOption = { name: "", code: "" }; // Create a new option with default empty name and code
 
@@ -1141,6 +1331,25 @@ const Formbuilder = () => {
                             field={field}
                             formData={formData}
                             onChange={handleFileUploadChange}
+                            onFocus={(e) => { setSelectedField(field) }}
+                            isFocused={field.label == selectedField.label}
+                        />
+                        {!existingData &&
+                            <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
+                                <img src={deleteBtn} />
+                            </button>
+                        }
+                    </div>
+                );
+            case 'table':
+                return (
+                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
+
+                        <TableField
+                            key={field.id}
+                            field={field}
+                            formData={formData}
+                            onChange={handleTableDataChange}
                             onFocus={(e) => { setSelectedField(field) }}
                             isFocused={field.label == selectedField.label}
                         />
@@ -1938,6 +2147,18 @@ const Formbuilder = () => {
                                     forign_key : forignKey,
                                     attributes : attributeKey
                                 }
+
+                                if(showPropsModal){
+                                    setPropEditField({
+                                        ...propEditField,
+                                        fieldType: {
+                                            ...propEditField.fieldType,
+                                            ...userUpdateFields
+                                        }
+                                    });
+                                    setMasterModalOpen(false);
+                                    return;
+                                }
             
 
                                 setFields(fields.map((field) =>
@@ -1970,6 +2191,18 @@ const Formbuilder = () => {
                                     options: [],
                                     forign_key : "",
                                     attributes : []
+                                }
+
+                                if(showPropsModal){
+                                    setPropEditField({
+                                        ...propEditField,
+                                        fieldType: {
+                                            ...propEditField.fieldType,
+                                            ...userUpdateFields
+                                        }
+                                    });
+                                    setMasterModalOpen(false);
+                                    return;
                                 }
             
                                 setFields(fields.map((field) =>
@@ -2043,6 +2276,17 @@ const Formbuilder = () => {
                                 attributes : attributeKey
                             }
 
+                            if(showPropsModal){
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        ...userUpdateFields
+                                    }
+                                });
+                                setMasterModalOpen(false);
+                                return;
+                            }
         
                             setFields(fields.map((field) =>
                                 (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
@@ -2073,6 +2317,18 @@ const Formbuilder = () => {
                                 options: [],
                                 forign_key : "",
                                 attributes : []
+                            }
+                            
+                            if(showPropsModal){
+                                setPropEditField({
+                                    ...propEditField,
+                                    fieldType: {
+                                        ...propEditField.fieldType,
+                                        ...userUpdateFields
+                                    }
+                                });
+                                setMasterModalOpen(false);
+                                return;
                             }
         
                             setFields(fields.map((field) =>
@@ -2150,6 +2406,18 @@ const Formbuilder = () => {
                             defaultValue : false
                         }
 
+                        if(showPropsModal){
+                            setPropEditField({
+                                ...propEditField,
+                                fieldType: {
+                                    ...propEditField.fieldType,
+                                    ...userUpdateFields
+                                }
+                            });
+                            setMasterModalOpen(false);
+                            return;
+                        }
+
                         setFields(fields.map((field) =>
                             (field.id === selectedField.id ? { ...field, ...userUpdateFields } : field)
                         ));
@@ -2175,6 +2443,18 @@ const Formbuilder = () => {
                             forign_key : '',
                             attributes : [],
                             defaultValue : false
+                        }
+
+                        if(showPropsModal){
+                            setPropEditField({
+                                ...propEditField,
+                                fieldType: {
+                                    ...propEditField.fieldType,
+                                    ...userUpdateFields
+                                }
+                            });
+                            setMasterModalOpen(false);
+                            return;
                         }
 
                         setFields(fields.map((field) =>
@@ -2879,7 +3159,99 @@ const Formbuilder = () => {
                                                                                                 </Box>
                                                                                             </Box>
                                                                                         </Box>
-                                                                                    )
+                                                                                    ) : (prop === "tableHeaders") ?
+                                                                                        <Box sx={{ borderBottom: '20px' }}>
+                                                                                            <Box sx={{ border: '1px solid #D0D5DD', borderRadius: '8px', background: '#F2F4F7' }}>
+                                                                                                <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '8px' }}>
+                                                                                                    <Typography sx={{ color: '#475467', fontWeight: '500', fontSize: '16px' }} className='Roboto'>
+                                                                                                        Enter Table Headers Below
+                                                                                                    </Typography>
+                                                                                                    <Button onClick={() => deleteAllTableHeaders()} sx={{ color: '#F04438', fontSize: '16px', fontWeight: '500', textTransform: 'none' }} className='Roboto'>
+                                                                                                        Delete all
+                                                                                                    </Button>
+                                                                                                </Box>
+                                                                                                <Box py={1} px={2} sx={{ maxHeight: '270px', overflow: 'auto' }}>
+                                                                                                    {selectedField.tableHeaders.length > 0 ? selectedField.tableHeaders.map((option, index) => (
+                                                                                                        <Box py={1} key={index} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
+                                                                                                            <TextField
+                                                                                                                label="Table Header"
+                                                                                                                disabled={selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
+                                                                                                                value={option.header}
+                                                                                                                onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "header")}
+                                                                                                                fullWidth
+                                                                                                                required
+                                                                                                                size="small"
+                                                                                                                margin="dense"
+                                                                                                            />
+                                                                                                            <FormControl fullWidth size="small" margin="dense">
+                                                                                                                <InputLabel>Field Type</InputLabel>
+                                                                                                                <Select
+                                                                                                                    label="Field Type"
+                                                                                                                    value={option.fieldType?.type || 'short_text'}
+                                                                                                                    onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "fieldType")}
+                                                                                                                >
+                                                                                                                    <MenuItem value="short_text">Short Text</MenuItem>
+                                                                                                                    <MenuItem value="date">Date</MenuItem>
+                                                                                                                    <MenuItem value="single_select">Single Select</MenuItem>
+                                                                                                                    <MenuItem value="multi_select">Multi Select</MenuItem>
+                                                                                                                    <MenuItem value="text_area">Text Area</MenuItem>
+                                                                                                                </Select>
+                                                                                                            </FormControl>
+                                                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                                                {
+                                                                                                                    (option.fieldType?.type === "single_select" || option.fieldType?.type === "multi_select") &&
+                                                                                                                    <Tooltip title="Add Options">
+                                                                                                                        <IconButton onClick={() => handleOpenPropsModal(index)}>
+                                                                                                                            <VisibilityIcon sx={{ color: '#1D2939' }} />
+                                                                                                                        </IconButton>
+                                                                                                                    </Tooltip>
+                                                                                                                }
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveTableHeaders(index)}>
+                                                                                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                                                                                </button>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddTableHeaders}>
+                                                                                                                    <AddCircleOutlineIcon />
+                                                                                                                </button>
+                                                                                                            </Box>
+                                                                                                        </Box>
+                                                                                                    )) :
+                                                                                                        <Box py={1} key={0} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
+                                                                                                            <TextField
+                                                                                                                label="Table Header"
+                                                                                                                disabled={selectedField['readonlyOption'] ? selectedField['readonlyOption'] : false}
+                                                                                                                value=''
+                                                                                                                onChange={(e) => handleTableHeaderChange(0, selectedField, e.target.value, "header")}
+                                                                                                                fullWidth
+                                                                                                                required
+                                                                                                                size="small"
+                                                                                                                margin="dense"
+                                                                                                            />
+                                                                                                            <FormControl fullWidth size="small" margin="dense">
+                                                                                                                <InputLabel>Field Type</InputLabel>
+                                                                                                                <Select
+                                                                                                                    label="Field Type"
+                                                                                                                    onChange={(e) => handleTableHeaderChange(0, selectedField, e.target.value, "fieldType")}
+                                                                                                                >
+                                                                                                                    <MenuItem value="short_text">Short Text</MenuItem>
+                                                                                                                    <MenuItem value="date">Date</MenuItem>
+                                                                                                                    <MenuItem value="single_select">Single Select</MenuItem>
+                                                                                                                    <MenuItem value="multi_select">Multi Select</MenuItem>
+                                                                                                                </Select>
+                                                                                                            </FormControl>
+                                                                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleRemoveTableHeaders(0)}>
+                                                                                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                                                                                </button>
+                                                                                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={handleAddTableHeaders}>
+                                                                                                                    <AddCircleOutlineIcon />
+                                                                                                                </button>
+                                                                                                            </Box>
+                                                                                                        </Box>
+                                                                                                    }
+                                                                                                </Box>
+                                                                                            </Box>
+                                                                                        </Box>
+
                                                                                         : (
                                                                                             <TextField
                                                                                                 label={prop !== "name" ? prop.charAt(0).toUpperCase() + prop.slice(1) : "DB Name"}
@@ -3064,6 +3436,185 @@ const Formbuilder = () => {
                                 <CircularProgress size={100} />
                             </div>
             }
+
+            <Dialog open={showPropsModal} onClose={() => setShowPropsModal(false)} maxWidth="md" fullWidth>
+                <DialogTitle>Add Options</DialogTitle>
+                
+                <DialogContent dividers>
+
+                    {(propEditField?.fieldType?.type === "single_select" || propEditField?.fieldType?.type === "multi_select") && (
+                        <Box sx={{ borderBottom: '20px' }}>
+                            <Box sx={{ border: '1px solid #D0D5DD', borderRadius: '8px', background: '#F2F4F7' }}>
+                                <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '8px' }}>
+                                    <Typography sx={{ color: '#475467', fontWeight: '500', fontSize: '16px' }} className='Roboto'>
+                                        Enter dropdown values below
+                                    </Typography>
+                                    <Button 
+                                        onClick={()=> {
+                                            if (propEditField?.fieldType?.api) {
+                                                const { api, ...restFieldType } = propEditField.fieldType;
+
+                                                setPropEditField({
+                                                    ...propEditField,
+                                                    fieldType: {
+                                                        ...restFieldType,
+                                                        options: []
+                                                    }
+                                                });
+
+                                            }else{
+                                                setPropEditField({
+                                                    ...propEditField,
+                                                    fieldType: {
+                                                        ...propEditField.fieldType,
+                                                        options: []
+                                                    }
+                                                })
+                                            }
+                                        }} 
+                                        sx={{ color: '#F04438', fontSize: '16px', fontWeight: '500', textTransform: 'none' }} className='Roboto'>
+                                        Delete all
+                                    </Button>
+                                </Box>
+                                <Box py={1} px={2} sx={{ maxHeight: '270px', overflow: 'auto' }}>
+                                    {propEditField?.fieldType?.options?.length > 0 ? propEditField?.fieldType?.options.map((option, index) => (
+                                        <Box py={1} key={index} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
+                                            <TextField
+                                                label="Option Name"
+                                                disabled={propEditField?.fieldType?.['readonlyOption'] ? propEditField?.fieldType?.['readonlyOption'] : false}
+                                                value={option.name}
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+
+                                                    let updated = [...(propEditField?.fieldType?.options || [])];
+
+                                                    if (!updated[index]) {
+                                                        updated[index] = { name: '', code: '' };
+                                                    }
+
+                                                    updated[index].name = value;
+                                                    updated[index].code = value;
+
+                                                    setPropEditField({
+                                                        ...propEditField,
+                                                        fieldType: {
+                                                            ...propEditField.fieldType,
+                                                            options: updated
+                                                        }
+                                                    });
+                                                }}
+                                                fullWidth
+                                                required
+                                                size="small" // Default size is "medium"
+                                                margin="dense" // Adjust the margin to control spacing
+                                            />
+                                            <TextField
+                                                label="Option Code"
+                                                disabled
+                                                value={option.code}
+                                                fullWidth
+                                                required
+                                                size="small" // Default size is "medium"
+                                                margin="dense" // Adjust the margin to control spacing
+                                            />
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleTableFieldRemoveOption(index)}>
+                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                </button>
+                                                <button 
+                                                    style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} 
+                                                    onClick={() => {
+                                                        const updated = [...(propEditField?.fieldType?.options || []), { name: '', code: '' }];
+                                                        setPropEditField({
+                                                            ...propEditField,
+                                                            fieldType: {
+                                                                ...propEditField.fieldType,
+                                                                options: updated
+                                                            }
+                                                        });
+                                                    }}
+                                                >
+                                                    <AddCircleOutlineIcon />
+                                                </button>
+                                            </Box>
+                                        </Box>
+                                    )) :
+                                        <Box py={1} key={0} sx={{ display: "flex", alignItems: "center", gap: '18px' }}>
+                                            <TextField
+                                                label="Option Name"
+                                                disabled={propEditField?.fieldType?.['readonlyOption'] ? propEditField?.fieldType?.['readonlyOption'] : false}
+                                                value=''
+                                                onChange={(e) => {
+                                                    const value = e.target.value;
+
+                                                    let updated = [...(propEditField?.fieldType?.options || [])];
+
+                                                    if (!updated[0]) {
+                                                        updated[0] = { name: '', code: '' };
+                                                    }
+
+                                                    updated[0].name = value;
+                                                    updated[0].code = value;
+
+                                                    setPropEditField({
+                                                        ...propEditField,
+                                                        fieldType: {
+                                                            ...propEditField.fieldType,
+                                                            options: updated
+                                                        }
+                                                    });
+                                                }}
+                                                fullWidth
+                                                required
+                                                size="small"
+                                                margin="dense"
+                                            />
+                                            <TextField
+                                                label="Option Code"
+                                                disabled
+                                                value=''
+                                                fullWidth
+                                                required
+                                                size="small"
+                                                margin="dense"
+                                            />
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleTableFieldRemoveOption(0)}>
+                                                    <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />
+                                                </button>
+                                                <button 
+                                                    style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} 
+                                                    onClick={() => {
+                                                        const updated = [...(propEditField?.fieldType?.options || []), { name: '', code: '' }];
+                                                        setPropEditField({
+                                                            ...propEditField,
+                                                            fieldType: {
+                                                                ...propEditField.fieldType,
+                                                                options: updated
+                                                            }
+                                                        });
+                                                    }}
+                                                >
+                                                    <AddCircleOutlineIcon />
+                                                </button>
+                                            </Box>
+                                        </Box>
+                                        }
+                                    </Box>
+                                <Box p={1} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid #D0D5DD', borderRadius: '4px', gap: '14px', background: '#F2F4F7' }}>
+                                    <Button onClick={showMasterTable} sx={{ width: '100%', color: '#1D2939', fontSize: '16px', fontWeight: '500', textTransform: 'none', border: '1px solid #D0D5DD', borderRadius: '4px' }} className='Roboto'>
+                                        Import from data base
+                                    </Button>
+                                </Box>
+                            </Box>
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={() => setShowPropsModal(false)}>Cancel</Button>
+                    <Button variant="contained" onClick={handleSaveProps}>Save</Button>
+                </DialogActions>
+            </Dialog>
     
         </Box>
     );
