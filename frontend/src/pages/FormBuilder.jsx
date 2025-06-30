@@ -3194,6 +3194,7 @@ const Formbuilder = () => {
                                                                                                                     <MenuItem value="date">Date</MenuItem>
                                                                                                                     <MenuItem value="single_select">Single Select</MenuItem>
                                                                                                                     <MenuItem value="multi_select">Multi Select</MenuItem>
+                                                                                                                    <MenuItem value="text_area">Text Area</MenuItem>
                                                                                                                 </Select>
                                                                                                             </FormControl>
                                                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

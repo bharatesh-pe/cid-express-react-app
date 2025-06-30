@@ -19,9 +19,8 @@ import api from '../../services/api';
 
 const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFocused }) => {
 
-    console.log(errors,"errors");
-
     const [headers, setHeaders] = useState(field.tableHeaders ? { [field.name]: field.tableHeaders } : {});
+    const [focusedCell, setFocusedCell] = useState({ row: null, col: null });
 
     useEffect(() => {
         setHeaders(field.tableHeaders ? { [field.name]: field.tableHeaders } : {});
@@ -222,16 +221,22 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                     
                                     <TableCell key={colIndex}>
                                         {
-                                            header?.fieldType?.type === 'short_text' && (
-                                                <TextField
-                                                    variant="outlined"
-                                                    size="small"
-                                                    fullWidth
-                                                    value={row[header.header] || ''}
-                                                    disabled={readOnly}
-                                                    onChange={(e) => handleCellChange(rowIndex, header.header, e.target.value)}
-                                                />
-                                            )
+
+                                        (header?.fieldType?.type === 'short_text' || header?.fieldType?.type === 'text_area') && (
+                                            <TextField
+                                                variant="outlined"
+                                                size="small"
+                                                fullWidth
+                                                value={row[header.header] || ''}
+                                                disabled={readOnly}
+                                                onChange={(e) => handleCellChange(rowIndex, header.header, e.target.value)}
+                                                multiline={header?.fieldType?.type === 'text_area'}
+                                                rows={header?.fieldType?.type === 'text_area' && focusedCell.row === rowIndex && focusedCell.col === colIndex ? 6 : 1}
+                                                onFocus={() => setFocusedCell({ row: rowIndex, col: colIndex })}
+                                                onBlur={() => setFocusedCell({ row: null, col: null })}
+                                            />
+                                        )
+
                                             ||
                                             header?.fieldType?.type === 'date' && (
                                                 <TextField
