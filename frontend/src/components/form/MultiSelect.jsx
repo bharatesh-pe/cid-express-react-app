@@ -105,7 +105,7 @@ const MultiSelect = ({ field, formData, errors, onChange, onFocus, isFocused, on
             </FormHelperText>
             {
                 field?.linkModule && (
-                    <Tooltip title="Click to view detailed template data" arrow placement="top">
+                    <Tooltip title="" arrow placement="top">
                         <Box
                             onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}
                             mt={1}

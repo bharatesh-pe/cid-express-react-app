@@ -537,11 +537,7 @@ const Formbuilder = () => {
 
         const isDuplicate = newOptions.some((item, idx) => {
             if (idx === index) return false;
-            if (type !== "fieldType") {
-                return item?.[type] === value;
-            } else {
-                return item?.fieldType?.type === value;
-            }
+            return item?.['header'] === value;
         });
 
         if (isDuplicate) {
@@ -558,13 +554,13 @@ const Formbuilder = () => {
             return;
         }
 
-        if(type !== "fieldType"){
+        if(type === "header"){
             newOptions[index][type] = value;
         }else{
             if (!newOptions[index].fieldType) {
                 newOptions[index].fieldType = {};
             }
-            newOptions[index].fieldType.type = value;
+            newOptions[index].fieldType[type] = value;
         }
         
         // Update the selectedField state with the new options array
@@ -574,10 +570,19 @@ const Formbuilder = () => {
         setFields(fields.map((f) =>
             (f.id === field.id ? { ...f, tableHeaders: newOptions } : f) // If id matches, update the field's options
         ));
+
+        setFormData(prevData => {
+            const updatedData = { ...prevData };
+            delete updatedData[field?.name];
+            return {
+                ...updatedData
+            };
+        });
+
     };
 
     const handleAddTableHeaders = () => {
-        const newOption = { header: "", fieldType: {type: "short_text"} };
+        const newOption = { header: "", fieldType: {type: ""} };
 
         const hasEmptyOption = selectedField?.tableHeaders?.some(option =>
             !option.header?.trim() || !option.fieldType?.type?.trim()
@@ -881,6 +886,10 @@ const Formbuilder = () => {
             existingData = Createdfields.some((element) => element.id === field.id);
         }
 
+        if(field?.name === "field_approval_done_by"){
+            return null
+        }
+
         switch (field.type) {
             case "text":
                 return (
@@ -1017,6 +1026,8 @@ const Formbuilder = () => {
                             onChange={(value) =>
                               handleAutocomplete(field, value.target.value)
                             }
+                            onFocus={(e) => { setSelectedField(field) }}
+                            isFocused={field.label == selectedField.label}
                         />
                         {!existingData &&
                             <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
@@ -3082,15 +3093,30 @@ const Formbuilder = () => {
                                                                                                                 <Select
                                                                                                                     label="Field Type"
                                                                                                                     value={option.fieldType?.type || 'short_text'}
-                                                                                                                    onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "fieldType")}
+                                                                                                                    onChange={(e) => handleTableHeaderChange(index, selectedField, e.target.value, "type")}
                                                                                                                 >
                                                                                                                     <MenuItem value="short_text">Short Text</MenuItem>
+                                                                                                                    <MenuItem value="number">Number</MenuItem>
                                                                                                                     <MenuItem value="date">Date</MenuItem>
                                                                                                                     <MenuItem value="single_select">Single Select</MenuItem>
                                                                                                                     <MenuItem value="multi_select">Multi Select</MenuItem>
                                                                                                                     <MenuItem value="text_area">Text Area</MenuItem>
                                                                                                                 </Select>
                                                                                                             </FormControl>
+                                                                                                            <TextField
+                                                                                                                label="Width (px)"
+                                                                                                                type="number"
+                                                                                                                value={option.fieldType?.width || ''}
+                                                                                                                onChange={(e) => {
+                                                                                                                    const newValue = e.target.value;
+                                                                                                                    if (newValue === '' || /^[0-9\b]+$/.test(newValue)) {
+                                                                                                                        handleTableHeaderChange(index, selectedField, newValue, "width")
+                                                                                                                    }
+                                                                                                                }}
+                                                                                                                fullWidth
+                                                                                                                size="small"
+                                                                                                                margin="dense"
+                                                                                                            />
                                                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                                                                                 {
                                                                                                                     (option.fieldType?.type === "single_select" || option.fieldType?.type === "multi_select") &&
@@ -3124,12 +3150,14 @@ const Formbuilder = () => {
                                                                                                                 <InputLabel>Field Type</InputLabel>
                                                                                                                 <Select
                                                                                                                     label="Field Type"
-                                                                                                                    onChange={(e) => handleTableHeaderChange(0, selectedField, e.target.value, "fieldType")}
+                                                                                                                    onChange={(e) => handleTableHeaderChange(0, selectedField, e.target.value, "type")}
                                                                                                                 >
                                                                                                                     <MenuItem value="short_text">Short Text</MenuItem>
+                                                                                                                    <MenuItem value="number">Number</MenuItem>
                                                                                                                     <MenuItem value="date">Date</MenuItem>
                                                                                                                     <MenuItem value="single_select">Single Select</MenuItem>
                                                                                                                     <MenuItem value="multi_select">Multi Select</MenuItem>
+                                                                                                                    <MenuItem value="text_area">Text Area</MenuItem>
                                                                                                                 </Select>
                                                                                                             </FormControl>
                                                                                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

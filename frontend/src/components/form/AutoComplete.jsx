@@ -118,7 +118,7 @@ export default function AutocompleteField({ formData, errors, field, onFocus, is
 
             {
                 field?.linkModule && (
-                    <Tooltip title="Click to view detailed template data" arrow placement="top">
+                    <Tooltip title="" arrow placement="top">
                         <Box
                             onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}
                             mt={1}

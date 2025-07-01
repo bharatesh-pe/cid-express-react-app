@@ -8,7 +8,7 @@ import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly, viewLinkedTemplate }) => {
   return (
-    <>
+    <Box sx={{width: '100%'}}>
       {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
       <FormControl fullWidth>
         <InputLabel id="demo-simple-select-helper-label" className='hideHistoy'>
@@ -140,8 +140,8 @@ const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, on
                 boxShadow: isFocused ? '0px 0px 0px 3px #D1E9FF' : 'none', // Apply shadow based on focus
             },
           }}
-        //   onClick={onFocus}
-        // focused={isFocused || false}
+            onFocus={onFocus}
+            focused={isFocused || false}
         >
           <MenuItem value="">
             <em>None</em>
@@ -157,7 +157,7 @@ const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, on
         </FormHelperText>
         {
             field?.linkModule && (
-                <Tooltip title="Click to view detailed template data" arrow placement="top">
+                <Tooltip title="" arrow placement="top">
                     <Box
                         onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}
                         mt={1}
@@ -182,7 +182,7 @@ const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, on
             )
         }
       </FormControl>
-    </>
+    </Box>
   );
 };
 
