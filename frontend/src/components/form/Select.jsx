@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import './ShortText.css';
-import { FormControl, FormHelperText, InputLabel, MenuItem, Select, Tooltip } from '@mui/material';
+import { FormControl, FormHelperText, InputLabel, MenuItem, Select, Tooltip, Typography, Box } from '@mui/material';
 import textToSnakecase from './textformater';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly }) => {
+const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, onHistory, readOnly, viewLinkedTemplate }) => {
   return (
     <>
       {field.heading && <h4 className={`form-field-heading ${readOnly || field.disabled ? 'disabled' : ''}`}>{field.heading}</h4>}
@@ -154,6 +155,32 @@ const SelectField = ({ field, formData, errors, onChange, onFocus, isFocused, on
         <FormHelperText style={{ color: errors?.[field.name] ? '#d32f2f' : '' }}>
           {errors?.[field.name] || field.supportingText || ' '}
         </FormHelperText>
+        {
+            field?.linkModule && (
+                <Tooltip title="Click to view detailed template data" arrow placement="top">
+                    <Box
+                        onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}
+                        mt={1}
+                        sx={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 0.5,
+                            cursor: 'pointer',
+                            color: 'primary.main',
+                            fontSize: '0.875rem',
+                            '&:hover': {
+                                textDecoration: 'underline',
+                            },
+                        }}
+                    >
+                        <InfoOutlinedIcon fontSize="small" />
+                        <Typography variant="body2" fontWeight={500}>
+                            View Data Details
+                        </Typography>
+                    </Box>
+                </Tooltip>
+            )
+        }
       </FormControl>
     </>
   );

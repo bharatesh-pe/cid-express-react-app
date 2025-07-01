@@ -2096,6 +2096,239 @@ const NormalViewForm = ({
   // eslint-disable-next-line
 }, [showActionModal, caseActionSelectedValue, caseActionOptions]);
 
+    // handle link template view
+
+    const [showLinkTemplate, setShowLinkTemplate] = useState(false);
+
+    const [linkTemplateName, setLinkTemplateName] = useState("");
+    const [linkTableName, setLinkTableName] = useState("");
+
+    const [linkTemplateRowId, setLinkTemplateRowId] = useState("");
+    const [linkTemplateId, setLinkTemplateId] = useState("");
+
+    const [linkTemplateFields, setLinkTemplateFields] = useState([]);
+    const [linkTemplateStepperData, setLinkTemplateStepperData] = useState([]);
+
+    const [linkTemplateInitialData, setLinkTemplateInitialData] = useState({});
+
+    const viewLinkedTemplate = async (field)=>{
+
+        if((!field?.table || field?.table === "") || (!field?.forign_key || field?.forign_key === "")){
+            toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if(!formData?.[field?.name] || formData?.[field?.name] === ""){
+            toast.error("Please Select Value Before Getting Data !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var payload = {
+            table_name : field?.table,
+            key : field?.forign_key,
+            value : formData?.[field?.name]
+        }
+
+        try {
+            
+            const gettingDetailedData = await api.post('/templateData/getTemplateAlongWithData', payload);
+            
+            if(gettingDetailedData?.success && gettingDetailedData?.data){
+
+                const { data, template } = gettingDetailedData?.data
+
+                setLinkTemplateName(template?.template_name);
+                setLinkTableName(template?.table_name);
+
+                setLinkTemplateRowId(data?.id);
+                setLinkTemplateId(template?.template_id);
+
+                setLinkTemplateFields(template?.fields);
+                setLinkTemplateStepperData(template?.sections ? template?.sections : []);
+
+                setLinkTemplateInitialData(data);
+
+                setShowLinkTemplate(true);
+
+            }
+
+        } catch (error) {
+            if (error && error.response && error.response.data) {
+                toast.error( error.response?.data?.message || "Need dependent Fields", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
+
+    const closeLinkTemplateModal = ()=>{
+        setLinkTemplateName("");
+        setLinkTableName("");
+
+        setLinkTemplateRowId("");
+        setLinkTemplateId("");
+
+        setLinkTemplateFields([]);
+        setLinkTemplateStepperData([]);
+
+        setLinkTemplateInitialData({});
+
+        setShowLinkTemplate(false);
+    }
+
+    const linkTemplateUpdateFunc = async (data)=>{
+
+        if (!linkTableName || linkTableName === "") {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("table_name", linkTableName);
+        var normalData = {}; 
+
+        linkTemplateFields.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(
+                                (file) => file.filename instanceof File
+                            );
+                            var filteredArray = data[field.name].filter(
+                                (file) => file.filename instanceof File
+                            );
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+                                formData.append("folder_attachment_ids", JSON.stringify(filteredArray));
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+        normalData["id"] = data.id;
+        formData.append("id", data.id);
+        setLoading(true);
+        formData.append("data", JSON.stringify(normalData));
+
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+            setLoading(false);
+
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                closeLinkTemplateModal();
+
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const linkTemplateErrorFunc = async (data)=>{
+        console.log(data,"data");
+    }
+
 
   return (
     <>
@@ -2453,6 +2686,7 @@ const NormalViewForm = ({
                             onHistory={() => showHistory(field.name)}
                             onChange={(value) => handleAutocomplete(field, value.target.value)} 
                             readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
                         />
                         </div>
                       </Grid>
@@ -2469,6 +2703,7 @@ const NormalViewForm = ({
                           onHistory={() => showHistory(field.name)}
                           onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
                           readOnly={readOnlyData}
+                          viewLinkedTemplate={viewLinkedTemplate}
                         />
                       </Grid>
                     );
@@ -2484,6 +2719,7 @@ const NormalViewForm = ({
                           onHistory={() => showHistory(field.name)}
                           onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
                           readOnly={readOnlyData}
+                          viewLinkedTemplate={viewLinkedTemplate}
                         />
                       </Grid>
                     );
@@ -2590,6 +2826,7 @@ const NormalViewForm = ({
                                     onHistory={() => showHistory(field.name)}
                                     dropdownInputValue={dropdownInputValue}
                                     readOnly={readOnlyData}
+                                    viewLinkedTemplate={viewLinkedTemplate}
                                 />
                             </Grid>
                         );
@@ -2618,7 +2855,7 @@ const NormalViewForm = ({
               })}
             </Grid>
 
-            {onSubmit &&
+            {(onSubmit || onUpdate) &&
               <Grid container>
                 <Grid item xs={12} md={6}>
                   <Button ref={formButtonRef} className='GreenFillBtn' sx={{ display: 'none' }} type='submit'>Submit</Button>
@@ -2884,6 +3121,43 @@ const NormalViewForm = ({
                         </Box>
                     </DialogContentText>
                 </DialogContent>
+            </Dialog>
+        )}
+
+        {showLinkTemplate && (
+            <Dialog
+                open={showLinkTemplate}
+                onClose={() => closeLinkTemplateModal}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+                <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                    <DialogContentText id="alert-dialog-description">
+                        <FormControl fullWidth>
+                            <NormalViewForm
+                                table_row_id={linkTemplateRowId}
+                                template_id={linkTemplateId}
+                                template_name={linkTemplateName}
+                                table_name={linkTableName}
+                                readOnly={true}
+                                editData={false}
+                                initialData={linkTemplateInitialData}
+                                formConfig={linkTemplateFields}
+                                stepperData={linkTemplateStepperData}
+                                onUpdate={linkTemplateUpdateFunc}
+                                onError={linkTemplateErrorFunc}
+                                closeForm={closeLinkTemplateModal}
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={()=>closeLinkTemplateModal}>
+                        Cancel
+                    </Button>
+                </DialogActions>
             </Dialog>
         )}
 

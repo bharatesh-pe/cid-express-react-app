@@ -65,6 +65,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CloseIcon from '@mui/icons-material/Close';
 import DropdownWithAdd from '../components/form/DropdownWithAdd';
 import Swal from 'sweetalert2';
+import SelectField from '../components/form/Select';
 
 const camelize = (str) => {
     return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, (match, index) => (index === 0 ? match.toLowerCase() : match.toUpperCase())).replace(/\s+/g, '');
@@ -1008,122 +1009,15 @@ const Formbuilder = () => {
             case "dropdown":
                 return (
                     <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '16px' }}>
-                        <Box sx={{ width: '100%' }}>
-                            {field.heading && <h4 className='form-field-heading'>{field.heading}</h4>}
-                            <FormControl fullWidth key={field.id}>
-                                <InputLabel
-                                className='hideHistoy'>
-                                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                                        <span>
-                                            {field.label}
-                                        </span>
-                                        <span className="anekKannada" style={{ marginTop: '6px' }}>
-                                            {field.kannada ? '/ ' + field.kannada + ' ' : ''}
-                                        </span>
-                                        {field.required && (
-                                            <span
-                                                style={{
-                                                    padding: '0px 0px 0px 5px', 
-                                                    verticalAlign: 'middle'
-                                                }} 
-                                                className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
-                                            >
-                                                {'*'}
-                                            </span>
-                                        )}
-                                        {field.info && (
-                                            <Tooltip title={field.info ? field.info : ''} arrow placement="top">
-                                                <InfoIcon sx={{
-                                                    color: '#1570EF', 
-                                                    padding: '0px 0px 0px 3px;', 
-                                                    fontSize: '20px',
-                                                    verticalAlign: 'middle',
-                                                    marginBottom:'3px'
-                                                }}/>
-                                            </Tooltip>
-                                        )}
-                                        {field.history && (
-                                            <HistoryIcon className='historyIcon' sx={{
-                                                color: '#1570EF', 
-                                                padding: '0 1px', 
-                                                fontSize: '20px',
-                                                verticalAlign: 'middle',
-                                                marginBottom:'3px'
-                                            }}/>
-                                        )}
-                                    </div>
-                                </InputLabel>
-                                <Select
-                                    value={formData[field.name] || ""} // Ensure the value is linked to formData
-                                    onChange={(e) => handleDropdownChange(field.name, e.target.value)} // Handle change
-                                    id={field.id}
-                                    className='selectHideHistory'
-                                    label={
-                                        <div style={{ display: 'flex', alignItems: 'center' }}>
-                                            <span>
-                                                {field.label}
-                                            </span>
-                                            <span className="anekKannada" style={{ marginTop: '6px' }}>
-                                                {field.kannada ? '/ ' + field.kannada + ' ' : ''}
-                                            </span>
-                                            {field.required && (
-                                                <span
-                                                    style={{
-                                                        padding: '0px 0px 0px 5px', 
-                                                        verticalAlign: 'middle'
-                                                    }} 
-                                                    className='MuiFormLabel-asterisk MuiInputLabel-asterisk css-1ljffdk-MuiFormLabel-asterisk'
-                                                >
-                                                    {'*'}
-                                                </span>
-                                            )}
-                                            {field.info && (
-                                                <Tooltip title={field.info ? field.info : ''} arrow placement="top">
-                                                    <InfoIcon className='infoIcon' sx={{
-                                                        color: '#1570EF', 
-                                                        padding: '0px 0px 0px 3px;', 
-                                                        fontSize: '20px',
-                                                        verticalAlign: 'middle',
-                                                        marginBottom:'3px'
-                                                    }}/>
-                                                </Tooltip>
-                                            )}
-                                            {field.history && (
-                                                <HistoryIcon className='historyIcon' sx={{
-                                                    color: '#1570EF', 
-                                                    padding: '0', 
-                                                    fontSize: '20px',
-                                                    verticalAlign: 'middle',
-                                                    marginBottom:'3px'
-                                                }}/>
-                                            )}
-                                        </div>
-                                    }
-                                    sx={{
-                                        '& .MuiOutlinedInput-root': {
-                                            // backgroundColor: '#fff', // Inner input background color
-                                        },
-                                        '& .MuiOutlinedInput-notchedOutline': {
-                                            borderWidth: field.label == selectedField.label ? '2px' : '1px', // Apply border width based on focus
-                                            borderColor: field.label == selectedField.label ? '#1976d2' : '#ccc', // Apply border color based on focus
-                                            boxShadow: field.label == selectedField.label ? '0px 4px 6px rgba(25, 118, 210, 0.5)' : 'none', // Apply shadow based on focus
-                                        },
-                                    }}
-                                    errors=""
-                                    onFocus={(e) => { setSelectedField(field) }}
-                                    isFocused={field.label == selectedField.label}
-                                >
-                                    {field.options.map((option) => (
-                                        <MenuItem key={option.code} value={option.code}>
-                                            {option.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                                <FormHelperText>
-                                    {field.supportingText || field.supportingText || ' '}
-                                </FormHelperText>
-                            </FormControl>
-                        </Box>
+                        <SelectField
+                            key={field.id}
+                            field={field}
+                            formData={formData}
+                            errors={""}
+                            onChange={(value) =>
+                              handleAutocomplete(field, value.target.value)
+                            }
+                        />
                         {!existingData &&
                             <button className='formbuilderDeleteIcon' onClick={() => handleFieldDelete(field.label)}>
                                 <img src={deleteBtn} />
@@ -1839,8 +1733,6 @@ const Formbuilder = () => {
             // const data = await api.post("/siims/getAllFields");
             // setLoading(false);
             // console.log(data.data);
-
-            console.log(formFields,"formFields")
 
             // if(data && data.success && data.data && data.data.length > 0){
             if(formFields && formFields.length > 0){
@@ -2978,7 +2870,7 @@ const Formbuilder = () => {
 
                                                         var switchOnChange = handleSwitch;
 
-                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
+                                                        if (prop === 'required' || prop === 'ao_field' || prop === 'linkModule' || prop === 'tableTabs' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'hide_from_ux' || prop === 'hide_from_edit' || prop === 'particular_case_options') {
                                                             rowColValue = 2;
                                                             colText = (prop === 'required') ? 'Mandatory field' : (prop === 'history') ? 'Enable field history' : 'Disabled';
 
@@ -3002,6 +2894,8 @@ const Formbuilder = () => {
                                                                 colText = 'Hide in Edit'
                                                             }else if(prop === 'particular_case_options'){
                                                                 colText = 'Particular Case'
+                                                            }else if(prop === 'linkModule'){
+                                                                colText = 'Link Module'
                                                             }else if(prop === 'ao_field'){
                                                                 colText = 'AO'
                                                             }else if(prop === 'tableTabs'){
@@ -3039,7 +2933,7 @@ const Formbuilder = () => {
                                                                                 </Box>
                                                                             </Box>
                                                                         ) :
-                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'tableTabs' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
+                                                                        prop === 'hide_from_ux'|| prop === 'hide_from_edit' || prop === 'ao_field' || prop === 'linkModule' || prop === 'tableTabs' || prop === 'required' || prop === 'disabled' || prop === 'history' || prop === 'minDate' || prop === 'maxDate' || prop === 'multiple' || prop === 'table_display_content' || prop === 'is_primary_field' || prop === 'duplicateCheck' || prop === 'particular_case_options' ? (
                                                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                                                     <Switch name={prop} checked={selectedField[prop]} onChange={switchOnChange} disabled={(prop === 'is_primary_field' && selectedField.options && module !== 'master') ? true : false} />
                                                                                     <Typography pt={1} sx={{ textTransform: 'capitalize', textWrap: 'nowrap' }} className='propsOptionsBtn'>

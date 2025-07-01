@@ -289,6 +289,10 @@ router.post('/updateFieldsWithApproval',
     [gwtDataValidation],[validate_token],
     templateDataController.updateFieldsWithApproval)
 
+router.post('/getTemplateAlongWithData',
+    [gwtDataValidation],[validate_token],
+    templateDataController.getTemplateAlongWithData)
+
 router.post('/getPrimaryTemplateData',
     [gwtDataValidation],[validate_token],
     templateDataController.getPrimaryTemplateData)

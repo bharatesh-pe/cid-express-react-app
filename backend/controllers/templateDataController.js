@@ -9825,6 +9825,68 @@ exports.deMergeCaseData = async (req, res) => {
     }
 };
 
+exports.getTemplateAlongWithData = async (req, res) => {
+    try {
+        const { table_name, key, value } = req.body;
+
+        if (!table_name || !key || typeof value === "undefined") {
+            return userSendResponse(res, 400, false, "table_name, key, and value are required.", null);
+        }
+
+        // Fetch template metadata
+        const template = await Template.findOne({ where: { table_name } });
+        if (!template) {
+            return userSendResponse(res, 404, false, `Template ${table_name} not found.`, null);
+        }
+
+        // Parse fields
+        let fields = [];
+        try {
+            fields = typeof template.fields === "string" ? JSON.parse(template.fields) : template.fields;
+        } catch (e) {
+            return userSendResponse(res, 500, false, "Invalid fields JSON in template.", null);
+        }
+
+        const modelAttributes = {};
+        for (const field of fields) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+        }
+
+        const DynamicModel = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        const whereClause = {};
+        whereClause[key] = value;
+        const data = await DynamicModel.findOne({ where: whereClause });
+
+        return userSendResponse(res, 200, true, "Template and data fetched successfully.", {
+            template: {
+                template_id: template.template_id,
+                table_name: template.table_name,
+                template_name: template.template_name,
+                template_type: template.template_type,
+                template_module: template.template_module,
+                sections: template.sections,
+                no_of_sections: template.no_of_sections,
+                fields,
+            },
+            data: data ? data.toJSON() : null,
+        });
+    } catch (error) {
+        console.error("Error in getTemplateWithData:", error);
+        return userSendResponse(res, 500, false, "Server error.", error.message);
+    }
+};
 
 exports.saveActionPlan = async (req, res) => {
 
