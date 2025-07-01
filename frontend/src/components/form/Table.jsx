@@ -7,7 +7,8 @@ import {
     FormControl,
     MenuItem,
     Checkbox,
-    ListItemText
+    ListItemText,
+    Autocomplete
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -32,8 +33,6 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
         
         if (typeof data === "string") {
             try {
-                console.log("here only");
-                
                 return JSON.parse(data);
             } catch (err) {
                 console.error("Invalid JSON in formData:", err);
@@ -81,8 +80,6 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
     const deleteRow = (index) => {
         const updatedRows = rows.filter((_, i) => i !== index);
         setRows(updatedRows);
-
-        console.log(updatedRows,"updatedRows");
 
         onChange && onChange(field, updatedRows);
     };
@@ -186,13 +183,25 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                     )}
                 </div>
             </h4>
-            <TableContainer component={Paper} sx={{ mt: 2, width: '100%', boxShadow: 'none', border: '1px solid #ddd', borderColor: Boolean(errors?.[field?.name]) ? '#F04438' : '#ddd' }}>
+            <TableContainer component={Paper} sx={{ mt: 2, width: '100%', overflowX: 'auto', boxShadow: 'none', border: '1px solid #ddd', borderColor: Boolean(errors?.[field?.name]) ? '#F04438' : '#ddd' }}>
                 <Table size="small">
                     <TableHead>
                         <TableRow>
                             <TableCell sx={{width: '50px'}}>S.No</TableCell>
                             {headers?.[field?.name].map((header, index) => (
-                                <TableCell key={index} sx={{ fontWeight: 600 }}>{header.header}</TableCell>
+                                <TableCell 
+                                    key={index} 
+                                    sx={{
+                                        minWidth: header.fieldType?.width ? `${header.fieldType.width}px` : '120px',
+                                        maxWidth: header.fieldType?.width ? `${header.fieldType.width}px` : '300px',
+                                    }}
+                                >
+                                    <Tooltip title={header.header} arrow placement="top">
+                                        <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100%' }}>
+                                            {header.header}
+                                        </span>
+                                    </Tooltip>
+                                </TableCell>
                             ))}
                         </TableRow>
                     </TableHead>
@@ -222,21 +231,37 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                     <TableCell key={colIndex}>
                                         {
 
-                                        (header?.fieldType?.type === 'short_text' || header?.fieldType?.type === 'text_area') && (
-                                            <TextField
-                                                variant="outlined"
-                                                size="small"
-                                                fullWidth
-                                                value={row[header.header] || ''}
-                                                disabled={readOnly}
-                                                onChange={(e) => handleCellChange(rowIndex, header.header, e.target.value)}
-                                                multiline={header?.fieldType?.type === 'text_area'}
-                                                rows={header?.fieldType?.type === 'text_area' && focusedCell.row === rowIndex && focusedCell.col === colIndex ? 6 : 1}
-                                                onFocus={() => setFocusedCell({ row: rowIndex, col: colIndex })}
-                                                onBlur={() => setFocusedCell({ row: null, col: null })}
-                                            />
-                                        )
-
+                                            (header?.fieldType?.type === 'short_text' || header?.fieldType?.type === 'text_area') && (
+                                                <TextField
+                                                    variant="outlined"
+                                                    size="small"
+                                                    fullWidth
+                                                    value={row[header.header] || ''}
+                                                    disabled={readOnly}
+                                                    onChange={(e) => handleCellChange(rowIndex, header.header, e.target.value)}
+                                                    multiline={header?.fieldType?.type === 'text_area'}
+                                                    rows={header?.fieldType?.type === 'text_area' && focusedCell.row === rowIndex && focusedCell.col === colIndex ? 6 : 1}
+                                                    onFocus={() => setFocusedCell({ row: rowIndex, col: colIndex })}
+                                                    onBlur={() => setFocusedCell({ row: null, col: null })}
+                                                />
+                                            )
+                                            ||
+                                            header?.fieldType?.type === 'number' && (
+                                                <TextField
+                                                    variant="outlined"
+                                                    size="small"
+                                                    fullWidth
+                                                    value={row[header.header] || ''}
+                                                    disabled={readOnly}
+                                                    onChange={(e) => {
+                                                        const newValue = e.target.value;
+                                                        if (newValue === '' || /^[0-9\b]+$/.test(newValue)) {
+                                                            handleCellChange(rowIndex, header.header, newValue);
+                                                        }
+                                                    }}
+                                                    inputProps={{ inputMode: 'numeric' }}
+                                                />
+                                            ) 
                                             ||
                                             header?.fieldType?.type === 'date' && (
                                                 <TextField
@@ -265,22 +290,29 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
                                             ||
                                             header?.fieldType?.type === 'multi_select' && (
                                                 <FormControl fullWidth size="small">
-                                                    <Select
+                                                    <Autocomplete
                                                         multiple
-                                                        value={row[header.header] || []}
-                                                        disabled={readOnly}
-                                                        onChange={(e) => handleCellChange(rowIndex, header.header, e.target.value)}
-                                                        renderValue={(selected) =>
-                                                            (selected || []).map(code => header.fieldType?.options?.find(opt => opt.code === code)?.name || code).join(', ')
+                                                        disableCloseOnSelect
+                                                        options={header.fieldType?.options || []}
+                                                        getOptionLabel={(option) => option.name}
+                                                        value={
+                                                            (row[header.header] || []).map(code =>header.fieldType?.options?.find(opt => opt.code === code)).filter(Boolean)
                                                         }
-                                                    >
-                                                        {(header.fieldType?.options || []).map((opt, i) => (
-                                                            <MenuItem key={i} value={opt.code} sx={{padding: 0}}>
-                                                                <Checkbox checked={(row[header.header] || []).includes(opt.code)} />
-                                                                <ListItemText primary={opt.name} />
-                                                            </MenuItem>
-                                                        ))}
-                                                    </Select>
+                                                        onChange={(_, newValue) => {
+                                                            const codes = newValue.map(opt => opt.code);
+                                                            handleCellChange(rowIndex, header.header, codes);
+                                                        }}
+                                                        limitTags={2}
+                                                        renderInput={(params) => (
+                                                            <TextField
+                                                                {...params}
+                                                                variant="outlined"
+                                                                size="small"
+                                                                fullWidth
+                                                            />
+                                                        )}
+                                                        disabled={readOnly}
+                                                    />
                                                 </FormControl>
                                             )
                                         }
