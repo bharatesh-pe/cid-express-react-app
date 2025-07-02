@@ -43,16 +43,24 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
         return data;
     });
 
-    useEffect(()=>{
-
-        setRows(()=>{
+    useEffect(() => {
+        setRows(() => {
             const data = formData?.[field?.name];
-            if (!data) return [{}];
-            
+            if (!data || (Array.isArray(data) && data.length === 0)) {
+                const defaultRow = {};
+
+                field?.tableHeaders?.forEach(header => {
+                    const defaultOpt = header?.fieldType?.options?.find(opt => opt.defaultValue === true);
+                    if (defaultOpt) {
+                        defaultRow[header.header] =  header.fieldType?.type === 'multi_select' ? [defaultOpt.code] : defaultOpt.code;
+                    }
+                });
+
+                return [defaultRow];
+            }
+
             if (typeof data === "string") {
                 try {
-                    console.log("here only");
-                    
                     return JSON.parse(data);
                 } catch (err) {
                     console.error("Invalid JSON in formData:", err);
@@ -61,9 +69,8 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
             }
 
             return data;
-        })
-
-    },[formData])
+        });
+    }, [formData]);
 
     const handleCellChange = (rowIndex, key, value) => {
         const updatedRows = [...rows];
@@ -75,7 +82,20 @@ const TableField = ({ field, onChange, errors, readOnly, formData, onFocus, isFo
         onChange && onChange(field, updatedRows);
     };
 
-    const addRow = () => setRows([...rows, {}]);
+    const addRow = () => {
+        const defaultRow = {};
+
+        field?.tableHeaders?.forEach(header => {
+            const defaultOpt = header?.fieldType?.options?.find(opt => opt.defaultValue === true);
+            if (defaultOpt) {
+                defaultRow[header.header] =  header.fieldType?.type === 'multi_select' ? [defaultOpt.code] : defaultOpt.code;
+            }
+        });
+
+        const updatedRows = [...rows, defaultRow];
+        setRows(updatedRows);
+        onChange && onChange(field, updatedRows);
+    };
 
     const deleteRow = (index) => {
         const updatedRows = rows.filter((_, i) => i !== index);
