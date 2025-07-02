@@ -556,6 +556,13 @@ const Formbuilder = () => {
 
         if(type === "header"){
             newOptions[index][type] = value;
+        }else if (type === "defaultValue") {
+            for (let i = 0; i < newOptions.length; i++) {
+                if (!newOptions[i].fieldType) {
+                    newOptions[i].fieldType = {};
+                }
+                newOptions[i].fieldType.defaultValue = i === index ? value : null;
+            }
         }else{
             if (!newOptions[index].fieldType) {
                 newOptions[index].fieldType = {};
@@ -3439,6 +3446,30 @@ const Formbuilder = () => {
                                                 size="small" // Default size is "medium"
                                                 margin="dense" // Adjust the margin to control spacing
                                             />
+                                            <Box key={`default_value_${option.code}`}>
+                                                <Radio
+                                                    name="defaultValue"
+                                                    id={`default_value_${option.code}`}
+                                                    value={option.code}
+                                                    checked={option.defaultValue === true}
+                                                    onChange={() => {
+                                                        const updated = (propEditField?.fieldType?.options || []).map((opt, idx) => ({
+                                                            ...opt,
+                                                            defaultValue: idx === index,
+                                                        }));
+                                                        setPropEditField({
+                                                            ...propEditField,
+                                                            fieldType: {
+                                                                ...propEditField.fieldType,
+                                                                options: updated
+                                                            }
+                                                        });
+                                                    }}
+                                                />
+                                                <label style={{ color: '#475467', fontSize: '14px', fontWeight: '400' }} htmlFor={`default_value_${option?.code}`}>
+                                                    Default
+                                                </label>
+                                            </Box>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                                 <button style={{ outline: 'none', border: 'none', color: '#1D2939', padding: '0', display: 'flow', cursor: 'pointer' }} onClick={() => handleTableFieldRemoveOption(index)}>
                                                     <RemoveCircleOutlineIcon sx={{ color: '#1D2939' }} />

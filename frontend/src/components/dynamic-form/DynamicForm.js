@@ -1507,151 +1507,119 @@ const DynamicForm = ({
         }
     };
 
-    useEffect(() => {
-        const fetchTemplateData = async () => {
-            try { 
-                const apiCalls = newFormConfig
-                .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
-                .map(async (field) => {
-                    setLoading(true);
-                    try {
+    const fetchTemplateData = async () => {
+        try { 
+            const apiCalls = newFormConfig
+            .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
+            .map(async (field) => {
+                setLoading(true);
+                try {
 
-                        var apiPayload = {};
+                    var apiPayload = {};
 
-                        if(field.api === "/templateData/getTemplateData"){
-                            apiPayload = {
-                                table_name: field.table
-                            }
-                        }else if(field.table === "users"){
-                            apiPayload = {
-                                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
-                                get_flag : field?.user_hierarchy || null
-                            }
+                    if(field.api === "/templateData/getTemplateData"){
+                        apiPayload = {
+                            table_name: field.table
                         }
-
-                        const response = await api.post(field.api, apiPayload);
-
-                        setLoading(false);
-
-                        if (!response.data) return { id: field.id, options: [] };
-
-                        const updatedOptions = response.data.map((templateData) => {
-
-                            const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
-
-                            var headerName = nameKey;
-                            var headerId = 'id';
-    
-                            if(field.table === "users"){
-                                headerName = "name"
-                                headerId =  "user_id"
-                            }else if(field.api !== "/templateData/getTemplateData"){
-                                headerName = field.table + "_name"
-                                headerId =  field.table + "_id"
-                            }
-
-                            return {
-                                name: templateData[headerName],
-                                code: templateData[headerId],
-                            };
-                        });
-
-                        return { id: field.id, options: updatedOptions };
-
-                    } catch (error) {
-                        setLoading(false);
-                        return { id: field.id, options: [] };
+                    }else if(field.table === "users"){
+                        apiPayload = {
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : field?.user_hierarchy || null
+                        }
                     }
-                });
 
-                const results = await Promise.all(apiCalls);
+                    const response = await api.post(field.api, apiPayload);
 
-                var optionUpdateFields = []
+                    setLoading(false);
 
-                setNewFormConfig((prevFormConfig) => {
-                    const updatedFormConfig = prevFormConfig.map((field) => {
-                        const updatedField = results.find((res) => res.id === field.id);
-                        if (updatedField) {
-                            if (updatedField?.options.length === 1) {
-                                const onlyOption = updatedField.options[0];
+                    if (!response.data) return { id: field.id, options: [] };
 
-                                const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+                    const updatedOptions = response.data.map((templateData) => {
 
-                                if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
-                                    setFormData((prevData) => ({
-                                        ...prevData,
-                                        [field.name]: onlyOption.code
-                                    }));
-                                }
+                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by"].includes(key));
 
-                                optionUpdateFields.push(field);
-                            }
-                            return { ...field, options: updatedField.options };
+                        var headerName = nameKey;
+                        var headerId = 'id';
+
+                        if(field.table === "users"){
+                            headerName = "name"
+                            headerId =  "user_id"
+                        }else if(field.api !== "/templateData/getTemplateData"){
+                            headerName = field.table + "_name"
+                            headerId =  field.table + "_id"
                         }
-                        return field;
+
+                        return {
+                            name: templateData[headerName],
+                            code: templateData[headerId],
+                        };
                     });
-                    return updatedFormConfig;
-                });
 
-                gettingDependentedOptions(optionUpdateFields);
+                    return { id: field.id, options: updatedOptions };
 
-                const findDepartmentDivisionField = newFormConfig.filter((element)=>{
-                    if(element?.table && (element?.table === "division" || element?.table === "department")){
-                        return element
+                } catch (error) {
+                    setLoading(false);
+                    return { id: field.id, options: [] };
+                }
+            });
+
+            const results = await Promise.all(apiCalls);
+
+            var optionUpdateFields = []
+
+            setNewFormConfig((prevFormConfig) => {
+                const updatedFormConfig = prevFormConfig.map((field) => {
+                    const updatedField = results.find((res) => res.id === field.id);
+                    if (updatedField) {
+                        if (updatedField?.options.length === 1) {
+                            const onlyOption = updatedField.options[0];
+
+                            const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                            if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
+                                setFormData((prevData) => ({
+                                    ...prevData,
+                                    [field.name]: onlyOption.code
+                                }));
+                            }
+
+                            optionUpdateFields.push(field);
+                        }
+                        return { ...field, options: updatedField.options };
                     }
+                    return field;
                 });
+                return updatedFormConfig;
+            });
 
-                if(findDepartmentDivisionField?.length > 1){
-        
-                    setDepartmentDivisionField(findDepartmentDivisionField);
+            gettingDependentedOptions(optionUpdateFields);
 
-                    var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
+            const findDepartmentDivisionField = newFormConfig.filter((element)=>{
+                if(element?.table && (element?.table === "division" || element?.table === "department")){
+                    return element
+                }
+            });
 
-                    if(departmentField && departmentField?.name && initialData[departmentField?.name]){
+            if(findDepartmentDivisionField?.length > 1){
+    
+                setDepartmentDivisionField(findDepartmentDivisionField);
 
-                        const gettingDivisionBasedOnDepartment = async ()=>{
-                            try {
+                var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
 
-                                var departmentPayload = {
-                                    "department_id" : initialData[departmentField.name]
-                                }
+                if(departmentField && departmentField?.name && initialData[departmentField?.name]){
 
-                                const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
-                
-                                const data = response?.data;
+                    const gettingDivisionBasedOnDepartment = async ()=>{
+                        try {
 
-                                if (!data){
-                                    setNewFormConfig((prevFormConfig) => {
-                                        const updatedFormConfig = prevFormConfig.map((data) => {
-                                            if (data?.table === "division") {
-                                                return { ...data, options: [] };
-                                            }
-                                            return data;
-                                        });
-                                        return updatedFormConfig;
-                                    });
-                                    return;
-                                }
+                            var departmentPayload = {
+                                "department_id" : initialData[departmentField.name]
+                            }
 
-                                var updatedOptions = data.map((divisionData) => {
-                                                        return {
-                                                            name: divisionData["division_name"],
-                                                            code: divisionData["division_id"],
-                                                        };
-                                                    });
+                            const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+            
+                            const data = response?.data;
 
-                                setNewFormConfig((prevFormConfig) => {
-                                    const updatedFormConfig = prevFormConfig.map((data) => {
-                                        if (data?.table === "division") {
-                                            return { ...data, options: updatedOptions };
-                                        }
-                                        return data;
-                                    });
-                                    return updatedFormConfig;
-                                });
-                                
-                            } catch (error) {
-                                console.error("Error fetching division details:", error);
+                            if (!data){
                                 setNewFormConfig((prevFormConfig) => {
                                     const updatedFormConfig = prevFormConfig.map((data) => {
                                         if (data?.table === "division") {
@@ -1661,31 +1629,63 @@ const DynamicForm = ({
                                     });
                                     return updatedFormConfig;
                                 });
+                                return;
                             }
-                        }
 
-                        gettingDivisionBasedOnDepartment();
-                    }else{
-                        setNewFormConfig((prevFormConfig) => {
-                            const updatedFormConfig = prevFormConfig.map((data) => {
-                                if (data?.table === "division") {
-                                    return { ...data, options: [] };
-                                }
-                                return data;
+                            var updatedOptions = data.map((divisionData) => {
+                                                    return {
+                                                        name: divisionData["division_name"],
+                                                        code: divisionData["division_id"],
+                                                    };
+                                                });
+
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data?.table === "division") {
+                                        return { ...data, options: updatedOptions };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
                             });
-                            return updatedFormConfig;
-                        });
+                            
+                        } catch (error) {
+                            console.error("Error fetching division details:", error);
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data?.table === "division") {
+                                        return { ...data, options: [] };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
+                            });
+                        }
                     }
 
+                    gettingDivisionBasedOnDepartment();
                 }else{
-                    setDepartmentDivisionField([]);
+                    setNewFormConfig((prevFormConfig) => {
+                        const updatedFormConfig = prevFormConfig.map((data) => {
+                            if (data?.table === "division") {
+                                return { ...data, options: [] };
+                            }
+                            return data;
+                        });
+                        return updatedFormConfig;
+                    });
                 }
 
-            } catch (error) {
-                console.error("Error fetching template data:", error);
+            }else{
+                setDepartmentDivisionField([]);
             }
-        };
 
+        } catch (error) {
+            console.error("Error fetching template data:", error);
+        }
+    };
+
+    useEffect(() => {
         if (newFormConfig.length > 0) {
             fetchTemplateData();
         }
@@ -2013,6 +2013,7 @@ const DynamicForm = ({
                 });
 
                 closeLinkTemplateModal();
+                fetchTemplateData();
 
             } else {
                 const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
