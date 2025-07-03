@@ -30,7 +30,9 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from "@mui/icons-material/Add";
 import CloseIcon from '@mui/icons-material/Close';
 
-const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, pt_case_id, module, mainTableName}) =>{
+const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, pt_case_id, module, mainTableName, directAddNew}) =>{
+
+    console.log(mainTableName,"mainTableName");    
 
     const [loading, setLoading] = useState(false);
 
@@ -75,7 +77,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
     const getTableData = async (options, reOpen, noFilters) => {
 
-        const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_level).filter(Boolean);;
+        const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_level).filter(Boolean);
 
         var getTemplatePayload = {
             table_name: options.table_name || options,
@@ -304,6 +306,13 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
             }
         }
     }
+
+    useEffect(()=>{
+        if(directAddNew === true){
+            showAddNewForm();
+            return;
+        }
+    },[])
 
     function isValidISODate(value) {
         return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) && !isNaN(new Date(value).getTime());
@@ -568,9 +577,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                     }
                 });
 
-                var accusedId = selectedAccused.map((accused)=>{
-                    return accused.id
-                });
+                const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_level).filter(Boolean);
 
                 var initialFormConfig = {
                     'field_accused_level' : accusedId[0]
@@ -673,11 +680,19 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
             });
     
             if (result.isConfirmed) {
+                if(directAddNew === true){
+                    closeForm();
+                    return;
+                }
                 setFormOpen(false);
                 editedForm.current = false;
             }
 
         }else{
+            if(directAddNew === true){
+                closeForm();
+                return;
+            }
             setFormOpen(false);
             editedForm.current = false;
         }
@@ -764,6 +779,14 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                     progress: undefined,
                     className: "toast-success",
                     onOpen: () => {
+                        if(directAddNew === true){
+                            if(formOpen){
+                                showAddNewForm();
+                                return;
+                            }
+                            closeForm();
+                            return;
+                        }
                         getTableData(tableObj, formOpen);
                     }
                 });

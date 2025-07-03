@@ -65,16 +65,7 @@ const LokayuktaView = () => {
         'cid_pt_case_witness',
     ]);
 
-    const [splitScreenNavTabs, setsplitScreenNavTabs] = useState([
-        {
-            label : 'Notices',
-            table_name : 'cid_ui_case_41a_notices',
-        },
-        {
-            label : 'Recording of Statement',
-            table_name : 'cid_ui_case_recording_of_statements',
-        }
-    ]);
+    const [splitScreenNavTabs, setsplitScreenNavTabs] = useState([]);
 
     const [splitScreenActiveTab, setSplitScreenActiveTab] = useState(null);
 
@@ -102,12 +93,14 @@ const LokayuktaView = () => {
         setShowSplitScreenForm(true);
     };
 
-    const splitScreenFormClose = ()=> {
-        setShowSplitScreenForm(false);
-        setSplitScreenActiveTab(null);
-    }
+    const selectedSplitScreenRef = useRef([]);
+    const directAddNewRef = useRef(false);
 
     const [selectedSplitScreenRows, setSelectedSplitScreenRows] = useState([]);
+
+    useEffect(() => {
+        selectedSplitScreenRef.current = selectedSplitScreenRows;
+    }, [selectedSplitScreenRows]);
 
     const handleSplitScreenCheckbox = async (row, table) => {
 
@@ -136,7 +129,34 @@ const LokayuktaView = () => {
     const closeSplitScreenForm = ()=>{
         setSplitScreenActiveTab(null);
         setShowSplitScreenForm(false);
+        setSelectedSplitScreenRows([]);
+        directAddNewRef.current = false;
     }
+
+    const handleOpenSplitScreen = async (row, obj, table) => {
+
+        try {
+            const viewTemplatePayload = { table_name: table, id: row.id };
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+
+            const dataToAdd = viewTemplateData?.success && viewTemplateData?.data ? viewTemplateData.data : row;
+
+            setSplitScreenActiveTab(obj);
+            setShowSplitScreenForm(true);
+            setSelectedSplitScreenRows([dataToAdd]);
+
+        } catch (error) {
+            console.log(error,"error");
+        }
+
+    };
+
+
+    const handleOverAllAccused = async (obj) => {
+        setSplitScreenActiveTab(obj);
+        setShowSplitScreenForm(true);
+        directAddNewRef.current = true
+    };
 
     const [loading, setLoading] = useState(false);
     const [reloadForm, setReloadForm] = useState(false);
@@ -385,7 +405,7 @@ const LokayuktaView = () => {
             return;
         }
 
-        splitScreenFormClose();
+        closeSplitScreenForm();
 
         setSelectedSplitScreenRows([]);
         setActiveSidebar(item);
@@ -688,6 +708,7 @@ const LokayuktaView = () => {
                                         <Checkbox
                                             size="small"
                                             sx={{padding: 0}}
+                                            checked={selectedSplitScreenRows.some(item => item.id === params.row.id)}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 handleSplitScreenCheckbox(params.row, options?.table);
@@ -726,6 +747,9 @@ const LokayuktaView = () => {
                             resizable: false,
                             width: splitScreenArray.includes((options?.table || '').toLowerCase()) ? 90 : 65,
                             renderCell: (params) => {
+
+                                const checkedFlag = selectedSplitScreenRef.current.some(item => item.id === params.row.id);
+
                                 return (
                                     <Box
                                         sx={{
@@ -739,6 +763,7 @@ const LokayuktaView = () => {
                                             <Checkbox
                                                 size="small"
                                                 sx={{padding: 0}}
+                                                checked={checkedFlag}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     handleSplitScreenCheckbox(params.row, options?.table);
@@ -771,6 +796,52 @@ const LokayuktaView = () => {
                             ),
                             renderCell: renderCellFunc(key, index),
                         })),
+                        ...(splitScreenArray.includes(options?.table?.toLowerCase()) ? [
+                            {
+                                field: "notices",
+                                headerName: "Notices",
+                                width: 100,
+                                resizable: false,
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSplitScreen(params.row, 
+                                            {label: 'Notices', table_name: 'cid_ui_case_41a_notices'}, 
+                                            options?.table
+                                            );
+                                        }}
+                                        className="newStyleButton"
+                                    >
+                                        Notices
+                                    </Button>
+                                )
+                            },
+                            {
+                                field: "recording_of_statement",
+                                headerName: "Recording",
+                                width: 220,
+                                resizable: false,
+                                renderCell: (params) => (
+                                    <Button
+                                        variant="contained"
+                                        size="small"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenSplitScreen(params.row, 
+                                            {label: 'Recording of Statement', table_name: 'cid_ui_case_recording_of_statements'}, 
+                                            options?.table
+                                            );
+                                        }}
+                                        className="newStyleButton"
+                                    >
+                                        Recording of Statement
+                                    </Button>
+                                )
+                            }
+                        ] : []),
                     ]
 
                     const formatDate = (value) => {
@@ -3030,32 +3101,51 @@ const LokayuktaView = () => {
                             </Box>
                         </Box>
 
-                        {
-                            tableTabs.length > 0 &&
-                            <Box sx={{ display: "flex", alignItems: 'start'}} pl={1}>
-                                <Box className="parentFilterTabs">
+
+                            <Box sx={{ display: "flex", alignItems: 'start', justifyContent: 'space-between'}} pl={1}>
+
+                                <Box>
                                     {
-                                        tableTabs.map((element)=>{
-                                            return (
-                                                <Box
-                                                    onClick={() => {
-                                                        setSelectedTableTabs(element.code);
-                                                    }}
-                                                    className={`filterTabs ${selectedTableTabs === element.code ? "Active" : ""}`}
-                                                    sx={{padding: '0px 20px'}}
-                                                >
-                                                    {element?.name}
-                                                </Box>
-                                            )
-                                        })
+                                        tableTabs.length > 0 &&                     
+                                        <Box className="parentFilterTabs">
+                                            {
+                                                tableTabs.map((element)=>{
+                                                    return (
+                                                        <Box
+                                                            onClick={() => {
+                                                                setSelectedTableTabs(element.code);
+                                                            }}
+                                                            className={`filterTabs ${selectedTableTabs === element.code ? "Active" : ""}`}
+                                                            sx={{padding: '0px 20px'}}
+                                                        >
+                                                            {element?.name}
+                                                        </Box>
+                                                    )
+                                                })
+                                            }
+                                        </Box>
                                     }
                                 </Box>
+
+                                {
+                                    selectedSplitScreenRows.length > 0 &&
+                                    <Box>
+                                        <Button
+                                            variant="contained"
+                                            className="blueButton"
+                                            size="large"
+                                            sx={{ height: "38px" }}
+                                            onClick={()=>handleOverAllAccused( {label: 'Notices', table_name: 'cid_ui_case_41a_notices'} )}
+                                        >
+                                            Create Notices
+                                        </Button>
+                                    </Box>
+                                }
                             </Box>
-                        }
 
                         <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
                             
-                            <Box sx={{ width: (selectedSplitScreenRows?.length > 0 && splitScreenArray.includes(activeSidebar?.table?.toLowerCase())) ? '70%' : '100%' }}>
+                            <Box sx={{ width: '100%' }}>
                                 <TableView
                                     rows={tableRowData}
                                     columns={tableColumnData}
@@ -3065,36 +3155,6 @@ const LokayuktaView = () => {
                                     handlePagination={handlePagination}
                                 />
                             </Box>
-                            {
-                                (selectedSplitScreenRows?.length > 0 && splitScreenArray.includes(activeSidebar?.table?.toLowerCase())) &&
-                                <Box sx={{ width: '30%', mt: 2 }}>
-                                    {splitScreenNavTabs.map((screenTabs, index) => (
-                                        <Button
-                                            key={index}
-                                            fullWidth
-                                            variant={splitScreenActiveTab === index ? "contained" : "outlined"}
-                                            onClick={() => handleTabChange(null, index)}
-                                            sx={{
-                                                justifyContent: 'flex-start',
-                                                textTransform: 'none',
-                                                borderRadius: '8px',
-                                                fontWeight: 500,
-                                                mb: 1,
-                                                color: splitScreenActiveTab === index ? '#fff' : '#1D2939',
-                                                backgroundColor: splitScreenActiveTab === index ? '#1976d2' : 'transparent',
-                                                borderColor: '#1976d2',
-                                                '&:hover': {
-                                                    backgroundColor: splitScreenActiveTab === index ? '#1565c0' : '#f0f0f0',
-                                                    borderColor: '#1565c0',
-                                                },
-                                            }}
-                                            startIcon={<ArrowRightIcon />}
-                                        >
-                                            {screenTabs.label}
-                                        </Button>
-                                    ))}
-                                </Box>
-                            }
                         </Box>
                     </Box>
                 )}
@@ -3243,13 +3303,14 @@ const LokayuktaView = () => {
             {
                 showSplitScreenForm &&
                 <AccusedSplitScreen
-                    tableObj={splitScreenNavTabs?.[splitScreenActiveTab]}
+                    tableObj={splitScreenActiveTab}
                     selectedAccused={selectedSplitScreenRows}
                     closeForm={closeSplitScreenForm}
                     ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}
                     pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id}
                     module={module}
                     mainTableName={activeSidebar?.table}
+                    directAddNew={directAddNewRef.current}
                 />
             }
 
