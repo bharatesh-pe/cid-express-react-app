@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
-import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Button, Chip, CircularProgress, IconButton, InputAdornment, Stack, Tooltip, Typography, Tabs, Tab, Checkbox } from "@mui/material";
 import LokayuktaSidebar from "../components/lokayuktaSidebar";
 import { West } from "@mui/icons-material";
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -31,6 +31,8 @@ import ClosureReport from "./ClosureReport";
 import dayjs from "dayjs";
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import * as XLSX from 'xlsx';
+import ArrowRightIcon from '@mui/icons-material/ArrowRight';
+
 
 import {
   Dialog,
@@ -40,6 +42,8 @@ import {
 } from '@mui/material';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloseIcon from '@mui/icons-material/Close';
+
+import AccusedSplitScreen from './accusedSplitScreen';
 
 const LokayuktaView = () => {
 
@@ -55,6 +59,84 @@ const LokayuktaView = () => {
             navigate("/dashboard");
         }
     },[]);
+
+    const [splitScreenArray, setSplitScreenArray] = useState([
+        'cid_ui_case_accused',
+        'cid_pt_case_witness',
+    ]);
+
+    const [splitScreenNavTabs, setsplitScreenNavTabs] = useState([
+        {
+            label : 'Notices',
+            table_name : 'cid_ui_case_41a_notices',
+        },
+        {
+            label : 'Recording of Statement',
+            table_name : 'cid_ui_case_recording_of_statements',
+        }
+    ]);
+
+    const [splitScreenActiveTab, setSplitScreenActiveTab] = useState(null);
+
+    const [showSplitScreenForm, setShowSplitScreenForm] = useState(false);
+
+    const handleTabChange = async (event, newValue) => {
+
+        var tableObj = splitScreenNavTabs[newValue];
+         
+        if(!tableObj?.table_name){
+            toast.error("Please Check The Template !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        setSplitScreenActiveTab(newValue);
+        setShowSplitScreenForm(true);
+    };
+
+    const splitScreenFormClose = ()=> {
+        setShowSplitScreenForm(false);
+        setSplitScreenActiveTab(null);
+    }
+
+    const [selectedSplitScreenRows, setSelectedSplitScreenRows] = useState([]);
+
+    const handleSplitScreenCheckbox = async (row, table) => {
+
+        try {
+            const viewTemplatePayload = { table_name: table, id: row.id };
+            const viewTemplateData = await api.post("/templateData/viewTemplateData", viewTemplatePayload);
+
+            const dataToAdd = viewTemplateData?.success && viewTemplateData?.data ? viewTemplateData.data : row;
+
+            setSelectedSplitScreenRows((prev) => {
+                const isSelected = prev.some(item => item.id === row.id);
+
+                if (isSelected) {
+                    return prev.filter(item => item.id !== row.id);
+                }
+
+                return [...prev, dataToAdd];
+            });
+
+        } catch (error) {
+            console.log(error,"error");
+        }
+
+    };
+
+    const closeSplitScreenForm = ()=>{
+        setSplitScreenActiveTab(null);
+        setShowSplitScreenForm(false);
+    }
 
     const [loading, setLoading] = useState(false);
     const [reloadForm, setReloadForm] = useState(false);
@@ -187,7 +269,6 @@ const LokayuktaView = () => {
     useEffect(()=>{
 
         sidebarContentArray.map((element)=>{
-            console.log(element.name,"element name")
             if(element.name.toLowerCase() === "assign to io"){
 
                 setCaseFieldArray(initialRowData?.["field_approval_done_by"] ? [initialRowData?.["field_approval_done_by"]] : [] );
@@ -203,12 +284,6 @@ const LokayuktaView = () => {
                 const approvedStages = stepperArray.slice(0, lastApprovedIndex + 1);
 
                 setShowCaseActionBtn(approvedStages.includes(userRole));
-
-                console.log(element,"element");
-                console.log(stepperArray,"stepperArray");
-                console.log(approvedStages,"approvedStages");
-                console.log(initialRowData,"initialRowData");
-                console.log(approvedStages.includes(userRole),"approvedStages.includes(userRole)");
 
                 if(!initialRowData?.["field_approval_done_by"] || initialRowData?.["field_approval_done_by"] !== "DIG"){
                     setCaseAction(element);
@@ -310,6 +385,9 @@ const LokayuktaView = () => {
             return;
         }
 
+        splitScreenFormClose();
+
+        setSelectedSplitScreenRows([]);
         setActiveSidebar(item);
         setFormOpen(false);
         if(item?.viewAction){
@@ -596,7 +674,7 @@ const LokayuktaView = () => {
                             field: "sl_no",
                             headerName: "S.No",
                             resizable: false,
-                            width: 65,
+                            width: splitScreenArray.includes((options?.table || '').toLowerCase()) ? 90 : 65,
                             renderCell: (params) => (
                                 <Box
                                     sx={{
@@ -606,6 +684,16 @@ const LokayuktaView = () => {
                                         gap: "8px",
                                     }}
                                 >
+                                    {splitScreenArray.includes((options?.table || '').toLowerCase()) && (
+                                        <Checkbox
+                                            size="small"
+                                            sx={{padding: 0}}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSplitScreenCheckbox(params.row, options?.table);
+                                            }}
+                                        />
+                                    )}
                                     {params.value}
                                     <DeleteIcon
                                         sx={{ cursor: "pointer", color: "red", fontSize: 20 }}
@@ -636,7 +724,7 @@ const LokayuktaView = () => {
                             field: "sl_no",
                             headerName: "S.No",
                             resizable: false,
-                            width: 65,
+                            width: splitScreenArray.includes((options?.table || '').toLowerCase()) ? 90 : 65,
                             renderCell: (params) => {
                                 return (
                                     <Box
@@ -647,6 +735,16 @@ const LokayuktaView = () => {
                                             gap: "8px",
                                         }}
                                     >
+                                        {splitScreenArray.includes((options?.table || '').toLowerCase()) && (
+                                            <Checkbox
+                                                size="small"
+                                                sx={{padding: 0}}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleSplitScreenCheckbox(params.row, options?.table);
+                                                }}
+                                            />
+                                        )}
                                         {params.value}
                                         {
                                             !approvalDone &&
@@ -719,6 +817,8 @@ const LokayuktaView = () => {
 
         } catch (error) {
             setLoading(false);
+            setTableColumnData([]);
+            setTableRowData([]);
             if (error && error.response && error.response["data"]) {
                 toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
                     position: "top-right",
@@ -2953,15 +3053,48 @@ const LokayuktaView = () => {
                             </Box>
                         }
 
-                        <Box sx={{overflow: 'auto'}}>
-                            <TableView
-                                rows={tableRowData}
-                                columns={tableColumnData}
-                                totalPage={tableTotalPage}
-                                totalRecord={tableTotalRecord}
-                                paginationCount={tablePaginationCount.current}
-                                handlePagination={handlePagination}
-                            />
+                        <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
+                            
+                            <Box sx={{ width: (selectedSplitScreenRows?.length > 0 && splitScreenArray.includes(activeSidebar?.table?.toLowerCase())) ? '70%' : '100%' }}>
+                                <TableView
+                                    rows={tableRowData}
+                                    columns={tableColumnData}
+                                    totalPage={tableTotalPage}
+                                    totalRecord={tableTotalRecord}
+                                    paginationCount={tablePaginationCount.current}
+                                    handlePagination={handlePagination}
+                                />
+                            </Box>
+                            {
+                                (selectedSplitScreenRows?.length > 0 && splitScreenArray.includes(activeSidebar?.table?.toLowerCase())) &&
+                                <Box sx={{ width: '30%', mt: 2 }}>
+                                    {splitScreenNavTabs.map((screenTabs, index) => (
+                                        <Button
+                                            key={index}
+                                            fullWidth
+                                            variant={splitScreenActiveTab === index ? "contained" : "outlined"}
+                                            onClick={() => handleTabChange(null, index)}
+                                            sx={{
+                                                justifyContent: 'flex-start',
+                                                textTransform: 'none',
+                                                borderRadius: '8px',
+                                                fontWeight: 500,
+                                                mb: 1,
+                                                color: splitScreenActiveTab === index ? '#fff' : '#1D2939',
+                                                backgroundColor: splitScreenActiveTab === index ? '#1976d2' : 'transparent',
+                                                borderColor: '#1976d2',
+                                                '&:hover': {
+                                                    backgroundColor: splitScreenActiveTab === index ? '#1565c0' : '#f0f0f0',
+                                                    borderColor: '#1565c0',
+                                                },
+                                            }}
+                                            startIcon={<ArrowRightIcon />}
+                                        >
+                                            {screenTabs.label}
+                                        </Button>
+                                    ))}
+                                </Box>
+                            }
                         </Box>
                     </Box>
                 )}
@@ -3105,6 +3238,19 @@ const LokayuktaView = () => {
                         )}
                     </DialogContent>
                 </Dialog>
+            }
+
+            {
+                showSplitScreenForm &&
+                <AccusedSplitScreen
+                    tableObj={splitScreenNavTabs?.[splitScreenActiveTab]}
+                    selectedAccused={selectedSplitScreenRows}
+                    closeForm={closeSplitScreenForm}
+                    ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}
+                    pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id}
+                    module={module}
+                    mainTableName={activeSidebar?.table}
+                />
             }
 
 
