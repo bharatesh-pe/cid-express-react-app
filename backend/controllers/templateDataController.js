@@ -1386,25 +1386,7 @@ exports.getTemplateData = async (req, res, next) => {
   
     // const relevantSchema = schema;
     // Define model attributes based on filtered schema
-    const modelAttributes = {
-      id: {
-        type: Sequelize.DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      created_at: {
-        type: Sequelize.DataTypes.DATE,
-        allowNull: false,
-      },
-      updated_at: {
-        type: Sequelize.DataTypes.DATE,
-        allowNull: false,
-      },
-      created_by: {
-        type: Sequelize.DataTypes.STRING,
-        allowNull: true,  
-      } 
-    };
+    const modelAttributes = {};
     const associations = [];
     // Store field configurations by name for easy lookup
     const fieldConfigs = {};
@@ -1546,6 +1528,11 @@ exports.getTemplateData = async (req, res, next) => {
       });
       }
     }
+
+    modelAttributes['id'] = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true }
+    modelAttributes['created_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
+    modelAttributes['updated_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
+    modelAttributes['created_by'] = { type: Sequelize.DataTypes.STRING, allowNull: true }
 
     // Define and sync the dynamic model
     const Model = sequelize.define(table_name, modelAttributes, {
@@ -9885,6 +9872,160 @@ exports.getTemplateAlongWithData = async (req, res) => {
     } catch (error) {
         console.error("Error in getTemplateWithData:", error);
         return userSendResponse(res, 500, false, "Server error.", error.message);
+    }
+};
+
+exports.getTemplateDataWithAccused = async (req, res, next) => {
+    const {
+        table_name,
+        accused_ids = [],
+        limit = 10,
+        page = 1,
+        search = "",
+        from_date = null,
+        to_date = null,
+        filter = {},
+        ...rest
+    } = req.body;
+
+    if (!table_name || !Array.isArray(accused_ids) || accused_ids.length === 0) {
+        return userSendResponse(res, 400, false, "table_name and accused_ids array are required.", null);
+    }
+
+    try {
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+
+        // Only use fields with table_display_content: true
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+        const displayFields = schema.filter(f => f.table_display_content);
+
+        const fieldAccusedLevel = displayFields.find(f => f.name === "field_accused_level");
+        if (!fieldAccusedLevel) {
+            return userSendResponse(res, 400, false, "field_accused_level column not found in schema.", null);
+        }
+
+        const modelAttributes = {};
+        for (const field of displayFields) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+        modelAttributes['id'] = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true }
+        modelAttributes['created_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
+        modelAttributes['updated_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
+        modelAttributes['created_by'] = { type: Sequelize.DataTypes.STRING, allowNull: true }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await Model.sync();
+
+        const Op = Sequelize.Op;
+        const offset = (page - 1) * limit;
+
+        let accusedLevelType = (typeMapping[fieldAccusedLevel.data_type?.toUpperCase()] || {}).key;
+        let accusedIdsForQuery = accused_ids;
+        if (accusedLevelType === "STRING" || accusedLevelType === "TEXT") {
+            accusedIdsForQuery = accused_ids.map(id => String(id));
+        } else if (accusedLevelType === "INTEGER") {
+            accusedIdsForQuery = accused_ids.map(id => Number(id));
+        }
+
+        let whereClause = {
+            field_accused_level: { [Op.in]: accusedIdsForQuery }
+        };
+
+        if (filter && typeof filter === "object") {
+            Object.entries(filter).forEach(([key, value]) => {
+                if (displayFields.find(f => f.name === key)) {
+                    whereClause[key] = value;
+                }
+            });
+        }
+
+        if (from_date || to_date) {
+            whereClause["created_at"] = {};
+            if (from_date) whereClause["created_at"][Op.gte] = new Date(`${from_date}T00:00:00.000Z`);
+            if (to_date) whereClause["created_at"][Op.lte] = new Date(`${to_date}T23:59:59.999Z`);
+        }
+
+        if (search) {
+            const searchConditions = [];
+            for (const field of displayFields) {
+                if (["STRING", "TEXT"].includes((typeMapping[field.data_type?.toUpperCase()] || {}).key)) {
+                    searchConditions.push({ [field.name]: { [Op.iLike]: `%${search}%` } });
+                }
+            }
+            if (searchConditions.length > 0) {
+                whereClause[Op.or] = searchConditions;
+            }
+        }
+
+        const { rows, count } = await Model.findAndCountAll({
+            where: whereClause,
+            limit,
+            offset,
+            order: [["created_at", "DESC"]],
+        });
+
+        const result = [];
+        for (const row of rows) {
+            const data = row.toJSON();
+            for (const field of displayFields) {
+                if (field.table && field.attributes && Array.isArray(field.attributes)) {
+                    
+                    const RelatedModel = require(`../models`)[field.table];
+                    
+                    if (RelatedModel) {
+                        const attr = Array.isArray(field.attributes) ? field.attributes[0] : field.attributes;
+                        const related = await RelatedModel.findOne({
+                            where: { id: data[field.name] },
+                            attributes: [attr],
+                        });
+                        if (related && related[attr] !== undefined) {
+                            data[field.name] = related[attr];
+                        }
+                    } else {
+                        const attr = Array.isArray(field.attributes) ? field.attributes[0] : field.attributes;
+                        const [resultRow] = await sequelize.query(
+                            `SELECT ${attr} FROM ${field.table} WHERE id = :id LIMIT 1`,
+                            {
+                                replacements: { id: data[field.name] },
+                                type: Sequelize.QueryTypes.SELECT,
+                            }
+                        );
+                        if (resultRow && resultRow[attr] !== undefined) {
+                            data[field.name] = resultRow[attr];
+                        }
+                    }
+                }
+            }
+            result.push(data);
+        }
+
+        const totalPages = Math.ceil(count / limit);
+
+        return userSendResponse(res, 200, true, "Fetched data successfully.", result, null, {
+            page,
+            limit,
+            totalItems: count,
+            totalPages,
+            template_json: schema
+        });
+    } catch (error) {
+        console.error("Error in getTemplateDataWithAccused:", error);
+        return userSendResponse(res, 500, false, "Server error.", error);
     }
 };
 

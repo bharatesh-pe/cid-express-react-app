@@ -293,6 +293,10 @@ router.post('/getTemplateAlongWithData',
     [gwtDataValidation],[validate_token],
     templateDataController.getTemplateAlongWithData)
 
+router.post('/getTemplateDataWithAccused',
+    [gwtDataValidation],[validate_token],
+    templateDataController.getTemplateDataWithAccused)
+
 router.post('/getPrimaryTemplateData',
     [gwtDataValidation],[validate_token],
     templateDataController.getPrimaryTemplateData)
