@@ -6852,6 +6852,64 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
             }
     
+
+            if (table_name === "cid_under_investigation") {
+                const field1 = "field_crime_number_of_ps";
+                const field2 = "field_cid_crime_no./enquiry_no";
+                const field3 = "field_name_of_the_police_station";
+                
+                if (
+                  parsedData[field1] &&
+                  parsedData[field2] &&
+                  parsedData[field3]
+                ) {
+                  const modelAttributes = {};
+                  for (const field of schema) {
+                    const { name, data_type, not_null, default_value } = field;
+                    const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                    modelAttributes[name] = {
+                      type: sequelizeType,
+                      allowNull: !not_null,
+                      defaultValue: default_value || null,
+                    };
+                  }
+
+                  if (!modelAttributes.id) {
+                    modelAttributes.id = {
+                      type: Sequelize.DataTypes.INTEGER,
+                      primaryKey: true,
+                      autoIncrement: true,
+                    };
+                  }
+                  const Model = sequelize.define(table_name, modelAttributes, {
+                    freezeTableName: true,
+                    timestamps: true,
+                    createdAt: "created_at",
+                    updatedAt: "updated_at",
+                  });
+                  await Model.sync();
+
+                  const whereClause = {};
+                  whereClause[field1] = String(parsedData[field1]);
+                  whereClause[field2] = String(parsedData[field2]);
+                  whereClause[field3] = String(parsedData[field3]);
+
+                  const duplicate = await Model.findOne({
+                    where: whereClause,
+                  });
+                  if (duplicate) {
+                    return userSendResponse(
+                      res,
+                      400,
+                      false,
+                      `Duplicate constraint: The combination of ${field1}, ${field2}, and ${field3} is already present.`,
+                      null
+                    );
+                  }
+                }
+            }
+
+
             const validData = {};
             for (const field of schema) {
                 const { name, not_null, default_value } = field;
@@ -7666,6 +7724,65 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
             } catch (err) {
                 parsedData = data;
                 // return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+            }
+
+
+            if (table_name === "cid_under_investigation") {
+                const field1 = "field_crime_number_of_ps";
+                const field2 = "field_cid_crime_no./enquiry_no";
+                const field3 = "field_name_of_the_police_station";
+                if (
+                  parsedData[field1] &&
+                  parsedData[field2] &&
+                  parsedData[field3]
+                ) {
+                  const modelAttributes = {};
+                  for (const field of schema) {
+                    const { name, data_type, not_null, default_value } = field;
+                    const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                    modelAttributes[name] = {
+                      type: sequelizeType,
+                      allowNull: !not_null,
+                      defaultValue: default_value || null,
+                    };
+                  }
+                  if (!modelAttributes.id) {
+                    modelAttributes.id = {
+                      type: Sequelize.DataTypes.INTEGER,
+                      primaryKey: true,
+                      autoIncrement: true,
+                    };
+                  }
+                  const Model = sequelize.define(table_name, modelAttributes, {
+                    freezeTableName: true,
+                    timestamps: true,
+                    createdAt: "created_at",
+                    updatedAt: "updated_at",
+                  });
+                  await Model.sync();
+
+                  const whereClause = {};
+                  whereClause[field1] = String(parsedData[field1]);
+                  whereClause[field2] = String(parsedData[field2]);
+                  whereClause[field3] = String(parsedData[field3]);
+
+                  const ids = id.split(",").map((i) => i.trim());
+                  const duplicate = await Model.findOne({
+                    where: {
+                      ...whereClause,
+                      id: { [Sequelize.Op.notIn]: ids }
+                    }
+                  });
+                  if (duplicate) {
+                    return userSendResponse(
+                      res,
+                      400,
+                      false,
+                      `Duplicate constraint: The combination of ${field1}, ${field2}, and ${field3} is already present.`,
+                      null
+                    );
+                  }
+                }
             }
 
             // Validate and filter data for schema-based fields
