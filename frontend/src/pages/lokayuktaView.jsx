@@ -23,6 +23,7 @@ import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
 import ChargeSheetInvestigation from "./ChargeSheetInvestigation";
 import PropertyForm from "./PropertyForm";
+import Mahazars from './Mahazars';
 import CDR from "./CDR";
 import Report41A from "./Report41A";
 import PlanOfAction from "./PlanOfAction";
@@ -2409,6 +2410,17 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                     />
+                ) : activeSidebar?.table === "cid_ui_case_mahajars" ? (
+
+
+                     <Mahazars
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />    
                 ) : activeSidebar?.table === "cid_ui_case_cdr_ipdr" ? (
 
 
@@ -2630,6 +2642,7 @@ const LokayuktaView = () => {
                             table_name={tableName}
                             readOnly={formReadFlag}
                             editData={formEditFlag}
+                            editName={true}
                             initialData={initialRowData}
                             formConfig={templateFields}
                             stepperData={stepperConfig}

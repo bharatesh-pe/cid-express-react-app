@@ -271,6 +271,398 @@ exports.insertTemplateData = async (req, res, next) => {
   }
 };
 
+exports.insertTwoTemplateData = async (req, res, next) => {
+  let dirPath = "";
+  try {
+    const { table_name, data, folder_attachment_ids, transaction_id, second_table_name, second_data, second_folder_attachment_ids } = req.body;
+    const userId = req.user?.user_id || null;
+    const adminUserId = res.locals.admin_user_id || null;
+    const actorId = userId || adminUserId;
+
+    if (!actorId) {
+      return userSendResponse(res, 403, false, "Unauthorized access.", null);
+    }
+
+    dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+    if (fs.existsSync(dirPath))
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate transaction detected.",
+      });
+    fs.mkdirSync(dirPath, { recursive: true });
+
+    // Fetch user data
+    const userData = await Users.findOne({
+      include: [
+        {
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"],
+        },
+      ],
+      where: { user_id: userId },
+    });
+
+    let userName = userData?.kgidDetails?.name || null;
+
+    // --- First Table Insert ---
+    const tableData = await Template.findOne({ where: { table_name } });
+    if (!tableData) {
+      return userSendResponse(
+        res,
+        400,
+        false,
+        `Table ${table_name} does not exist.`,
+        null
+      );
+    }
+
+    const schema = tableData?.fields
+      ? typeof tableData.fields === "string"
+        ? JSON.parse(tableData.fields)
+        : tableData.fields
+      : [];
+
+    // Parse incoming data
+    let parsedData;
+    try {
+      parsedData = JSON.parse(data);
+    } catch (err) {
+      return userSendResponse(
+        res,
+        400,
+        false,
+        "Invalid JSON format in data.",
+        null
+      );
+    }
+
+    const validData = {};
+    for (const field of schema) {
+      const { name, not_null, default_value } = field;
+      if (parsedData.hasOwnProperty(name)) {
+        validData[name] = parsedData[name];
+      } else if (not_null && default_value === undefined) {
+        return userSendResponse(
+          res,
+          400,
+          false,
+          `Field ${name} cannot be null.`,
+          null
+        );
+      } else if (default_value !== undefined) {
+        validData[name] = default_value;
+      }
+    }
+    validData.created_by = userName;
+    validData.created_by_id = userId;
+
+    let completeSchema = parsedData?.sys_status
+      ? [
+          {
+            name: "sys_status",
+            data_type: "TEXT",
+            not_null: false,
+            default_value: parsedData.sys_status.trim(),
+          },
+          { name: "created_by", data_type: "TEXT", not_null: false },
+          { name: "created_by_id", data_type: "INTEGER", not_null: false },
+          ...schema,
+        ]
+      : [
+          { name: "created_by", data_type: "TEXT", not_null: false },
+          { name: "created_by_id", data_type: "INTEGER", not_null: false },
+          ...schema,
+        ];
+
+    if (parsedData.ui_case_id && parsedData.ui_case_id != "") {
+      completeSchema = [
+        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+        ...completeSchema,
+      ];
+      validData.ui_case_id = parsedData.ui_case_id;
+    }
+    if (parsedData.pt_case_id && parsedData.pt_case_id != "") {
+      completeSchema = [
+        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+        ...completeSchema,
+      ];
+      validData.pt_case_id = parsedData.pt_case_id;
+    }
+
+    // Define dynamic model
+    const modelAttributes = {};
+    for (const field of completeSchema) {
+      const { name, data_type, not_null, default_value } = field;
+      const sequelizeType =
+        typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+      modelAttributes[name] = {
+        type: sequelizeType,
+        allowNull: !not_null,
+        defaultValue: default_value || null,
+      };
+    }
+
+    const Model = sequelize.define(table_name, modelAttributes, {
+      freezeTableName: true,
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    });
+
+    await Model.sync();
+
+    // Insert data to first table (but do not insert yet, wait for second table id if needed)
+    let insertedData = null;
+    let insertedSecondData = null;
+
+    // --- Second Table Insert (if provided) ---
+    if (second_table_name && second_data) {
+      const secondTableData = await Template.findOne({ where: { table_name: second_table_name } });
+      if (!secondTableData) {
+        return userSendResponse(
+          res,
+          400,
+          false,
+          `Table ${second_table_name} does not exist.`,
+          null
+        );
+      }
+      const secondSchema = secondTableData?.fields
+        ? typeof secondTableData.fields === "string"
+          ? JSON.parse(secondTableData.fields)
+          : secondTableData.fields
+        : [];
+      let secondParsedData;
+      try {
+        secondParsedData = JSON.parse(second_data);
+      } catch (err) {
+        return userSendResponse(
+          res,
+          400,
+          false,
+          "Invalid JSON format in second_data.",
+          null
+        );
+      }
+
+      const secondValidData = {};
+      for (const field of secondSchema) {
+        const { name, not_null, default_value } = field;
+        if (secondParsedData.hasOwnProperty(name)) {
+          secondValidData[name] = secondParsedData[name];
+        } else if (not_null && default_value === undefined) {
+          return userSendResponse(
+            res,
+            400,
+            false,
+            `Field ${name} cannot be null in second table.`,
+            null
+          );
+        } else if (default_value !== undefined) {
+          secondValidData[name] = default_value;
+        }
+      }
+      secondValidData.created_by = userName;
+      secondValidData.created_by_id = userId;
+
+      let secondCompleteSchema = [
+        { name: "created_by", data_type: "TEXT", not_null: false },
+        { name: "created_by_id", data_type: "INTEGER", not_null: false },
+        ...secondSchema,
+      ];
+      if (secondParsedData.sys_status) {
+        secondCompleteSchema.unshift({
+          name: "sys_status",
+          data_type: "TEXT",
+          not_null: false,
+          default_value: secondParsedData.sys_status.trim(),
+        });
+        secondValidData.sys_status = secondParsedData.sys_status;
+      }
+      if (secondParsedData.ui_case_id && secondParsedData.ui_case_id != "") {
+        secondCompleteSchema.unshift({
+          name: "ui_case_id",
+          data_type: "INTEGER",
+          not_null: false,
+        });
+        secondValidData.ui_case_id = secondParsedData.ui_case_id;
+      }
+      if (secondParsedData.pt_case_id && secondParsedData.pt_case_id != "") {
+        secondCompleteSchema.unshift({
+          name: "pt_case_id",
+          data_type: "INTEGER",
+          not_null: false,
+        });
+        secondValidData.pt_case_id = secondParsedData.pt_case_id;
+      }
+
+      const secondModelAttributes = {};
+      for (const field of secondCompleteSchema) {
+        const { name, data_type, not_null, default_value } = field;
+        const sequelizeType =
+          typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+        secondModelAttributes[name] = {
+          type: sequelizeType,
+          allowNull: !not_null,
+          defaultValue: default_value || null,
+        };
+      }
+      const SecondModel = sequelize.define(second_table_name, secondModelAttributes, {
+        freezeTableName: true,
+        timestamps: true,
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+      });
+      await SecondModel.sync();
+      insertedSecondData = await SecondModel.create(secondValidData);
+
+      // Now, if first table is 'cid_ui_case_mahajars' and has 'field_property_form_id', set it to second table id
+      if (
+        table_name === "cid_ui_case_mahajars" &&
+        schema.some(f => f.name === "field_property_form_id") &&
+        insertedSecondData?.id
+      ) {
+        validData["field_property_form_id"] = insertedSecondData.id;
+      }
+
+      // Insert first table row now (after setting property_form_id if needed)
+      insertedData = await Model.create(validData);
+
+      // Handle file uploads for first table
+      const fileUpdates = {};
+      if (req.files && req.files.length > 0) {
+        const folderAttachments = folder_attachment_ids
+          ? JSON.parse(folder_attachment_ids)
+          : [];
+        for (const file of req.files) {
+          const { originalname, size, fieldname, filename } = file;
+          const fileExtension = path.extname(originalname);
+          const matchingFolder = folderAttachments.find(
+            (attachment) =>
+              attachment.filename === originalname &&
+              attachment.field_name === fieldname
+          );
+          const folderId = matchingFolder ? matchingFolder.folder_id : null;
+          const s3Key = `../data/cases/${filename}`;
+          await ProfileAttachment.create({
+            template_id: tableData.template_id,
+            table_row_id: insertedData.id,
+            attachment_name: originalname,
+            attachment_extension: fileExtension,
+            attachment_size: size,
+            s3_key: s3Key,
+            field_name: fieldname,
+            folder_id: folderId,
+          });
+          if (!fileUpdates[fieldname]) {
+            fileUpdates[fieldname] = originalname;
+          } else {
+            fileUpdates[fieldname] += `,${originalname}`;
+          }
+        }
+        for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+          await Model.update(
+            { [fieldname]: filenames },
+            { where: { id: insertedData.id } }
+          );
+        }
+      }
+
+      // Handle file uploads for second table
+      const secondFileUpdates = {};
+      if (req.files && req.files.length > 0) {
+        const secondFolderAttachments = second_folder_attachment_ids
+          ? JSON.parse(second_folder_attachment_ids)
+          : [];
+        for (const file of req.files) {
+          const { originalname, size, fieldname, filename } = file;
+          const fileExtension = path.extname(originalname);
+          const matchingFolder = secondFolderAttachments.find(
+            (attachment) =>
+              attachment.filename === originalname &&
+              attachment.field_name === fieldname
+          );
+          const folderId = matchingFolder ? matchingFolder.folder_id : null;
+          const s3Key = `../data/cases/${filename}`;
+          await ProfileAttachment.create({
+            template_id: secondTableData.template_id,
+            table_row_id: insertedSecondData.id,
+            attachment_name: originalname,
+            attachment_extension: fileExtension,
+            attachment_size: size,
+            s3_key: s3Key,
+            field_name: fieldname,
+            folder_id: folderId,
+          });
+          if (!secondFileUpdates[fieldname]) {
+            secondFileUpdates[fieldname] = originalname;
+          } else {
+            secondFileUpdates[fieldname] += `,${originalname}`;
+          }
+        }
+        for (const [fieldname, filenames] of Object.entries(secondFileUpdates)) {
+          await SecondModel.update(
+            { [fieldname]: filenames },
+            { where: { id: insertedSecondData.id } }
+          );
+        }
+      }
+    } else {
+      // No second table, just insert first table as usual
+      insertedData = await Model.create(validData);
+
+      // Handle file uploads for first table
+      const fileUpdates = {};
+      if (req.files && req.files.length > 0) {
+        const folderAttachments = folder_attachment_ids
+          ? JSON.parse(folder_attachment_ids)
+          : [];
+        for (const file of req.files) {
+          const { originalname, size, fieldname, filename } = file;
+          const fileExtension = path.extname(originalname);
+          const matchingFolder = folderAttachments.find(
+            (attachment) =>
+              attachment.filename === originalname &&
+              attachment.field_name === fieldname
+          );
+          const folderId = matchingFolder ? matchingFolder.folder_id : null;
+          const s3Key = `../data/cases/${filename}`;
+          await ProfileAttachment.create({
+            template_id: tableData.template_id,
+            table_row_id: insertedData.id,
+            attachment_name: originalname,
+            attachment_extension: fileExtension,
+            attachment_size: size,
+            s3_key: s3Key,
+            field_name: fieldname,
+            folder_id: folderId,
+          });
+          if (!fileUpdates[fieldname]) {
+            fileUpdates[fieldname] = originalname;
+          } else {
+            fileUpdates[fieldname] += `,${originalname}`;
+          }
+        }
+        for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+          await Model.update(
+            { [fieldname]: filenames },
+            { where: { id: insertedData.id } }
+          );
+        }
+      }
+    }
+
+    return userSendResponse(res, 200, true, `Record Created Successfully`, null);
+  } catch (error) {
+    console.error("Error inserting data:", error.stack);
+    return userSendResponse(res, 500, false, "Server error.", error);
+  } finally {
+    if (fs.existsSync(dirPath))
+      fs.rmSync(dirPath, { recursive: true, force: true });
+  }
+};
+
 async function getDisplayValueForField(field, value, schema) {
   // If value is null or undefined, return it as is
   if (value === null || value === undefined) {

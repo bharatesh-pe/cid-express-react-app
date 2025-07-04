@@ -2105,7 +2105,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                         marginLeft: 'auto',
                                     }}
                                     >
-                                    {!viewModeOnly && (
+                                    {/* {!viewModeOnly && (
                                         <Button
                                             variant="outlined"
                                             sx={{ height: '40px' }}
@@ -2113,8 +2113,8 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                         >
                                             Add
                                         </Button>
-                                    )}
-                                    <Button
+                                    )} */}
+                                    {/* <Button
                                         onClick={handleOpenExportPopup}
                                         sx={{
 
@@ -2137,7 +2137,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     >
                                         <ImportExportIcon sx={{ fontSize: 18 }} />
                                         Export / Import
-                                    </Button>
+                                    </Button> */}
                                     <Button
                                         variant="contained"
                                         color="success"
