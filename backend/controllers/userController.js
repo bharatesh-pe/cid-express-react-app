@@ -1176,6 +1176,6 @@ exports.get_user_management_logs = async (req, res) => {
         return res.status(200).json({"logs":logs});
     } catch (error) {
         console.error('Error fetching user management logs:', error);
-        return res.status(500).json({ message: error.message || 'Internal server error' });
+        return res.status(500).json({ message: "Failed to fetch user management logs", error: error.message });
     }
 };

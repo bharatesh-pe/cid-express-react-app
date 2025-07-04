@@ -304,7 +304,10 @@ exports.createTemplate = async (req, res, next) => {
     return adminSendResponse(res, 200, true, responseMessage, null);
   } catch (error) {
     console.error("Error creating table:", error);
-    return adminSendResponse(res, 400, false, "Server error.", error);
+    return adminSendResponse(res, 400, false,  "Failed to create template.", {
+      error: error.message || "Server error.",
+    }
+    );
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -590,7 +593,10 @@ exports.updateTemplate = async (req, res, next) => {
     return adminSendResponse(res, 200, true, responseMessage, null);
   } catch (error) {
     console.error("Error updating table:", error);
-    return adminSendResponse(res, 400, false, "Server error.", error);
+    return adminSendResponse(res, 400, false, "Failed to update template.", {
+      error: error.message || "Server error.",
+    }
+    );
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -673,7 +679,10 @@ exports.deleteTemplate = async (req, res, next) => {
   } catch (error) {
     console.error("Error deleting table:", error);
 
-    return adminSendResponse(res, 500, false, "Server error.", error.message);
+    return adminSendResponse(res, 500, false, "Failed to delete template.", {
+      error: error.message || "Server error.",
+    }
+    );
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -740,7 +749,9 @@ exports.viewTemplate = async (req, res, next) => {
     );
   } catch (error) {
     console.error("Error viewing template:", error);
-    return adminSendResponse(res, 500, false, "Server error.", error.message);
+    return adminSendResponse(res, 500, false, "Failed to view template.", {
+      error: error.message || "Server error.",
+    });
   }
 };
 
@@ -909,7 +920,9 @@ exports.paginateTemplate = async (req, res) => {
     );
   } catch (error) {
     console.error("Error fetching templates:", error);
-    return adminSendResponse(res, 500, false, "Server error.", error.message);
+    return adminSendResponse(res, 500, false, "Failed to fetch templates.", {
+      error: error.message || "Server error.",
+    });
   }
 };
 
@@ -990,7 +1003,7 @@ exports.getMasterTemplates = async (req, res, next) => {
     return adminSendResponse(res, 200, true, responseMessage, finalData);
   } catch (error) {
     console.error("Error fetching master templates:", error);
-    return adminSendResponse(res, 500, false, "Server error.", error);
+    return adminSendResponse(res, 500, false, "Failed to get master templates.", error.message);
   }
 };
 
@@ -1125,7 +1138,7 @@ exports.downloadPdf = async (req, res) => {
       res,
       500,
       false,
-      "Internal Server Error.",
+      "Failed to download PDF.",
       null,
       error.message
     );
@@ -1165,7 +1178,7 @@ exports.getAllTemplates = async (req, res) => {
         return adminSendResponse(res, 200, true, "All templates fetched successfully.", result);
     } catch (error) {
         console.error("Error fetching all templates:", error);
-        return adminSendResponse(res, 500, false, "Server error.", error.message);
+        return adminSendResponse(res, 500, false, "Failed to get templates.", error.message);
     }
 };
 
@@ -1208,7 +1221,7 @@ exports.checkDuplicateTemplate = async (req, res, next) => {
       res,
       500,
       false,
-      "Internal Server Error.",
+      "failed to check duplicate template.",
       null,
       error.message
     );
