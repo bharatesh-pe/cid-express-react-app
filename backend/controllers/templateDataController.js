@@ -11616,27 +11616,43 @@ exports.checkFinalSheet = async (req, res) => {
     }
 
     let fslStatusOk = false;
-    const fslRecords = await sequelize.query(
-      `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
-      {
-        replacements: { ui_case_id },
-        type: Sequelize.QueryTypes.SELECT,
-      }
-    );
-    if (fslRecords.length > 0) {
-      for (const rec of fslRecords) {
-        if ((rec.field_used_as_evidence || '').toLowerCase() === 'yes') {
-          fslStatusOk = true;
-          break;
+        const fslRecords = await sequelize.query(
+            `SELECT field_property_details FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+            {
+                replacements: { ui_case_id },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        
+        if (fslRecords.length > 0) {
+            for (const rec of fslRecords) {
+                try {
+                    const propertyItems = JSON.parse(rec.field_property_details || '[]');
+
+                    const hasEvidence = propertyItems.some(
+                        item => (item["Used as Evidence"] || '').trim().toLowerCase() === 'yes'
+                    );
+
+                    if (hasEvidence) {
+                        fslStatusOk = true;
+                        break;
+                    }
+
+                    const hasNoEvidence = propertyItems.some(
+                        item => (item["Used as Evidence"] || '').trim().toLowerCase() === 'no' &&
+                        (item["Reason"] || '').trim() !== ''
+                    );
+                    if (hasNoEvidence) {
+                        fslStatusOk = true;
+                        break;
+                    }
+
+                } catch (err) {
+                    console.error('Invalid JSON in field_property_details:', err);
+                }
+            }
         }
-        if ((rec.field_used_as_evidence || '').toLowerCase() === 'no') {
-          if (rec.field_reason && String(rec.field_reason).trim() !== '') {
-            fslStatusOk = true;
-            break;
-          }
-        }
-      }
-    }
 
     return res.status(200).json({
       success: true,
@@ -11794,18 +11810,33 @@ exports.checkCaseStatusCombined = async (req, res) => {
             progressReportEmpty = true;
         }
 
-        let fslEmpty = false;
-        const fslRecordsEmpty = await sequelize.query(
-            `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
-            {
-                replacements: { ui_case_id },
-                type: Sequelize.QueryTypes.SELECT,
-            }
-        );
-        if (!fslRecordsEmpty || fslRecordsEmpty.length === 0) {
-            fslEmpty = true;
-        }
+    let fslEmpty = true;
 
+    const fslRecordsEmpty = await sequelize.query(
+      `SELECT field_property_details
+      FROM cid_ui_case_forensic_science_laboratory 
+      WHERE ui_case_id = :ui_case_id`,
+      {
+        replacements: { ui_case_id },
+        type: Sequelize.QueryTypes.SELECT,
+      }
+    );
+
+    if (fslRecordsEmpty && fslRecordsEmpty.length > 0) {
+      for (const rec of fslRecordsEmpty) {
+        try {
+          const items = JSON.parse(rec.field_property_details || '[]');
+
+          if (Array.isArray(items) && items.length > 0 && !items["Used as Evidence"]) {
+            fslEmpty = false;
+            break;
+          }
+
+        } catch (err) {
+          console.error('Invalid JSON in field_property_details:', err);
+        }
+      }
+    }
         data.progressReportEmpty = progressReportEmpty;
         data.fslEmpty = fslEmpty;
 
@@ -11854,23 +11885,39 @@ exports.checkCaseStatusCombined = async (req, res) => {
 
         let fslStatusOk = false;
         const fslRecords = await sequelize.query(
-            `SELECT field_used_as_evidence, field_reason FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
+            `SELECT field_property_details FROM cid_ui_case_forensic_science_laboratory WHERE ui_case_id = :ui_case_id`,
             {
                 replacements: { ui_case_id },
                 type: Sequelize.QueryTypes.SELECT,
             }
         );
+
+        
         if (fslRecords.length > 0) {
             for (const rec of fslRecords) {
-                if ((rec.field_used_as_evidence || '').toLowerCase() === 'yes') {
-                    fslStatusOk = true;
-                    break;
-                }
-                if ((rec.field_used_as_evidence || '').toLowerCase() === 'no') {
-                    if (rec.field_reason && String(rec.field_reason).trim() !== '') {
+                try {
+                    const propertyItems = JSON.parse(rec.field_property_details || '[]');
+
+                    const hasEvidence = propertyItems.some(
+                        item => (item["Used as Evidence"] || '').trim().toLowerCase() === 'yes'
+                    );
+
+                    if (hasEvidence) {
                         fslStatusOk = true;
                         break;
                     }
+
+                    const hasNoEvidence = propertyItems.some(
+                        item => (item["Used as Evidence"] || '').trim().toLowerCase() === 'no' &&
+                        (item["Reason"] || '').trim() !== ''
+                    );
+                    if (hasNoEvidence) {
+                        fslStatusOk = true;
+                        break;
+                    }
+
+                } catch (err) {
+                    console.error('Invalid JSON in field_property_details:', err);
                 }
             }
         }
