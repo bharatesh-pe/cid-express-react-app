@@ -10528,6 +10528,7 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
         from_date = null,
         to_date = null,
         filter = {},
+        templateField,
         ...rest
     } = req.body;
 
@@ -10545,9 +10546,9 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
         const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
         const displayFields = schema.filter(f => f.table_display_content);
 
-        const fieldAccusedLevel = displayFields.find(f => f.name === "field_accused_name");
+        const fieldAccusedLevel = displayFields.find(f => f.name === templateField);
         if (!fieldAccusedLevel) {
-            return userSendResponse(res, 400, false, "field_accused_name column not found in schema.", null);
+            return userSendResponse(res, 400, false, templateField + " column not found in schema.", null);
         }
 
         const modelAttributes = {};
@@ -10586,7 +10587,7 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
         }
 
         let whereClause = {
-            field_accused_name: { [Op.in]: accusedIdsForQuery }
+            [templateField]: { [Op.in]: accusedIdsForQuery }
         };
 
         if (filter && typeof filter === "object") {
