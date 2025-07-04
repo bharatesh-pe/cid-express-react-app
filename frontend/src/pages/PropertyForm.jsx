@@ -477,7 +477,8 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     !excludedKeys.includes(key) &&
                                     key !== "field_pf_number" &&
                                     key !== "created_at" &&
-                                    key !== "created_by"
+                                    key !== "created_by" &&
+                                    key !== "field_property_details"
                                 )
                                 .map((key) => {
                                     const updatedKeyName = key
