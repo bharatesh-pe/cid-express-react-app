@@ -10545,9 +10545,9 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
         const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
         const displayFields = schema.filter(f => f.table_display_content);
 
-        const fieldAccusedLevel = displayFields.find(f => f.name === "field_accused_level");
+        const fieldAccusedLevel = displayFields.find(f => f.name === "field_accused_name");
         if (!fieldAccusedLevel) {
-            return userSendResponse(res, 400, false, "field_accused_level column not found in schema.", null);
+            return userSendResponse(res, 400, false, "field_accused_name column not found in schema.", null);
         }
 
         const modelAttributes = {};
@@ -10586,7 +10586,7 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
         }
 
         let whereClause = {
-            field_accused_level: { [Op.in]: accusedIdsForQuery }
+            field_accused_name: { [Op.in]: accusedIdsForQuery }
         };
 
         if (filter && typeof filter === "object") {
@@ -10675,6 +10675,97 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
           error.message || "An unexpected error occurred.",
           error
         );
+    }
+};
+
+
+exports.getDateWiseTableCounts = async (req, res) => {
+    try {
+        const { table_name = [] } = req.body;
+
+        if (!Array.isArray(table_name) || table_name.length === 0) {
+            return userSendResponse(res, 400, false, "table_name array is required.", null);
+        }
+
+        const formatDate = (date) => {
+            const d = new Date(date);
+            const day = String(d.getDate()).padStart(2, "0");
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const year = d.getFullYear();
+            return `${day}-${month}-${year}`;
+        };
+
+        const allDatesSet = new Set();
+        const tableDateCounts = {};
+
+        for (const table_name of table_name) {
+            const tableData = await Template.findOne({ where: { table_name } });
+            if (!tableData) continue;
+
+            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+            const hasCaseDairy = schema.some(f => f.name === "field_case_dairy");
+
+            const modelAttributes = {};
+            for (const field of schema) {
+                const { name, data_type, not_null, default_value } = field;
+                const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                modelAttributes[name] = {
+                    type: sequelizeType,
+                    allowNull: !not_null,
+                    defaultValue: default_value || null,
+                };
+            }
+
+            modelAttributes.id = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true };
+            modelAttributes.created_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
+
+            if (hasCaseDairy) {
+                modelAttributes.field_case_dairy = { type: Sequelize.DataTypes.DATE, allowNull: true };
+            }
+
+            const Model = sequelize.define(table_name, modelAttributes, {
+                freezeTableName: true,
+                timestamps: true,
+                createdAt: "created_at",
+                updatedAt: "updated_at",
+            });
+
+            await Model.sync();
+
+            const dateField = hasCaseDairy ? "field_case_dairy" : "created_at";
+            const records = await Model.findAll({
+                attributes: [[Sequelize.fn('DATE', Sequelize.col(dateField)), 'date']],
+                raw: true,
+            });
+
+            const dateCountMap = {};
+            for (const rec of records) {
+                if (!rec.date) continue;
+                const dateStr = formatDate(rec.date);
+                dateCountMap[dateStr] = (dateCountMap[dateStr] || 0) + 1;
+                allDatesSet.add(dateStr);
+            }
+            tableDateCounts[table_name] = dateCountMap;
+        }
+
+        const allDates = Array.from(allDatesSet).sort((a, b) => {
+            const [da, ma, ya] = a.split('-').map(Number);
+            const [db, mb, yb] = b.split('-').map(Number);
+            return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
+        });
+
+        const result = allDates.map(dateStr => {
+            const row = { date: dateStr };
+            for (const table_name of table_name) {
+                row[table_name] = tableDateCounts[table_name]?.[dateStr] || 0;
+            }
+            return row;
+        });
+
+        return userSendResponse(res, 200, true, "Date-wise table counts fetched successfully.", result);
+    } catch (error) {
+        console.error("Error in getDateWiseTableCounts:", error);
+        return userSendResponse(res, 500, false, "Internal server error.", error);
     }
 };
 

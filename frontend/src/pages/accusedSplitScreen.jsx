@@ -77,7 +77,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
     const getTableData = async (options, reOpen, noFilters) => {
 
-        const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_level).filter(Boolean);
+        const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_name).filter(Boolean);
 
         var getTemplatePayload = {
             table_name: options.table_name || options,
@@ -560,7 +560,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                 
                 var updatedFields = viewTemplateResponse?.["data"]?.["fields"].map((field)=>{
 
-                    if(field.name === "field_accused_level"){
+                    if(field.name === "field_accused_name"){
 
                         if(field.type === "multidropdown"){
                             multiSelect = true
@@ -577,14 +577,14 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                     }
                 });
 
-                const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_level).filter(Boolean);
+                const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_name).filter(Boolean);
 
                 var initialFormConfig = {
-                    'field_accused_level' : accusedId[0]
+                    'field_accused_name' : accusedId[0]
                 }
 
                 if(multiSelect){
-                    initialFormConfig['field_accused_level'] = accusedId
+                    initialFormConfig['field_accused_name'] = accusedId
                 }
                 
                 setSelectedTemplateId(viewTemplateResponse?.["data"]?.template_id);
