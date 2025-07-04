@@ -2023,11 +2023,11 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     {otherTemplatesTotalRecord} Records
                                 </Box>
 
-                                {APIsSubmited && (
+                                {/* {APIsSubmited && (
                                     <Box className="notifyAtTopCaseStyle">
                                         Submission request in progress. Awaiting SP approval.
                                     </Box>
-                                )}
+                                )} */}
                             </Box>
 
                             {/* Actions Section */}
