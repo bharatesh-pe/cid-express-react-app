@@ -18,6 +18,7 @@ const {
   CaseAlerts,
   Template,
 } = require("../models");
+const xlsx = require('xlsx');
 const Sequelize = require("sequelize");
 const { userSendResponse } = require("../services/userSendResponse");
 const db = require("../models");
@@ -2049,6 +2050,348 @@ const mapUIandPT = async (req, res) => {
     }
 };
 
+const updatePoliceStationFromExcel = async (req, res) => {
+    try {
+        const workbook = xlsx.readFile(path.join(__dirname, '../data/CID_data.xlsx'));
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const data = xlsx.utils.sheet_to_json(sheet, { header: 1 });
+
+        if (!data || data.length === 0) {
+            return res.status(400).json({ success: false, message: "No data found in the Excel sheet" });
+        }
+
+        const headers = data[0];
+
+        const fieldIsUIIndex = headers.indexOf("IsUI");
+        const fieldCrimeNumberIndex = headers.indexOf("field_crime_number_of_ps");
+        const fieldEnquiryNoIndex = headers.indexOf("field_cid_crime_no./enquiry_no");
+        const fieldCCNoIndex = headers.indexOf("field_cc_no./sc_no");
+        const policeStationIdIndex = headers.indexOf("PoliceStationId");
+        const CourtIdIndex = headers.indexOf("CourtId");
+        const fieldDateOfRegistrationByPsIndex = headers.indexOf("field_date_of_registration_by_ps/range");
+        const fieldDateOfEntrustmentToCidIndex = headers.indexOf("field_date_of_entrustment_to_cid");
+        const fieldDateOfTakingOverByCidIndex = headers.indexOf("field_date_of_taking_over_by_cid");
+        const fieldDateOfTakingOverByPresentIoIndex = headers.indexOf("field_date_of_taking_over_by_present_io");
+        const publickeyIndex = headers.indexOf("PublicKey");
+        const fieldNumberOfAccusedIndex = headers.indexOf("TotalAccusedCount");
+        const fieldNumberOfAccusedCustodyIndex = headers.indexOf("TotalAccusedinCustody");
+        const fieldDateOfSubmissionOfFrToCourtIndex = headers.indexOf("field_date_of_submission_of_fr_to_court");
+        const fieldDateOfFilingLastSupplimentaryChargeSheetIndex =headers.indexOf("field_date_of_filing_last_supplimentary_charge_sheet");
+        const fieldDateOfFilingLastPreliminaryChargeSheetIndex =headers.indexOf("field_date_of_filing_last_preliminary_charge_sheet");
+        const fieldNameOfAccusedA1Index = headers.indexOf("field_name_of_accused");
+        const fieldDateOfJudgementIndex = headers.indexOf("field_date_of_judgement");
+        const fieldResultOfJudgementIndex = headers.indexOf("field_result_of_judgment");
+        const fieldPtRemarksIndex = headers.indexOf("PT_Remarks");
+        const fieldTrialStatusIndex = headers.indexOf("StateofTrialId");
+        const fieldHigherCourtIdIndex = headers.indexOf("HigherCourtId");
+        const fieldSpecialPPIdIndex = headers.indexOf("SplPPId");
+
+        const uiCases = [];
+        const ptCases = [];
+        const eqCases = [];
+
+        data.slice(1).forEach(row => {
+            const isUI = row[fieldIsUIIndex];
+            var crimeNumber = row[fieldCrimeNumberIndex];
+            const enquiryNo = row[fieldEnquiryNoIndex];
+            const policeStationkey = row[policeStationIdIndex];
+            const ccNo = row[fieldCCNoIndex];
+            const courtkey = row[CourtIdIndex];
+            const dateOfRegistrationByPs = row[fieldDateOfRegistrationByPsIndex];
+            const dateOfEntrustmentToCid = row[fieldDateOfEntrustmentToCidIndex];
+            const dateOfTakingOverByCid = row[fieldDateOfTakingOverByCidIndex];
+            const dateOfTakingOverByPresentIo = row[fieldDateOfTakingOverByPresentIoIndex];
+            const publickey = row[publickeyIndex];
+            const TotalAccusedCount = row[fieldNumberOfAccusedIndex];
+            const TotalAccusedinCustody = row[fieldNumberOfAccusedCustodyIndex];
+            const dateOfSubmissionOfFrToCourt = row[fieldDateOfSubmissionOfFrToCourtIndex];
+            const dateOfFilingLastSupplimentaryChargeSheet = row[fieldDateOfFilingLastSupplimentaryChargeSheetIndex];
+            const dateOfFilingLastPreliminaryChargeSheet = row[fieldDateOfFilingLastPreliminaryChargeSheetIndex];
+            const fieldNameOfAccusedA1 = row[fieldNameOfAccusedA1Index];
+            const fieldDateOfJudgement = row[fieldDateOfJudgementIndex];
+            const fieldResultOfJudgement = row[fieldResultOfJudgementIndex];
+            const fieldPtRemarks = row[fieldPtRemarksIndex];
+            const fieldTrialStatus = row[fieldTrialStatusIndex];
+            const fieldHigherCourtId = row[fieldHigherCourtIdIndex];
+            const fieldSpecialPPId = row[fieldSpecialPPIdIndex];
+            
+
+
+            if ((isUI === 2 || isUI === '2') && crimeNumber && enquiryNo) {
+                uiCases.push({ crimeNumber, enquiryNo, policeStationkey ,courtkey , dateOfRegistrationByPs, dateOfEntrustmentToCid, dateOfTakingOverByCid, dateOfTakingOverByPresentIo , publickey , TotalAccusedCount , dateOfSubmissionOfFrToCourt , dateOfFilingLastSupplimentaryChargeSheet , dateOfFilingLastPreliminaryChargeSheet, fieldNameOfAccusedA1});
+            } else if ((isUI === 4 || isUI === 5 || isUI === '4' || isUI === '5') && crimeNumber && enquiryNo) {
+                ptCases.push({ crimeNumber, enquiryNo, policeStationkey ,ccNo , courtkey ,publickey , TotalAccusedCount , TotalAccusedinCustody , fieldDateOfJudgement , fieldResultOfJudgement , fieldPtRemarks , fieldTrialStatus , fieldHigherCourtId , fieldSpecialPPId});
+            } else if ((isUI === 1 || isUI === '1') && enquiryNo) {
+                if(crimeNumber == undefined || crimeNumber == null)
+                    crimeNumber = '';
+
+                eqCases.push({ enquiryNo, policeStationkey , crimeNumber , dateOfRegistrationByPs, dateOfEntrustmentToCid, dateOfTakingOverByCid, dateOfTakingOverByPresentIo , publickey , TotalAccusedCount });
+            }
+        });
+
+        const updateUICases = async (cases, tableName) => {
+            for (const item of cases) {
+
+                var police_station_id = '';
+                if (item.policeStationkey)
+                {
+                    const police_station_result = await sequelize.query(
+                        `SELECT id FROM cid_police_station WHERE "publickey" = :policeStationkey`,
+                        {
+                            replacements: { policeStationkey: item.policeStationkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    police_station_id = police_station_result[0]?.id;
+                }
+
+                var court_id = "";
+                if (item.courtkey) {
+                    const court_result = await sequelize.query(
+                        `SELECT id FROM cid_court WHERE "publickey" = :courtkey`,
+                        {
+                            replacements: { courtkey: item.courtkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+                    
+                    court_id = court_result[0]?.id;
+                    if (!court_id) continue;
+                }
+
+
+                await sequelize.query(
+                    `UPDATE ${tableName} 
+                     SET 
+                     "field_name_of_the_police_station" = :police_station_id , 
+                     "field_name_of_the_court_place" = :court_id ,
+                     "field_date_of_registration_by_ps/range" = :dateOfRegistrationByPs,
+                     "field_date_of_entrustment_to_cid" = :dateOfEntrustmentToCid, 
+                     "field_date_of_taking_over_by_cid" = :dateOfTakingOverByCid, 
+                     "field_date_of_taking_over_by_present_io" = :dateOfTakingOverByPresentIo,
+                     "publickey" = :publickey,
+                     "field_number_of_accused" = :TotalAccusedCount,
+                     "field_date_of_submission_of_fr_to_court" = :dateOfSubmissionOfFrToCourt,
+                     "field_date_of_filing_last_supplimentary_charge_sheet" = :dateOfFilingLastSupplimentaryChargeSheet,
+                     "field_date_of_filing_last_preliminary_charge_sheet" = :dateOfFilingLastPreliminaryChargeSheet,
+                     "field_name_of_accused" = :fieldNameOfAccusedA1
+                     WHERE "field_cid_crime_no./enquiry_no" = :enquiryNo 
+                       AND "field_crime_number_of_ps" = :crimeNumber`,
+                    {
+                        replacements: {
+                            police_station_id : String(police_station_id),
+                            enquiryNo: String(item.enquiryNo),
+                            crimeNumber: String(item.crimeNumber),
+                            court_id: String(court_id),
+                            dateOfRegistrationByPs: excelDateToString(item.dateOfRegistrationByPs),
+                            dateOfEntrustmentToCid: excelDateToString(item.dateOfEntrustmentToCid),
+                            dateOfTakingOverByCid: excelDateToString(item.dateOfTakingOverByCid),
+                            dateOfTakingOverByPresentIo: excelDateToString(item.dateOfTakingOverByPresentIo),
+                            publickey: String(item.publickey),
+                            TotalAccusedCount: String(item.TotalAccusedCount || ''),
+                            dateOfSubmissionOfFrToCourt: excelDateToString(item.dateOfSubmissionOfFrToCourt || ''),
+                            dateOfFilingLastSupplimentaryChargeSheet: excelDateToString(item.dateOfFilingLastSupplimentaryChargeSheet || ''),
+                            dateOfFilingLastPreliminaryChargeSheet: excelDateToString(item.dateOfFilingLastPreliminaryChargeSheet || ''),
+                            fieldNameOfAccusedA1: String(item.fieldNameOfAccusedA1 || '')
+                        },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            }
+        };
+
+        const updatePTCases = async (cases, tableName) => {
+            for (const item of cases) {
+                var police_station_id = '';
+                if (item.policeStationkey)
+                {
+                    const police_station_result = await sequelize.query(
+                        `SELECT id FROM cid_police_station WHERE "publickey" = :policeStationkey`,
+                        {
+                            replacements: { policeStationkey: item.policeStationkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    police_station_id = police_station_result[0]?.id;
+                }
+
+                var court_id = "";
+                if (item.courtkey) {
+                    const court_result = await sequelize.query(
+                        `SELECT id FROM cid_court WHERE "publickey" = :courtkey`,
+                        {
+                            replacements: { courtkey: item.courtkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+                    
+                    court_id = court_result[0]?.id;
+                    if (!court_id) continue;
+                }
+
+                var result_of_judgement_id = '';
+                if (item.fieldResultOfJudgement) {
+                    const judgement_result = await sequelize.query(
+                        `SELECT id FROM cid_result_of_judgement WHERE "publickey" = :fieldResultOfJudgement`,
+                        {
+                            replacements: { fieldResultOfJudgement: item.fieldResultOfJudgement },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    result_of_judgement_id = judgement_result[0]?.id;
+                }
+
+
+                var higher_court_id  = '';
+                if (item.fieldHigherCourtId) {
+                    const higher_court_result = await sequelize.query(
+                        `SELECT id FROM cid_court WHERE "publickey" = :courtkey`,
+                        {
+                            replacements: { courtkey: item.fieldHigherCourtId },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    higher_court_id = higher_court_result[0]?.id;
+                }
+
+                var trial_status_id = '';
+                if (item.fieldTrialStatus) {
+                    const trial_status_result = await sequelize.query(
+                        `SELECT id FROM cid_state_of_trial WHERE "publickey" = :trialkey`,
+                        {
+                            replacements: { trialkey: item.fieldTrialStatus },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    trial_status_id = trial_status_result[0]?.id;
+                }
+
+                var pp_id = '';
+                if (item.fieldSpecialPPId) {
+                    const pp_result = await sequelize.query(
+                        `SELECT id FROM cid_state_of_trial WHERE "publickey" = :PPkey`,
+                        {
+                            replacements: { PPkey: item.fieldSpecialPPId },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    pp_id = pp_result[0]?.id;
+                }
+
+                await sequelize.query(
+                    `UPDATE ${tableName} 
+                        SET 
+                            "field_name_of_the_police_station" = :police_station_id,
+                            "field_ps_crime_number" = :crimeNumber,
+                            "field_name_of_the_court" = :court_id,
+                            "publickey" = :publickey,
+                            "field_total_number_of_accused_persons" = :TotalAccusedCount,
+                            "field_total_number_of_accused_persons_in_custody" = :TotalAccusedinCustody, 
+                            "field_date_of_judgement" = :fieldDateOfJudgement,
+                            "field_result_of_judgment(dis/acq/con)" = :result_of_judgement_id,
+                            "field_remark" = :fieldPtRemarks,
+                            "field_state_of_trial" = :fieldTrialStatus,
+                            "field_name_of_the_higher_court" = :higher_court_id,
+                            "field_name_of_spl.pp" = :pp_id
+                        WHERE 
+                            "field_cid_crime_no./enquiry_no" = :enquiryNo 
+                            AND "field_cc_no./sc_no" = :ccNo`,
+                    {
+                        replacements: {
+                            police_station_id : String(police_station_id),
+                            enquiryNo: String(item.enquiryNo),
+                            crimeNumber: String(item.crimeNumber),
+                            ccNo: String(item.ccNo),
+                            court_id: String(court_id),
+                            publickey: String(item.publickey),
+                            TotalAccusedCount: String(item.TotalAccusedCount || ''),
+                            TotalAccusedinCustody: String(item.TotalAccusedinCustody != undefined || item.TotalAccusedinCustody != null ? item.TotalAccusedinCustody : ''), 
+                            fieldDateOfJudgement: excelDateToString(item.fieldDateOfJudgement),
+                            result_of_judgement_id: String(result_of_judgement_id || ''),
+                            fieldPtRemarks: String(item.fieldPtRemarks || ''),
+                            fieldTrialStatus: String(trial_status_id || ''),
+                            higher_court_id: String(higher_court_id || ''),
+                            pp_id: String(pp_id || ''),
+                        },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            }
+        };
+
+        const updateEQCases = async (cases, tableName) => {
+            for (const item of cases) {
+                var police_station_id = null;
+                if (item.policeStationkey)
+                {
+                    const police_station_result = await sequelize.query(
+                        `SELECT id FROM cid_police_station WHERE "publickey" = :policeStationkey`,
+                        {
+                            replacements: { policeStationkey: item.policeStationkey },
+                            type: sequelize.QueryTypes.SELECT
+                        }
+                    );
+    
+                    police_station_id = police_station_result[0]?.id;
+                }
+                
+                await sequelize.query(
+                    `UPDATE ${tableName} 
+                     SET 
+                     "field_name_of_the_ps/range" = :police_station_id , 
+                     "field_crime_number_of_ps/range" = :crimeNumber ,
+                     "field_date_of_registration_by_ps/range" = :dateOfRegistrationByPs,
+                     "field_date_of_entrustment_to_cid" = :dateOfEntrustmentToCid, 
+                     "field_date_of_taking_over_by_cid" = :dateOfTakingOverByCid, 
+                     "field_date_of_taking_over_by_present_io" = :dateOfTakingOverByPresentIo,
+                     "publickey" = :publickey,
+                     "field_number_of_accused" = :TotalAccusedCount
+                     WHERE "field_cid_crime_no./enquiry_no" = :enquiryNo `,
+                    {
+                        replacements: {
+                            police_station_id : police_station_id,
+                            enquiryNo: String(item.enquiryNo),
+                            crimeNumber: String(item.crimeNumber || ''),
+                            dateOfRegistrationByPs: excelDateToString(item.dateOfRegistrationByPs),
+                            dateOfEntrustmentToCid: excelDateToString(item.dateOfEntrustmentToCid),
+                            dateOfTakingOverByCid: excelDateToString(item.dateOfTakingOverByCid),
+                            dateOfTakingOverByPresentIo: excelDateToString(item.dateOfTakingOverByPresentIo),
+                            publickey: String(item.publickey),
+                            TotalAccusedCount: String(item.TotalAccusedCount || '')
+                        },
+                        type: sequelize.QueryTypes.UPDATE
+                    }
+                );
+            }
+        };
+
+        // await updateUICases(uiCases, 'cid_under_investigation');
+        // await updatePTCases(ptCases, 'cid_pending_trial');
+        await updateEQCases(eqCases, 'cid_enquiry');
+
+        return res.status(200).json({
+            success: true,
+            message: "Police Station fields updated successfully for valid records.",
+            stats: {
+                uiUpdated: uiCases.length,
+                ptUpdated: ptCases.length,
+                eqUpdated: eqCases.length
+            }
+        });
+    } catch (error) {
+        console.error("Excel processing error:", error);
+        return res.status(500).json({ success: false, message: "Internal Server Error", error: error.message });
+    }
+};
+
+
 
   
 
@@ -2063,7 +2406,8 @@ module.exports = {
   get_supervisor_id,
   set_user_hierarchy,
   fetch_dash_count,
-  mapUIandPT
+  mapUIandPT,
+  updatePoliceStationFromExcel,
 };
 
 
@@ -2075,4 +2419,13 @@ function normalizeValues(values, expectedType) {
         if (expectedType === 'int') return Number(v);
         return v;
         });
+}
+
+
+function excelDateToString(serial) {
+    if (!serial || isNaN(serial)) return null;
+    const utc_days = Math.floor(serial - 25569);
+    const utc_value = utc_days * 86400; // seconds
+    const date_info = new Date(utc_value * 1000);
+    return date_info.toISOString().split('T')[0]; // 'YYYY-MM-DD'
 }
