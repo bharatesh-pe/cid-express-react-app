@@ -1371,7 +1371,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_cdr_ipdr'
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_cdr_ipdr'
       ? schema
       : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
     
