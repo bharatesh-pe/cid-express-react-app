@@ -506,7 +506,7 @@ const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData
                             ...Object.keys(getTemplateResponse.data[0] || {})
                                 .filter((key) =>
                                     !excludedKeys.includes(key) &&
-                                    key !== "field_pf#" &&
+                                    key !== "field_pf_number" &&
                                     key !== "created_at" &&
                                     key !== "created_by" &&
                                     key !== "field_approval_done_by" &&

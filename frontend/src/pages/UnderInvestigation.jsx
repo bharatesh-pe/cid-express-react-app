@@ -1424,7 +1424,7 @@ const fslTableRef = useRef();
                             tableHeader = tableHeader.filter(
                                 (col) =>
                                     col.field === "sl_no" ||
-                                    col.field === "field_pf#" ||
+                                    col.field === "field_pf_number" ||
                                     col.field === "field_used_as_evidence" ||
                                     col.field === "field_reason"
                             );

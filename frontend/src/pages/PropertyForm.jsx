@@ -440,14 +440,14 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     );
                                 }
                             },
-                            ...(Object.keys(getTemplateResponse.data[0] || {}).includes("field_pf#") ? [{
-                                field: "field_pf#",
-                                headerName: "Pf#",
+                            ...(Object.keys(getTemplateResponse.data[0] || {}).includes("field_pf_number") ? [{
+                                field: "field_pf_number",
+                                headerName: "PF Number",
                                 width: 200,
                                 resizable: true,
                                 renderHeader: () => (
                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>Pf#</span>
+                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>PF Number</span>
                                     </div>
                                 ),
                                 renderCell: (params) => {
@@ -475,7 +475,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                             ...Object.keys(getTemplateResponse.data[0] || {})
                                 .filter((key) =>
                                     !excludedKeys.includes(key) &&
-                                    key !== "field_pf#" &&
+                                    key !== "field_pf_number" &&
                                     key !== "created_at" &&
                                     key !== "created_by"
                                 )
