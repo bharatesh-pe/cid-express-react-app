@@ -43,7 +43,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
     ]);
 
     const [accusedHeaderName, setAccusedHeaderName] = useState(
-        () => (selectedAccused || []).map(item => item?.field_name).join(', ')
+        () => (selectedAccused || []).map(item => item?.[gettingFieldName]).join(', ')
     );
 
     const [tableRowData, setTableRowData] = useState([]);
