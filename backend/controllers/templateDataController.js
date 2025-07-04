@@ -156,11 +156,13 @@ exports.insertTemplateData = async (req, res, next) => {
           },
           { name: "created_by", data_type: "TEXT", not_null: false },
           { name: "created_by_id", data_type: "INTEGER", not_null: false },
+          { name: "publickey", data_type: "TEXT", not_null: false },
           ...schema,
         ]
       : [
           { name: "created_by", data_type: "TEXT", not_null: false },
           { name: "created_by_id", data_type: "INTEGER", not_null: false },
+          { name: "publickey", data_type: "TEXT", not_null: false },
           ...schema,
         ];
 
@@ -892,11 +894,13 @@ exports.updateTemplateData = async (req, res, next) => {
                 },
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
             ]
             : [
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
             ];
 
@@ -1532,6 +1536,7 @@ exports.getActionTemplateData = async (req, res, next) => {
       created_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
       updated_at: { type: Sequelize.DataTypes.DATE, allowNull: false },
       created_by: { type: Sequelize.DataTypes.STRING, allowNull: true },
+      publickey: { type: Sequelize.DataTypes.STRING, allowNull: true },
     };
 
     const associations = [];
@@ -5866,326 +5871,539 @@ exports.checkPdfEntry = async (req, res) => {
 // Cache for dynamically generated models
 const modelCache = {};
 
+// exports.caseSysStatusUpdation = async (req, res) => {
+//   let dirPath = "";
+//   try {
+//     const { table_name, data, transaction_id } = req.body;
+//     const userId = req.user?.user_id || null;
+//     if (!table_name || !data || typeof data !== "object") {
+//       return userSendResponse(res, 400, false, "Invalid request format.");
+//     }
+//     dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+//     if (fs.existsSync(dirPath))
+//       return res
+//         .status(400)
+//         .json({ success: false, message: "Duplicate transaction detected." });
+//     fs.mkdirSync(dirPath, { recursive: true });
+
+//     const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
+//     if (!id || !sys_status) {
+//       return userSendResponse(
+//         res,
+//         400,
+//         false,
+//         "ID and sys_status are required."
+//       );
+//     }
+
+//     const recordId = Array.isArray(id) ? id : [id];
+//     const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
+//     if (invalidIds.length > 0) {
+//       return userSendResponse(res, 400, false, "Invalid ID format(s).");
+//     }
+
+
+//     const tableData = await Template.findOne({ where: { table_name } });
+//     if (!tableData) {
+//       return userSendResponse(
+//         res,
+//         400,
+//         false,
+//         `Table ${table_name} does not exist.`
+//       );
+//     }
+
+//     const schema =
+//       typeof tableData.fields === "string"
+//         ? JSON.parse(tableData.fields)
+//         : tableData.fields;
+
+//     const completeSchema = [
+//       {
+//         name: "id",
+//         data_type: "INTEGER",
+//         not_null: true,
+//         primaryKey: true,
+//         autoIncrement: true,
+//       },
+//       {
+//         name: "sys_status",
+//         data_type: "TEXT",
+//         not_null: false,
+//         default_value: default_status,
+//       },
+//       { name: "created_by", data_type: "TEXT", not_null: false },
+//       { name: "updated_by", data_type: "TEXT", not_null: false },
+//       { name: "created_by_id", data_type: "INTEGER", not_null: false },
+//       { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+//       { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+//       { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+//       ...schema,
+//     ];
+
+//     let Model = modelCache[table_name];
+
+//     if (!Model) {
+//       const modelAttributes = {};
+//       for (const field of completeSchema) {
+//         const {
+//           name,
+//           data_type,
+//           not_null,
+//           default_value,
+//           primaryKey,
+//           autoIncrement,
+//         } = field;
+//         const sequelizeType =
+//           typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+//         modelAttributes[name] = {
+//           type: sequelizeType,
+//           allowNull: !not_null,
+//         };
+
+//         if (default_value) modelAttributes[name].defaultValue = default_value;
+//         if (primaryKey) modelAttributes[name].primaryKey = true;
+//         if (autoIncrement) modelAttributes[name].autoIncrement = true;
+//       }
+
+//       Model = sequelize.define(
+//         table_name,
+//         modelAttributes,
+//         {
+//           freezeTableName: true,
+//           timestamps: true,
+//           createdAt: "created_at",
+//           updatedAt: "updated_at",
+//           underscored: true,
+//         }
+//       );
+
+//       await Model.sync({ alter: true });
+//       modelCache[table_name] = Model;
+//     }
+
+//     if (Array.isArray(recordId)) {
+//       const records = await Model.findAll({
+//         where: {
+//           id: recordId
+//         }
+//       });
+
+//     if (records.length !== recordId.length) {
+//       return userSendResponse(
+//         res,
+//         404,
+//         false,
+//         `Some records with the provided IDs were not found in table ${table_name}.`
+//       );
+//     }
+
+//   } else {
+//     const record = await Model.findByPk(recordId);
+  
+//     if (!record) {
+//       return userSendResponse(
+//         res,
+//         404,
+//         false,
+//         `Record with ID ${recordId} not found in table ${table_name}.`
+//       );
+//     }
+//   }
+
+
+//     const [updatedCount] = await Model.update(
+//       { sys_status },
+//       { where: { id: recordId } }
+//     );
+
+//     // Fetch user data
+//     const userData = await Users.findOne({
+//         include: [
+//         {
+//             model: KGID,
+//             as: "kgidDetails",
+//             attributes: ["kgid", "name", "mobile"],
+//         },
+//         ],
+//         where: { user_id: userId },
+//     });
+
+//     let userName = userData?.kgidDetails?.name || null;
+    
+//     if (Array.isArray(recordId)) {
+//         const historyRecords = recordId.map(id => ({
+//             template_id: tableData.template_id,
+//             table_row_id: id,
+//             user_id: userId,
+//             actor_name: userName,
+//             action: `Status Updated`,
+//         }));
+    
+//         await CaseHistory.bulkCreate(historyRecords);
+//     } else {
+//         await CaseHistory.create({
+//             template_id: tableData.template_id,
+//             table_row_id: recordId,
+//             user_id: userId,
+//             actor_name: userName,
+//             action: `Status Updated`,
+//         });
+//     }
+    
+
+//     // if (updatedCount === 0) {
+//     //   return userSendResponse(
+//     //     res,
+//     //     400,
+//     //     false,
+//     //     "No changes detected or update failed."
+//     //   );
+//     // }
+
+//   if (updatedCount === 0) {
+//     const existingRecords = await Model.findAll({
+//       where: { id: recordId }
+//     });
+//     const alreadySet = existingRecords.every(rec => rec.sys_status === sys_status);
+//     if (alreadySet) {
+//       return userSendResponse(
+//         res,
+//         200,
+//         true,
+//         "Case record already has the requested status."
+//       );
+//     }
+//     const currentStatuses = existingRecords.map(rec => ({
+//       id: rec.id,
+//       current_sys_status: rec.sys_status
+//     }));
+//     return userSendResponse(
+//       res,
+//       400,
+//       false,
+//       `No records were updated. The current status${existingRecords.length > 1 ? 'es are' : ' is'}: ${currentStatuses.map(s => `[id: ${s.id}, sys_status: ${s.current_sys_status}]`).join(', ')}. The requested status may already be set or the update failed.`,
+//       { error: "No records were updated.", currentStatuses }
+//     );
+//   }
+
+
+//     const handleInvestigationUpdate = async (invTableName, caseId , default_status) => {
+//       const investigationTable = await Template.findOne({
+//         where: { table_name: invTableName },
+//       });
+//       if (!investigationTable) {
+//         return userSendResponse(
+//           res,
+//           400,
+//           false,
+//           `${invTableName} not found.`
+//         );
+//       }
+
+//       const invSchema =
+//         typeof investigationTable.fields === "string"
+//           ? JSON.parse(investigationTable.fields)
+//           : investigationTable.fields;
+
+//       const completeInvSchema = [
+//         {
+//           name: "id",
+//           data_type: "INTEGER",
+//           not_null: true,
+//           primaryKey: true,
+//           autoIncrement: true,
+//         },
+//         { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status},
+//         { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+//         { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+//         { name: "created_by", data_type: "TEXT", not_null: false },
+//         { name: "updated_by", data_type: "TEXT", not_null: false },
+//         { name: "created_by_id", data_type: "INTEGER", not_null: false },
+//         { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+//         ...invSchema,
+//       ];
+
+//       let InvModel = modelCache[invTableName];
+//       if (!InvModel) {
+//         const invModelAttributes = {};
+//         for (const field of completeInvSchema) {
+//           const { name, data_type, not_null, primaryKey, autoIncrement } = field;
+//           const sequelizeType =
+//             typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+
+//           invModelAttributes[name] = {
+//             type: sequelizeType,
+//             allowNull: !not_null,
+//           };
+
+//           if (primaryKey) invModelAttributes[name].primaryKey = true;
+//           if (autoIncrement) invModelAttributes[name].autoIncrement = true;
+//         }
+
+//         InvModel = sequelize.define(
+//           invTableName,
+//           invModelAttributes,
+//           {
+//             freezeTableName: true,
+//             timestamps: true,
+//             createdAt: "created_at",
+//             updatedAt: "updated_at",
+//             underscored: true,
+//           }
+//         );
+
+//         await InvModel.sync({ alter: true });
+//         modelCache[invTableName] = InvModel;
+//       }
+
+//       const invRecord = await InvModel.findOne({ where: { id: caseId } });
+//       if (invRecord) {
+//         await InvModel.update(
+//           { sys_status: "178_cases" },
+//           { where: { id: caseId } }
+//         );
+//       } else {
+//         console.log(`No matching record found in \`${invTableName}\` for id:`, caseId);
+//       }
+//     };
+
+//     if (ui_case_id && sys_status === "178_cases") {
+//       await handleInvestigationUpdate("cid_under_investigation", ui_case_id ,"ui_case");
+//     }
+
+//     if (pt_case_id && sys_status === "178_cases") {
+//       await handleInvestigationUpdate("cid_pending_trial", pt_case_id,"pt_case");
+//     }
+
+//     return userSendResponse(
+//       res,
+//       200,
+//       true,
+//       "Case record updated successfully!"
+//     );
+//   } catch (error) {
+//     console.error("Error updating case status:", error);
+//     return userSendResponse(res, 500, false, "Internal Server Error.", error);
+//   } finally {
+//     if (fs.existsSync(dirPath))
+//       fs.rmSync(dirPath, { recursive: true, force: true });
+//   }
+// };
+
 exports.caseSysStatusUpdation = async (req, res) => {
-  let dirPath = "";
-  try {
-    const { table_name, data, transaction_id } = req.body;
-    const userId = req.user?.user_id || null;
-    if (!table_name || !data || typeof data !== "object") {
-      return userSendResponse(res, 400, false, "Invalid request format.");
-    }
-    dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-    if (fs.existsSync(dirPath))
-      return res
-        .status(400)
-        .json({ success: false, message: "Duplicate transaction detected." });
-    fs.mkdirSync(dirPath, { recursive: true });
-
-    const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
-    if (!id || !sys_status) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        "ID and sys_status are required."
-      );
-    }
-
-    const recordId = Array.isArray(id) ? id : [id];
-    const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
-    if (invalidIds.length > 0) {
-      return userSendResponse(res, 400, false, "Invalid ID format(s).");
-    }
-
-
-    const tableData = await Template.findOne({ where: { table_name } });
-    if (!tableData) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        `Table ${table_name} does not exist.`
-      );
-    }
-
-    const schema =
-      typeof tableData.fields === "string"
-        ? JSON.parse(tableData.fields)
-        : tableData.fields;
-
-    const completeSchema = [
-      {
-        name: "id",
-        data_type: "INTEGER",
-        not_null: true,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      {
-        name: "sys_status",
-        data_type: "TEXT",
-        not_null: false,
-        default_value: default_status,
-      },
-      { name: "created_by", data_type: "TEXT", not_null: false },
-      { name: "updated_by", data_type: "TEXT", not_null: false },
-      { name: "created_by_id", data_type: "INTEGER", not_null: false },
-      { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-      { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-      { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-      ...schema,
-    ];
-
-    let Model = modelCache[table_name];
-
-    if (!Model) {
-      const modelAttributes = {};
-      for (const field of completeSchema) {
-        const {
-          name,
-          data_type,
-          not_null,
-          default_value,
-          primaryKey,
-          autoIncrement,
-        } = field;
-        const sequelizeType =
-          typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-
-        modelAttributes[name] = {
-          type: sequelizeType,
-          allowNull: !not_null,
-        };
-
-        if (default_value) modelAttributes[name].defaultValue = default_value;
-        if (primaryKey) modelAttributes[name].primaryKey = true;
-        if (autoIncrement) modelAttributes[name].autoIncrement = true;
+    let dirPath = "";
+    try {
+      const { table_name, data, transaction_id } = req.body;
+      const userId = req.user?.user_id || null;
+  
+      if (!table_name || !data || typeof data !== "object") {
+        return userSendResponse(res, 400, false, "Invalid request format.");
       }
-
-      Model = sequelize.define(
-        table_name,
-        modelAttributes,
-        {
+  
+      const { id, sys_status, default_status, ui_case_id, pt_case_id } = data;
+      if (!id || !sys_status) {
+        return userSendResponse(res, 400, false, "ID and sys_status are required.");
+      }
+  
+      const recordId = Array.isArray(id) ? id : [id];
+      const invalidIds = recordId.filter(val => isNaN(parseInt(val)));
+      if (invalidIds.length > 0) {
+        return userSendResponse(res, 400, false, "Invalid ID format(s).");
+      }
+  
+      // Check for duplicate transaction
+      dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+      if (fs.existsSync(dirPath)) {
+        return res.status(400).json({
+          success: false,
+          message: "Duplicate transaction detected.",
+        });
+      }
+      fs.mkdirSync(dirPath, { recursive: true });
+  
+      // Fetch schema
+      const tableData = await Template.findOne({ where: { table_name } });
+      if (!tableData) {
+        return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`);
+      }
+  
+      const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+  
+      const completeSchema = [
+        { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+        { name: "sys_status", data_type: "TEXT", not_null: false, default_value: default_status },
+        { name: "created_by", data_type: "TEXT", not_null: false },
+        { name: "updated_by", data_type: "TEXT", not_null: false },
+        { name: "created_by_id", data_type: "INTEGER", not_null: false },
+        { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+        { name: "publickey", data_type: "TEXT", not_null: false },
+        ...schema,
+      ];
+  
+      // Define model
+      let Model = modelCache[table_name];
+      if (!Model) {
+        const modelAttributes = {};
+        for (const field of completeSchema) {
+          const { name, data_type, not_null, default_value, primaryKey, autoIncrement } = field;
+          const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+  
+          modelAttributes[name] = {
+            type: sequelizeType,
+            allowNull: !not_null,
+          };
+          if (default_value) modelAttributes[name].defaultValue = default_value;
+          if (primaryKey) modelAttributes[name].primaryKey = true;
+          if (autoIncrement) modelAttributes[name].autoIncrement = true;
+        }
+  
+        Model = sequelize.define(table_name, modelAttributes, {
           freezeTableName: true,
           timestamps: true,
           createdAt: "created_at",
           updatedAt: "updated_at",
           underscored: true,
-        }
-      );
-
-      await Model.sync({ alter: true });
-      modelCache[table_name] = Model;
-    }
-
-    if (Array.isArray(recordId)) {
-      const records = await Model.findAll({
-        where: {
-          id: recordId
-        }
-      });
-
-    if (records.length !== recordId.length) {
-      return userSendResponse(
-        res,
-        404,
-        false,
-        `Some records with the provided IDs were not found in table ${table_name}.`
-      );
-    }
-
-  } else {
-    const record = await Model.findByPk(recordId);
-  
-    if (!record) {
-      return userSendResponse(
-        res,
-        404,
-        false,
-        `Record with ID ${recordId} not found in table ${table_name}.`
-      );
-    }
-  }
-
-
-    const [updatedCount] = await Model.update(
-      { sys_status },
-      { where: { id: recordId } }
-    );
-
-    // Fetch user data
-    const userData = await Users.findOne({
-        include: [
-        {
-            model: KGID,
-            as: "kgidDetails",
-            attributes: ["kgid", "name", "mobile"],
-        },
-        ],
-        where: { user_id: userId },
-    });
-
-    let userName = userData?.kgidDetails?.name || null;
-    
-    if (Array.isArray(recordId)) {
-        const historyRecords = recordId.map(id => ({
-            template_id: tableData.template_id,
-            table_row_id: id,
-            user_id: userId,
-            actor_name: userName,
-            action: `Status Updated`,
-        }));
-    
-        await CaseHistory.bulkCreate(historyRecords);
-    } else {
-        await CaseHistory.create({
-            template_id: tableData.template_id,
-            table_row_id: recordId,
-            user_id: userId,
-            actor_name: userName,
-            action: `Status Updated`,
         });
-    }
-    
-
-    // if (updatedCount === 0) {
-    //   return userSendResponse(
-    //     res,
-    //     400,
-    //     false,
-    //     "No changes detected or update failed."
-    //   );
-    // }
-
-  if (updatedCount === 0) {
-    const existingRecords = await Model.findAll({
-      where: { id: recordId }
-    });
-    const alreadySet = existingRecords.every(rec => rec.sys_status === sys_status);
-    if (alreadySet) {
-      return userSendResponse(
-        res,
-        200,
-        true,
-        "Case record already has the requested status."
+  
+        await Model.sync(); // Avoid alter in production
+        modelCache[table_name] = Model;
+      }
+  
+      // Validate records exist
+      const records = await Model.findAll({ where: { id: recordId } });
+      if (records.length !== recordId.length) {
+        return userSendResponse(res, 404, false, `Some records with the provided IDs were not found in table ${table_name}.`);
+      }
+  
+      // Check if already has same status
+      const alreadySet = records.every(rec => rec.sys_status === sys_status);
+      if (alreadySet) {
+        return userSendResponse(res, 200, true, "Case record already has the requested status.");
+      }
+  
+      // Update status
+      const [updatedCount] = await Model.update(
+        { sys_status, updated_by_id: userId },
+        { where: { id: recordId } }
       );
-    }
-    const currentStatuses = existingRecords.map(rec => ({
-      id: rec.id,
-      current_sys_status: rec.sys_status
-    }));
-    return userSendResponse(
-      res,
-      400,
-      false,
-      `No records were updated. The current status${existingRecords.length > 1 ? 'es are' : ' is'}: ${currentStatuses.map(s => `[id: ${s.id}, sys_status: ${s.current_sys_status}]`).join(', ')}. The requested status may already be set or the update failed.`,
-      { error: "No records were updated.", currentStatuses }
-    );
-  }
-
-
-    const handleInvestigationUpdate = async (invTableName, caseId , default_status) => {
-      const investigationTable = await Template.findOne({
-        where: { table_name: invTableName },
-      });
-      if (!investigationTable) {
+  
+      if (updatedCount === 0) {
+        const currentStatuses = records.map(rec => ({
+          id: rec.id,
+          current_sys_status: rec.sys_status
+        }));
         return userSendResponse(
           res,
           400,
           false,
-          `${invTableName} not found.`
+          `No records were updated. Current status${currentStatuses.length > 1 ? 'es are' : ' is'}: ${currentStatuses.map(s => `[id: ${s.id}, sys_status: ${s.current_sys_status}]`).join(', ')}.`,
+          { error: "No records updated.", currentStatuses }
         );
       }
-
-      const invSchema =
-        typeof investigationTable.fields === "string"
-          ? JSON.parse(investigationTable.fields)
-          : investigationTable.fields;
-
-      const completeInvSchema = [
-        {
-          name: "id",
-          data_type: "INTEGER",
-          not_null: true,
-          primaryKey: true,
-          autoIncrement: true,
-        },
-        { name: "sys_status", data_type: "TEXT", not_null: false , default_value: default_status},
-        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-        { name: "created_by", data_type: "TEXT", not_null: false },
-        { name: "updated_by", data_type: "TEXT", not_null: false },
-        { name: "created_by_id", data_type: "INTEGER", not_null: false },
-        { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-        ...invSchema,
-      ];
-
-      let InvModel = modelCache[invTableName];
-      if (!InvModel) {
-        const invModelAttributes = {};
-        for (const field of completeInvSchema) {
-          const { name, data_type, not_null, primaryKey, autoIncrement } = field;
-          const sequelizeType =
-            typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-
-          invModelAttributes[name] = {
-            type: sequelizeType,
-            allowNull: !not_null,
-          };
-
-          if (primaryKey) invModelAttributes[name].primaryKey = true;
-          if (autoIncrement) invModelAttributes[name].autoIncrement = true;
-        }
-
-        InvModel = sequelize.define(
-          invTableName,
-          invModelAttributes,
-          {
-            freezeTableName: true,
-            timestamps: true,
-            createdAt: "created_at",
-            updatedAt: "updated_at",
-            underscored: true,
+  
+      // Fetch user details
+      const userData = await Users.findOne({
+        include: [{
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"]
+        }],
+        where: { user_id: userId },
+      });
+  
+      const userName = userData?.kgidDetails?.name || null;
+  
+      // Create history
+      const historyData = recordId.map(id => ({
+        template_id: tableData.template_id,
+        table_row_id: id,
+        user_id: userId,
+        actor_name: userName,
+        action: "Status Updated",
+      }));
+      await CaseHistory.bulkCreate(historyData);
+  
+      // Update related tables if sys_status is "178_cases"
+      const handleInvestigationUpdate = async (invTableName, caseId, default_status) => {
+        try {
+          const investigationTable = await Template.findOne({ where: { table_name: invTableName } });
+          if (!investigationTable) return;
+  
+          const invSchema = typeof investigationTable.fields === "string"
+            ? JSON.parse(investigationTable.fields)
+            : investigationTable.fields;
+  
+          const completeInvSchema = [
+            { name: "id", data_type: "INTEGER", not_null: true, primaryKey: true, autoIncrement: true },
+            { name: "sys_status", data_type: "TEXT", not_null: false, default_value: default_status },
+            { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+            { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+            { name: "created_by", data_type: "TEXT", not_null: false },
+            { name: "updated_by", data_type: "TEXT", not_null: false },
+            { name: "created_by_id", data_type: "INTEGER", not_null: false },
+            { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+            { name: "publickey", data_type: "TEXT", not_null: false },
+            ...invSchema,
+          ];
+  
+          let InvModel = modelCache[invTableName];
+          if (!InvModel) {
+            const invModelAttributes = {};
+            for (const field of completeInvSchema) {
+              const { name, data_type, not_null, primaryKey, autoIncrement } = field;
+              const sequelizeType = typeMapping?.[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+  
+              invModelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+              };
+              if (primaryKey) invModelAttributes[name].primaryKey = true;
+              if (autoIncrement) invModelAttributes[name].autoIncrement = true;
+            }
+  
+            InvModel = sequelize.define(invTableName, invModelAttributes, {
+              freezeTableName: true,
+              timestamps: true,
+              createdAt: "created_at",
+              updatedAt: "updated_at",
+              underscored: true,
+            });
+  
+            await InvModel.sync();
+            modelCache[invTableName] = InvModel;
           }
-        );
-
-        await InvModel.sync({ alter: true });
-        modelCache[invTableName] = InvModel;
+  
+          const invRecord = await InvModel.findOne({ where: { id: caseId } });
+          if (invRecord) {
+            await InvModel.update({ sys_status: "178_cases" }, { where: { id: caseId } });
+          } else {
+            console.warn(`No record found in ${invTableName} for id: ${caseId}`);
+          }
+        } catch (e) {
+          console.error(`Error updating ${invTableName}:`, e);
+        }
+      };
+  
+      if (ui_case_id && sys_status === "178_cases") {
+        await handleInvestigationUpdate("cid_under_investigation", ui_case_id, "ui_case");
       }
-
-      const invRecord = await InvModel.findOne({ where: { id: caseId } });
-      if (invRecord) {
-        await InvModel.update(
-          { sys_status: "178_cases" },
-          { where: { id: caseId } }
-        );
-      } else {
-        console.log(`No matching record found in \`${invTableName}\` for id:`, caseId);
+  
+      if (pt_case_id && sys_status === "178_cases") {
+        await handleInvestigationUpdate("cid_pending_trial", pt_case_id, "pt_case");
       }
-    };
-
-    if (ui_case_id && sys_status === "178_cases") {
-      await handleInvestigationUpdate("cid_under_investigation", ui_case_id ,"ui_case");
+  
+      return userSendResponse(res, 200, true, "Case record updated successfully!");
+    } catch (error) {
+      console.error("Error updating case status:", error);
+      return userSendResponse(res, 500, false, "Internal Server Error.", error);
+    } finally {
+      if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
     }
-
-    if (pt_case_id && sys_status === "178_cases") {
-      await handleInvestigationUpdate("cid_pending_trial", pt_case_id,"pt_case");
-    }
-
-    return userSendResponse(
-      res,
-      200,
-      true,
-      "Case record updated successfully!"
-    );
-  } catch (error) {
-    console.error("Error updating case status:", error);
-    return userSendResponse(res, 500, false, "Internal Server Error.", error);
-  } finally {
-    if (fs.existsSync(dirPath))
-      fs.rmSync(dirPath, { recursive: true, force: true });
-  }
-};
+  };
 
 
 const dirPath = path.join(__dirname, "../public/files/");
@@ -7406,6 +7624,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
 						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
 						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+                        { name: "publickey", data_type: "TEXT", not_null: false },
 						...otherSchema
 					];
 
@@ -7493,6 +7712,10 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                     type: Sequelize.DataTypes.STRING,
                                     allowNull: true,
                                     },
+                                    publickey: {
+                                        type: Sequelize.DataTypes.STRING,
+                                        allowNull: true,
+                                    },
                                 };
                            
                                 for (const field of PFschema) {
@@ -7547,6 +7770,10 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                                      type: Sequelize.DataTypes.STRING,
                                      allowNull: true,
                                      },
+                                    publickey: {
+                                        type: Sequelize.DataTypes.STRING,
+                                        allowNull: true,
+                                    },
                                  };
                             
                                  for (const field of PRschema) {
@@ -7897,11 +8124,13 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
                 },
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
                 ]
             : [
                 { name: "updated_by", data_type: "TEXT", not_null: false },
                 { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                { name: "publickey", data_type: "TEXT", not_null: false },
                 ...schema,
                 ];
 
@@ -8127,6 +8356,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 						{ name: "updated_by_id", data_type: "INTEGER", not_null: false },
 						{ name: "ui_case_id", data_type: "INTEGER", not_null: false },
 						{ name: "pt_case_id", data_type: "INTEGER", not_null: false },
+                        { name: "publickey", data_type: "TEXT", not_null: false },
 						...otherSchema
 					];
 
@@ -10384,6 +10614,7 @@ exports.deMergeCaseData = async (req, res) => {
             { name: "updated_by_id", data_type: "INTEGER", not_null: false },
             { name: "ui_case_id", data_type: "INTEGER", not_null: false },
             { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+            { name: "publickey", data_type: "TEXT", not_null: false },
             ...schema,
         ];
 
