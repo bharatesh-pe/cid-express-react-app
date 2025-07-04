@@ -10779,10 +10779,7 @@ exports.getDateWiseTableCounts = async (req, res) => {
     } catch (error) {
         await transaction.rollback();
         console.error("Error in getDateWiseTableCounts:", error);
-        return userSendResponse(res, 500, false, "Internal server error", {
-            message: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-        });
+        return userSendResponse(res, 500, false, "Failed to get date wise counts", error.message);
     }
 };
 
