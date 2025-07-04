@@ -264,7 +264,7 @@ exports.insertTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
   } catch (error) {
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    return userSendResponse(res, 500, false, error?.message || "Server error.", error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -654,9 +654,9 @@ exports.insertTwoTemplateData = async (req, res, next) => {
     }
 
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
-  } catch (error) {
+    } catch (error) {
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    return userSendResponse(res, 500, false, error?.message || "Server error.", error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1167,7 +1167,13 @@ exports.updateTemplateData = async (req, res, next) => {
             );
         }
         console.error("Error updating data:", error);
-        return userSendResponse(res, 500, false, "Server error.", error);
+        let errorMessage = "Server error.";
+        if (error && error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === "string") {
+            errorMessage = error;
+        }
+        return userSendResponse(res, 500, false, errorMessage, error);
     } finally {
         if (fs.existsSync(dirPath))
             fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1367,7 +1373,13 @@ exports.updateEditTemplateData = async (req, res, next) => {
     }
 
     console.error("Error updating data:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    let errorMessage = "Server error.";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   } finally {
     if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
   }
@@ -1470,7 +1482,8 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record deleted successfully.`, null);
   } catch (error) {
     console.error("Error deleting file from template:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    const errorMessage = error && error.message ? error.message : error;
+    return userSendResponse(res, 500, false, errorMessage, error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1723,7 +1736,13 @@ exports.getActionTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, responseMessage, transformedRecords);
   } catch (error) {
     console.error("Error fetching data:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    let errorMessage = "Server error.";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -2430,9 +2449,15 @@ exports.getTemplateData = async (req, res, next) => {
       null,
       templateresult,
     );
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching data:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    let errorMessage = "Server error.";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -2534,10 +2559,10 @@ exports.bulkUpdateColumn = async (req, res) => {
             `Updated ${affectedRows} records in column ${column} of table ${table_name}.`,
             null
         );
-    } catch (error) {
+          } catch (error) {
         if (t) await t.rollback();
         console.error("Error in bulkUpdateColumn:", error);
-        return userSendResponse(res, 500, false, "Internal server error.", error);
+        return userSendResponse(res, 500, false, error?.message || "Internal server error.", error);
     }
 };
 
@@ -2647,10 +2672,19 @@ exports.updateFieldsWithApproval = async (req, res) => {
             "Fields updated and approval created successfully.",
             updatedRecord
         );
-    } catch (error) {
+          } catch (error) {
         if (t && !t.finished) await t.rollback();
         console.error("Error in updateFieldsWithApproval:", error);
-        return userSendResponse(res, 500, false, "Internal server error.", error);
+
+        // Send a user-friendly error message with actual error details if available
+        let errorMessage = "Internal server error.";
+        if (error && error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === "string") {
+            errorMessage = error;
+        }
+
+        return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
 
@@ -2770,9 +2804,15 @@ exports.viewTemplateData = async (req, res, next) => {
 
         const responseMessage = `Fetched record successfully from table ${table_name}.`;
         return userSendResponse(res, 200, true, responseMessage, data);
-    } catch (error) {
+          } catch (error) {
         console.error("Error fetching data by ID:", error);
-        return userSendResponse(res, 500, false, "Server error.", error);
+        let errorMessage = "Server error.";
+        if (error && error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === "string") {
+            errorMessage = error;
+        }
+        return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
 
@@ -3038,7 +3078,7 @@ exports.viewMagazineTemplateData = async (req, res) => {
     return userSendResponse(res, 200, true, "Data fetched successfully", data);
   } catch (error) {
     console.error("Error fetching view data:", error);
-    return userSendResponse(res, 500, false, "Server error", error);
+    return userSendResponse(res, 500, false, error?.message || "Server error", error);
   }
 };
 
@@ -3237,9 +3277,15 @@ exports.deleteTemplateData = async (req, res, next) => {
       );
     }
   } catch (error) {
-    console.error("Error deleting data:", error.message);
-    return userSendResponse(res, 500, false, "Server error.", error.message);
-  } finally {
+        console.error("Error deleting data:", error);
+        let errorMessage = "Server error.";
+        if (error && error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        }
+        return userSendResponse(res, 500, false, errorMessage, error);
+  }finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
   }
@@ -3798,9 +3844,15 @@ exports.paginateTemplateData = async (req, res) => {
       "Data fetched successfully",
       responseData
     );
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching paginated data:", error);
-    return userSendResponse(res, 500, false, "Server error", error);
+    let errorMessage = "Server error";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -4721,10 +4773,15 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       "Data fetched successfully",
       responseData
     );
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching paginated data:", error);
-
-    return userSendResponse(res, 500, false, "Server error", error);
+    let errorMessage = "Server error";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -4885,7 +4942,7 @@ exports.downloadExcelData = async (req, res) => {
     console.error("Error during Excel download:", error);
     return res
       .status(500)
-      .send("An error occurred while generating the Excel file.");
+      .send(`An error occurred while generating the Excel file: ${error.message || error}`);
   }
 };
 
@@ -4979,8 +5036,14 @@ exports.bulkInsertData = async (req, res) => {
         }
 
     } catch (error) {
-        console.log(error,"bulkInsertData catch error")
-        return userSendResponse(res, 500, false, "Internal server error.", error.message);
+          console.log(error, "bulkInsertData catch error");
+          let errorMessage = "Internal server error.";
+          if (error && error.message) {
+            errorMessage = error.message;
+          } else if (typeof error === "string") {
+            errorMessage = error;
+          }
+          return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
 
@@ -5022,11 +5085,12 @@ exports.fetchAndDownloadExcel = async (req, res) => {
     console.log(`File ${file_name} is being downloaded.`);
   } catch (error) {
     console.error("Error fetching and downloading Excel file:", error);
+    const errorMessage = error && error.message ? error.message : "Server error occurred while downloading the file.";
     return userSendResponse(
       res,
       500,
       false,
-      "Server error occurred while downloading the file.",
+      errorMessage,
       error
     );
   }
@@ -5215,7 +5279,8 @@ exports.getEventsByOrganization = async (req, res) => {
     );
   } catch (error) {
     console.error("Error fetching events:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    const errorMessage = error && error.message ? error.message : error;
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -5305,9 +5370,10 @@ exports.getEventsByLeader = async (req, res) => {
       "Events fetched successfully",
       response
     );
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching events:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    const errorMessage = error && error.message ? error.message : error;
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -5406,9 +5472,15 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
     }
 
     return userSendResponse(res, 200, true, "No duplicates found.", null);
-  } catch (error) {
+    } catch (error) {
     console.error("Error checking duplicate values in fields:", error);
-    return userSendResponse(res, 500, false, "Internal Server Error.", error);
+    let errorMessage = "Internal Server Error.";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -5462,7 +5534,7 @@ exports.checkPdfEntry = async (req, res) => {
     }
   } catch (error) {
     console.error("Error checking PDF entry:", error);
-    return userSendResponse(res, 500, false, "Internal Server Error.", error);
+    return userSendResponse(res, 500, false, error?.message || error, error);
   }
 };
 
@@ -5586,10 +5658,16 @@ exports.checkPdfEntry = async (req, res) => {
 
             return userSendResponse(res, 200, true, `Fetched data successfully from table ${table_name}.`, transformedRecords, null, meta);
 
-        } catch (error) {
+          } catch (error) {
             console.error("Error fetching data:", error);
-            return userSendResponse(res, 500, false, "Server error.", null, error, null);
-        }
+            let errorMessage = "Server error.";
+            if (error && error.message) {
+              errorMessage = error.message;
+            } else if (typeof error === "string") {
+              errorMessage = error;
+            }
+            return userSendResponse(res, 500, false, errorMessage, null, error, null);
+          }
     };
 
     exports.getPrimaryTemplateDataWithoutPagination = async (req, res, next) => {
@@ -5673,9 +5751,15 @@ exports.checkPdfEntry = async (req, res) => {
             return userSendResponse(res, 200, true, `Fetched data successfully from table ${table_name}.`, {data : transformedRecords, primaryAttribute : PrimaryKeyName});
 
         } catch (error) {
-            console.error("Error fetching data:", error);
-            return userSendResponse(res, 500, false, "Server error.", null, error, null);
+        console.error("Error fetching data:", error);
+        let errorMessage = "Server error.";
+        if (error && error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
         }
+        return userSendResponse(res, 500, false, errorMessage, null, error, null);
+      }
     };
 
     exports.addDropdownSingleFieldValue = async (req, res) => {
@@ -5774,7 +5858,8 @@ exports.checkPdfEntry = async (req, res) => {
             });
         } catch (error) {
             console.error("Error in addSingleFieldValue:", error);
-            return userSendResponse(res, 500, false, "Internal server error.", error);
+            const errorMessage = error && error.message ? error.message : error;
+            return userSendResponse(res, 500, false, errorMessage, error);
         }
     };
 
@@ -6198,11 +6283,12 @@ exports.uploadFile = async (req, res) => {
         message: "File uploaded successfully.",
         file_path,
       });
-    } catch (error) {
+        } catch (error) {
       console.error("Error uploading file:", error);
       return res.status(500).json({
         success: false,
-        message: "Internal server error.",
+        message: error?.message || "Internal server error.",
+        error: error,
       });
     }
   });
@@ -6239,7 +6325,7 @@ exports.getUploadedFiles = async (req, res) => {
     console.error("Error fetching files:", error);
     return res
       .status(500)
-      .json({ success: false, message: "Internal server error." });
+      .json({ success: false, message: error?.message || "Internal server error.", error });
   }
 };
 
@@ -6752,7 +6838,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error.', error: error?.message || error });
+    return res.status(500).json({ success: false, message: error?.message || error, error });
   }
 };
 
@@ -6793,7 +6879,7 @@ exports.getMonthWiseByCaseId = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching monthwise progress reports:', error);
-    return res.status(500).json({ success: false, message: 'Failed to fetch data.' });
+    return res.status(500).json({ success: false, message: error?.message || 'Internal server error.', error });
   }
 };
 
@@ -6857,7 +6943,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 const field1 = "field_crime_number_of_ps";
                 const field2 = "field_cid_crime_no./enquiry_no";
                 const field3 = "field_name_of_the_police_station";
-                
+
                 if (
                   parsedData[field1] &&
                   parsedData[field2] &&
@@ -7662,11 +7748,12 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
 
 	} catch (error) {
-		console.error("Error saving data to templates:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
-	} finally {
+    console.error("Error saving data to templates:", error);
+    if (t) await t.rollback();
+    const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+    const message = isDuplicate ? "Duplicate entry detected." : (error.message || "An unexpected error occurred.");
+    return userSendResponse(res, isDuplicate ? 400 : 500, false, message, error);
+  } finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -8166,12 +8253,27 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 		await t.commit();
 		return userSendResponse(res, 200, true, `Record Updated Successfully`, null);
 
-	} catch (error) {
-		console.error("Error saving data to templates:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
-	} finally {
+    } catch (error) {
+      console.error("Error saving data to templates:", error);
+
+      if (t) await t.rollback();
+
+      let statusCode = 500;
+      let userMessage = "Internal Server Error.";
+
+      if (error.name === "SequelizeUniqueConstraintError") {
+        statusCode = 400;
+        userMessage = "Duplicate entry detected.";
+      } else if (error.name === "SequelizeValidationError") {
+        statusCode = 400;
+        userMessage = error.errors?.map(e => e.message).join(", ") || "Validation error.";
+      } else if (error.message) {
+        userMessage = error.message;
+      }
+
+      return userSendResponse(res, statusCode, false, userMessage, error);
+
+    }finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -8414,11 +8516,16 @@ exports.getAccusedWitness = async (req, res) => {
 			return res.status(404).json({ success: false, message: "No records found." });
 		}
 		return res.status(200).json({ success: true, data });
-	} catch (error) {
-		console.error("Error fetching records:", error);
-		return res.status(500).json({ success: false, message: "Internal server error." });
-	}
-};
+    } catch (error) {
+      console.error("Error fetching records:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Internal server error.",
+        error: error,
+      });
+      }
+  };
 
 
 exports.checkAccusedDataStatus = async (req, res) => {
@@ -8567,10 +8674,14 @@ exports.checkAccusedDataStatus = async (req, res) => {
 
 
 		return res.status(200).json({ success: true, data });
-	} catch (error) {
-		console.error("Error fetching records:", error);
-		return res.status(500).json({ success: false, message: "Internal server error." });
-	}
+  } catch (error) {
+    console.error("Error fetching records:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
 };
 
 exports.insertMergeData = async (req, res) => {
@@ -9384,8 +9495,11 @@ exports.getMergeParentData = async (req, res) =>
   } catch (error) {
     console.error("Error fetching paginated data:", error);
 
-    return userSendResponse(res, 500, false, "Server error", error);
+    const errorMessage = error.message || "Unexpected error occurred.";
+
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
+
 }
 
 exports.getMergeChildData = async (req, res) =>
@@ -10117,8 +10231,15 @@ exports.getMergeChildData = async (req, res) =>
   } catch (error) {
     console.error("Error fetching paginated data:", error);
 
-    return userSendResponse(res, 500, false, "Server error", error);
+    return userSendResponse(
+      res,
+      500,
+      false,
+      error.message || "An unexpected error occurred.",
+      error
+    );
   }
+
 }
 
 exports.deMergeCaseData = async (req, res) => {
@@ -10311,11 +10432,18 @@ exports.deMergeCaseData = async (req, res) => {
 
         await t.commit();
         return userSendResponse(res, 200, true, "Merge data updated and de-merged successfully.");
-    } catch (err) {
+   } catch (err) {
         console.error("deMergeCaseData error:", err);
         await t.rollback();
-        return userSendResponse(res, 500, false, "Failed to de-merge data.");
-    } finally {
+        
+        return userSendResponse(
+            res,
+            500,
+            false,
+            err.message || "Failed to de-merge data.",
+            err
+        );
+    }finally {
         if (fs.existsSync(dirPath))
             fs.rmSync(dirPath, { recursive: true, force: true });
     }
@@ -10378,10 +10506,16 @@ exports.getTemplateAlongWithData = async (req, res) => {
             },
             data: data ? data.toJSON() : null,
         });
-    } catch (error) {
-        console.error("Error in getTemplateWithData:", error);
-        return userSendResponse(res, 500, false, "Server error.", error.message);
-    }
+   } catch (error) {
+    console.error("Error in getTemplateWithData:", error);
+      return userSendResponse(
+          res,
+          500,
+          false,
+          error.message || "An unexpected server error occurred.",
+          error
+      );
+  }
 };
 
 exports.getTemplateDataWithAccused = async (req, res, next) => {
@@ -10532,9 +10666,15 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
             totalPages,
             template_json: schema
         });
-    } catch (error) {
-        console.error("Error in getTemplateDataWithAccused:", error);
-        return userSendResponse(res, 500, false, "Server error.", error);
+  } catch (error) {
+    console.error("Error in getTemplateDataWithAccused:", error); 
+      return userSendResponse(
+          res,
+          500,
+          false,
+          error.message || "An unexpected error occurred.",
+          error
+        );
     }
 };
 
@@ -10738,11 +10878,16 @@ exports.saveActionPlan = async (req, res) => {
 		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
 
 	} catch (error) {
-		console.error("Error saving data to templates:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
-	} finally {
+    console.error("Error saving data to templates:", error);
+    if (t) await t.rollback();
+
+    const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+    const message = isDuplicate
+      ? "Duplicate entry detected."
+      : error.message || "Internal Server Error.";
+
+    return userSendResponse(res, isDuplicate ? 400 : 500, false, message, error);
+  }finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -10973,17 +11118,22 @@ exports.submitActionPlanPR = async (req, res) => {
 		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
 
 	} catch (error) {
-		console.error("Error submitting Action Plan:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(
-			res,
-			isDuplicate ? 400 : 500,
-			false,
-			isDuplicate ? "Duplicate entry detected." : "Internal Server Error.",
-			error
-		);
-	} finally {
+    console.error("Error submitting Action Plan:", error);
+    if (t) await t.rollback();
+
+    const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+    const message = isDuplicate
+      ? "Duplicate entry detected."
+      : error.message || "Internal Server Error.";
+
+    return userSendResponse(
+      res,
+      isDuplicate ? 400 : 500,
+      false,
+      message,
+      error
+    );
+  }finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -11122,17 +11272,22 @@ exports.submitPropertyFormFSL = async (req, res) => {
 		await t.commit();
 		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
 	} catch (error) {
-		console.error("Error submitting Action Plan:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(
-			res,
-			isDuplicate ? 400 : 500,
-			false,
-			isDuplicate ? "Duplicate entry detected." : "Internal Server Error.",
-			error
-		);
-	} finally {
+    console.error("Error submitting Action Plan:", error);
+    if (t) await t.rollback();
+
+    const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+    const message = isDuplicate
+      ? "Duplicate entry detected."
+      : error.message || "Internal Server Error.";
+
+    return userSendResponse(
+      res,
+      isDuplicate ? 400 : 500,
+      false,
+      message,
+      error
+    );
+  }finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -11229,9 +11384,12 @@ exports.checkFinalSheet = async (req, res) => {
       progressReportStatusOk,
       fslStatusOk,
     });
-  } catch (error) {
+ } catch (error) {
     console.error("Error in checkCaseStatusByUiCaseId:", error);
-    return res.status(500).json({ success: false, message: "Internal server error." });
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error."
+    });
   }
 };
 
@@ -11463,8 +11621,11 @@ exports.checkCaseStatusCombined = async (req, res) => {
             progressReportStatusOk,
             fslStatusOk,
         });
-    } catch (error) {
-        console.error("Error in checkCaseStatusCombined:", error);
-        return res.status(500).json({ success: false, message: "Internal server error." });
-    }
+        } catch (error) {
+            console.error("Error in checkCaseStatusCombined:", error);
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Internal server error."
+            });
+        }
 };
