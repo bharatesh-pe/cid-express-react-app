@@ -38,6 +38,8 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
     const [expandedDates, setExpandedDates] = useState([]);
     const [comments, setComments] = useState({});
 
+    const [focusedField, setFocusedField] = useState({});
+
     useEffect(() => {
         const filteredActions = actionArray.filter((action) => action.table);
 
@@ -603,17 +605,7 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
                                         {tables.map(({ table, count, label }) => (
                                             <tr key={table} sx={{border: '1px solid #e2e8f0'}}>
                                                 <td style={{padding: "12px 16px", fontSize: "14px", fontWeight: 400}}>
-                                                    <Box 
-                                                        sx={{
-                                                            color: '#0167F8', 
-                                                            textDecoration: 'underline', 
-                                                            cursor: 'pointer'
-                                                        }}
-
-                                                        onClick={()=> getIndividualTableData(table, date)}
-                                                    >
-                                                        {label}
-                                                    </Box>
+                                                    {label}
                                                 </td>
                                                 <td>
                                                     <Box
@@ -626,7 +618,11 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
                                                             alignItems: "center",
                                                             justifyContent: "center",
                                                             transition: "all 0.3s ease-in-out",
+                                                            cursor: 'pointer',
+                                                            color: '#0167F8',
+                                                            textDecoration: 'underline'
                                                         }}
+                                                        onClick={()=> getIndividualTableData(table, date)}
                                                     >
                                                         {count}
                                                     </Box>
@@ -640,6 +636,10 @@ const CaseDairy = ({ actionArray, ui_case_id, pt_case_id, closeForm }) => {
                                                             style: { fontSize: '14px' }
                                                         }}
                                                         value={comments?.[date]?.[table] || ""}
+                                                        multiline
+                                                        minRows={focusedField[`${date}_${table}`] ? 4 : 1}
+                                                        onFocus={() => setFocusedField(prev => ({ ...prev, [`${date}_${table}`]: true }))}
+                                                        onBlur={() => setFocusedField(prev => ({ ...prev, [`${date}_${table}`]: false }))}
                                                         onChange={(e) =>
                                                             handleCommentChange(date, table, e.target.value)
                                                         }

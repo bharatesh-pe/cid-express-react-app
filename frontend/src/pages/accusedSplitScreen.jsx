@@ -34,6 +34,8 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
     console.log(mainTableName,"mainTableName");    
 
+    const gettingFieldName = mainTableName === "cid_ui_case_accused" ? "field_accused_name" : "field_witness_name";
+
     const [loading, setLoading] = useState(false);
 
     const [tableColumnData, setTableColumnData] = useState([
@@ -77,7 +79,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
 
     const getTableData = async (options, reOpen, noFilters) => {
 
-        const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_name).filter(Boolean);
+        const accusedId = (selectedAccused || []).map(accused => accused.id);
 
         var getTemplatePayload = {
             table_name: options.table_name || options,
@@ -90,6 +92,7 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
             from_date: noFilters ? null : tableFilterFromDate,
             to_date: noFilters ? null : tableFilterToDate,
             filter: noFilters ? {} : tableFilterOtherFilters,
+            templateField : gettingFieldName
         };
 
         setLoading(true);
@@ -560,16 +563,8 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                 
                 var updatedFields = viewTemplateResponse?.["data"]?.["fields"].map((field)=>{
 
-                    if(field.name === "field_accused_name"){
-
-                        if(field.type === "multidropdown"){
-                            multiSelect = true
-                        }
-
-                        return {
-                            ...field,
-                            disabled : true
-                        }
+                    if(field.type === "multidropdown"){
+                        multiSelect = true
                     }
 
                     return {
@@ -577,14 +572,14 @@ const AccusedSplitScreen = ({tableObj, selectedAccused, closeForm, ui_case_id, p
                     }
                 });
 
-                const accusedId = (selectedAccused || []).map(accused => mainTableName === "cid_ui_case_accused" ? accused.id : accused?.field_accused_name).filter(Boolean);
+                const accusedId = (selectedAccused || []).map(accused => accused.id).filter(Boolean);
 
                 var initialFormConfig = {
-                    'field_accused_name' : accusedId[0]
+                    [gettingFieldName] : accusedId[0]
                 }
 
                 if(multiSelect){
-                    initialFormConfig['field_accused_name'] = accusedId
+                    initialFormConfig[gettingFieldName] = accusedId
                 }
                 
                 setSelectedTemplateId(viewTemplateResponse?.["data"]?.template_id);

@@ -25,8 +25,8 @@ const io = new Server(server, {
 app.set('io', io);
 
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: '20mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '20mb' }));
 app.use(cookieParser());
 
 // Serve static files from the 'public' directory
