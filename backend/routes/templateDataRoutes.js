@@ -208,6 +208,27 @@ router.post(
     templateDataController.insertTemplateData
 );
 
+router.post(
+    '/insertTwoTemplateData',
+    // eitherAuthMiddleware,
+    (req, res, next) => {
+        if (req.is('multipart/form-data')) {
+            upload.any()(req, res, (err) => {
+                if (err) {
+                    console.error('Error during file upload:', err);
+                    return res.status(400).json(
+                        userSendResponse(false, req, 'File upload failed', err)
+                    );
+                }
+                next();
+            });
+        } else {
+            next();
+        }
+    },
+    [insertDataValidation],[validate_token],
+    templateDataController.insertTwoTemplateData
+);
 
 
 router.post('/updateTemplateData',

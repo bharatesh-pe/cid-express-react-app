@@ -1684,6 +1684,13 @@ div::first-letter {
         transition: all 0.6s ease !important;
     }
 
+    .newStyleButton.Mui-disabled {
+        background-color: #cccccc !important; 
+        color: #888888 !important;  
+        cursor: not-allowed !important;
+        box-shadow: none !important;
+    }
+
     .newStyleButton:hover {
         box-shadow: 0 10px 15px -3px #488aec4f, 0 4px 6px -2px #488aec17 !important;
     }

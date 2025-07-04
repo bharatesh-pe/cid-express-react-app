@@ -37,8 +37,9 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import ImportExportIcon from '@mui/icons-material/ImportExport';
 import dayjs from "dayjs";
+import React from "react";
 
-const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
+const Mahazars = ({ templateName, headerDetails, rowId, options, selectedRowData, backNavigation }) => {
     const location = useLocation();
     const navigate = useNavigate();
     const { pageCount, systemStatus } = location.state || {};
@@ -97,7 +98,16 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
     const [optionFormTemplateData, setOptionFormTemplateData] = useState([]);
     const [starFlag, setStarFlag] = useState(null);
     const [readFlag, setReadFlag] = useState(null);
-    const [loading, setLoading] = useState(false); // State for loading indicator
+
+    const [skipPropertyForm, setSkipPropertyForm] = useState(false);
+    const [propertyFormOpen, setPropertyFormOpen] = useState(false);
+    const [pendingMahazarData, setPendingMahazarData] = useState(null);
+    const [propertyFormConfig, setPropertyFormConfig] = useState([]);
+    const [propertyFormTemplateId, setPropertyFormTemplateId] = useState(null);
+    const [propertyFormInitialData, setPropertyFormInitialData] = useState({});
+    const [propertyFormStepperData, setPropertyFormStepperData] = useState([]);
+
+    const [loading, setLoading] = useState(false);
     const [viewTemplateTableColumns, setviewTemplateTableData] = useState([
         { field: "sl_no", headerName: "S.No" },
     ]);
@@ -312,20 +322,12 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
                     if (records && records.length > 0) {
 
-                        // Get supervisor-specific records
                         const supervisorRecords = records.filter(
                             record => record.supervisior_designation_id == userDesigId
                         );
 
 
                         let allAPWithOutSupervisorSubmit = false;
-
-
-                        // Check if all supervisor records are NOT submitted
-                        // allAPWithOutSupervisorSubmit = supervisorRecords.length > 0 && supervisorRecords.every(
-                        //     r => r.field_submit_status === "" || r.field_submit_status === null
-                        // );
-
 
 
                         for (let i = 0; i < supervisorRecords.length; i++) {
@@ -342,20 +344,17 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                             }
                         }
 
-                        // Get non-supervisor records with sys_status "ui_case"
                         const ioRecords = records.filter(
                             record =>
                                 record.sys_status === "ui_case" &&
                                 record.supervisior_designation_id != userDesigId
                         );
 
-                        // Check if all IO records are NOT submitted
                         const allAPWithOutIOSubmit = ioRecords.length > 0 &&
                             ioRecords.every(
                                 record => record.field_submit_status === "" || record.field_submit_status === null
                             );
 
-                        // Set flags accordingly
                         if (allAPWithOutSupervisorSubmit || allAPWithOutIOSubmit) {
                             anySubmitAP = false;
                         }
@@ -364,7 +363,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                             isSuperivisor = true;
                         }
 
-                        // APisSubmited logic with clear grouping
                         APisSubmited = records.every(record =>
                             record.sys_status === "ui_case" ||
                             (
@@ -379,9 +377,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                     }
 
 
-                    console.log('anySubmitAP', anySubmitAP);
-
-                    console.log('isSuperivisor', isSuperivisor)
                     setShowSubmitAPButton(anySubmitAP);
                     setIsImmediateSupervisior(isSuperivisor);
                     setAPIsSubmited(APisSubmited);
@@ -392,7 +387,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                     }
 
                     setShowSubmitPFButton(anySubmitPF);
-
                     if (getTemplateResponse.data[0]) {
                         var excludedKeys = [
                             "updated_at",
@@ -405,9 +399,10 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                             "sys_status",
                             "field_status",
                             "field_submit_status",
-                            "supervisior_designation_id"
+                            "supervisior_designation_id",
+                            "field_approval_done_by",
+                            "field_property_form_id",
                         ];
-
 
                         const userPermissions = JSON.parse(localStorage.getItem("user_permissions")) || [];
                         const canDelete = userPermissions[0]?.action_delete;
@@ -440,23 +435,22 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     );
                                 }
                             },
-                            ...(Object.keys(getTemplateResponse.data[0] || {}).includes("field_pf_number") ? [{
-                                field: "field_pf_number",
-                                headerName: "PF Number",
+                            ...(Object.keys(getTemplateResponse.data[0] || {}).includes("field_mahajar_type") ? [{
+                                field: "field_mahajar_type",
+                                headerName: "Mahajar Type",
                                 width: 200,
                                 resizable: true,
                                 renderHeader: () => (
                                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>PF Number</span>
+                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>Mahajar Type</span>
                                     </div>
                                 ),
                                 renderCell: (params) => {
-                                    const isEditAllowed = canEdit && !isViewAction && !(options.table === "cid_ui_case_property_form" && params.row.sys_status === 'submit');
                                     return (
                                         <span
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleOthersTemplateDataView(params.row, false, options.table, !isEditAllowed);
+                                                handleOthersTemplateDataView(params.row, false, options.table);
                                             }}
                                             style={{
                                                 color: '#2563eb',
@@ -472,12 +466,51 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                 }
                             }] : []),
 
+                            ...(Object.keys(getTemplateResponse.data[0] || {}).includes("field_property_form_id") ? [{
+                                field: "property_form_button",
+                                headerName: "Property Form",
+                                width: 200,
+                                resizable: false,
+                                sortable: false,
+                                filterable: false,
+                                renderHeader: () => (
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                                        <span style={{ color: "#1D2939", fontSize: "15px", fontWeight: "500" }}>Property Form</span>
+                                    </div>
+                                ),
+                                renderCell: (params) => {
+                                    const propertyFormId = params.row.field_property_form_id;
+                                    return (
+                                        <Button
+                                            variant="contained"
+                                            size="small"
+                                            disabled={!propertyFormId}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (propertyFormId) {
+                                                    handleOthersTemplateDataView(
+                                                        { id: propertyFormId },
+                                                        false,
+                                                        "cid_ui_case_property_form"
+                                                    );
+                                                }
+                                            }}
+                                            className="newStyleButton"
+                                            >
+                                            Property Form
+                                        </Button>
+                                    );
+                                }
+                            }] : []),
+
                             ...Object.keys(getTemplateResponse.data[0] || {})
                                 .filter((key) =>
                                     !excludedKeys.includes(key) &&
                                     key !== "field_pf_number" &&
                                     key !== "created_at" &&
-                                    key !== "created_by"
+                                    key !== "created_by" &&
+                                    key !== "field_approval_done_by" &&
+                                    key !== "field_mahajar_type"
                                 )
                                 .map((key) => {
                                     const updatedKeyName = key
@@ -500,7 +533,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                         ),
                                         renderCell: (params) => tableCellRender(key, params, params.value),
                                     };
-                               }),
+                            }),
 
                             ...(Object.keys(getTemplateResponse.data[0] || {}).includes("created_by") ? [{
                                 field: "created_by",
@@ -528,8 +561,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                 renderCell: (params) => tableCellRender("created_at", params, params.row.created_at)
                             }] : [])
                         ].filter(Boolean);
-
-
 
                         setOtherTemplateColumn(updatedHeader);
                     } else {
@@ -626,6 +657,90 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 progress: undefined,
                 className: "toast-warning",
             });
+            return;
+        }
+
+        if (table_name === "cid_ui_case_property_form") {
+            setLoading(true);
+            try {
+                const viewTemplateData = await api.post(
+                    "/templateData/viewTemplateData",
+                    { table_name, id: rowData.id }
+                );
+                setLoading(false);
+
+                if (viewTemplateData && viewTemplateData.success) {
+                    setLoading(true);
+                    try {
+                        const viewTemplateResponse = await api.post(
+                            "/templates/viewTemplate",
+                            { table_name }
+                        );
+                        setLoading(false);
+
+                        if (viewTemplateResponse && viewTemplateResponse.success) {
+                            setPropertyFormConfig(viewTemplateResponse.data.fields || []);
+                            setPropertyFormTemplateId(viewTemplateResponse.data.template_id);
+                            setPropertyFormStepperData(
+                                viewTemplateResponse.data.no_of_sections > 0
+                                    ? viewTemplateResponse.data.sections
+                                    : []
+                            );
+                            setPropertyFormInitialData(viewTemplateData.data ? viewTemplateData.data : {});
+                            setPropertyFormOpen({
+                                open: true,
+                                readOnly: !editData,
+                                editData: editData
+                            });
+                                            setOtherReadOnlyTemplateData(!editData);
+                setOtherEditTemplateData(editData);
+
+                        } else {
+                            toast.error(
+                                viewTemplateResponse.message ||
+                                    "Failed to load property form template.",
+                                {
+                                    position: "top-right",
+                                    autoClose: 3000,
+                                    className: "toast-error",
+                                }
+                            );
+                        }
+                    } catch (error) {
+                        setLoading(false);
+                        toast.error(
+                            error?.response?.data?.message ||
+                                "Failed to load property form template.",
+                            {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            }
+                        );
+                    }
+                } else {
+                    toast.error(
+                        viewTemplateData.message ||
+                            "Failed to load property form data.",
+                        {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-error",
+                        }
+                    );
+                }
+            } catch (error) {
+                setLoading(false);
+                toast.error(
+                    error?.response?.data?.message ||
+                        "Failed to load property form data.",
+                    {
+                        position: "top-right",
+                        autoClose: 3000,
+                        className: "toast-error",
+                    }
+                );
+            }
             return;
         }
 
@@ -1013,189 +1128,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
             setLoading(false);
             if (error && error.response && error.response["data"]) {
                 toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        }
-    };
-
-    const loadTableData = async (page) => {
-        const getTemplatePayload = {
-            page,
-            limit: 10,
-            sort_by: tableSortKey,
-            order: tableSortOption,
-            search: searchValue || "",
-            table_name,
-            is_starred: starFlag,
-            is_read: readFlag,
-            template_module: "ui_case",
-            sys_status: sysStatus,
-            from_date: fromDateValue,
-            to_date: toDateValue,
-            filter: filterValues,
-        };
-
-        setLoading(true);
-
-        try {
-            const getTemplateResponse = await api.post("/templateData/paginateTemplateDataForOtherThanMaster", getTemplatePayload);
-            setLoading(false);
-
-            if (getTemplateResponse?.success) {
-                const { data, meta } = getTemplateResponse.data;
-
-                const totalPages = meta?.totalPages;
-                const totalItems = meta?.totalItems;
-
-                if (totalPages !== null && totalPages !== undefined) {
-                    setTotalPage(totalPages);
-                }
-
-                if (totalItems !== null && totalItems !== undefined) {
-                    setTotalRecord(totalItems);
-                }
-
-                if (meta?.table_name && meta?.template_name) {
-                    setTable_name(meta.table_name);
-                }
-
-                if (data?.length > 0) {
-                    const excludedKeys = [
-                        "created_at", "updated_at", "id", "deleted_at", "attachments",
-                        "Starred", "ReadStatus", "linked_profile_info",
-                        "ui_case_id", "pt_case_id", "sys_status", "task_unread_count", "field_cid_crime_no./enquiry_no", "field_io_name", "field_io_name_id"
-                    ];
-
-                    const generateReadableHeader = (key) =>
-                        key
-                            .replace(/^field_/, "")
-                            .replace(/_/g, " ")
-                            .toLowerCase()
-                            .replace(/^\w|\s\w/g, (c) => c.toUpperCase());
-
-
-                    const renderCellFunc = (key, count) => (params) => tableCellRender(key, params, params.value, count, meta.table_name);
-
-                    // {
-                    //     field: "task",
-                    //     headerName: "",
-                    //     width: 50,
-                    //     resizable: true,
-                    //     renderHeader: (params) => (
-                    //         <Tooltip title="Add Task" sx={{ color: "", fill: "#1f1dac" }}><AssignmentIcon /></Tooltip>
-                    //     ),
-                    //     renderCell: (params) => {
-                    //       const isDisabled = !params?.row?.["field_io_name"];
-                    //       return (
-                    //         <Badge
-                    //             badgeContent={params?.row?.['task_unread_count']}
-                    //             color="primary"
-                    //             sx={{ '& .MuiBadge-badge': { minWidth: 17, maxWidth: 20, height: 17, borderRadius: '50%', fontSize: '10px',backgroundColor:'#f23067 !important' } }}
-                    //         >
-                    //             <Tooltip title="Add Task"><AddTaskIcon onClick={isDisabled ? undefined : () => handleTaskShow(params?.row)} sx={{margin: 'auto', cursor: 'pointer',color:'rgb(242 186 5); !important'}} /></Tooltip>
-                    //         </Badge>
-                    //     )},
-                    //   },
-
-                    const updatedHeader = [
-
-                        {
-                            field: "field_cid_crime_no./enquiry_no",
-                            headerName: "Cid Crime No./Enquiry No",
-                            width: 130,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_cid_crime_no./enquiry_no")
-                            ),
-                            renderCell: renderCellFunc("field_cid_crime_no./enquiry_no", 0),
-                        },
-                        {
-                            field: "field_io_name",
-                            headerName: "Assign To IO",
-                            width: 200,
-                            resizable: true,
-                            cellClassName: 'justify-content-start',
-                            renderHeader: (params) => (
-                                tableHeaderRender(params, "field_io_name")
-                            ),
-                            renderCell: renderCellFunc("field_io_name",),
-                        },
-                        ...Object.keys(data[0])
-                            .filter((key) => !excludedKeys.includes(key))
-                            .map((key) => ({
-                                field: key,
-                                headerName: generateReadableHeader(key),
-                                width: generateReadableHeader(key).length < 15 ? 100 : 200,
-                                resizable: true,
-                                renderHeader: (params) => (
-                                    tableHeaderRender(params, key)
-                                ),
-                                renderCell: renderCellFunc(key),
-                            })),
-                    ];
-
-                    setviewTemplateTableData(updatedHeader);
-
-                    const formatDate = (value) => {
-                        const parsed = Date.parse(value);
-                        if (isNaN(parsed)) return value;
-                        return new Date(parsed).toLocaleDateString("en-GB");
-                    };
-
-                    const updatedTableData = data.map((field, index) => {
-                        const updatedField = {};
-
-                        Object.keys(field).forEach((key) => {
-                            if (field[key] && key !== 'id' && isValidISODate(field[key])) {
-                                updatedField[key] = formatDate(field[key]);
-                            } else {
-                                updatedField[key] = field[key];
-                            }
-                        });
-
-                        return {
-                            ...updatedField,
-                            sl_no: (page - 1) * 10 + (index + 1),
-                            ...(field.id ? {} : { id: "unique_id_" + index }),
-                        };
-                    });
-
-                    setTableData(updatedTableData);
-                } else {
-                    setTableData([]);
-                }
-
-                setviewReadonly(false);
-                setEditTemplateData(false);
-                setInitialData({});
-                setFormOpen(false);
-                setSelectedRow(null);
-
-            } else {
-                setLoading(false);
-                toast.error(getTemplateResponse.message || "Failed to load template data.", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            }
-        } catch (error) {
-            setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again!", {
                 position: "top-right",
                 autoClose: 3000,
                 hideProgressBar: false,
@@ -1204,7 +1136,8 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 draggable: true,
                 progress: undefined,
                 className: "toast-error",
-            });
+                });
+            }
         }
     };
 
@@ -1248,15 +1181,8 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                     };
                 });
 
-                // const today = dayjs().format("YYYY-MM-DD");
 
                 getAllOptionsforFilter(getOnlyDropdown, true);
-                // if(fromDateValue == null || toDateValue === null){
-                //     setFromDateValue(today);
-                //     setToDateValue(today);
-                // }
-
-                // setShowFilterModal(true);
                 setOthersFilterModal(true);
 
             } else {
@@ -1509,93 +1435,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         return res?.data || [];
     };
 
-    const handleSubmitPF = async () => {
-        // Find all rows with sys_status === 'PF'
-        const pfRows = otherTemplateData.filter(row => row.sys_status === 'PF');
-        if (!selectedRowData?.id || pfRows.length === 0) {
-            toast.error("No Property Form records with status 'PF' to submit.", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-        const result = await Swal.fire({
-            title: 'Are you sure?',
-            text: "Do you want to submit these Property Form(s)? Once submitted, the selected record(s) will be moved to the FSL.",
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, submit it!',
-            cancelButtonText: 'Cancel',
-        });
-
-        if (result.isConfirmed) {
-            const payload = {
-                transaction_id: `submitap_${Math.floor(Math.random() * 1000000)}`,
-                ui_case_id: selectedRowData.id,
-                row_ids: pfRows.map(row => row.id)
-            };
-
-            try {
-                setLoading(true);
-                const response = await api.post('/templateData/submitPropertyFormFSL', payload);
-
-                if (response.success) {
-                    toast.success("The Property Form(s) have been submitted", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-success",
-                        onOpen: () => {
-                            if (!selectedOtherTemplate?.field) {
-                                handleOtherTemplateActions(selectedOtherTemplate, selectedRow)
-                            } else {
-                                loadTableData(paginationCount);
-                            }
-                        },
-                    });
-                    // No need to clear selectedIds
-                } else {
-                    toast.error(response.message || 'Something went wrong.', {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                }
-            } catch (error) {
-                toast.error(error.message || 'Submission failed.', {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
-                });
-            } finally {
-                setLoading(false);
-            }
-        }
-    };
-
-
-    const otherAPPRTemplateSaveFunc = async (data, saveNewAction) => {
-
+    const mahazarTemplateSaveFunc = async (data, saveNewAction) => {
         if ((!selectedOtherTemplate.table || selectedOtherTemplate.table === "")) {
             toast.warning("Please Check The Template", {
                 position: "top-right",
@@ -1614,80 +1454,146 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
             return;
         }
 
-        const formData = new FormData();
-        const normalData = {};
-
-        optionFormTemplateData.forEach((field) => {
-            const val = data[field.name];
-            if (val !== undefined && val !== null && val !== "") {
-                if (field.type === "file" || field.type === "profilepicture") {
-                    if (field.type === "file") {
-                        if (Array.isArray(val)) {
-                            const validFiles = val.filter(f => f.filename instanceof File);
-                            validFiles.forEach(file => formData.append(field.name, file.filename));
-                            const filteredMeta = validFiles.map(f => ({
-                                ...f,
-                                filename: f.filename.name,
-                            }));
-                            formData.append("folder_attachment_ids", JSON.stringify(filteredMeta));
-                        }
-                    } else {
-                        formData.append(field.name, val);
-                    }
-                } else {
-                    normalData[field.name] = Array.isArray(val) ? val.join(",") : val
-                }
-            }
-        });
-
-
-        normalData.sys_status = "PF"
-        normalData.field_submit_status = "";
-        normalData["ui_case_id"] = selectedRowData.id;
-        formData.append("table_name", selectedOtherTemplate.table);
-        formData.append("data", JSON.stringify(normalData));
-        formData.append("transaction_id", randomApprovalId);
-        formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
+        console.log("Opening property form dialog, Mahazar data:", data, saveNewAction);
+        setPendingMahazarData({ data, saveNewAction });
 
         setLoading(true);
-
         try {
-            const response = await api.post("/templateData/saveActionPlan", formData);
+            const res = await api.post("/templates/viewTemplate", { table_name: "cid_ui_case_property_form" });
             setLoading(false);
-
-            if (response?.success) {
-                toast.success(response.message || "Case Updated Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    className: "toast-success",
-                });
-
-                setOtherFormOpen(false);
-
-                if (selectedOtherTemplate?.field) {
-                    const combinedData = {
-                        id: selectedRowData.id,
-                        [selectKey.name]: selectedOtherFields.code,
-                    };
-                    onUpdateTemplateData(combinedData);
-                }
-                if (saveNewAction) {
-                    await handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
-                    showOptionTemplate(selectedOtherTemplate.table);
-                } else {
-                    handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
-                }
-
+            if (res?.success && res.data) {
+                setPropertyFormConfig(res.data.fields || []);
+                setPropertyFormTemplateId(res.data.template_id);
+                setPropertyFormStepperData(res.data.no_of_sections > 0 ? res.data.sections : []);
+                setPropertyFormInitialData({});
+                setPropertyFormOpen(true);
             } else {
-                toast.error(response.message || "Failed to change the status. Please try again.", {
+                toast.error("Failed to load property form template.", {
                     position: "top-right",
                     autoClose: 3000,
                     className: "toast-error",
                 });
             }
-        } catch (error) {
+        } catch (err) {
             setLoading(false);
-            toast.error(error?.response?.data?.message || "Please Try Again!", {
+            toast.error("Failed to load property form template.", {
+                position: "top-right",
+                autoClose: 3000,
+                className: "toast-error",
+            });
+        }
+        return;
+    };
+
+    const handlePropertyFormSubmit = async (propertyFormData) => {
+        if (!pendingMahazarData) return;
+        setPropertyFormOpen(false);
+
+        const { data: mahazarData, saveNewAction } = pendingMahazarData;
+        const mahazarNormalData = {};
+        let mahazarFolderAttachments = [];
+        optionFormTemplateData.forEach((field) => {
+            const val = mahazarData[field.name];
+            if (val !== undefined && val !== null && val !== "") {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(val)) {
+                            const validFiles = val.filter(f => f.filename instanceof File);
+                            const filteredMeta = validFiles.map(f => ({
+                                ...f,
+                                filename: f.filename.name,
+                            }));
+                            mahazarFolderAttachments = filteredMeta;
+                        }
+                    }
+                } else {
+                    mahazarNormalData[field.name] = Array.isArray(val) ? val.join(",") : val;
+                }
+            }
+        });
+        mahazarNormalData.sys_status = "ui_case";
+        mahazarNormalData.field_submit_status = "";
+        mahazarNormalData["ui_case_id"] = selectedRowData.id;
+
+        const propertyNormalData = {};
+        let propertyFolderAttachments = [];
+        propertyFormConfig.forEach((field) => {
+            const val = propertyFormData[field.name];
+            if (val !== undefined && val !== null && val !== "") {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(val)) {
+                            const validFiles = val.filter(f => f.filename instanceof File);
+                            const filteredMeta = validFiles.map(f => ({
+                                ...f,
+                                filename: f.filename.name,
+                            }));
+                            propertyFolderAttachments = filteredMeta;
+                        }
+                    }
+                } else {
+                    propertyNormalData[field.name] = Array.isArray(val) ? val.join(",") : val;
+                }
+            }
+        });
+        propertyNormalData.sys_status = "PF";
+        propertyNormalData.field_submit_status = "";
+        propertyNormalData["ui_case_id"] = selectedRowData.id;
+
+        const formData = new FormData();
+        formData.append("table_name", selectedOtherTemplate.table);
+        formData.append("data", JSON.stringify(mahazarNormalData));
+        formData.append("transaction_id", randomApprovalId);
+        formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
+        if (mahazarFolderAttachments.length > 0) {
+            formData.append("folder_attachment_ids", JSON.stringify(mahazarFolderAttachments));
+            optionFormTemplateData.forEach((field) => {
+                const val = mahazarData[field.name];
+                if (field.type === "file" && Array.isArray(val)) {
+                    val.filter(f => f.filename instanceof File).forEach(file => {
+                        formData.append(field.name, file.filename);
+                    });
+                }
+            });
+        }
+        formData.append("second_table_name", "cid_ui_case_property_form");
+        formData.append("second_data", JSON.stringify(propertyNormalData));
+        if (propertyFolderAttachments.length > 0) {
+            formData.append("second_folder_attachment_ids", JSON.stringify(propertyFolderAttachments));
+            propertyFormConfig.forEach((field) => {
+                const val = propertyFormData[field.name];
+                if (field.type === "file" && Array.isArray(val)) {
+                    val.filter(f => f.filename instanceof File).forEach(file => {
+                        formData.append(field.name, file.filename);
+                    });
+                }
+            });
+        }
+
+        setLoading(true);
+        try {
+            const res = await api.post("/templateData/insertTwoTemplateData", formData);
+            setLoading(false);
+
+            if (res?.success) {
+                toast.success("Mahazar and Property Form saved successfully.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-success",
+                });
+                setOtherFormOpen(false);
+                setPendingMahazarData(null);
+                handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+            } else {
+                toast.error(res?.message || "Failed to save Mahazar/Property Form.", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    className: "toast-error",
+                });
+            }
+        } catch (err) {
+            setLoading(false);
+            toast.error(err?.message || "Failed to save Mahazar/Property Form.", {
                 position: "top-right",
                 autoClose: 3000,
                 className: "toast-error",
@@ -1695,30 +1601,151 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         }
     };
 
-    const otherTemplateUpdateFunc = async (data) => {
-        if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
-            toast.warning("Please Check The Template", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
 
-        if (Object.keys(data).length === 0) {
+        const otherTemplateUpdateFunc = async (data) => {
+            if (!selectedOtherTemplate.table || selectedOtherTemplate.table === "") {
+                toast.warning("Please Check The Template", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return;
+            }
+    
+            if (Object.keys(data).length === 0) {
+                toast.warning("Data Is Empty Please Check Once", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-warning",
+                });
+                return;
+            }
+    
+            const formData = new FormData();
+            let normalData = {};
+            let filteredFileArray = [];
+    
+            optionFormTemplateData.forEach((field) => {
+                if (data[field.name]) {
+                    if (field.type === "file" || field.type === "profilepicture") {
+                        if (field.type === "file" && Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(
+                                (file) => file.filename instanceof File
+                            );
+                            filteredFileArray = data[field.name].filter(
+                                (file) => file.filename instanceof File
+                            );
+    
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+    
+                                const folderInfo = filteredFileArray.map((file) => ({
+                                    ...file,
+                                    filename: file.filename.name,
+                                }));
+    
+                                formData.append(
+                                    "folder_attachment_ids",
+                                    JSON.stringify(folderInfo)
+                                );
+                            }
+                        } else {
+                            formData.append(field.name, data[field.name]);
+                        }
+                    } else {
+                        normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                    }
+                }
+            });
+    
+            if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
+                normalData["field_pr_status"] = "No";
+            }
+    
+            formData.append("table_name", selectedOtherTemplate.table);
+            formData.append("id", data.id);
+            formData.append("data", JSON.stringify(normalData));
+            formData.append("transaction_id", randomApprovalId);
+            formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
+    
+            let othersData = {};
+    
+            setLoading(true);
+    
+            try {
+                const updateRes = await api.post(
+                    "/templateData/updateDataWithApprovalToTemplates",
+                    formData
+                );
+                setLoading(false);
+    
+                if (updateRes && updateRes.success) {
+                    toast.success(updateRes.message || "Data Updated Successfully", {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-success",
+                        onOpen: () =>
+                            handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
+                    });
+    
+                    setOtherEditTemplateData(false);
+                    setOtherReadOnlyTemplateData(false);
+                } else {
+                    const errorMessage =
+                        updateRes.message || "Failed to update. Please try again.";
+                    toast.error(errorMessage, {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    });
+                }
+            } catch (error) {
+                setLoading(false);
+                toast.error(
+                    error?.response?.data?.message || "Update failed. Please try again.",
+                    {
+                        position: "top-right",
+                        autoClose: 3000,
+                        hideProgressBar: false,
+                        closeOnClick: true,
+                        pauseOnHover: true,
+                        draggable: true,
+                        progress: undefined,
+                        className: "toast-error",
+                    }
+                );
+            }
+        };
+    
+    const propertyTemplateUpdateFunc = async (data) => {
+        if (!data || Object.keys(data).length === 0) {
             toast.warning("Data Is Empty Please Check Once", {
                 position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
+                autoClose: true,
                 className: "toast-warning",
             });
             return;
@@ -1728,19 +1755,20 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
         let normalData = {};
         let filteredFileArray = [];
 
-        optionFormTemplateData.forEach((field) => {
-            if (data[field.name]) {
+        propertyFormConfig.forEach((field) => {
+            const val = data[field.name];
+            if (val !== undefined && val !== null && val !== "") {
                 if (field.type === "file" || field.type === "profilepicture") {
-                    if (field.type === "file" && Array.isArray(data[field.name])) {
-                        const hasFileInstance = data[field.name].some(
+                    if (field.type === "file" && Array.isArray(val)) {
+                        const hasFileInstance = val.some(
                             (file) => file.filename instanceof File
                         );
-                        filteredFileArray = data[field.name].filter(
+                        filteredFileArray = val.filter(
                             (file) => file.filename instanceof File
                         );
 
                         if (hasFileInstance) {
-                            data[field.name].forEach((file) => {
+                            val.forEach((file) => {
                                 if (file.filename instanceof File) {
                                     formData.append(field.name, file.filename);
                                 }
@@ -1756,26 +1784,18 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                 JSON.stringify(folderInfo)
                             );
                         }
-                    } else {
-                        formData.append(field.name, data[field.name]);
                     }
                 } else {
-                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                    normalData[field.name] = Array.isArray(val) ? val.join(",") : val;
                 }
             }
         });
 
-        if (selectedOtherTemplate.table === "cid_ui_case_progress_report") {
-            normalData["field_pr_status"] = "No";
-        }
-
-        formData.append("table_name", selectedOtherTemplate.table);
+        formData.append("table_name", "cid_ui_case_property_form");
         formData.append("id", data.id);
         formData.append("data", JSON.stringify(normalData));
         formData.append("transaction_id", randomApprovalId);
         formData.append("user_designation_id", localStorage.getItem("designation_id") || null);
-
-        let othersData = {};
 
         setLoading(true);
 
@@ -1790,11 +1810,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 toast.success(updateRes.message || "Data Updated Successfully", {
                     position: "top-right",
                     autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
                     className: "toast-success",
                     onOpen: () =>
                         handleOtherTemplateActions(selectedOtherTemplate, selectedRow),
@@ -1802,17 +1817,13 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
 
                 setOtherEditTemplateData(false);
                 setOtherReadOnlyTemplateData(false);
+                setPropertyFormOpen(false);
             } else {
                 const errorMessage =
                     updateRes.message || "Failed to update. Please try again.";
                 toast.error(errorMessage, {
                     position: "top-right",
                     autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
                     className: "toast-error",
                 });
             }
@@ -1823,161 +1834,118 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 {
                     position: "top-right",
                     autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
                     className: "toast-error",
                 }
             );
         }
     };
 
-    const onUpdateTemplateData = async (data) => {
 
-        if (!table_name || table_name === "") {
-            toast.warning("Please Check The Template", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-
-        if (Object.keys(data).length === 0) {
-            toast.warning("Data Is Empty Please Check Once", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-warning",
-            });
-            return;
-        }
-
-        const formData = new FormData();
-
-        formData.append("table_name", table_name);
-        var normalData = {}; // Non-file upload fields
-
-        formTemplateData.forEach((field) => {
-            if (data[field.name]) {
-                if (field.type === "file" || field.type === "profilepicture") {
-                    // Append file fields to formData
-                    if (field.type === "file") {
-                        if (Array.isArray(data[field.name])) {
-                            const hasFileInstance = data[field.name].some(
-                                (file) => file.filename instanceof File
-                            );
-                            var filteredArray = data[field.name].filter(
-                                (file) => file.filename instanceof File
-                            );
-                            if (hasFileInstance) {
-                                data[field.name].forEach((file) => {
-                                    if (file.filename instanceof File) {
-                                        formData.append(field.name, file.filename);
-                                    }
-                                });
-
-                                filteredArray = filteredArray.map((obj) => {
-                                    return {
-                                        ...obj,
-                                        filename: obj.filename["name"],
-                                    };
-                                });
-                                formData.append(
-                                    "folder_attachment_ids",
-                                    JSON.stringify(filteredArray)
-                                );
-                            }
-                        }
-                    } else {
-                        formData.append(field.name, data[field.name]);
-                    }
-                } else {
-                    // Add non-file fields to normalData
-                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
-                }
+    function handleSkipPropertyForm() {
+        Swal.fire({
+            title: "Are you sure?",
+            text: "Are you sure you want to skip this and save only Mahazar?",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "Yes, Save Only Mahazar",
+            cancelButtonText: "No",
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setPropertyFormOpen(false);
+                setSkipPropertyForm(true); 
+                setPendingMahazarData(pendingMahazarData);
             }
         });
-        setLoading(true);
-        formData.append("id", data.id);
-        formData.append("data", JSON.stringify(normalData));
+    }
 
-        try {
-            const saveTemplateData = await api.post(
-                "/templateData/updateTemplateData",
-                formData
-            );
-            setLoading(false);
-
-            if (saveTemplateData && saveTemplateData.success) {
-                toast.success(saveTemplateData.message || "Data Updated Successfully", {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-success",
-                    onOpen: () => {
-                        loadTableData(paginationCount);
-                    },
+    useEffect(() => {
+        if (skipPropertyForm && pendingMahazarData) {
+            (async () => {
+                const { data: mahazarData, saveNewAction } = pendingMahazarData;
+                const mahazarNormalData = {};
+                let mahazarFolderAttachments = [];
+                optionFormTemplateData.forEach((field) => {
+                    const val = mahazarData[field.name];
+                    if (val !== undefined && val !== null && val !== "") {
+                        if (field.type === "file" || field.type === "profilepicture") {
+                            if (field.type === "file") {
+                                if (Array.isArray(val)) {
+                                    const validFiles = val.filter(f => f.filename instanceof File);
+                                    const filteredMeta = validFiles.map(f => ({
+                                        ...f,
+                                        filename: f.filename.name,
+                                    }));
+                                    mahazarFolderAttachments = filteredMeta;
+                                }
+                            }
+                        } else {
+                            mahazarNormalData[field.name] = Array.isArray(val) ? val.join(",") : val;
+                        }
+                    }
                 });
+                mahazarNormalData.sys_status = "ui_case";
+                mahazarNormalData.field_submit_status = "";
+                mahazarNormalData["ui_case_id"] = selectedRowData.id;
 
-                setSelectKey(null);
-                setSelectedRow([]);
-                setSelectedOtherFields(null);
-                setselectedOtherTemplate(null);
-                setSelectedRowIds([]);
-
-            } else {
-                const errorMessage = saveTemplateData.message
-                    ? saveTemplateData.message
-                    : "Failed to create the profile. Please try again.";
-                toast.error(errorMessage, {
-                    position: "top-right",
-                    autoClose: 3000,
-                    hideProgressBar: false,
-                    closeOnClick: true,
-                    pauseOnHover: true,
-                    draggable: true,
-                    progress: undefined,
-                    className: "toast-error",
+                const propertyNormalData = {};
+                let propertyFolderAttachments = [];
+                propertyFormConfig.forEach((field) => {
                 });
-            }
-        } catch (error) {
-            setLoading(false);
-            if (error && error.response && error.response["data"]) {
-                toast.error(
-                    error.response["data"].message
-                        ? error.response["data"].message
-                        : "Please Try Again !",
-                    {
+                propertyNormalData.sys_status = "ui_case";
+                propertyNormalData.field_submit_status = "";
+                propertyNormalData["ui_case_id"] = selectedRowData.id;
+
+                const formData = new FormData();
+                formData.append("table_name", selectedOtherTemplate.table);
+                formData.append("data", JSON.stringify(mahazarNormalData));
+                formData.append("transaction_id", randomApprovalId);
+                formData.append("user_designation_id", localStorage.getItem('designation_id') || null);
+                if (mahazarFolderAttachments.length > 0) {
+                    formData.append("folder_attachment_ids", JSON.stringify(mahazarFolderAttachments));
+                    optionFormTemplateData.forEach((field) => {
+                        const val = mahazarData[field.name];
+                        if (field.type === "file" && Array.isArray(val)) {
+                            val.filter(f => f.filename instanceof File).forEach(file => {
+                                formData.append(field.name, file.filename);
+                            });
+                        }
+                    });
+                }
+
+                setLoading(true);
+                try {
+                    const mahazarRes = await api.post("/templateData/insertTemplateData", formData);
+                    setLoading(false);
+                    if (mahazarRes?.success) {
+                        toast.success("Mahazar saved successfully.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-success",
+                        });
+                        setOtherFormOpen(false);
+                        setPendingMahazarData(null);
+                        setSkipPropertyForm(false);
+                        handleOtherTemplateActions(selectedOtherTemplate, selectedRowData);
+                    } else {
+                        toast.error(mahazarRes?.message || "Failed to save Mahazar.", {
+                            position: "top-right",
+                            autoClose: 3000,
+                            className: "toast-error",
+                        });
+                        setSkipPropertyForm(false);
+                    }
+                } catch (err) {
+                    setLoading(false);
+                    toast.error(err?.message || "Failed to save Mahazar.", {
                         position: "top-right",
                         autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
                         className: "toast-error",
-                    }
-                );
-            }
+                    });
+                    setSkipPropertyForm(false);
+                }
+            })();
         }
-    };
-
+    }, [skipPropertyForm, pendingMahazarData]);
 
     return (
         <>
@@ -1991,7 +1959,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                             zIndex: 1,
                         }}
                     >
-                        {/* Header Section */}
                         <Box
                             sx={{
                                 display: "flex",
@@ -2023,11 +1990,6 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     {otherTemplatesTotalRecord} Records
                                 </Box>
 
-                                {/* {APIsSubmited && (
-                                    <Box className="notifyAtTopCaseStyle">
-                                        Submission request in progress. Awaiting SP approval.
-                                    </Box>
-                                )} */}
                             </Box>
 
                             {/* Actions Section */}
@@ -2105,7 +2067,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                         marginLeft: 'auto',
                                     }}
                                     >
-                                    {/* {!viewModeOnly && (
+                                    {!viewModeOnly && (
                                         <Button
                                             variant="outlined"
                                             sx={{ height: '40px' }}
@@ -2113,49 +2075,12 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                         >
                                             Add
                                         </Button>
-                                    )} */}
-                                    {/* <Button
-                                        onClick={handleOpenExportPopup}
-                                        sx={{
-
-                                            height: 40,
-                                            px: 2.8,
-                                            fontWeight: 600,
-                                            fontSize: 14,
-                                            textTransform: 'none',
-                                            borderRadius: '8px',
-                                            backgroundColor: '#1976d2',
-                                            color: '#fff',
-                                            '&:hover': {
-                                                backgroundColor: '#115293',
-                                            },
-                                            boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1.2,
-                                        }}
-                                    >
-                                        <ImportExportIcon sx={{ fontSize: 18 }} />
-                                        Export / Import
-                                    </Button> */}
-                                    <Button
-                                        variant="contained"
-                                        color="success"
-                                        onClick={handleSubmitPF}
-                                        disabled={showSubmitPFButton}
-                                        sx={{
-                                            marginLeft: 'auto',
-                                            mr: 3,
-                                            }}
-                                    >
-                                        Submit
-                                    </Button>
+                                    )}
                                 </Box>
                                 </Box>     
                             </Box>
-                        </Box>
+                                               </Box>
 
-                        {/* Data Table */}
                         <TableView
                             rows={otherTemplateData}
                             columns={otherTemplateColumn}
@@ -2191,7 +2116,7 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                                     initialData={otherInitialTemplateData}
                                     formConfig={optionFormTemplateData}
                                     stepperData={optionStepperData}
-                                    onSubmit={otherAPPRTemplateSaveFunc}
+                                    onSubmit={mahazarTemplateSaveFunc}
                                     onUpdate={otherTemplateUpdateFunc}
                                     disableEditButton={disableEditButtonFlag}
                                     onError={onSaveTemplateError}
@@ -2209,237 +2134,53 @@ const PropertyForm = ({ templateName, headerDetails, rowId, options, selectedRow
                 </Dialog>
             )}
 
-            {showExportPopup && (
+            {/* Property Form Dialog */}
+            {propertyFormOpen && (
                 <Dialog
-                    open={showExportPopup}
-                    onClose={() => setShowExportPopup(false)}
-                    maxWidth="md"
+                    open={propertyFormOpen}
+                    onClose={() => setPropertyFormOpen(false)}
+                    aria-labelledby="property-form-dialog-title"
+                    aria-describedby="property-form-dialog-description"
+                    maxWidth="xl"
                     fullWidth
-                    PaperProps={{
-                        sx: {
-                            p: 3,
-                            borderRadius: 3,
-                            bgcolor: "#f9fafb",
-                            boxShadow: "0 6px 20px rgba(0,0,0,0.12)",
-                            minHeight: 400,
-                            maxHeight: "80vh",
-                            display: "flex",
-                            flexDirection: "column",
-                        },
-                    }}
                 >
-                    {/* Tabs */}
-                    <Box
-                        sx={{
-                            display: "flex",
-                            gap: 1.5,
-                            justifyContent: "center",
-                            mb: 2,
-                        }}
-                    >
-                        {[0, 1].map((idx) => (
-                            <Button
-                                key={idx}
-                                variant={tabIndex === idx ? "contained" : "outlined"}
-                                color="primary"
-                                onClick={() => setTabIndex(idx)}
-                                sx={{
-                                    borderRadius: "20px",
-                                    textTransform: "none",
-                                    px: 3,
-                                    py: 1,
-                                    fontWeight: 600,
-                                    fontSize: 15,
-                                    minWidth: 110,
-                                }}
-                            >
-                                {idx === 0 ? "Export" : "Import"}
-                            </Button>
-                        ))}
-                    </Box>
+                    <DialogContent sx={{ minWidth: "400px", padding: '0' }}>
+                        <DialogContentText id="property-form-dialog-description">
+                            <FormControl fullWidth>
+                                <NormalViewForm
+                                table_row_id={null}
+                                template_id={propertyFormTemplateId}
+                                template_name="Property Form"
+                                table_name="cid_ui_case_property_form"
+                                readOnly={otherReadOnlyTemplateData}
+                                editData={otherEditTemplateData}
+                                initialData={propertyFormInitialData}
+                                formConfig={propertyFormConfig}
+                                stepperData={propertyFormStepperData}
+                                onSubmit={handlePropertyFormSubmit}
+                                onUpdate={propertyTemplateUpdateFunc}
+                                disableEditButton={false}
+                                onError={onSaveTemplateError}
+                                closeForm={() => setPropertyFormOpen(false)}
+                                headerDetails={selectedRowData?.["field_cid_crime_no./enquiry_no"]}
+                                onSkip={pendingMahazarData?.data?.field_mahajar_type === "Spot Mahazar" ? handleSkipPropertyForm : undefined}
+                                skip = {handleSkipPropertyForm}
+                                />
 
-                    {/* Main Content */}
-                    <Box
-                        sx={{
-                            bgcolor: "white",
-                            borderRadius: 2,
-                            boxShadow: "0 3px 10px rgba(0,0,0,0.05)",
-                            p: 3,
-                            flexGrow: 1,
-                            display: "flex",
-                            flexDirection: "column",
-                            overflow: "hidden",
-                        }}
-                    >
-                        {/* Export Content */}
-                        {tabIndex === 0 && (
-                            <>
-                                <Typography variant="h6" sx={{ fontSize: 17, fontWeight: 600, mb: 2 }}>
-                                    Exported Data
-                                </Typography>
-
-                                {exportableData.length === 0 ? (
-                                    <Typography
-                                        sx={{
-                                            textAlign: "center",
-                                            mt: 6,
-                                            color: "#777",
-                                            fontSize: 15,
-                                            flexGrow: 1,
-                                        }}
-                                    >
-                                        No data available to export.
-                                    </Typography>
-                                ) : (
-                                    <Box sx={{ overflowX: "auto", flexGrow: 1 }}>
-                                        <Table size="small" stickyHeader>
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell sx={{ fontWeight: 700, minWidth: 40, py: 1 }}>S.no</TableCell>
-                                                    {Object.keys(exportableData[0])
-                                                        .filter(
-                                                            (col) =>
-                                                                ![
-                                                                    "id",
-                                                                    "created_at",
-                                                                    "updated_at",
-                                                                    "created_by",
-                                                                    "sys_status",
-                                                                    "ReadStatus",
-                                                                ].includes(col)
-                                                        )
-                                                        .map((col) => {
-                                                            let display = col.startsWith("field_") ? col.slice(6) : col;
-                                                            display = display
-                                                                .replace(/_/g, " ")
-                                                                .split(" ")
-                                                                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-                                                                .join(" ");
-                                                            return (
-                                                                <TableCell key={col} sx={{ fontWeight: 600, minWidth: 110, py: 1 }}>
-                                                                    {display}
-                                                                </TableCell>
-                                                            );
-                                                        })}
-                                                </TableRow>
-                                            </TableHead>
-                                            <TableBody>
-                                                {exportableData.map((row, idx) => (
-                                                    <TableRow key={idx} hover>
-                                                        <TableCell sx={{ py: 0.8 }}>{idx + 1}</TableCell>
-                                                        {Object.keys(row)
-                                                            .filter(
-                                                                (col) =>
-                                                                    ![
-                                                                        "id",
-                                                                        "created_at",
-                                                                        "updated_at",
-                                                                        "created_by",
-                                                                        "sys_status",
-                                                                        "ReadStatus",
-                                                                    ].includes(col)
-                                                            )
-                                                            .map((col) => {
-                                                                let val = row[col];
-                                                                const isDateField =
-                                                                    col.toLowerCase().includes("_date") || col.toLowerCase().endsWith("date");
-
-                                                                if (
-                                                                    isDateField &&
-                                                                    typeof val === "string" &&
-                                                                    !isNaN(Date.parse(val)) &&
-                                                                    dayjs(val).isValid()
-                                                                ) {
-                                                                    val = dayjs(val).format("DD-MM-YYYY");
-                                                                }
-                                                                return (
-                                                                    <TableCell key={col} sx={{ py: 0.8, fontSize: 13 }}>
-                                                                        {val}
-                                                                    </TableCell>
-                                                                );
-                                                            })}
-                                                    </TableRow>
-                                                ))}
-                                            </TableBody>
-                                        </Table>
-                                    </Box>
-                                )}
-                            </>
-                        )}
-
-                        {/* Import Content */}
-                        {tabIndex === 1 && (
-                            <Box
-                                sx={{
-                                    flexGrow: 1,
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    gap: 3,
-                                }}
-                            >
-                                <Typography variant="h6" sx={{ fontWeight: 600, fontSize: 18 }}>
-                                    Upload Excel to Import Data
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        border: "1px dashed #ccc",
-                                        borderRadius: 2,
-                                        padding: "20px 30px",
-                                        backgroundColor: "#f5f5f5",
-                                        width: "100%",
-                                        maxWidth: 400,
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    <input type="file" accept=".xlsx,.xls,.csv" style={{ width: "100%" }} />
-                                </Box>
-                            </Box>
-                        )}
-                    </Box>
-
-                    {/* Footer Buttons */}
-                    <Box
-                        sx={{
-                            mt: 3,
-                            display: "flex",
-                            justifyContent: "flex-end",
-                            alignItems: "center",
-                            gap: 1.5,
-                        }}
-                    >
-                        {tabIndex === 0 && (
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                disabled={exportableData.length === 0}
-                                onClick={() =>
-                                    exportToExcel(
-                                        exportableData,
-                                        (selectedOtherTemplate?.name || "Exported_Data").replace(/\s+/g, "_")
-                                    )
-                                }
-                            >
-                                Download Excel
-                            </Button>
-                        )}
-
-                        {tabIndex === 1 && (
-                            <Button variant="contained" color="primary">
-                                Import Data
-                            </Button>
-                        )}
-
-                        <Button variant="outlined" color="secondary" onClick={() => setShowExportPopup(false)}>
-                            Close
+                            </FormControl>
+                        </DialogContentText>
+                    </DialogContent>
+                    <DialogActions sx={{ padding: "12px 24px" }}>
+                        <Button onClick={() => setPropertyFormOpen(false)}>
+                            Cancel
                         </Button>
-                    </Box>
-
+                    </DialogActions>
                 </Dialog>
             )}
+ 
+ 
         </>
     );
 };
 
-export default PropertyForm;
+export default Mahazars;

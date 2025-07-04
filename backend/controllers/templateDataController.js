@@ -264,7 +264,399 @@ exports.insertTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
   } catch (error) {
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    return userSendResponse(res, 500, false, error?.message || "Server error.", error);
+  } finally {
+    if (fs.existsSync(dirPath))
+      fs.rmSync(dirPath, { recursive: true, force: true });
+  }
+};
+
+exports.insertTwoTemplateData = async (req, res, next) => {
+  let dirPath = "";
+  try {
+    const { table_name, data, folder_attachment_ids, transaction_id, second_table_name, second_data, second_folder_attachment_ids } = req.body;
+    const userId = req.user?.user_id || null;
+    const adminUserId = res.locals.admin_user_id || null;
+    const actorId = userId || adminUserId;
+
+    if (!actorId) {
+      return userSendResponse(res, 403, false, "Unauthorized access.", null);
+    }
+
+    dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
+    if (fs.existsSync(dirPath))
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate transaction detected.",
+      });
+    fs.mkdirSync(dirPath, { recursive: true });
+
+    // Fetch user data
+    const userData = await Users.findOne({
+      include: [
+        {
+          model: KGID,
+          as: "kgidDetails",
+          attributes: ["kgid", "name", "mobile"],
+        },
+      ],
+      where: { user_id: userId },
+    });
+
+    let userName = userData?.kgidDetails?.name || null;
+
+    // --- First Table Insert ---
+    const tableData = await Template.findOne({ where: { table_name } });
+    if (!tableData) {
+      return userSendResponse(
+        res,
+        400,
+        false,
+        `Table ${table_name} does not exist.`,
+        null
+      );
+    }
+
+    const schema = tableData?.fields
+      ? typeof tableData.fields === "string"
+        ? JSON.parse(tableData.fields)
+        : tableData.fields
+      : [];
+
+    // Parse incoming data
+    let parsedData;
+    try {
+      parsedData = JSON.parse(data);
+    } catch (err) {
+      return userSendResponse(
+        res,
+        400,
+        false,
+        "Invalid JSON format in data.",
+        null
+      );
+    }
+
+    const validData = {};
+    for (const field of schema) {
+      const { name, not_null, default_value } = field;
+      if (parsedData.hasOwnProperty(name)) {
+        validData[name] = parsedData[name];
+      } else if (not_null && default_value === undefined) {
+        return userSendResponse(
+          res,
+          400,
+          false,
+          `Field ${name} cannot be null.`,
+          null
+        );
+      } else if (default_value !== undefined) {
+        validData[name] = default_value;
+      }
+    }
+    validData.created_by = userName;
+    validData.created_by_id = userId;
+
+    let completeSchema = parsedData?.sys_status
+      ? [
+          {
+            name: "sys_status",
+            data_type: "TEXT",
+            not_null: false,
+            default_value: parsedData.sys_status.trim(),
+          },
+          { name: "created_by", data_type: "TEXT", not_null: false },
+          { name: "created_by_id", data_type: "INTEGER", not_null: false },
+          ...schema,
+        ]
+      : [
+          { name: "created_by", data_type: "TEXT", not_null: false },
+          { name: "created_by_id", data_type: "INTEGER", not_null: false },
+          ...schema,
+        ];
+
+    if (parsedData.ui_case_id && parsedData.ui_case_id != "") {
+      completeSchema = [
+        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+        ...completeSchema,
+      ];
+      validData.ui_case_id = parsedData.ui_case_id;
+    }
+    if (parsedData.pt_case_id && parsedData.pt_case_id != "") {
+      completeSchema = [
+        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+        ...completeSchema,
+      ];
+      validData.pt_case_id = parsedData.pt_case_id;
+    }
+
+    // Define dynamic model
+    const modelAttributes = {};
+    for (const field of completeSchema) {
+      const { name, data_type, not_null, default_value } = field;
+      const sequelizeType =
+        typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+      modelAttributes[name] = {
+        type: sequelizeType,
+        allowNull: !not_null,
+        defaultValue: default_value || null,
+      };
+    }
+
+    const Model = sequelize.define(table_name, modelAttributes, {
+      freezeTableName: true,
+      timestamps: true,
+      createdAt: "created_at",
+      updatedAt: "updated_at",
+    });
+
+    await Model.sync();
+
+    // Insert data to first table (but do not insert yet, wait for second table id if needed)
+    let insertedData = null;
+    let insertedSecondData = null;
+
+    // --- Second Table Insert (if provided) ---
+    if (second_table_name && second_data) {
+      const secondTableData = await Template.findOne({ where: { table_name: second_table_name } });
+      if (!secondTableData) {
+        return userSendResponse(
+          res,
+          400,
+          false,
+          `Table ${second_table_name} does not exist.`,
+          null
+        );
+      }
+      const secondSchema = secondTableData?.fields
+        ? typeof secondTableData.fields === "string"
+          ? JSON.parse(secondTableData.fields)
+          : secondTableData.fields
+        : [];
+      let secondParsedData;
+      try {
+        secondParsedData = JSON.parse(second_data);
+      } catch (err) {
+        return userSendResponse(
+          res,
+          400,
+          false,
+          "Invalid JSON format in second_data.",
+          null
+        );
+      }
+
+      const secondValidData = {};
+      for (const field of secondSchema) {
+        const { name, not_null, default_value } = field;
+        if (secondParsedData.hasOwnProperty(name)) {
+          secondValidData[name] = secondParsedData[name];
+        } else if (not_null && default_value === undefined) {
+          return userSendResponse(
+            res,
+            400,
+            false,
+            `Field ${name} cannot be null in second table.`,
+            null
+          );
+        } else if (default_value !== undefined) {
+          secondValidData[name] = default_value;
+        }
+      }
+      secondValidData.created_by = userName;
+      secondValidData.created_by_id = userId;
+
+      let secondCompleteSchema = [
+        { name: "created_by", data_type: "TEXT", not_null: false },
+        { name: "created_by_id", data_type: "INTEGER", not_null: false },
+        ...secondSchema,
+      ];
+      if (secondParsedData.sys_status) {
+        secondCompleteSchema.unshift({
+          name: "sys_status",
+          data_type: "TEXT",
+          not_null: false,
+          default_value: secondParsedData.sys_status.trim(),
+        });
+        secondValidData.sys_status = secondParsedData.sys_status;
+      }
+      if (secondParsedData.ui_case_id && secondParsedData.ui_case_id != "") {
+        secondCompleteSchema.unshift({
+          name: "ui_case_id",
+          data_type: "INTEGER",
+          not_null: false,
+        });
+        secondValidData.ui_case_id = secondParsedData.ui_case_id;
+      }
+      if (secondParsedData.pt_case_id && secondParsedData.pt_case_id != "") {
+        secondCompleteSchema.unshift({
+          name: "pt_case_id",
+          data_type: "INTEGER",
+          not_null: false,
+        });
+        secondValidData.pt_case_id = secondParsedData.pt_case_id;
+      }
+
+      const secondModelAttributes = {};
+      for (const field of secondCompleteSchema) {
+        const { name, data_type, not_null, default_value } = field;
+        const sequelizeType =
+          typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+        secondModelAttributes[name] = {
+          type: sequelizeType,
+          allowNull: !not_null,
+          defaultValue: default_value || null,
+        };
+      }
+      const SecondModel = sequelize.define(second_table_name, secondModelAttributes, {
+        freezeTableName: true,
+        timestamps: true,
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+      });
+      await SecondModel.sync();
+      insertedSecondData = await SecondModel.create(secondValidData);
+
+      // Now, if first table is 'cid_ui_case_mahajars' and has 'field_property_form_id', set it to second table id
+      if (
+        table_name === "cid_ui_case_mahajars" &&
+        schema.some(f => f.name === "field_property_form_id") &&
+        insertedSecondData?.id
+      ) {
+        validData["field_property_form_id"] = insertedSecondData.id;
+      }
+
+      // Insert first table row now (after setting property_form_id if needed)
+      insertedData = await Model.create(validData);
+
+      // Handle file uploads for first table
+      const fileUpdates = {};
+      if (req.files && req.files.length > 0) {
+        const folderAttachments = folder_attachment_ids
+          ? JSON.parse(folder_attachment_ids)
+          : [];
+        for (const file of req.files) {
+          const { originalname, size, fieldname, filename } = file;
+          const fileExtension = path.extname(originalname);
+          const matchingFolder = folderAttachments.find(
+            (attachment) =>
+              attachment.filename === originalname &&
+              attachment.field_name === fieldname
+          );
+          const folderId = matchingFolder ? matchingFolder.folder_id : null;
+          const s3Key = `../data/cases/${filename}`;
+          await ProfileAttachment.create({
+            template_id: tableData.template_id,
+            table_row_id: insertedData.id,
+            attachment_name: originalname,
+            attachment_extension: fileExtension,
+            attachment_size: size,
+            s3_key: s3Key,
+            field_name: fieldname,
+            folder_id: folderId,
+          });
+          if (!fileUpdates[fieldname]) {
+            fileUpdates[fieldname] = originalname;
+          } else {
+            fileUpdates[fieldname] += `,${originalname}`;
+          }
+        }
+        for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+          await Model.update(
+            { [fieldname]: filenames },
+            { where: { id: insertedData.id } }
+          );
+        }
+      }
+
+      // Handle file uploads for second table
+      const secondFileUpdates = {};
+      if (req.files && req.files.length > 0) {
+        const secondFolderAttachments = second_folder_attachment_ids
+          ? JSON.parse(second_folder_attachment_ids)
+          : [];
+        for (const file of req.files) {
+          const { originalname, size, fieldname, filename } = file;
+          const fileExtension = path.extname(originalname);
+          const matchingFolder = secondFolderAttachments.find(
+            (attachment) =>
+              attachment.filename === originalname &&
+              attachment.field_name === fieldname
+          );
+          const folderId = matchingFolder ? matchingFolder.folder_id : null;
+          const s3Key = `../data/cases/${filename}`;
+          await ProfileAttachment.create({
+            template_id: secondTableData.template_id,
+            table_row_id: insertedSecondData.id,
+            attachment_name: originalname,
+            attachment_extension: fileExtension,
+            attachment_size: size,
+            s3_key: s3Key,
+            field_name: fieldname,
+            folder_id: folderId,
+          });
+          if (!secondFileUpdates[fieldname]) {
+            secondFileUpdates[fieldname] = originalname;
+          } else {
+            secondFileUpdates[fieldname] += `,${originalname}`;
+          }
+        }
+        for (const [fieldname, filenames] of Object.entries(secondFileUpdates)) {
+          await SecondModel.update(
+            { [fieldname]: filenames },
+            { where: { id: insertedSecondData.id } }
+          );
+        }
+      }
+    } else {
+      // No second table, just insert first table as usual
+      insertedData = await Model.create(validData);
+
+      // Handle file uploads for first table
+      const fileUpdates = {};
+      if (req.files && req.files.length > 0) {
+        const folderAttachments = folder_attachment_ids
+          ? JSON.parse(folder_attachment_ids)
+          : [];
+        for (const file of req.files) {
+          const { originalname, size, fieldname, filename } = file;
+          const fileExtension = path.extname(originalname);
+          const matchingFolder = folderAttachments.find(
+            (attachment) =>
+              attachment.filename === originalname &&
+              attachment.field_name === fieldname
+          );
+          const folderId = matchingFolder ? matchingFolder.folder_id : null;
+          const s3Key = `../data/cases/${filename}`;
+          await ProfileAttachment.create({
+            template_id: tableData.template_id,
+            table_row_id: insertedData.id,
+            attachment_name: originalname,
+            attachment_extension: fileExtension,
+            attachment_size: size,
+            s3_key: s3Key,
+            field_name: fieldname,
+            folder_id: folderId,
+          });
+          if (!fileUpdates[fieldname]) {
+            fileUpdates[fieldname] = originalname;
+          } else {
+            fileUpdates[fieldname] += `,${originalname}`;
+          }
+        }
+        for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+          await Model.update(
+            { [fieldname]: filenames },
+            { where: { id: insertedData.id } }
+          );
+        }
+      }
+    }
+
+    return userSendResponse(res, 200, true, `Record Created Successfully`, null);
+    } catch (error) {
+    console.error("Error inserting data:", error.stack);
+    return userSendResponse(res, 500, false, error?.message || "Server error.", error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -775,7 +1167,13 @@ exports.updateTemplateData = async (req, res, next) => {
             );
         }
         console.error("Error updating data:", error);
-        return userSendResponse(res, 500, false, "Server error.", error);
+        let errorMessage = "Server error.";
+        if (error && error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === "string") {
+            errorMessage = error;
+        }
+        return userSendResponse(res, 500, false, errorMessage, error);
     } finally {
         if (fs.existsSync(dirPath))
             fs.rmSync(dirPath, { recursive: true, force: true });
@@ -975,7 +1373,13 @@ exports.updateEditTemplateData = async (req, res, next) => {
     }
 
     console.error("Error updating data:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    let errorMessage = "Server error.";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   } finally {
     if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
   }
@@ -1078,7 +1482,8 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record deleted successfully.`, null);
   } catch (error) {
     console.error("Error deleting file from template:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    const errorMessage = error && error.message ? error.message : error;
+    return userSendResponse(res, 500, false, errorMessage, error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1331,7 +1736,13 @@ exports.getActionTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, responseMessage, transformedRecords);
   } catch (error) {
     console.error("Error fetching data:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    let errorMessage = "Server error.";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -2038,9 +2449,15 @@ exports.getTemplateData = async (req, res, next) => {
       null,
       templateresult,
     );
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching data:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    let errorMessage = "Server error.";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -2142,10 +2559,10 @@ exports.bulkUpdateColumn = async (req, res) => {
             `Updated ${affectedRows} records in column ${column} of table ${table_name}.`,
             null
         );
-    } catch (error) {
+          } catch (error) {
         if (t) await t.rollback();
         console.error("Error in bulkUpdateColumn:", error);
-        return userSendResponse(res, 500, false, "Internal server error.", error);
+        return userSendResponse(res, 500, false, error?.message || "Internal server error.", error);
     }
 };
 
@@ -2255,10 +2672,19 @@ exports.updateFieldsWithApproval = async (req, res) => {
             "Fields updated and approval created successfully.",
             updatedRecord
         );
-    } catch (error) {
+          } catch (error) {
         if (t && !t.finished) await t.rollback();
         console.error("Error in updateFieldsWithApproval:", error);
-        return userSendResponse(res, 500, false, "Internal server error.", error);
+
+        // Send a user-friendly error message with actual error details if available
+        let errorMessage = "Internal server error.";
+        if (error && error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === "string") {
+            errorMessage = error;
+        }
+
+        return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
 
@@ -2378,9 +2804,15 @@ exports.viewTemplateData = async (req, res, next) => {
 
         const responseMessage = `Fetched record successfully from table ${table_name}.`;
         return userSendResponse(res, 200, true, responseMessage, data);
-    } catch (error) {
+          } catch (error) {
         console.error("Error fetching data by ID:", error);
-        return userSendResponse(res, 500, false, "Server error.", error);
+        let errorMessage = "Server error.";
+        if (error && error.message) {
+            errorMessage = error.message;
+        } else if (typeof error === "string") {
+            errorMessage = error;
+        }
+        return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
 
@@ -2646,7 +3078,7 @@ exports.viewMagazineTemplateData = async (req, res) => {
     return userSendResponse(res, 200, true, "Data fetched successfully", data);
   } catch (error) {
     console.error("Error fetching view data:", error);
-    return userSendResponse(res, 500, false, "Server error", error);
+    return userSendResponse(res, 500, false, error?.message || "Server error", error);
   }
 };
 
@@ -2845,9 +3277,15 @@ exports.deleteTemplateData = async (req, res, next) => {
       );
     }
   } catch (error) {
-    console.error("Error deleting data:", error.message);
-    return userSendResponse(res, 500, false, "Server error.", error.message);
-  } finally {
+        console.error("Error deleting data:", error);
+        let errorMessage = "Server error.";
+        if (error && error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
+        }
+        return userSendResponse(res, 500, false, errorMessage, error);
+  }finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
   }
@@ -3406,9 +3844,15 @@ exports.paginateTemplateData = async (req, res) => {
       "Data fetched successfully",
       responseData
     );
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching paginated data:", error);
-    return userSendResponse(res, 500, false, "Server error", error);
+    let errorMessage = "Server error";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -4329,10 +4773,15 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
       "Data fetched successfully",
       responseData
     );
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching paginated data:", error);
-
-    return userSendResponse(res, 500, false, "Server error", error);
+    let errorMessage = "Server error";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -4493,7 +4942,7 @@ exports.downloadExcelData = async (req, res) => {
     console.error("Error during Excel download:", error);
     return res
       .status(500)
-      .send("An error occurred while generating the Excel file.");
+      .send(`An error occurred while generating the Excel file: ${error.message || error}`);
   }
 };
 
@@ -4587,8 +5036,14 @@ exports.bulkInsertData = async (req, res) => {
         }
 
     } catch (error) {
-        console.log(error,"bulkInsertData catch error")
-        return userSendResponse(res, 500, false, "Internal server error.", error.message);
+          console.log(error, "bulkInsertData catch error");
+          let errorMessage = "Internal server error.";
+          if (error && error.message) {
+            errorMessage = error.message;
+          } else if (typeof error === "string") {
+            errorMessage = error;
+          }
+          return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
 
@@ -4630,11 +5085,12 @@ exports.fetchAndDownloadExcel = async (req, res) => {
     console.log(`File ${file_name} is being downloaded.`);
   } catch (error) {
     console.error("Error fetching and downloading Excel file:", error);
+    const errorMessage = error && error.message ? error.message : "Server error occurred while downloading the file.";
     return userSendResponse(
       res,
       500,
       false,
-      "Server error occurred while downloading the file.",
+      errorMessage,
       error
     );
   }
@@ -4823,7 +5279,8 @@ exports.getEventsByOrganization = async (req, res) => {
     );
   } catch (error) {
     console.error("Error fetching events:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    const errorMessage = error && error.message ? error.message : error;
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -4913,9 +5370,10 @@ exports.getEventsByLeader = async (req, res) => {
       "Events fetched successfully",
       response
     );
-  } catch (error) {
+    } catch (error) {
     console.error("Error fetching events:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
+    const errorMessage = error && error.message ? error.message : error;
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -5014,9 +5472,15 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
     }
 
     return userSendResponse(res, 200, true, "No duplicates found.", null);
-  } catch (error) {
+    } catch (error) {
     console.error("Error checking duplicate values in fields:", error);
-    return userSendResponse(res, 500, false, "Internal Server Error.", error);
+    let errorMessage = "Internal Server Error.";
+    if (error && error.message) {
+      errorMessage = error.message;
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    }
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
 
@@ -5070,7 +5534,7 @@ exports.checkPdfEntry = async (req, res) => {
     }
   } catch (error) {
     console.error("Error checking PDF entry:", error);
-    return userSendResponse(res, 500, false, "Internal Server Error.", error);
+    return userSendResponse(res, 500, false, error?.message || error, error);
   }
 };
 
@@ -5194,10 +5658,16 @@ exports.checkPdfEntry = async (req, res) => {
 
             return userSendResponse(res, 200, true, `Fetched data successfully from table ${table_name}.`, transformedRecords, null, meta);
 
-        } catch (error) {
+          } catch (error) {
             console.error("Error fetching data:", error);
-            return userSendResponse(res, 500, false, "Server error.", null, error, null);
-        }
+            let errorMessage = "Server error.";
+            if (error && error.message) {
+              errorMessage = error.message;
+            } else if (typeof error === "string") {
+              errorMessage = error;
+            }
+            return userSendResponse(res, 500, false, errorMessage, null, error, null);
+          }
     };
 
     exports.getPrimaryTemplateDataWithoutPagination = async (req, res, next) => {
@@ -5281,9 +5751,15 @@ exports.checkPdfEntry = async (req, res) => {
             return userSendResponse(res, 200, true, `Fetched data successfully from table ${table_name}.`, {data : transformedRecords, primaryAttribute : PrimaryKeyName});
 
         } catch (error) {
-            console.error("Error fetching data:", error);
-            return userSendResponse(res, 500, false, "Server error.", null, error, null);
+        console.error("Error fetching data:", error);
+        let errorMessage = "Server error.";
+        if (error && error.message) {
+          errorMessage = error.message;
+        } else if (typeof error === "string") {
+          errorMessage = error;
         }
+        return userSendResponse(res, 500, false, errorMessage, null, error, null);
+      }
     };
 
     exports.addDropdownSingleFieldValue = async (req, res) => {
@@ -5382,7 +5858,8 @@ exports.checkPdfEntry = async (req, res) => {
             });
         } catch (error) {
             console.error("Error in addSingleFieldValue:", error);
-            return userSendResponse(res, 500, false, "Internal server error.", error);
+            const errorMessage = error && error.message ? error.message : error;
+            return userSendResponse(res, 500, false, errorMessage, error);
         }
     };
 
@@ -5806,11 +6283,12 @@ exports.uploadFile = async (req, res) => {
         message: "File uploaded successfully.",
         file_path,
       });
-    } catch (error) {
+        } catch (error) {
       console.error("Error uploading file:", error);
       return res.status(500).json({
         success: false,
-        message: "Internal server error.",
+        message: error?.message || "Internal server error.",
+        error: error,
       });
     }
   });
@@ -5847,7 +6325,7 @@ exports.getUploadedFiles = async (req, res) => {
     console.error("Error fetching files:", error);
     return res
       .status(500)
-      .json({ success: false, message: "Internal server error." });
+      .json({ success: false, message: error?.message || "Internal server error.", error });
   }
 };
 
@@ -6360,7 +6838,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
-    return res.status(500).json({ success: false, message: 'Internal server error.', error: error?.message || error });
+    return res.status(500).json({ success: false, message: error?.message || error, error });
   }
 };
 
@@ -6401,7 +6879,7 @@ exports.getMonthWiseByCaseId = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching monthwise progress reports:', error);
-    return res.status(500).json({ success: false, message: 'Failed to fetch data.' });
+    return res.status(500).json({ success: false, message: error?.message || 'Internal server error.', error });
   }
 };
 
@@ -6460,6 +6938,64 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
                 return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
             }
     
+
+            if (table_name === "cid_under_investigation") {
+                const field1 = "field_crime_number_of_ps";
+                const field2 = "field_cid_crime_no./enquiry_no";
+                const field3 = "field_name_of_the_police_station";
+
+                if (
+                  parsedData[field1] &&
+                  parsedData[field2] &&
+                  parsedData[field3]
+                ) {
+                  const modelAttributes = {};
+                  for (const field of schema) {
+                    const { name, data_type, not_null, default_value } = field;
+                    const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                    modelAttributes[name] = {
+                      type: sequelizeType,
+                      allowNull: !not_null,
+                      defaultValue: default_value || null,
+                    };
+                  }
+
+                  if (!modelAttributes.id) {
+                    modelAttributes.id = {
+                      type: Sequelize.DataTypes.INTEGER,
+                      primaryKey: true,
+                      autoIncrement: true,
+                    };
+                  }
+                  const Model = sequelize.define(table_name, modelAttributes, {
+                    freezeTableName: true,
+                    timestamps: true,
+                    createdAt: "created_at",
+                    updatedAt: "updated_at",
+                  });
+                  await Model.sync();
+
+                  const whereClause = {};
+                  whereClause[field1] = String(parsedData[field1]);
+                  whereClause[field2] = String(parsedData[field2]);
+                  whereClause[field3] = String(parsedData[field3]);
+
+                  const duplicate = await Model.findOne({
+                    where: whereClause,
+                  });
+                  if (duplicate) {
+                    return userSendResponse(
+                      res,
+                      400,
+                      false,
+                      `Duplicate constraint: The combination of ${field1}, ${field2}, and ${field3} is already present.`,
+                      null
+                    );
+                  }
+                }
+            }
+
+
             const validData = {};
             for (const field of schema) {
                 const { name, not_null, default_value } = field;
@@ -7212,11 +7748,12 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
 		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
 
 	} catch (error) {
-		console.error("Error saving data to templates:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
-	} finally {
+    console.error("Error saving data to templates:", error);
+    if (t) await t.rollback();
+    const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+    const message = isDuplicate ? "Duplicate entry detected." : (error.message || "An unexpected error occurred.");
+    return userSendResponse(res, isDuplicate ? 400 : 500, false, message, error);
+  } finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -7274,6 +7811,65 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
             } catch (err) {
                 parsedData = data;
                 // return userSendResponse(res, 400, false, "Invalid JSON format in data.", null);
+            }
+
+
+            if (table_name === "cid_under_investigation") {
+                const field1 = "field_crime_number_of_ps";
+                const field2 = "field_cid_crime_no./enquiry_no";
+                const field3 = "field_name_of_the_police_station";
+                if (
+                  parsedData[field1] &&
+                  parsedData[field2] &&
+                  parsedData[field3]
+                ) {
+                  const modelAttributes = {};
+                  for (const field of schema) {
+                    const { name, data_type, not_null, default_value } = field;
+                    const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                    modelAttributes[name] = {
+                      type: sequelizeType,
+                      allowNull: !not_null,
+                      defaultValue: default_value || null,
+                    };
+                  }
+                  if (!modelAttributes.id) {
+                    modelAttributes.id = {
+                      type: Sequelize.DataTypes.INTEGER,
+                      primaryKey: true,
+                      autoIncrement: true,
+                    };
+                  }
+                  const Model = sequelize.define(table_name, modelAttributes, {
+                    freezeTableName: true,
+                    timestamps: true,
+                    createdAt: "created_at",
+                    updatedAt: "updated_at",
+                  });
+                  await Model.sync();
+
+                  const whereClause = {};
+                  whereClause[field1] = String(parsedData[field1]);
+                  whereClause[field2] = String(parsedData[field2]);
+                  whereClause[field3] = String(parsedData[field3]);
+
+                  const ids = id.split(",").map((i) => i.trim());
+                  const duplicate = await Model.findOne({
+                    where: {
+                      ...whereClause,
+                      id: { [Sequelize.Op.notIn]: ids }
+                    }
+                  });
+                  if (duplicate) {
+                    return userSendResponse(
+                      res,
+                      400,
+                      false,
+                      `Duplicate constraint: The combination of ${field1}, ${field2}, and ${field3} is already present.`,
+                      null
+                    );
+                  }
+                }
             }
 
             // Validate and filter data for schema-based fields
@@ -7657,12 +8253,27 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
 		await t.commit();
 		return userSendResponse(res, 200, true, `Record Updated Successfully`, null);
 
-	} catch (error) {
-		console.error("Error saving data to templates:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
-	} finally {
+    } catch (error) {
+      console.error("Error saving data to templates:", error);
+
+      if (t) await t.rollback();
+
+      let statusCode = 500;
+      let userMessage = "Internal Server Error.";
+
+      if (error.name === "SequelizeUniqueConstraintError") {
+        statusCode = 400;
+        userMessage = "Duplicate entry detected.";
+      } else if (error.name === "SequelizeValidationError") {
+        statusCode = 400;
+        userMessage = error.errors?.map(e => e.message).join(", ") || "Validation error.";
+      } else if (error.message) {
+        userMessage = error.message;
+      }
+
+      return userSendResponse(res, statusCode, false, userMessage, error);
+
+    }finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -7905,11 +8516,16 @@ exports.getAccusedWitness = async (req, res) => {
 			return res.status(404).json({ success: false, message: "No records found." });
 		}
 		return res.status(200).json({ success: true, data });
-	} catch (error) {
-		console.error("Error fetching records:", error);
-		return res.status(500).json({ success: false, message: "Internal server error." });
-	}
-};
+    } catch (error) {
+      console.error("Error fetching records:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: error.message || "Internal server error.",
+        error: error,
+      });
+      }
+  };
 
 
 exports.checkAccusedDataStatus = async (req, res) => {
@@ -8058,10 +8674,14 @@ exports.checkAccusedDataStatus = async (req, res) => {
 
 
 		return res.status(200).json({ success: true, data });
-	} catch (error) {
-		console.error("Error fetching records:", error);
-		return res.status(500).json({ success: false, message: "Internal server error." });
-	}
+  } catch (error) {
+    console.error("Error fetching records:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Something went wrong.",
+    });
+  }
 };
 
 exports.insertMergeData = async (req, res) => {
@@ -8875,8 +9495,11 @@ exports.getMergeParentData = async (req, res) =>
   } catch (error) {
     console.error("Error fetching paginated data:", error);
 
-    return userSendResponse(res, 500, false, "Server error", error);
+    const errorMessage = error.message || "Unexpected error occurred.";
+
+    return userSendResponse(res, 500, false, errorMessage, error);
   }
+
 }
 
 exports.getMergeChildData = async (req, res) =>
@@ -9608,8 +10231,15 @@ exports.getMergeChildData = async (req, res) =>
   } catch (error) {
     console.error("Error fetching paginated data:", error);
 
-    return userSendResponse(res, 500, false, "Server error", error);
+    return userSendResponse(
+      res,
+      500,
+      false,
+      error.message || "An unexpected error occurred.",
+      error
+    );
   }
+
 }
 
 exports.deMergeCaseData = async (req, res) => {
@@ -9802,11 +10432,18 @@ exports.deMergeCaseData = async (req, res) => {
 
         await t.commit();
         return userSendResponse(res, 200, true, "Merge data updated and de-merged successfully.");
-    } catch (err) {
+   } catch (err) {
         console.error("deMergeCaseData error:", err);
         await t.rollback();
-        return userSendResponse(res, 500, false, "Failed to de-merge data.");
-    } finally {
+        
+        return userSendResponse(
+            res,
+            500,
+            false,
+            err.message || "Failed to de-merge data.",
+            err
+        );
+    }finally {
         if (fs.existsSync(dirPath))
             fs.rmSync(dirPath, { recursive: true, force: true });
     }
@@ -9869,10 +10506,16 @@ exports.getTemplateAlongWithData = async (req, res) => {
             },
             data: data ? data.toJSON() : null,
         });
-    } catch (error) {
-        console.error("Error in getTemplateWithData:", error);
-        return userSendResponse(res, 500, false, "Server error.", error.message);
-    }
+   } catch (error) {
+    console.error("Error in getTemplateWithData:", error);
+      return userSendResponse(
+          res,
+          500,
+          false,
+          error.message || "An unexpected server error occurred.",
+          error
+      );
+  }
 };
 
 exports.getTemplateDataWithAccused = async (req, res, next) => {
@@ -10023,9 +10666,15 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
             totalPages,
             template_json: schema
         });
-    } catch (error) {
-        console.error("Error in getTemplateDataWithAccused:", error);
-        return userSendResponse(res, 500, false, "Server error.", error);
+  } catch (error) {
+    console.error("Error in getTemplateDataWithAccused:", error); 
+      return userSendResponse(
+          res,
+          500,
+          false,
+          error.message || "An unexpected error occurred.",
+          error
+        );
     }
 };
 
@@ -10320,11 +10969,16 @@ exports.saveActionPlan = async (req, res) => {
 		return userSendResponse(res, 200, true, `Record Created Successfully`, null);
 
 	} catch (error) {
-		console.error("Error saving data to templates:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(res, isDuplicate ? 400 : 500, false, isDuplicate ? "Duplicate entry detected." : "Internal Server Error.", error);
-	} finally {
+    console.error("Error saving data to templates:", error);
+    if (t) await t.rollback();
+
+    const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+    const message = isDuplicate
+      ? "Duplicate entry detected."
+      : error.message || "Internal Server Error.";
+
+    return userSendResponse(res, isDuplicate ? 400 : 500, false, message, error);
+  }finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -10555,17 +11209,22 @@ exports.submitActionPlanPR = async (req, res) => {
 		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
 
 	} catch (error) {
-		console.error("Error submitting Action Plan:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(
-			res,
-			isDuplicate ? 400 : 500,
-			false,
-			isDuplicate ? "Duplicate entry detected." : "Internal Server Error.",
-			error
-		);
-	} finally {
+    console.error("Error submitting Action Plan:", error);
+    if (t) await t.rollback();
+
+    const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+    const message = isDuplicate
+      ? "Duplicate entry detected."
+      : error.message || "Internal Server Error.";
+
+    return userSendResponse(
+      res,
+      isDuplicate ? 400 : 500,
+      false,
+      message,
+      error
+    );
+  }finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -10704,17 +11363,22 @@ exports.submitPropertyFormFSL = async (req, res) => {
 		await t.commit();
 		return userSendResponse(res, 200, true, "Action Plan submitted to Progress Report successfully.");
 	} catch (error) {
-		console.error("Error submitting Action Plan:", error);
-		if (t) await t.rollback();
-		const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-		return userSendResponse(
-			res,
-			isDuplicate ? 400 : 500,
-			false,
-			isDuplicate ? "Duplicate entry detected." : "Internal Server Error.",
-			error
-		);
-	} finally {
+    console.error("Error submitting Action Plan:", error);
+    if (t) await t.rollback();
+
+    const isDuplicate = error.name === "SequelizeUniqueConstraintError";
+    const message = isDuplicate
+      ? "Duplicate entry detected."
+      : error.message || "Internal Server Error.";
+
+    return userSendResponse(
+      res,
+      isDuplicate ? 400 : 500,
+      false,
+      message,
+      error
+    );
+  }finally {
 		if (fs.existsSync(dirPath)) {
 			fs.rmSync(dirPath, { recursive: true, force: true });
 		}
@@ -10811,9 +11475,12 @@ exports.checkFinalSheet = async (req, res) => {
       progressReportStatusOk,
       fslStatusOk,
     });
-  } catch (error) {
+ } catch (error) {
     console.error("Error in checkCaseStatusByUiCaseId:", error);
-    return res.status(500).json({ success: false, message: "Internal server error." });
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error."
+    });
   }
 };
 
@@ -11045,8 +11712,11 @@ exports.checkCaseStatusCombined = async (req, res) => {
             progressReportStatusOk,
             fslStatusOk,
         });
-    } catch (error) {
-        console.error("Error in checkCaseStatusCombined:", error);
-        return res.status(500).json({ success: false, message: "Internal server error." });
-    }
+        } catch (error) {
+            console.error("Error in checkCaseStatusCombined:", error);
+            return res.status(500).json({
+                success: false,
+                message: error.message || "Internal server error."
+            });
+        }
 };

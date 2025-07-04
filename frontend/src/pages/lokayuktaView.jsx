@@ -23,6 +23,7 @@ import ActionPlan from "./ActionPlan";
 import ProgressReport from "./ProgressReport";
 import ChargeSheetInvestigation from "./ChargeSheetInvestigation";
 import PropertyForm from "./PropertyForm";
+import Mahazars from './Mahazars';
 import CDR from "./CDR";
 import Report41A from "./Report41A";
 import PlanOfAction from "./PlanOfAction";
@@ -2079,11 +2080,50 @@ const LokayuktaView = () => {
         } catch (error) {
             setLoading(false);
             console.error("Error while updating:", error);
-            toast.error(error?.response?.data?.message || "Please Try Again !", {
-                position: "top-right",
-                autoClose: 3000,
-                className: "toast-error",
-            });
+                          if (
+                            error &&
+                            error.response &&
+                            error.response.status === 400 &&
+                            typeof error.response.data?.message === "string" &&
+                            error.response.data.message.includes("Duplicate constraint: The combination of")
+                          ) {
+                            // Extract the field names from the error message
+                            const match = error.response.data.message.match(/Duplicate constraint: The combination of (.+) is already present/);
+                            let fields = "";
+                            if (match && match[1]) {
+                              fields = match[1]
+                                .split(",")
+                                .map(f =>
+                                  f
+                                    .replace(/field_/g, "")
+                                    .replace(/\./g, "")
+                                    .replace(/_/g, " ")
+                                    .replace(/\s+/g, " ")
+                                    .replace(/\b\w/g, c => c.toUpperCase())
+                                    .trim()
+                                )
+                                .join(", ");
+                            }
+                            toast.error(
+                              `Duplicate entry: The combination of ${fields} is already present.`,
+                              {
+                                position: "top-right",
+                                autoClose: 3000,
+                                hideProgressBar: false,
+                                closeOnClick: true,
+                                pauseOnHover: true,
+                                draggable: true,
+                                progress: undefined,
+                                className: "toast-error",
+                              }
+                            );
+                          } else {
+                            toast.error(error?.response?.data?.message || "Please Try Again !", {
+                                position: "top-right",
+                                autoClose: 3000,
+                                className: "toast-error",
+                            });
+                          }
         }
     };
 
@@ -2580,6 +2620,17 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                     />
+                ) : activeSidebar?.table === "cid_ui_case_mahajars" ? (
+
+
+                     <Mahazars
+                        templateName={template_name}
+                        headerDetails={headerDetails}
+                        rowId={tableRowId}
+                        options={activeSidebar}
+                        selectedRowData={rowData}
+                        backNavigation={backToForm}
+                    />    
                 ) : activeSidebar?.table === "cid_ui_case_cdr_ipdr" ? (
 
 
@@ -2801,6 +2852,7 @@ const LokayuktaView = () => {
                             table_name={tableName}
                             readOnly={formReadFlag}
                             editData={formEditFlag}
+                            editName={true}
                             initialData={initialRowData}
                             formConfig={templateFields}
                             stepperData={stepperConfig}
