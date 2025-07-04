@@ -1949,7 +1949,6 @@ exports.getTemplateData = async (req, res, next) => {
     modelAttributes['created_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
     modelAttributes['updated_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
     modelAttributes['created_by'] = { type: Sequelize.DataTypes.STRING, allowNull: true }
-    modelAttributes['publickey'] = { type: Sequelize.DataTypes.STRING, allowNull: true }
 
     // Define and sync the dynamic model
     const Model = sequelize.define(table_name, modelAttributes, {
