@@ -62,6 +62,7 @@ router.post('/paginateTemplate',
 	// eitherAuthMiddleware,
 	[paginateTemplateValidation],
 	templateController.paginateTemplate)
+router.post('/getAllTemplates', templateController.getAllTemplates)
 router.post('/downloadPdf',
 	templateController.downloadPdf)
 

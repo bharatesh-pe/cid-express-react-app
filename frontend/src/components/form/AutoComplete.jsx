@@ -3,11 +3,12 @@ import TextField from '@mui/material/TextField';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import textToSnakecase from './textformater';
-import { FormHelperText, Tooltip } from '@mui/material';
+import { FormHelperText, Tooltip, Typography } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-export default function AutocompleteField({ formData, errors, field, onFocus, isFocused, onChange, onHistory, value, disabled, readOnly }) {
+export default function AutocompleteField({ formData, errors, field, onFocus, isFocused, onChange, onHistory, value, disabled, readOnly, viewLinkedTemplate }) {
     return (
         <Box sx={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
             {field.heading && 
@@ -115,6 +116,32 @@ export default function AutocompleteField({ formData, errors, field, onFocus, is
             {errors?.[field?.name] || field?.supportingText || ''}
             </FormHelperText>
 
+            {
+                field?.linkModule && (
+                    <Tooltip title="" arrow placement="top">
+                        <Box
+                            onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}
+                            mt={1}
+                            sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                cursor: 'pointer',
+                                color: 'primary.main',
+                                fontSize: '0.875rem',
+                                '&:hover': {
+                                    textDecoration: 'underline',
+                                },
+                            }}
+                        >
+                            <InfoOutlinedIcon fontSize="small" />
+                            <Typography variant="body2" fontWeight={500}>
+                                View Data Details
+                            </Typography>
+                        </Box>
+                    </Tooltip>
+                )
+            }
         </Box>
     );
 }

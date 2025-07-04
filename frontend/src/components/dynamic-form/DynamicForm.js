@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import isEqual from 'lodash.isequal';
 // import formConfig from './formConfig.json';
-import { Button, Grid, Box, Typography, IconButton } from "@mui/material";
+import { Button, Grid, Box, Typography, IconButton, FormControl, DialogActions } from "@mui/material";
 import { Stepper, Step, StepLabel } from "@mui/material";
 
 import ShortText from "../form/ShortText";
@@ -42,6 +42,8 @@ import DialogTitle from "@mui/material/DialogTitle";
 import CloseIcon from "@mui/icons-material/Close";
 import ActTable from './actSection';
 import DropdownWithAdd from "../form/DropdownWithAdd";
+import TableField from "../form/Table";
+import NormalViewForm from "./NormalViewForm";
 
 const DynamicForm = ({
   formConfig,
@@ -679,6 +681,15 @@ const DynamicForm = ({
       [fieldId]: selectedValue,
     }));
   };
+
+    const handleTableDataChange = (field, data)=>{
+        setFormData(prevData => {
+            return {
+                ...prevData,
+                [field.name]: JSON.stringify(data),
+            };
+        });
+    }
 
   const handleAutocomplete = (field, selectedValue) => {
     let updatedFormData = { ...formData, [field.name]: selectedValue };
@@ -1496,151 +1507,119 @@ const DynamicForm = ({
         }
     };
 
-    useEffect(() => {
-        const fetchTemplateData = async () => {
-            try { 
-                const apiCalls = newFormConfig
-                .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
-                .map(async (field) => {
-                    setLoading(true);
-                    try {
+    const fetchTemplateData = async () => {
+        try { 
+            const apiCalls = newFormConfig
+            .filter((field) =>  field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false") )
+            .map(async (field) => {
+                setLoading(true);
+                try {
 
-                        var apiPayload = {};
+                    var apiPayload = {};
 
-                        if(field.api === "/templateData/getTemplateData"){
-                            apiPayload = {
-                                table_name: field.table
-                            }
-                        }else if(field.table === "users"){
-                            apiPayload = {
-                                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
-                                get_flag : field?.user_hierarchy || null
-                            }
+                    if(field.api === "/templateData/getTemplateData"){
+                        apiPayload = {
+                            table_name: field.table
                         }
-
-                        const response = await api.post(field.api, apiPayload);
-
-                        setLoading(false);
-
-                        if (!response.data) return { id: field.id, options: [] };
-
-                        const updatedOptions = response.data.map((templateData) => {
-
-                            const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
-
-                            var headerName = nameKey;
-                            var headerId = 'id';
-    
-                            if(field.table === "users"){
-                                headerName = "name"
-                                headerId =  "user_id"
-                            }else if(field.api !== "/templateData/getTemplateData"){
-                                headerName = field.table + "_name"
-                                headerId =  field.table + "_id"
-                            }
-
-                            return {
-                                name: templateData[headerName],
-                                code: templateData[headerId],
-                            };
-                        });
-
-                        return { id: field.id, options: updatedOptions };
-
-                    } catch (error) {
-                        setLoading(false);
-                        return { id: field.id, options: [] };
+                    }else if(field.table === "users"){
+                        apiPayload = {
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : field?.user_hierarchy || null
+                        }
                     }
-                });
 
-                const results = await Promise.all(apiCalls);
+                    const response = await api.post(field.api, apiPayload);
 
-                var optionUpdateFields = []
+                    setLoading(false);
 
-                setNewFormConfig((prevFormConfig) => {
-                    const updatedFormConfig = prevFormConfig.map((field) => {
-                        const updatedField = results.find((res) => res.id === field.id);
-                        if (updatedField) {
-                            if (updatedField?.options.length === 1) {
-                                const onlyOption = updatedField.options[0];
+                    if (!response.data) return { id: field.id, options: [] };
 
-                                const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+                    const updatedOptions = response.data.map((templateData) => {
 
-                                if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
-                                    setFormData((prevData) => ({
-                                        ...prevData,
-                                        [field.name]: onlyOption.code
-                                    }));
-                                }
+                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by"].includes(key));
 
-                                optionUpdateFields.push(field);
-                            }
-                            return { ...field, options: updatedField.options };
+                        var headerName = nameKey;
+                        var headerId = 'id';
+
+                        if(field.table === "users"){
+                            headerName = "name"
+                            headerId =  "user_id"
+                        }else if(field.api !== "/templateData/getTemplateData"){
+                            headerName = field.table + "_name"
+                            headerId =  field.table + "_id"
                         }
-                        return field;
+
+                        return {
+                            name: templateData[headerName],
+                            code: templateData[headerId],
+                        };
                     });
-                    return updatedFormConfig;
-                });
 
-                gettingDependentedOptions(optionUpdateFields);
+                    return { id: field.id, options: updatedOptions };
 
-                const findDepartmentDivisionField = newFormConfig.filter((element)=>{
-                    if(element?.table && (element?.table === "division" || element?.table === "department")){
-                        return element
+                } catch (error) {
+                    setLoading(false);
+                    return { id: field.id, options: [] };
+                }
+            });
+
+            const results = await Promise.all(apiCalls);
+
+            var optionUpdateFields = []
+
+            setNewFormConfig((prevFormConfig) => {
+                const updatedFormConfig = prevFormConfig.map((field) => {
+                    const updatedField = results.find((res) => res.id === field.id);
+                    if (updatedField) {
+                        if (updatedField?.options.length === 1) {
+                            const onlyOption = updatedField.options[0];
+
+                            const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                            if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
+                                setFormData((prevData) => ({
+                                    ...prevData,
+                                    [field.name]: onlyOption.code
+                                }));
+                            }
+
+                            optionUpdateFields.push(field);
+                        }
+                        return { ...field, options: updatedField.options };
                     }
+                    return field;
                 });
+                return updatedFormConfig;
+            });
 
-                if(findDepartmentDivisionField?.length > 1){
-        
-                    setDepartmentDivisionField(findDepartmentDivisionField);
+            gettingDependentedOptions(optionUpdateFields);
 
-                    var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
+            const findDepartmentDivisionField = newFormConfig.filter((element)=>{
+                if(element?.table && (element?.table === "division" || element?.table === "department")){
+                    return element
+                }
+            });
 
-                    if(departmentField && departmentField?.name && initialData[departmentField?.name]){
+            if(findDepartmentDivisionField?.length > 1){
+    
+                setDepartmentDivisionField(findDepartmentDivisionField);
 
-                        const gettingDivisionBasedOnDepartment = async ()=>{
-                            try {
+                var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
 
-                                var departmentPayload = {
-                                    "department_id" : initialData[departmentField.name]
-                                }
+                if(departmentField && departmentField?.name && initialData[departmentField?.name]){
 
-                                const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
-                
-                                const data = response?.data;
+                    const gettingDivisionBasedOnDepartment = async ()=>{
+                        try {
 
-                                if (!data){
-                                    setNewFormConfig((prevFormConfig) => {
-                                        const updatedFormConfig = prevFormConfig.map((data) => {
-                                            if (data?.table === "division") {
-                                                return { ...data, options: [] };
-                                            }
-                                            return data;
-                                        });
-                                        return updatedFormConfig;
-                                    });
-                                    return;
-                                }
+                            var departmentPayload = {
+                                "department_id" : initialData[departmentField.name]
+                            }
 
-                                var updatedOptions = data.map((divisionData) => {
-                                                        return {
-                                                            name: divisionData["division_name"],
-                                                            code: divisionData["division_id"],
-                                                        };
-                                                    });
+                            const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+            
+                            const data = response?.data;
 
-                                setNewFormConfig((prevFormConfig) => {
-                                    const updatedFormConfig = prevFormConfig.map((data) => {
-                                        if (data?.table === "division") {
-                                            return { ...data, options: updatedOptions };
-                                        }
-                                        return data;
-                                    });
-                                    return updatedFormConfig;
-                                });
-                                
-                            } catch (error) {
-                                console.error("Error fetching division details:", error);
+                            if (!data){
                                 setNewFormConfig((prevFormConfig) => {
                                     const updatedFormConfig = prevFormConfig.map((data) => {
                                         if (data?.table === "division") {
@@ -1650,31 +1629,63 @@ const DynamicForm = ({
                                     });
                                     return updatedFormConfig;
                                 });
+                                return;
                             }
-                        }
 
-                        gettingDivisionBasedOnDepartment();
-                    }else{
-                        setNewFormConfig((prevFormConfig) => {
-                            const updatedFormConfig = prevFormConfig.map((data) => {
-                                if (data?.table === "division") {
-                                    return { ...data, options: [] };
-                                }
-                                return data;
+                            var updatedOptions = data.map((divisionData) => {
+                                                    return {
+                                                        name: divisionData["division_name"],
+                                                        code: divisionData["division_id"],
+                                                    };
+                                                });
+
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data?.table === "division") {
+                                        return { ...data, options: updatedOptions };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
                             });
-                            return updatedFormConfig;
-                        });
+                            
+                        } catch (error) {
+                            console.error("Error fetching division details:", error);
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data?.table === "division") {
+                                        return { ...data, options: [] };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
+                            });
+                        }
                     }
 
+                    gettingDivisionBasedOnDepartment();
                 }else{
-                    setDepartmentDivisionField([]);
+                    setNewFormConfig((prevFormConfig) => {
+                        const updatedFormConfig = prevFormConfig.map((data) => {
+                            if (data?.table === "division") {
+                                return { ...data, options: [] };
+                            }
+                            return data;
+                        });
+                        return updatedFormConfig;
+                    });
                 }
 
-            } catch (error) {
-                console.error("Error fetching template data:", error);
+            }else{
+                setDepartmentDivisionField([]);
             }
-        };
 
+        } catch (error) {
+            console.error("Error fetching template data:", error);
+        }
+    };
+
+    useEffect(() => {
         if (newFormConfig.length > 0) {
             fetchTemplateData();
         }
@@ -1800,6 +1811,244 @@ const DynamicForm = ({
         }));
     };
 
+
+    // handle link template view
+
+    const [showLinkTemplate, setShowLinkTemplate] = useState(false);
+
+    const [linkTemplateName, setLinkTemplateName] = useState("");
+    const [linkTableName, setLinkTableName] = useState("");
+
+    const [linkTemplateRowId, setLinkTemplateRowId] = useState("");
+    const [linkTemplateId, setLinkTemplateId] = useState("");
+
+    const [linkTemplateFields, setLinkTemplateFields] = useState([]);
+    const [linkTemplateStepperData, setLinkTemplateStepperData] = useState([]);
+
+    const [linkTemplateInitialData, setLinkTemplateInitialData] = useState({});
+
+    const viewLinkedTemplate = async (field)=>{
+
+        if((!field?.table || field?.table === "") || (!field?.forign_key || field?.forign_key === "")){
+            toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if(!formData?.[field?.name] || formData?.[field?.name] === ""){
+            toast.error("Please Select Value Before Getting Data !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var payload = {
+            table_name : field?.table,
+            key : field?.forign_key,
+            value : formData?.[field?.name]
+        }
+
+        try {
+            
+            const gettingDetailedData = await api.post('/templateData/getTemplateAlongWithData', payload);
+            
+            if(gettingDetailedData?.success && gettingDetailedData?.data){
+
+                const { data, template } = gettingDetailedData?.data
+
+                setLinkTemplateName(template?.template_name);
+                setLinkTableName(template?.table_name);
+
+                setLinkTemplateRowId(data?.id);
+                setLinkTemplateId(template?.template_id);
+
+                setLinkTemplateFields(template?.fields);
+                setLinkTemplateStepperData(template?.sections ? template?.sections : []);
+
+                setLinkTemplateInitialData(data);
+
+                setShowLinkTemplate(true);
+
+            }
+
+
+
+        } catch (error) {
+            if (error && error.response && error.response.data) {
+                toast.error( error.response?.data?.message || "Need dependent Fields", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+
+    }
+
+    const closeLinkTemplateModal = ()=>{
+        setLinkTemplateName("");
+        setLinkTableName("");
+
+        setLinkTemplateRowId("");
+        setLinkTemplateId("");
+
+        setLinkTemplateFields([]);
+        setLinkTemplateStepperData([]);
+
+        setLinkTemplateInitialData({});
+
+        setShowLinkTemplate(false);
+    }
+
+    const linkTemplateUpdateFunc = async (data)=>{
+
+        if (!linkTableName || linkTableName === "") {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("table_name", linkTableName);
+        var normalData = {}; 
+
+        linkTemplateFields.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(
+                                (file) => file.filename instanceof File
+                            );
+                            var filteredArray = data[field.name].filter(
+                                (file) => file.filename instanceof File
+                            );
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+                                formData.append("folder_attachment_ids", JSON.stringify(filteredArray));
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+        normalData["id"] = data.id;
+        formData.append("id", data.id);
+        setLoading(true);
+        formData.append("data", JSON.stringify(normalData));
+
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+            setLoading(false);
+
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                closeLinkTemplateModal();
+                fetchTemplateData();
+
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const linkTemplateErrorFunc = async (data)=>{
+        console.log(data,"data");
+    }
+
   //   console.log(stepperConfigData, "stepperConfigData stepperConfigData")
   //   console.log(stepperData, "stepperData stepperData")    
   return (
@@ -1812,7 +2061,7 @@ const DynamicForm = ({
           right: "0",
           bottom: "0",
           background: "rgba(0, 0, 0, 0.5)",
-          zIndex: "100",
+          zIndex: "98",
         }}
       />
       <Box
@@ -1823,7 +2072,7 @@ const DynamicForm = ({
           left: "50px",
           height: "100%",
           background: "#F5F5F5",
-          zIndex: "100",
+          zIndex: "98",
           borderRadius: "12px 0 0 12px",
           overflow: "hidden",
         }}
@@ -2354,6 +2603,7 @@ const DynamicForm = ({
                               handleAutocomplete(field, value.target.value)
                             }
                             readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
                           />
                         </div>
                       </Grid>
@@ -2372,6 +2622,8 @@ const DynamicForm = ({
                             handleAutocomplete(field, selectedCode)
                           }
                           readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
+
                         />
                       </Grid>
                     );
@@ -2389,6 +2641,7 @@ const DynamicForm = ({
                             handleAutocomplete(field, selectedCode)
                           }
                           readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
                         />
                       </Grid>
                     );
@@ -2495,9 +2748,23 @@ const DynamicForm = ({
                                     onHistory={() => showHistory(field.name)}
                                     dropdownInputValue={dropdownInputValue}
                                     readOnly={readOnlyData}
+                                    viewLinkedTemplate={viewLinkedTemplate}
                                 />
                             </Grid>
                         );
+                    case "table":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <TableField
+                                    field={field}
+                                    formData={formData}
+                                    onChange={handleTableDataChange}
+                                    readOnly={readOnlyData}
+                                    errors={errors}
+                                />
+                            </Grid>
+                        );
+                        
                   case "divider":
                     return (
                       <div
@@ -2616,6 +2883,44 @@ const DynamicForm = ({
           </DialogContent>
         </Dialog>
       )}
+
+        {showLinkTemplate && (
+            <Dialog
+                open={showLinkTemplate}
+                onClose={() => closeLinkTemplateModal}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+                <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                    <DialogContentText id="alert-dialog-description">
+                        <FormControl fullWidth>
+                            <NormalViewForm
+                                table_row_id={linkTemplateRowId}
+                                template_id={linkTemplateId}
+                                template_name={linkTemplateName}
+                                table_name={linkTableName}
+                                readOnly={true}
+                                editData={false}
+                                initialData={linkTemplateInitialData}
+                                formConfig={linkTemplateFields}
+                                stepperData={linkTemplateStepperData}
+                                onUpdate={linkTemplateUpdateFunc}
+                                onError={linkTemplateErrorFunc}
+                                closeForm={closeLinkTemplateModal}
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={()=>closeLinkTemplateModal}>
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        )}
+
     </>
   );
 };

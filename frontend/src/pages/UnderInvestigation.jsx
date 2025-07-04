@@ -1424,7 +1424,7 @@ const fslTableRef = useRef();
                             tableHeader = tableHeader.filter(
                                 (col) =>
                                     col.field === "sl_no" ||
-                                    col.field === "field_pf#" ||
+                                    col.field === "field_pf_number" ||
                                     col.field === "field_used_as_evidence" ||
                                     col.field === "field_reason"
                             );
@@ -2002,6 +2002,17 @@ const fslTableRef = useRef();
           }
       }
 
+        if(table_name === "cid_ui_case_accused" && data?.['field_status_of_accused_in_charge_sheet'] === "Dropped" && !data?.['field_he_is_being_treated_as_witness']){
+
+            Swal.fire({
+                title: 'Please Update Witness Field',
+                text: 'He is being treated as witness ?',
+                icon: 'warning'
+            });
+
+            return;
+        }
+
 
       if (Object.keys(data).length === 0) {
           toast.warning("Data Is Empty Please Check Once", {
@@ -2056,10 +2067,17 @@ const fslTableRef = useRef();
       });
 
       normalData["id"] = selectedRowId;
+      normalData["ui_case_id"] = selectedRowData.id;
       formData.append("id", selectedRowId);
       formData.append("data", JSON.stringify(normalData));
       const transactionId = `accusedUpdate_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
       formData.append("transaction_id", transactionId);
+
+        var insertWitnessData = false;
+        if(table_name === "cid_ui_case_accused" && data?.['field_status_of_accused_in_charge_sheet'] === "Dropped" && data?.['field_he_is_being_treated_as_witness'] === "Yes"){
+            insertWitnessData = true
+        }
+        formData.append("checkWitnessData", insertWitnessData);
 
       setLoading(true);
       try {
@@ -2387,6 +2405,26 @@ function toISODateString(val) {
 
     console.log("Batch update ids:", ids);
     console.log("Batch update dataArr:", dataArr);
+
+    var droppedAccusedWithoutWitness = false;
+    
+    dataArr.map((element)=>{
+        if(element['field_status_of_accused_in_charge_sheet'] === "Dropped" && (!element['field_he_is_being_treated_as_witness'] || element['field_he_is_being_treated_as_witness'] === "")){
+            droppedAccusedWithoutWitness = true;
+        }
+    });
+
+    if(droppedAccusedWithoutWitness){
+
+        Swal.fire({
+            title: 'Please Update Witness Field',
+            text: 'This person is being treated as a witness. Please update the accused data accordingly.',
+            icon: 'warning',
+            confirmButtonText: 'OK'
+        });
+
+        return;
+    }
 
     if (ids.length === 0) {
       toast.error("No valid rows to update.", { className: "toast-error" });
@@ -5510,6 +5548,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         caseView : true,
                         viewAction : true,
                         chargeSheet : true
+                    },
+                    {
+                        name: "Case Dairy",
+                        caseView : true,
+                        viewAction : true,
+                        caseDairy : true
                     }
                 ].filter(Boolean);
     
@@ -12180,79 +12224,120 @@ const handleExtensionApprovalWithUpdate = async () => {
   
           setLoading(true);
   
-          try {
-              const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates",formData);
-  
-              setLoading(false);
-  
-                if (overallSaveData && overallSaveData.success) {
-  
-                    toast.success(overallSaveData.message ? overallSaveData.message : "Case Created Successfully", {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-success",
-                        onOpen: () => {
+            try {
+              const overallSaveData = await api.post("/templateData/saveDataWithApprovalToTemplates", formData);
 
-                            if(saveNew === true){
-                                getTemplate(table_name);
-                                setFormOpen(false);
-                                setShowApprovalModal(false);
-                                setApprovalSaveCaseData({});
-                                setApprovalItemsData([]);
-                                setApprovalDesignationData([]);
-                                setApprovalSaveData({});
-                                return;
-                            }
-
-                            if (sysStatus === "merge_cases") {
-                                loadMergedCasesData(paginationCount);
-                            } else {
-                                loadTableData(paginationCount);
-                            }
-                        },
-                    });
-    
-                    setShowApprovalModal(false);
-                    setApprovalSaveCaseData({});
-                    setApprovalItemsData([]);
-                    setApprovalDesignationData([]);
-                    setApprovalSaveData({});
-                    setSaveNew(null);
-  
-                } else {
-                    const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
-                    toast.error(errorMessage, {
-                        position: "top-right",
-                        autoClose: 3000,
-                        hideProgressBar: false,
-                        closeOnClick: true,
-                        pauseOnHover: true,
-                        draggable: true,
-                        progress: undefined,
-                        className: "toast-error",
-                    });
-                }
-          } catch (error) {
               setLoading(false);
-              if (error && error.response && error.response["data"]) {
-                  toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
-                      position: "top-right",
-                      autoClose: 3000,
-                      hideProgressBar: false,
-                      closeOnClick: true,
-                      pauseOnHover: true,
-                      draggable: true,
-                      progress: undefined,
-                      className: "toast-error",
-                  });
+
+              if (overallSaveData && overallSaveData.success) {
+
+                toast.success(overallSaveData.message ? overallSaveData.message : "Case Created Successfully", {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-success",
+                  onOpen: () => {
+
+                    if (saveNew === true) {
+                      getTemplate(table_name);
+                      setFormOpen(false);
+                      setShowApprovalModal(false);
+                      setApprovalSaveCaseData({});
+                      setApprovalItemsData([]);
+                      setApprovalDesignationData([]);
+                      setApprovalSaveData({});
+                      return;
+                    }
+
+                    if (sysStatus === "merge_cases") {
+                      loadMergedCasesData(paginationCount);
+                    } else {
+                      loadTableData(paginationCount);
+                    }
+                  },
+                });
+
+                setShowApprovalModal(false);
+                setApprovalSaveCaseData({});
+                setApprovalItemsData([]);
+                setApprovalDesignationData([]);
+                setApprovalSaveData({});
+                setSaveNew(null);
+
+              } else {
+                const errorMessage = overallSaveData.message ? overallSaveData.message : "Failed to change the status. Please try again.";
+                toast.error(errorMessage, {
+                  position: "top-right",
+                  autoClose: 3000,
+                  hideProgressBar: false,
+                  closeOnClick: true,
+                  pauseOnHover: true,
+                  draggable: true,
+                  progress: undefined,
+                  className: "toast-error",
+                });
               }
-          }
-  
+            } catch (error) {
+              setLoading(false);
+              if (
+                error &&
+                error.response &&
+                error.response.status === 400 &&
+                typeof error.response.data?.message === "string" &&
+                error.response.data.message.includes("Duplicate constraint: The combination of")
+              ) {
+                // Extract the field names from the error message
+                const match = error.response.data.message.match(/Duplicate constraint: The combination of (.+) is already present/);
+                let fields = "";
+                if (match && match[1]) {
+                  fields = match[1]
+                    .split(",")
+                    .map(f =>
+                      f
+                        .replace(/field_/g, "")
+                        .replace(/\./g, "")
+                        .replace(/_/g, " ")
+                        .replace(/\s+/g, " ")
+                        .replace(/\b\w/g, c => c.toUpperCase())
+                        .trim()
+                    )
+                    .join(", ");
+                }
+                toast.error(
+                  `Duplicate entry: The combination of ${fields} is already present.`,
+                  {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                  }
+                );
+              } else if (error && error.response && error.response["data"]) {
+                toast.error(
+                  error.response["data"].message
+                    ? error.response["data"].message
+                    : "Please Try Again !",
+                  {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                  }
+                );
+              }
+            }
       }
 
 

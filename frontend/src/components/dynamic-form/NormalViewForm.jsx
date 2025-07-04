@@ -47,10 +47,11 @@ import ActTable from './actSection';
 import RichTextEditor from '../form/RichTextEditor';
 import DropdownWithAdd from '../form/DropdownWithAdd';
 import dayjs from 'dayjs';
+import TableField from '../form/Table';
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -126,6 +127,12 @@ const NormalViewForm = ({
             editedForm(false);
         }
     },[reloadForm]);
+
+    useEffect(()=>{
+        if(reloadFormConfig !== null && reloadFormConfig !== undefined){
+            setNewFormConfig(formConfig);
+        }
+    },[reloadFormConfig]);
 
   const [dateUpdateFlag, setDateUpdateFlag] = useState(false);
 
@@ -673,6 +680,15 @@ const NormalViewForm = ({
       [fieldId]: selectedValue,
     }));
   };
+
+    const handleTableDataChange = (field, data)=>{
+        setFormData(prevData => {
+            return {
+                ...prevData,
+                [field.name]: JSON.stringify(data),
+            };
+        });
+    }
 
   const handleAutocomplete = (field, selectedValue) => {
 
@@ -1409,170 +1425,138 @@ const NormalViewForm = ({
   }
 
 
-    useEffect(() => {
-        const fetchTemplateData = async () => {
-            try { 
-                const apiCalls = newFormConfig
-                .filter((field) => field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false"))
-                .map(async (field) => {
-                    try {
+    const fetchTemplateData = async () => {
+        try { 
+            const apiCalls = newFormConfig
+            .filter((field) => field?.api && field?.table && (!field?.is_dependent || field?.is_dependent == "false"))
+            .map(async (field) => {
+                try {
 
-                        var apiPayload = {};
+                    var apiPayload = {};
 
-                        if(field.api === "/templateData/getTemplateData"){
-                            apiPayload = {
-                                table_name: field.table
-                            }
-                        }else if(field.table === "users"){
-                            apiPayload = {
-                                designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
-                                get_flag : field?.user_hierarchy || null
-                            }
+                    if(field.api === "/templateData/getTemplateData"){
+                        apiPayload = {
+                            table_name: field.table
                         }
-
-                        var payloadApi = field.api
-
-                        if((field.table === "cid_ui_case_accused" || field.table === "cid_ui_case_witness") && selectedRow && field?.particular_case_options){
-
-                            payloadApi = "templateData/getAccusedWitness"
-
-
-                            if(table_name === "cid_under_investigation" || investigationViewTable === "cid_under_investigation"){
-                                apiPayload = {
-                                    "table_name": field.table,
-                                    "ui_case_id": selectedRow?.['id'] || "",
-                                    "pt_case_id": selectedRow?.['pt_case_id'] || "",
-                                }
-                            }else if(table_name === "cid_pending_trial" || investigationViewTable === "cid_pending_trial"){
-                                apiPayload = {
-                                    "table_name": field.table,
-                                    "ui_case_id": selectedRow?.['ui_case_id'] || "",
-                                    "pt_case_id": selectedRow?.['id'] || "",
-                                }
-                            }
-
+                    }else if(field.table === "users"){
+                        apiPayload = {
+                            designation_id : localStorage.getItem('designation_id') ? localStorage.getItem('designation_id') : null,
+                            get_flag : field?.user_hierarchy || null
                         }
-
-                        const response = await api.post(payloadApi, apiPayload);
-
-                        if (!response.data) return { id: field.id, options: [] };
-
-                        const updatedOptions = response.data.map((templateData) => {
-
-                            const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at"].includes(key));
-
-                            var headerName = nameKey;
-                            var headerId = 'id';
-
-                            if(field.table === "users"){
-                                headerName = "name"
-                                headerId =  "user_id"
-                            }else if(field.api !== "/templateData/getTemplateData"){
-                                headerName = field.table + "_name"
-                                headerId =  field.table + "_id"
-                            }
-
-                            return {
-                                name: templateData[headerName],
-                                code: templateData[headerId],
-                            };
-                        });
-
-                        return { id: field.id, options: updatedOptions };
-
-                    } catch (error) {
-                        return { id: field.id, options: [] };
                     }
-                });
 
-                const results = await Promise.all(apiCalls);
+                    var payloadApi = field.api
 
-                var optionUpdateFields = []
+                    if((field.table === "cid_ui_case_accused" || field.table === "cid_ui_case_witness") && selectedRow && field?.particular_case_options){
 
-                setNewFormConfig((prevFormConfig) => {
-                    const updatedFormConfig = prevFormConfig.map((field) => {
-                        const updatedField = results.find((res) => res.id === field.id);
-                        if (updatedField) {
-                            if (updatedField?.options.length === 1) {
-                                const onlyOption = updatedField.options[0];
+                        payloadApi = "templateData/getAccusedWitness"
 
-                                const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
 
-                                if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
-                                    setFormData((prevData) => ({
-                                        ...prevData,
-                                        [field.name]: onlyOption.code
-                                    }));
-                                }
-
-                                optionUpdateFields.push(field);
+                        if(table_name === "cid_under_investigation" || investigationViewTable === "cid_under_investigation"){
+                            apiPayload = {
+                                "table_name": field.table,
+                                "ui_case_id": selectedRow?.['id'] || "",
+                                "pt_case_id": selectedRow?.['pt_case_id'] || "",
                             }
-                            return { ...field, options: updatedField.options };
+                        }else if(table_name === "cid_pending_trial" || investigationViewTable === "cid_pending_trial"){
+                            apiPayload = {
+                                "table_name": field.table,
+                                "ui_case_id": selectedRow?.['ui_case_id'] || "",
+                                "pt_case_id": selectedRow?.['id'] || "",
+                            }
                         }
-                        return field;
+
+                    }
+
+                    const response = await api.post(payloadApi, apiPayload);
+
+                    if (!response.data) return { id: field.id, options: [] };
+
+                    const updatedOptions = response.data.map((templateData) => {
+
+                        const nameKey = Object.keys(templateData).find((key) => !["id", "created_at", "updated_at", "created_by"].includes(key));
+
+                        var headerName = nameKey;
+                        var headerId = 'id';
+
+                        if(field.table === "users"){
+                            headerName = "name"
+                            headerId =  "user_id"
+                        }else if(field.api !== "/templateData/getTemplateData"){
+                            headerName = field.table + "_name"
+                            headerId =  field.table + "_id"
+                        }
+
+                        return {
+                            name: templateData[headerName],
+                            code: templateData[headerId],
+                        };
                     });
-                    return updatedFormConfig;
-                });
 
-                gettingDependentedOptions(optionUpdateFields);
-                
-                const findDepartmentDivisionField = newFormConfig.filter((element)=>{
-                    if(element?.table && (element?.table === "division" || element?.table === "department")){
-                        return element
+                    return { id: field.id, options: updatedOptions };
+
+                } catch (error) {
+                    return { id: field.id, options: [] };
+                }
+            });
+
+            const results = await Promise.all(apiCalls);
+
+            var optionUpdateFields = []
+
+            setNewFormConfig((prevFormConfig) => {
+                const updatedFormConfig = prevFormConfig.map((field) => {
+                    const updatedField = results.find((res) => res.id === field.id);
+                    if (updatedField) {
+                        if (updatedField?.options.length === 1) {
+                            const onlyOption = updatedField.options[0];
+
+                            const gettingFormdata = Object.keys(formData).length === 0 ? (initialData || formData) : formData;
+
+                            if(!gettingFormdata[field?.name] || gettingFormdata[field?.name] === ""){
+                                setFormData((prevData) => ({
+                                    ...prevData,
+                                    [field.name]: onlyOption.code
+                                }));
+                            }
+
+                            optionUpdateFields.push(field);
+                        }
+                        return { ...field, options: updatedField.options };
                     }
+                    return field;
                 });
+                return updatedFormConfig;
+            });
 
-                if(findDepartmentDivisionField?.length > 1){
-        
-                    setDepartmentDivisionField(findDepartmentDivisionField);
+            gettingDependentedOptions(optionUpdateFields);
+            
+            const findDepartmentDivisionField = newFormConfig.filter((element)=>{
+                if(element?.table && (element?.table === "division" || element?.table === "department")){
+                    return element
+                }
+            });
 
-                    var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
+            if(findDepartmentDivisionField?.length > 1){
+    
+                setDepartmentDivisionField(findDepartmentDivisionField);
 
-                    if(departmentField && departmentField?.name && initialData[departmentField?.name]){
+                var departmentField = findDepartmentDivisionField.find((field)=>field.table === "department");
 
-                        const gettingDivisionBasedOnDepartment = async ()=>{
-                            try {
+                if(departmentField && departmentField?.name && initialData[departmentField?.name]){
 
-                                var departmentPayload = {
-                                    "department_id" : initialData[departmentField.name]
-                                }
+                    const gettingDivisionBasedOnDepartment = async ()=>{
+                        try {
 
-                                const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
-                
-                                const data = response?.data;
+                            var departmentPayload = {
+                                "department_id" : initialData[departmentField.name]
+                            }
 
-                                if (!data){
-                                    setNewFormConfig((prevFormConfig) => {
-                                        const updatedFormConfig = prevFormConfig.map((data) => {
-                                            if (data?.table === "division") {
-                                                return { ...data, options: [] };
-                                            }
-                                            return data;
-                                        });
-                                        return updatedFormConfig;
-                                    });
-                                    return;
-                                }
+                            const response = await api.post("cidMaster/getDivisionBasedOnDepartment", departmentPayload);
+            
+                            const data = response?.data;
 
-                                var updatedOptions = data.map((divisionData) => {
-                                                        return {
-                                                            name: divisionData["division_name"],
-                                                            code: divisionData["division_id"],
-                                                        };
-                                                    });
-
-                                setNewFormConfig((prevFormConfig) => {
-                                    const updatedFormConfig = prevFormConfig.map((data) => {
-                                        if (data?.table === "division") {
-                                            return { ...data, options: updatedOptions };
-                                        }
-                                        return data;
-                                    });
-                                    return updatedFormConfig;
-                                });
-                                
-                            } catch (error) {
-                                console.error("Error fetching division details:", error);
+                            if (!data){
                                 setNewFormConfig((prevFormConfig) => {
                                     const updatedFormConfig = prevFormConfig.map((data) => {
                                         if (data?.table === "division") {
@@ -1582,31 +1566,63 @@ const NormalViewForm = ({
                                     });
                                     return updatedFormConfig;
                                 });
+                                return;
                             }
-                        }
 
-                        gettingDivisionBasedOnDepartment();
-                    }else{
-                        setNewFormConfig((prevFormConfig) => {
-                            const updatedFormConfig = prevFormConfig.map((data) => {
-                                if (data?.table === "division") {
-                                    return { ...data, options: [] };
-                                }
-                                return data;
+                            var updatedOptions = data.map((divisionData) => {
+                                                    return {
+                                                        name: divisionData["division_name"],
+                                                        code: divisionData["division_id"],
+                                                    };
+                                                });
+
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data?.table === "division") {
+                                        return { ...data, options: updatedOptions };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
                             });
-                            return updatedFormConfig;
-                        });
+                            
+                        } catch (error) {
+                            console.error("Error fetching division details:", error);
+                            setNewFormConfig((prevFormConfig) => {
+                                const updatedFormConfig = prevFormConfig.map((data) => {
+                                    if (data?.table === "division") {
+                                        return { ...data, options: [] };
+                                    }
+                                    return data;
+                                });
+                                return updatedFormConfig;
+                            });
+                        }
                     }
 
+                    gettingDivisionBasedOnDepartment();
                 }else{
-                    setDepartmentDivisionField([]);
+                    setNewFormConfig((prevFormConfig) => {
+                        const updatedFormConfig = prevFormConfig.map((data) => {
+                            if (data?.table === "division") {
+                                return { ...data, options: [] };
+                            }
+                            return data;
+                        });
+                        return updatedFormConfig;
+                    });
                 }
 
-            } catch (error) {
-                console.error("Error fetching template data:", error);
+            }else{
+                setDepartmentDivisionField([]);
             }
-        };
 
+        } catch (error) {
+            console.error("Error fetching template data:", error);
+        }
+    };
+
+    useEffect(() => {
         if (newFormConfig.length > 0) {
             fetchTemplateData();
         }
@@ -2086,6 +2102,240 @@ const NormalViewForm = ({
   // eslint-disable-next-line
 }, [showActionModal, caseActionSelectedValue, caseActionOptions]);
 
+    // handle link template view
+
+    const [showLinkTemplate, setShowLinkTemplate] = useState(false);
+
+    const [linkTemplateName, setLinkTemplateName] = useState("");
+    const [linkTableName, setLinkTableName] = useState("");
+
+    const [linkTemplateRowId, setLinkTemplateRowId] = useState("");
+    const [linkTemplateId, setLinkTemplateId] = useState("");
+
+    const [linkTemplateFields, setLinkTemplateFields] = useState([]);
+    const [linkTemplateStepperData, setLinkTemplateStepperData] = useState([]);
+
+    const [linkTemplateInitialData, setLinkTemplateInitialData] = useState({});
+
+    const viewLinkedTemplate = async (field)=>{
+
+        if((!field?.table || field?.table === "") || (!field?.forign_key || field?.forign_key === "")){
+            toast.error("Template Not Found !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        if(!formData?.[field?.name] || formData?.[field?.name] === ""){
+            toast.error("Please Select Value Before Getting Data !", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-error",
+            });
+            return;
+        }
+
+        var payload = {
+            table_name : field?.table,
+            key : field?.forign_key,
+            value : formData?.[field?.name]
+        }
+
+        try {
+            
+            const gettingDetailedData = await api.post('/templateData/getTemplateAlongWithData', payload);
+            
+            if(gettingDetailedData?.success && gettingDetailedData?.data){
+
+                const { data, template } = gettingDetailedData?.data
+
+                setLinkTemplateName(template?.template_name);
+                setLinkTableName(template?.table_name);
+
+                setLinkTemplateRowId(data?.id);
+                setLinkTemplateId(template?.template_id);
+
+                setLinkTemplateFields(template?.fields);
+                setLinkTemplateStepperData(template?.sections ? template?.sections : []);
+
+                setLinkTemplateInitialData(data);
+
+                setShowLinkTemplate(true);
+
+            }
+
+        } catch (error) {
+            if (error && error.response && error.response.data) {
+                toast.error( error.response?.data?.message || "Need dependent Fields", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+                return;
+            }
+        }
+    }
+
+    const closeLinkTemplateModal = ()=>{
+        setLinkTemplateName("");
+        setLinkTableName("");
+
+        setLinkTemplateRowId("");
+        setLinkTemplateId("");
+
+        setLinkTemplateFields([]);
+        setLinkTemplateStepperData([]);
+
+        setLinkTemplateInitialData({});
+
+        setShowLinkTemplate(false);
+    }
+
+    const linkTemplateUpdateFunc = async (data)=>{
+
+        if (!linkTableName || linkTableName === "") {
+            toast.warning("Please Check The Template", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        if (Object.keys(data).length === 0) {
+            toast.warning("Data Is Empty Please Check Once", {
+                position: "top-right",
+                autoClose: 3000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+                progress: undefined,
+                className: "toast-warning",
+            });
+            return;
+        }
+
+        const formData = new FormData();
+
+        formData.append("table_name", linkTableName);
+        var normalData = {}; 
+
+        linkTemplateFields.forEach((field) => {
+            if (data[field.name]) {
+                if (field.type === "file" || field.type === "profilepicture") {
+                    if (field.type === "file") {
+                        if (Array.isArray(data[field.name])) {
+                            const hasFileInstance = data[field.name].some(
+                                (file) => file.filename instanceof File
+                            );
+                            var filteredArray = data[field.name].filter(
+                                (file) => file.filename instanceof File
+                            );
+                            if (hasFileInstance) {
+                                data[field.name].forEach((file) => {
+                                    if (file.filename instanceof File) {
+                                        formData.append(field.name, file.filename);
+                                    }
+                                });
+
+                                filteredArray = filteredArray.map((obj) => {
+                                    return {
+                                        ...obj,
+                                        filename: obj.filename["name"],
+                                    };
+                                });
+                                formData.append("folder_attachment_ids", JSON.stringify(filteredArray));
+                            }
+                        }
+                    } else {
+                        formData.append(field.name, data[field.name]);
+                    }
+                } else {
+                    normalData[field.name] = Array.isArray(data[field.name]) ? data[field.name].join(",") : data[field.name]
+                }
+            }
+        });
+        normalData["id"] = data.id;
+        formData.append("id", data.id);
+        setLoading(true);
+        formData.append("data", JSON.stringify(normalData));
+
+        try {
+            const saveTemplateData = await api.post("/templateData/updateTemplateData", formData);
+            setLoading(false);
+
+            if (saveTemplateData && saveTemplateData.success) {
+                toast.success(saveTemplateData.message || "Data Updated Successfully", {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-success",
+                });
+
+                closeLinkTemplateModal();
+                fetchTemplateData();
+
+            } else {
+                const errorMessage = saveTemplateData.message ? saveTemplateData.message : "Failed to create the profile. Please try again.";
+                toast.error(errorMessage, {
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        } catch (error) {
+            setLoading(false);
+            if (error && error.response && error.response["data"]) {
+                toast.error(error.response["data"].message ? error.response["data"].message : "Please Try Again !",{
+                    position: "top-right",
+                    autoClose: 3000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    progress: undefined,
+                    className: "toast-error",
+                });
+            }
+        }
+    }
+
+    const linkTemplateErrorFunc = async (data)=>{
+        console.log(data,"data");
+    }
+
 
   return (
     <>
@@ -2153,7 +2403,35 @@ const NormalViewForm = ({
                 </Button>
             }
 
-            {!readOnlyTemplate && editDataTemplate && onUpdate ?
+            {onSkip && (
+                <Button
+                  onClick={() => {skip();}}
+                  sx={{
+                    border: "1.5px solid #E53935",
+                    background: "transparent",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#E53935",
+                    padding: "6px 16px",
+                    marginLeft: "10px",
+                    marginRight: "10px",
+                    boxShadow: "none",
+                    borderRadius: "8px",
+                    transition: "background 0.2s, color 0.2s, border-color 0.2s",
+                    "&:hover": {
+                    background: "#FFEBEE",
+                    borderColor: "#B71C1C",
+                    color: "#B71C1C",
+                    },
+                  }}
+                  className="Roboto"
+                  variant="outlined"
+                  >
+                  Skip PF & Save
+                  </Button>
+                )}
+              
+              {!readOnlyTemplate && editDataTemplate && onUpdate ?
 
               <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
                 Update
@@ -2171,12 +2449,12 @@ const NormalViewForm = ({
                     sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
                     className="Roboto blueButton"
                   >
-                    Save
+                    {table_name === "cid_ui_case_mahajars" ? "Next" : "Save"}
                   </Button>
             
                     {
                         !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" && table_name !== "cid_eq_case_enquiry_order_copy" &&
-                        table_name !== "cid_eq_case_extension_form" &&
+                        table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahajars" && table_name !== "cid_ui_case_property_form" &&
                         <Button
                             variant="contained" color="success"
                             onClick={() =>{
@@ -2206,7 +2484,7 @@ const NormalViewForm = ({
                     }}
                     className="Roboto blueButton"
                 >
-                    Edit Case
+                  {editName ? "Edit Case" : "Edit"}
                 </Button>
             }
 
@@ -2443,6 +2721,7 @@ const NormalViewForm = ({
                             onHistory={() => showHistory(field.name)}
                             onChange={(value) => handleAutocomplete(field, value.target.value)} 
                             readOnly={readOnlyData}
+                            viewLinkedTemplate={viewLinkedTemplate}
                         />
                         </div>
                       </Grid>
@@ -2459,6 +2738,7 @@ const NormalViewForm = ({
                           onHistory={() => showHistory(field.name)}
                           onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
                           readOnly={readOnlyData}
+                          viewLinkedTemplate={viewLinkedTemplate}
                         />
                       </Grid>
                     );
@@ -2474,6 +2754,7 @@ const NormalViewForm = ({
                           onHistory={() => showHistory(field.name)}
                           onChange={(name, selectedCode) => handleAutocomplete(field, selectedCode)}
                           readOnly={readOnlyData}
+                          viewLinkedTemplate={viewLinkedTemplate}
                         />
                       </Grid>
                     );
@@ -2580,6 +2861,19 @@ const NormalViewForm = ({
                                     onHistory={() => showHistory(field.name)}
                                     dropdownInputValue={dropdownInputValue}
                                     readOnly={readOnlyData}
+                                    viewLinkedTemplate={viewLinkedTemplate}
+                                />
+                            </Grid>
+                        );
+                        case "table":
+                        return (
+                            <Grid item xs={12} md={field.col ? field.col : 12} p={2}>
+                                <TableField
+                                    field={field}
+                                    formData={formData}
+                                    onChange={handleTableDataChange}
+                                    readOnly={readOnlyData}
+                                    errors={errors}
                                 />
                             </Grid>
                         );
@@ -2596,7 +2890,7 @@ const NormalViewForm = ({
               })}
             </Grid>
 
-            {onSubmit &&
+            {(onSubmit || onUpdate) &&
               <Grid container>
                 <Grid item xs={12} md={6}>
                   <Button ref={formButtonRef} className='GreenFillBtn' sx={{ display: 'none' }} type='submit'>Submit</Button>
@@ -2862,6 +3156,43 @@ const NormalViewForm = ({
                         </Box>
                     </DialogContentText>
                 </DialogContent>
+            </Dialog>
+        )}
+
+        {showLinkTemplate && (
+            <Dialog
+                open={showLinkTemplate}
+                onClose={() => closeLinkTemplateModal}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="xl"
+                fullWidth
+            >
+                <DialogContent sx={{ minWidth: "400px", padding: '0'}}>
+                    <DialogContentText id="alert-dialog-description">
+                        <FormControl fullWidth>
+                            <NormalViewForm
+                                table_row_id={linkTemplateRowId}
+                                template_id={linkTemplateId}
+                                template_name={linkTemplateName}
+                                table_name={linkTableName}
+                                readOnly={true}
+                                editData={false}
+                                initialData={linkTemplateInitialData}
+                                formConfig={linkTemplateFields}
+                                stepperData={linkTemplateStepperData}
+                                onUpdate={linkTemplateUpdateFunc}
+                                onError={linkTemplateErrorFunc}
+                                closeForm={closeLinkTemplateModal}
+                            />
+                        </FormControl>
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions sx={{ padding: "12px 24px" }}>
+                    <Button onClick={()=>closeLinkTemplateModal}>
+                        Cancel
+                    </Button>
+                </DialogActions>
             </Dialog>
         )}
 
