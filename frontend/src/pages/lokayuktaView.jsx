@@ -821,7 +821,7 @@ const LokayuktaView = () => {
                             },
                             {
                                 field: "recording_of_statement",
-                                headerName: "Recording",
+                                headerName: "Recording of Statement",
                                 width: 220,
                                 resizable: false,
                                 renderCell: (params) => (
