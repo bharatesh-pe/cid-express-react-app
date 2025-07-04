@@ -8727,10 +8727,10 @@ exports.getAccusedWitness = async (req, res) => {
 
 		let attributes = [];
 		if(table_name === "cid_ui_case_accused"){
-			attributes = ["id", "field_name"];
+			attributes = ["id", "field_accused_name"];
 		}
 		else if(table_name === "cid_ui_case_witness"){
-			attributes = ["id", "field_name"];
+			attributes = ["id", "field_witness_name"];
 		}
 
 		const Usersdata = await Model.findAll({
@@ -8740,9 +8740,9 @@ exports.getAccusedWitness = async (req, res) => {
 
 		const data = Usersdata.map((item) => {
 			if (table_name === "cid_ui_case_accused") {
-				return { id: item.id, name: item.field_name };
+				return { id: item.id, name: item.field_accused_name };
 			} else if (table_name === "cid_ui_case_witness") {
-				return { id: item.id, name: item.field_name };
+				return { id: item.id, name: item.field_witness_name };
 			}
 			return item;
 		});
@@ -10993,7 +10993,7 @@ exports.getDateWiseTableCounts = async (req, res) => {
                     continue;
                 }
                 
-                dateCountMap[dateStr] = (dateCountMap[dateStr] || 0) + rec.count;
+                dateCountMap[dateStr] = (dateCountMap[dateStr] || "") + rec.count;
                 allDatesSet.add(dateStr);
             }
             tableDateCounts[table] = dateCountMap;
