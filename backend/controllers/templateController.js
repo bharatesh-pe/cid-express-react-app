@@ -1132,6 +1132,44 @@ exports.downloadPdf = async (req, res) => {
   }
 };
 
+exports.getAllTemplates = async (req, res) => {
+    try {
+        const templates = await Template.findAll({
+            attributes: [
+                "template_id",
+                "template_name",
+                "table_name",
+                "template_type",
+                "template_module",
+                "sections",
+                "no_of_sections",
+                "fields",
+                "created_at",
+                "updated_at"
+            ],
+            order: [["created_at", "DESC"]]
+        });
+
+        const result = templates.map(t => {
+            const data = t.toJSON();
+            if (data.fields) {
+                try {
+                    data.fields = JSON.parse(data.fields);
+                } catch (e) {
+                    data.fields = null;
+                }
+            }
+            return data;
+        });
+
+        return adminSendResponse(res, 200, true, "All templates fetched successfully.", result);
+    } catch (error) {
+        console.error("Error fetching all templates:", error);
+        return adminSendResponse(res, 500, false, "Server error.", error.message);
+    }
+};
+
+
 exports.checkDuplicateTemplate = async (req, res, next) => {
   try {
     let { template_name, template_module } = req.body;

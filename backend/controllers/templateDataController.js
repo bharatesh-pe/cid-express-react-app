@@ -771,357 +771,407 @@ async function getDisplayValueForField(field, value, schema) {
   // If no transformation was possible, return the original value
   return value;
 }
+
 exports.updateTemplateData = async (req, res, next) => {
-  const { table_name, id, data, folder_attachment_ids, transaction_id } =
-    req.body;
+    const { table_name, id, data, folder_attachment_ids, transaction_id, checkWitnessData } = req.body;
 
-  const userId = req.user?.user_id || null;
-  const adminUserId = res.locals.admin_user_id || null;
-  const actorId = userId || adminUserId;
+    const userId = req.user?.user_id || null;
+    const adminUserId = res.locals.admin_user_id || null;
+    const actorId = userId || adminUserId;
 
-  if (!actorId) {
-    return userSendResponse(res, 403, false, "Unauthorized access.", null);
-  }
-
-  const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
-  if (fs.existsSync(dirPath))
-    return res
-      .status(400)
-      .json({ success: false, message: "Duplicate transaction detected." });
-  fs.mkdirSync(dirPath, { recursive: true });
-
-  // Fetch user data
-  const userData = await Users.findOne({
-    include: [
-      {
-        model: KGID,
-        as: "kgidDetails",
-        attributes: ["kgid", "name", "mobile"],
-      },
-    ],
-    where: { user_id: userId },
-  });
-
-  let userName = userData?.kgidDetails?.name || null;
-
-  try {
-    // Fetch the table template
-    const tableData = await Template.findOne({ where: { table_name } });
-
-    if (!tableData) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        `Table ${table_name} does not exist.`,
-        null
-      );
+    if (!actorId) {
+        return userSendResponse(res, 403, false, "Unauthorized access.", null);
     }
 
-    // Parse schema and request data
-    const schema =
-      typeof tableData.fields === "string"
-        ? JSON.parse(tableData.fields)
-        : tableData.fields;
-    const validData = {};
-
-    // Parse incoming JSON payload
-    // const cleanedData = data.replace(/\/\/.*|\/\*[\s\S]*?\*\/|,\s*}/g, match => {
-    //     return match.includes(",") ? "}" : "";
-    // });
-    // const parsedData = JSON.parse(cleanedData);
-    let parsedData;
-    try {
-      parsedData = JSON.parse(data);
-    } catch (err) {
-      return userSendResponse(
-        res,
-        400,
-        false,
-        "Invalid JSON format in data.",
-        null
-      );
-    }
-
-    // Validate and filter data for schema-based fields
-    for (const field of schema) {
-      const { name, not_null } = field;
-
-      if (parsedData.hasOwnProperty(name)) {
-        validData[name] = parsedData[name];
-      } else if (not_null && !parsedData[name]) {
-        return userSendResponse(
-          res,
-          400,
-          false,
-          `Field ${name} cannot be null.`,
-          null
-        );
-      }
-    }
-
-    if (parsedData.field_io_name) {
-      let ioIds;
-      if (typeof id === "string" && id.includes(",")) {
-        ioIds = id.split(",").map((i) => i.trim());
-      } else {
-        ioIds = [id];
-      }
-      await CaseAlerts.update(
-        { status: "Completed" },
-        {
-          where: {
-            record_id: { [Sequelize.Op.in]: ioIds },
-            status: "Pending",
-          },
-        }
-      );
-    }
-    validData.sys_status = parsedData.sys_status;
-    validData.updated_by = userName;
-    validData.updated_by_id = userId;
-
-    // Include additional system fields dynamically
-    let completeSchema = parsedData?.sys_status
-      ? [
-          {
-            name: "sys_status",
-            data_type: "TEXT",
-            not_null: false,
-            default_value: parsedData.sys_status.trim(),
-          },
-          { name: "updated_by", data_type: "TEXT", not_null: false },
-          { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-          ...schema,
-        ]
-      : [
-          { name: "updated_by", data_type: "TEXT", not_null: false },
-          { name: "updated_by_id", data_type: "INTEGER", not_null: false },
-          ...schema,
-        ];
-
-    if (parsedData?.ui_case_id && parsedData.ui_case_id != "") {
-      completeSchema = [
-        { name: "ui_case_id", data_type: "INTEGER", not_null: false },
-        ...completeSchema,
-      ];
-      validData.ui_case_id = parsedData.ui_case_id;
-    }
-
-    if (parsedData?.pt_case_id && parsedData.pt_case_id != "") {
-      completeSchema = [
-        { name: "pt_case_id", data_type: "INTEGER", not_null: false },
-        ...completeSchema,
-      ];
-      validData.pt_case_id = parsedData.pt_case_id;
-    }
-
-    // Define Sequelize model dynamically
-    const modelAttributes = {};
-    for (const field of completeSchema) {
-      const { name, data_type, not_null, default_value } = field;
-      const sequelizeType =
-        typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
-      modelAttributes[name] = {
-        type: sequelizeType,
-        allowNull: !not_null,
-        defaultValue: default_value || null,
-      };
-    }
-
-    const Model = sequelize.define(table_name, modelAttributes, {
-      freezeTableName: true,
-      timestamps: true,
-      createdAt: "created_at",
-      updatedAt: "updated_at",
-    });
-
-    // Find existing record by ID
-    const ids = id.split(",").map((id) => id.trim());
-
-    for (const singleId of ids) {
-      // Find existing record by ID
-      const record = await Model.findByPk(singleId);
-      if (!record) {
-        return userSendResponse(
-          res,
-          400,
-          false,
-          `Record with ID ${singleId} does not exist in table ${table_name}.`,
-          null
-        );
-      }
-
-      const originalData = record.toJSON();
-      const updatedFields = {};
-
-      // Update fields only if they are changed
-      for (const key in validData) {
-        if (originalData[key] !== validData[key]) {
-          updatedFields[key] = validData[key];
-        }
-      }
-
-      // Perform the database update if there are changes
-      if (Object.keys(updatedFields).length > 0) {
-        await record.update(updatedFields);
-
-        // Log changes in ProfileHistory (Only for changed fields)
-        if (userId) {
-          const ids = typeof id === 'string' && id.includes(',')
-              ? id.split(',').map(i => parseInt(i.trim()))
-              : [parseInt(id)];
-      
-          for (const rowId of ids) {
-              for (const key in updatedFields) {
-                  const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
-                  const newValue = updatedFields[key];
-      
-                  console.log(">>>>>oldValue1>>>>>>>>", oldValue);
-                  console.log(">>>>>>newValue1>>>>>>>", newValue);
-      
-                  const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
-                  const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
-      
-                  console.log(">>>>>oldDisplayValue>>>>>>>>", oldDisplayValue);
-                  console.log(">>>>newDisplayValue>>>>>>>>>", newDisplayValue);
-      
-                  if (oldValue !== newValue) {
-                      await ProfileHistory.create({
-                          template_id: tableData.template_id,
-                          table_row_id: rowId,
-                          user_id: userId,
-                          field_name: key,
-                          old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
-                          updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
-                      });
-                  }
-              }
-          }
-      }
-      
-
-        // await ActivityLog.create({
-        //     template_id: tableData.template_id,
-        //     table_row_id: id,
-        //     user_id: actorId,
-        //     actor_name: actorName,
-        //     activity: `Updated`,
-        // });
-
-        for (const rowId of ids) {
-          await CaseHistory.create({
-            template_id: tableData.template_id,
-            table_row_id: rowId,
-            user_id: actorId,
-            actor_name: userName,
-            action: `Updated`,
-          });
-        }
-      }
-
-      const fileUpdates = {};
-
-      if (req.files && req.files.length > 0) {
-        const folderAttachments = folder_attachment_ids
-          ? JSON.parse(folder_attachment_ids)
-          : []; // Parse if provided, else empty array
-
-        for (const file of req.files) {
-          const { originalname, size, key, fieldname, filename } = file;
-          const fileExtension = path.extname(originalname);
-
-          // Find matching folder_id from the payload (if any)
-          const matchingFolder = folderAttachments.find(
-            (attachment) =>
-              attachment.filename === originalname &&
-              attachment.field_name === fieldname
-          );
-
-          const folderId = matchingFolder ? matchingFolder.folder_id : null; // Store NULL if no folder_id provided
-
-            const s3Key = `../data/cases/${filename}`;
-
-          await ProfileAttachment.create({
-            template_id: tableData.template_id,
-            table_row_id: id,
-            attachment_name: originalname,
-            attachment_extension: fileExtension,
-            attachment_size: size,
-            s3_key: s3Key,
-            field_name: fieldname,
-            folder_id: folderId, // Store NULL if no folder_id provided
-          });
-
-          // Fetch current field value if it exists
-          const existingRecord = await Model.findOne({
-            where: { id },
-            attributes: [fieldname],
-          });
-
-          let currentFilenames = existingRecord?.[fieldname] || "";
-
-          // Append new filename to the existing comma-separated list
-          currentFilenames = currentFilenames
-            ? `${currentFilenames},${originalname}`
-            : originalname;
-
-          // Add/accumulate new filenames for each field
-          if (fileUpdates[fieldname]) {
-            fileUpdates[
-              fieldname
-            ] = `${fileUpdates[fieldname]},${originalname}`;
-          } else {
-            fileUpdates[fieldname] = currentFilenames;
-          }
-        }
-
-        // Update the model with the updated filenames
-        for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
-          await Model.update(
-            { [fieldname]: filenames },
-            { where: { id: singleId } }
-          );
-        }
-      }
-    }
-
-    // await TemplateUserStatus.destroy({
-    //     where: {
-    //         template_id: tableData.template_id,
-    //         table_row_id: id
-    //     }
-    // });
-    return userSendResponse(res, 200, true, `Record updated successfully.`, null);
-  } catch (error) {
-    if (error.name === "SequelizeUniqueConstraintError") {
-      const uniqueErrorField = error.errors[0]?.path || "a unique field";
-      return userSendResponse(
-        res,
-        400,
-        false,
-        `${uniqueErrorField} already exists. Please use a different value.`,
-        null
-      );
-    }
-
-    if (error.name === "SequelizeValidationError") {
-      const validationErrorField = error.errors[0]?.path || "a required field";
-      return userSendResponse(
-        res,
-        400,
-        false,
-        `${validationErrorField} is required and cannot be null.`,
-        null
-      );
-    }
-
-    console.error("Error updating data:", error);
-    return userSendResponse(res, 500, false, "Server error.", error);
-  } finally {
+    const dirPath = path.join(__dirname, `../data/user_unique/${transaction_id}`);
     if (fs.existsSync(dirPath))
-      fs.rmSync(dirPath, { recursive: true, force: true });
-  }
+        return res
+            .status(400)
+            .json({ success: false, message: "Duplicate transaction detected." });
+    fs.mkdirSync(dirPath, { recursive: true });
+
+    // Start a transaction for atomicity
+    const t = await sequelize.transaction();
+    try {
+        // Fetch user data
+        const userData = await Users.findOne({
+            include: [{
+                model: KGID,
+                as: "kgidDetails",
+                attributes: ["kgid", "name", "mobile"],
+            }],
+            where: { user_id: userId },
+        });
+
+        let userName = userData?.kgidDetails?.name || null;
+
+        // Fetch the table template
+        const tableData = await Template.findOne({ where: { table_name } });
+
+        if (!tableData) {
+            await t.rollback();
+            return userSendResponse(
+                res,
+                400,
+                false,
+                `Table ${table_name} does not exist.`,
+                null
+            );
+        }
+
+        // Parse schema and request data
+        const schema =
+            typeof tableData.fields === "string"
+                ? JSON.parse(tableData.fields)
+                : tableData.fields;
+
+        let parsedData;
+        try {
+            parsedData = JSON.parse(data);
+        } catch (err) {
+            await t.rollback();
+            return userSendResponse(
+                res,
+                400,
+                false,
+                "Invalid JSON format in data.",
+                null
+            );
+        }
+
+        // Validate and filter data for schema-based fields
+        const validData = {};
+        for (const field of schema) {
+            const { name, not_null } = field;
+            if (parsedData.hasOwnProperty(name)) {
+                validData[name] = parsedData[name];
+            } else if (not_null && !parsedData[name]) {
+                await t.rollback();
+                return userSendResponse(
+                    res,
+                    400,
+                    false,
+                    `Field ${name} cannot be null.`,
+                    null
+                );
+            }
+        }
+
+        // If IO is being updated, mark related alerts as completed
+        if (parsedData.field_io_name) {
+            let ioIds;
+            if (typeof id === "string" && id.includes(",")) {
+                ioIds = id.split(",").map((i) => i.trim());
+            } else {
+                ioIds = [id];
+            }
+            await CaseAlerts.update(
+                { status: "Completed" },
+                {
+                    where: {
+                        record_id: { [Sequelize.Op.in]: ioIds },
+                        status: "Pending",
+                    },
+                    transaction: t,
+                }
+            );
+        }
+
+        validData.sys_status = parsedData.sys_status;
+        validData.updated_by = userName;
+        validData.updated_by_id = userId;
+
+        // Build dynamic schema for Sequelize model
+        let completeSchema = parsedData?.sys_status
+            ? [
+                {
+                    name: "sys_status",
+                    data_type: "TEXT",
+                    not_null: false,
+                    default_value: parsedData.sys_status.trim(),
+                },
+                { name: "updated_by", data_type: "TEXT", not_null: false },
+                { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                ...schema,
+            ]
+            : [
+                { name: "updated_by", data_type: "TEXT", not_null: false },
+                { name: "updated_by_id", data_type: "INTEGER", not_null: false },
+                ...schema,
+            ];
+
+        if (parsedData?.ui_case_id && parsedData.ui_case_id != "") {
+            completeSchema = [
+                { name: "ui_case_id", data_type: "INTEGER", not_null: false },
+                ...completeSchema,
+            ];
+            validData.ui_case_id = parsedData.ui_case_id;
+        }
+
+        if (parsedData?.pt_case_id && parsedData.pt_case_id != "") {
+            completeSchema = [
+                { name: "pt_case_id", data_type: "INTEGER", not_null: false },
+                ...completeSchema,
+            ];
+            validData.pt_case_id = parsedData.pt_case_id;
+        }
+
+        // Define Sequelize model dynamically
+        const modelAttributes = {};
+        for (const field of completeSchema) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType =
+                typeMapping[data_type.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        // Find existing record(s) by ID
+        const ids = id.split(",").map((id) => id.trim());
+
+        for (const singleId of ids) {
+            const record = await Model.findByPk(singleId, { transaction: t });
+            if (!record) {
+                await t.rollback();
+                return userSendResponse(
+                    res,
+                    400,
+                    false,
+                    `Record with ID ${singleId} does not exist in table ${table_name}.`,
+                    null
+                );
+            }
+
+            const originalData = record.toJSON();
+            const updatedFields = {};
+
+            // Only update changed fields
+            for (const key in validData) {
+                if (originalData[key] !== validData[key]) {
+                    updatedFields[key] = validData[key];
+                }
+            }
+
+            if (Object.keys(updatedFields).length > 0) {
+                await record.update(updatedFields, { transaction: t });
+
+                // Log changes in ProfileHistory (Only for changed fields)
+                if (userId) {
+                    for (const key in updatedFields) {
+                        const oldValue = originalData.hasOwnProperty(key) ? originalData[key] : null;
+                        const newValue = updatedFields[key];
+                        const oldDisplayValue = await getDisplayValueForField(key, oldValue, schema);
+                        const newDisplayValue = await getDisplayValueForField(key, newValue, schema);
+
+                        if (oldValue !== newValue) {
+                            await ProfileHistory.create({
+                                template_id: tableData.template_id,
+                                table_row_id: parseInt(singleId),
+                                user_id: userId,
+                                field_name: key,
+                                old_value: oldDisplayValue !== null ? String(oldDisplayValue) : null,
+                                updated_value: newDisplayValue !== null ? String(newDisplayValue) : null,
+                            }, { transaction: t });
+                        }
+                    }
+                }
+
+                await CaseHistory.create({
+                    template_id: tableData.template_id,
+                    table_row_id: singleId,
+                    user_id: actorId,
+                    actor_name: userName,
+                    action: `Updated`,
+                }, { transaction: t });
+            }
+
+            // Handle file attachments if any
+            const fileUpdates = {};
+            if (req.files && req.files.length > 0) {
+                const folderAttachments = folder_attachment_ids
+                    ? JSON.parse(folder_attachment_ids)
+                    : [];
+
+                for (const file of req.files) {
+                    const { originalname, size, key, fieldname, filename } = file;
+                    const fileExtension = path.extname(originalname);
+
+                    const matchingFolder = folderAttachments.find(
+                        (attachment) =>
+                            attachment.filename === originalname &&
+                            attachment.field_name === fieldname
+                    );
+                    const folderId = matchingFolder ? matchingFolder.folder_id : null;
+                    const s3Key = `../data/cases/${filename}`;
+
+                    await ProfileAttachment.create({
+                        template_id: tableData.template_id,
+                        table_row_id: singleId,
+                        attachment_name: originalname,
+                        attachment_extension: fileExtension,
+                        attachment_size: size,
+                        s3_key: s3Key,
+                        field_name: fieldname,
+                        folder_id: folderId,
+                    }, { transaction: t });
+
+                    // Fetch current field value if it exists
+                    const existingRecord = await Model.findOne({
+                        where: { id: singleId },
+                        attributes: [fieldname],
+                        transaction: t,
+                    });
+
+                    let currentFilenames = existingRecord?.[fieldname] || "";
+                    currentFilenames = currentFilenames
+                        ? `${currentFilenames},${originalname}`
+                        : originalname;
+
+                    fileUpdates[fieldname] = fileUpdates[fieldname]
+                        ? `${fileUpdates[fieldname]},${originalname}`
+                        : currentFilenames;
+                }
+
+                // Update the model with the updated filenames
+                for (const [fieldname, filenames] of Object.entries(fileUpdates)) {
+                    await Model.update(
+                        { [fieldname]: filenames },
+                        { where: { id: singleId }, transaction: t }
+                    );
+                }
+            }
+            
+            if (checkWitnessData && table_name === "cid_ui_case_accused") {
+
+                const witnessTableName = "cid_pt_case_witness";
+                const witnessTemplate = await Template.findOne({ where: { table_name: witnessTableName } });
+
+                if (witnessTemplate) {
+                    const witnessSchema = typeof witnessTemplate.fields === "string"
+                        ? JSON.parse(witnessTemplate.fields)
+                        : witnessTemplate.fields;
+
+                    const accusedTableColumns = schema.map(f => f.name);
+                    const witnessColumns = witnessSchema.map(f => f.name);
+                    const commonColumns = accusedTableColumns.filter(col => witnessColumns.includes(col));
+
+                    const witnessData = {};
+                    for (const col of commonColumns) {
+                        if (parsedData.hasOwnProperty(col)) {
+                            witnessData[col] = parsedData[col];
+                        }
+                    }
+
+                    if (parsedData.ui_case_id) witnessData.ui_case_id = parsedData.ui_case_id;
+                    if (parsedData.pt_case_id) witnessData.pt_case_id = parsedData.pt_case_id;
+
+                    witnessData.created_by = userName;
+                    witnessData.created_by_id = userId;
+
+                    const witnessModelAttributes = {};
+                    for (const field of witnessSchema) {
+                        const { name, data_type, not_null, default_value } = field;
+                        const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+                        witnessModelAttributes[name] = {
+                            type: sequelizeType,
+                            allowNull: !not_null,
+                            defaultValue: default_value || null,
+                        };
+                    }
+
+                    if (!witnessModelAttributes.created_by) {
+                        witnessModelAttributes.created_by = { type: Sequelize.DataTypes.STRING, allowNull: true };
+                    }
+                    if (!witnessModelAttributes.created_by_id) {
+                        witnessModelAttributes.created_by_id = { type: Sequelize.DataTypes.INTEGER, allowNull: true };
+                    }
+                    
+                    if (!witnessModelAttributes["ui_case_id"]) {
+                        witnessModelAttributes["ui_case_id"] = {
+                            type: Sequelize.DataTypes.INTEGER,
+                            allowNull: true,
+                            defaultValue: null,
+                        };
+                    }
+
+                    if (!witnessModelAttributes["pt_case_id"]) {
+                        witnessModelAttributes["pt_case_id"] = {
+                            type: Sequelize.DataTypes.INTEGER,
+                            allowNull: true,
+                            defaultValue: null,
+                        };
+                    }
+                    const WitnessModel = sequelize.define(witnessTableName, witnessModelAttributes, {
+                        freezeTableName: true,
+                        timestamps: true,
+                        createdAt: "created_at",
+                        updatedAt: "updated_at",
+                    });
+
+                    await WitnessModel.sync();
+
+                    // Check if accused field_aadhar_no exists in witness
+                    if (witnessData.field_aadhar_no) {
+                        const existingWitness = await WitnessModel.findOne({
+                            where: { 
+                                field_aadhar_no: witnessData.field_aadhar_no, 
+                                ui_case_id : witnessData.ui_case_id 
+                            },
+                            transaction: t,
+                        });
+
+                        if (existingWitness) {
+                            await existingWitness.update(witnessData, { transaction: t });
+                        } else {
+                            await WitnessModel.create(witnessData, { transaction: t });
+                        }
+                    } else {
+                        await WitnessModel.create(witnessData, { transaction: t });
+                    }
+                }
+            }
+        }
+
+        await t.commit();
+        return userSendResponse(res, 200, true, `Record updated successfully.`, null);
+    } catch (error) {
+        if (t && !t.finished) await t.rollback();
+        if (error.name === "SequelizeUniqueConstraintError") {
+            const uniqueErrorField = error.errors[0]?.path || "a unique field";
+            return userSendResponse(
+                res,
+                400,
+                false,
+                `${uniqueErrorField} already exists. Please use a different value.`,
+                null
+            );
+        }
+        if (error.name === "SequelizeValidationError") {
+            const validationErrorField = error.errors[0]?.path || "a required field";
+            return userSendResponse(
+                res,
+                400,
+                false,
+                `${validationErrorField} is required and cannot be null.`,
+                null
+            );
+        }
+        console.error("Error updating data:", error);
+        return userSendResponse(res, 500, false, "Server error.", error);
+    } finally {
+        if (fs.existsSync(dirPath))
+            fs.rmSync(dirPath, { recursive: true, force: true });
+    }
 };
 
 exports.updateEditTemplateData = async (req, res, next) => {
@@ -1713,7 +1763,7 @@ exports.getTemplateData = async (req, res, next) => {
 
     // Filter fields that have is_primary_field as true
     const relevantSchema = 
-    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_accused' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_cdr_ipdr'
+    table_name === "cid_ui_case_progress_report" || table_name === "cid_eq_case_progress_report" || table_name === 'cid_eq_case_plan_of_action' || table_name === "cid_pt_case_trail_monitoring" || table_name === 'cid_ui_case_action_plan' || table_name === 'cid_ui_case_property_form' || table_name === 'cid_ui_case_cdr_ipdr'
       ? schema
       : schema.filter((field) => field.is_primary_field === true || field.table_display_content === true);
     
@@ -1728,25 +1778,7 @@ exports.getTemplateData = async (req, res, next) => {
   
     // const relevantSchema = schema;
     // Define model attributes based on filtered schema
-    const modelAttributes = {
-      id: {
-        type: Sequelize.DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      created_at: {
-        type: Sequelize.DataTypes.DATE,
-        allowNull: false,
-      },
-      updated_at: {
-        type: Sequelize.DataTypes.DATE,
-        allowNull: false,
-      },
-      created_by: {
-        type: Sequelize.DataTypes.STRING,
-        allowNull: true,  
-      } 
-    };
+    const modelAttributes = {};
     const associations = [];
     // Store field configurations by name for easy lookup
     const fieldConfigs = {};
@@ -1888,6 +1920,11 @@ exports.getTemplateData = async (req, res, next) => {
       });
       }
     }
+
+    modelAttributes['id'] = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true }
+    modelAttributes['created_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
+    modelAttributes['updated_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
+    modelAttributes['created_by'] = { type: Sequelize.DataTypes.STRING, allowNull: true }
 
     // Define and sync the dynamic model
     const Model = sequelize.define(table_name, modelAttributes, {
@@ -10167,6 +10204,222 @@ exports.deMergeCaseData = async (req, res) => {
     }
 };
 
+exports.getTemplateAlongWithData = async (req, res) => {
+    try {
+        const { table_name, key, value } = req.body;
+
+        if (!table_name || !key || typeof value === "undefined") {
+            return userSendResponse(res, 400, false, "table_name, key, and value are required.", null);
+        }
+
+        // Fetch template metadata
+        const template = await Template.findOne({ where: { table_name } });
+        if (!template) {
+            return userSendResponse(res, 404, false, `Template ${table_name} not found.`, null);
+        }
+
+        // Parse fields
+        let fields = [];
+        try {
+            fields = typeof template.fields === "string" ? JSON.parse(template.fields) : template.fields;
+        } catch (e) {
+            return userSendResponse(res, 500, false, "Invalid fields JSON in template.", null);
+        }
+
+        const modelAttributes = {};
+        for (const field of fields) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: not_null ? false : true,
+                defaultValue: default_value || null,
+            };
+        }
+
+        const DynamicModel = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        const whereClause = {};
+        whereClause[key] = value;
+        const data = await DynamicModel.findOne({ where: whereClause });
+
+        return userSendResponse(res, 200, true, "Template and data fetched successfully.", {
+            template: {
+                template_id: template.template_id,
+                table_name: template.table_name,
+                template_name: template.template_name,
+                template_type: template.template_type,
+                template_module: template.template_module,
+                sections: template.sections,
+                no_of_sections: template.no_of_sections,
+                fields,
+            },
+            data: data ? data.toJSON() : null,
+        });
+    } catch (error) {
+        console.error("Error in getTemplateWithData:", error);
+        return userSendResponse(res, 500, false, "Server error.", error.message);
+    }
+};
+
+exports.getTemplateDataWithAccused = async (req, res, next) => {
+    const {
+        table_name,
+        accused_ids = [],
+        limit = 10,
+        page = 1,
+        search = "",
+        from_date = null,
+        to_date = null,
+        filter = {},
+        ...rest
+    } = req.body;
+
+    if (!table_name || !Array.isArray(accused_ids) || accused_ids.length === 0) {
+        return userSendResponse(res, 400, false, "table_name and accused_ids array are required.", null);
+    }
+
+    try {
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+
+        // Only use fields with table_display_content: true
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+        const displayFields = schema.filter(f => f.table_display_content);
+
+        const fieldAccusedLevel = displayFields.find(f => f.name === "field_accused_level");
+        if (!fieldAccusedLevel) {
+            return userSendResponse(res, 400, false, "field_accused_level column not found in schema.", null);
+        }
+
+        const modelAttributes = {};
+        for (const field of displayFields) {
+            const { name, data_type, not_null, default_value } = field;
+            const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
+            modelAttributes[name] = {
+                type: sequelizeType,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+        }
+        modelAttributes['id'] = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true }
+        modelAttributes['created_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
+        modelAttributes['updated_at'] = { type: Sequelize.DataTypes.DATE, allowNull: false }
+        modelAttributes['created_by'] = { type: Sequelize.DataTypes.STRING, allowNull: true }
+
+        const Model = sequelize.define(table_name, modelAttributes, {
+            freezeTableName: true,
+            timestamps: true,
+            createdAt: "created_at",
+            updatedAt: "updated_at",
+        });
+
+        await Model.sync();
+
+        const Op = Sequelize.Op;
+        const offset = (page - 1) * limit;
+
+        let accusedLevelType = (typeMapping[fieldAccusedLevel.data_type?.toUpperCase()] || {}).key;
+        let accusedIdsForQuery = accused_ids;
+        if (accusedLevelType === "STRING" || accusedLevelType === "TEXT") {
+            accusedIdsForQuery = accused_ids.map(id => String(id));
+        } else if (accusedLevelType === "INTEGER") {
+            accusedIdsForQuery = accused_ids.map(id => Number(id));
+        }
+
+        let whereClause = {
+            field_accused_level: { [Op.in]: accusedIdsForQuery }
+        };
+
+        if (filter && typeof filter === "object") {
+            Object.entries(filter).forEach(([key, value]) => {
+                if (displayFields.find(f => f.name === key)) {
+                    whereClause[key] = value;
+                }
+            });
+        }
+
+        if (from_date || to_date) {
+            whereClause["created_at"] = {};
+            if (from_date) whereClause["created_at"][Op.gte] = new Date(`${from_date}T00:00:00.000Z`);
+            if (to_date) whereClause["created_at"][Op.lte] = new Date(`${to_date}T23:59:59.999Z`);
+        }
+
+        if (search) {
+            const searchConditions = [];
+            for (const field of displayFields) {
+                if (["STRING", "TEXT"].includes((typeMapping[field.data_type?.toUpperCase()] || {}).key)) {
+                    searchConditions.push({ [field.name]: { [Op.iLike]: `%${search}%` } });
+                }
+            }
+            if (searchConditions.length > 0) {
+                whereClause[Op.or] = searchConditions;
+            }
+        }
+
+        const { rows, count } = await Model.findAndCountAll({
+            where: whereClause,
+            limit,
+            offset,
+            order: [["created_at", "DESC"]],
+        });
+
+        const result = [];
+        for (const row of rows) {
+            const data = row.toJSON();
+            for (const field of displayFields) {
+                if (field.table && field.attributes && Array.isArray(field.attributes)) {
+                    
+                    const RelatedModel = require(`../models`)[field.table];
+                    
+                    if (RelatedModel) {
+                        const attr = Array.isArray(field.attributes) ? field.attributes[0] : field.attributes;
+                        const related = await RelatedModel.findOne({
+                            where: { id: data[field.name] },
+                            attributes: [attr],
+                        });
+                        if (related && related[attr] !== undefined) {
+                            data[field.name] = related[attr];
+                        }
+                    } else {
+                        const attr = Array.isArray(field.attributes) ? field.attributes[0] : field.attributes;
+                        const [resultRow] = await sequelize.query(
+                            `SELECT ${attr} FROM ${field.table} WHERE id = :id LIMIT 1`,
+                            {
+                                replacements: { id: data[field.name] },
+                                type: Sequelize.QueryTypes.SELECT,
+                            }
+                        );
+                        if (resultRow && resultRow[attr] !== undefined) {
+                            data[field.name] = resultRow[attr];
+                        }
+                    }
+                }
+            }
+            result.push(data);
+        }
+
+        const totalPages = Math.ceil(count / limit);
+
+        return userSendResponse(res, 200, true, "Fetched data successfully.", result, null, {
+            page,
+            limit,
+            totalItems: count,
+            totalPages,
+            template_json: schema
+        });
+    } catch (error) {
+        console.error("Error in getTemplateDataWithAccused:", error);
+        return userSendResponse(res, 500, false, "Server error.", error);
+    }
+};
 
 exports.saveActionPlan = async (req, res) => {
 

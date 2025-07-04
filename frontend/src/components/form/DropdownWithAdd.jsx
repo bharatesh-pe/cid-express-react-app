@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Autocomplete, TextField, Popper, Box, styled, CircularProgress, FormHelperText, Tooltip } from "@mui/material";
+import { Autocomplete, TextField, Popper, Box, styled, CircularProgress, FormHelperText, Tooltip, Typography } from "@mui/material";
 import { useEffect } from "react";
 import InfoIcon from '@mui/icons-material/Info';
 import HistoryIcon from '@mui/icons-material/History';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 const StyledPopper = styled(Popper)({
     "& .MuiAutocomplete-listbox": {
@@ -42,7 +43,8 @@ export default function DropdownWithAdd(
         readOnly,
         disabled,
         onHistory,
-        isFocused
+        isFocused,
+        viewLinkedTemplate
     }) {
 
     const handleAdd = async (val) => {
@@ -181,6 +183,34 @@ export default function DropdownWithAdd(
             >
                 {errors?.[field?.name] || field?.supportingText || ''}
             </FormHelperText>
+
+            {
+                field?.linkModule && (
+                    <Tooltip title="" arrow placement="top">
+                        <Box
+                            onClick={()=> viewLinkedTemplate && viewLinkedTemplate(field)}
+                            mt={1}
+                            sx={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                cursor: 'pointer',
+                                color: 'primary.main',
+                                fontSize: '0.875rem',
+                                '&:hover': {
+                                    textDecoration: 'underline',
+                                },
+                            }}
+                        >
+                            <InfoOutlinedIcon fontSize="small" />
+                            <Typography variant="body2" fontWeight={500}>
+                                View Data Details
+                            </Typography>
+                        </Box>
+                    </Tooltip>
+                )
+            }
+
         </Box>
     );
 }
