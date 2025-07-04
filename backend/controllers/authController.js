@@ -128,7 +128,8 @@ const get_module = async (req, res) => {
     console.error("error retrieving modules:", error.message);
     return res.status(500).json({
         success: false,
-        message: error.message || "Internal server error"
+        message: "Failed to retrieve modules",
+        error: error.message || "Internal Server Error"
     });
     }
 
@@ -350,7 +351,8 @@ const verify_OTP = async (req, res) => {
     console.error("Error verifying OTP:", error.message);
     return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to verify OTP",
+        error: error.message || "Internal Server Error"
     });
   }
 };
@@ -462,7 +464,8 @@ const generate_OTP = async (req, res) => {
     console.error("Error generating OTP:", error.message);
     return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to generate OTP",
+        error: error.message || "Internal Server Error"
     });
   }
 };
@@ -505,7 +508,8 @@ const logout = async (req, res) => {
         console.error("Error logging out:", error.message);
         return res.status(500).json({
             success: false,
-            message: error.message || "Internal Server Error"
+            message: "Failed to log out",
+            error: error.message || "Internal Server Error"
         });
     }
     
@@ -598,7 +602,8 @@ const generate_OTP_without_pin = async (req, res) => {
     console.error("Error generating OTP:", error.message);
     return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to generate OTP",
+        error: error.message || "Internal Server Error"
     });
   }
 };
@@ -672,7 +677,8 @@ const verify_OTP_without_pin = async (req, res) => {
     console.error("Error verifying OTP:", error.message);
     return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to verify OTP",
+        error: error.message || "Internal Server Error"
     });
   }
 };
@@ -739,7 +745,8 @@ const update_pin = async (req, res) => {
     console.error("Error updating PIN:", error.message);
     return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to update PIN",
+        error: error.message || "Internal Server Error"
     });
   } finally {
     if (fs.existsSync(dirPath))
@@ -847,7 +854,7 @@ const get_supervisor_id = async (req, res) => {
     console.error("Error logging out:", error.message);
     return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to get supervisor id. " + error.message || "Internal Server Error"
     });
   }
 };
@@ -973,7 +980,7 @@ const set_user_hierarchy = async (req, res) => {
         console.error("Error setting user hierarchy:", error.message);
         return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to set user hierarchy. " + error.message || "Internal Server Error"
     });
     }
 };
@@ -2005,7 +2012,8 @@ const fetch_dash_count = async (req, res) => {
         console.error("Error retrieving dashboard count:", error.message);
         return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to retrieve dashboard count",
+        error: error.message || "Internal Server Error"
     });
     }
 };
@@ -2059,7 +2067,8 @@ const mapUIandPT = async (req, res) => {
         console.error("Error mapping UI and PT:", error.message);
         return res.status(500).json({
         success: false,
-        message: error.message || "Internal Server Error"
+        message: "Failed to map UI and PT cases",
+        error: error.message || "Internal Server Error"
     });
     }
 };

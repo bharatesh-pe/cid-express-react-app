@@ -87,7 +87,9 @@ exports.createComment = async (req, res) => {
         return userSendResponse(res, 201, true, "Comment created successfully.", newComment);
     } catch (error) {
         console.error(error);
-        return userSendResponse(res, 500, false, error.message || "Internal Server Error.", null, error.message);
+        return userSendResponse(res, 500, false, "Failed to create comment.", {
+            error: error.message || "Internal Server Error."
+        });
     }
 };
 
@@ -167,7 +169,9 @@ exports.updateComment = async (req, res) => {
         return userSendResponse(res, 200, true, "Comment updated successfully.", existingComment);
     } catch (error) {
         console.error(error);
-        return userSendResponse(res, 500, false, error.message || "Internal Server Error.", null, error.message);
+        return userSendResponse(res, 500, false, "Failed to update comment.", {
+            error: error.message || "Internal Server Error."
+        });
     }
 };
 
@@ -243,7 +247,9 @@ exports.deleteComment = async (req, res) => {
         return userSendResponse(res, 200, true, "Comment deleted successfully.");
     } catch (error) {
         console.error(error);
-        return userSendResponse(res, 500, false, error.message || "Internal Server Error.", null, error.message);
+        return userSendResponse(res, 500, false, "Failed to delete comment.", {
+            error: error.message || "Internal Server Error."
+        });
     }
 };
 
@@ -317,7 +323,9 @@ exports.viewComment = async (req, res) => {
         return userSendResponse(res, 200, true, "Comment retrieved successfully.", comment);
     } catch (error) {
         console.error(error);
-        return userSendResponse(res, 500, false, error.message || "Internal Server Error.", null, error.message);
+        return userSendResponse(res, 500, false, "Failed to retrieve comment.", {
+            error: error.message || "Internal Server Error."
+        });
     }
 };
 
@@ -423,7 +431,9 @@ exports.getComments = async (req, res) => {
         return userSendResponse(res, 200, true, "Comments retrieved successfully.", formattedComments);
     } catch (error) {
         console.error("Error fetching comments:", error);
-        return userSendResponse(res, 500, false, error.message || "Internal Server Error.", null, error.message);
+        return userSendResponse(res, 500, false, "Failed to fetch comments.", {
+            error: error.message || "Internal Server Error."
+        });
     }
 };
 
@@ -509,6 +519,8 @@ exports.paginateComments = async (req, res) => {
         return userSendResponse(res, 200, true, "Comments fetched successfully", responseData);
     } catch (error) {
         console.error('Error fetching paginated comments:', error);
-        return userSendResponse(res, 500, false, error.message || "Server error" , error);
+        return userSendResponse(res, 500, false, "Failed to fetch comments.", {
+            error: error.message || "Internal Server Error."
+        });
     }
 };

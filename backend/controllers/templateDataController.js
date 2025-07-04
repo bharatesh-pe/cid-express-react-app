@@ -264,7 +264,7 @@ exports.insertTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
   } catch (error) {
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, error?.message || "Server error.", error);
+    return userSendResponse(res, 500, false, "Failed to insert data.", error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -656,7 +656,7 @@ exports.insertTwoTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record Created Successfully`, null);
     } catch (error) {
     console.error("Error inserting data:", error.stack);
-    return userSendResponse(res, 500, false, error?.message || "Server error.", error);
+    return userSendResponse(res, 500, false, "Failed to insert data", error);
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1167,12 +1167,12 @@ exports.updateTemplateData = async (req, res, next) => {
             );
         }
         console.error("Error updating data:", error);
-        let errorMessage = "Server error.";
-        if (error && error.message) {
-            errorMessage = error.message;
-        } else if (typeof error === "string") {
-            errorMessage = error;
-        }
+        let errorMessage = "An error occurred while updating the data.";
+        // if (error && error.message) {
+        //     errorMessage = error.message;
+        // } else if (typeof error === "string") {
+        //     errorMessage = error;
+        // }
         return userSendResponse(res, 500, false, errorMessage, error);
     } finally {
         if (fs.existsSync(dirPath))
@@ -1373,12 +1373,12 @@ exports.updateEditTemplateData = async (req, res, next) => {
     }
 
     console.error("Error updating data:", error);
-    let errorMessage = "Server error.";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while updating the record.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   } finally {
     if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1482,7 +1482,8 @@ exports.deleteFileFromTemplate = async (req, res, next) => {
     return userSendResponse(res, 200, true, `Record deleted successfully.`, null);
   } catch (error) {
     console.error("Error deleting file from template:", error);
-    const errorMessage = error && error.message ? error.message : error;
+    const errorMessage = "An error occurred while deleting the file." +
+      (error.message ? ` ${error.message}` : "");
     return userSendResponse(res, 500, false, errorMessage, error);
   } finally {
     if (fs.existsSync(dirPath))
@@ -1736,12 +1737,12 @@ exports.getActionTemplateData = async (req, res, next) => {
     return userSendResponse(res, 200, true, responseMessage, transformedRecords);
   } catch (error) {
     console.error("Error fetching data:", error);
-    let errorMessage = "Server error.";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while fetching data.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
@@ -2451,12 +2452,12 @@ exports.getTemplateData = async (req, res, next) => {
     );
     } catch (error) {
     console.error("Error fetching data:", error);
-    let errorMessage = "Server error.";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while fetching data.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
@@ -2677,12 +2678,12 @@ exports.updateFieldsWithApproval = async (req, res) => {
         console.error("Error in updateFieldsWithApproval:", error);
 
         // Send a user-friendly error message with actual error details if available
-        let errorMessage = "Internal server error.";
-        if (error && error.message) {
-            errorMessage = error.message;
-        } else if (typeof error === "string") {
-            errorMessage = error;
-        }
+        let errorMessage = "An error occurred while updating fields.";
+        // if (error && error.message) {
+        //     errorMessage = error.message;
+        // } else if (typeof error === "string") {
+        //     errorMessage = error;
+        // }
 
         return userSendResponse(res, 500, false, errorMessage, error);
     }
@@ -2806,12 +2807,12 @@ exports.viewTemplateData = async (req, res, next) => {
         return userSendResponse(res, 200, true, responseMessage, data);
           } catch (error) {
         console.error("Error fetching data by ID:", error);
-        let errorMessage = "Server error.";
-        if (error && error.message) {
-            errorMessage = error.message;
-        } else if (typeof error === "string") {
-            errorMessage = error;
-        }
+        let errorMessage = "An error occurred while fetching data.";
+        // if (error && error.message) {
+        //     errorMessage = error.message;
+        // } else if (typeof error === "string") {
+        //     errorMessage = error;
+        // }
         return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
@@ -3278,12 +3279,12 @@ exports.deleteTemplateData = async (req, res, next) => {
     }
   } catch (error) {
         console.error("Error deleting data:", error);
-        let errorMessage = "Server error.";
-        if (error && error.message) {
-          errorMessage = error.message;
-        } else if (typeof error === "string") {
-          errorMessage = error;
-        }
+        let errorMessage = "An error occurred while deleting data.";
+        // if (error && error.message) {
+        //   errorMessage = error.message;
+        // } else if (typeof error === "string") {
+        //   errorMessage = error;
+        // }
         return userSendResponse(res, 500, false, errorMessage, error);
   }finally {
     if (fs.existsSync(dirPath))
@@ -3846,12 +3847,12 @@ exports.paginateTemplateData = async (req, res) => {
     );
     } catch (error) {
     console.error("Error fetching paginated data:", error);
-    let errorMessage = "Server error";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while fetching data.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
@@ -4775,12 +4776,12 @@ exports.paginateTemplateDataForOtherThanMaster = async (req, res) => {
     );
     } catch (error) {
     console.error("Error fetching paginated data:", error);
-    let errorMessage = "Server error";
-    if (error && error.message) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    }
+    let errorMessage = "An error occurred while fetching data.";
+    // if (error && error.message) {
+    //   errorMessage = error.message;
+    // } else if (typeof error === "string") {
+    //   errorMessage = error;
+    // }
     return userSendResponse(res, 500, false, errorMessage, error);
   }
 };
@@ -5037,12 +5038,12 @@ exports.bulkInsertData = async (req, res) => {
 
     } catch (error) {
           console.log(error, "bulkInsertData catch error");
-          let errorMessage = "Internal server error.";
-          if (error && error.message) {
-            errorMessage = error.message;
-          } else if (typeof error === "string") {
-            errorMessage = error;
-          }
+          let errorMessage = "Error occurred while inserting data.";
+          // if (error && error.message) {
+          //   errorMessage = error.message;
+          // } else if (typeof error === "string") {
+          //   errorMessage = error;
+          // }
           return userSendResponse(res, 500, false, errorMessage, error);
     }
 };
@@ -5474,7 +5475,7 @@ exports.templateDataFieldDuplicateCheck = async (req, res) => {
     return userSendResponse(res, 200, true, "No duplicates found.", null);
     } catch (error) {
     console.error("Error checking duplicate values in fields:", error);
-    let errorMessage = "Internal Server Error.";
+    let errorMessage = "Failed to check duplicate values in fields.";
     if (error && error.message) {
       errorMessage = error.message;
     } else if (typeof error === "string") {
@@ -5660,7 +5661,7 @@ exports.checkPdfEntry = async (req, res) => {
 
           } catch (error) {
             console.error("Error fetching data:", error);
-            let errorMessage = "Server error.";
+            let errorMessage = "Failed to get primary template Data.";
             if (error && error.message) {
               errorMessage = error.message;
             } else if (typeof error === "string") {
@@ -5752,7 +5753,7 @@ exports.checkPdfEntry = async (req, res) => {
 
         } catch (error) {
         console.error("Error fetching data:", error);
-        let errorMessage = "Server error.";
+        let errorMessage = "Failed to get template data.";
         if (error && error.message) {
           errorMessage = error.message;
         } else if (typeof error === "string") {
@@ -5858,7 +5859,7 @@ exports.checkPdfEntry = async (req, res) => {
             });
         } catch (error) {
             console.error("Error in addSingleFieldValue:", error);
-            const errorMessage = error && error.message ? error.message : error;
+            const errorMessage = "Failed to add value to dropdown field.";
             return userSendResponse(res, 500, false, errorMessage, error);
         }
     };
@@ -6287,7 +6288,7 @@ exports.uploadFile = async (req, res) => {
       console.error("Error uploading file:", error);
       return res.status(500).json({
         success: false,
-        message: error?.message || "Internal server error.",
+        message: "Failed to upload file.",
         error: error,
       });
     }
@@ -6325,7 +6326,7 @@ exports.getUploadedFiles = async (req, res) => {
     console.error("Error fetching files:", error);
     return res
       .status(500)
-      .json({ success: false, message: error?.message || "Internal server error.", error });
+      .json({ success: false, message: "Failed to get Upload files", error });
   }
 };
 
@@ -6838,7 +6839,7 @@ exports.appendToLastLineOfPDF = async (req, res) => {
     return res.status(200).json({ success: true, message: 'PDF updated successfully.' });
   } catch (error) {
     console.error('Error in appendToLastLineOfPDF:', error);
-    return res.status(500).json({ success: false, message: error?.message || error, error });
+    return res.status(500).json({ success: false, message: "Failed to append the PDF" + error.message, error });
   }
 };
 
@@ -6879,7 +6880,7 @@ exports.getMonthWiseByCaseId = async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching monthwise progress reports:', error);
-    return res.status(500).json({ success: false, message: error?.message || 'Internal server error.', error });
+    return res.status(500).json({ success: false, message: "Failed to get monthwise case id" , error });
   }
 };
 
@@ -7751,7 +7752,7 @@ exports.saveDataWithApprovalToTemplates = async (req, res, next) => {
     console.error("Error saving data to templates:", error);
     if (t) await t.rollback();
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
-    const message = isDuplicate ? "Duplicate entry detected." : (error.message || "An unexpected error occurred.");
+    const message = isDuplicate ? "Duplicate entry detected." : "Failed to save data." + (error.message || "");
     return userSendResponse(res, isDuplicate ? 400 : 500, false, message, error);
   } finally {
 		if (fs.existsSync(dirPath)) {
@@ -8259,7 +8260,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
       if (t) await t.rollback();
 
       let statusCode = 500;
-      let userMessage = "Internal Server Error.";
+      let userMessage = "Failed to Update Data.";
 
       if (error.name === "SequelizeUniqueConstraintError") {
         statusCode = 400;
@@ -8268,7 +8269,7 @@ exports.updateDataWithApprovalToTemplates = async (req, res, next) => {
         statusCode = 400;
         userMessage = error.errors?.map(e => e.message).join(", ") || "Validation error.";
       } else if (error.message) {
-        userMessage = error.message;
+        userMessage =  "Failed to Update Data" + error.message;
       }
 
       return userSendResponse(res, statusCode, false, userMessage, error);
@@ -8521,7 +8522,7 @@ exports.getAccusedWitness = async (req, res) => {
 
       return res.status(500).json({
         success: false,
-        message: error.message || "Internal server error.",
+        message: "Failed to fetch accused/witness data.",
         error: error,
       });
       }
@@ -8679,7 +8680,8 @@ exports.checkAccusedDataStatus = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: error.message || "Something went wrong.",
+      message: "Failed to check accused data status.",
+      error: error.message || "Internal server error.",
     });
   }
 };
@@ -10235,7 +10237,7 @@ exports.getMergeChildData = async (req, res) =>
       res,
       500,
       false,
-      error.message || "An unexpected error occurred.",
+      "Failed to fetch data" + error.message,
       error
     );
   }
@@ -10440,7 +10442,7 @@ exports.deMergeCaseData = async (req, res) => {
             res,
             500,
             false,
-            err.message || "Failed to de-merge data.",
+            "Failed to de-merge data." + (err.message || ""),
             err
         );
     }finally {
@@ -10512,7 +10514,7 @@ exports.getTemplateAlongWithData = async (req, res) => {
           res,
           500,
           false,
-          error.message || "An unexpected server error occurred.",
+          "Failed to fetch template and data." + (error.message || ""),
           error
       );
   }
@@ -10672,7 +10674,7 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
           res,
           500,
           false,
-          error.message || "An unexpected error occurred.",
+          "Failed to fetch template data with accused." || error.message,
           error
         );
     }
@@ -10765,7 +10767,7 @@ exports.getDateWiseTableCounts = async (req, res) => {
         return userSendResponse(res, 200, true, "Date-wise table counts fetched successfully.", result);
     } catch (error) {
         console.error("Error in getDateWiseTableCounts:", error);
-        return userSendResponse(res, 500, false, "Internal server error.", error);
+        return userSendResponse(res, 500, false, "Failed to fetch date-wise table counts.", error);
     }
 };
 
@@ -10975,7 +10977,7 @@ exports.saveActionPlan = async (req, res) => {
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
     const message = isDuplicate
       ? "Duplicate entry detected."
-      : error.message || "Internal Server Error.";
+      : "Failed to save data to templates." + (error.message ? `: ${error.message}` : "");
 
     return userSendResponse(res, isDuplicate ? 400 : 500, false, message, error);
   }finally {
@@ -11215,7 +11217,7 @@ exports.submitActionPlanPR = async (req, res) => {
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
     const message = isDuplicate
       ? "Duplicate entry detected."
-      : error.message || "Internal Server Error.";
+      : "Failed to submit Action Plan. Please try again later." || error.message;
 
     return userSendResponse(
       res,
@@ -11369,7 +11371,7 @@ exports.submitPropertyFormFSL = async (req, res) => {
     const isDuplicate = error.name === "SequelizeUniqueConstraintError";
     const message = isDuplicate
       ? "Duplicate entry detected."
-      : error.message || "Internal Server Error.";
+      : "Failed to submit Action Plan." || error.message || "Internal Server Error.";
 
     return userSendResponse(
       res,
@@ -11479,7 +11481,8 @@ exports.checkFinalSheet = async (req, res) => {
     console.error("Error in checkCaseStatusByUiCaseId:", error);
     return res.status(500).json({
       success: false,
-      message: error.message || "Internal server error."
+      message: "Failed to check case status.",
+      error: error.message || "An unexpected error occurred."
     });
   }
 };
@@ -11716,7 +11719,8 @@ exports.checkCaseStatusCombined = async (req, res) => {
             console.error("Error in checkCaseStatusCombined:", error);
             return res.status(500).json({
                 success: false,
-                message: error.message || "Internal server error."
+                message: "Failed to check case status.",
+                error: error.message || "Internal server error."
             });
         }
 };
