@@ -297,6 +297,10 @@ router.post('/getTemplateDataWithAccused',
     [gwtDataValidation],[validate_token],
     templateDataController.getTemplateDataWithAccused)
 
+router.post('/getDateWiseTableCounts',
+    [gwtDataValidation],[validate_token],
+    templateDataController.getDateWiseTableCounts)
+
 router.post('/getPrimaryTemplateData',
     [gwtDataValidation],[validate_token],
     templateDataController.getPrimaryTemplateData)
