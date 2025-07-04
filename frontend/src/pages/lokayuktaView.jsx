@@ -74,27 +74,6 @@ const LokayuktaView = () => {
 
     const [showSplitScreenForm, setShowSplitScreenForm] = useState(false);
 
-    const handleTabChange = async (event, newValue) => {
-
-        var tableObj = splitScreenNavTabs[newValue];
-         
-        if(!tableObj?.table_name){
-            toast.error("Please Check The Template !", {
-                position: "top-right",
-                autoClose: 3000,
-                hideProgressBar: false,
-                closeOnClick: true,
-                pauseOnHover: true,
-                draggable: true,
-                progress: undefined,
-                className: "toast-error",
-            });
-            return;
-        }
-
-        setSplitScreenActiveTab(newValue);
-        setShowSplitScreenForm(true);
-    };
 
     const selectedSplitScreenRef = useRef([]);
     const directAddNewRef = useRef(false);
