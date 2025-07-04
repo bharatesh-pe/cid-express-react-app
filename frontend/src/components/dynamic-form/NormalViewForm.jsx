@@ -51,7 +51,7 @@ import TableField from '../form/Table';
 
 const NormalViewForm = ({ 
     formConfig, initialData, onSubmit, onError, stepperData, closeForm, table_name, template_name, readOnly, editData, onUpdate, template_id, table_row_id, headerDetails, selectedRow, noPadding, disableEditButton, disableSaveNew, overAllReadonly, investigationViewTable, editedForm
-    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig
+    , showAssignIo, investigationAction, reloadApproval, showCaseActionBtn, reloadForm , showCaseLog, reloadFormConfig , onSkip , skip , editName
  }) => {
 
 //   let storageFormData = localStorage.getItem(template_name + '-formData') ? JSON.parse(localStorage.getItem(template_name + '-formData')) : {};
@@ -2403,7 +2403,35 @@ const NormalViewForm = ({
                 </Button>
             }
 
-            {!readOnlyTemplate && editDataTemplate && onUpdate ?
+            {onSkip && (
+                <Button
+                  onClick={() => {skip();}}
+                  sx={{
+                    border: "1.5px solid #E53935",
+                    background: "transparent",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#E53935",
+                    padding: "6px 16px",
+                    marginLeft: "10px",
+                    marginRight: "10px",
+                    boxShadow: "none",
+                    borderRadius: "8px",
+                    transition: "background 0.2s, color 0.2s, border-color 0.2s",
+                    "&:hover": {
+                    background: "#FFEBEE",
+                    borderColor: "#B71C1C",
+                    color: "#B71C1C",
+                    },
+                  }}
+                  className="Roboto"
+                  variant="outlined"
+                  >
+                  Skip PF & Save
+                  </Button>
+                )}
+              
+              {!readOnlyTemplate && editDataTemplate && onUpdate ?
 
               <Button onClick={() => formButtonRef && formButtonRef.current && formButtonRef.current.click()} sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px' }} className="Roboto blueButton">
                 Update
@@ -2421,12 +2449,12 @@ const NormalViewForm = ({
                     sx={{ background: '#0167F8', fontSize: '14px', fontWeight: '500', color: '#FFFFFF', padding: '6px 16px', marginRight: '8px' }}
                     className="Roboto blueButton"
                   >
-                    Save
+                    {table_name === "cid_ui_case_mahajars" ? "Next" : "Save"}
                   </Button>
             
                     {
                         !disableSaveNew && table_name !== "cid_eq_case_closure_report" && table_name !== "cid_ui_case_extension_form" && table_name !== "cid_eq_case_enquiry_order_copy" &&
-                        table_name !== "cid_eq_case_extension_form" &&
+                        table_name !== "cid_eq_case_extension_form" && table_name !== "cid_ui_case_mahajars" && table_name !== "cid_ui_case_property_form" &&
                         <Button
                             variant="contained" color="success"
                             onClick={() =>{
@@ -2456,7 +2484,7 @@ const NormalViewForm = ({
                     }}
                     className="Roboto blueButton"
                 >
-                    Edit Case
+                  {editName ? "Edit Case" : "Edit"}
                 </Button>
             }
 

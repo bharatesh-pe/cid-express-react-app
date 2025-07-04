@@ -124,13 +124,14 @@ const get_module = async (req, res) => {
       modules: enabled_modules,
       unreadNotificationCount,
     });
-  } catch (error) {
-    // Log and return error if an error occurs during module retrieval
+    } catch (error) {
     console.error("error retrieving modules:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "internal server error" });
-  }
+    return res.status(500).json({
+        success: false,
+        message: error.message || "Internal server error"
+    });
+    }
+
 };
 
 // Function to verify OTP
@@ -347,9 +348,10 @@ const verify_OTP = async (req, res) => {
   } catch (error) {
     // Log and return error if an error occurs during OTP verification
     console.error("Error verifying OTP:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -458,9 +460,10 @@ const generate_OTP = async (req, res) => {
   } catch (error) {
     // Log and return error if an error occurs during OTP generation
     console.error("Error generating OTP:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -500,9 +503,10 @@ const logout = async (req, res) => {
     } catch (error) {
 
         console.error("Error logging out:", error.message);
-        return res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+        return res.status(500).json({
+            success: false,
+            message: error.message || "Internal Server Error"
+        });
     }
     
 };
@@ -592,9 +596,10 @@ const generate_OTP_without_pin = async (req, res) => {
   } catch (error) {
     // Log and return error if an error occurs during OTP generation
     console.error("Error generating OTP:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -665,9 +670,10 @@ const verify_OTP_without_pin = async (req, res) => {
   } catch (error) {
     // Log and return error if an error occurs during OTP verification
     console.error("Error verifying OTP:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -731,9 +737,10 @@ const update_pin = async (req, res) => {
     }
   } catch (error) {
     console.error("Error updating PIN:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -838,9 +845,10 @@ const get_supervisor_id = async (req, res) => {
     }
   } catch (error) {
     console.error("Error logging out:", error.message);
-    return res
-      .status(500)
-      .json({ success: false, message: "Internal Server Error" });
+    return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
   }
 };
 
@@ -963,9 +971,10 @@ const set_user_hierarchy = async (req, res) => {
         });
     } catch (error) {
         console.error("Error setting user hierarchy:", error.message);
-        return res
-        .status(500)
-        .json({ success: false, message: "Internal Server Error" });
+        return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
     }
 };
 
@@ -1994,7 +2003,10 @@ const fetch_dash_count = async (req, res) => {
         });
     } catch (error) {
         console.error("Error retrieving dashboard count:", error.message);
-        return res.status(500).json({ success: false, message: "Internal server error"+error });
+        return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
     }
 };
 
@@ -2045,7 +2057,10 @@ const mapUIandPT = async (req, res) => {
         return res.status(200).json({ success: true, message: "PT cases updated with UI or PT IDs as required" });
     } catch (error) {
         console.error("Error mapping UI and PT:", error.message);
-        return res.status(500).json({ success: false, message: "Internal server error" });
+        return res.status(500).json({
+        success: false,
+        message: error.message || "Internal Server Error"
+    });
     }
 };
 
