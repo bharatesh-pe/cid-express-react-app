@@ -5548,6 +5548,12 @@ const loadChildMergedCasesData = async (page, caseId) => {
                         caseView : true,
                         viewAction : true,
                         chargeSheet : true
+                    },
+                    {
+                        name: "Case Dairy",
+                        caseView : true,
+                        viewAction : true,
+                        caseDairy : true
                     }
                 ].filter(Boolean);
     

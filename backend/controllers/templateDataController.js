@@ -10031,94 +10031,264 @@ exports.getTemplateDataWithAccused = async (req, res, next) => {
 
 
 exports.getDateWiseTableCounts = async (req, res) => {
+    const transaction = await sequelize.transaction();
     try {
-        const { table_name = [] } = req.body;
+        const { table_name = [], pt_case_id, ui_case_id } = req.body;
 
-        if (!Array.isArray(table_name) || table_name.length === 0) {
-            return userSendResponse(res, 400, false, "table_name array is required.", null);
+        if (!Array.isArray(table_name)){
+            return userSendResponse(res, 400, false, "table_name should be an array", null);
         }
 
-        const formatDate = (date) => {
-            const d = new Date(date);
-            const day = String(d.getDate()).padStart(2, "0");
-            const month = String(d.getMonth() + 1).padStart(2, "0");
-            const year = d.getFullYear();
-            return `${day}-${month}-${year}`;
-        };
+        if (table_name.length === 0) {
+            return userSendResponse(res, 400, false, "At least one table name is required", null);
+        }
+
+        const validTables = [];
+        for (const table of table_name) {
+            if (/^[a-z0-9_]+$/.test(table)) {
+                validTables.push(table);
+            }
+        }
+
+        if (validTables.length === 0) {
+            return userSendResponse(res, 400, false, "No valid table names provided", null);
+        }
 
         const allDatesSet = new Set();
         const tableDateCounts = {};
 
-        for (const table_name of table_name) {
-            const tableData = await Template.findOne({ where: { table_name } });
+        for (const table of validTables) {
+
+            const tableData = await Template.findOne({ 
+                where: { table_name: table },
+                transaction
+            });
+
             if (!tableData) continue;
 
-            const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
-            const hasCaseDairy = schema.some(f => f.name === "field_case_dairy");
+            const schema = typeof tableData.fields === "string"  ? JSON.parse(tableData.fields)  : tableData.fields;
 
-            const modelAttributes = {};
-            for (const field of schema) {
-                const { name, data_type, not_null, default_value } = field;
-                const sequelizeType = typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING;
-                modelAttributes[name] = {
-                    type: sequelizeType,
-                    allowNull: !not_null,
-                    defaultValue: default_value || null,
-                };
+            const hasCaseDiary = schema.some(f => f.name === "field_case_diary");
+            const dateField = hasCaseDiary ? "field_case_diary" : "created_at";
+
+            const whereConditions = [`${dateField} IS NOT NULL`];
+            const replacements = {};
+
+            if (ui_case_id) {
+                whereConditions.push("ui_case_id = :ui_case_id");
+                replacements.ui_case_id = ui_case_id;
             }
 
-            modelAttributes.id = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true };
-            modelAttributes.created_at = { type: Sequelize.DataTypes.DATE, allowNull: true };
-
-            if (hasCaseDairy) {
-                modelAttributes.field_case_dairy = { type: Sequelize.DataTypes.DATE, allowNull: true };
+            if (pt_case_id) {
+                whereConditions.push("pt_case_id = :pt_case_id");
+                replacements.pt_case_id = pt_case_id;
             }
 
-            const Model = sequelize.define(table_name, modelAttributes, {
+            const query = `SELECT  DATE(${dateField}) as date, COUNT(*) as count FROM ${table} WHERE ${whereConditions.join(" AND ")} GROUP BY DATE(${dateField}) `;
+
+            const records = await sequelize.query(query, {
+                type: sequelize.QueryTypes.SELECT,
+                replacements,
+                transaction
+            });
+
+            const dateCountMap = {};
+            for (const rec of records) {
+                if (!rec.date) continue;
+                
+                let dateStr;
+                try {
+                    const dateObj = rec.date instanceof Date ? rec.date : new Date(rec.date);
+                    
+                    if (isNaN(dateObj.getTime())) continue;
+                    
+                    dateStr = dateObj.toISOString().split('T')[0];
+                } catch (e) {
+                    continue;
+                }
+                
+                dateCountMap[dateStr] = (dateCountMap[dateStr] || 0) + rec.count;
+                allDatesSet.add(dateStr);
+            }
+            tableDateCounts[table] = dateCountMap;
+        }
+
+        const allDates = Array.from(allDatesSet).sort();
+
+        const result = allDates.map(dateStr => {
+            const row = { date: dateStr };
+            for (const table of validTables) {
+                row[table] = tableDateCounts[table]?.[dateStr] || 0;
+            }
+            return row;
+        });
+
+        await transaction.commit();
+        return userSendResponse(res, 200, true, "Date-wise counts fetched", result);
+    } catch (error) {
+        await transaction.rollback();
+        console.error("Error in getDateWiseTableCounts:", error);
+        return userSendResponse(res, 500, false, "Internal server error", {
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+};
+
+exports.getTemplateDataWithDate = async (req, res) => {
+    try {
+        const {
+            table_name,
+            date,
+            ui_case_id,
+            pt_case_id,
+            page = 1,
+            limit = 10,
+            search = ""
+        } = req.body;
+
+        if (!table_name || !date) {
+            return userSendResponse(res, 400, false, "table_name and date are required.", null);
+        }
+
+        const tableData = await Template.findOne({ where: { table_name } });
+        if (!tableData) {
+            return userSendResponse(res, 400, false, `Table ${table_name} does not exist.`, null);
+        }
+
+        const schema = typeof tableData.fields === "string" ? JSON.parse(tableData.fields) : tableData.fields;
+        const displayFields = schema.filter(f => f.table_display_content);
+
+        const fields = {};
+        let dateField = "created_at";
+
+        for (const field of displayFields) {
+            const { name, data_type, not_null, default_value } = field;
+
+            fields[name] = {
+                type: typeMapping[data_type?.toUpperCase()] || Sequelize.DataTypes.STRING,
+                allowNull: !not_null,
+                defaultValue: default_value || null,
+            };
+
+            if (name === "field_case_diary") {
+                dateField = "field_case_diary";
+            }
+        }
+
+        fields["id"] = { type: Sequelize.DataTypes.INTEGER, primaryKey: true, autoIncrement: true };
+        fields["created_at"] = { type: Sequelize.DataTypes.DATE, allowNull: false };
+        fields["updated_at"] = { type: Sequelize.DataTypes.DATE, allowNull: false };
+
+        const Model =
+            sequelize.models[table_name] ||
+            sequelize.define(table_name, fields, {
                 freezeTableName: true,
                 timestamps: true,
                 createdAt: "created_at",
                 updatedAt: "updated_at",
             });
 
-            await Model.sync();
+        await Model.sync();
 
-            const dateField = hasCaseDairy ? "field_case_dairy" : "created_at";
-            const records = await Model.findAll({
-                attributes: [[Sequelize.fn('DATE', Sequelize.col(dateField)), 'date']],
-                raw: true,
-            });
+        const Op = Sequelize.Op;
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        const parsedDate = date.split("T")[0];
 
-            const dateCountMap = {};
-            for (const rec of records) {
-                if (!rec.date) continue;
-                const dateStr = formatDate(rec.date);
-                dateCountMap[dateStr] = (dateCountMap[dateStr] || 0) + 1;
-                allDatesSet.add(dateStr);
-            }
-            tableDateCounts[table_name] = dateCountMap;
+        const whereConditions = [
+            Sequelize.where(
+                Sequelize.fn("DATE", Sequelize.col(dateField)),
+                parsedDate
+            )
+        ];
+
+        if (fields["ui_case_id"] && ui_case_id) {
+        whereConditions.push({ ui_case_id });
         }
 
-        const allDates = Array.from(allDatesSet).sort((a, b) => {
-            const [da, ma, ya] = a.split('-').map(Number);
-            const [db, mb, yb] = b.split('-').map(Number);
-            return new Date(ya, ma - 1, da) - new Date(yb, mb - 1, db);
-        });
+        if (fields["pt_case_id"] && pt_case_id) {
+        whereConditions.push({ pt_case_id });
+        }
 
-        const result = allDates.map(dateStr => {
-            const row = { date: dateStr };
-            for (const table_name of table_name) {
-                row[table_name] = tableDateCounts[table_name]?.[dateStr] || 0;
+        if (search) {
+            const searchConditions = [];
+            for (const field of displayFields) {
+                if (["STRING", "TEXT"].includes((typeMapping[field.data_type?.toUpperCase()] || {}).key)) {
+                    searchConditions.push({ [field.name]: { [Op.iLike]: `%${search}%` } });
+                }
             }
-            return row;
+            if (searchConditions.length > 0) {
+                whereConditions.push({ [Op.or]: searchConditions });
+            }
+        }
+
+        const whereClause = { [Op.and]: whereConditions };
+
+        const { rows, count } = await Model.findAndCountAll({
+            where: whereClause,
+            limit: parseInt(limit),
+            offset: parseInt(offset),
+            order: [["created_at", "DESC"]],
         });
 
-        return userSendResponse(res, 200, true, "Date-wise table counts fetched successfully.", result);
+        const result = [];
+        for (const row of rows) {
+            const data = row.toJSON();
+
+            for (const field of displayFields) {
+                if (field.table && field.attributes && Array.isArray(field.attributes)) {
+                    const relatedFieldName = field.name;
+                    const relatedAttr = field.attributes[0];
+
+                    const RelatedModel = require("../models")[field.table];
+
+                    if (RelatedModel) {
+                        const related = await RelatedModel.findOne({
+                            where: { id: data[relatedFieldName] },
+                            attributes: [relatedAttr],
+                        });
+
+                        if (related && related[relatedAttr] !== undefined) {
+                            data[relatedFieldName] = related[relatedAttr];
+                        }
+                    } else {
+                        const [resultRow] = await sequelize.query(
+                            `SELECT ${relatedAttr} FROM ${field.table} WHERE id = :id LIMIT 1`,
+                            {
+                                replacements: { id: data[relatedFieldName] },
+                                type: Sequelize.QueryTypes.SELECT,
+                            }
+                        );
+
+                        if (resultRow && resultRow[relatedAttr] !== undefined) {
+                            data[relatedFieldName] = resultRow[relatedAttr];
+                        }
+                    }
+                }
+            }
+
+            result.push(data);
+        }
+
+        const totalPages = Math.ceil(count / limit);
+
+        return userSendResponse(res, 200, true, "Fetched data successfully.", {
+            data: result,
+            meta: {
+                page: parseInt(page),
+                limit: parseInt(limit),
+                totalItems: count,
+                totalPages,
+                date: parsedDate,
+                table_name,
+            },
+        });
     } catch (error) {
-        console.error("Error in getDateWiseTableCounts:", error);
-        return userSendResponse(res, 500, false, "Internal server error.", error);
+        console.error("Error in getTemplateDataWithDate:", error);
+        return userSendResponse(res, 500, false, "Internal server error.", error.message);
     }
 };
+
 
 exports.saveActionPlan = async (req, res) => {
 

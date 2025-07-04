@@ -44,6 +44,8 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CloseIcon from '@mui/icons-material/Close';
 
 import AccusedSplitScreen from './accusedSplitScreen';
+import CaseDairy from "./CaseDairy";
+
 
 const LokayuktaView = () => {
 
@@ -2520,6 +2522,15 @@ const LokayuktaView = () => {
                         selectedRowData={rowData}
                         backNavigation={backToForm}
                     />
+                ) : activeSidebar?.caseDairy === true ? (
+
+                    <CaseDairy
+                        actionArray={sidebarContentArray}
+                        ui_case_id={module === "pt_case" ? rowData?.ui_case_id :  rowData?.id}
+                        pt_case_id={module === "pt_case" ? rowData?.id :  rowData?.pt_case_id}
+                        closeForm={backToForm}
+                    />
+
                 ) : activeSidebar?.chargeSheet === true ? (
                     sysStatus === "disposal" ? (
                         <ChargeSheetInvestigation
