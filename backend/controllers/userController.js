@@ -265,9 +265,10 @@ exports.create_user = async (req, res) => {
       await t.rollback();
     }
     console.error("Error creating user:", error);
-    return res
-      .status(500)
-      .json({ message: "Failed to create user", error: error.message });
+    return res.status(500).json({
+      message: error.message ||  "Failed to create user",
+      error: error.message || "Unknown error occurred"
+    });
   } finally {
     if (fs.existsSync(dirPath)) {
       fs.rmdirSync(dirPath, { recursive: true });
@@ -501,7 +502,7 @@ exports.update_user = async (req, res) => {
   } catch (error) {
     await t.rollback();
     console.error("Error updating user:", error);
-    return res.status(500).json({ message: "Failed to update user", error: error.message });
+    return res.status(500).json({ message: "Failed to update user" || error.message, error: error.message });
   } finally {
     if (fs.existsSync(dirPath)) fs.rmSync(dirPath, { recursive: true, force: true });
   }
@@ -556,7 +557,7 @@ exports.user_active_deactive = async (req, res) => {
     console.error("Error updating user status:", error);
     return res
       .status(500)
-      .json({ message: "Failed to update user status", error: error.message });
+      .json({ message: "Failed to update user status" || error.message, error: error.message });
   } finally {
     if (fs.existsSync(dirPath)) {
       fs.rmdirSync(dirPath, { recursive: true });
@@ -742,7 +743,7 @@ exports.get_users = async (req, res) => {
   } catch (error) {
     console.error("Error fetching users:", error);
     return res.status(500).json({
-      message: "Failed to fetch users",
+      message: "Failed to fetch users" || error.message,
       error: error.message,
     });
   }
@@ -993,7 +994,7 @@ exports.filter_users = async (req, res) => {
     console.error("Error filtering users:", error);
     return res
       .status(500)
-      .json({ message: "Failed to filter users", error: error.message });
+      .json({ message: "Failed to filter users" || error.message, error: error.message });
   }
 };
 
@@ -1175,6 +1176,6 @@ exports.get_user_management_logs = async (req, res) => {
         return res.status(200).json({"logs":logs});
     } catch (error) {
         console.error('Error fetching user management logs:', error);
-        return res.status(500).json({ message: 'Internal server error' });
+        return res.status(500).json({ message: error.message || 'Internal server error' });
     }
 };
