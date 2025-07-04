@@ -43,7 +43,7 @@ exports.fetch_masters_meta = async (req, res) => {
     const totalPages = Math.ceil(totalItems / limit);
     return res.status(200).json({ success: true, master ,meta: { page, limit, totalItems,totalPages, order,},});
   } catch (error) {
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ error: error.message ||"Internal server error" });
   }
 };
 
@@ -776,7 +776,7 @@ exports.fetch_specific_master_data = async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching master data:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: error.message ||"Internal server error" });
   }
 };
 
@@ -1117,7 +1117,7 @@ exports.create_master_data = async (req, res) => {
     });
   } catch (error) {
     console.log("Error creating master data:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: error.message ||"Internal server error" });
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });
@@ -1457,7 +1457,7 @@ exports.update_master_data = async (req, res) => {
     });
   } catch (error) {
     console.log("Error updating master data:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(500).json({ message: error.message || "Internal server error" });
   } finally {
     if (fs.existsSync(dirPath))
       fs.rmSync(dirPath, { recursive: true, force: true });

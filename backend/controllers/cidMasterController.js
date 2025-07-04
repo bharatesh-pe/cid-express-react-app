@@ -52,7 +52,7 @@ const getAllDepartments = async (req, res) => {
         return adminSendResponse(res, 200, true, "Departments retrieved successfully", [ ...departments ]);
     } catch (error) {
         console.error("Error fetching departments:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, error.message ||"Internal Server Error");
     }
 };
 
@@ -70,7 +70,7 @@ const getAllDesignations = async (req, res) => {
         return adminSendResponse(res, 200, true, "Designations retrieved successfully", [ ...designations ]);
     } catch (error) {
         console.error("Error fetching designations:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, error.message ||"Internal Server Error");
     }
 };
 
@@ -113,7 +113,7 @@ const getAllDivisions = async (req, res) => {
         return adminSendResponse(res, 200, true, "Divisions retrieved successfully", [ ...divisions ]);
     } catch (error) {
         console.error("Error fetching divisions:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, error.message ||"Internal Server Error");
     }
 };
 
@@ -634,7 +634,7 @@ const getAllKGID = async (req, res) => {
         return adminSendResponse(res, 200, true, "KGID retrieved successfully", [ ...kgids ]);
     } catch (error) {
         console.error("Error fetching kgids:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, error.message ||"Internal Server Error");
     }
 };
 
@@ -712,7 +712,7 @@ const getAllAct = async (req, res) => {
         return adminSendResponse(res, 200, true, "Act retrieved successfully", [ ...acts ]);
     } catch (error) {
         console.error("Error fetching act's:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, error.message ||"Internal Server Error");
     }
 };
 
@@ -759,7 +759,7 @@ const getAllSectionAndActBasedSection = async (req, res) => {
         return adminSendResponse(res, 200, true, "Section's retrieved successfully", [ ...sections ]);
     } catch (error) {
         console.error("Error fetching section's:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, error.message || "Internal Server Error");
     }
 };
 
@@ -781,7 +781,7 @@ const getDivisionBasedOnDepartment = async (req, res) => {
         return adminSendResponse(res, 200, true, "Divisions retrieved successfully", [ ...divisions ]);
     } catch (error) {
         console.error("Error fetching divisions:", error.message);
-        return adminSendResponse(res, 500, false, "Internal Server Error");
+        return adminSendResponse(res, 500, false, error.message || "Internal Server Error");
     }
 };
 
